@@ -1,0 +1,69 @@
+{
+  "name": "pos-crokets-react",
+  "version": "1.0.0",
+  "description": "Sistema POS CROKETS con React y Electron",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k \"cross-env NODE_ENV=development vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\" \"nodemon src/backend/server.js\"",
+    "build": "vite build && electron-builder",
+    "build:frontend": "vite build",
+    "build:electron": "electron-builder",
+    "start": "electron .",
+    "watch": "vite build --watch",
+    "preview": "vite preview",
+    "rebuild": "electron-rebuild -f -w sqlite3"
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "pos",
+    "crokets"
+  ],
+  "author": "Tu Nombre",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "electron-is-dev": "^2.0.0",
+    "express": "^5.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/sqlite3": "^5.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
+    "node-gyp": "^11.3.0",
+    "nodemon": "^3.1.10",
+    "vite": "^7.1.0",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.crokets.pos",
+    "productName": "POS CROKETS",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/images/LOGOCROKEIS.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

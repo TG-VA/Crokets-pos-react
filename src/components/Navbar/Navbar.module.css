@@ -1,0 +1,234 @@
+:root {
+  --croketsOrange: #fc8913;
+  --croketsOrangeDark: #e07a0d;
+  --croketsBlue: #1092b1;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.croketsNavbar {
+  background-color: var(--white);
+  min-height: 80px;
+  width: 100%;  
+  padding: 0.5rem 1rem;
+  display: flex;  
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--croketsOrange);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  width: 99vw;
+  max-width: 99vw;
+  margin: 0;
+}
+
+.navButton {
+  background-color: var(--croketsOrange);
+  color: var(--white);
+  border: 2px solid var(--croketsOrange);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navButton:hover {
+  background-color: var(--white);
+  color: var(--croketsOrange);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logoutButton {
+  background-color: var(--croketsBlue);
+  color: var(--white);
+  border: 2px solid var(--croketsBlue);
+}
+
+.logoutButton:hover {
+  background-color: var(--white);
+  color: var(--croketsBlue);
+  border: 2px solid var(--croketsBlue);
+}
+
+.navbarBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--darkGray);
+}
+
+.navbarLogo {
+  height: 40px;
+  width: auto;
+}
+
+.navbarMenu,
+.navbarUser {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navIcon,
+.userIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 8px;
+  transition: all 0.2s ease;
+}
+
+.btnVentas,
+.btnProductos,
+.btnInventario,
+.btnFacturas,
+.btnCorte,
+.btnReportes,
+.btnConfiguracion {
+  position: relative;
+}
+
+.btnVentas:hover::after {
+  content: "F1";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnProductos:hover::after {
+  content: "F2";
+  /* mismo estilo que arriba */
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnInventario:hover::after {
+  content: "F3";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnFacturas:hover::after {
+  content: "F4";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnCorte:hover::after {
+  content: "F5";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnReportes:hover::after {
+  content: "F6";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.btnConfiguracion:hover::after {
+  content: "F7";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: -59px;
+}
+
+.userIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.navButton:hover .navIcon,
+.logoutButton:hover .navIcon {
+  filter: brightness(1.2);
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .navIcon,
+  .userIcon {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+  }
+}

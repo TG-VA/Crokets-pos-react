@@ -1,0 +1,17 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.navbar {
+  display: flex;
+  flex-direction: column;
+  height: 97vh;
+}
+
+.dashboardContent {
+  flex: 1;
+  background-color: var(--lightGray);
+}

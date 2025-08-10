@@ -1,0 +1,165 @@
+ :root {
+  --color-primary: #0078d7;
+  --color-primary-dark: #005fa3;
+  --color-secondary: #fc8913;
+  --color-error: #d93025;
+
+  --color-white: #ffffff;
+  --color-light-gray: #f2f2f2;
+  --color-medium-gray: #05060f0a;
+  --color-dark-gray: #00000099;
+  --color-placeholder: #999;
+
+  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+.loginContainer {
+  background: var(--color-white);
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: var(--shadow-default);
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  align-items: center;
+}
+
+.logo {
+  width: 70%;
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.inputGroup {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.inputIconWrapper {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-medium-gray);
+  border-radius: 0.5rem;
+  padding: 0 1rem;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+  height: 44px;
+  position: relative;
+}
+
+.inputIconWrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.inputIconWrapperError {
+  border-color: var(--color-error);
+  background-color: #ffe5e5;
+}
+
+.input {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  padding-right: 30px;
+  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color var(--transition-normal), color var(--transition-normal), background var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--color-placeholder);
+  font-style: italic;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-dark-gray);
+}
+
+.inputIcon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  opacity: 0.7;
+}
+
+.eyeButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin:0;
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+}
+
+.eyeButton img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.eyeButton:hover img {
+  opacity: 1;
+}
+
+.forgotPassword {
+  width: 100%;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.linkButton {
+  font-size: 1rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.linkButton:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+.errorMessage {
+  color: var(--color-error);
+  text-align: center;
+  margin: 10px 0;
+  font-weight: bold;
+  min-height: 20px;
+}
+
+.loginButton {
+  padding: 12px 24px;
+  font-size: 1rem;
+  border-radius: 10px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  box-shadow: var(--shadow-button);
+  transition: all var(--transition-normal);
+}
+
+.loginButton:hover {
+  background-color: var(--color-primary-dark);
+  cursor: pointer;
+}
