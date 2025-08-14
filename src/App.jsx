@@ -4,12 +4,15 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login/Login';
 import CashRegister from './pages/CashRegister/CashRegister';
 import Dashboard from './pages/Dashboard/Dashboard';
+import Products from './pages/Products/Products';
 
 function App() {
   // Estado de autenticación del usuario.
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   // Estado que indica si la caja ya se abrió.
   const [cashRegistered, setCashRegistered] = useState(false);
+  // Estado para validar al usuario admin con sus permisos
+  const [isAdmin, setIsAdmin] = useState(false);
 
   return (
     <Router>
@@ -28,7 +31,7 @@ function App() {
         <Route 
           path="/cash-register" 
           element={
-            isAuthenticated ? 
+            isAuthenticated ?
               <CashRegister 
                 setCashRegistered={setCashRegistered}
                 setIsAuthenticated={setIsAuthenticated}
@@ -46,6 +49,16 @@ function App() {
                 setIsAuthenticated={setIsAuthenticated}
                 setCashRegistered={setCashRegistered}
               /> : 
+              <Navigate to="/cash-register" replace />
+          } 
+        />
+        
+        {/* Ruta de productos */}
+        <Route 
+          path="/products" 
+          element={
+            cashRegistered ? 
+              <Products /> : 
               <Navigate to="/cash-register" replace />
           } 
         />
