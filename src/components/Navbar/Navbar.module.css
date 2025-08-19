@@ -19,16 +19,20 @@
 .croketsNavbar {
   background-color: var(--white);
   min-height: 80px;
-  width: 100%;  
+  width: 100%;
   padding: 0.5rem 1rem;
   display: flex;  
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid var(--croketsOrange);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-
-  width: 99vw;
-  max-width: 99vw;
+  
+  /* Hacer la navbar completamente fija */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   margin: 0;
 }
 

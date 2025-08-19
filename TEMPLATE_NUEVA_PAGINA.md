@@ -1,4 +1,4 @@
-# 🛠️ TEMPLATE PARA CREAR NUEVAS PÁGINAS
+# TEMPLATE PARA CREAR NUEVAS PÁGINAS
 
 ## Pasos para agregar una nueva página al sistema:
 

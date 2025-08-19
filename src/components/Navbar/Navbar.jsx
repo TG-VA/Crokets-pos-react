@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './Navbar.module.css';
 
 // Importa los recursos de la aplicación (imágenes e íconos).
@@ -15,11 +16,17 @@ import LogoutIcon from '../../assets/icons/door-open-solid-full.svg';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Función para manejar el cierre de sesión.
   const handleLogout = () => {
-    window.electronAPI.send('go-to-login');
-    navigate('/login');
+    // Mostrar confirmación antes de cerrar sesión
+    const confirmLogout = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
+    
+    if (confirmLogout) {
+      logout(); // Usar el contexto para logout
+      navigate('/login');
+    }
   };
 
   // Array de objetos que define los ítems de navegación.
@@ -53,7 +60,7 @@ const Navbar = () => {
       </div>
       
       <div className={styles.navbarUser}>
-        <span>Usuario: Admin</span>
+        <span>Usuario: {user ? user.name : 'Cargando...'}</span>
         <button className={`${styles.navButton} ${styles.logoutButton}`} onClick={handleLogout}>
           <img src={LogoutIcon} alt="Salir" className={styles.navIcon} />
           Salir

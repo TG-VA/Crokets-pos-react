@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 // Importa los componentes de las páginas.
 import Login from './pages/Login/Login';
 import CashRegister from './pages/CashRegister/CashRegister';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Products from './pages/Products/Products';
+import Settings from './pages/Settings/Settings';
+import Profiles from './pages/Profiles/Profiles';
+// Importa el contexto de autenticación
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-function App() {
-  // Estado de autenticación del usuario.
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // Estado que indica si la caja ya se abrió.
-  const [cashRegistered, setCashRegistered] = useState(false);
-  // Estado para validar al usuario admin con sus permisos
-  const [isAdmin, setIsAdmin] = useState(false);
+function AppRoutes() {
+  const { isAuthenticated, cashRegistered, setCashRegistered } = useAuth();
 
   return (
     <Router>
@@ -22,7 +21,7 @@ function App() {
           path="/login" 
           element={
             !isAuthenticated ? 
-              <Login setIsAuthenticated={setIsAuthenticated} /> : 
+              <Login /> : 
               <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
           } 
         />
@@ -34,7 +33,6 @@ function App() {
             isAuthenticated ?
               <CashRegister 
                 setCashRegistered={setCashRegistered}
-                setIsAuthenticated={setIsAuthenticated}
               /> : 
               <Navigate to="/login" replace />
           } 
@@ -46,7 +44,6 @@ function App() {
           element={
             cashRegistered ? 
               <Dashboard 
-                setIsAuthenticated={setIsAuthenticated}
                 setCashRegistered={setCashRegistered}
               /> : 
               <Navigate to="/cash-register" replace />
@@ -74,8 +71,36 @@ function App() {
             } replace />
           } 
         />
+
+        {/* Ruta de configuración */}
+        <Route 
+          path="/settings" 
+          element={
+            isAuthenticated ?
+            <Settings /> :
+            <Navigate to="/login" replace />
+          }
+        />
+
+        {/* Ruta de perfiles/usuarios */}
+        <Route 
+          path="/profiles" 
+          element={
+            isAuthenticated ?
+            <Profiles /> :
+            <Navigate to="/login" replace />
+          }
+        />
       </Routes>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
