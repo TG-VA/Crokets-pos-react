@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './Login.module.css';
 
 // Importa los recursos gráficos.
@@ -9,7 +10,8 @@ import lockIcon from '../../assets/icons/lock-solid.svg';
 import eyeIcon from '../../assets/icons/eye-solid-full.svg';
 import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
 
-const Login = ({setIsAuthenticated }) => {
+const Login = () => {
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -37,7 +39,7 @@ const Login = ({setIsAuthenticated }) => {
         // Lógica para Electron
         const result = await window.electronAPI.invoke('login', { username, password });
         if (result.success) {
-          setIsAuthenticated(true);
+          login(result.user); // Usar el contexto de autenticación
           navigate('/cash-register');
         } else {
           setError(result.message || 'Credenciales incorrectas');
@@ -52,7 +54,7 @@ const Login = ({setIsAuthenticated }) => {
 
         const data = await response.json();
         if (data.success) {
-          setIsAuthenticated(true);
+          login(data.user); // Usar el contexto de autenticación
           navigate('/cash-register');
         } else {
           setError(data.message || 'Credenciales incorrectas');

@@ -1,0 +1,117 @@
+:root {
+  --croketsOrange: #fc8913;
+  --croketsOrangeDark: #e07a0d;
+  --croketsBlue: #1092b1;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 1rem;
+  background-color: var(--lightGray);
+  overflow-y: auto;
+  width: 100%;
+}
+
+.header {
+  background-color: var(--white);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: var(--darkGray);
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
+
+.header p {
+  color: var(--textColor);
+  font-size: 1.1rem;
+}
+
+.content {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--mediumGray);
+  gap: 1rem;
+}
+
+.addButton {
+  background-color: var(--croketsOrange);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addButton:hover {
+  background-color: var(--croketsOrangeDark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.searchInput {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--mediumGray);
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 300px;
+  transition: border-color 0.3s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--croketsOrange);
+}
+
+.productsList {
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.productsList p {
+  text-align: center;
+  color: var(--textColor);
+  font-size: 1.1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 1rem;
+  }
+  
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .searchInput {
+    width: 100%;
+  }
+}

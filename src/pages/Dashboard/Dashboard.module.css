@@ -11,6 +11,11 @@
   height: 97vh;
 }
 
+.mainContent {
+  flex: 1;
+  background-color: var(--lightGray);
+}
+
 .dashboardContent {
   flex: 1;
   background-color: var(--lightGray);

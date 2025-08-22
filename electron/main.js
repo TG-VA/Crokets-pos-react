@@ -92,15 +92,37 @@ ipcMain.handle('close-cash-register', () => {
   return result;
 });
 
-// Manejador de login con credenciales de prueba
+// Manejador de login que usa la API del backend
 ipcMain.handle('login', async (event, { username, password }) => {
-  const validUsername = 'admin';
-  const validPassword = '1234'; 
+  try {
+    // Hacer la llamada al backend
+    const fetch = require('node-fetch');
+    const response = await fetch('http://localhost:3000/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  if (username === validUsername && password === validPassword) {
-    return { success: true, message: 'Login exitoso' };
-  } else {
-    return { success: false, message: 'Credenciales incorrectas' };
+    const data = await response.json();
+    
+    if (data.success) {
+      return { 
+        success: true, 
+        message: data.message,
+        user: data.user
+      };
+    } else {
+      return { 
+        success: false, 
+        message: data.message || 'Credenciales incorrectas'
+      };
+    }
+  } catch (error) {
+    console.error('Error en login de Electron:', error);
+    return { 
+      success: false, 
+      message: 'Error de conexión con el servidor'
+    };
   }
 });
 
