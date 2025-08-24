@@ -19,13 +19,14 @@ const Navbar = () => {
   const { user, logout } = useAuth();
 
   // Función para manejar el cierre de sesión.
-  const handleLogout = () => {
-    // Mostrar confirmación antes de cerrar sesión
+  const handleLogout = async () => {
     const confirmLogout = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
     
     if (confirmLogout) {
-      logout(); // Usar el contexto para logout
-      navigate('/login');
+      await logout(); // Esperamos a que el logout termine
+      setTimeout(() => {  // Damos tiempo a que el estado se limpie
+        navigate('/login', { replace: true });
+      }, 0);
     }
   };
 

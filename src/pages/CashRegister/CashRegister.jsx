@@ -16,8 +16,8 @@ const CashRegister = ({ setCashRegistered }) => {
         // Llama al proceso principal para obtener el estado de la caja.
         const state = await window.electronAPI.invoke('check-cash-register');
         // Si la caja ya está abierta, marca el estado y navega al dashboard.
-        if (state.isOpen) {`
-          setCashRegistered(true);`
+        if (state.isOpen) {
+          setCashRegistered(true);
           navigate('/dashboard');
         }
       } catch (err) {
