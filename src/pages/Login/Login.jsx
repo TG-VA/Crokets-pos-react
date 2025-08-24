@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './Login.module.css';
@@ -17,6 +17,28 @@ const Login = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const usernameRef = useRef(null);
+
+  useEffect(() => {
+    setUsername('');
+    setPassword('');
+    setError('');
+
+    const focusTimer = setTimeout(() => {
+      if (usernameRef.current) {
+        usernameRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(focusTimer);
+  }, []);
+
+  const handleFormClick = () => {
+    if (usernameRef.current) {
+      usernameRef.current.focus();
+    }
+  }
+
 
   // Función para alternar visibilidad de contraseña
   const togglePasswordVisibility = () => {
@@ -26,9 +48,11 @@ const Login = () => {
   // Función para manejar el envío del formulario 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    //Elimina espacion al iniciar y al final del username
+    const cleanUsername = username.trim();
     // Validación básica
-    if (!username.trim() || !password.trim()) {
+    if (!cleanUsername || !password.trim()) {
       setError('Por favor, complete todos los campos.');
       return;
     }
@@ -37,7 +61,7 @@ const Login = () => {
       // Verifica si estamos en Electron o en desarrollo web
       if (window.electronAPI) {
         // Lógica para Electron
-        const result = await window.electronAPI.invoke('login', { username, password });
+        const result = await window.electronAPI.invoke('login', { username:cleanUsername, password });
         if (result.success) {
           login(result.user); // Usar el contexto de autenticación
           navigate('/cash-register');
@@ -49,7 +73,7 @@ const Login = () => {
         const response = await fetch('http://localhost:3000/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username: cleanUsername, password })
         });
 
         const data = await response.json();
@@ -75,7 +99,7 @@ const Login = () => {
   }, [error]);
 
   return (
-    <form className={styles.loginContainer} onSubmit={handleSubmit} noValidate>
+    <form className={styles.loginContainer} onSubmit={handleSubmit}noValidate>
       <img
         src={logo}
         alt="Logo de Crokets"
@@ -87,6 +111,7 @@ const Login = () => {
         <div className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ''}`}>
           <img src={userIcon} alt="Icono usuario" className={styles.inputIcon} />
           <input
+            ref={usernameRef}
             autoComplete="off"
             id="username"
             className={styles.input}

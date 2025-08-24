@@ -21,20 +21,22 @@ function AppRoutes() {
           path="/login" 
           element={
             !isAuthenticated ? 
-              <Login /> : 
+              <Login key={Date.now()} /> : 
               <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
           } 
         />
-        
+
         {/* Ruta de caja registradora */}
         <Route 
           path="/cash-register" 
           element={
-            isAuthenticated ?
-              <CashRegister 
-                setCashRegistered={setCashRegistered}
-              /> : 
+            !isAuthenticated ? (
               <Navigate to="/login" replace />
+            ) : cashRegistered ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <CashRegister setCashRegistered={setCashRegistered} />
+            )
           } 
         />
         
@@ -42,11 +44,13 @@ function AppRoutes() {
         <Route 
           path="/dashboard" 
           element={
-            cashRegistered ? 
-              <Dashboard 
-                setCashRegistered={setCashRegistered}
-              /> : 
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
               <Navigate to="/cash-register" replace />
+            ) : (
+              <Dashboard setCashRegistered={setCashRegistered} />
+            )
           } 
         />
         
@@ -54,31 +58,23 @@ function AppRoutes() {
         <Route 
           path="/products" 
           element={
-            cashRegistered ? 
-              <Products /> : 
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
               <Navigate to="/cash-register" replace />
+            ) : (
+              <Products />
+            )
           } 
         />
         
-        {/* Ruta raíz - redirige según estado */}
-        <Route 
-          path="/" 
-          element={
-            <Navigate to={
-              isAuthenticated ? 
-                (cashRegistered ? "/dashboard" : "/cash-register") : 
-                "/login"
-            } replace />
-          } 
-        />
-
         {/* Ruta de configuración */}
         <Route 
           path="/settings" 
           element={
             isAuthenticated ?
-            <Settings /> :
-            <Navigate to="/login" replace />
+              <Settings /> :
+              <Navigate to="/login" replace />
           }
         />
 
@@ -87,9 +83,21 @@ function AppRoutes() {
           path="/profiles" 
           element={
             isAuthenticated ?
-            <Profiles /> :
-            <Navigate to="/login" replace />
+              <Profiles /> :
+              <Navigate to="/login" replace />
           }
+        />
+
+        {/* Ruta raíz - redirige según estado */}
+        <Route 
+          path="/" 
+          element={
+            <Navigate to={
+              !isAuthenticated ? "/login" :
+              !cashRegistered ? "/cash-register" :
+              "/dashboard"
+            } replace />
+          } 
         />
       </Routes>
     </Router>

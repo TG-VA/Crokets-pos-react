@@ -21,7 +21,7 @@ const Settings = () => {
       <main className={styles.mainContent}>
         <div className={styles.header}>
           <h1>CONFIGURACIÓN</h1>
-          <p>Apartado de coonfiguracióon únicamente accesible para administradores</p>
+          <p>Apartado de configuración únicamente accesible para administradores</p>
         </div>
         
         <div className={styles.content}>
