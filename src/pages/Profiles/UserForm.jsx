@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from './Profiles.module.css';
+import styles from './UserForm.module.css';
 
 const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -119,132 +119,129 @@ const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
   };
 
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.formHeader}>
-        <h2>{user ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</h2>
-        <button 
-          type="button" 
-          className={styles.closeButton}
-          onClick={onCancel}
-        >
-          ✕
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className={styles.userForm}>
-        {/* Campo Nombre */}
-        <div className={styles.formGroup}>
-          <label htmlFor="name" className={styles.label}>
-            Nombre Completo *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
-            placeholder="Ingrese el nombre completo del usuario"
-          />
-          {errors.name && <span className={styles.errorText}>{errors.name}</span>}
-        </div>
-
-        {/* Campo Username */}
-        <div className={styles.formGroup}>
-          <label htmlFor="username" className={styles.label}>
-            Nombre de Usuario (Login) *
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleInputChange}
-            className={`${styles.input} ${errors.username ? styles.inputError : ''}`}
-            placeholder="Nombre para iniciar sesión"
-          />
-          {errors.username && <span className={styles.errorText}>{errors.username}</span>}
-        </div>
-
-        {/* Campo Contraseña */}
-        <div className={styles.formGroup}>
-          <label htmlFor="password" className={styles.label}>
-            {user ? 'Nueva Contraseña (opcional)' : 'Contraseña *'}
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
-            placeholder={user ? "Dejar vacío para mantener la actual" : "Mínimo 6 caracteres"}
-          />
-          {errors.password && <span className={styles.errorText}>{errors.password}</span>}
-        </div>
-
-        {/* Campo Confirmar Contraseña */}
-        <div className={styles.formGroup}>
-          <label htmlFor="confirmPassword" className={styles.label}>
-            {user ? 'Confirmar Nueva Contraseña' : 'Confirmar Contraseña *'}
-          </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
-            placeholder="Confirme la contraseña"
-          />
-          {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
-        </div>
-
-        {/* Sección de Permisos */}
-        <div className={styles.formGroup}>
-          <label className={styles.label}>
-            Permisos del Usuario *
-          </label>
-          <div className={styles.permissionsContainer}>
-            {availablePermissions.map(permission => (
-              <div key={permission.id} className={styles.permissionItem}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={formData.permissions.includes(permission.id)}
-                    onChange={() => handlePermissionChange(permission.id)}
-                    className={styles.checkbox}
-                  />
-                  <span className={styles.checkboxCustom}></span>
-                  <div className={styles.permissionInfo}>
-                    <span className={styles.permissionTitle}>{permission.label}</span>
-                    <span className={styles.permissionDescription}>{permission.description}</span>
-                  </div>
-                </label>
-              </div>
-            ))}
-          </div>
-          {errors.permissions && <span className={styles.errorText}>{errors.permissions}</span>}
-        </div>
-
-        {/* Botones de acción */}
-        <div className={styles.formActions}>
-          <button
-            type="button"
-            className={styles.cancelButton}
+    <>
+      <div className={styles.modalBackdrop} onClick={onCancel} />
+      <div className={styles.formContainer}>
+        <div className={styles.formHeader}>
+          <h2>{user ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</h2>
+          <button 
+            type="button" 
+            className={styles.closeButton}
             onClick={onCancel}
           >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className={styles.submitButton}
-          >
-            {user ? 'Actualizar Usuario' : 'Crear Usuario'}
+            ✕
           </button>
         </div>
-      </form>
-    </div>
+
+        <form onSubmit={handleSubmit} className={styles.userForm}>
+          <div className={styles.leftColumn}>
+            {/* Datos básicos */}
+            <div className={styles.formGroup}>
+              <label htmlFor="name" className={styles.label}>
+                Nombre Completo *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
+                placeholder="Ingrese el nombre completo del usuario"
+              />
+              {errors.name && <span className={styles.errorText}>{errors.name}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="username" className={styles.label}>
+                Nombre de Usuario (Login) *
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.username ? styles.inputError : ''}`}
+                placeholder="Nombre para iniciar sesión"
+              />
+              {errors.username && <span className={styles.errorText}>{errors.username}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="password" className={styles.label}>
+                {user ? 'Nueva Contraseña (opcional)' : 'Contraseña *'}
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+                placeholder={user ? "Dejar vacío para mantener la actual" : "Mínimo 6 caracteres"}
+              />
+              {errors.password && <span className={styles.errorText}>{errors.password}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="confirmPassword" className={styles.label}>
+                {user ? 'Confirmar Nueva Contraseña' : 'Confirmar Contraseña *'}
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
+                placeholder="Confirme la contraseña"
+              />
+              {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
+            </div>
+          </div>
+
+          <div className={styles.rightColumn}>
+            {/* Sección de Permisos */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Permisos del Usuario *
+              </label>
+              <div className={styles.permissionsContainer}>
+                {availablePermissions.map(permission => (
+                  <div key={permission.id} className={styles.permissionItem}>
+                    <label className={styles.checkboxWrapper}>
+                      <input
+                        type="checkbox"
+                        className={styles.checkbox}
+                        checked={formData.permissions.includes(permission.id)}
+                        onChange={() => handlePermissionChange(permission.id)}
+                      />
+                      <div className={styles.permissionInfo}>
+                        <span className={styles.permissionLabel}>{permission.label}</span>
+                        <span className={styles.permissionDescription}>
+                          {permission.description}
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {errors.permissions && <span className={styles.errorText}>{errors.permissions}</span>}
+            </div>
+          </div>
+
+          <div className={styles.formActions}>
+            <button type="button" className={styles.cancelButton} onClick={onCancel}>
+              Cancelar
+            </button>
+            <button type="submit" className={styles.submitButton}>
+              {user ? 'Actualizar Usuario' : 'Crear Usuario'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
   );
 };
 

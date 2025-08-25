@@ -33,12 +33,6 @@ const Login = () => {
     return () => clearTimeout(focusTimer);
   }, []);
 
-  const handleFormClick = () => {
-    if (usernameRef.current) {
-      usernameRef.current.focus();
-    }
-  }
-
 
   // Función para alternar visibilidad de contraseña
   const togglePasswordVisibility = () => {
@@ -99,7 +93,7 @@ const Login = () => {
   }, [error]);
 
   return (
-    <form className={styles.loginContainer} onSubmit={handleSubmit}noValidate>
+    <form className={styles.loginContainer} onSubmit={handleSubmit} noValidate>
       <img
         src={logo}
         alt="Logo de Crokets"
