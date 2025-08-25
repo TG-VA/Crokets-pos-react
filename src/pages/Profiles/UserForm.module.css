@@ -1,0 +1,225 @@
+:root {
+  --croketsOrange: #fc8913;
+  --croketsOrangeDark: #e07a0d;
+  --croketsBlue: #1092b1;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+  --errorColor: #e74c3c;
+  --successColor: #27ae60;
+}
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.formContainer {
+  position: fixed;
+  top: 80px;
+  right: 0;
+  bottom: 60px;
+  left: 0;
+  background: var(--white);
+  overflow: hidden;
+  margin: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--croketsBlue);
+  color: var(--white);
+  border-bottom: none;
+}
+
+.formTitle {
+  color: var(--white);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: var(--white);
+}
+
+.userForm {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--textColor);
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--mediumGray);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus {
+  border-color: var(--croketsBlue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.2);
+}
+
+.inputError {
+  border-color: var(--errorColor);
+}
+
+.errorText {
+  color: var(--errorColor);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.permissionsContainer {
+  border: 1px solid var(--mediumGray);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--white);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.permissionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--lightGray);
+  transition: background-color 0.2s;
+}
+
+.permissionItem:last-child {
+  border-bottom: none;
+}
+
+.permissionItem:hover {
+  background-color: var(--lightGray);
+}
+
+.checkboxWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--croketsBlue);
+}
+
+.permissionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.permissionLabel {
+  font-weight: 500;
+  color: var(--textColor);
+}
+
+.permissionDescription {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.formActions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--lightGray);
+}
+
+.submitButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButton {
+  background: var(--croketsBlue);
+  color: var(--white);
+  border: none;
+}
+
+.submitButton:hover {
+  background: #0d7a94;
+}
+
+.submitButton:disabled {
+  background: var(--mediumGray);
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background: none;
+  border: 1px solid var(--mediumGray);
+  color: var(--textColor);
+}
+
+.cancelButton:hover {
+  background: var(--lightGray);
+}
