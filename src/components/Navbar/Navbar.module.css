@@ -128,7 +128,6 @@
 
 .btnProductos:hover::after {
   content: "F2";
-  /* mismo estilo que arriba */
   position: absolute;
   bottom: 100%;
   left: 50%;

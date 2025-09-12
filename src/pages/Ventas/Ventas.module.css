@@ -1,0 +1,388 @@
+:root {
+  --color-primary: #0078d7;
+  --color-primary-dark: #005fa3;
+  --color-secondary: #fc8913;
+  --color-error: #d93025;
+
+  --color-white: #ffffff;
+  --color-light-gray: #f2f2f2;
+  --color-medium-gray: #05060f0a;
+  --color-dark-gray: #00000099;
+  --color-placeholder: #999;
+  --color-black: #000000;
+
+  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+.ventasContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px);
+  width: 100vw;
+  background-color: var(--color-light-gray);
+  padding: 10px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+/* Encabezado de venta */
+.saleHeader {
+  padding: 10px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 5px;
+  margin-top: 70px;
+}
+
+.saleHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Barra superior de acciones*/
+.topActionBar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: var(--color-light-gray);
+  padding: 8px 10px;
+  gap: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+}
+
+/* Botones horizontales y alargados */
+.horizontalActionButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 15px;
+  background-color: #e9e9e9;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  height: 35px;
+  flex: 1;
+}
+
+.horizontalActionButton:hover {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.horizontalActionButton:hover .actionKey,
+.horizontalActionButton:hover .actionText {
+  color: white;
+}
+
+.buttonIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.actionKey {
+  font-weight: bolder;
+  font-size: 0.8rem;
+  color: var(--color-black);
+  transition: color 0.3s ease;
+}
+
+.actionKey2 {
+  font-size: 1rem;
+  font-weight: bolder;
+  color: var(--color-white);
+  transition: color 0.3s ease;
+}
+
+.actionText {
+  font-size: 0.8rem;
+  color: #555;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.actionText2 {
+  font-weight:100 ;
+  transition: color 0.3s ease;
+}
+
+/* Botones cuadrados naranjas para el footer */
+.squareButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 80px;
+  background-color: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.squareButton:hover {
+  background-color: white;
+  color: var(--color-secondary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2 );
+  border: 1px solid var(--color-secondary);
+}
+
+.squareButton:hover .squareKey,
+.squareButton:hover .squareText {
+  color: var(--color-secondary);
+}
+
+.squareIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-bottom: 5px;
+  filter: brightness(0) invert(1);
+  transition: filter 0.3s ease;
+}
+
+.squareButton:hover .squareIcon {
+  filter: brightness(0) invert(0.7) sepia(1) saturate(5) hue-rotate(0deg);
+}
+
+.squareKey {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  margin-right: 4px;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.squareText {
+  font-size: 1rem;
+  text-align: center;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+
+.productInputBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+  background-color: var(--color-white);
+  border-radius: 5px;
+  box-shadow: var(--shadow-default);
+}
+
+.inputSection {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.inputSection label {
+  font-size: 0.9em;
+  color: var(--color-dark-gray);
+}
+
+.barcodeInput {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.addProductBtn {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  padding: 10px 20px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addProductBtn:hover {
+  background-color: #e67d00;
+  transform: scale(1.05);
+}
+
+/* Tabla de productos redimensionable manteniendo Grid */
+.productsTable {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border-radius: 5px;
+  box-shadow: var(--shadow-default);
+  overflow: hidden;
+  border: 1px solid var(--color-placeholder);
+  position: relative;
+}
+
+.tableHeader {
+  display: grid;
+  background-color: var(--color-medium-gray);
+  padding: 10px;
+  font-weight: bold;
+  border-bottom: 1px solid var(--color-placeholder);
+  position: relative;
+}
+
+.tableHeader span {
+  position: relative;
+  text-align: center;
+  padding: 5px;
+  border-right: 1px solid var(--color-placeholder);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tableHeader span:last-child {
+  border-right: none;
+}
+
+/* Resize handle para redimensionar columnas */
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+}
+
+.resizeHandle:hover {
+  background-color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.resizeHandle:active {
+  background-color: var(--color-primary-dark);
+}
+
+.tableBody {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Estilos para las filas de la tabla */
+.tableRow {
+  display: grid;
+  padding: 10px;
+  border-bottom: 1px solid var(--color-placeholder);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background-color: #f8f9fa;
+}
+
+.tableCell {
+  text-align: center;
+  padding: 5px;
+  border-right: 1px solid var(--color-placeholder);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tableCell:last-child {
+  border-right: none;
+}
+
+.footerBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: var(--color-white);
+  border-radius: 5px;
+  box-shadow: var(--shadow-default);
+}
+
+.leftActions, .rightActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.payButton {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 30px 100px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 15px;
+}
+
+.payButton:hover {
+  background-color: var(--color-primary-dark);
+  transform: scale(1.05);
+}
+
+.payIcon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  margin-bottom: 5px;
+  margin-right: 10px;
+  filter: brightness(0) invert(1);
+  transition: filter 0.3s ease;
+}
+
+.payKey {
+  font-weight: bold;
+  font-size: 1.6em;
+  margin-right: 4px;
+}
+
+.payText {
+    font-size: 1.5rem;
+}
+
+.totalSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 15px;
+}
+
+.totalLabel {
+  font-size: 0.9em;
+  color: var(--color-dark-gray);
+}
+
+.totalAmount {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: var(--color-primary-dark);
+}
