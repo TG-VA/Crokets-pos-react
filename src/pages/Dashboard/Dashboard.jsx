@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import styles from './Dashboard.module.css';
 import Footer from '../../components/Footer/Footer';
-import Ventas from '../Ventas/Ventas';
+import Sales from '../Sales/Sales';
 
 
 const Dashboard = () => {
@@ -10,7 +10,7 @@ const Dashboard = () => {
     <div className={styles.navbar}>
       <Navbar />
       <main className={styles.mainContent}>
-        <Ventas /> 
+        <Sales /> 
       </main>
       <Footer/> 
     </div>

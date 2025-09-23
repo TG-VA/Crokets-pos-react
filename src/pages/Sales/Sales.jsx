@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import styles from "./Ventas.module.css";
+import styles from "./Sales.module.css";
 
 // Importar iconos
 import searchIcon from "../../assets/icons/searchIcon.svg";
