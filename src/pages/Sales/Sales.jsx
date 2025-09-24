@@ -11,7 +11,7 @@ import changeIcon from "../../assets/icons/changeIcon.svg";
 import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
 import payIcon from "../../assets/icons/payIcon.svg";
 
-const Ventas = () => {
+const Sales = () => {
   // Número de ticket de ejemplo
   const ticketNumber = 1;
 
@@ -34,10 +34,53 @@ const Ventas = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState("Terminal");
-  const [paidAmount, setPaidAmount] = useState(0);
+
+  // Estados para diferentes métodos de pago
+  const [paidAmount, setPaidAmount] = useState("");
+  const [dollarAmount, setDollarAmount] = useState("");
+  const [exchangeRate] = useState(18.5); // Tipo de cambio fijo, Se puede hacer dinamico mas adelante
+
+  // Estados para pago mixto
+  const [mixedPayments, setMixedPayments] = useState({
+    efectivo: "",
+    tarjeta: "",
+    dolares: "",
+  });
+
+  // Estados para transferencia
+  const [trackingCode, setTrackingCode] = useState("");
 
   const total = 207.0; // aquí puedes ligar con el total real de la venta
-  const change = Math.max(0, paidAmount - total);
+
+  // Función para convertir valores a número, manejando NaN y valores vacíos
+  const toNumber = (value) => {
+    const num = parseFloat(value.trim());
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Calcular cambio según método de pago
+  const numericPaidAmount = toNumber(paidAmount);
+  const numericDollarAmount = toNumber(dollarAmount);
+  const numericEfectivo = toNumber(mixedPayments.efectivo);
+  const numericTarjeta = toNumber(mixedPayments.tarjeta);
+  const numericDolares = toNumber(mixedPayments.dolares);
+
+  const calculateChange = () => {
+    switch (selectedPaymentMethod) {
+      case "Efectivo":
+        return Math.max(0, numericPaidAmount - total);
+      case "Dolares":
+        return Math.max(0, numericDollarAmount * exchangeRate - total);
+      case "Mixto":
+        const totalMixed =
+          numericEfectivo + numericTarjeta + numericDolares * exchangeRate;
+        return Math.max(0, totalMixed - total);
+      default:
+        return 0;
+    }
+  };
+
+  const change = calculateChange();
 
   const paymentMethods = [
     { id: "Efectivo", name: "Efectivo", icon: "💰" },
@@ -47,12 +90,247 @@ const Ventas = () => {
     { id: "Transferencia", name: "Transferencia", icon: "🏦" },
   ];
 
-  const closePaymentModal = () => setShowPaymentModal(false);
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    // Resetear todos los estados
+    setPaidAmount("");
+    setDollarAmount("");
+    setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
+    setTrackingCode("");
+  };
+
   const processPayment = () => {
     alert(
       `Procesando pago de $${total.toFixed(2)} con ${selectedPaymentMethod}`
     );
     setShowPaymentModal(false);
+  };
+
+  // Función para renderizar el contenido del método de pago
+  const renderPaymentContent = () => {
+    switch (selectedPaymentMethod) {
+      case "Efectivo":
+        return (
+          <div className={styles.paymentInfo}>
+            <div className={styles.paymentRow}>
+              <span>Pagó Con:</span>
+              <div className={styles.inputWithSymbol}>
+                <span className={styles.currencySymbol}>$</span>
+                <input
+                  type="text"
+                  className={styles.paymentInput}
+                  value={paidAmount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (
+                      /^\d*\.?\d*$/.test(val) &&
+                      val.split(".").length - 1 <= 1
+                    ) {
+                      // permite solo números y punto
+                      setPaidAmount(val === "." ? "0." : val);
+                    }
+                  }}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>Su Cambio:</span>
+              <span className={styles.changeAmount}>${change.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+
+      case "Dolares":
+        return (
+          <div className={styles.paymentInfo}>
+            <div className={styles.exchangeRateDisplay}>
+              <span>
+                Tipo de cambio: ${exchangeRate.toFixed(2)} MXN por USD
+              </span>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>Pagó Con (USD):</span>
+              <div className={styles.inputWithSymbol}>
+                <span className={styles.currencySymbol}>$</span>
+                <input
+                  type="text"
+                  className={styles.paymentInput}
+                  value={dollarAmount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (
+                      /^\d*\.?\d*$/.test(val) &&
+                      val.split(".").length - 1 <= 1
+                    ) {
+                      setDollarAmount(val === "." ? "0." : val);
+                    }
+                  }}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>Equivalente en MXN:</span>
+              <span className={styles.equivalentAmount}>
+                ${(toNumber(dollarAmount) * exchangeRate).toFixed(2)}
+              </span>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>Su Cambio:</span>
+              <span className={styles.changeAmount}>${change.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+
+      case "Mixto":
+        return (
+          <div className={styles.paymentInfo}>
+            <div className={styles.mixedPaymentSection}>
+              <h3>Desglose de Pago</h3>
+
+              {/* Efectivo */}
+              <div className={styles.paymentRow}>
+                <span>Efectivo:</span>
+                <div className={styles.inputWithSymbol}>
+                  <span className={styles.currencySymbol}>$</span>
+                  <input
+                    type="text"
+                    className={styles.paymentInput}
+                    value={mixedPayments.efectivo}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
+                        setMixedPayments((prev) => ({
+                          ...prev,
+                          efectivo: val === "." ? "0." : val,
+                        }));
+                      }
+                    }}
+                    placeholder="0.00"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* Tarjeta */}
+              <div className={styles.paymentRow}>
+                <span>Tarjeta:</span>
+                <div className={styles.inputWithSymbol}>
+                  <span className={styles.currencySymbol}>$</span>
+                  <input
+                    type="text"
+                    className={styles.paymentInput}
+                    value={mixedPayments.tarjeta}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
+                        setMixedPayments((prev) => ({
+                          ...prev,
+                          tarjeta: val === "." ? "0." : val,
+                        }));
+                      }
+                    }}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Dólares */}
+              <div className={styles.paymentRow}>
+                <span>Dólares (USD):</span>
+                <div className={styles.inputWithSymbol}>
+                  <span className={styles.currencySymbol}>$</span>
+                  <input
+                    type="text"
+                    className={styles.paymentInput}
+                    value={mixedPayments.dolares}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
+                        setMixedPayments((prev) => ({
+                          ...prev,
+                          dolares: val === "." ? "0." : val,
+                        }));
+                      }
+                    }}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className={styles.totalMixedRow}>
+                <span>Total Pagado:</span>
+                <span className={styles.totalMixedAmount}>
+                  $
+                  {(
+                    toNumber(mixedPayments.efectivo) +
+                    toNumber(mixedPayments.tarjeta) +
+                    toNumber(mixedPayments.dolares) * exchangeRate
+                  ).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Cambio */}
+              <div className={styles.paymentRow}>
+                <span>Su Cambio:</span>
+                <span className={styles.changeAmount}>
+                  ${change.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "Terminal":
+        return (
+          <div className={styles.paymentInfo}>
+            <div className={styles.terminalSection}>
+              <div className={styles.paymentRow}>
+                <span>Total a Cobrar:</span>
+                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "Transferencia":
+        return (
+          <div className={styles.paymentInfo}>
+            <div className={styles.transferSection}>
+              <div className={styles.paymentRow}>
+                <span>Informacion de Transferencia:</span>
+                <input
+                  type="text"
+                  className={styles.trackingInput}
+                  value={trackingCode}
+                  onChange={(e) => setTrackingCode(e.target.value)}
+                  placeholder="Clave de rastreo, referencia, etc."
+                />
+              </div>
+              <div className={styles.paymentRow}>
+                <span>Total a Cobrar:</span>
+                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   // Datos de ejemplo para la tabla
@@ -135,6 +413,40 @@ const Ventas = () => {
       document.body.style.userSelect = "";
     };
   }, [isResizing, resizingIndex, startX, tableWidth, columnFractions]);
+
+  //useEffect para manejar Esc
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        closePaymentModal();
+      }
+    };
+
+    if (showPaymentModal) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showPaymentModal]);
+
+  //useEffect para abrir y cerrar el modal de sales con F12 y esc
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F12") {
+        setShowPaymentModal(true);
+      } else if (e.key === "Escape") {
+        closePaymentModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className={styles.ventasContainer}>
@@ -330,26 +642,9 @@ const Ventas = () => {
               ))}
             </div>
 
-            <div className={styles.paymentInfo}>
-              <div className={styles.paymentRow}>
-                <span>Pagó Con:</span>
-                <input
-                  type="number"
-                  className={styles.paymentInput}
-                  value={paidAmount}
-                  onChange={(e) =>
-                    setPaidAmount(parseFloat(e.target.value) || 0)
-                  }
-                  step="0.01"
-                />
-              </div>
-              <div className={styles.paymentRow}>
-                <span>Su Cambio:</span>
-                <span className={styles.changeAmount}>
-                  ${change.toFixed(2)}
-                </span>
-              </div>
-            </div>
+            {/* Contenido dinámico según método de pago */}
+            {renderPaymentContent()}
+
             <div className={styles.modalActions}>
               <button className={`${styles.modalActionBtn} `}>
                 F1 - Cobrar e Imprimir
@@ -380,4 +675,4 @@ const Ventas = () => {
   );
 };
 
-export default Ventas;
+export default Sales;
