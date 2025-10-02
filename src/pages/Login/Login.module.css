@@ -119,12 +119,6 @@
   opacity: 1;
 }
 
-.forgotPassword {
-  width: 100%;
-  text-align: center;
-  margin-top: 0.5rem;
-}
-
 .linkButton {
   font-size: 1rem;
   color: var(--color-primary);
