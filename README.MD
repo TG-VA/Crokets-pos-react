@@ -101,9 +101,3 @@ npm run dev
 | Comando            | Descripción                                   |
 |--------------------|-----------------------------------------------|
 | `npm run dev`      | Inicia Vite + Electron en modo desarrollo     |
-| `npm run build`    | Crea versión de producción                    |
-| `npm run start`    | Ejecuta build de producción                   |
-| `npm run lint`     | Ejecuta ESLint para verificar código          |
-| `npm run format`   | Formatea código con Prettier                  |
-| `npm test`         | Ejecuta pruebas de componentes                |
-
