@@ -151,11 +151,6 @@ const Login = () => {
           </button>
         </div>
       </div>
-
-      <div className={styles.forgotPassword}>
-        <button type="button" className={styles.linkButton}>¿Olvidaste tu contraseña?</button>
-      </div>
-
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <button className={styles.loginButton} type="submit">Ingresar</button>
