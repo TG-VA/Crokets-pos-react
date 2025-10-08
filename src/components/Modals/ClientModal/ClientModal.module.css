@@ -1,0 +1,163 @@
+:root {
+  --color-primary: #0078d7;
+  --color-primary-dark: #005fa3;
+  --color-secondary: #fc8913;
+  --color-error: #d93025;
+
+  --color-white: #ffffff;
+  --color-light-gray: #f2f2f2;
+  --color-medium-gray: #05060f0a;
+  --color-dark-gray: #00000099;
+  --color-placeholder: #999;
+  --color-black: #000000;
+
+  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: var(--lightGray);
+  border-top: 1px solid var(--mediumGray);
+  border-radius: 0 0 8px 8px;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px 8px 0 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.searchBarContainer {
+  padding: 1rem 1.5rem;
+}
+
+.clientSearchBar {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+}
+
+.clientList {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+}
+
+.clientItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clientItem:hover,
+.clientItemSelected {
+  background-color: #e3f2fd; /* Azul claro para selección */
+}
+
+.clientName {
+  font-weight: bold;
+}
+
+.clientId {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.clientPoints {
+  text-align: right;
+  font-weight: bold;
+  color: var(--croketsOrange);
+}
+
+.noClientsMessage {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+
+.saveButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.saveButton {
+  background-color: var(--croketsBlue);
+  color: white;
+}
+
+.saveButton:hover {
+  background-color: #0d7a94;
+  transform: translateY(-2px);
+}
+
+.cancelButton {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.cancelButton:hover {
+  background-color: #c7c7c7;
+}
