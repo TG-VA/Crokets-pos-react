@@ -1,0 +1,148 @@
+:root {
+  --color-primary: #0078d7;
+  --color-primary-dark: #005fa3;
+  --color-secondary: #fc8913;
+  --color-error: #d93025;
+
+  --color-white: #ffffff;
+  --color-light-gray: #f2f2f2;
+  --color-medium-gray: #05060f0a;
+  --color-dark-gray: #00000099;
+  --color-placeholder: #999;
+  --color-black: #000000;
+
+  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 450px; 
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader { 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--croketsBlue);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modalActions {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modalBody { 
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--darkGray);
+}
+
+.formGroup input, .formGroup textarea {
+  padding: 0.75rem;
+  border: 2px solid var(--mediumGray);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.formGroup input:focus, .formGroup textarea:focus {
+    outline: none;
+    border-color: var(--croketsOrange);
+    box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.3);
+}
+
+.formGroup textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.errorMessage {
+    color: var(--color-error);
+    text-align: center;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+.saveButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.saveButton {
+  background-color: var(--croketsBlue);
+  color: white;
+}
+
+.saveButton:hover {
+  background-color: #0d7a94;
+  transform: translateY(-2px);
+}

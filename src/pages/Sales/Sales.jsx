@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import styles from "./Sales.module.css";
+import styles from "../../pages/Sales/Sales.module.css";
 
 // Importar iconos
 import searchIcon from "../../assets/icons/searchIcon.svg";
@@ -10,6 +10,12 @@ import verifyIcon from "../../assets/icons/verifyIcon.svg";
 import changeIcon from "../../assets/icons/changeIcon.svg";
 import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
 import payIcon from "../../assets/icons/payIcon.svg";
+
+// Importar componentes de modales
+import ExitModal from "../../components/Modals/ExitModal/ExitModal";
+import EntryModal from "../../components/Modals/EntryModal/EntryModal";
+import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal";
+import ClientModal from "../../components/Modals/ClientModal/ClientModal";
 
 const Sales = () => {
   // Número de ticket de ejemplo
@@ -30,423 +36,15 @@ const Sales = () => {
 
   const tableRef = useRef(null);
 
-  // Modal de entradas
+  // Estados para los modales
+  const [isExitModalOpen, setExitModalOpen] = useState(false);
   const [isEntryModalOpen, setEntryModalOpen] = useState(false);
-  const [cashMovements, setCashMovements] = useState([]);
-  const [entryAmount, setEntryAmount] = useState('');
-  const [entryReason, setEntryReason] = useState('');
-  const [entryError, setEntryError] = useState('');
-
-
-  //Modal de salidas
-  const [isExitModalOpen, setExitModalOpen] = useState(false); 
-  const [exitAmount, setExitAmount] = useState('');    
-  const [exitReason, setExitReason] = useState('');
-  const [exitError, setExitError] = useState('');
-
-  //Asignar cliente
-  const [isClientModalOpen, setClientModalOpen] = useState(false);
-  const [clients] = useState([ // Clientes de ejemplo
-    { id: '9988776655', name: 'Juan Pérez García', points: 150 },
-    { id: '9988112233', name: 'María López Hernández', points: 85 },
-    { id: '9988445566', name: 'Carlos Sánchez Rodríguez', points: 320 },
-  ]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [currentSaleClient, setCurrentSaleClient] = useState(null);
-
-  // Modal de Cobro
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState("Terminal");
+  const [isClientModalOpen, setClientModalOpen] = useState(false);
 
-  // Estados para diferentes métodos de pago
-  const [paidAmount, setPaidAmount] = useState("");
-  const [dollarAmount, setDollarAmount] = useState("");
-  const [exchangeRate] = useState(18.5); // Tipo de cambio fijo, Se puede hacer dinamico mas adelante
-
-  // Estados para pago mixto
-  const [mixedPayments, setMixedPayments] = useState({
-    efectivo: "",
-    tarjeta: "",
-    dolares: "",
-  });
-
-  // Estados para transferencia
-  const [trackingCode, setTrackingCode] = useState("");
-
-  const total = 207.0; // aquí puedes ligar con el total real de la venta
-
-  // Función para convertir valores a número, manejando NaN y valores vacíos
-  const toNumber = (value) => {
-    const num = parseFloat(value.trim());
-    return isNaN(num) ? 0 : num;
-  };
-
-  // Calcular cambio según método de pago
-  const numericPaidAmount = toNumber(paidAmount);
-  const numericDollarAmount = toNumber(dollarAmount);
-  const numericEfectivo = toNumber(mixedPayments.efectivo);
-  const numericTarjeta = toNumber(mixedPayments.tarjeta);
-  const numericDolares = toNumber(mixedPayments.dolares);
-
-  const calculateChange = () => {
-    switch (selectedPaymentMethod) {
-      case "Efectivo":
-        return Math.max(0, numericPaidAmount - total);
-      case "Dolares":
-        return Math.max(0, numericDollarAmount * exchangeRate - total);
-      case "Mixto":
-        const totalMixed =
-          numericEfectivo + numericTarjeta + numericDolares * exchangeRate;
-        return Math.max(0, totalMixed - total);
-      default:
-        return 0;
-    }
-  };
-
-  const change = calculateChange();
-
-  const paymentMethods = [
-    { id: "Efectivo", name: "Efectivo", icon: "💰" },
-    { id: "Dolares", name: "Dólares", icon: "💵" },
-    { id: "Mixto", name: "Mixto", icon: "🪙" },
-    { id: "Terminal", name: "Terminal", icon: "🖥️" },
-    { id: "Transferencia", name: "Transferencia", icon: "🏦" },
-  ];
-
-  const closePaymentModal = () => {
-    setShowPaymentModal(false);
-    // Resetear todos los estados
-    setPaidAmount("");
-    setDollarAmount("");
-    setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
-    setTrackingCode("");
-  };
-
-  // Funciones del modal de entradas
-  const closeEntryModal = () => {
-    setEntryModalOpen(false);
-    setEntryAmount('');
-    setEntryReason('');
-    setEntryError('');
-  };
-
-  const handleSaveEntry = () => {
-    if (!entryAmount || parseFloat(entryAmount) <= 0) {
-      setEntryError('Por favor, ingrese un monto válido.');
-      return;
-    }
-    if (!entryReason.trim()) {
-      setEntryError('Por favor, ingrese una razón.');
-      return;
-    }
-    
-    const newMovement = {
-      id: Date.now(),
-      type: 'entry',
-      amount: parseFloat(entryAmount),
-      reason: entryReason,
-      createdAt: new Date().toISOString()
-    };
-    
-    const updatedMovements = [...cashMovements, newMovement];
-    setCashMovements(updatedMovements);
-    console.log('Movimientos de caja actualizados:', updatedMovements);
-    closeEntryModal(); // Cierra y resetea el modal
-  };
-
-  //Funciones para el modal de salidas
-
-  const closeExitModal = () => {
-    setExitModalOpen(false);
-    setExitAmount('');
-    setExitReason('');
-    setExitError('');
-  };
-
-  const handleSaveExit = () => {
-    if (!exitAmount || parseFloat(exitAmount) <= 0) {
-      setExitError('Por favor, ingrese un monto válido.');
-      return;
-    }
-    if (!exitReason.trim()) {
-      setExitError('Por favor, ingrese una razón.');
-      return;
-    }
-    
-    const newMovement = {
-      id: Date.now(),
-      type: 'exit', 
-      amount: parseFloat(exitAmount),
-      reason: exitReason,
-      createdAt: new Date().toISOString()
-    };
-    
-    const updatedMovements = [...cashMovements, newMovement];
-    setCashMovements(updatedMovements);
-    console.log('Movimientos de caja actualizados:', updatedMovements);
-    closeExitModal();
-  };
-
-  //Funciones para asignar cliente
-
-  const openClientModal = () => {
-    setSelectedClient(currentSaleClient); 
-    setClientModalOpen(true);
-  };
-  
-  const closeClientModal = () => {
-    setClientModalOpen(false);
-    setSearchTerm('');
-    setSelectedClient(null);
-  };
-
-  const handleAssignClient = () => {
-    setCurrentSaleClient(selectedClient);
-    console.log("Cliente asignado a la venta:", selectedClient);
-    closeClientModal();
-  };
-
-  // Filtra los clientes basándose en el término de búsqueda (nombre o teléfono)
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    client.id.includes(searchTerm)
-  );
-
-  const processPayment = () => {
-    alert(
-      `Procesando pago de $${total.toFixed(2)} con ${selectedPaymentMethod}`
-    );
-    setShowPaymentModal(false);
-  };
-
-  // Función para renderizar el contenido del método de pago
-  const renderPaymentContent = () => {
-    switch (selectedPaymentMethod) {
-      case "Efectivo":
-        return (
-          <div className={styles.paymentInfo}>
-            <div className={styles.paymentRow}>
-              <span>Pagó Con:</span>
-              <div className={styles.inputWithSymbol}>
-                <span className={styles.currencySymbol}>$</span>
-                <input
-                  type="text"
-                  className={styles.paymentInput}
-                  value={paidAmount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (
-                      /^\d*\.?\d*$/.test(val) &&
-                      val.split(".").length - 1 <= 1
-                    ) {
-                      // permite solo números y punto
-                      setPaidAmount(val === "." ? "0." : val);
-                    }
-                  }}
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </div>
-            </div>
-            <div className={styles.paymentRow}>
-              <span>Su Cambio:</span>
-              <span className={styles.changeAmount}>${change.toFixed(2)}</span>
-            </div>
-          </div>
-        );
-
-      case "Dolares":
-        return (
-          <div className={styles.paymentInfo}>
-            <div className={styles.exchangeRateDisplay}>
-              <span>
-                Tipo de cambio: ${exchangeRate.toFixed(2)} MXN por USD
-              </span>
-            </div>
-            <div className={styles.paymentRow}>
-              <span>Pagó Con (USD):</span>
-              <div className={styles.inputWithSymbol}>
-                <span className={styles.currencySymbol}>$</span>
-                <input
-                  type="text"
-                  className={styles.paymentInput}
-                  value={dollarAmount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (
-                      /^\d*\.?\d*$/.test(val) &&
-                      val.split(".").length - 1 <= 1
-                    ) {
-                      setDollarAmount(val === "." ? "0." : val);
-                    }
-                  }}
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </div>
-            </div>
-            <div className={styles.paymentRow}>
-              <span>Equivalente en MXN:</span>
-              <span className={styles.equivalentAmount}>
-                ${(toNumber(dollarAmount) * exchangeRate).toFixed(2)}
-              </span>
-            </div>
-            <div className={styles.paymentRow}>
-              <span>Su Cambio:</span>
-              <span className={styles.changeAmount}>${change.toFixed(2)}</span>
-            </div>
-          </div>
-        );
-
-      case "Mixto":
-        return (
-          <div className={styles.paymentInfo}>
-            <div className={styles.mixedPaymentSection}>
-              <h3>Desglose de Pago</h3>
-
-              {/* Efectivo */}
-              <div className={styles.paymentRow}>
-                <span>Efectivo:</span>
-                <div className={styles.inputWithSymbol}>
-                  <span className={styles.currencySymbol}>$</span>
-                  <input
-                    type="text"
-                    className={styles.paymentInput}
-                    value={mixedPayments.efectivo}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (
-                        /^\d*\.?\d*$/.test(val) &&
-                        val.split(".").length - 1 <= 1
-                      ) {
-                        setMixedPayments((prev) => ({
-                          ...prev,
-                          efectivo: val === "." ? "0." : val,
-                        }));
-                      }
-                    }}
-                    placeholder="0.00"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              {/* Tarjeta */}
-              <div className={styles.paymentRow}>
-                <span>Tarjeta:</span>
-                <div className={styles.inputWithSymbol}>
-                  <span className={styles.currencySymbol}>$</span>
-                  <input
-                    type="text"
-                    className={styles.paymentInput}
-                    value={mixedPayments.tarjeta}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (
-                        /^\d*\.?\d*$/.test(val) &&
-                        val.split(".").length - 1 <= 1
-                      ) {
-                        setMixedPayments((prev) => ({
-                          ...prev,
-                          tarjeta: val === "." ? "0." : val,
-                        }));
-                      }
-                    }}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              {/* Dólares */}
-              <div className={styles.paymentRow}>
-                <span>Dólares (USD):</span>
-                <div className={styles.inputWithSymbol}>
-                  <span className={styles.currencySymbol}>$</span>
-                  <input
-                    type="text"
-                    className={styles.paymentInput}
-                    value={mixedPayments.dolares}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (
-                        /^\d*\.?\d*$/.test(val) &&
-                        val.split(".").length - 1 <= 1
-                      ) {
-                        setMixedPayments((prev) => ({
-                          ...prev,
-                          dolares: val === "." ? "0." : val,
-                        }));
-                      }
-                    }}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className={styles.totalMixedRow}>
-                <span>Total Pagado:</span>
-                <span className={styles.totalMixedAmount}>
-                  $
-                  {(
-                    toNumber(mixedPayments.efectivo) +
-                    toNumber(mixedPayments.tarjeta) +
-                    toNumber(mixedPayments.dolares) * exchangeRate
-                  ).toFixed(2)}
-                </span>
-              </div>
-
-              {/* Cambio */}
-              <div className={styles.paymentRow}>
-                <span>Su Cambio:</span>
-                <span className={styles.changeAmount}>
-                  ${change.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "Terminal":
-        return (
-          <div className={styles.paymentInfo}>
-            <div className={styles.terminalSection}>
-              <div className={styles.paymentRow}>
-                <span>Total a Cobrar:</span>
-                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "Transferencia":
-        return (
-          <div className={styles.paymentInfo}>
-            <div className={styles.transferSection}>
-              <div className={styles.paymentRow}>
-                <span>Informacion de Transferencia:</span>
-                <input
-                  type="text"
-                  className={styles.trackingInput}
-                  value={trackingCode}
-                  onChange={(e) => setTrackingCode(e.target.value)}
-                  placeholder="Clave de rastreo, referencia, etc."
-                />
-              </div>
-              <div className={styles.paymentRow}>
-                <span>Total a Cobrar:</span>
-                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  // Estados para movimientos de caja
+  const [cashMovements, setCashMovements] = useState([]);
+  const [currentSaleClient, setCurrentSaleClient] = useState(null);
 
   // Datos de ejemplo para la tabla
   const productos = [
@@ -513,6 +111,37 @@ const Sales = () => {
     setResizingIndex(-1);
   };
 
+  // Funciones para manejar movimientos de caja
+  const handleSaveEntry = (newMovement) => {
+    const updatedMovements = [...cashMovements, newMovement];
+    setCashMovements(updatedMovements);
+    console.log('Movimientos de caja actualizados:', updatedMovements);
+  };
+
+  const handleSaveExit = (newMovement) => {
+    const updatedMovements = [...cashMovements, newMovement];
+    setCashMovements(updatedMovements);
+    console.log('Movimientos de caja actualizados:', updatedMovements);
+  };
+
+  // Funciones para asignar cliente
+  const openClientModal = () => {
+    setClientModalOpen(true);
+  };
+
+  const handleAssignClient = (client) => {
+    setCurrentSaleClient(client);
+    console.log("Cliente asignado a la venta:", client);
+  };
+
+  // Función para procesar pagos
+  const handleProcessPayment = (paymentData) => {
+    console.log("Procesando pago:", paymentData);
+    // Aquí puedes manejar la lógica de procesamiento del pago
+    alert(`Pago procesado: $${paymentData.total} con ${paymentData.method}`);
+  };
+
+  // Efectos para manejar teclas
   useEffect(() => {
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
@@ -529,47 +158,35 @@ const Sales = () => {
     };
   }, [isResizing, resizingIndex, startX, tableWidth, columnFractions]);
 
-  //useEffect para manejar Esc
+  // Manejo de teclas para todos los modales
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        closePaymentModal();
-      }
-    };
-
-    if (showPaymentModal) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showPaymentModal]);
-
-  //useEffect para abrir y cerrar el modal de sales con F12 y esc
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "F12") {
-        setShowPaymentModal(true);
-      } else if (e.key === "Escape") {
-        closePaymentModal();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  //useEffect para abrir y cerrar el modal de entradas con F7 y esc
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "F7") {
-        setEntryModalOpen(true);
-      } else if (e.key === "Escape") {
-        closeEntryModal();
+      switch (e.key) {
+        case "F12":
+          e.preventDefault();
+          setShowPaymentModal(true);
+          break;
+        case "F7":
+          e.preventDefault();
+          setEntryModalOpen(true);
+          break;
+        case "F8":
+          e.preventDefault();
+          setExitModalOpen(true);
+          break;
+        case "Escape":
+          if (showPaymentModal) {
+            setShowPaymentModal(false);
+          } else if (isEntryModalOpen) {
+            setEntryModalOpen(false);
+          } else if (isExitModalOpen) {
+            setExitModalOpen(false);
+          } else if (isClientModalOpen) {
+            setClientModalOpen(false);
+          }
+          break;
+        default:
+          break;
       }
     };
 
@@ -578,30 +195,22 @@ const Sales = () => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [showPaymentModal, isEntryModalOpen, isExitModalOpen, isClientModalOpen]);
 
-  //useEffect para abrir y cerrar el modal de salidas con F8 y esc
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "F8") {
-        setExitModalOpen(true);
-      } else if (e.key === "Escape") {
-        closeExitModal();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  // Calcular totales
+  const subtotal = productos.reduce((sum, producto) => sum + producto.importe, 0);
+  const total = subtotal; // Aquí podrías agregar impuestos si los hay
 
   return (
     <div className={styles.ventasContainer}>
       {/* Título de venta y número de ticket */}
       <div className={styles.saleHeader}>
         <h2>VENTA - Ticket {ticketNumber}</h2>
+        {currentSaleClient && (
+          <div className={styles.clientInfo}>
+            <span>Cliente: {currentSaleClient.name}</span>
+          </div>
+        )}
       </div>
 
       {/* Barra superior de acciones*/}
@@ -611,12 +220,18 @@ const Sales = () => {
           <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Buscar</span>
         </div>
-          <div className={styles.horizontalActionButton} onClick={() => setEntryModalOpen(true)}>
+        <div 
+          className={styles.horizontalActionButton} 
+          onClick={() => setEntryModalOpen(true)}
+        >
           <span className={styles.actionKey}>F7</span>
           <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Entradas</span>
         </div>
-        <div className={styles.horizontalActionButton}onClick={() => setExitModalOpen(true)}>
+        <div 
+          className={styles.horizontalActionButton}
+          onClick={() => setExitModalOpen(true)}
+        >
           <span className={styles.actionKey}>F8</span>
           <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Salidas</span>
@@ -738,11 +353,11 @@ const Sales = () => {
         <div className={styles.rightActions}>
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Subtotal:</span>
-            <span className={styles.totalAmount}>$0.00</span>
+            <span className={styles.totalAmount}>${subtotal.toFixed(2)}</span>
           </div>
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Total:</span>
-            <span className={styles.totalAmount}>$0.00</span>
+            <span className={styles.totalAmount}>${total.toFixed(2)}</span>
           </div>
           <div
             className={styles.payButton}
@@ -755,202 +370,37 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* Modal de Cobro */}
-      {showPaymentModal && (
-        <div className={styles.modalOverlay} onClick={closePaymentModal}>
-          <div
-            className={styles.paymentModal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h2>COBRAR</h2>
-              <button
-                className={styles.closeButton}
-                onClick={closePaymentModal}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.totalDisplay}>${total.toFixed(2)}</div>
-
-            <div className={styles.paymentMethods}>
-              {paymentMethods.map((method) => (
-                <div
-                  key={method.id}
-                  className={`${styles.paymentMethod} ${
-                    selectedPaymentMethod === method.id
-                      ? styles.paymentMethodSelected
-                      : ""
-                  }`}
-                  onClick={() => setSelectedPaymentMethod(method.id)}
-                >
-                  <div className={styles.methodIcon}>{method.icon}</div>
-                  <div className={styles.methodName}>{method.name}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Contenido dinámico según método de pago */}
-            {renderPaymentContent()}
-
-            <div className={styles.modalActions}>
-              <button className={`${styles.modalActionBtn} `}>
-                F1 - Cobrar e Imprimir
-              </button>
-              <button className={`${styles.modalActionBtn}`}>
-                F2 - Cobrar sin imprimir
-              </button>
-              <button
-                className={`${styles.modalActionBtn}`}
-                onClick={closePaymentModal}
-              >
-                ESC - Cancelar
-              </button>
-              <button className={`${styles.modalActionBtn}`}>
-                F4 - Ingresar notas
-              </button>
-              <button
-                className={`${styles.modalActionBtn}`}
-                onClick={processPayment}
-              >
-                Facturar venta
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* MODALES */}
+      
       {/* Modal de Entradas */}
-      {isEntryModalOpen && (
-        <div className={styles.modalOverlay} onClick={closeEntryModal}>
-          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Registrar Entrada de Efectivo</h2>
-              <button className={styles.closeButton} onClick={closeEntryModal}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label htmlFor="entryAmount">Monto:</label>
-                <input
-                  type="number"
-                  id="entryAmount"
-                  value={entryAmount}
-                  onChange={(e) => { setEntryAmount(e.target.value); setEntryError(''); }}
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="entryReason">Razón:</label>
-                <textarea
-                  id="entryReason"
-                  value={entryReason}
-                  onChange={(e) => { setEntryReason(e.target.value); setEntryError(''); }}
-                  placeholder="Ej. Cambio, fondo de caja,etc."
-                />
-              </div>
-              {entryError && <p className={styles.errorMessage}>{entryError}</p>}
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.cancelButton} onClick={closeEntryModal}>Cancelar</button>
-              <button className={styles.saveButton} onClick={handleSaveEntry}>Guardar Entrada</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EntryModal
+        isOpen={isEntryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+        onSaveEntry={handleSaveEntry}
+      />
 
       {/* Modal de Salidas */}
-      {isExitModalOpen && (
-        <div className={styles.modalOverlay} onClick={closeExitModal}>
-          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Registrar Salida de Efectivo</h2>
-              <button className={styles.closeButton} onClick={closeExitModal}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label htmlFor="exitAmount">Monto:</label>
-                <input
-                  type="number"
-                  id="exitAmount"
-                  value={exitAmount}
-                  onChange={(e) => { setExitAmount(e.target.value); setExitError(''); }}
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="exitReason">Razón:</label>
-                <textarea
-                  id="exitReason"
-                  value={exitReason}
-                  onChange={(e) => { setExitReason(e.target.value); setExitError(''); }}
-                  placeholder="Ej. Pago a proveedor, retiro, etc."
-                />
-              </div>
-              {exitError && <p className={styles.errorMessage}>{exitError}</p>}
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.cancelButton} onClick={closeExitModal}>Cancelar</button>
-              <button className={styles.saveButton} onClick={handleSaveExit}>Guardar Salida</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExitModal
+        isOpen={isExitModalOpen}
+        onClose={() => setExitModalOpen(false)}
+        onSaveExit={handleSaveExit}
+      />
 
-      {/* Modal para asignar cliente */}
-      {isClientModalOpen && (
-        <div className={styles.modalOverlay} onClick={closeClientModal}>
-          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Asignar Cliente</h2>
-            </div>
+      {/* Modal de Cobro */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        total={total}
+        onProcessPayment={handleProcessPayment}
+      />
 
-            <div className={styles.searchBarContainer}>
-              <input 
-                type="text"
-                className={styles.clientSearchBar}
-                placeholder="Buscar por nombre o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div className={styles.clientList}>
-              {filteredClients.length > 0 ? (
-                filteredClients.map(client => (
-                  <div 
-                    key={client.id} 
-                    className={`${styles.clientItem} ${selectedClient?.id === client.id ? styles.clientItemSelected : ''}`}
-                    onClick={() => setSelectedClient(client)}
-                  >
-                    <div>
-                      <div className={styles.clientName}>{client.name}</div>
-                      <div className={styles.clientId}>Tel: {client.id}</div>
-                    </div>
-                    <div className={styles.clientPoints}>{client.points} pts</div>
-                  </div>
-                ))
-              ) : (
-                <p className={styles.noClientsMessage}>No se encontraron clientes.</p>
-              )}
-            </div>
-            
-            <div className={styles.modalActions}>
-              <button className={styles.cancelButton} onClick={closeClientModal}>Cancelar</button>
-              <button 
-                className={styles.saveButton} 
-                onClick={handleAssignClient}
-                disabled={!selectedClient} 
-              >
-                Asignar Cliente
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de Cliente */}
+      <ClientModal
+        isOpen={isClientModalOpen}
+        onClose={() => setClientModalOpen(false)}
+        onAssignClient={handleAssignClient}
+        currentSaleClient={currentSaleClient}
+      />
     </div>
   );
 };
