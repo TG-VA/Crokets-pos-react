@@ -30,6 +30,31 @@ const Sales = () => {
 
   const tableRef = useRef(null);
 
+  // Modal de entradas
+  const [isEntryModalOpen, setEntryModalOpen] = useState(false);
+  const [cashMovements, setCashMovements] = useState([]);
+  const [entryAmount, setEntryAmount] = useState('');
+  const [entryReason, setEntryReason] = useState('');
+  const [entryError, setEntryError] = useState('');
+
+
+  //Modal de salidas
+  const [isExitModalOpen, setExitModalOpen] = useState(false); 
+  const [exitAmount, setExitAmount] = useState('');    
+  const [exitReason, setExitReason] = useState('');
+  const [exitError, setExitError] = useState('');
+
+  //Asignar cliente
+  const [isClientModalOpen, setClientModalOpen] = useState(false);
+  const [clients] = useState([ // Clientes de ejemplo
+    { id: '9988776655', name: 'Juan Pérez García', points: 150 },
+    { id: '9988112233', name: 'María López Hernández', points: 85 },
+    { id: '9988445566', name: 'Carlos Sánchez Rodríguez', points: 320 },
+  ]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [currentSaleClient, setCurrentSaleClient] = useState(null);
+
   // Modal de Cobro
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -98,6 +123,96 @@ const Sales = () => {
     setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
     setTrackingCode("");
   };
+
+  // Funciones del modal de entradas
+  const closeEntryModal = () => {
+    setEntryModalOpen(false);
+    setEntryAmount('');
+    setEntryReason('');
+    setEntryError('');
+  };
+
+  const handleSaveEntry = () => {
+    if (!entryAmount || parseFloat(entryAmount) <= 0) {
+      setEntryError('Por favor, ingrese un monto válido.');
+      return;
+    }
+    if (!entryReason.trim()) {
+      setEntryError('Por favor, ingrese una razón.');
+      return;
+    }
+    
+    const newMovement = {
+      id: Date.now(),
+      type: 'entry',
+      amount: parseFloat(entryAmount),
+      reason: entryReason,
+      createdAt: new Date().toISOString()
+    };
+    
+    const updatedMovements = [...cashMovements, newMovement];
+    setCashMovements(updatedMovements);
+    console.log('Movimientos de caja actualizados:', updatedMovements);
+    closeEntryModal(); // Cierra y resetea el modal
+  };
+
+  //Funciones para el modal de salidas
+
+  const closeExitModal = () => {
+    setExitModalOpen(false);
+    setExitAmount('');
+    setExitReason('');
+    setExitError('');
+  };
+
+  const handleSaveExit = () => {
+    if (!exitAmount || parseFloat(exitAmount) <= 0) {
+      setExitError('Por favor, ingrese un monto válido.');
+      return;
+    }
+    if (!exitReason.trim()) {
+      setExitError('Por favor, ingrese una razón.');
+      return;
+    }
+    
+    const newMovement = {
+      id: Date.now(),
+      type: 'exit', 
+      amount: parseFloat(exitAmount),
+      reason: exitReason,
+      createdAt: new Date().toISOString()
+    };
+    
+    const updatedMovements = [...cashMovements, newMovement];
+    setCashMovements(updatedMovements);
+    console.log('Movimientos de caja actualizados:', updatedMovements);
+    closeExitModal();
+  };
+
+  //Funciones para asignar cliente
+
+  const openClientModal = () => {
+    setSelectedClient(currentSaleClient); 
+    setClientModalOpen(true);
+  };
+  
+  const closeClientModal = () => {
+    setClientModalOpen(false);
+    setSearchTerm('');
+    setSelectedClient(null);
+  };
+
+  const handleAssignClient = () => {
+    setCurrentSaleClient(selectedClient);
+    console.log("Cliente asignado a la venta:", selectedClient);
+    closeClientModal();
+  };
+
+  // Filtra los clientes basándose en el término de búsqueda (nombre o teléfono)
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    client.id.includes(searchTerm)
+  );
 
   const processPayment = () => {
     alert(
@@ -448,6 +563,40 @@ const Sales = () => {
     };
   }, []);
 
+  //useEffect para abrir y cerrar el modal de entradas con F7 y esc
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F7") {
+        setEntryModalOpen(true);
+      } else if (e.key === "Escape") {
+        closeEntryModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  //useEffect para abrir y cerrar el modal de salidas con F8 y esc
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F8") {
+        setExitModalOpen(true);
+      } else if (e.key === "Escape") {
+        closeExitModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <div className={styles.ventasContainer}>
       {/* Título de venta y número de ticket */}
@@ -462,12 +611,12 @@ const Sales = () => {
           <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Buscar</span>
         </div>
-        <div className={styles.horizontalActionButton}>
+          <div className={styles.horizontalActionButton} onClick={() => setEntryModalOpen(true)}>
           <span className={styles.actionKey}>F7</span>
           <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Entradas</span>
         </div>
-        <div className={styles.horizontalActionButton}>
+        <div className={styles.horizontalActionButton}onClick={() => setExitModalOpen(true)}>
           <span className={styles.actionKey}>F8</span>
           <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Salidas</span>
@@ -577,7 +726,7 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Eliminar</span>
           </div>
-          <div className={styles.squareButton}>
+          <div className={styles.squareButton} onClick={openClientModal}>
             <img
               src={assignClientIcon}
               alt="Asignar cliente"
@@ -666,6 +815,137 @@ const Sales = () => {
                 onClick={processPayment}
               >
                 Facturar venta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Entradas */}
+      {isEntryModalOpen && (
+        <div className={styles.modalOverlay} onClick={closeEntryModal}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Registrar Entrada de Efectivo</h2>
+              <button className={styles.closeButton} onClick={closeEntryModal}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label htmlFor="entryAmount">Monto:</label>
+                <input
+                  type="number"
+                  id="entryAmount"
+                  value={entryAmount}
+                  onChange={(e) => { setEntryAmount(e.target.value); setEntryError(''); }}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="entryReason">Razón:</label>
+                <textarea
+                  id="entryReason"
+                  value={entryReason}
+                  onChange={(e) => { setEntryReason(e.target.value); setEntryError(''); }}
+                  placeholder="Ej. Cambio, fondo de caja,etc."
+                />
+              </div>
+              {entryError && <p className={styles.errorMessage}>{entryError}</p>}
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelButton} onClick={closeEntryModal}>Cancelar</button>
+              <button className={styles.saveButton} onClick={handleSaveEntry}>Guardar Entrada</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Salidas */}
+      {isExitModalOpen && (
+        <div className={styles.modalOverlay} onClick={closeExitModal}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Registrar Salida de Efectivo</h2>
+              <button className={styles.closeButton} onClick={closeExitModal}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label htmlFor="exitAmount">Monto:</label>
+                <input
+                  type="number"
+                  id="exitAmount"
+                  value={exitAmount}
+                  onChange={(e) => { setExitAmount(e.target.value); setExitError(''); }}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="exitReason">Razón:</label>
+                <textarea
+                  id="exitReason"
+                  value={exitReason}
+                  onChange={(e) => { setExitReason(e.target.value); setExitError(''); }}
+                  placeholder="Ej. Pago a proveedor, retiro, etc."
+                />
+              </div>
+              {exitError && <p className={styles.errorMessage}>{exitError}</p>}
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelButton} onClick={closeExitModal}>Cancelar</button>
+              <button className={styles.saveButton} onClick={handleSaveExit}>Guardar Salida</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para asignar cliente */}
+      {isClientModalOpen && (
+        <div className={styles.modalOverlay} onClick={closeClientModal}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Asignar Cliente</h2>
+            </div>
+
+            <div className={styles.searchBarContainer}>
+              <input 
+                type="text"
+                className={styles.clientSearchBar}
+                placeholder="Buscar por nombre o teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className={styles.clientList}>
+              {filteredClients.length > 0 ? (
+                filteredClients.map(client => (
+                  <div 
+                    key={client.id} 
+                    className={`${styles.clientItem} ${selectedClient?.id === client.id ? styles.clientItemSelected : ''}`}
+                    onClick={() => setSelectedClient(client)}
+                  >
+                    <div>
+                      <div className={styles.clientName}>{client.name}</div>
+                      <div className={styles.clientId}>Tel: {client.id}</div>
+                    </div>
+                    <div className={styles.clientPoints}>{client.points} pts</div>
+                  </div>
+                ))
+              ) : (
+                <p className={styles.noClientsMessage}>No se encontraron clientes.</p>
+              )}
+            </div>
+            
+            <div className={styles.modalActions}>
+              <button className={styles.cancelButton} onClick={closeClientModal}>Cancelar</button>
+              <button 
+                className={styles.saveButton} 
+                onClick={handleAssignClient}
+                disabled={!selectedClient} 
+              >
+                Asignar Cliente
               </button>
             </div>
           </div>

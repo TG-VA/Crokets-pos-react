@@ -636,6 +636,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.8rem;
+  text-align: center; 
+  flex: 1 1 auto;
 }
 
 .modalActionBtn:hover {
@@ -678,3 +680,181 @@
   background-color: var(--color-primary-dark);
   transform: scale(1.05);
 }
+
+
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 450px; 
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+
+.modalHeader { 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--croketsBlue);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modalBody { 
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--darkGray);
+}
+
+.formGroup input, .formGroup textarea {
+  padding: 0.75rem;
+  border: 2px solid var(--mediumGray);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.formGroup input:focus, .formGroup textarea:focus {
+    outline: none;
+    border-color: var(--croketsOrange);
+    box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.3);
+}
+
+.formGroup textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: var(--lightGray);
+  border-top: 1px solid var(--mediumGray);
+  border-radius: 0 0 8px 8px;
+}
+
+.saveButton, .cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.saveButton {
+  background-color: var(--croketsBlue);
+  color: white;
+}
+
+.saveButton:hover {
+    background-color: #0d7a94; 
+    transform: translateY(-2px);
+}
+
+.cancelButton {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.cancelButton:hover {
+    background-color: #c7c7c7;
+}
+
+.errorMessage {
+    color: var(--color-error);
+    text-align: center;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+
+
+.searchBarContainer {
+  padding: 1rem 1.5rem;
+}
+
+.clientSearchBar {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+}
+
+.clientList {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+}
+
+.clientItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clientItem:hover, .clientItemSelected {
+  background-color: #e3f2fd; /* Azul claro para selección */
+}
+
+.clientName {
+  font-weight: bold;
+}
+
+.clientId {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.clientPoints {
+  text-align: right;
+  font-weight: bold;
+  color: var(--croketsOrange);
+}
+
+.noClientsMessage {
+    text-align: center;
+    padding: 2rem;
+    color: #888;
+}
+
