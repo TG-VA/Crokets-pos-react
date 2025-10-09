@@ -188,12 +188,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                 className={styles.searchInput}
                 value={searchTerm}
                 onChange={handleInputChange}
-                placeholder="Escribe el nombre o usa % para búsqueda parcial..."
+                placeholder="Escribe el nombre del producto...  "
                 autoFocus
               />
             </div>
             <div className={styles.searchHelp}>
-              <span>Usa "%" al inicio para búsqueda parcial. Ej: "%mini adult"</span>
+              <span>Escribe parte del nombre del producto (ej. “kg”, “adulto”, “pollo”)</span>
             </div>
           </div>
 

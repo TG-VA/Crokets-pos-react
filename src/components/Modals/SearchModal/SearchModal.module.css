@@ -1,3 +1,6 @@
+*{
+    --croketsBlue: #1092b1;
+}
 /* Modal Overlay */
 .modalOverlay {
   position: fixed;
@@ -34,9 +37,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: #2c3e50;
+  background: var(--croketsBlue);
   color: white;
-  border-bottom: 1px solid #34495e;
+  border-bottom: 1px solid var(--croketsBlue);
 }
 
 .modalHeader h2 {
