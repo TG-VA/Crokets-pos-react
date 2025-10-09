@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../PaymentModal/PaymentModal.module.css";
+import NotesModal from "../NotesModal/NotesModal";
 
 const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
   // Estados para diferentes métodos de pago
@@ -13,6 +14,10 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
     dolares: "",
   });
   const [trackingCode, setTrackingCode] = useState("");
+
+  // Estados para modal de notas
+  const [isNotesModalOpen, setNotesModalOpen] = useState(false);
+  const [saleNotes, setSaleNotes] = useState("");
 
   // Función para convertir valores a número, manejando NaN y valores vacíos
   const toNumber = (value) => {
@@ -53,14 +58,63 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
   ];
 
   const closePaymentModal = () => {
+    // Cerrar modal de notas si está abierto
+    if (isNotesModalOpen) {
+      setNotesModalOpen(false);
+    }
     // Resetear todos los estados
     setPaidAmount("");
     setDollarAmount("");
     setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
     setTrackingCode("");
+    setSaleNotes("");
     setSelectedPaymentMethod("Terminal");
     onClose();
   };
+
+  // Funciones para modal de notas
+  const openNotesModal = () => {
+    setNotesModalOpen(true);
+  };
+
+  const closeNotesModal = () => {
+    setNotesModalOpen(false);
+  };
+
+  const handleSaveNotes = (notes) => {
+    setSaleNotes(notes);
+    console.log("Notas de venta guardadas:", notes);
+    // Aquí podrías enviar las notas al backend o almacenarlas localmente
+  };
+
+  // useEffect para manejar teclas F4 y ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      
+      if (e.key === "Escape") {
+        // Solo manejar ESC si el modal de notas NO está abierto
+        if (!isNotesModalOpen) {
+          e.preventDefault();
+          e.stopPropagation();
+          closePaymentModal();
+        }
+        // Si el modal de notas está abierto, dejar que NotesModal maneje el ESC
+      } else if (e.key === "F4" && !isNotesModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        openNotesModal();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, isNotesModalOpen]);
 
   const processPayment = () => {
     const paymentData = {
@@ -356,7 +410,10 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
           <button className={styles.modalActionBtn} onClick={closePaymentModal}>
             ESC - Cancelar
           </button>
-          <button className={styles.modalActionBtn}>
+          <button 
+            className={styles.modalActionBtn}
+            onClick={openNotesModal}
+          >
             F4 - Ingresar notas
           </button>
           <button className={styles.modalActionBtn} onClick={processPayment}>
@@ -364,6 +421,14 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
           </button>
         </div>
       </div>
+      
+      {/* Modal de Notas */}
+      <NotesModal
+        isOpen={isNotesModalOpen}
+        onClose={closeNotesModal}
+        onSave={handleSaveNotes}
+        initialNotes={saleNotes}
+      />
     </div>
   );
 };

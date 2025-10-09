@@ -1,0 +1,293 @@
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container */
+.verifierModal {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Header */
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #2c3e50;
+  color: white;
+  border-bottom: 1px solid #34495e;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Body */
+.verifierModalBody {
+  padding: 24px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Barcode Section */
+.barcodeSection {
+  margin-bottom: 24px;
+}
+
+.barcodeSection label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.inputContainer {
+  display: flex;
+  gap: 12px;
+}
+
+.barcodeInput {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.barcodeInput:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.searchButton {
+  padding: 12px 20px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 100px;
+}
+
+.searchButton:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.searchButton:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Error Message */
+.errorMessage {
+  background: #e74c3c;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Product Info */
+.productInfo {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.productInfo h3 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.productDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.productRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.productRow:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.value {
+  font-weight: 500;
+  color: #212529;
+  text-align: right;
+}
+
+.price {
+  color: #27ae60;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.inStock {
+  color: #27ae60;
+}
+
+.outOfStock {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* Modal Actions */
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  gap: 12px;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover {
+  background: #5a6268;
+}
+
+.addButton {
+  padding: 12px 24px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.addButton:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .verifierModal {
+    width: 95%;
+    max-width: none;
+    margin: 10px;
+  }
+  
+  .modalHeader {
+    padding: 16px 20px;
+  }
+  
+  .verifierModalBody {
+    padding: 20px;
+  }
+  
+  .modalActions {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .cancelButton,
+  .addButton {
+    width: 100%;
+  }
+  
+  .inputContainer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .searchButton {
+    width: 100%;
+  }
+}
+
+/* Animation */
+.verifierModal {
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
