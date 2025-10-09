@@ -16,7 +16,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
       existencia: 10,
     },
     "0987654321": {
-      codigo: "0987654321", 
+      codigo: "   ", 
       nombre: "Nupec adulto razas pequeñas 8kg",
       precio: 1135,
       existencia: 15,

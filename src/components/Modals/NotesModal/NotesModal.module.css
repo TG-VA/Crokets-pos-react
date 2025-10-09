@@ -3,6 +3,7 @@
   --color-white: #ffffff;
   --color-placeholder: #999;
   --shadow-default: 0 5px 15px rgba(0, 0, 0, 0.3);
+  --croketsBlue: #1092b1;
 }
 
 /* Modal Overlay */
@@ -38,7 +39,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  background-color: var(--color-primary);
+  background-color: var(--croketsBlue);
   color: white;
   border-radius: 8px 8px 0 0;
 }
