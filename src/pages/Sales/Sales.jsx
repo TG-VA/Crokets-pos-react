@@ -60,6 +60,10 @@ const Sales = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState("Terminal");
 
+  // Modal de Notas
+  const [isNotesModalOpen, setNotesModalOpen] = useState(false);
+  const [saleNotes, setSaleNotes] = useState("");
+
   // Estados para diferentes métodos de pago
   const [paidAmount, setPaidAmount] = useState("");
   const [dollarAmount, setDollarAmount] = useState("");
@@ -116,6 +120,10 @@ const Sales = () => {
   ];
 
   const closePaymentModal = () => {
+    // Cerrar modal de notas si está abierto
+    if (isNotesModalOpen) {
+      setNotesModalOpen(false);
+    }
     setShowPaymentModal(false);
     // Resetear todos los estados
     setPaidAmount("");
@@ -200,6 +208,21 @@ const Sales = () => {
     setClientModalOpen(false);
     setSearchTerm('');
     setSelectedClient(null);
+  };
+
+  // Funciones para el modal de notas
+  const openNotesModal = () => {
+    setNotesModalOpen(true);
+  };
+
+  const closeNotesModal = () => {
+    setNotesModalOpen(false);
+  };
+
+  const handleSaveNotes = () => {
+    console.log("Notas guardadas:", saleNotes);
+    // Aquí guardaremos las notas en el estado de la venta o enviarlas al backend más adelante
+    closeNotesModal();
   };
 
   const handleAssignClient = () => {
@@ -529,73 +552,114 @@ const Sales = () => {
     };
   }, [isResizing, resizingIndex, startX, tableWidth, columnFractions]);
 
-  //useEffect para manejar Esc
+  //useEffect para manejar teclas globales (F12, F7, F8)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        closePaymentModal();
+      // Solo manejar teclas globales si no hay modales abiertos
+      if (!showPaymentModal && !isEntryModalOpen && !isExitModalOpen && !isClientModalOpen && !isNotesModalOpen) {
+        if (e.key === "F12") {
+          e.preventDefault();
+          setShowPaymentModal(true);
+        } else if (e.key === "F7") {
+          e.preventDefault();
+          setEntryModalOpen(true);
+        } else if (e.key === "F8") {
+          e.preventDefault();
+          setExitModalOpen(true);
+        }
       }
     };
 
-    if (showPaymentModal) {
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showPaymentModal, isEntryModalOpen, isExitModalOpen, isClientModalOpen, isNotesModalOpen]);
+
+  //useEffect específico para el modal de cobro y notas
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isNotesModalOpen) {
+          closeNotesModal();
+        } else if (showPaymentModal) {
+          closePaymentModal();
+        }
+      } else if (e.key === "F4" && showPaymentModal && !isNotesModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        openNotesModal();
+      }
+    };
+
+    if (showPaymentModal || isNotesModalOpen) {
       document.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showPaymentModal]);
+  }, [showPaymentModal, isNotesModalOpen]);
 
-  //useEffect para abrir y cerrar el modal de sales con F12 y esc
+  // useEffect para modal de entradas
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "F12") {
-        setShowPaymentModal(true);
-      } else if (e.key === "Escape") {
-        closePaymentModal();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  //useEffect para abrir y cerrar el modal de entradas con F7 y esc
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "F7") {
-        setEntryModalOpen(true);
-      } else if (e.key === "Escape") {
+      if (e.key === "Escape" && isEntryModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
         closeEntryModal();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    if (isEntryModalOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [isEntryModalOpen]);
 
-  //useEffect para abrir y cerrar el modal de salidas con F8 y esc
+  // useEffect para modal de salidas
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "F8") {
-        setExitModalOpen(true);
-      } else if (e.key === "Escape") {
+      if (e.key === "Escape" && isExitModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
         closeExitModal();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    if (isExitModalOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [isExitModalOpen]);
+
+  // useEffect para modal de cliente
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isClientModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeClientModal();
+      }
+    };
+
+    if (isClientModalOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isClientModalOpen]);
 
   return (
     <div className={styles.ventasContainer}>
@@ -807,7 +871,10 @@ const Sales = () => {
               >
                 ESC - Cancelar
               </button>
-              <button className={`${styles.modalActionBtn}`}>
+              <button 
+                className={`${styles.modalActionBtn}`}
+                onClick={openNotesModal}
+              >
                 F4 - Ingresar notas
               </button>
               <button
@@ -946,6 +1013,55 @@ const Sales = () => {
                 disabled={!selectedClient} 
               >
                 Asignar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Notas */}
+      {isNotesModalOpen && (
+        <div className={styles.modalOverlay} onClick={closeNotesModal}>
+          <div
+            className={styles.notesModal}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2>Agregar Notas</h2>
+              <button
+                className={styles.closeButton}
+                onClick={closeNotesModal}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.notesModalBody}>
+              <textarea
+                className={styles.notesTextarea}
+                value={saleNotes}
+                onChange={(e) => setSaleNotes(e.target.value)}
+                placeholder="Escriba aquí sus anotaciones sobre esta venta..."
+                autoFocus
+                maxLength={500}
+              />
+              <div className={styles.characterCount}>
+                {saleNotes.length}/500 caracteres
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={closeNotesModal}
+              >
+                ESC - Cancelar
+              </button>
+              <button
+                className={styles.saveButton}
+                onClick={handleSaveNotes}
+              >
+                Guardar Notas
               </button>
             </div>
           </div>
