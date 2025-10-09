@@ -16,6 +16,8 @@ import ExitModal from "../../components/Modals/ExitModal/ExitModal";
 import EntryModal from "../../components/Modals/EntryModal/EntryModal";
 import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal";
 import ClientModal from "../../components/Modals/ClientModal/ClientModal";
+import VerifierModal from "../../components/Modals/VerifierModal/VerifierModal";
+import SearchModal from "../../components/Modals/SearchModal/SearchModal";
 
 const Sales = () => {
   // Número de ticket de ejemplo
@@ -41,6 +43,8 @@ const Sales = () => {
   const [isEntryModalOpen, setEntryModalOpen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isClientModalOpen, setClientModalOpen] = useState(false);
+  const [isVerifierModalOpen, setVerifierModalOpen] = useState(false);
+  const [isSearchModalOpen, setSearchModalOpen] = useState(false);
 
   // Estados para movimientos de caja
   const [cashMovements, setCashMovements] = useState([]);
@@ -140,6 +144,12 @@ const Sales = () => {
     // Aquí puedes manejar la lógica de procesamiento del pago
     alert(`Pago procesado: $${paymentData.total} con ${paymentData.method}`);
   };
+  
+  // Función para agregar producto desde el verificador
+  const handleAddProductFromVerifier = (product) => {
+    console.log("Producto agregado desde verificador:", product);
+    // Aquí en el futuro se agregará la lógica para agregar a la venta
+  };
 
   // Efectos para manejar teclas
   useEffect(() => {
@@ -174,6 +184,14 @@ const Sales = () => {
           e.preventDefault();
           setExitModalOpen(true);
           break;
+        case "F9":
+          e.preventDefault();
+          setVerifierModalOpen(true);
+          break;
+        case "F10":
+          e.preventDefault();
+          setSearchModalOpen(true);
+          break;
         case "Escape":
           if (showPaymentModal) {
             setShowPaymentModal(false);
@@ -183,6 +201,10 @@ const Sales = () => {
             setExitModalOpen(false);
           } else if (isClientModalOpen) {
             setClientModalOpen(false);
+          } else if (isVerifierModalOpen) {
+            setVerifierModalOpen(false);
+          } else if (isSearchModalOpen) {
+            setSearchModalOpen(false);
           }
           break;
         default:
@@ -195,7 +217,7 @@ const Sales = () => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showPaymentModal, isEntryModalOpen, isExitModalOpen, isClientModalOpen]);
+  }, [showPaymentModal, isEntryModalOpen, isExitModalOpen, isClientModalOpen, isVerifierModalOpen, isSearchModalOpen]);
 
   // Calcular totales
   const subtotal = productos.reduce((sum, producto) => sum + producto.importe, 0);
@@ -215,7 +237,10 @@ const Sales = () => {
 
       {/* Barra superior de acciones*/}
       <div className={styles.topActionBar}>
-        <div className={styles.horizontalActionButton}>
+        <div 
+          className={styles.horizontalActionButton}
+          onClick={() => setSearchModalOpen(true)}
+        >
           <span className={styles.actionKey}>F10</span>
           <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Buscar</span>
@@ -241,7 +266,10 @@ const Sales = () => {
           <img src={deleteIcon} alt="Borrar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Borrar Art.</span>
         </div>
-        <div className={styles.horizontalActionButton}>
+        <div 
+          className={styles.horizontalActionButton}
+          onClick={() => setVerifierModalOpen(true)}
+        >
           <span className={styles.actionKey}>F9</span>
           <img
             src={verifyIcon}
@@ -400,6 +428,20 @@ const Sales = () => {
         onClose={() => setClientModalOpen(false)}
         onAssignClient={handleAssignClient}
         currentSaleClient={currentSaleClient}
+      />
+      
+      {/* Modal de Verificador */}
+      <VerifierModal
+        isOpen={isVerifierModalOpen}
+        onClose={() => setVerifierModalOpen(false)}
+        onAddToSale={handleAddProductFromVerifier}
+      />
+      
+      {/* Modal de Búsqueda */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onAddToSale={handleAddProductFromVerifier}
       />
     </div>
   );
