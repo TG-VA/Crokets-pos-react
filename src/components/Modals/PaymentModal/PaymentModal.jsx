@@ -93,13 +93,13 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
       if (!isOpen) return;
       
       if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isNotesModalOpen) {
-          closeNotesModal();
-        } else {
+        // Solo manejar ESC si el modal de notas NO está abierto
+        if (!isNotesModalOpen) {
+          e.preventDefault();
+          e.stopPropagation();
           closePaymentModal();
         }
+        // Si el modal de notas está abierto, dejar que NotesModal maneje el ESC
       } else if (e.key === "F4" && !isNotesModalOpen) {
         e.preventDefault();
         e.stopPropagation();

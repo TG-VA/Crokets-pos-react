@@ -13,16 +13,18 @@ const NotesModal = ({ isOpen, onClose, onSave, initialNotes = "" }) => {
       if (e.key === "Escape" && isOpen) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation(); // Evita que otros listeners se ejecuten
         handleClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
+      // Usar capture: true para capturar el evento antes que otros listeners
+      document.addEventListener("keydown", handleKeyDown, true);
     }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [isOpen]);
 
