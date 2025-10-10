@@ -157,7 +157,6 @@
 }
 
 .btnFacturas:hover::after {
-  content: "F4";
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -172,7 +171,6 @@
 }
 
 .btnCorte:hover::after {
-  content: "F5";
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -187,7 +185,6 @@
 }
 
 .btnReportes:hover::after {
-  content: "F6";
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -202,7 +199,6 @@
 }
 
 .btnConfiguracion:hover::after {
-  content: "F7";
   position: absolute;
   bottom: 100%;
   left: 50%;
