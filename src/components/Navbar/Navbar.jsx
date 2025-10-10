@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './Navbar.module.css';
@@ -32,19 +32,33 @@ const Navbar = () => {
 
   // Array de objetos que define los ítems de navegación.
   const navItems = [
-    { id: 'ventas', label: 'Ventas', icon: SalesIcon, path: '/dashboard' },
-    { id: 'productos', label: 'Productos', icon: ProductsIcon, path: '/products' },
-    { id: 'inventario', label: 'Inventario', icon: InventoryIcon, path: '/inventory' },
-    { id: 'facturas', label: 'Facturas', icon: InvoicesIcon, path: '/invoices' },
-    { id: 'corte', label: 'Corte', icon: CashoutIcon, path: '/cashout' },
-    { id: 'reportes', label: 'Reportes', icon: ReportsIcon, path: '/reports' },
-    { id: 'configuracion', label: 'Configuración', icon: SettingsIcon, path: '/settings' }
+    { id: 'btnVentas', label: 'Ventas', icon: SalesIcon, path: '/dashboard', shortcut: 'F1' },
+    { id: 'btnProductos', label: 'Productos', icon: ProductsIcon, path: '/products',shortcut: 'F2' },
+    { id: 'btnInventario', label: 'Inventario', icon: InventoryIcon, path: '/inventory',shortcut: 'F3'},
+    { id: 'btnFacturas', label: 'Facturas', icon: InvoicesIcon, path: '/invoices' },
+    { id: 'btnCorte', label: 'Corte', icon: CashoutIcon, path: '/cashout' },
+    { id: 'btnReportes', label: 'Reportes', icon: ReportsIcon, path: '/reports' },
+    { id: 'btnConfiguracion', label: 'Configuración', icon: SettingsIcon, path: '/settings' }
   ];
+
+  //useEffect para manejar atajos de teclado
+  useEffect(() =>{
+    const handleKeyDown = (e) =>{
+      const item = navItems.find(nav => nav.shortcut === e.key);
+      if(item){
+        e.preventDefault(); //evita que F1 abra la ayuda del navegador
+        navigate(item.path);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   return (
     <nav className={styles.croketsNavbar}>
       <div className={styles.navbarBrand}>
-        <img src={Logo} alt="CROKETS" className={styles.navbarLogo} />
+        <img src={Logo} alt="CROKETS LOGO" className={styles.navbarLogo} />
       </div>
       
       <div className={styles.navbarMenu}>
