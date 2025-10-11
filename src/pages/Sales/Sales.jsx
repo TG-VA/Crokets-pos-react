@@ -12,12 +12,12 @@ import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
 import payIcon from "../../assets/icons/payIcon.svg";
 
 // Importar componentes de modales
-import ExitModal from "../../components/Modals/ExitModal/ExitModal";
-import EntryModal from "../../components/Modals/EntryModal/EntryModal";
-import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal";
-import ClientModal from "../../components/Modals/ClientModal/ClientModal";
-import VerifierModal from "../../components/Modals/VerifierModal/VerifierModal";
-import SearchModal from "../../components/Modals/SearchModal/SearchModal";
+import ExitModal from "../../components/SalesComponents/Modals/ExitModal/ExitModal";
+import EntryModal from "../../components/SalesComponents/Modals/EntryModal/EntryModal";
+import PaymentModal from "../../components/SalesComponents/Modals/PaymentModal/PaymentModal";
+import ClientModal from "../../components/SalesComponents/Modals/ClientModal/ClientModal";
+import VerifierModal from "../../components/SalesComponents/Modals/VerifierModal/VerifierModal";
+import SearchModal from "../../components/SalesComponents/Modals/SearchModal/SearchModal";
 
 const Sales = () => {
   // Número de ticket de ejemplo

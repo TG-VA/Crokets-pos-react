@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "../EntryModal/EntryModal.module.css";
+import styles from "./EntryModal.module.css";
 
 const EntryModal = ({ isOpen, onClose, onSaveEntry }) => {
   // Estados locales del modal

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "../ExitModal/ExitModal.module.css";
+import styles from "./ExitModal.module.css";
 
 const ExitModal = ({ isOpen, onClose, onSave }) => {
   const [exitAmount, setExitAmount] = useState('');

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "../ClientModal/ClientModal.module.css";
+import styles from "./ClientModal.module.css";
 
 const ClientModal = ({ isOpen, onClose, onAssignClient, currentSaleClient = null }) => {
   // Clientes de ejemplo
