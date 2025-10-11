@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styles from "../PaymentModal/PaymentModal.module.css";
+import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 
 const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
