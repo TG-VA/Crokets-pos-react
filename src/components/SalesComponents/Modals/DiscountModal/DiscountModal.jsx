@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from "react";
 import styles from "./DiscountModal.module.css";
 
-const DiscountModal = ({ isOpen, onClose }) => {
-  const [price, setPrice] = useState(100); // precio original
+const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) => {
+  // Usar el precio del producto seleccionado o un valor por defecto
+  const [price, setPrice] = useState(selectedProduct ? selectedProduct.precio : 100);
   const [newPrice, setNewPrice] = useState("");
   const [discount, setDiscount] = useState("");
-  const costPrice = 80; // costo del producto (valor fijo por ahora)
+  //Obtener el costo del producto seleccionado
+  const costPrice = selectedProduct ? selectedProduct.costo : 0;
   const [showWarning, setShowWarning] = useState(false);
+
+  // Actualizar el precio cuando cambia el producto seleccionado
+  useEffect(() => {
+    if (selectedProduct) {
+      setPrice(selectedProduct.precio);
+      setNewPrice("");
+      setDiscount("");
+    }
+  }, [selectedProduct]);
 
   // Efecto para manejar la tecla ESC
   useEffect(() => {
@@ -32,7 +43,7 @@ const DiscountModal = ({ isOpen, onClose }) => {
     } else {
       setShowWarning(false);
     }
-  }, [newPrice]);
+  }, [newPrice,costPrice]);
 
   const handlePriceChange = (e) => {
     const value = e.target.value;
@@ -62,6 +73,17 @@ const DiscountModal = ({ isOpen, onClose }) => {
 
   const handleConfirm = () => {
     if (newPrice && !isNaN(parseFloat(newPrice))) {
+      const discountData = {
+        originalPrice: price,
+        newPrice: parseFloat(newPrice),
+        discount: discount ? parseFloat(discount) : 0,
+        costPrice: costPrice
+      };
+      
+      if (onApplyDiscount) {
+        onApplyDiscount(discountData);
+      }
+      
       console.log(`Nuevo precio confirmado: $${parseFloat(newPrice).toFixed(2)}`);
     }
     onClose();
@@ -78,13 +100,18 @@ const DiscountModal = ({ isOpen, onClose }) => {
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
       <div className={styles.modalContainer}>
-        {/* ENCABEZADO AZUL - Como en la imagen */}
         <div className={styles.modalHeader}>
           <h2>Cambiar Precio</h2>
           <button className={styles.closeButton} onClick={onClose}>✕</button>
         </div>
 
         <div className={styles.modalBody}>
+          {selectedProduct && (
+            <div className={styles.productInfo}>
+              <div className={styles.productName}>{selectedProduct.codigo}</div>
+            </div>
+          )}
+          
           <div className={styles.inputGroup}>
             <label>Precio Actual</label>
             <div className={styles.currentPriceDisplay}>${price.toFixed(2)}</div>

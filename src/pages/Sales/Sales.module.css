@@ -453,3 +453,62 @@
   }
 }
 
+/* Estilo para fila seleccionada */
+.tableRow {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.selectedRow {
+  background-color: rgba(16, 146, 177, 0.1) !important;
+  border-left: 3px solid var(--croketsBlue);
+  cursor: pointer;
+}
+
+/* Estilo para información del producto en el modal */
+.productInfo {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.productCode {
+  font-weight: 600;
+  color: var(--croketsBlue);
+}
+
+/* Tooltip personalizado para botones */
+.squareButton[data-tooltip] {
+  position: relative;
+}
+
+.squareButton[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+
+.squareButton[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  margin-bottom: 2px;
+  pointer-events: none;
+}
