@@ -1,0 +1,182 @@
+:root{
+    --croketsBlue: #1092b1;
+    --green: #28a745;
+    --grenDark: #218838;
+    --gray: #6c757d;
+    --secondgary: #5a6268;
+}
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modalHeader {
+  background-color: var(--croketsBlue);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: white;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.modalBody {
+  padding: 20px;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.currentPriceDisplay {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--croketsBlue);
+  padding: 8px 0;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.inputGroup input {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-bottom-color: var(--croketsBlue);
+}
+
+.inputGroup input::placeholder {
+  color: #999;
+}
+
+.warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 12px;
+  border-radius: 4px;
+  margin: 20px 0;
+  font-size: 0.9rem;
+}
+
+.summary {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.summaryRow:last-child {
+  margin-bottom: 0;
+}
+
+.discountAmount {
+  font-weight: 600;
+  color: #dc3545;
+}
+
+.finalPrice {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--croketsBlue);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.confirmBtn {
+  background-color: var(--green);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  font-size: 0.95rem;
+}
+
+.confirmBtn:hover {
+  background-color: var(--greenDark);
+}
+
+.cancelBtn {
+  background-color: var(--gray);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  font-size: 0.95rem;
+}
+
+.cancelBtn:hover {
+  background-color: var(--secondgray);
+}

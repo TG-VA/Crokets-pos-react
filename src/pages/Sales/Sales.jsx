@@ -10,6 +10,7 @@ import verifyIcon from "../../assets/icons/verifyIcon.svg";
 import changeIcon from "../../assets/icons/changeIcon.svg";
 import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
 import payIcon from "../../assets/icons/payIcon.svg";
+import DiscountIcon from "../../assets/icons/percent-solid-full.svg";
 
 // Importar componentes de modales
 import ExitModal from "../../components/SalesComponents/Modals/ExitModal/ExitModal";
@@ -18,6 +19,7 @@ import PaymentModal from "../../components/SalesComponents/Modals/PaymentModal/P
 import ClientModal from "../../components/SalesComponents/Modals/ClientModal/ClientModal";
 import VerifierModal from "../../components/SalesComponents/Modals/VerifierModal/VerifierModal";
 import SearchModal from "../../components/SalesComponents/Modals/SearchModal/SearchModal";
+import DiscountModal from "../../components/SalesComponents/Modals/DiscountModal/DiscountModal";
 
 const Sales = () => {
   // Número de ticket de ejemplo
@@ -45,6 +47,7 @@ const Sales = () => {
   const [isClientModalOpen, setClientModalOpen] = useState(false);
   const [isVerifierModalOpen, setVerifierModalOpen] = useState(false);
   const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+  const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
 
   // Estados para movimientos de caja
   const [cashMovements, setCashMovements] = useState([]);
@@ -119,13 +122,13 @@ const Sales = () => {
   const handleSaveEntry = (newMovement) => {
     const updatedMovements = [...cashMovements, newMovement];
     setCashMovements(updatedMovements);
-    console.log('Movimientos de caja actualizados:', updatedMovements);
+    console.log("Movimientos de caja actualizados:", updatedMovements);
   };
 
   const handleSaveExit = (newMovement) => {
     const updatedMovements = [...cashMovements, newMovement];
     setCashMovements(updatedMovements);
-    console.log('Movimientos de caja actualizados:', updatedMovements);
+    console.log("Movimientos de caja actualizados:", updatedMovements);
   };
 
   // Funciones para asignar cliente
@@ -144,7 +147,7 @@ const Sales = () => {
     // Aquí puedes manejar la lógica de procesamiento del pago
     alert(`Pago procesado: $${paymentData.total} con ${paymentData.method}`);
   };
-  
+
   // Función para agregar producto desde el verificador
   const handleAddProductFromVerifier = (product) => {
     console.log("Producto agregado desde verificador:", product);
@@ -217,10 +220,20 @@ const Sales = () => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [showPaymentModal, isEntryModalOpen, isExitModalOpen, isClientModalOpen, isVerifierModalOpen, isSearchModalOpen]);
+  }, [
+    showPaymentModal,
+    isEntryModalOpen,
+    isExitModalOpen,
+    isClientModalOpen,
+    isVerifierModalOpen,
+    isSearchModalOpen,
+  ]);
 
   // Calcular totales
-  const subtotal = productos.reduce((sum, producto) => sum + producto.importe, 0);
+  const subtotal = productos.reduce(
+    (sum, producto) => sum + producto.importe,
+    0
+  );
   const total = subtotal; // Aquí podrías agregar impuestos si los hay
 
   return (
@@ -237,7 +250,7 @@ const Sales = () => {
 
       {/* Barra superior de acciones*/}
       <div className={styles.topActionBar}>
-        <div 
+        <div
           className={styles.horizontalActionButton}
           onClick={() => setSearchModalOpen(true)}
         >
@@ -245,15 +258,15 @@ const Sales = () => {
           <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Buscar</span>
         </div>
-        <div 
-          className={styles.horizontalActionButton} 
+        <div
+          className={styles.horizontalActionButton}
           onClick={() => setEntryModalOpen(true)}
         >
           <span className={styles.actionKey}>F7</span>
           <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Entradas</span>
         </div>
-        <div 
+        <div
           className={styles.horizontalActionButton}
           onClick={() => setExitModalOpen(true)}
         >
@@ -266,7 +279,7 @@ const Sales = () => {
           <img src={deleteIcon} alt="Borrar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Borrar Art.</span>
         </div>
-        <div 
+        <div
           className={styles.horizontalActionButton}
           onClick={() => setVerifierModalOpen(true)}
         >
@@ -352,15 +365,18 @@ const Sales = () => {
       {/* Pie de página con acciones y total */}
       <div className={styles.footerBar}>
         <div className={styles.leftActions}>
+          {/*botón Cambiar*/}
           <div className={styles.squareButton}>
             <img src={changeIcon} alt="Cambiar" className={styles.squareIcon} />
             <span className={styles.squareKey}>F5</span>
             <span className={styles.squareText}>Cambiar</span>
           </div>
+          {/*botón Pendiente*/}
           <div className={styles.squareButton}>
             <span className={styles.squareKey}>F6</span>
             <span className={styles.squareText}>Pendiente</span>
           </div>
+          {/*botón Eliminar*/}
           <div className={styles.squareButton}>
             <img
               src={deleteIcon}
@@ -369,6 +385,16 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Eliminar</span>
           </div>
+          {/*botón Descuento*/}
+          <div className={styles.squareButton} onClick={() => setDiscountModalOpen(true)}>
+            <img
+              src={DiscountIcon}
+              alt="Descuento Icono"
+              className={styles.squareIcon}
+            />
+            <span className={styles.squareText}>Descuento</span>
+          </div>
+          {/*botón Asignar Cliente*/}
           <div className={styles.squareButton} onClick={openClientModal}>
             <img
               src={assignClientIcon}
@@ -399,7 +425,7 @@ const Sales = () => {
       </div>
 
       {/* MODALES */}
-      
+
       {/* Modal de Entradas */}
       <EntryModal
         isOpen={isEntryModalOpen}
@@ -429,20 +455,25 @@ const Sales = () => {
         onAssignClient={handleAssignClient}
         currentSaleClient={currentSaleClient}
       />
-      
+
       {/* Modal de Verificador */}
       <VerifierModal
         isOpen={isVerifierModalOpen}
         onClose={() => setVerifierModalOpen(false)}
         onAddToSale={handleAddProductFromVerifier}
       />
-      
+
       {/* Modal de Búsqueda */}
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setSearchModalOpen(false)}
         onAddToSale={handleAddProductFromVerifier}
       />
+      {/* Modal de Descuento */}
+      <DiscountModal
+        isOpen={isDiscountModalOpen}
+        onClose={() => setDiscountModalOpen(false)}
+      />  
     </div>
   );
 };
