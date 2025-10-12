@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./SearchModal.module.css";
 
 const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const resultsListRef = useRef(null);
 
   // Productos de ejemplo para búsqueda
   const sampleProducts = [
@@ -57,6 +58,25 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       existencia: 3,
     }
   ];
+
+  // Efecto para hacer scroll automático cuando cambia selectedIndex
+  useEffect(() => {
+    if (selectedIndex >= 0 && resultsListRef.current) {
+      const container = resultsListRef.current;
+      const items = container.querySelectorAll(`.${styles.resultItem}`);
+      
+      if (items[selectedIndex]) {
+        const selectedElement = items[selectedIndex];
+        
+        // Usar scrollIntoView para un scroll suave y automático
+        selectedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [selectedIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -193,7 +213,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
               />
             </div>
             <div className={styles.searchHelp}>
-              <span>Escribe parte del nombre del producto (ej. “kg”, “adulto”, “pollo”)</span>
+              <span>Escribe parte del nombre del producto (ej. "kg", "adulto", "pollo")</span>
             </div>
           </div>
 
@@ -208,7 +228,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
               )}
             </div>
 
-            <div className={styles.resultsContainer}>
+            <div className={styles.resultsContainer} ref={resultsListRef}>
               {searchResults.length === 0 ? (
                 <div className={styles.emptyMessage}>
                   {searchTerm.trim() ? 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import styles from "../../pages/Sales/Sales.module.css";
 
 // Importar iconos
@@ -25,18 +25,19 @@ const Sales = () => {
   // Número de ticket de ejemplo
   const ticketNumber = 1;
 
-  // Estados para el redimensionamiento de columnas usando fracciones
-  const [columnFractions, setColumnFractions] = useState([
-    "2fr",
-    "1fr",
-    "0.5fr",
-    "1fr",
-    "1fr",
-  ]);
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizingIndex, setResizingIndex] = useState(-1);
-  const [startX, setStartX] = useState(0);
-  const [tableWidth, setTableWidth] = useState(0);
+  // Configuración de anchos de columna en píxeles (OPTIMIZADO)
+  const MIN_COLUMN_WIDTH = 80;
+  const [columnWidths, setColumnWidths] = useState([400, 150, 80, 150, 150]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Referencia optimizada para redimensionamiento
+  const resizeRef = useRef({
+    isResizing: false,
+    columnIndex: -1,
+    startX: 0,
+    startWidth: 0,
+    nextStartWidth: 0
+  });
 
   const tableRef = useRef(null);
 
@@ -48,75 +49,171 @@ const Sales = () => {
   const [isVerifierModalOpen, setVerifierModalOpen] = useState(false);
   const [isSearchModalOpen, setSearchModalOpen] = useState(false);
   const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Estados para movimientos de caja
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
 
   // Datos de ejemplo para la tabla
-  const productos = [
+  const [productos, setProductos] = useState([
     {
-      codigo: "1 AC bb 8520 MOBO",
-      precio: 69.0,
+      id: 1,
+      codigo: "NUPEC ADULTO RAZA PEQUEÑA 2KG",
+      precio: 332.0,
+      costo: 250.0,
       cantidad: 1,
-      importe: 69.0,
+      importe: 332.0,
       existencia: 10,
     },
     {
-      codigo: "1 AC bb 8520 MOBO",
-      precio: 69.0,
+      id: 2,
+      codigo: "NUPEC ADULTO 20KG",
+      precio: 2089.0,
+      costo: 1200.0,
       cantidad: 1,
       importe: 69.0,
-      existencia: 10,
+      existencia: 6,
     },
     {
-      codigo: "1 AC bb 8520 MOBO",
-      precio: 69.0,
+      id: 3,
+      codigo: "NEXGARD SPECTRA 15-30 KG",
+      precio: 890,
+      costo: 600,
       cantidad: 1,
-      importe: 69.0,
-      existencia: 10,
+      importe: 890,
+      existencia: 5,
     },
-  ];
+  ]);
 
-  // Funciones para el redimensionamiento
-  const handleMouseDown = (e, index) => {
-    if (tableRef.current) {
-      setTableWidth(tableRef.current.offsetWidth);
+  // Función para seleccionar/deseleccionar producto
+  const handleProductSelect = (producto) => {
+    if (selectedProduct && selectedProduct.id === producto.id) {
+      setSelectedProduct(null);
+    } else {
+      setSelectedProduct(producto);
     }
-    setIsResizing(true);
-    setResizingIndex(index);
-    setStartX(e.clientX);
+  };
+
+  // Función para manejar el descuento aplicado
+  const handleApplyDiscount = (discountData) => {
+    if (selectedProduct) {
+      const updatedProductos = productos.map(producto => 
+        producto.id === selectedProduct.id 
+          ? { 
+              ...producto, 
+              precio: parseFloat(discountData.newPrice),
+              importe: parseFloat(discountData.newPrice) * producto.cantidad
+            }
+          : producto
+      );
+      setProductos(updatedProductos);
+      setSelectedProduct(null);
+    }
+  };
+
+  // ========== CÓDIGO OPTIMIZADO PARA REDIMENSIONAMIENTO ==========
+
+  // Función optimizada para el movimiento del mouse
+  const handleMouseMove = useCallback((e) => {
+    const { isResizing, columnIndex, startX, startWidth, nextStartWidth } = resizeRef.current;
+    
+    if (!isResizing || columnIndex === -1) return;
+
+    const deltaX = e.clientX - startX;
+    
+    // Calcular nuevos anchos
+    let newWidth = startWidth + deltaX;
+    let newNextWidth = nextStartWidth - deltaX;
+
+    // Aplicar límites mínimos
+    if (newWidth < MIN_COLUMN_WIDTH) {
+      newWidth = MIN_COLUMN_WIDTH;
+      newNextWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
+    }
+    
+    if (newNextWidth < MIN_COLUMN_WIDTH) {
+      newNextWidth = MIN_COLUMN_WIDTH;
+      newWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
+    }
+
+    // Actualizar solo las columnas afectadas
+    setColumnWidths(prev => {
+      const newWidths = [...prev];
+      newWidths[columnIndex] = newWidth;
+      newWidths[columnIndex + 1] = newNextWidth;
+      return newWidths;
+    });
+  }, []);
+
+  // Función para finalizar redimensionamiento
+  const handleMouseUp = useCallback(() => {
+    resizeRef.current.isResizing = false;
+    resizeRef.current.columnIndex = -1;
+    
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+    
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, [handleMouseMove]);
+
+  // Función optimizada para iniciar redimensionamiento
+  const handleMouseDown = useCallback((e, index) => {
     e.preventDefault();
-  };
+    e.stopPropagation();
+    
+    // No permitir redimensionar la última columna
+    if (index >= columnWidths.length - 1) return;
 
-  const handleMouseMove = (e) => {
-    if (!isResizing || resizingIndex === -1 || !tableRef.current) return;
+    resizeRef.current = {
+      isResizing: true,
+      columnIndex: index,
+      startX: e.clientX,
+      startWidth: columnWidths[index],
+      nextStartWidth: columnWidths[index + 1]
+    };
 
-    const currentX = e.clientX;
-    const diffX = currentX - startX;
-    const diffPercent = (diffX / tableWidth) * 100;
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
-    const currentFractions = columnFractions.map((fr) =>
-      parseFloat(fr.replace("fr", ""))
-    );
-    const newValue = Math.max(
-      0.2,
-      currentFractions[resizingIndex] + diffPercent / 100
-    );
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [columnWidths, handleMouseMove, handleMouseUp]);
 
-    const newFractions = [...currentFractions];
-    newFractions[resizingIndex] = newValue;
+  // Efecto para limpieza al desmontar el componente
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
-    const newFractionsStr = newFractions.map((val) => `${val}fr`);
-    setColumnFractions(newFractionsStr);
+  // Efecto para calcular anchos iniciales basados en el contenedor
+  useEffect(() => {
+    if (tableRef.current && !isInitialized) {
+      const tableWidth = tableRef.current.offsetWidth;
+      
+      // Restar: border de la tabla (2px), padding del header (20px), y margen adicional
+      const availableWidth = tableWidth - 22; 
+      
+      // Proporciones deseadas para cada columna (excepto la última)
+      const proportions = [0.4, 0.15, 0.1, 0.15]; // Solo las primeras 4 columnas
+      
+      const calculatedWidths = proportions.map(prop => 
+        Math.max(MIN_COLUMN_WIDTH, Math.floor(availableWidth * prop))
+      );
+      
+      // La última columna toma el espacio restante
+      const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
+      const lastColumnWidth = Math.max(MIN_COLUMN_WIDTH, availableWidth - usedWidth);
+      
+      setColumnWidths([...calculatedWidths, lastColumnWidth]);
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
-    setStartX(currentX);
-  };
-
-  const handleMouseUp = () => {
-    setIsResizing(false);
-    setResizingIndex(-1);
-  };
+  // ========== FIN CÓDIGO REDIMENSIONAMIENTO ==========
 
   // Funciones para manejar movimientos de caja
   const handleSaveEntry = (newMovement) => {
@@ -144,36 +241,54 @@ const Sales = () => {
   // Función para procesar pagos
   const handleProcessPayment = (paymentData) => {
     console.log("Procesando pago:", paymentData);
-    // Aquí puedes manejar la lógica de procesamiento del pago
     alert(`Pago procesado: $${paymentData.total} con ${paymentData.method}`);
   };
 
   // Función para agregar producto desde el verificador
   const handleAddProductFromVerifier = (product) => {
     console.log("Producto agregado desde verificador:", product);
-    // Aquí en el futuro se agregará la lógica para agregar a la venta
   };
 
-  // Efectos para manejar teclas
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isResizing, resizingIndex, startX, tableWidth, columnFractions]);
-
-  // Manejo de teclas para todos los modales
+  // Manejo de teclas para todos los modales y navegación de productos
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Si hay algún modal abierto, no procesar las flechas en la tabla principal
+      const isAnyModalOpen = showPaymentModal || isEntryModalOpen || isExitModalOpen || 
+                             isClientModalOpen || isVerifierModalOpen || isSearchModalOpen || 
+                             isDiscountModalOpen;
+      
+      // Navegación con flechas arriba/abajo entre productos (solo si no hay modal abierto)
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
+        e.preventDefault();
+        
+        if (productos.length === 0) return;
+        
+        if (!selectedProduct) {
+          // Si no hay producto seleccionado, seleccionar el primero
+          setSelectedProduct(productos[0]);
+        } else {
+          const currentIndex = productos.findIndex(p => p.id === selectedProduct.id);
+          
+          if (e.key === "ArrowDown") {
+            // Mover hacia abajo
+            const nextIndex = (currentIndex + 1) % productos.length;
+            setSelectedProduct(productos[nextIndex]);
+          } else if (e.key === "ArrowUp") {
+            // Mover hacia arriba
+            const prevIndex = currentIndex === 0 ? productos.length - 1 : currentIndex - 1;
+            setSelectedProduct(productos[prevIndex]);
+          }
+        }
+        return;
+      }
+      
+      // Ctrl + D para abrir modal de descuento cuando hay un producto seleccionado
+      if (e.ctrlKey && e.key === "d") {
+        e.preventDefault();
+        if (selectedProduct) {
+          setDiscountModalOpen(true);
+        }
+      }
       switch (e.key) {
         case "F12":
           e.preventDefault();
@@ -208,6 +323,8 @@ const Sales = () => {
             setVerifierModalOpen(false);
           } else if (isSearchModalOpen) {
             setSearchModalOpen(false);
+          } else if (isDiscountModalOpen) {
+            setDiscountModalOpen(false);
           }
           break;
         default:
@@ -227,6 +344,9 @@ const Sales = () => {
     isClientModalOpen,
     isVerifierModalOpen,
     isSearchModalOpen,
+    isDiscountModalOpen,
+    selectedProduct,
+    productos,
   ]);
 
   // Calcular totales
@@ -234,7 +354,10 @@ const Sales = () => {
     (sum, producto) => sum + producto.importe,
     0
   );
-  const total = subtotal; // Aquí podrías agregar impuestos si los hay
+  const total = subtotal;
+
+  // Generar el template de columnas para CSS Grid
+  const gridTemplate = columnWidths.map(width => `${width}px`).join(' ');
 
   return (
     <div className={styles.ventasContainer}>
@@ -305,14 +428,14 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* Tabla de productos redimensionable */}
+      {/* Tabla de productos redimensionable - OPTIMIZADA */}
       <div className={styles.productsTable} ref={tableRef}>
         <div
           className={styles.tableHeader}
-          style={{ gridTemplateColumns: columnFractions.join(" ") }}
+          style={{ gridTemplateColumns: gridTemplate }}
         >
           <span>
-            Código de Barras
+            Producto
             <div
               className={styles.resizeHandle}
               onMouseDown={(e) => handleMouseDown(e, 0)}
@@ -342,11 +465,14 @@ const Sales = () => {
           <span>Existencia</span>
         </div>
         <div className={styles.tableBody}>
-          {productos.map((producto, index) => (
+          {productos.map((producto) => (
             <div
-              key={index}
-              className={styles.tableRow}
-              style={{ gridTemplateColumns: columnFractions.join(" ") }}
+              key={producto.id}
+              className={`${styles.tableRow} ${
+                selectedProduct?.id === producto.id ? styles.selectedRow : ""
+              }`}
+              style={{ gridTemplateColumns: gridTemplate }}
+              onClick={() => handleProductSelect(producto)}
             >
               <span className={styles.tableCell}>{producto.codigo}</span>
               <span className={styles.tableCell}>
@@ -365,18 +491,15 @@ const Sales = () => {
       {/* Pie de página con acciones y total */}
       <div className={styles.footerBar}>
         <div className={styles.leftActions}>
-          {/*botón Cambiar*/}
           <div className={styles.squareButton}>
             <img src={changeIcon} alt="Cambiar" className={styles.squareIcon} />
             <span className={styles.squareKey}>F5</span>
             <span className={styles.squareText}>Cambiar</span>
           </div>
-          {/*botón Pendiente*/}
           <div className={styles.squareButton}>
             <span className={styles.squareKey}>F6</span>
             <span className={styles.squareText}>Pendiente</span>
           </div>
-          {/*botón Eliminar*/}
           <div className={styles.squareButton}>
             <img
               src={deleteIcon}
@@ -385,8 +508,17 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Eliminar</span>
           </div>
-          {/*botón Descuento*/}
-          <div className={styles.squareButton} onClick={() => setDiscountModalOpen(true)}>
+          <div
+            className={styles.squareButton}
+            onClick={() => {
+              if (selectedProduct) {
+                setDiscountModalOpen(true);
+              } else {
+                alert("Por favor, selecciona un producto primero");
+              }
+            }}
+            data-tooltip="Ctrl + D"
+          >
             <img
               src={DiscountIcon}
               alt="Descuento Icono"
@@ -394,7 +526,6 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Descuento</span>
           </div>
-          {/*botón Asignar Cliente*/}
           <div className={styles.squareButton} onClick={openClientModal}>
             <img
               src={assignClientIcon}
@@ -425,22 +556,18 @@ const Sales = () => {
       </div>
 
       {/* MODALES */}
-
-      {/* Modal de Entradas */}
       <EntryModal
         isOpen={isEntryModalOpen}
         onClose={() => setEntryModalOpen(false)}
         onSaveEntry={handleSaveEntry}
       />
 
-      {/* Modal de Salidas */}
       <ExitModal
         isOpen={isExitModalOpen}
         onClose={() => setExitModalOpen(false)}
         onSaveExit={handleSaveExit}
       />
 
-      {/* Modal de Cobro */}
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -448,7 +575,6 @@ const Sales = () => {
         onProcessPayment={handleProcessPayment}
       />
 
-      {/* Modal de Cliente */}
       <ClientModal
         isOpen={isClientModalOpen}
         onClose={() => setClientModalOpen(false)}
@@ -456,24 +582,24 @@ const Sales = () => {
         currentSaleClient={currentSaleClient}
       />
 
-      {/* Modal de Verificador */}
       <VerifierModal
         isOpen={isVerifierModalOpen}
         onClose={() => setVerifierModalOpen(false)}
         onAddToSale={handleAddProductFromVerifier}
       />
 
-      {/* Modal de Búsqueda */}
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setSearchModalOpen(false)}
         onAddToSale={handleAddProductFromVerifier}
       />
-      {/* Modal de Descuento */}
+      
       <DiscountModal
         isOpen={isDiscountModalOpen}
         onClose={() => setDiscountModalOpen(false)}
-      />  
+        onApplyDiscount={handleApplyDiscount}
+        selectedProduct={selectedProduct}
+      />
     </div>
   );
 };

@@ -1,10 +1,13 @@
-:root{
-    --croketsBlue: #1092b1;
-    --green: #28a745;
-    --grenDark: #218838;
-    --gray: #6c757d;
-    --secondgary: #5a6268;
+:root {
+  --croketsBlue: #1092b1;
+  --green: #28a745;
+  --grenDark: #218838;
+  --gray: #6c757d;
+  --grayDark: #5a6268;
+  --softyellow: #fff3cd;
+  --yellow: #ffeaa7;
 }
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -65,6 +68,22 @@
   padding: 20px;
 }
 
+/* NUEVO ESTILO PARA EL NOMBRE DEL PRODUCTO */
+.productInfo {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.productName {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--croketsBlue);
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
 .inputGroup {
   margin-bottom: 20px;
 }
@@ -78,11 +97,12 @@
 }
 
 .currentPriceDisplay {
-  font-size: 1.1rem;
+  font-size: 2rem;
   font-weight: bold;
   color: var(--croketsBlue);
   padding: 8px 0;
   border-bottom: 2px solid #e9ecef;
+  text-align: center;
 }
 
 .inputGroup input {
@@ -105,8 +125,8 @@
 }
 
 .warning {
-  background-color: #fff3cd;
-  border: 1px solid #ffeaa7;
+  background-color: var(--softyellow);
+  border: 1px solid var(--yellow);
   color: #856404;
   padding: 12px;
   border-radius: 4px;
@@ -162,7 +182,7 @@
 }
 
 .confirmBtn:hover {
-  background-color: var(--greenDark);
+  background-color: var(--grenDark);
 }
 
 .cancelBtn {
@@ -178,5 +198,5 @@
 }
 
 .cancelBtn:hover {
-  background-color: var(--secondgray);
+  background-color: var(--grayDark);
 }
