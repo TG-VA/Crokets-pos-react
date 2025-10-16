@@ -20,12 +20,16 @@ import ClientModal from "../../components/SalesComponents/Modals/ClientModal/Cli
 import VerifierModal from "../../components/SalesComponents/Modals/VerifierModal/VerifierModal";
 import SearchModal from "../../components/SalesComponents/Modals/SearchModal/SearchModal";
 import DiscountModal from "../../components/SalesComponents/Modals/DiscountModal/DiscountModal";
+import PendingTicketModal from "../../components/SalesComponents/Modals/PendingTicketModal/PendingTicketModal";
+import ChangeTicketModal from "../../components/SalesComponents/Modals/ChangeTicketModal/ChangeTicketModal";
+import DeleteTicketModal from "../../components/SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal";
 
 const Sales = () => {
-  // Número de ticket de ejemplo
-  const ticketNumber = 1;
+  // Estados para tickets
+  const [ticketNumber, setTicketNumber] = useState(1);
+  const [pendingTickets, setPendingTickets] = useState([]);
 
-  // Configuración de anchos de columna en píxeles (OPTIMIZADO)
+  // Configuración de anchos de columna en píxeles
   const MIN_COLUMN_WIDTH = 80;
   const [columnWidths, setColumnWidths] = useState([400, 150, 80, 150, 150]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -49,6 +53,9 @@ const Sales = () => {
   const [isVerifierModalOpen, setVerifierModalOpen] = useState(false);
   const [isSearchModalOpen, setSearchModalOpen] = useState(false);
   const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
+  const [isPendingModalOpen, setPendingModalOpen] = useState(false);
+  const [isChangeModalOpen, setChangeModalOpen] = useState(false);
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Estados para movimientos de caja
@@ -112,9 +119,9 @@ const Sales = () => {
     }
   };
 
-  // ========== CÓDIGO OPTIMIZADO PARA REDIMENSIONAMIENTO ==========
+  // ========== CÓDIGO PARA REDIMENSIONAMIENTO ==========
 
-  // Función optimizada para el movimiento del mouse
+  // Función para el movimiento del mouse
   const handleMouseMove = useCallback((e) => {
     const { isResizing, columnIndex, startX, startWidth, nextStartWidth } = resizeRef.current;
     
@@ -122,7 +129,7 @@ const Sales = () => {
 
     const deltaX = e.clientX - startX;
     
-    // Calcular nuevos anchos
+    // Calcular anchos
     let newWidth = startWidth + deltaX;
     let newNextWidth = nextStartWidth - deltaX;
 
@@ -158,7 +165,7 @@ const Sales = () => {
     document.body.style.userSelect = '';
   }, [handleMouseMove]);
 
-  // Función optimizada para iniciar redimensionamiento
+  // Función para iniciar redimensionamiento
   const handleMouseDown = useCallback((e, index) => {
     e.preventDefault();
     e.stopPropagation();
@@ -215,6 +222,13 @@ const Sales = () => {
 
   // ========== FIN CÓDIGO REDIMENSIONAMIENTO ==========
 
+  // Calcular totales 
+  const subtotal = productos.reduce(
+    (sum, producto) => sum + producto.importe,
+    0
+  );
+  const total = subtotal;
+
   // Funciones para manejar movimientos de caja
   const handleSaveEntry = (newMovement) => {
     const updatedMovements = [...cashMovements, newMovement];
@@ -249,13 +263,93 @@ const Sales = () => {
     console.log("Producto agregado desde verificador:", product);
   };
 
+  // Función para manejar ticket pendiente
+  const handleSavePendingTicket = (ticketName) => {
+    const pendingTicket = {
+      number: ticketNumber,
+      name: ticketName,
+      products: productos,
+      client: currentSaleClient,
+      subtotal: subtotal,
+      total: total,
+      date: new Date().toISOString()
+    };
+
+    setPendingTickets([...pendingTickets, pendingTicket]);
+    console.log("Ticket guardado como pendiente:", pendingTicket);
+
+    // Limpiar la venta actual y crear un nuevo ticket
+    setProductos([]);
+    setCurrentSaleClient(null);
+    setSelectedProduct(null);
+    setTicketNumber(ticketNumber + 1);
+  };
+
+  // Función para cambiar a un ticket pendiente
+  const handleChangeToTicket = (ticket) => {
+    // Guardar el ticket actual como pendiente si tiene productos
+    if (productos.length > 0) {
+      const currentTicket = {
+        number: ticketNumber,
+        name: `Ticket ${ticketNumber}`,
+        products: productos,
+        client: currentSaleClient,
+        subtotal: subtotal,
+        total: total,
+        date: new Date().toISOString()
+      };
+      
+      // Actualizar tickets pendientes (agregar el actual y quitar el seleccionado)
+      const updatedPendingTickets = pendingTickets.filter(t => t !== ticket);
+      setPendingTickets([...updatedPendingTickets, currentTicket]);
+    } else {
+      // Si no hay productos en el ticket actual, solo quitar el ticket seleccionado de pendientes
+      const updatedPendingTickets = pendingTickets.filter(t => t !== ticket);
+      setPendingTickets(updatedPendingTickets);
+    }
+
+    // Cargar el ticket seleccionado
+    setProductos(ticket.products);
+    setCurrentSaleClient(ticket.client);
+    setTicketNumber(ticket.number);
+    setSelectedProduct(null);
+    
+    console.log("Cambiado a ticket:", ticket);
+  };
+
+  // Función para eliminar un ticket pendiente
+  const handleDeleteTicket = (index) => {
+    const updatedPendingTickets = pendingTickets.filter((_, i) => i !== index);
+    setPendingTickets(updatedPendingTickets);
+    console.log("Ticket eliminado");
+  };
+
+  // Función para abrir modal de cambio
+  const handleOpenChangeModal = () => {
+    if (pendingTickets.length === 0) {
+      alert("No hay tickets pendientes");
+    } else {
+      setChangeModalOpen(true);
+    }
+  };
+
+  // Función para abrir modal de eliminar
+  const handleOpenDeleteModal = () => {
+    if (pendingTickets.length === 0) {
+      alert("No hay tickets pendientes por eliminar");
+    } else {
+      setDeleteModalOpen(true);
+    }
+  };
+
   // Manejo de teclas para todos los modales y navegación de productos
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Si hay algún modal abierto, no procesar las flechas en la tabla principal
       const isAnyModalOpen = showPaymentModal || isEntryModalOpen || isExitModalOpen || 
                              isClientModalOpen || isVerifierModalOpen || isSearchModalOpen || 
-                             isDiscountModalOpen;
+                             isDiscountModalOpen || isPendingModalOpen || isChangeModalOpen || 
+                             isDeleteModalOpen;
       
       // Navegación con flechas arriba/abajo entre productos (solo si no hay modal abierto)
       if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
@@ -294,6 +388,14 @@ const Sales = () => {
           e.preventDefault();
           setShowPaymentModal(true);
           break;
+        case "F5":
+          e.preventDefault();
+          handleOpenChangeModal();
+          break;
+        case "F6":
+          e.preventDefault();
+          setPendingModalOpen(true);
+          break;
         case "F7":
           e.preventDefault();
           setEntryModalOpen(true);
@@ -310,6 +412,10 @@ const Sales = () => {
           e.preventDefault();
           setSearchModalOpen(true);
           break;
+        case "Delete":
+          e.preventDefault();
+          handleOpenDeleteModal();
+          break;
         case "Escape":
           if (showPaymentModal) {
             setShowPaymentModal(false);
@@ -325,6 +431,12 @@ const Sales = () => {
             setSearchModalOpen(false);
           } else if (isDiscountModalOpen) {
             setDiscountModalOpen(false);
+          } else if (isPendingModalOpen) {
+            setPendingModalOpen(false);
+          } else if (isChangeModalOpen) {
+            setChangeModalOpen(false);
+          } else if (isDeleteModalOpen) {
+            setDeleteModalOpen(false);
           }
           break;
         default:
@@ -345,16 +457,13 @@ const Sales = () => {
     isVerifierModalOpen,
     isSearchModalOpen,
     isDiscountModalOpen,
+    isPendingModalOpen,
+    isChangeModalOpen,
+    isDeleteModalOpen,
     selectedProduct,
     productos,
+    pendingTickets,
   ]);
-
-  // Calcular totales
-  const subtotal = productos.reduce(
-    (sum, producto) => sum + producto.importe,
-    0
-  );
-  const total = subtotal;
 
   // Generar el template de columnas para CSS Grid
   const gridTemplate = columnWidths.map(width => `${width}px`).join(' ');
@@ -428,7 +537,7 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* Tabla de productos redimensionable - OPTIMIZADA */}
+      {/* Tabla de productos redimensionable */}
       <div className={styles.productsTable} ref={tableRef}>
         <div
           className={styles.tableHeader}
@@ -491,16 +600,27 @@ const Sales = () => {
       {/* Pie de página con acciones y total */}
       <div className={styles.footerBar}>
         <div className={styles.leftActions}>
-          <div className={styles.squareButton}>
+          <div 
+            className={styles.squareButton}
+            onClick={handleOpenChangeModal}
+            data-tooltip="F5"
+          >
             <img src={changeIcon} alt="Cambiar" className={styles.squareIcon} />
             <span className={styles.squareKey}>F5</span>
             <span className={styles.squareText}>Cambiar</span>
           </div>
-          <div className={styles.squareButton}>
+          <div 
+            className={styles.squareButton}
+            onClick={() => setPendingModalOpen(true)}
+            data-tooltip="F6"
+          >
             <span className={styles.squareKey}>F6</span>
             <span className={styles.squareText}>Pendiente</span>
           </div>
-          <div className={styles.squareButton}>
+          <div 
+            className={styles.squareButton}
+            onClick={handleOpenDeleteModal}
+          >
             <img
               src={deleteIcon}
               alt="Eliminar"
@@ -599,6 +719,28 @@ const Sales = () => {
         onClose={() => setDiscountModalOpen(false)}
         onApplyDiscount={handleApplyDiscount}
         selectedProduct={selectedProduct}
+      />
+
+      <PendingTicketModal
+        isOpen={isPendingModalOpen}
+        onClose={() => setPendingModalOpen(false)}
+        onAccept={handleSavePendingTicket}
+        currentTicketNumber={ticketNumber}
+        nextTicketNumber={ticketNumber + 1}
+      />
+
+      <ChangeTicketModal
+        isOpen={isChangeModalOpen}
+        onClose={() => setChangeModalOpen(false)}
+        onSelectTicket={handleChangeToTicket}
+        pendingTickets={pendingTickets}
+      />
+
+      <DeleteTicketModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onDeleteTicket={handleDeleteTicket}
+        pendingTickets={pendingTickets}
       />
     </div>
   );

@@ -1,0 +1,243 @@
+import React, { useState, useEffect, useRef } from "react";
+import styles from "./DeleteTicketModal.module.css";
+
+const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) => {
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState(null);
+  const resultsListRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && pendingTickets.length > 0) {
+      setSelectedIndex(0);
+      setShowConfirmation(false);
+      setTicketToDelete(null);
+    } else {
+      setSelectedIndex(-1);
+    }
+  }, [isOpen, pendingTickets]);
+
+  // Efecto para hacer scroll automático
+  useEffect(() => {
+    if (selectedIndex >= 0 && resultsListRef.current && !showConfirmation) {
+      const container = resultsListRef.current;
+      const items = container.querySelectorAll(`.${styles.ticketItem}`);
+      
+      if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [selectedIndex, showConfirmation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (showConfirmation) {
+          setShowConfirmation(false);
+          setTicketToDelete(null);
+        } else {
+          handleClose();
+        }
+      } else if (!showConfirmation) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedIndex(prev => 
+            prev < pendingTickets.length - 1 ? prev + 1 : prev
+          );
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+        } else if (e.key === "Delete" || e.key === "Enter") {
+          e.preventDefault();
+          if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
+            handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
+          }
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown, true);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [isOpen, pendingTickets, selectedIndex, showConfirmation]);
+
+  const handleClose = () => {
+    setSelectedIndex(-1);
+    setShowConfirmation(false);
+    setTicketToDelete(null);
+    onClose();
+  };
+
+  const handleShowConfirmation = (ticket, index) => {
+    setTicketToDelete({ ticket, index });
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (ticketToDelete) {
+      onDeleteTicket(ticketToDelete.index);
+      setShowConfirmation(false);
+      setTicketToDelete(null);
+      
+      // Si no quedan más tickets, cerrar el modal
+      if (pendingTickets.length === 1) {
+        handleClose();
+      } else {
+        // Ajustar el índice seleccionado si es necesario
+        if (selectedIndex >= pendingTickets.length - 1) {
+          setSelectedIndex(pendingTickets.length - 2);
+        }
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmation(false);
+    setTicketToDelete(null);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={handleClose}>
+      <div
+        className={styles.deleteModal}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.modalHeader}>
+          <h2>Eliminar Ticket Pendiente</h2>
+          <button
+            className={styles.closeButton}
+            onClick={handleClose}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          {showConfirmation ? (
+            <div className={styles.confirmationContainer}>
+              <div className={styles.warningIcon}>⚠️</div>
+              <h3>¿Estás seguro?</h3>
+              <p className={styles.confirmMessage}>
+                ¿Deseas eliminar el ticket <strong>{ticketToDelete?.ticket.name}</strong>?
+              </p>
+              <p className={styles.confirmSubtext}>
+                Esta acción no se puede deshacer.
+              </p>
+              <div className={styles.confirmActions}>
+                <button
+                  className={`${styles.actionButton} ${styles.confirmButton}`}
+                  onClick={handleConfirmDelete}
+                >
+                  Confirmar
+                </button>
+                <button
+                  className={`${styles.actionButton} ${styles.cancelButton}`}
+                  onClick={handleCancelDelete}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : pendingTickets.length === 0 ? (
+            <div className={styles.emptyMessage}>
+              <div className={styles.emptyIcon}>🗑️</div>
+              <p>No hay tickets pendientes por eliminar</p>
+              <span className={styles.emptySubtext}>
+                Los tickets que guardes como pendientes aparecerán aquí
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className={styles.ticketsHeader}>
+                <span>Selecciona el ticket que deseas eliminar</span>
+              </div>
+              <div className={styles.ticketsContainer} ref={resultsListRef}>
+                <div className={styles.ticketsList}>
+                  {pendingTickets.map((ticket, index) => (
+                    <div
+                      key={index}
+                      className={`${styles.ticketItem} ${
+                        index === selectedIndex ? styles.selectedTicket : ""
+                      }`}
+                      onClick={() => handleShowConfirmation(ticket, index)}
+                    >
+                      <div className={styles.ticketInfo}>
+                        <div className={styles.ticketHeader}>
+                          <span className={styles.ticketName}>{ticket.name}</span>
+                          <span className={styles.ticketTotal}>
+                            ${ticket.total.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className={styles.ticketDetails}>
+                          <span className={styles.ticketProducts}>
+                            {ticket.products.length} producto(s)
+                          </span>
+                          {ticket.client && (
+                            <span className={styles.ticketClient}>
+                              Cliente: {ticket.client.name}
+                            </span>
+                          )}
+                          <span className={styles.ticketDate}>
+                            {new Date(ticket.date).toLocaleString('es-MX', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {!showConfirmation && pendingTickets.length > 0 && (
+          <div className={styles.modalActions}>
+            <div className={styles.actionButtons}>
+              <button
+                className={`${styles.actionButton} ${styles.deleteButton}`}
+                onClick={() => {
+                  if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
+                    handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
+                  }
+                }}
+                disabled={selectedIndex < 0}
+              >
+                Eliminar ticket seleccionado
+              </button>
+              <button
+                className={`${styles.actionButton} ${styles.cancelButton}`}
+                onClick={handleClose}
+              >
+                ESC - Cancelar
+              </button>
+            </div>
+            <div className={styles.actionHints}>
+              <span>↑↓ Navegar • Enter/Delete - Eliminar</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DeleteTicketModal;
