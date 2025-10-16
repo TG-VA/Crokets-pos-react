@@ -100,7 +100,7 @@ const Sales = () => {
     if (selectedProduct) {
       const updatedProductos = productos.map(producto => 
         producto.id === selectedProduct.id 
-          ? { 
+          ? {
               ...producto, 
               precio: parseFloat(discountData.newPrice),
               importe: parseFloat(discountData.newPrice) * producto.cantidad

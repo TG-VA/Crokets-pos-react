@@ -25,7 +25,7 @@
 
 .header {
   background-color: var(--white);
-  padding: 1.5rem;
+  padding: 5px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
@@ -47,6 +47,9 @@
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .toolbar {
@@ -56,23 +59,8 @@
   padding: 1.5rem;
   border-bottom: 1px solid var(--mediumGray);
   gap: 1rem;
-}
-
-.addButton {
-  background-color: var(--croketsOrange);
-  color: var(--white);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.addButton:hover {
-  background-color: var(--croketsOrangeDark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .searchInput {
@@ -89,29 +77,290 @@
   border-color: var(--croketsOrange);
 }
 
-.productsList {
-  padding: 2rem;
-  min-height: 400px;
+/* Filtro de departamento */
+.filterContainer {
+  position: relative;
+  display: inline-block;
 }
 
-.productsList p {
+.filterButton {
+  background-color: var(--croketsBlue);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  min-width: 200px;
+  text-align: left;
+}
+
+.filterButton:hover {
+  background-color: #0d7a94;
+}
+
+.filterDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--white);
+  border: 1px solid var(--mediumGray);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.filterOption {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-transform: capitalize;
+}
+
+.filterOption:hover {
+  background-color: var(--lightGray);
+}
+
+/* Tabla de productos */
+.productsContainer {
+  padding: 0;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.productsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed;
+}
+
+.productsTable thead {
+  background-color: var(--croketsOrange);
+  color: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.productsTable th {
+  padding: 1rem 0.5rem;
+  text-align: left;
+  font-weight: bold;
+  border-bottom: 2px solid var(--mediumGray);
+}
+
+/* Anchos específicos para cada columna */
+.productsTable th:nth-child(1) { width: 12%; } /* Código */
+.productsTable th:nth-child(2) { width: 35%; } /* Descripción */
+.productsTable th:nth-child(3) { width: 15%; } /* Departamento */
+.productsTable th:nth-child(4) { width: 10%; } /* Costo */
+.productsTable th:nth-child(5) { width: 10%; } /* Precio */
+.productsTable th:nth-child(6) { width: 8%; }  /* Existencia */
+.productsTable th:nth-child(7) { width: 5%; }  /* Mínimo */
+.productsTable th:nth-child(8) { width: 5%; }  /* Máximo */
+
+.productsTable th:first-child {
+  padding-left: 1.5rem;
+}
+
+.productsTable th:last-child {
+  padding-right: 1.5rem;
+}
+
+.productRow {
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.productRow:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.productRow:hover {
+  background-color: var(--lightGray);
+}
+
+.selectedRow {
+  background-color: #e3f2fd !important;
+  border-left: 4px solid var(--croketsOrange);
+}
+
+.selectedRow:hover {
+  background-color: #e3f2fd !important;
+}
+
+.productsTable td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--mediumGray);
+  vertical-align: middle;
+}
+
+.productsTable td:first-child {
+  padding-left: 1.5rem;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.productsTable td:last-child {
+  padding-right: 1.5rem;
+}
+
+.descriptionCell {
+  word-wrap: break-word;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.departmentCell {
+  text-transform: capitalize;
+  font-weight: 500;
+  color: var(--croketsBlue);
+}
+
+.priceCell {
+  text-align: right;
+  font-weight: bold;
+  color: var(--darkGray);
+}
+
+.stockCell {
   text-align: center;
+  font-weight: bold;
+}
+
+.lowStock {
+  color: #d32f2f;
+  background-color: #ffebee;
+}
+
+.normalStock {
+  color: #2e7d32;
+}
+
+.noResults {
+  text-align: center;
+  padding: 3rem;
   color: var(--textColor);
   font-size: 1.1rem;
-  margin-top: 2rem;
+  font-style: italic;
+}
+
+/* Indicador de navegación */
+.navigationHint {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--darkGray);
+  color: var(--white);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 1000;
 }
 
 @media (max-width: 768px) {
   .mainContent {
-    padding: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .content {
+    height: 90vh;
   }
   
   .toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
   }
   
   .searchInput {
     width: 100%;
+  }
+  
+  .filterButton {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .productsTable {
+    font-size: 0.8rem;
+  }
+  
+  .productsTable th,
+  .productsTable td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .productsTable th:first-child,
+  .productsTable td:first-child {
+    padding-left: 0.5rem;
+  }
+  
+  .productsTable th:last-child,
+  .productsTable td:last-child {
+    padding-right: 0.5rem;
+  }
+  
+  .descriptionCell {
+    font-size: 0.75rem;
+  }
+  
+  /* Ajustar anchos de columnas en móvil */
+  .productsTable th:nth-child(1) { width: 15%; }
+  .productsTable th:nth-child(2) { width: 30%; }
+  .productsTable th:nth-child(3) { width: 15%; }
+  .productsTable th:nth-child(4) { width: 10%; }
+  .productsTable th:nth-child(5) { width: 10%; }
+  .productsTable th:nth-child(6) { width: 8%; }
+  .productsTable th:nth-child(7) { width: 6%; }
+  .productsTable th:nth-child(8) { width: 6%; }
+  
+  .navigationHint {
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .header {
+    padding: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .content {
+    height: 92vh;
+  }
+  
+  .toolbar {
+    padding: 0.75rem;
+  }
+  
+  .productsTable {
+    font-size: 0.7rem;
+  }
+  
+  .descriptionCell {
+    font-size: 0.65rem;
+  }
+  
+  .productsTable th,
+  .productsTable td {
+    padding: 0.4rem 0.2rem;
   }
 }
