@@ -1,12 +1,14 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// Importa los componentes de las páginas.
+
+// Importa los componentes de las páginas
 import Login from './pages/Login/Login';
 import CashRegister from './pages/CashRegister/CashRegister';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Products from './pages/Products/Products';
 import Settings from './pages/Settings/Settings';
 import Profiles from './pages/Profiles/Profiles';
+
 // Importa el contexto de autenticación
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -17,18 +19,23 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Ruta de login - accesible solo si no está autenticado */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
-            !isAuthenticated ? 
-              <Login key={Date.now()} /> : 
-              <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
-          } 
+            !isAuthenticated ? (
+              <Login key={Date.now()} />
+            ) : (
+              <Navigate
+                to={cashRegistered ? '/dashboard' : '/cash-register'}
+                replace
+              />
+            )
+          }
         />
 
         {/* Ruta de caja registradora */}
-        <Route 
-          path="/cash-register" 
+        <Route
+          path="/cash-register"
           element={
             !isAuthenticated ? (
               <Navigate to="/login" replace />
@@ -37,12 +44,12 @@ function AppRoutes() {
             ) : (
               <CashRegister setCashRegistered={setCashRegistered} />
             )
-          } 
+          }
         />
-        
+
         {/* Ruta de dashboard */}
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             !isAuthenticated ? (
               <Navigate to="/login" replace />
@@ -51,12 +58,12 @@ function AppRoutes() {
             ) : (
               <Dashboard setCashRegistered={setCashRegistered} />
             )
-          } 
+          }
         />
-        
-        {/* Ruta de productos */}
-        <Route 
-          path="/products" 
+
+        {/* ✅ Ruta de productos con subrutas */}
+        <Route
+          path="/products/*"
           element={
             !isAuthenticated ? (
               <Navigate to="/login" replace />
@@ -65,39 +72,48 @@ function AppRoutes() {
             ) : (
               <Products />
             )
-          } 
+          }
         />
-        
+
         {/* Ruta de configuración */}
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
-            isAuthenticated ?
-              <Settings /> :
+            isAuthenticated ? (
+              <Settings />
+            ) : (
               <Navigate to="/login" replace />
+            )
           }
         />
 
         {/* Ruta de perfiles/usuarios */}
-        <Route 
-          path="/profiles" 
+        <Route
+          path="/profiles"
           element={
-            isAuthenticated ?
-              <Profiles /> :
+            isAuthenticated ? (
+              <Profiles />
+            ) : (
               <Navigate to="/login" replace />
+            )
           }
         />
 
         {/* Ruta raíz - redirige según estado */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            <Navigate to={
-              !isAuthenticated ? "/login" :
-              !cashRegistered ? "/cash-register" :
-              "/dashboard"
-            } replace />
-          } 
+            <Navigate
+              to={
+                !isAuthenticated
+                  ? '/login'
+                  : !cashRegistered
+                  ? '/cash-register'
+                  : '/dashboard'
+              }
+              replace
+            />
+          }
         />
       </Routes>
     </Router>
