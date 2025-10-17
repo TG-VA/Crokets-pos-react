@@ -1,36 +1,37 @@
 import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
+import NavbarProducts from '../../components/ProductsComponents/NavbarProducts/NavbarProducts';
+
+import ProductsList from '../../components/ProductsComponents/PageProducts/ProductsList/ProductsList';
+import ProductsNew from '../../components/ProductsComponents/PageProducts/ProductsNew/ProductsNew';
+import ProductsModify from '../../components/ProductsComponents/PageProducts/ProductsModify/ProductsModify';
+import ProductsDelete from '../../components/ProductsComponents/PageProducts/ProductsDelete/ProductsDelete';
+import ProductsPromotions from '../../components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions';
+import ProductsImports from '../../components/ProductsComponents/PageProducts/ProductsImport/ProductsImports';
+
 import styles from './Products.module.css';
 
 const Products = () => {
   return (
     <div className={styles.container}>
       <Navbar />
-      <main className={styles.mainContent}>
-        <div className={styles.header}>
-          <h1>Gestión de Productos</h1>
-          <p>Administra tu catálogo de productos</p>
-        </div>
-        
-        <div className={styles.content}>
-          <div className={styles.toolbar}>
-            <button className={styles.addButton}>
-              Agregar Producto
-            </button>
-            <input 
-              type="text" 
-              placeholder="Buscar producto..."
-              className={styles.searchInput}
-            />
-          </div>
-          
-          <div className={styles.productsList}>
-            {/* Aquí iría la lista de productos */}
-            <p>Lista de productos aparecerá aquí</p>
-          </div>
-        </div>
-      </main>
+      <NavbarProducts />
+      
+      <div className={styles.pageContent}>
+        <Routes>
+          <Route path="/" element={<ProductsList />} />
+          <Route path="/nuevo" element={<ProductsNew />} />
+          <Route path="/modificar" element={<ProductsModify />} />
+          <Route path="/eliminar" element={<ProductsDelete />} />
+          <Route path="/promociones" element={<ProductsPromotions />} />
+          <Route path="/importar" element={<ProductsImports />} />
+          {/* Redirección si no se encuentra la ruta */}
+          <Route path="*" element={<Navigate to="/products" replace />} />
+        </Routes>
+      </div>
+
       <Footer />
     </div>
   );
