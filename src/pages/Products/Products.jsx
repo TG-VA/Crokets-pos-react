@@ -3,13 +3,13 @@ import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import styles from './Products.module.css';
 
-const Products = () => {
+const productos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [showDepartmentFilter, setShowDepartmentFilter] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(0);
 
-  // Productos de muestra con todos los campos solicitados
+  // Productos de muestra usados en la pagina de sales
   const sampleProducts = [
     {
       codigo: "1234567890",

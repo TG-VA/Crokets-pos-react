@@ -1,0 +1,180 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pendingModal {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  background-color: #1792b1;
+  color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modalBody {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.question {
+  font-size: 1.1rem;
+  color: #333333;
+  margin: 0;
+  font-weight: 500;
+  text-align: center;
+}
+
+.inputSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputSection label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #555555;
+}
+
+.nameInput {
+  padding: 12px;
+  border: 2px solid #dddddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: #1792b1;
+  box-shadow: 0 0 0 3px rgba(23, 146, 177, 0.1);
+}
+
+.modalActions {
+  padding: 1.5rem 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  border-top: 1px solid #eeeeee;
+}
+
+.actionButton {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.acceptButton {
+  background-color: #1792b1;
+  color: #ffffff;
+}
+
+.acceptButton:hover {
+  background-color: #136a82;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(23, 146, 177, 0.3);
+}
+
+.cancelButton {
+  background-color: #e0e0e0;
+  color: #333333;
+}
+
+.cancelButton:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+}
+
+.currentTicketInfo {
+  font-size: 1rem;
+  color: #666666;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+.currentTicketInfo strong {
+  color: #1792b1;
+  font-weight: 600;
+}
