@@ -54,13 +54,13 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
             className={styles.cancelButton} 
             onClick={onClose}
           >
-            Cancelar (ESC)
+            Esc - Cancelar
           </button>
           <button 
             className={styles.confirmButton} 
             onClick={handleConfirm}
           >
-            Eliminar (ENTER)
+            Enter - Eliminar 
           </button>
         </div>
       </div>

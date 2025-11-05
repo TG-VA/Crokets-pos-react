@@ -75,7 +75,7 @@ const ClientModal = ({ isOpen, onClose, onAssignClient, currentSaleClient = null
         
         <div className={styles.modalActions}>
           <button className={styles.cancelButton} onClick={closeModal}>
-            Cancelar
+            Esc - Cancelar
           </button>
           <button 
             className={styles.saveButton} 

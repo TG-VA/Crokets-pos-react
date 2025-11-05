@@ -76,7 +76,7 @@
 
 .modalFooter {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   padding: 20px;
   border-top: 1px solid #dee2e6;
