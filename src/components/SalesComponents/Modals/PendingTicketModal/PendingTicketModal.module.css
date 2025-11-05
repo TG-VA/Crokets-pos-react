@@ -126,7 +126,7 @@
   padding: 1.5rem 2rem;
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  justify-content: space-between;
   border-top: 1px solid #eeeeee;
 }
 
@@ -153,8 +153,8 @@
 }
 
 .cancelButton {
-  background-color: #e0e0e0;
-  color: #333333;
+  background-color: #6c757d;
+  color: white;
 }
 
 .cancelButton:hover {

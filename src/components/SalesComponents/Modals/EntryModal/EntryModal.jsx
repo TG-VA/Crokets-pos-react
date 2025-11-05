@@ -73,7 +73,7 @@ const EntryModal = ({ isOpen, onClose, onSaveEntry }) => {
         </div>
         <div className={styles.modalActions}>
           <button className={styles.cancelButton} onClick={closeEntryModal}>
-            Cancelar
+            Esc - Cancelar
           </button>
           <button className={styles.saveButton} onClick={handleSaveEntry}>
             Guardar Entrada

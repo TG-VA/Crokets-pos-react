@@ -137,6 +137,7 @@
   cursor: pointer;
   font-weight: bold;
   transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
 .saveButton {
@@ -147,4 +148,9 @@
 .saveButton:hover {
   background-color: #0d7a94;
   transform: translateY(-2px);
+}
+
+.cancelButton{
+  background-color: #6c757d;
+  color: white;
 }

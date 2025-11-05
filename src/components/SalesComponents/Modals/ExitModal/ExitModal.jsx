@@ -68,7 +68,7 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
           {exitError && <p className={styles.errorMessage}>{exitError}</p>}
         </div>
         <div className={styles.modalActions}>
-          <button className={styles.cancelButton} onClick={handleClose}>Cancelar</button>
+          <button className={styles.cancelButton} onClick={handleClose}>Esc - Cancelar</button>
           <button className={styles.saveButton} onClick={handleSave}>Guardar Salida</button>
         </div>
       </div>

@@ -416,9 +416,6 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
           >
             F4 - Ingresar notas
           </button>
-          <button className={styles.modalActionBtn} onClick={processPayment}>
-            Facturar venta
-          </button>
         </div>
       </div>
       
