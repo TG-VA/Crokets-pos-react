@@ -11,6 +11,7 @@ import changeIcon from "../../assets/icons/changeIcon.svg";
 import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
 import payIcon from "../../assets/icons/payIcon.svg";
 import DiscountIcon from "../../assets/icons/percent-solid-full.svg";
+import SalesHistoryIcon from "../../assets/icons/table-list-solid-full.svg";
 
 // Importar componentes de modales
 import ExitModal from "../../components/SalesComponents/Modals/ExitModal/ExitModal";
@@ -24,6 +25,7 @@ import PendingTicketModal from "../../components/SalesComponents/Modals/PendingT
 import ChangeTicketModal from "../../components/SalesComponents/Modals/ChangeTicketModal/ChangeTicketModal";
 import DeleteTicketModal from "../../components/SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal";
 import DeleteItemModal from "../../components/SalesComponents/Modals/DeleteItemModal/DeleteItemModal";
+import SalesHistoryModal from "../../components/SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal";
 
 const Sales = () => {
   // Estados para tickets
@@ -59,6 +61,7 @@ const Sales = () => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
+  const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
 
   // Estados para movimientos de caja
   const [cashMovements, setCashMovements] = useState([]);
@@ -378,7 +381,8 @@ const Sales = () => {
         isPendingModalOpen ||
         isChangeModalOpen ||
         isDeleteModalOpen ||
-        isDeleteItemModalOpen;
+        isDeleteItemModalOpen ||
+        isSalesHistoryModalOpen;
 
       // Navegación con flechas arriba/abajo entre productos (solo si no hay modal abierto)
       if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
@@ -444,12 +448,27 @@ const Sales = () => {
           e.preventDefault();
           setSearchModalOpen(true);
           break;
-        case "Backspace": 
-          e.preventDefault();
-          if (selectedProduct && !isAnyModalOpen) {
-            setDeleteItemModalOpen(true);
-          } else if (!selectedProduct) {
-            alert("Por favor, selecciona un producto primero");
+        case "Backspace":
+          // Detectar si está en un input
+          const target = e.target;
+          const isInputElement =
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable;
+
+          // Si está en un input, permitir el comportamiento normal
+          if (isInputElement) {
+            return; // No hacer nada, dejar que funcione normalmente
+          }
+
+          // Solo ejecutar la lógica si NO hay modales abiertos
+          if (!isAnyModalOpen) {
+            e.preventDefault();
+            if (selectedProduct) {
+              setDeleteItemModalOpen(true);
+            } else {
+              alert("Por favor, selecciona un producto primero");
+            }
           }
           break;
         case "Delete":
@@ -479,6 +498,8 @@ const Sales = () => {
             setDeleteModalOpen(false);
           } else if (isDeleteItemModalOpen) {
             setDeleteItemModalOpen(false);
+          } else if (isSalesHistoryModalOpen) {
+            setSalesHistoryModalOpen(false);
           }
           break;
         default:
@@ -503,6 +524,7 @@ const Sales = () => {
     isChangeModalOpen,
     isDeleteModalOpen,
     isDeleteItemModalOpen,
+    isSalesHistoryModalOpen,
     selectedProduct,
     productos,
     pendingTickets,
@@ -703,6 +725,19 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Asignar cliente</span>
           </div>
+          <div
+            className={styles.SquareButtonSecondary}
+            onClick={() => setSalesHistoryModalOpen(true)}
+          >
+            <img
+              src={SalesHistoryIcon}
+              alt="Ventas del día y Devoluciones"
+              className={styles.squareIconSecondary}
+            />
+            <span className={styles.squareText}>
+              Ventas del día y Devoluciones{" "}
+            </span>
+          </div>
         </div>
         <div className={styles.rightActions}>
           <div className={styles.totalSection}>
@@ -796,6 +831,10 @@ const Sales = () => {
         onClose={() => setDeleteItemModalOpen(false)}
         onConfirmDelete={handleDeleteSelectedProduct}
         selectedProduct={selectedProduct}
+      />
+      <SalesHistoryModal
+        isOpen={isSalesHistoryModalOpen}
+        onClose={() => setSalesHistoryModalOpen(false)}
       />
     </div>
   );
