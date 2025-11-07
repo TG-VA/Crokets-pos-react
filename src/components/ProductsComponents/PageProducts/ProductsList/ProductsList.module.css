@@ -8,29 +8,16 @@
   --textColor: #333333;
   --white: #ffffff;
 
-  /* Altura máxima de la tabla dentro de la página (ajústala si quieres) */
   --productsTableMaxHeight: 60vh;
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  /* No fijamos alturas aquí para no alterar el layout general */
-  padding: 10px;
-  gap: 10px;
-}
-
-.header {
-  background-color: var(--white);
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.header h1 {
-  color: var(--darkGray);
-  margin: 0;
-  font-size: 1.6rem;
+  height: 100%;
+  padding: 0.5rem;
+  padding-bottom: 70px; /* Espacio para el footer */
+  gap: 0.5rem;
 }
 
 .content {
@@ -39,7 +26,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  /* sin alturas forzadas para no mover el resto de la página */
+  flex: 1;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -49,7 +37,17 @@
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--mediumGray);
   gap: 1rem;
-  flex-wrap: wrap;
+}
+
+.toolbar h1 {
+  color: var(--darkGray);
+  margin: 0;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.toolbar .searchInput {
+  margin-left: auto;
 }
 
 .searchInput {
@@ -116,10 +114,8 @@
 
 /* ----------- SCROLL SOLO EN LA TABLA ----------- */
 .productsContainer {
-  /* No height fija, solo max-height para no romper layout */
-  max-height: var(--productsTableMaxHeight);
-  overflow: auto; /* 👈 aquí vive la scrollbar */
-  /* Si usas un thead sticky, esto asegura que se vea bien */
+  flex: 1;
+  overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--croketsOrange) var(--lightGray);
 }
@@ -163,7 +159,7 @@
   padding: 1rem 0.5rem;
   text-align: left;
   font-weight: bold;
-  border-bottom: 2px solid var(--mediumGray);
+  border-bottom: none;
 }
 
 /* Anchos específicos por columna */

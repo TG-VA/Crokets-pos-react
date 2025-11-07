@@ -11,6 +11,7 @@ import Profiles from './pages/Profiles/Profiles';
 
 // Importa el contexto de autenticación
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ProductsProvider } from './context/ProductsContext';
 
 function AppRoutes() {
   const { isAuthenticated, cashRegistered, setCashRegistered } = useAuth();
@@ -123,7 +124,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ProductsProvider>
+        <AppRoutes />
+      </ProductsProvider>
     </AuthProvider>
   );
 }
