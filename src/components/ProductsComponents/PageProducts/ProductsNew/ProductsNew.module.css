@@ -1,205 +1,150 @@
-:root {
-  --croketsOrange: #fc8913;
-  --croketsOrangeDark: #e07a0d;
-  --croketsBlue: #1092b1;
-  --lightGray: #f2f2f2;
-  --mediumGray: #e0e0e0;
-  --darkGray: #333333;
-  --textColor: #333333;
-  --white: #ffffff;
-  --errorRed: #d32f2f;
-  --successGreen: #2e7d32;
+/* Contenedor principal - ocupa todo el espacio disponible */
+.body {
+  display: none;
 }
 
 .content {
-  background-color: var(--white);
-  /* Eliminamos border-radius para que ocupe todo el ancho */
-  border-radius: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  /* Aseguramos que use todo el ancho */
+  background-color: #ffffff;
   width: 100%;
-  /* Calculamos la altura disponible: viewport - navbar principal - navbar productos - footer */
-  min-height: calc(100vh - 140px - 40px);
-  overflow: hidden;
+  min-height: 100%;
 }
 
+/* Encabezado */
 .header {
-  /* Padding mínimo para que llegue hasta los bordes */
-  padding: 1.5rem 1rem 1rem 1rem;
-  border-bottom: 1px solid var(--mediumGray);
-  flex-shrink: 0;
-  background-color: var(--white);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
 }
 
 .header h1 {
-  color: var(--darkGray);
+  color: #333333;
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .header p {
-  color: #666;
+  color: #666666;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
+/* Contenedor del formulario */
 .formContainer {
-  flex: 1;
-  overflow-y: auto;
-  /* Padding mínimo para que llegue hasta los bordes */
-  padding: 2rem 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--croketsOrange) var(--lightGray);
-  background-color: var(--white);
+  padding: 2rem;
+  background-color: #ffffff;
 }
 
-.formContainer::-webkit-scrollbar {
-  width: 8px;
-}
-
-.formContainer::-webkit-scrollbar-track {
-  background: var(--lightGray);
-}
-
-.formContainer::-webkit-scrollbar-thumb {
-  background: var(--croketsOrange);
-  border-radius: 4px;
-}
-
-.formContainer::-webkit-scrollbar-thumb:hover {
-  background: var(--croketsOrangeDark);
-}
-
+/* Formulario - centrado con ancho máximo */
 .form {
-  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.3rem;
 }
 
-.formRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
+/* Grupo de campo */
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-.formGroup.fullWidth {
-  grid-column: 1 / -1;
-}
-
+/* Etiqueta */
 .label {
-  color: var(--darkGray);
+  color: #333333;
   font-weight: 600;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
 }
 
 .required {
-  color: var(--errorRed);
+  color: #d32f2f;
 }
 
+/* Input */
 .input {
   padding: 0.75rem 1rem;
-  border: 2px solid var(--mediumGray);
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
-  font-family: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--croketsOrange);
-}
-
-.input:disabled {
-  background-color: var(--lightGray);
-  cursor: not-allowed;
+  border-color: #fc8913;
 }
 
 .inputError {
-  border-color: var(--errorRed);
+  border-color: #d32f2f;
 }
 
+/* Mensaje de error */
 .errorMessage {
-  color: var(--errorRed);
-  font-size: 0.85rem;
-  margin-top: -0.25rem;
+  color: #d32f2f;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
 }
 
+/* Hint del campo */
+.fieldHint {
+  color: #999999;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
+/* Mensaje de éxito */
+.successMessage {
+  background-color: #e8f5e9;
+  border-left: 4px solid #2e7d32;
+  color: #2e7d32;
+  padding: 1rem 2rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Contenedor de botones */
 .buttonContainer {
   display: flex;
-  justify-content: flex-start;
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  padding-bottom: 1rem;
-  border-top: 1px solid var(--mediumGray);
+  padding-bottom: 3rem;
+  border-top: 1px solid #e0e0e0;
 }
 
+/* Botón */
 .button {
-  padding: 0.9rem 2rem;
+  padding: 0.85rem 2rem;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 150px;
+  transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .buttonPrimary {
-  background-color: var(--croketsOrange);
-  color: var(--white);
+  background-color: #fc8913;
+  color: #ffffff;
 }
 
-.buttonPrimary:hover:not(:disabled) {
-  background-color: var(--croketsOrangeDark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(252, 137, 19, 0.3);
+.buttonPrimary:hover {
+  background-color: #e07a0d;
 }
 
 .buttonSecondary {
-  background-color: var(--mediumGray);
-  color: var(--darkGray);
+  background-color: #e0e0e0;
+  color: #333333;
 }
 
-.buttonSecondary:hover:not(:disabled) {
+.buttonSecondary:hover {
   background-color: #d0d0d0;
-}
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.successMessage {
-  background-color: #e8f5e9;
-  border-left: 4px solid var(--successGreen);
-  color: var(--successGreen);
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.fieldHint {
-  color: #666;
-  font-size: 0.85rem;
-  font-style: italic;
 }
 
 /* Responsive */
@@ -209,16 +154,11 @@
   }
 
   .formContainer {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
   }
 
-  .formRow {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .header h1 {
-    font-size: 1.3rem;
+  .form {
+    max-width: 100%;
   }
 
   .buttonContainer {
@@ -227,31 +167,5 @@
 
   .button {
     width: 100%;
-  }
-
-  .successMessage {
-    padding: 1rem 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .header {
-    padding: 1rem;
-  }
-
-  .formContainer {
-    padding: 1rem;
-  }
-
-  .header h1 {
-    font-size: 1.2rem;
-  }
-
-  .input {
-    font-size: 0.95rem;
-  }
-
-  .successMessage {
-    padding: 1rem;
   }
 }

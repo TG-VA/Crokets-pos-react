@@ -62,16 +62,16 @@ const ProductsNew = () => {
       newErrors.precio = 'El precio no puede ser menor al costo';
     }
 
-    if (!formData.existencia || parseInt(formData.existencia) < 0) {
+    if (formData.existencia === '' || parseInt(formData.existencia) < 0) {
       newErrors.existencia = 'Las piezas actuales deben ser 0 o mayor';
     }
 
-    if (!formData.minimo || parseInt(formData.minimo) < 0) {
+    if (formData.minimo === '' || parseInt(formData.minimo) < 0) {
       newErrors.minimo = 'El mínimo debe ser 0 o mayor';
     }
 
-    if (!formData.maximo || parseInt(formData.maximo) <= 0) {
-      newErrors.maximo = 'El máximo debe ser mayor a 0';
+    if (formData.maximo === '' || parseInt(formData.maximo) < 0) {
+      newErrors.maximo = 'El máximo debe ser 0 o mayor';
     }
 
     if (parseInt(formData.maximo) < parseInt(formData.minimo)) {
@@ -128,8 +128,24 @@ const ProductsNew = () => {
     navigate('/products');
   };
 
+  const handleKeyPress = (e, nextFieldName) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextFieldName === 'submit') {
+        handleSubmit(e);
+      } else {
+        const form = e.target.form;
+        const index = Array.prototype.indexOf.call(form, e.target);
+        const nextField = form.elements[index + 1];
+        if (nextField && nextField.type !== 'submit') {
+          nextField.focus();
+        }
+      }
+    }
+  };
+
   return (
-    <div className={styles.content}>
+    <div className={styles.container}>
       <div className={styles.header}>
         <h1>Nuevo Producto</h1>
         <p>Completa la información para agregar un nuevo producto al inventario</p>
@@ -143,7 +159,6 @@ const ProductsNew = () => {
 
       <div className={styles.formContainer}>
         <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label}>
               Código de Barras <span className={styles.required}>*</span>
@@ -153,10 +168,28 @@ const ProductsNew = () => {
               name="codigo"
               value={formData.codigo}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.codigo ? styles.inputError : ''}`}
               placeholder="Ej: 1234567890"
+              autoFocus
             />
             {errors.codigo && <span className={styles.errorMessage}>{errors.codigo}</span>}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              Nombre del Producto <span className={styles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              name="descripcion"
+              value={formData.descripcion}
+              onChange={handleChange}
+              onKeyPress={handleKeyPress}
+              className={`${styles.input} ${errors.descripcion ? styles.inputError : ''}`}
+              placeholder="Ej: Royal canin urinary so small dog 4kg"
+            />
+            {errors.descripcion && <span className={styles.errorMessage}>{errors.descripcion}</span>}
           </div>
 
           <div className={styles.formGroup}>
@@ -168,29 +201,13 @@ const ProductsNew = () => {
               name="departamento"
               value={formData.departamento}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.departamento ? styles.inputError : ''}`}
               placeholder="Ej: royal canin"
             />
             {errors.departamento && <span className={styles.errorMessage}>{errors.departamento}</span>}
           </div>
-        </div>
 
-        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <label className={styles.label}>
-            Nombre del Producto <span className={styles.required}>*</span>
-          </label>
-          <input
-            type="text"
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            className={`${styles.input} ${errors.descripcion ? styles.inputError : ''}`}
-            placeholder="Ej: Royal canin urinary so small dog 4kg"
-          />
-          {errors.descripcion && <span className={styles.errorMessage}>{errors.descripcion}</span>}
-        </div>
-
-        <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label}>
               Costo <span className={styles.required}>*</span>
@@ -200,6 +217,7 @@ const ProductsNew = () => {
               name="costo"
               value={formData.costo}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.costo ? styles.inputError : ''}`}
               placeholder="0.00"
               step="0.01"
@@ -217,6 +235,7 @@ const ProductsNew = () => {
               name="precio"
               value={formData.precio}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.precio ? styles.inputError : ''}`}
               placeholder="0.00"
               step="0.01"
@@ -224,9 +243,7 @@ const ProductsNew = () => {
             />
             {errors.precio && <span className={styles.errorMessage}>{errors.precio}</span>}
           </div>
-        </div>
 
-        <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label}>
               Piezas Actuales <span className={styles.required}>*</span>
@@ -236,6 +253,7 @@ const ProductsNew = () => {
               name="existencia"
               value={formData.existencia}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.existencia ? styles.inputError : ''}`}
               placeholder="0"
               min="0"
@@ -252,6 +270,7 @@ const ProductsNew = () => {
               name="minimo"
               value={formData.minimo}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.minimo ? styles.inputError : ''}`}
               placeholder="0"
               min="0"
@@ -259,9 +278,7 @@ const ProductsNew = () => {
             {errors.minimo && <span className={styles.errorMessage}>{errors.minimo}</span>}
             <span className={styles.fieldHint}>Stock mínimo recomendado</span>
           </div>
-        </div>
 
-        <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label}>
               Máximo <span className={styles.required}>*</span>
@@ -271,6 +288,7 @@ const ProductsNew = () => {
               name="maximo"
               value={formData.maximo}
               onChange={handleChange}
+              onKeyPress={handleKeyPress}
               className={`${styles.input} ${errors.maximo ? styles.inputError : ''}`}
               placeholder="0"
               min="0"
@@ -278,21 +296,21 @@ const ProductsNew = () => {
             {errors.maximo && <span className={styles.errorMessage}>{errors.maximo}</span>}
             <span className={styles.fieldHint}>Stock máximo en inventario</span>
           </div>
-        </div>
 
         <div className={styles.buttonContainer}>
+          <button
+            type="submit"
+            className={`${styles.button} ${styles.buttonPrimary}`}
+            onKeyPress={(e) => handleKeyPress(e, 'submit')}
+          >
+            Crear Producto
+          </button>
           <button
             type="button"
             className={`${styles.button} ${styles.buttonSecondary}`}
             onClick={handleCancel}
           >
             Cancelar
-          </button>
-          <button
-            type="submit"
-            className={`${styles.button} ${styles.buttonPrimary}`}
-          >
-            Crear Nuevo Producto
           </button>
         </div>
         </form>
