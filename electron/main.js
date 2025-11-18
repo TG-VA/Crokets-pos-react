@@ -15,8 +15,16 @@ let cashRegisterState = {
 };
 
 function createMainWindow() {
+  const iconPath = isDev 
+  ? path.join(__dirname, '../icon.ico')
+  : path.join(__dirname, '../icon.ico'); 
+
+   console.log('Ruta del icono:', iconPath); // Para debug
+  console.log('¿Existe el icono?', require('fs').existsSync(iconPath)); // Para debug
+  
   // Configuración de la ventana principal
   mainWindow = new BrowserWindow({
+   icon: iconPath,
     webPreferences: {
       // Configuración de seguridad para la ventana de renderizado
       nodeIntegration: false,
