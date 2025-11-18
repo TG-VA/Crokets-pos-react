@@ -94,7 +94,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-      } else if (e.key === "Enter" || e.key === "F1") {
+      } else if (e.key === "Enter") {
         e.preventDefault();
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleSelectProduct(searchResults[selectedIndex]);
@@ -283,7 +283,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
               }}
               disabled={selectedIndex < 0 || !searchResults[selectedIndex]}
             >
-              F1 - Agregar a la venta
+              Agregar a la venta
             </button>
             <button
               className={styles.actionButton}
@@ -313,7 +313,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             </button>
           </div>
           <div className={styles.actionHints}>
-            <span>↑↓ Navegar • Enter/F1 - Agregar a venta</span>
+            <span>↑↓ Navegar • Enter - Agregar a venta</span>
           </div>
         </div>
       </div>

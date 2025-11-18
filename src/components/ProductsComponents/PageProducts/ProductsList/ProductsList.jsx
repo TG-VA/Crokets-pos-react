@@ -17,16 +17,12 @@ const ProductsList = () => {
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const s = searchTerm.trim().toLowerCase();
-
-      const matchesSearch =
-        !s ||
-        product.descripcion.toLowerCase().includes(s) ||
-        product.codigo.includes(s);
-
-      const matchesDepartment =
-        !selectedDepartment ||
-        product.departamento === selectedDepartment;
-
+      const matchesSearch = !s || (
+        product.descripcion.toLowerCase().includes(s)
+      );
+      const matchesDepartment = !selectedDepartment || (
+        product.departamento.toLowerCase() === selectedDepartment.toLowerCase()
+      );
       return matchesSearch && matchesDepartment;
     });
   }, [searchTerm, selectedDepartment]);
@@ -73,10 +69,17 @@ const ProductsList = () => {
   const handleDepartmentSelect = (department) => {
     setSelectedDepartment(department);
     setShowDepartmentFilter(false);
+    setSelectedRowIndex(0);
   };
 
   const handleRowClick = (index) => {
     setSelectedRowIndex(index);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedDepartment('');
+    setSelectedRowIndex(0);
   };
 
   return (
@@ -84,45 +87,70 @@ const ProductsList = () => {
         {/* Barra de búsqueda y filtros */}
         <div className={styles.toolbar}>
           <h1> LISTA DE PRODUCTOS</h1>
-          <input
-            type="text"
-            placeholder="Buscar por nombre o código..."
-            className={styles.searchInput}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-
-          <div className={styles.filterContainer}>
-            <button
-              className={styles.filterButton}
-              onClick={() => setShowDepartmentFilter(!showDepartmentFilter)}
-            >
-              {selectedDepartment || 'Filtrar por Departamento'} ▼
-            </button>
-
-            {showDepartmentFilter && (
-              <div className={styles.filterDropdown}>
-                <div
-                  className={styles.filterOption}
-                  onClick={() => handleDepartmentSelect('')}
+          <div className={styles.toolbarActions}>
+            <div className={styles.searchContainer}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre..."
+                className={styles.searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  className={styles.clearSearchButton}
+                  onClick={() => setSearchTerm('')}
+                  title="Limpiar búsqueda"
                 >
-                  Todos los departamentos
-                </div>
-                {departments.map(dept => (
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className={styles.filterContainer}>
+              <button
+                className={styles.filterButton}
+                onClick={() => setShowDepartmentFilter(!showDepartmentFilter)}
+              >
+                {selectedDepartment || 'Filtrar por Departamento'} ▼
+              </button>
+
+              {showDepartmentFilter && (
+                <div className={styles.filterDropdown}>
                   <div
-                    key={dept}
                     className={styles.filterOption}
-                    onClick={() => handleDepartmentSelect(dept)}
+                    onClick={() => handleDepartmentSelect('')}
                   >
-                    {dept}
+                    Todos los departamentos
                   </div>
-                ))}
-              </div>
-            )}
+                  {departments.map(dept => (
+                    <div
+                      key={dept}
+                      className={styles.filterOption}
+                      onClick={() => handleDepartmentSelect(dept)}
+                    >
+                      {dept}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+        
+        {/* Contador de resultados */}
+        <div className={styles.resultsInfo}>
+          {filteredProducts.length === 0 ? (
+            <span className={styles.noResultsText}>No se encontraron productos</span>
+          ) : (
+            <span className={styles.resultsCount}>
+              Mostrando {filteredProducts.length} de {products.length} productos
+              {selectedDepartment && ` en ${selectedDepartment}`}
+            </span>
+          )}
+        </div>
 
-        {/* Tabla de productos (scroll interno) */}
+        {/* Tabla de productos */}
         <div
           className={styles.productsContainer}
           ref={tableContainerRef}

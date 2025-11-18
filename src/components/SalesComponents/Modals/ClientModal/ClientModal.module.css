@@ -35,7 +35,7 @@
 }
 .modalActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background-color: var(--lightGray);
@@ -54,7 +54,7 @@
 }
 
 .modalHeader {
-  background-color: var(--color-primary);
+  background-color: #1092b1;
   color: white;
   padding: 15px 20px;
   display: flex;
@@ -156,8 +156,8 @@
 }
 
 .cancelButton {
-  background-color: #e0e0e0;
-  color: #333;
+  background-color: #6c757d;
+  color: white;
 }
 
 .cancelButton:hover {

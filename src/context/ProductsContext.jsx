@@ -113,6 +113,46 @@ export const ProductsProvider = ({ children }) => {
       minimo: 5,
       maximo: 22,
     },
+    {
+      codigo: "9999000011",
+      descripcion: "Pro plan cachorro razas pequeñas 3kg",
+      departamento: "pro plan",
+      costo: 423,
+      precio: 609,
+      existencia: 1,
+      minimo: 2,
+      maximo: 4,
+    },
+    {
+      codigo: "123912931",
+      descripcion: "Instinct raw boost cordero 2kg",
+      departamento: "instinct",
+      costo: 670,
+      precio: 730,
+      existencia: 1,
+      minimo: 1,
+      maximo: 2,
+    },
+    {
+      codigo: "12282820392",
+      descripcion: "Instinct raw boost salmon 2kg",
+      departamento: "INSTINCT",
+      costo: 670,
+      precio: 730,
+      existencia: 1,
+      minimo: 1,
+      maximo: 2,
+    },
+    {
+      codigo: "88123981212",
+      descripcion: "Instinct raw boost salmon 2kg",
+      departamento: "INSTINCT",
+      costo: 670,
+      precio: 730,
+      existencia: 1,
+      minimo: 1,
+      maximo: 2,
+    }
   ]);
 
   const addProduct = (newProduct) => {

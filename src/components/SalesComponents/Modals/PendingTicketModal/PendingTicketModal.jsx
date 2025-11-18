@@ -94,7 +94,7 @@ const PendingTicketModal = ({ isOpen, onClose, onAccept, currentTicketNumber}) =
             className={`${styles.actionButton} ${styles.cancelButton}`}
             onClick={handleClose}
           >
-            Cancelar
+            Esc - Cancelar
           </button>
         </div>
       </div>

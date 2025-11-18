@@ -7,8 +7,6 @@
   --darkGray: #333333;
   --textColor: #333333;
   --white: #ffffff;
-
-  --productsTableMaxHeight: 60vh;
 }
 
 .container {
@@ -17,26 +15,29 @@
   height: 100%;
   padding: 0.5rem;
   padding-bottom: 70px; /* Espacio para el footer */
-  gap: 0.5rem;
 }
 
 .content {
   background-color: var(--white);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--mediumGray);
   gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--white);
 }
 
 .toolbar h1 {
@@ -64,7 +65,50 @@
   border-color: var(--croketsOrange);
 }
 
-/* Filtro de departamento */
+/* Contenedor de búsqueda con botón de limpiar */
+.searchContainer {
+  display: flex;
+  align-items: center;
+}
+
+.clearSearchButton {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--darkGray);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.clearSearchButton:hover {
+  background-color: var(--lightGray);
+  color: var(--croketsOrange);
+}
+
+/* Botón de limpiar filtros */
+/* eliminamos el botón de limpiar filtros */
+
+/* Información de resultados */
+.resultsInfo {
+  padding: 0.5rem 1.5rem;
+  background-color: var(--lightGray);
+  border-bottom: 1px solid var(--mediumGray);
+  font-size: 0.9rem;
+}
+
+.resultsCount {
+  color: var(--darkGray);
+  font-weight: 500;
+}
+
+.noResultsText {
+  color: #d32f2f;
+  font-weight: 500;
+}
 .filterContainer {
   position: relative;
   display: inline-block;
@@ -118,6 +162,7 @@
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--croketsOrange) var(--lightGray);
+  height: 70%;
 }
 
 /* Scrollbar WebKit */
@@ -142,6 +187,7 @@
 /* Tabla */
 .productsTable {
   width: 100%;
+  height: 80%;
   border-collapse: collapse;
   font-size: 0.9rem;
   table-layout: fixed;
@@ -345,4 +391,10 @@
   .productsTable td {
     padding: 0.4rem 0.2rem;
   }
+}
+.toolbarActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }

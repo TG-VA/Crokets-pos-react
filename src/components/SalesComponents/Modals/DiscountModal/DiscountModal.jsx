@@ -171,7 +171,7 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
               Cambiar Precio
             </button>
             <button className={styles.cancelBtn} onClick={onClose}>
-              Cancelar
+              Esc - Cancelar
             </button>
           </div>
         </div>

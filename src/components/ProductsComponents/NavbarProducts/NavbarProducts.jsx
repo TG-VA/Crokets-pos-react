@@ -8,6 +8,7 @@ import EditIcon from "../../../assets/icons/pencil-solid-full.svg";
 import DeleteIcon from "../../../assets/icons/deleteIcon.svg";
 import PromotionsIcon from "../../../assets/icons/gifts-solid-full.svg";
 import ImportIcon from "../../../assets/icons/file-import-solid-full.svg";
+import DepartmentsIcon from "../../../assets/icons/building-solid-full.svg"
 
 const NavbarProducts = () => {
   const options = [
@@ -15,6 +16,7 @@ const NavbarProducts = () => {
     { id: "nuevo", label: "Nuevo", icon: NewIcon, path: "/products/nuevo" },
     { id: "modificar", label: "Modificar", icon: EditIcon, path: "/products/modificar" },
     { id: "eliminar", label: "Eliminar", icon: DeleteIcon, path: "/products/eliminar" },
+    { id: "departamentos", label: "Departamentos", icon: DepartmentsIcon, path: "/products/departamentos" },
     { id: "promociones", label: "Promociones", icon: PromotionsIcon, path: "/products/promociones" },
     { id: "importar", label: "Importar", icon: ImportIcon, path: "/products/importar" },
   ];
