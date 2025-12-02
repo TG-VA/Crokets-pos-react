@@ -1,12 +1,18 @@
 .container {
-  min-height: 100vh;
+  height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
-  padding-top: 200px; /* Navbar principal (80px) + NavbarProducts (~120px) */
+  padding-top: 100px;
+  width: 100%;
 }
 
-.content {
-  flex: 1;
-  padding: 2rem;
+.pageContent {
+  margin: 0;
+  padding: 0;
   background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 10px;
+  width: 100%;
 }

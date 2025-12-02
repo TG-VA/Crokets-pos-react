@@ -33,7 +33,7 @@ const Products = () => {
           <Route path="*" element={<Navigate to="/products" replace />} />
         </Routes>
       </div>
-
+      
       <Footer />
     </div>
   );

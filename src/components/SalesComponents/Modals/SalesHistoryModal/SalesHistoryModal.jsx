@@ -19,7 +19,7 @@ const SalesHistoryModal = ({ isOpen, onClose }) => {
       date: "21 de Octubre 2025",
       paymentMethod: "Efectivo",
       items: [
-        { cant: 1, description: "NUPEC FELINO URINARY 1.5KG", amount: 310.34 }
+        { cant: 1, description: "NUPEC FELINO URINARY 1.5KG", amount: 310.34 },
       ]
     },
     {
