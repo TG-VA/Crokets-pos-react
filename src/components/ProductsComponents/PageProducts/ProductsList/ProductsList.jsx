@@ -10,8 +10,12 @@ const ProductsList = () => {
   const [selectedRowIndex, setSelectedRowIndex] = useState(0);
   const tableContainerRef = useRef(null);
 
-  // Obtener departamentos únicos
-  const departments = [...new Set(products.map(product => product.departamento))].sort();
+  const normalizeDept = (d) => (d || '').trim().toLowerCase();
+  const formatDept = (d) => d.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const departments = useMemo(() => {
+    const set = new Set(products.map(p => normalizeDept(p.departamento)).filter(Boolean));
+    return Array.from(set).sort();
+  }, [products]);
 
   // Filtrar productos basado en búsqueda y departamento
   const filteredProducts = useMemo(() => {
@@ -61,6 +65,18 @@ const ProductsList = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [filteredProducts.length]);
 
+  const filterRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!showDepartmentFilter) return;
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setShowDepartmentFilter(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDepartmentFilter]);
+
   // Reset selectedRowIndex cuando cambian los filtros
   useEffect(() => {
     setSelectedRowIndex(0);
@@ -95,6 +111,7 @@ const ProductsList = () => {
                 className={styles.searchInput}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setShowDepartmentFilter(false)}
               />
               {searchTerm && (
                 <button 
@@ -107,12 +124,12 @@ const ProductsList = () => {
               )}
             </div>
 
-            <div className={styles.filterContainer}>
+            <div className={styles.filterContainer} ref={filterRef}>
               <button
                 className={styles.filterButton}
                 onClick={() => setShowDepartmentFilter(!showDepartmentFilter)}
               >
-                {selectedDepartment || 'Filtrar por Departamento'} ▼
+                {selectedDepartment ? formatDept(selectedDepartment) : 'Departamentos'} ▼
               </button>
 
               {showDepartmentFilter && (
@@ -121,7 +138,7 @@ const ProductsList = () => {
                     className={styles.filterOption}
                     onClick={() => handleDepartmentSelect('')}
                   >
-                    Todos los departamentos
+                    Todo
                   </div>
                   {departments.map(dept => (
                     <div
@@ -129,7 +146,7 @@ const ProductsList = () => {
                       className={styles.filterOption}
                       onClick={() => handleDepartmentSelect(dept)}
                     >
-                      {dept}
+                      {formatDept(dept)}
                     </div>
                   ))}
                 </div>
@@ -159,7 +176,7 @@ const ProductsList = () => {
             <thead>
               <tr>
                 <th>Código</th>
-                <th>Descripción Producto</th>
+                <th>Descripción producto</th>
                 <th>Departamento</th>
                 <th>Costo</th>
                 <th>Precio</th>
@@ -176,7 +193,29 @@ const ProductsList = () => {
                   onClick={() => handleRowClick(index)}
                 >
                   <td>{product.codigo}</td>
-                  <td className={styles.descriptionCell}>{product.descripcion}</td>
+                  <td
+                    className={styles.descriptionCell}
+                    onMouseEnter={(e) => {
+                      const container = e.currentTarget;
+                      const content = container.querySelector(`.${styles.scrollText}`);
+                      if (!content) return;
+                      const distance = content.scrollWidth - container.clientWidth;
+                      if (distance > 2) {
+                        content.style.setProperty('--scroll-distance', `${distance + 12}px`);
+                        content.classList.add(styles.marquee);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const content = e.currentTarget.querySelector(`.${styles.scrollText}`);
+                      if (content) {
+                        content.classList.remove(styles.marquee);
+                        content.style.removeProperty('--scroll-distance');
+                        content.style.transform = '';
+                      }
+                    }}
+                  >
+                    <span className={styles.scrollText}>{product.descripcion}</span>
+                  </td>
                   <td className={styles.departmentCell}>{product.departamento}</td>
                   <td className={styles.priceCell}>${product.costo.toFixed(2)}</td>
                   <td className={styles.priceCell}>${product.precio.toFixed(2)}</td>
