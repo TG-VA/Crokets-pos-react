@@ -16,7 +16,6 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "1234567890",
       descripcion: "Royal canin urinary so small dog 4kg",
-      departamento: "royal canin",
       costo: 1100,
       precio: 1299,
       existencia: 10,
@@ -136,7 +135,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "12282820392",
       descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "INSTINCT",
+      departamento: "Instinct",
       costo: 670,
       precio: 730,
       existencia: 1,
@@ -146,7 +145,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "88123981212",
       descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "INSTINCT",
+      departamento: "Instinct",
       costo: 670,
       precio: 730,
       existencia: 1,

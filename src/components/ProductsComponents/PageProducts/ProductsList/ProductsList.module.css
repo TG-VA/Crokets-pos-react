@@ -272,6 +272,22 @@
   white-space: nowrap;
 }
 
+.scrollText {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.marquee {
+  animation: marqueeScroll 6s ease-in-out 0.2s 1;
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(calc(-1 * var(--scroll-distance))); }
+  100% { transform: translateX(0); }
+}
+
 .departmentCell {
   text-transform: capitalize;
   font-weight: 500;
