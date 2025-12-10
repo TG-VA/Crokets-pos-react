@@ -15,7 +15,7 @@ export const ProductsProvider = ({ children }) => {
   const [products, setProducts] = useState([
     {
       codigo: "1234567890",
-      descripcion: "Royal canin urinary so small dog 4kg",
+      descripcion: "Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg",
       costo: 1100,
       precio: 1299,
       existencia: 10,
