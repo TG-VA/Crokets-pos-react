@@ -25,7 +25,7 @@ const ProductsList = () => {
         product.descripcion.toLowerCase().includes(s)
       );
       const matchesDepartment = !selectedDepartment || (
-        product.departamento.toLowerCase() === selectedDepartment.toLowerCase()
+        normalizeDept(product.departamento) === selectedDepartment.toLowerCase()
       );
       return matchesSearch && matchesDepartment;
     });
