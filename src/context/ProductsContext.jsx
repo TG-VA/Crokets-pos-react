@@ -16,6 +16,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "1234567890",
       descripcion: "Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg",
+      departamento : "royal canin",
       costo: 1100,
       precio: 1299,
       existencia: 10,

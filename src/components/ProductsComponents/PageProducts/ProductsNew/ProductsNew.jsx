@@ -44,9 +44,11 @@ const ProductsNew = () => {
   };
 
   return (
-    <div className={styles.center}>
-      <div className={styles.wrapper}>
-        <h1 className={styles.title}>Nuevo Producto</h1>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Nuevo Producto</h1>
+        </div>
         <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.formRow}>
           <label className={styles.label}>Código de barras</label>
@@ -159,9 +161,9 @@ const ProductsNew = () => {
           />
         </div>
 
-          <div className={styles.actions}>
-            <button className={styles.saveButton} type="submit">Guardar</button>
-          </div>
+        <div className={styles.actions}>
+          <button className={styles.saveButton} type="submit">Guardar</button>
+        </div>
         </form>
       </div>
     </div>
