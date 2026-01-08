@@ -35,7 +35,7 @@ const ProductsNew = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const payload = {
       codigo: form.codigo.trim(),
       descripcion: form.descripcion.trim(),
@@ -180,9 +180,6 @@ const ProductsNew = () => {
           />
         </div>
 
-        <div className={styles.actions}>
-          <button className={styles.saveButton} type="submit">Guardar</button>
-        </div>
         </form>
         <div className={styles.containerSecunday}>
           <form className={styles.formSecondary} onSubmit={handleSubmit}>
@@ -291,6 +288,9 @@ const ProductsNew = () => {
             </div>
           </form>
         </div>
+        </div>
+        <div className={styles.bodyFooter}>
+          <button className={styles.saveButton} type="button" onClick={handleSubmit}>Guardar</button>
         </div>
       </div>
     </div>
