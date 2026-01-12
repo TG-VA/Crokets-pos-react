@@ -16,7 +16,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "1234567890",
       descripcion: "Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg",
-      departamento : "royal canin",
+      departamento: "ROYAL CANIN",
       costo: 1100,
       precio: 1299,
       existencia: 10,
@@ -26,7 +26,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "0987654321",
       descripcion: "Nupec adulto razas pequeñas 8kg",
-      departamento: "nupec",
+      departamento: "NUPEC",
       costo: 950,
       precio: 1135,
       existencia: 15,
@@ -36,7 +36,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "1111222233",
       descripcion: "Six barrilito",
-      departamento: "sr.mascota",
+      departamento: "SR.MASCOTA",
       costo: 100,
       precio: 120,
       existencia: 5,
@@ -46,7 +46,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "2222333344",
       descripcion: "Royal canin mini adult 2kg",
-      departamento: "royal canin",
+      departamento: "ROYAL CANIN",
       costo: 550,
       precio: 665,
       existencia: 8,
@@ -56,7 +56,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "3333444455",
       descripcion: "Pro plan puppy small breed 3kg",
-      departamento: "pro plan",
+      departamento: "PRO PLAN",
       costo: 750,
       precio: 899,
       existencia: 12,
@@ -66,7 +66,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "4444555566",
       descripcion: "Hills science diet adult large breed 15kg",
-      departamento: "hills",
+      departamento: "HILLS",
       costo: 1950,
       precio: 2299,
       existencia: 4,
@@ -76,7 +76,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "5555666677",
       descripcion: "Whiskas adult chicken 1.5kg",
-      departamento: "whiskas",
+      departamento: "WHISKAS",
       costo: 155,
       precio: 189,
       existencia: 20,
@@ -86,7 +86,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "6666777788",
       descripcion: "Royal canin mature large dog 13kg",
-      departamento: "royal canin",
+      departamento: "ROYAL CANIN",
       costo: 2400,
       precio: 2899,
       existencia: 3,
@@ -96,7 +96,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "7777888899",
       descripcion: "Nupec senior dog 15kg",
-      departamento: "nupec",
+      departamento: "NUPEC",
       costo: 1200,
       precio: 1450,
       existencia: 6,
@@ -106,7 +106,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "8888999900",
       descripcion: "Sr.mascota premium adult 20kg",
-      departamento: "sr.mascota",
+      departamento: "SR.MASCOTA",
       costo: 800,
       precio: 950,
       existencia: 8,
@@ -116,7 +116,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "9999000011",
       descripcion: "Pro plan cachorro razas pequeñas 3kg",
-      departamento: "pro plan",
+      departamento: "PRO PLAN",
       costo: 423,
       precio: 609,
       existencia: 1,
@@ -126,7 +126,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "123912931",
       descripcion: "Instinct raw boost cordero 2kg",
-      departamento: "instinct",
+      departamento: "INSTINCT",
       costo: 670,
       precio: 730,
       existencia: 1,
@@ -136,7 +136,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "12282820392",
       descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "Instinct",
+      departamento: "INSTINCT",
       costo: 670,
       precio: 730,
       existencia: 1,
@@ -146,7 +146,7 @@ export const ProductsProvider = ({ children }) => {
     {
       codigo: "88123981212",
       descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "Instinct",
+      departamento: "INSTINCT",
       costo: 670,
       precio: 730,
       existencia: 1,
@@ -159,16 +159,10 @@ export const ProductsProvider = ({ children }) => {
     setProducts(prevProducts => [...prevProducts, newProduct]);
   };
 
-  const departments = useMemo(() => {
-    const map = new Map();
-    for (const product of products) {
-      const raw = (product?.departamento ?? "").toString().trim();
-      if (!raw) continue;
-      const key = raw.toLowerCase();
-      if (!map.has(key)) map.set(key, raw);
-    }
-    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
-  }, [products]);
+  const departments = useMemo(
+    () => ["ROYAL CANIN", "NUPEC", "SR.MASCOTA", "PRO PLAN", "HILLS", "WHISKAS", "INSTINCT"],
+    []
+  );
 
   const providers = useMemo(
     () => ["VETFRIEND", "DIFARVET", "CATSAVET", "TECATE"],
