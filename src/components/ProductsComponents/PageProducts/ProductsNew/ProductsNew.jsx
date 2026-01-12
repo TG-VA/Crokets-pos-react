@@ -244,12 +244,14 @@ const ProductsNew = () => {
 
             <div className={styles.formRow}>
               <label className={styles.label}>Global</label>
-              <input
+              <select
                 className={styles.input}
-                type="checkbox"
-                checked={!!form.isGlobal}
-                onChange={(e) => updateField("isGlobal", e.target.checked)}
-              />
+                value={form.isGlobal ? "activo" : "inactivo"}
+                onChange={(e) => updateField("isGlobal", e.target.value === "activo")}
+              >
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
             </div>
 
             <div className={styles.formRow}>
@@ -266,12 +268,16 @@ const ProductsNew = () => {
 
             <div className={styles.formRow}>
               <label className={styles.label}>Genera comisión</label>
-              <input
+              <select
                 className={styles.input}
-                type="checkbox"
-                checked={!!form.commission_enable}
-                onChange={(e) => updateField("commission_enable", e.target.checked)}
-              />
+                value={form.commission_enable ? "activo" : "inactivo"}
+                onChange={(e) =>
+                  updateField("commission_enable", e.target.value === "activo")
+                }
+              >
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
             </div>
 
             <div className={styles.formRow}>
