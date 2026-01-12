@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
 const ProductsContext = createContext();
 
@@ -159,9 +159,27 @@ export const ProductsProvider = ({ children }) => {
     setProducts(prevProducts => [...prevProducts, newProduct]);
   };
 
+  const departments = useMemo(() => {
+    const map = new Map();
+    for (const product of products) {
+      const raw = (product?.departamento ?? "").toString().trim();
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      if (!map.has(key)) map.set(key, raw);
+    }
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [products]);
+
+  const providers = useMemo(
+    () => ["VETFRIEND", "DIFARVET", "CATSAVET", "TECATE"],
+    []
+  );
+
   const value = {
     products,
     addProduct,
+    departments,
+    providers,
   };
 
   return (

@@ -1,7 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useProducts } from "../../../../context/ProductsContext";
 import styles from "./ProductsNew.module.css";
 
 const ProductsNew = () => {
+  const bodyRef = useRef(null);
+  const [submitArmed, setSubmitArmed] = useState(false);
+  const { departments, providers } = useProducts();
+
   const [form, setForm] = useState({
     codigo: "",
     descripcion: "",
@@ -9,9 +14,9 @@ const ProductsNew = () => {
     precio: "",
     departamento: "",
     proveedor: "",
-    existencia: "",
-    minimo: "",
-    maximo: "",
+    existencia: 0,
+    minimo: 0,
+    maximo: 0,
     sale_type: "unidad",
     unit: "pz",
     tax: 16,
@@ -32,6 +37,61 @@ const ProductsNew = () => {
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const getFocusableBodyElements = () => {
+    if (!bodyRef.current) return [];
+    const nodes = Array.from(
+      bodyRef.current.querySelectorAll("input, select, textarea")
+    );
+    return nodes.filter((el) => {
+      if (!el) return false;
+      if (el.disabled) return false;
+      if (el.tagName === "INPUT" && el.type === "hidden") return false;
+      if (el.tabIndex === -1) return false;
+      if (el.tagName === "INPUT" && el.readOnly) return false;
+      return true;
+    });
+  };
+
+  useEffect(() => {
+    if (!submitArmed) return;
+    const onKeyDown = (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      e.stopPropagation();
+      setSubmitArmed(false);
+      handleSubmit();
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [submitArmed]);
+
+  const handleContentKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+
+    const focusables = getFocusableBodyElements();
+    const active = document.activeElement;
+    const index = focusables.indexOf(active);
+    if (index === -1) return;
+
+    if (index < focusables.length - 1) {
+      setSubmitArmed(false);
+      const next = focusables[index + 1];
+      next.focus();
+      if (typeof next.select === "function") next.select();
+      return;
+    }
+
+    if (!submitArmed) {
+      setSubmitArmed(true);
+      if (active && typeof active.blur === "function") active.blur();
+      return;
+    }
+
+    setSubmitArmed(false);
+    handleSubmit();
   };
 
   const handleSubmit = (e) => {
@@ -63,11 +123,15 @@ const ProductsNew = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.content}>
+      <div
+        className={styles.content}
+        onKeyDown={handleContentKeyDown}
+        onFocusCapture={() => setSubmitArmed(false)}
+      >
         <div className={styles.header}>
           <h1 className={styles.title}>Nuevo Producto</h1>
         </div>
-        <div className={styles.body}>
+        <div className={styles.body} ref={bodyRef}>
         <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.formRow}>
           <label className={styles.label}>Código de barras</label>
@@ -109,6 +173,7 @@ const ProductsNew = () => {
             type="text"
             value={Number.isFinite(ganancia) ? ganancia.toFixed(2) : "0.00"}
             readOnly
+            tabIndex={-1}
           />
         </div>
 
@@ -126,22 +191,34 @@ const ProductsNew = () => {
 
         <div className={styles.formRow}>
           <label className={styles.label}>Departamento</label>
-          <input
+          <select
             className={styles.input}
-            type="text"
             value={form.departamento}
             onChange={(e) => updateField("departamento", e.target.value)}
-          />
+          >
+            <option value="">Selecciona...</option>
+            {departments.map((dep) => (
+              <option key={dep} value={dep}>
+                {dep}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.formRow}>
           <label className={styles.label}>Proveedor</label>
-          <input
+          <select
             className={styles.input}
-            type="text"
             value={form.proveedor}
             onChange={(e) => updateField("proveedor", e.target.value)}
-          />
+          >
+            <option value="">Selecciona...</option>
+            {providers.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.formRow}>
