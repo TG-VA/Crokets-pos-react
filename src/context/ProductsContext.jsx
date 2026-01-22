@@ -159,8 +159,34 @@ export const ProductsProvider = ({ children }) => {
     setProducts(prevProducts => [...prevProducts, newProduct]);
   };
 
+  const getProductByCodigo = (codigo) => {
+    const key = (codigo ?? "").toString().trim();
+    if (!key) return null;
+    return products.find((p) => (p?.codigo ?? "").toString().trim() === key) || null;
+  };
+
+  const updateProductByCodigo = (codigo, updatedProduct) => {
+    const key = (codigo ?? "").toString().trim();
+    if (!key) return false;
+    let found = false;
+    setProducts((prev) =>
+      prev.map((p) => {
+        const pCode = (p?.codigo ?? "").toString().trim();
+        if (pCode !== key) return p;
+        found = true;
+        return { ...p, ...updatedProduct, codigo: pCode };
+      })
+    );
+    return found;
+  };
+
   const departments = useMemo(
     () => ["ROYAL CANIN", "NUPEC", "SR.MASCOTA", "PRO PLAN", "HILLS", "WHISKAS", "INSTINCT"],
+    []
+  );
+
+  const providers = useMemo(
+    () => ["VETFRIEND", "DIFARVET", "CATSAVET", "TECATE"],
     []
   );
 
@@ -168,6 +194,9 @@ export const ProductsProvider = ({ children }) => {
     products,
     addProduct,
     departments,
+    providers,
+    getProductByCodigo,
+    updateProductByCodigo,
   };
 
   return (

@@ -1,0 +1,161 @@
+:root {
+  --croketsBlue: #1092b1;
+  --croketsBlueDark: #0d7a94;
+  --croketsOrange: #fc8913;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+  --errorColor: #e74c3c;
+  --successColor: #27ae60;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  --shadow-focus: 0 0 0 2px rgba(16, 146, 177, 0.15);
+}
+
+.container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 10px;
+}
+
+.content {
+  background-color: var(--white);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.header {
+  padding: 0 0 0.75rem 0;
+  width: 100%;
+}
+
+.title {
+  color: var(--croketsBlue);
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.lookup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 1rem;
+}
+
+.body {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  flex: 1;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 45%;
+}
+
+.containerSecunday {
+  display: flex;
+  flex-direction: column;
+  margin-left: auto;
+  width: 45%;
+}
+
+.formSecondary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-weight: 700;
+  color: var(--darkGray);
+  font-size: 0.8rem;
+}
+
+.input {
+  width: 100%;
+  height: 25px;
+  border-radius: 6px;
+  border: 2px solid var(--mediumGray);
+  padding: 0 12px;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+  background-color: var(--white);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: var(--shadow-focus);
+}
+
+.input:read-only {
+  background-color: var(--lightGray);
+  color: var(--darkGray);
+}
+
+.sectionTitle {
+  font-weight: 700;
+  color: var(--croketsBlue);
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.bodyFooter {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.saveButton {
+  background-color: var(--croketsBlue);
+  color: var(--white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saveButton:hover {
+  background-color: var(--croketsBlueDark);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .body {
+    flex-direction: column;
+  }
+  .form {
+    width: 100%;
+  }
+  .containerSecunday {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
