@@ -13,7 +13,6 @@ const ProductsNew = () => {
     costo: "",
     precio: "",
     departamento: "",
-    proveedor: "",
     existencia: 0,
     minimo: 0,
     maximo: 0,
@@ -103,7 +102,6 @@ const ProductsNew = () => {
       precio: parseFloat(form.precio) || 0,
       ganancia: ganancia,
       departamento: form.departamento.trim(),
-      proveedor: form.proveedor.trim(),
       existencia: parseInt(form.existencia) || 0,
       minimo: parseInt(form.minimo) || 0,
       maximo: parseInt(form.maximo) || 0,
@@ -200,22 +198,6 @@ const ProductsNew = () => {
             {departments.map((dep) => (
               <option key={dep} value={dep}>
                 {dep}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.formRow}>
-          <label className={styles.label}>Proveedor</label>
-          <select
-            className={styles.input}
-            value={form.proveedor}
-            onChange={(e) => updateField("proveedor", e.target.value)}
-          >
-            <option value="">Selecciona...</option>
-            {providers.map((p) => (
-              <option key={p} value={p}>
-                {p}
               </option>
             ))}
           </select>
