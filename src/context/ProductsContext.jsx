@@ -185,16 +185,10 @@ export const ProductsProvider = ({ children }) => {
     []
   );
 
-  const providers = useMemo(
-    () => ["VETFRIEND", "DIFARVET", "CATSAVET", "TECATE"],
-    []
-  );
-
   const value = {
     products,
     addProduct,
     departments,
-    providers,
     getProductByCodigo,
     updateProductByCodigo,
   };

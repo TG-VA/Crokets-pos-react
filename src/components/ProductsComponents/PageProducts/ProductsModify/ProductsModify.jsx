@@ -4,7 +4,7 @@ import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearch
 import styles from "./ProductsModify.module.css";
 
 const ProductsModify = () => {
-  const { products, departments, providers, getProductByCodigo, updateProductByCodigo } =
+  const { products, departments, getProductByCodigo, updateProductByCodigo } =
     useProducts();
   const bodyRef = useRef(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -18,7 +18,6 @@ const ProductsModify = () => {
     costo: "",
     precio: "",
     departamento: "",
-    proveedor: "",
     existencia: 0,
     minimo: 0,
     maximo: 0,
@@ -54,7 +53,6 @@ const ProductsModify = () => {
       costo: (product.costo ?? "").toString(),
       precio: (product.precio ?? "").toString(),
       departamento: product.departamento ?? "",
-      proveedor: product.proveedor ?? "",
       existencia: product.existencia ?? 0,
       minimo: product.minimo ?? 0,
       maximo: product.maximo ?? 0,
@@ -281,22 +279,6 @@ const ProductsModify = () => {
                     {departments.map((dep) => (
                       <option key={dep} value={dep}>
                         {dep}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className={styles.formRow}>
-                  <label className={styles.label}>Proveedor</label>
-                  <select
-                    className={styles.input}
-                    value={form.proveedor}
-                    onChange={(e) => updateField("proveedor", e.target.value)}
-                  >
-                    <option value="">Selecciona...</option>
-                    {providers.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
                       </option>
                     ))}
                   </select>
