@@ -86,7 +86,6 @@ const ProductsModify = () => {
       precio: parseFloat(form.precio) || 0,
       ganancia: ganancia,
       departamento: form.departamento.toString().trim(),
-      proveedor: form.proveedor.toString().trim(),
       existencia: parseInt(form.existencia) || 0,
       minimo: parseInt(form.minimo) || 0,
       maximo: parseInt(form.maximo) || 0,
@@ -189,24 +188,26 @@ const ProductsModify = () => {
           <h1 className={styles.title}>Modificar productos</h1>
         </div>
 
-        <div className={styles.lookup}>
-          <div className={styles.formRow}>
-            <label className={styles.label}>Código de barras</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleLookup();
-                }
-              }}
-              autoFocus
-            />
+        {!selectedProduct && (
+          <div className={styles.lookup}>
+            <div className={styles.formRow}>
+              <label className={styles.label}>Código de barras</label>
+              <input
+                className={styles.input}
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleLookup();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {selectedProduct && (
           <>

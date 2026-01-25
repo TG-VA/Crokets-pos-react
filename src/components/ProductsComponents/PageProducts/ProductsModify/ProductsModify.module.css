@@ -31,7 +31,7 @@
   padding: 1rem 1.5rem;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .header {
@@ -58,7 +58,6 @@
   display: flex;
   gap: 1.5rem;
   width: 100%;
-  flex: 1;
 }
 
 .form {
