@@ -11,8 +11,8 @@ export const useProducts = () => {
 };
 
 export const ProductsProvider = ({ children }) => {
-  // Productos iniciales de muestra
-  const [products, setProducts] = useState([
+  //Productos base ingresados manualmente en el código
+  const INITIAL_PRODUCTS = [
     {
       codigo: "1234567890",
       descripcion: "Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg",
@@ -132,28 +132,40 @@ export const ProductsProvider = ({ children }) => {
       existencia: 1,
       minimo: 1,
       maximo: 2,
-    },
-    {
-      codigo: "12282820392",
-      descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "INSTINCT",
-      costo: 670,
-      precio: 730,
-      existencia: 1,
-      minimo: 1,
-      maximo: 2,
-    },
-    {
-      codigo: "88123981212",
-      descripcion: "Instinct raw boost salmon 2kg",
-      departamento: "INSTINCT",
-      costo: 670,
-      precio: 730,
-      existencia: 1,
-      minimo: 1,
-      maximo: 2,
     }
-  ]);
+  ];
+
+  const [products, setProducts] = useState(() => {
+    try {
+      const stored = localStorage.getItem('products');
+      const loadedProducts = stored ? JSON.parse(stored) : INITIAL_PRODUCTS;
+      
+      // Filter out duplicates by codigo
+      const uniqueProducts = [];
+      const seenCodes = new Set();
+      
+      loadedProducts.forEach(product => {
+        const code = (product.codigo || "").toString().trim();
+        if (!seenCodes.has(code)) {
+          seenCodes.add(code);
+          uniqueProducts.push(product);
+        }
+      });
+      
+      return uniqueProducts;
+    } catch (error) {
+      console.error("Error loading products from localStorage", error);
+      return INITIAL_PRODUCTS;
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('products', JSON.stringify(products));
+    } catch (error) {
+      console.error("Error saving products to localStorage", error);
+    }
+  }, [products]);
 
   const addProduct = (newProduct) => {
     setProducts(prevProducts => [...prevProducts, newProduct]);
@@ -192,15 +204,95 @@ export const ProductsProvider = ({ children }) => {
     return found;
   };
 
-  const departments = useMemo(
-    () => ["ROYAL CANIN", "NUPEC", "SR.MASCOTA", "PRO PLAN", "HILLS", "WHISKAS", "INSTINCT"],
-    []
-  );
+  const INITIAL_DEPARTMENTS = [
+    { id: 1, name: "ROYAL CANIN", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 2, name: "NUPEC", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 3, name: "SR.MASCOTA", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 4, name: "PRO PLAN", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 5, name: "HILLS", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 6, name: "WHISKAS", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 7, name: "INSTINCT", status: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  ];
+
+  const [departments, setDepartments] = useState(() => {
+    try {
+      const stored = localStorage.getItem('departments');
+      return stored ? JSON.parse(stored) : INITIAL_DEPARTMENTS;
+    } catch (error) {
+      console.error("Error loading departments from localStorage", error);
+      return INITIAL_DEPARTMENTS;
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('departments', JSON.stringify(departments));
+    } catch (error) {
+      console.error("Error saving departments to localStorage", error);
+    }
+  }, [departments]);
+
+  const addDepartment = (name) => {
+    setDepartments(prev => {
+      const maxId = prev.length > 0 ? Math.max(...prev.map(d => d.id)) : 0;
+      const newDept = {
+        id: maxId + 1,
+        name,
+        status: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      return [...prev, newDept];
+    });
+  };
+
+  const updateDepartment = (id, data) => {
+    // Si cambia el nombre, actualizar productos asociados
+    if (data.name) {
+      const dept = departments.find(d => d.id === id);
+      if (dept && dept.name !== data.name) {
+        const oldName = dept.name.trim().toLowerCase();
+        const newName = data.name.trim();
+        setProducts(prev => prev.map(p => {
+          if ((p.departamento || "").trim().toLowerCase() === oldName) {
+            return { ...p, departamento: newName };
+          }
+          return p;
+        }));
+      }
+    }
+
+    setDepartments(prev => prev.map(d => {
+      if (d.id === id) {
+        return { ...d, ...data, updated_at: new Date().toISOString() };
+      }
+      return d;
+    }));
+  };
+
+  const deleteDepartment = (id) => {
+    // Desvincular productos del departamento eliminado
+    const dept = departments.find(d => d.id === id);
+    if (dept) {
+      const deptName = dept.name.trim().toLowerCase();
+      setProducts(prev => prev.map(p => {
+        if ((p.departamento || "").trim().toLowerCase() === deptName) {
+          return { ...p, departamento: "" };
+        }
+        return p;
+      }));
+    }
+
+    setDepartments(prev => prev.filter(d => d.id !== id));
+  };
 
   const value = {
     products,
     addProduct,
     departments,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
     getProductByCodigo,
     updateProductByCodigo,
     deleteProductByCodigo,

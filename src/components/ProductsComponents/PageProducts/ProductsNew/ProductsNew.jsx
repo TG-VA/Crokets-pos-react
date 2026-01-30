@@ -234,8 +234,8 @@ const ProductsNew = () => {
           >
             <option value="">Selecciona...</option>
             {departments.map((dep) => (
-              <option key={dep} value={dep}>
-                {dep}
+              <option key={dep.id} value={dep.name}>
+                {dep.name}
               </option>
             ))}
           </select>
