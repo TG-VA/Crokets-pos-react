@@ -174,9 +174,21 @@ export const ProductsProvider = ({ children }) => {
         const pCode = (p?.codigo ?? "").toString().trim();
         if (pCode !== key) return p;
         found = true;
-        return { ...p, ...updatedProduct, codigo: pCode };
+        return { ...p, ...updatedProduct };
       })
     );
+    return found;
+  };
+
+  const deleteProductByCodigo = (codigo) => {
+    const key = (codigo ?? "").toString().trim();
+    if (!key) return false;
+    let found = false;
+    setProducts((prev) => {
+      const exists = prev.some((p) => (p?.codigo ?? "").toString().trim() === key);
+      if (exists) found = true;
+      return prev.filter((p) => (p?.codigo ?? "").toString().trim() !== key);
+    });
     return found;
   };
 
@@ -191,6 +203,7 @@ export const ProductsProvider = ({ children }) => {
     departments,
     getProductByCodigo,
     updateProductByCodigo,
+    deleteProductByCodigo,
   };
 
   return (
