@@ -187,7 +187,6 @@
 /* Tabla */
 .productsTable {
   width: 100%;
-  height: 80%;
   border-collapse: collapse;
   font-size: 0.9rem;
   table-layout: fixed;

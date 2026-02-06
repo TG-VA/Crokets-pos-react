@@ -106,7 +106,8 @@ const ProductsModify = () => {
       return;
     }
     alert("Producto modificado");
-    loadProduct({ ...selectedProduct, ...payload });
+    setSelectedProduct(null);
+    setBarcode("");
   };
 
   const getFocusableBodyElements = () => {
@@ -204,6 +205,8 @@ const ProductsModify = () => {
                   }
                 }}
                 autoFocus
+                placeholder="Escanea el código o presiona F10 para buscar"
+
               />
             </div>
           </div>
@@ -219,8 +222,7 @@ const ProductsModify = () => {
                     className={styles.input}
                     type="text"
                     value={form.codigo}
-                    readOnly
-                    tabIndex={-1}
+                    onChange={(e) => updateField("codigo", e.target.value)}
                   />
                 </div>
 
@@ -278,8 +280,8 @@ const ProductsModify = () => {
                   >
                     <option value="">Selecciona...</option>
                     {departments.map((dep) => (
-                      <option key={dep} value={dep}>
-                        {dep}
+                      <option key={dep.id} value={dep.name}>
+                        {dep.name}
                       </option>
                     ))}
                   </select>

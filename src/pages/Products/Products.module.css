@@ -4,6 +4,7 @@
   flex-direction: column;
   padding-top: 100px;
   width: 100%;
+  flex: 1;
 }
 
 .pageContent {
@@ -15,4 +16,5 @@
   overflow: hidden;
   gap: 10px;
   width: 100%;
+  flex: 1;
 }

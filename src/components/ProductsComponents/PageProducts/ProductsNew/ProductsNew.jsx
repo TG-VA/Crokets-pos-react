@@ -5,7 +5,7 @@ import styles from "./ProductsNew.module.css";
 const ProductsNew = () => {
   const bodyRef = useRef(null);
   const [submitArmed, setSubmitArmed] = useState(false);
-  const { departments } = useProducts();
+  const { departments, addProduct, getProductByCodigo } = useProducts();
 
   const [form, setForm] = useState({
     codigo: "",
@@ -26,6 +26,28 @@ const ProductsNew = () => {
     commission_enable: false,
     commission_percent: 0,
   });
+
+  const resetForm = () => {
+    setForm({
+      codigo: "",
+      descripcion: "",
+      costo: "",
+      precio: "",
+      departamento: "",
+      existencia: 0,
+      minimo: 0,
+      maximo: 0,
+      sale_type: "unidad",
+      unit: "pz",
+      tax: 16,
+      cfdi: "",
+      status: "activo",
+      isGlobal: false,
+      created_at: new Date().toISOString().slice(0, 10),
+      commission_enable: false,
+      commission_percent: 0,
+    });
+  };
 
   const ganancia = useMemo(() => {
     const c = parseFloat(form.costo);
@@ -95,6 +117,13 @@ const ProductsNew = () => {
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    
+    // Validar si el código ya existe
+    if (getProductByCodigo(form.codigo.trim())) {
+      alert("El código de producto ya existe. Por favor use uno diferente.");
+      return;
+    }
+
     const payload = {
       codigo: form.codigo.trim(),
       descripcion: form.descripcion.trim(),
@@ -115,8 +144,17 @@ const ProductsNew = () => {
       commission_enable: !!form.commission_enable,
       commission_percent: parseFloat(form.commission_percent) || 0,
     };
+    
+    addProduct(payload);
     console.log("Nuevo producto", payload);
-    alert("Producto preparado para guardar");
+    alert("Producto agregado correctamente");
+    resetForm();
+    
+    // Enfocar de nuevo el primer input si es posible
+    setTimeout(() => {
+        const firstInput = bodyRef.current?.querySelector('input');
+        if (firstInput) firstInput.focus();
+    }, 0);
   };
 
   return (
@@ -196,8 +234,8 @@ const ProductsNew = () => {
           >
             <option value="">Selecciona...</option>
             {departments.map((dep) => (
-              <option key={dep} value={dep}>
-                {dep}
+              <option key={dep.id} value={dep.name}>
+                {dep.name}
               </option>
             ))}
           </select>
