@@ -22,7 +22,6 @@ const Departments = () => {
         setSelectedId("new");
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   const handleCreate = () => {
