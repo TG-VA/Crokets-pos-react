@@ -232,7 +232,7 @@ const ProductsModify = () => {
                     className={styles.input}
                     type="text"
                     value={form.descripcion}
-                    onChange={(e) => updateField("descripcion", e.target.value)}
+                    onChange={(e) => updateField("descripcion", e.target.value.toUpperCase())}
                   />
                 </div>
 

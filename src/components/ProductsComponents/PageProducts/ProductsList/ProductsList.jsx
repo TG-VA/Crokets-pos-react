@@ -33,15 +33,32 @@ const ProductsList = () => {
 
   // Efecto para hacer scroll automático cuando cambia selectedRowIndex
   useEffect(() => {
-    if (!tableContainerRef.current) return;
-    const rows = tableContainerRef.current.querySelectorAll('tbody tr');
+    // Buscar el tbody dentro del contenedor de la tabla
+    const tbody = tableContainerRef.current?.querySelector('tbody');
+    if (!tbody) return;
 
-    if (rows[selectedRowIndex]) {
-      rows[selectedRowIndex].scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'nearest',
-      });
+    const rows = tbody.querySelectorAll('tr');
+    const row = rows[selectedRowIndex];
+
+    if (row) {
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
+      const containerTop = tbody.scrollTop;
+      const containerBottom = containerTop + tbody.clientHeight;
+
+      if (rowTop < containerTop) {
+        // Scroll hacia arriba
+        tbody.scrollTo({
+          top: rowTop,
+          behavior: 'smooth'
+        });
+      } else if (rowBottom > containerBottom) {
+        // Scroll hacia abajo
+        tbody.scrollTo({
+          top: rowBottom - tbody.clientHeight,
+          behavior: 'smooth'
+        });
+      }
     }
   }, [selectedRowIndex]);
 

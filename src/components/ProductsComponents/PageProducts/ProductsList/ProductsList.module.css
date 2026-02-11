@@ -155,33 +155,13 @@
 .filterOption:hover {
   background-color: var(--lightGray);
 }
-
 /* ----------- SCROLL SOLO EN LA TABLA ----------- */
 .productsContainer {
   flex: 1;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--croketsOrange) var(--lightGray);
+  /* overflow: auto;  Removido para mover scroll al tbody */
   height: 70%;
-}
-
-/* Scrollbar WebKit */
-.productsContainer::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.productsContainer::-webkit-scrollbar-track {
-  background: var(--lightGray);
-}
-
-.productsContainer::-webkit-scrollbar-thumb {
-  background: var(--croketsOrange);
-  border-radius: 4px;
-}
-
-.productsContainer::-webkit-scrollbar-thumb:hover {
-  background: var(--croketsOrangeDark);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Tabla */
@@ -189,15 +169,55 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  table-layout: fixed;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .productsTable thead {
   background-color: var(--croketsOrange);
   color: var(--white);
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  /* position: sticky; No necesario con flex */
+  /* top: 0; */
+  /* z-index: 1; */
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex: 0 0 auto;
+}
+
+.productsTable tbody {
+  display: block;
+  overflow-y: auto;
+  flex: 1;
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--croketsOrange) var(--lightGray);
+}
+
+.productsTable tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollbar WebKit - Movido para aplicar al tbody */
+.productsTable tbody::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.productsTable tbody::-webkit-scrollbar-track {
+  background: var(--lightGray);
+}
+
+.productsTable tbody::-webkit-scrollbar-thumb {
+  background: var(--croketsOrange);
+  border-radius: 4px;
+}
+
+.productsTable tbody::-webkit-scrollbar-thumb:hover {
+  background: var(--croketsOrangeDark);
 }
 
 .productsTable th {
@@ -207,15 +227,15 @@
   border-bottom: none;
 }
 
-/* Anchos específicos por columna */
-.productsTable th:nth-child(1) { width: 12%; } /* Código */
-.productsTable th:nth-child(2) { width: 35%; } /* Descripción */
-.productsTable th:nth-child(3) { width: 15%; } /* Departamento */
-.productsTable th:nth-child(4) { width: 10%; } /* Costo */
-.productsTable th:nth-child(5) { width: 10%; } /* Precio */
-.productsTable th:nth-child(6) { width: 8%; }  /* Existencia */
-.productsTable th:nth-child(7) { width: 5%; }  /* Mínimo */
-.productsTable th:nth-child(8) { width: 5%; }  /* Máximo */
+/* Anchos específicos por columna - Aplicar a th y td */
+.productsTable th:nth-child(1), .productsTable td:nth-child(1) { width: 12%; } /* Código */
+.productsTable th:nth-child(2), .productsTable td:nth-child(2) { width: 35%; } /* Descripción */
+.productsTable th:nth-child(3), .productsTable td:nth-child(3) { width: 15%; } /* Departamento */
+.productsTable th:nth-child(4), .productsTable td:nth-child(4) { width: 10%; } /* Costo */
+.productsTable th:nth-child(5), .productsTable td:nth-child(5) { width: 10%; } /* Precio */
+.productsTable th:nth-child(6), .productsTable td:nth-child(6) { width: 8%; }  /* Existencia */
+.productsTable th:nth-child(7), .productsTable td:nth-child(7) { width: 5%; }  /* Mínimo */
+.productsTable th:nth-child(8), .productsTable td:nth-child(8) { width: 5%; }  /* Máximo */
 
 .productsTable th:first-child {
   padding-left: 1.5rem;

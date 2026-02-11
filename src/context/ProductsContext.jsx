@@ -15,7 +15,7 @@ export const ProductsProvider = ({ children }) => {
   const INITIAL_PRODUCTS = [
     {
       codigo: "1234567890",
-      descripcion: "Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg Royal canin urinary so small dog 4kg",
+      descripcion: "ROYAL CANIN URINARY SO SMALL DOG 4KG ROYAL CANIN URINARY SO SMALL DOG 4KG ROYAL CANIN URINARY SO SMALL DOG 4KG",
       departamento: "ROYAL CANIN",
       costo: 1100,
       precio: 1299,
@@ -25,7 +25,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "0987654321",
-      descripcion: "Nupec adulto razas pequeñas 8kg",
+      descripcion: "NUPEC ADULTO RAZAS PEQUEÑAS 8KG",
       departamento: "NUPEC",
       costo: 950,
       precio: 1135,
@@ -35,7 +35,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "1111222233",
-      descripcion: "Six barrilito",
+      descripcion: "SIX BARRILITO",
       departamento: "SR.MASCOTA",
       costo: 100,
       precio: 120,
@@ -45,7 +45,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "2222333344",
-      descripcion: "Royal canin mini adult 2kg",
+      descripcion: "ROYAL CANIN MINI ADULT 2KG",
       departamento: "ROYAL CANIN",
       costo: 550,
       precio: 665,
@@ -55,7 +55,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "3333444455",
-      descripcion: "Pro plan puppy small breed 3kg",
+      descripcion: "PRO PLAN PUPPY SMALL BREED 3KG",
       departamento: "PRO PLAN",
       costo: 750,
       precio: 899,
@@ -65,7 +65,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "4444555566",
-      descripcion: "Hills science diet adult large breed 15kg",
+      descripcion: "HILLS SCIENCE DIET ADULT LARGE BREED 15KG",
       departamento: "HILLS",
       costo: 1950,
       precio: 2299,
@@ -75,7 +75,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "5555666677",
-      descripcion: "Whiskas adult chicken 1.5kg",
+      descripcion: "WHISKAS ADULT CHICKEN 1.5KG",
       departamento: "WHISKAS",
       costo: 155,
       precio: 189,
@@ -85,7 +85,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "6666777788",
-      descripcion: "Royal canin mature large dog 13kg",
+      descripcion: "ROYAL CANIN MATURE LARGE DOG 13KG",
       departamento: "ROYAL CANIN",
       costo: 2400,
       precio: 2899,
@@ -95,7 +95,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "7777888899",
-      descripcion: "Nupec senior dog 15kg",
+      descripcion: "NUPEC SENIOR DOG 15KG",
       departamento: "NUPEC",
       costo: 1200,
       precio: 1450,
@@ -105,7 +105,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "8888999900",
-      descripcion: "Sr.mascota premium adult 20kg",
+      descripcion: "SR.MASCOTA PREMIUM ADULT 20KG",
       departamento: "SR.MASCOTA",
       costo: 800,
       precio: 950,
@@ -115,7 +115,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "9999000011",
-      descripcion: "Pro plan cachorro razas pequeñas 3kg",
+      descripcion: "PRO PLAN CACHORRO RAZAS PEQUEÑAS 3KG",
       departamento: "PRO PLAN",
       costo: 423,
       precio: 609,
@@ -125,7 +125,7 @@ export const ProductsProvider = ({ children }) => {
     },
     {
       codigo: "123912931",
-      descripcion: "Instinct raw boost cordero 2kg",
+      descripcion: "INSTINCT RAW BOOST CORDERO 2KG",
       departamento: "INSTINCT",
       costo: 670,
       precio: 730,
@@ -140,7 +140,7 @@ export const ProductsProvider = ({ children }) => {
       const stored = localStorage.getItem('products');
       const loadedProducts = stored ? JSON.parse(stored) : INITIAL_PRODUCTS;
       
-      // Filter out duplicates by codigo
+      // Filter out duplicates by codigo and normalize description to uppercase
       const uniqueProducts = [];
       const seenCodes = new Set();
       
@@ -148,7 +148,12 @@ export const ProductsProvider = ({ children }) => {
         const code = (product.codigo || "").toString().trim();
         if (!seenCodes.has(code)) {
           seenCodes.add(code);
-          uniqueProducts.push(product);
+          // Normalize description to uppercase
+          const normalizedProduct = {
+            ...product,
+            descripcion: (product.descripcion || "").toUpperCase()
+          };
+          uniqueProducts.push(normalizedProduct);
         }
       });
       
