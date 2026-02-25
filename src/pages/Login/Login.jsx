@@ -1,7 +1,9 @@
 import React, { useState, useEffect,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBranch } from '../../contexts/BranchContext';
 import styles from './Login.module.css';
+import { supabase } from '../../lib/supabaseClient'
 
 // Importa los recursos gráficos.
 import logo from '../../assets/images/LOGOCROKETS.png';
@@ -12,6 +14,7 @@ import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
 
 const Login = () => {
   const { login } = useAuth();
+  const { setBranch } = useBranch();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -41,48 +44,82 @@ const Login = () => {
 
   // Función para manejar el envío del formulario 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    //Elimina espacion al iniciar y al final del username
-    const cleanUsername = username.trim();
-    // Validación básica
-    if (!cleanUsername || !password.trim()) {
-      setError('Por favor, complete todos los campos.');
+  const cleanUsername = username.trim();
+  if (!cleanUsername || !password.trim()) {
+    setError('Por favor, complete todos los campos.');
+    return;
+  }
+
+  try {
+    setError('');
+
+    // 1️⃣ Obtener email usando username
+    const { data: email, error: rpcError } = await supabase.rpc(
+      'get_email_by_username',
+      { p_username: cleanUsername }
+    );
+
+    if (rpcError || !email) {
+      setError('Credenciales incorrectas');
       return;
     }
 
-    try {
-      // Verifica si estamos en Electron o en desarrollo web
-      if (window.electronAPI) {
-        // Lógica para Electron
-        const result = await window.electronAPI.invoke('login', { username:cleanUsername, password });
-        if (result.success) {
-          login(result.user); // Usar el contexto de autenticación
-          navigate('/cash-register');
-        } else {
-          setError(result.message || 'Credenciales incorrectas');
-        }
-      } else {
-        // Lógica para desarrollo web
-        const response = await fetch('http://localhost:3000/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: cleanUsername, password })
-        });
+    // 2️⃣ Login real con Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-        const data = await response.json();
-        if (data.success) {
-          login(data.user); // Usar el contexto de autenticación
-          navigate('/cash-register');
-        } else {
-          setError(data.message || 'Credenciales incorrectas');
-        }
-      }
-    } catch (error) {
-      setError('No se pudo conectar al servidor');
-      console.error('Error en login:', error);
+    if (error) {
+      setError('Credenciales incorrectas');
+      return;
     }
-  };
+
+const authUser = data.user;
+
+// Traer username desde public.users
+const { data: profile, error: profileError } = await supabase
+  .from('users')
+  .select('username')
+  .eq('id', authUser.id)
+  .single();
+
+if (profileError) {
+  console.error(profileError);
+}
+
+login({
+  ...authUser,
+  username: profile?.username
+});
+
+// Resolver sucursal por device_code y guardarla en contexto
+const { deviceCode } = await window.electronAPI.invoke('get-device-code');
+
+const branchRes = await fetch('http://localhost:3000/device/branch', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ deviceCode })
+});
+
+const branchData = await branchRes.json();
+
+if (!branchData.success) {
+  setError(branchData.message || 'Este POS no está asignado a ninguna sucursal');
+  return;
+}
+
+setBranch(branchData.branch);
+
+navigate('/cash-register');
+
+  } catch (err) {
+    console.error(err);
+    setError('Error al conectar con el servidor');
+  }
+};
 
   // Limpiar error cuando el usuario escribe
   useEffect(() => {

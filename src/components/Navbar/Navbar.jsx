@@ -75,7 +75,7 @@ const Navbar = () => {
       </div>
       
       <div className={styles.navbarUser}>
-        <span>Usuario: {user ? user.name : 'Cargando...'}</span>
+        <span>Usuario: {(user?.username ?? user?.email ?? '—').toUpperCase()}</span>
         <button className={`${styles.navButton} ${styles.logoutButton}`} onClick={handleLogout}>
           <img src={LogoutIcon} alt="Salir" className={styles.navIcon} />
           Salir

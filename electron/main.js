@@ -2,9 +2,23 @@
 const { app, BrowserWindow, ipcMain } = require('electron'); 
 const path = require('path');
 const isDev = require('electron-is-dev'); 
+const Store = require('electron-store').default;
+const { randomUUID } = require('crypto');
 
 // Variable para la ventana principal
 let mainWindow = null;
+
+// Store para guardar datos persistentes del dispositivo
+const store = new Store();
+
+function getOrCreateDeviceCode() {
+  let code = store.get('device_code');
+  if (!code) {
+    code = randomUUID();
+    store.set('device_code', code);
+  }
+  return code;
+}
 
 // Estado de la caja registradora
 let cashRegisterState = {
@@ -61,6 +75,11 @@ function createMainWindow() {
 }
 
 // Manejadores de IPC 
+
+// Devuelve el device_code único de esta PC
+ipcMain.handle('get-device-code', async () => {
+  return { deviceCode: getOrCreateDeviceCode() };
+});
 
 // Abre la caja registradora con un monto inicial
 ipcMain.handle('set-initial-cash', (event, amount) => {

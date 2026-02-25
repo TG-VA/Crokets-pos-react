@@ -1,10 +1,18 @@
+require('dotenv').config();
 // Módulos de Node.js para el servidor, CORS, rutas y base de datos.
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const db = require('./bd');
+const { createClient } = require('@supabase/supabase-js');
+
 const app = express();
 const port = 3000;
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // --- Configuración de Middleware ---
 // Permite solicitudes desde otros orígenes.
@@ -356,6 +364,41 @@ app.delete('/api/users/:id', (req, res) => {
     }
   );
 });
+
+app.post('/device/branch', async (req, res) => {
+  try {
+    const { deviceCode } = req.body;
+    if (!deviceCode) {
+      return res.status(400).json({ success: false, message: 'deviceCode requerido' });
+    }
+
+    const { data, error } = await supabase
+      .from('pos_devices')
+      .select('branch_id, branches:branch_id ( id, name, code )')
+      .eq('device_code', deviceCode)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.json({ success: false, message: 'Este POS no está asignado a ninguna sucursal' });
+    }
+
+    return res.json({
+      success: true,
+      branch: {
+        id: data.branch_id,
+        name: data.branches?.name,
+        code: data.branches?.code
+      }
+    });
+  } catch (e) {
+    console.error('Error en /device/branch:', e);
+    return res.status(500).json({ success: false, message: 'Error resolviendo sucursal del POS' });
+  }
+});
+
 
 // Inicia el servidor y lo pone a escuchar en el puerto definido.
 app.listen(port, () => {
