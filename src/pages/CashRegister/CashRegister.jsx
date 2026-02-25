@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import styles from './CashRegister.module.css';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import styles from "./CashRegister.module.css";
+import { useBranch } from "../../contexts/BranchContext";
 
 const CashRegister = ({ setCashRegistered }) => {
-  const [initialCash, setInitialCash] = useState('');
-  const [error, setError] = useState('');
+  const { branch } = useBranch();
+  console.log("Sucursal actual:", branch);
+
+  if (!branch) {
+    return <div className={styles.container}>Cargando sucursal...</div>;
+  }
+
+  const [initialCash, setInitialCash] = useState("");
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -14,17 +22,17 @@ const CashRegister = ({ setCashRegistered }) => {
     const checkCashRegister = async () => {
       try {
         // Llama al proceso principal para obtener el estado de la caja.
-        const state = await window.electronAPI.invoke('check-cash-register');
+        const state = await window.electronAPI.invoke("check-cash-register");
         // Si la caja ya está abierta, marca el estado y navega al dashboard.
         if (state.isOpen) {
           setCashRegistered(true);
-          navigate('/dashboard');
+          navigate("/dashboard");
         }
       } catch (err) {
-        console.error('Error verificando caja:', err);
+        console.error("Error verificando caja:", err);
       }
     };
-    
+
     checkCashRegister();
     if (inputRef.current) {
       inputRef.current.focus();
@@ -37,26 +45,28 @@ const CashRegister = ({ setCashRegistered }) => {
     const currentValue = e.target.value;
 
     // Permite teclas de control.
-    if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    if (
+      ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+    ) {
       return;
     }
 
     // Manejar Enter
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSubmit();
       return;
     }
 
     // Manejar punto decimal
-    if (e.key === '.') {
-      if (currentValue.includes('.')) {
+    if (e.key === ".") {
+      if (currentValue.includes(".")) {
         e.preventDefault();
         return;
       }
       if (cursorPos === 0) {
         e.preventDefault();
-        setInitialCash('0.');
+        setInitialCash("0.");
         setTimeout(() => {
           if (inputRef.current) {
             inputRef.current.setSelectionRange(2, 2);
@@ -75,10 +85,10 @@ const CashRegister = ({ setCashRegistered }) => {
   // Validar y enviar
   const handleSubmit = async () => {
     const value = parseFloat(initialCash);
-    
+
     if (value < 0) {
-      setError('Ingrese un monto válido');
-      setInitialCash('');
+      setError("Ingrese un monto válido");
+      setInitialCash("");
       if (inputRef.current) {
         inputRef.current.focus();
       }
@@ -87,16 +97,16 @@ const CashRegister = ({ setCashRegistered }) => {
 
     try {
       // Llama al proceso principal para abrir la caja.
-      const result = await window.electronAPI.invoke('set-initial-cash', value);
+      const result = await window.electronAPI.invoke("set-initial-cash", value);
       // Si tiene éxito, actualiza el estado y navega al dashboard.
       if (result.success) {
         setCashRegistered(true);
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        setError(result.message || 'Error al abrir caja');
+        setError(result.message || "Error al abrir caja");
       }
     } catch (err) {
-      setError('Error al comunicar con el sistema');
+      setError("Error al comunicar con el sistema");
       console.error(err);
     }
   };
@@ -105,9 +115,9 @@ const CashRegister = ({ setCashRegistered }) => {
   const handleChange = (e) => {
     const value = e.target.value;
     // Validar que no sea negativo
-    if (!value.startsWith('-')) {
+    if (!value.startsWith("-")) {
       setInitialCash(value);
-      setError('');
+      setError("");
     }
   };
 
@@ -116,7 +126,9 @@ const CashRegister = ({ setCashRegistered }) => {
       <h1 className={styles.title}>APERTURA DE CAJA</h1>
 
       <div className={styles.title}>
-        <label htmlFor="initialCash" className={styles.label}>Dinero inicial en caja:</label>
+        <label htmlFor="initialCash" className={styles.label}>
+          Dinero inicial en caja:
+        </label>
         <div className={styles.currencyInput}>
           <input
             ref={inputRef}
@@ -136,10 +148,7 @@ const CashRegister = ({ setCashRegistered }) => {
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.confirmButtonContainer}>
-        <button 
-          className={styles.confirmButton}
-          onClick={handleSubmit}
-        >
+        <button className={styles.confirmButton} onClick={handleSubmit}>
           Confirmar
         </button>
       </div>

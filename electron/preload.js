@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Lista blanca de canales permitidos
 
 // Canales permitidos para comunicación bidireccional (solicitud-respuesta).
-const allowedInvokeChannels = ['set-initial-cash', 'check-cash-register', 'close-cash-register', 'login'];
+const allowedInvokeChannels = ['set-initial-cash', 'check-cash-register', 'close-cash-register', 'login','get-device-code'];
 
 // Canales permitidos para enviar mensajes al proceso principal (una sola vía).
 const allowedSendChannels = ['log-message', 'window-action'];
