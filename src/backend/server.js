@@ -269,7 +269,7 @@ app.put('/api/users/:id', (req, res) => {
             });
           }
 
-          // Preparar la actualización
+          
           const permissionsJson = JSON.stringify(permissions);
           let updateQuery, updateParams;
 
@@ -399,8 +399,139 @@ app.post('/device/branch', async (req, res) => {
   }
 });
 
+// ============================
+// CAJA (cash_register_sessions)
+// ============================
+
+// CHECK: ¿hay caja abierta en esta sucursal?
+app.post('/cash/check', async (req, res) => {
+  try {
+    const { branchId } = req.body;
+    if (!branchId) return res.status(400).json({ success: false, message: 'branchId requerido' });
+
+    const { data, error } = await supabase
+      .from('cash_register_sessions')
+      .select('*')
+      .eq('branch_id', branchId)
+      .eq('status', 'open')
+      .order('opened_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return res.json({ success: true, session: data || null });
+  } catch (e) {
+    console.error('Error /cash/check:', e);
+    return res.status(500).json({ success: false, message: 'Error verificando caja' });
+  }
+});
+
+// OPEN: abrir caja para la sucursal (si no hay otra abierta)
+app.post('/cash/open', async (req, res) => {
+  try {
+    const { branchId, userId, openingAmount } = req.body;
+
+    if (!branchId) return res.status(400).json({ success: false, message: 'branchId requerido' });
+    if (!userId) return res.status(400).json({ success: false, message: 'userId requerido' });
+
+    const amount = Number(openingAmount ?? 0);
+    if (Number.isNaN(amount) || amount < 0) {
+      return res.status(400).json({ success: false, message: 'openingAmount inválido' });
+    }
+
+    // Verificar si ya hay una caja abierta en esa sucursal
+    const { data: openSession, error: checkErr } = await supabase
+      .from('cash_register_sessions')
+      .select('id')
+      .eq('branch_id', branchId)
+      .eq('status', 'open')
+      .limit(1)
+      .maybeSingle();
+
+    if (checkErr) throw checkErr;
+
+    if (openSession) {
+      return res.json({ success: false, message: 'Ya hay una caja abierta en esta sucursal' });
+    }
+
+    // Abrir caja
+    const { data, error } = await supabase
+      .from('cash_register_sessions')
+      .insert([{
+        branch_id: branchId,
+        user_id: userId,
+        opening_amount: amount,
+        opened_at: new Date().toISOString(),
+        status: 'open'
+      }])
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return res.json({ success: true, session: data });
+  } catch (e) {
+    console.error('Error /cash/open:', e);
+    return res.status(500).json({ success: false, message: 'Error abriendo caja' });
+  }
+});
+
+// CLOSE: cerrar caja abierta de esa sucursal
+app.post('/cash/close', async (req, res) => {
+  try {
+    const { branchId, closingAmount } = req.body;
+
+    if (!branchId) return res.status(400).json({ success: false, message: 'branchId requerido' });
+
+    const closeAmt = Number(closingAmount ?? 0);
+    if (Number.isNaN(closeAmt) || closeAmt < 0) {
+      return res.status(400).json({ success: false, message: 'closingAmount inválido' });
+    }
+
+    // Buscar caja abierta
+    const { data: session, error: findErr } = await supabase
+      .from('cash_register_sessions')
+      .select('*')
+      .eq('branch_id', branchId)
+      .eq('status', 'open')
+      .order('opened_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (findErr) throw findErr;
+
+    if (!session) {
+      return res.json({ success: false, message: 'No hay caja abierta en esta sucursal' });
+    }
+
+    const diff = closeAmt - Number(session.opening_amount ?? 0);
+
+    // Cerrar caja
+    const { data, error } = await supabase
+      .from('cash_register_sessions')
+      .update({
+        closing_amount: closeAmt,
+        closed_at: new Date().toISOString(),
+        status: 'closed',
+        difference: diff
+      })
+      .eq('id', session.id)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return res.json({ success: true, session: data });
+  } catch (e) {
+    console.error('Error /cash/close:', e);
+    return res.status(500).json({ success: false, message: 'Error cerrando caja' });
+  }
+});
+
+
 
 // Inicia el servidor y lo pone a escuchar en el puerto definido.
 app.listen(port, () => {
-  console.log(`🟢 Servidor corriendo en http://localhost:${port}`);
+  console.log(`Servidor corriendo en http://localhost:${port}`);
 });
