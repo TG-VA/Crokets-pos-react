@@ -1,14 +1,3 @@
-:root {
-  --croketsOrange: #fc8913;
-  --croketsOrangeDark: #e07a0d;
-  --croketsBlue: #1092b1;
-  --lightGray: #f2f2f2;
-  --mediumGray: #e0e0e0;
-  --darkGray: #333333;
-  --textColor: #333333;
-  --white: #ffffff;
-}
-
 .container {
   display: flex;
   flex-direction: column;
@@ -18,21 +7,20 @@
 .mainContent {
   flex: 1;
   padding: 1rem;
-  background-color: var(--lightGray);
+  background-color: #f2f2f2;
   min-height: calc(100vh - 160px);
-  /* Compensar la navbar fija */
   margin-top: 80px;
   width: 100%;
 }
 
-/* Estilos del header */
+/* Header */
 .header {
   text-align: center;
   margin-bottom: 1.5rem;
 }
 
 .header h1 {
-  color: var(--croketsOrange);
+  color: #fc8913;
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
@@ -41,12 +29,12 @@
 }
 
 .header p {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 0.9rem;
   opacity: 0.8;
 }
 
-/* Estilos del menú de configuración */
+/* Menú de configuración */
 .settingsMenu {
   width: 100%;
   margin: 0;
@@ -59,12 +47,12 @@
 }
 
 .sectionTitle {
-  color: var(--croketsBlue);
+  color: #1092b1;
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
   padding-bottom: 0.25rem;
-  border-bottom: 2px solid var(--croketsOrange);
+  border-bottom: 2px solid #fc8913;
   display: inline-block;
 }
 
@@ -77,7 +65,7 @@
 }
 
 .optionCard {
-  background: var(--white);
+  background: #ffffff;
   border-radius: 8px;
   padding: 0.75rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -95,7 +83,7 @@
 .optionCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border-color: var(--croketsOrange);
+  border-color: #fc8913;
 }
 
 .optionCard:active {
@@ -107,7 +95,7 @@
   flex-shrink: 0;
   width: 35px;
   height: 35px;
-  background: linear-gradient(135deg, var(--croketsOrange), var(--croketsOrangeDark));
+  background: linear-gradient(135deg, #fc8913, #e07a0d);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -125,7 +113,7 @@
 }
 
 .optionInfo h3 {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
@@ -133,23 +121,23 @@
 }
 
 .optionInfo p {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 0.7rem;
   opacity: 0.7;
   margin: 0;
   line-height: 1.4;
 }
 
-/* Responsive design - Solo para móviles muy pequeños */
+/* Responsive */
 @media (max-width: 768px) {
   .mainContent {
     padding: 0.5rem;
   }
-  
+
   .optionsGrid {
     flex-wrap: wrap;
   }
-  
+
   .optionCard {
     flex: 1 1 calc(50% - 0.375rem);
     min-width: 200px;
@@ -161,27 +149,27 @@
     flex-direction: column;
     flex-wrap: nowrap;
   }
-  
+
   .optionCard {
     flex: 1;
     min-width: auto;
     padding: 0.6rem;
     min-height: 50px;
   }
-  
+
   .iconContainer {
     width: 30px;
     height: 30px;
   }
-  
+
   .icon {
     font-size: 0.8rem;
   }
-  
+
   .optionInfo h3 {
     font-size: 0.8rem;
   }
-  
+
   .optionInfo p {
     font-size: 0.65rem;
   }

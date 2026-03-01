@@ -64,7 +64,7 @@ const Navbar = () => {
       icon: InvoicesIcon,
       path: "/invoices",
     },
-    { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashout" },
+    { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashcut" },
     {
       id: "btnReportes",
       label: "Reportes",

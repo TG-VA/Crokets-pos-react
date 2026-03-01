@@ -1,26 +1,3 @@
-:root {
-  --color-primary: #0078d7;
-  --color-primary-dark: #005fa3;
-  --color-secondary: #fc8913;
-  --color-error: #d93025;
-
-  --color-white: #ffffff;
-  --color-light-gray: #f2f2f2;
-  --color-medium-gray: #05060f0a;
-  --color-dark-gray: #00000099;
-  --color-placeholder: #999;
-  --color-black: #000000;
-
-  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
-  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
-
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-
-  --croketsBlue: #1092b1;
-}
-
 .modalActions {
   background-color: #f8f9fa;
   padding: 20px;
@@ -37,18 +14,18 @@
   flex-direction: column;
   align-items: center;
   padding: 10px 15px;
-  background-color: var(--color-light-gray);
+  background-color: #f2f2f2;
   border: 1px solid #ccc;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.8rem;
-  text-align: center; 
+  text-align: center;
   flex: 1 1 auto;
 }
 
 .modalActionBtn:hover {
-  background-color: var(--color-secondary);
+  background-color: #fc8913;
   color: white;
   transform: translateY(-1px);
 }
@@ -71,12 +48,12 @@
   z-index: 2000;
 }
 
-.modalHeader { 
+.modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  background-color: var(--croketsBlue);
+  background-color: #1092b1;
   color: white;
   border-radius: 8px 8px 0 0;
 }
@@ -90,7 +67,7 @@
   text-align: center;
   font-size: 5rem;
   font-weight: bold;
-  color: var(--color-primary);
+  color: #0078d7;
   padding: 20px;
   margin: 20px 0;
 }
@@ -116,13 +93,13 @@
 }
 
 .paymentMethod:hover {
-  border-color: var(--color-secondary);
+  border-color: #fc8913;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .paymentMethodSelected {
-  border-color: var(--color-primary) !important;
+  border-color: #0078d7 !important;
   background-color: #e3f2fd;
   box-shadow: 0 0 10px rgba(0, 120, 215, 0.3);
 }
@@ -175,7 +152,7 @@
   left: 8px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-dark-gray);
+  color: #00000099;
   font-weight: bold;
   z-index: 1;
 }
@@ -192,10 +169,9 @@
 .changeAmount {
   font-size: 2rem;
   font-weight: bold;
-  color: var(--color-secondary);
+  color: #fc8913;
 }
 
-/* Estilos para tipo de cambio */
 .exchangeRateDisplay {
   background-color: #f8f9fa;
   padding: 10px;
@@ -203,21 +179,20 @@
   margin-bottom: 15px;
   text-align: center;
   font-size: 0.9rem;
-  color: var(--color-dark-gray);
+  color: #00000099;
 }
 
 .equivalentAmount {
   font-size: 1.2rem;
   font-weight: bold;
-  color: var(--color-primary);
+  color: #0078d7;
 }
-
 
 .mixedPaymentSection h3 {
   margin: 0 0 15px 0;
-  color: var(--color-primary);
+  color: #0078d7;
   font-size: 1.1rem;
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: 2px solid #0078d7;
   padding-bottom: 5px;
 }
 
@@ -226,7 +201,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  border-top: 2px solid var(--color-primary);
+  border-top: 2px solid #0078d7;
   border-bottom: 1px solid #f0f0f0;
   margin: 10px 0;
 }
@@ -234,10 +209,9 @@
 .totalMixedAmount {
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--color-primary);
+  color: #0078d7;
 }
 
-/* Estilos para terminal y transferencia */
 .terminalSection,
 .transferSection {
   background-color: #f8f9fa;
@@ -257,7 +231,7 @@
 
 .trackingInput:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: #0078d7;
   box-shadow: 0 0 0 2px rgba(0, 120, 215, 0.2);
 }
 
