@@ -130,6 +130,7 @@ navigate('/cash-register');
   }, [error]);
 
   return (
+    <div className={styles.loginWrapper}>
     <form className={styles.loginContainer} onSubmit={handleSubmit} noValidate>
       <img
         src={logo}
@@ -192,6 +193,7 @@ navigate('/cash-register');
 
       <button className={styles.loginButton} type="submit">Ingresar</button>
     </form>
+    </div>
   );
 };
 

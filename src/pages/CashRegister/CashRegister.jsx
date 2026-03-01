@@ -15,9 +15,7 @@ const CashRegister = ({ setCashRegistered }) => {
   const { branch } = useBranch();
   const { user } = useAuth();
 
-  // ✅ Revisar si ya hay caja abierta en esta sucursal
   useEffect(() => {
-    // Si aún no hay sucursal, no podemos checar; dejamos de "cargar" y mostramos el form (o el texto de "Cargando sucursal...")
     if (!branch?.id) {
       setChecking(false);
       return;
@@ -48,14 +46,12 @@ const CashRegister = ({ setCashRegistered }) => {
     checkCashRegister();
   }, [branch?.id, navigate, setCashRegistered]);
 
-  // ✅ Enfocar input cuando ya terminó la verificación
   useEffect(() => {
     if (!checking) {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [checking]);
 
-  // Maneja los eventos de teclado en el campo de entrada.
   const handleKeyDown = (e) => {
     const cursorPos = e.target.selectionStart;
     const currentValue = e.target.value;
@@ -84,7 +80,6 @@ const CashRegister = ({ setCashRegistered }) => {
     if (!/[0-9.]/.test(e.key)) e.preventDefault();
   };
 
-  // ✅ Abrir caja en Supabase
   const handleSubmit = async () => {
     const value = parseFloat(initialCash);
 
@@ -138,45 +133,46 @@ const CashRegister = ({ setCashRegistered }) => {
     }
   };
 
-  // ✅ Pantalla de loading sin flash
   if (checking) {
     return (
-      <div className={styles.container}>
-        <h1 className={styles.title}>Cargando...</h1>
-        <div style={{ opacity: 0.8 }}>Verificando caja de la sucursal...</div>
+      <div className={styles.pageWrapper}>
+        <div className={styles.container}>
+          <h1 className={styles.title}>Cargando...</h1>
+          <div style={{ opacity: 0.8 }}>Verificando caja de la sucursal...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>APERTURA DE CAJA</h1>
+    <div className={styles.pageWrapper}>
+      <div className={styles.container}>
+        <h1 className={styles.title}>APERTURA DE CAJA</h1>
 
-      <div style={{ marginBottom: 10, opacity: 0.8 }}>
-        Sucursal: {branch?.code ? `${branch.code} - ${branch.name}` : 'Cargando sucursal...'}
-      </div>
-
-      <div className={styles.title}>
-        <label htmlFor="initialCash" className={styles.label}>Dinero inicial en caja:</label>
-        <div className={styles.currencyInput}>
-          <input
-            ref={inputRef}
-            type="number"
-            id="initialCash"
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            value={initialCash}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            required
-          />
+        <div style={{ marginBottom: 10, opacity: 0.8 }}>
+          Sucursal: {branch?.code ? `${branch.code} - ${branch.name}` : 'Cargando sucursal...'}
         </div>
-      </div>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+        <div className={styles.inputGroup}>
+          <label htmlFor="initialCash" className={styles.label}>Dinero inicial en caja:</label>
+          <div className={styles.currencyInput}>
+            <input
+              ref={inputRef}
+              type="number"
+              id="initialCash"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              value={initialCash}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              required
+            />
+          </div>
+        </div>
 
-      <div className={styles.confirmButtonContainer}>
+        {error && <div className={styles.errorMessage}>{error}</div>}
+
         <button className={styles.confirmButton} onClick={handleSubmit}>
           Confirmar
         </button>

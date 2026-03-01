@@ -9,12 +9,11 @@
   --white: #ffffff;
 }
 
-.container {
+.productsContainer {
+  flex: 1;
+  min-height: 0;        
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 0.5rem;
-  padding-bottom: 70px; /* Espacio para el footer */
 }
 
 .content {
@@ -25,6 +24,8 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  margin-top: 30px;
+  height: calc(100vh - 130px);
 }
 
 .toolbar {
@@ -90,7 +91,6 @@
 }
 
 /* Botón de limpiar filtros */
-/* eliminamos el botón de limpiar filtros */
 
 /* Información de resultados */
 .resultsInfo {
@@ -155,6 +155,7 @@
 .filterOption:hover {
   background-color: var(--lightGray);
 }
+
 /* ----------- SCROLL SOLO EN LA TABLA ----------- */
 .productsContainer {
   flex: 1;
@@ -177,9 +178,6 @@
 .productsTable thead {
   background-color: var(--croketsOrange);
   color: var(--white);
-  /* position: sticky; No necesario con flex */
-  /* top: 0; */
-  /* z-index: 1; */
   display: table;
   width: 100%;
   table-layout: fixed;
@@ -341,7 +339,7 @@
   font-style: italic;
 }
 
-/* Indicador de navegación (opcional) */
+/* Indicador de navegación  */
 .navigationHint {
   position: fixed;
   bottom: 20px;

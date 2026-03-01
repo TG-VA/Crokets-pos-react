@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useProducts } from "../../../../context/ProductsContext";
+import { useProducts } from "../../../../contexts/ProductsContext";
 import styles from "./Departments.module.css";
 
 const Departments = () => {

@@ -8,10 +8,11 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import Products from './pages/Products/Products';
 import Settings from './pages/Settings/Settings';
 import Profiles from './pages/Profiles/Profiles';
+import CashCut from "./pages/CashCut/CashCut";
 
 // Importa el contexto de autenticación
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ProductsProvider } from './context/ProductsContext';
+import { ProductsProvider } from './contexts/ProductsContext';
 
 function AppRoutes() {
   const { isAuthenticated, cashRegistered, setCashRegistered } = useAuth();
@@ -19,7 +20,7 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
-        {/* Ruta de login - accesible solo si no está autenticado */}
+        {/* Ruta de login */}
         <Route
           path="/login"
           element={
@@ -62,7 +63,7 @@ function AppRoutes() {
           }
         />
 
-        {/* ✅ Ruta de productos con subrutas */}
+        {/* Ruta de productos con subrutas */}
         <Route
           path="/products/*"
           element={
@@ -72,6 +73,20 @@ function AppRoutes() {
               <Navigate to="/cash-register" replace />
             ) : (
               <Products />
+            )
+          }
+        />
+
+        {/* Ruta de corte de caja */}
+        <Route
+          path="/cashcut/*"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
+              <Navigate to="/cash-register" replace />
+            ) : (
+              <CashCut />
             )
           }
         />

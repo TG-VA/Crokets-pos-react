@@ -1,16 +1,3 @@
-:root {
-  --croketsOrange: #fc8913;
-  --croketsOrangeDark: #e07a0d;
-  --croketsBlue: #1092b1;
-  --lightGray: #f2f2f2;
-  --mediumGray: #e0e0e0;
-  --darkGray: #333333;
-  --textColor: #333333;
-  --white: #ffffff;
-  --errorColor: #e74c3c;
-  --successColor: #27ae60;
-}
-
 /* Loading */
 .loadingContainer {
   display: flex;
@@ -18,7 +5,7 @@
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
-  background: var(--white);
+  background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -26,8 +13,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid var(--mediumGray);
-  border-top: 4px solid var(--croketsOrange);
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #fc8913;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -37,30 +24,33 @@
 .listContainer {
   width: 100%;
 }
+
 .listHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: var(--white);
+  background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
 .listTitle h2 {
-  color: var(--croketsBlue);
+  color: #1092b1;
   font-size: 1.5rem;
   margin: 0 0 0.5rem 0;
 }
+
 .userCount {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 0.9rem;
   opacity: 0.7;
 }
 
 .createButton {
-  background: linear-gradient(135deg, var(--croketsOrange), var(--croketsOrangeDark));
-  color: var(--white);
+  background: linear-gradient(135deg, #fc8913, #e07a0d);
+  color: #ffffff;
   border: none;
   padding: 0.8rem 1.5rem;
   border-radius: 8px;
@@ -88,7 +78,7 @@
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
-  background: var(--white);
+  background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -100,27 +90,27 @@
 }
 
 .emptyState h3 {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
 }
 
 .emptyState p {
-  color: var(--darkGray);
+  color: #333333;
   opacity: 0.7;
   margin-bottom: 2rem;
 }
 
 /* Tabla de usuarios */
 .userTable {
-  background: var(--white);
+  background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
 .tableContainer {
-  background: white;
+  background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -141,7 +131,7 @@
 .table th {
   background-color: #f8f9fa;
   font-weight: 500;
-  color: #333;
+  color: #333333;
 }
 
 .table tr:hover {
@@ -153,8 +143,8 @@
   grid-template-columns: 2fr 3fr 1.5fr 1fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  background: var(--croketsBlue);
-  color: var(--white);
+  background: #1092b1;
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.9rem;
   text-transform: uppercase;
@@ -176,13 +166,13 @@
   grid-template-columns: 2fr 3fr 1.5fr 1fr;
   gap: 1rem;
   padding: 1.5rem;
-  border-bottom: 1px solid var(--mediumGray);
+  border-bottom: 1px solid #e0e0e0;
   align-items: center;
   transition: all 0.3s ease;
 }
 
 .tableRow:hover {
-  background-color: var(--lightGray);
+  background-color: #f2f2f2;
 }
 
 .tableRow:last-child {
@@ -200,8 +190,8 @@
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--croketsOrange), var(--croketsOrangeDark));
-  color: var(--white);
+  background: linear-gradient(135deg, #fc8913, #e07a0d);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,13 +206,13 @@
 
 .userName {
   font-weight: 600;
-  color: var(--darkGray);
+  color: #333333;
   font-size: 1rem;
 }
 
 .userId {
   font-size: 0.8rem;
-  color: var(--darkGray);
+  color: #333333;
   opacity: 0.6;
 }
 
@@ -240,8 +230,8 @@
 }
 
 .permissionTag {
-  background: var(--croketsOrange);
-  color: var(--white);
+  background: #fc8913;
+  color: #ffffff;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -249,13 +239,13 @@
 }
 
 .noPermissions {
-  color: var(--errorColor);
+  color: #e74c3c;
   font-style: italic;
   font-size: 0.8rem;
 }
 
 .morePermissions {
-  color: var(--darkGray);
+  color: #333333;
   opacity: 0.7;
   font-size: 0.7rem;
   font-style: italic;
@@ -263,7 +253,7 @@
 
 /* Fecha */
 .dateCell {
-  color: var(--darkGray);
+  color: #333333;
   font-size: 0.85rem;
 }
 
@@ -289,8 +279,8 @@
 }
 
 .editButton {
-  background: var(--croketsBlue);
-  color: var(--white);
+  background: #1092b1;
+  color: #ffffff;
 }
 
 .editButton:hover {
@@ -299,24 +289,11 @@
 }
 
 .deleteButton {
-  background: var(--errorColor);
-  color: var(--white);
+  background: #e74c3c;
+  color: #ffffff;
 }
 
 .deleteButton:hover {
   background: #c0392b;
   transform: scale(1.1);
-}
-
-
-/* Loading */
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  background: var(--white);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }

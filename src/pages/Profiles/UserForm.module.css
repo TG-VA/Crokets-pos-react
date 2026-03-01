@@ -1,15 +1,3 @@
-:root {
-  --croketsOrange: #fc8913;
-  --croketsOrangeDark: #e07a0d;
-  --croketsBlue: #1092b1;
-  --lightGray: #f2f2f2;
-  --mediumGray: #e0e0e0;
-  --darkGray: #333333;
-  --textColor: #333333;
-  --white: #ffffff;
-  --errorColor: #e74c3c;
-  --successColor: #27ae60;
-}
 .modalBackdrop {
   position: fixed;
   top: 0;
@@ -26,7 +14,7 @@
   right: 0;
   bottom: 60px;
   left: 0;
-  background: var(--white);
+  background: #ffffff;
   overflow: hidden;
   margin: 1rem;
   border-radius: 8px;
@@ -41,13 +29,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: var(--croketsBlue);
-  color: var(--white);
+  background: #1092b1;
+  color: #ffffff;
   border-bottom: none;
 }
 
 .formTitle {
-  color: var(--white);
+  color: #ffffff;
   font-weight: 600;
   font-size: 1.25rem;
   margin: 0;
@@ -59,7 +47,7 @@
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.2);
-  color: var(--white);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,7 +57,7 @@
 
 .closeButton:hover {
   background: rgba(255, 255, 255, 0.3);
-  color: var(--white);
+  color: #ffffff;
 }
 
 .userForm {
@@ -96,39 +84,39 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: var(--textColor);
+  color: #333333;
 }
 
 .input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--mediumGray);
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input:focus {
-  border-color: var(--croketsBlue);
+  border-color: #1092b1;
   outline: none;
   box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.2);
 }
 
 .inputError {
-  border-color: var(--errorColor);
+  border-color: #e74c3c;
 }
 
 .errorText {
-  color: var(--errorColor);
+  color: #e74c3c;
   font-size: 0.875rem;
   margin-top: 0.25rem;
 }
 
 .permissionsContainer {
-  border: 1px solid var(--mediumGray);
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   padding: 1rem;
-  background: var(--white);
+  background: #ffffff;
   max-height: 300px;
   overflow-y: auto;
 }
@@ -138,7 +126,7 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 0.75rem;
-  border-bottom: 1px solid var(--lightGray);
+  border-bottom: 1px solid #f2f2f2;
   transition: background-color 0.2s;
 }
 
@@ -147,7 +135,7 @@
 }
 
 .permissionItem:hover {
-  background-color: var(--lightGray);
+  background-color: #f2f2f2;
 }
 
 .checkboxWrapper {
@@ -161,7 +149,7 @@
 .checkbox {
   width: 18px;
   height: 18px;
-  accent-color: var(--croketsBlue);
+  accent-color: #1092b1;
 }
 
 .permissionInfo {
@@ -172,7 +160,7 @@
 
 .permissionLabel {
   font-weight: 500;
-  color: var(--textColor);
+  color: #333333;
 }
 
 .permissionDescription {
@@ -187,7 +175,7 @@
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--lightGray);
+  border-top: 1px solid #f2f2f2;
 }
 
 .submitButton,
@@ -200,8 +188,8 @@
 }
 
 .submitButton {
-  background: var(--croketsBlue);
-  color: var(--white);
+  background: #1092b1;
+  color: #ffffff;
   border: none;
 }
 
@@ -210,16 +198,16 @@
 }
 
 .submitButton:disabled {
-  background: var(--mediumGray);
+  background: #e0e0e0;
   cursor: not-allowed;
 }
 
 .cancelButton {
   background: none;
-  border: 1px solid var(--mediumGray);
-  color: var(--textColor);
+  border: 1px solid #e0e0e0;
+  color: #333333;
 }
 
 .cancelButton:hover {
-  background: var(--lightGray);
+  background: #f2f2f2;
 }

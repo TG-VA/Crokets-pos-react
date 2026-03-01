@@ -1,0 +1,401 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+
+.pageContent {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 80px 28px 18px;  
+  box-sizing: border-box;
+  flex: 1;
+}
+
+
+.sessionHeader {
+  padding: 14px 0 10px;
+  margin: 0;
+  border-bottom: 1px solid #e0e5ec;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #1a2332;
+  letter-spacing: -0.5px;
+}
+
+.sessionInfo {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.userName {
+  color: #1976d2;
+}
+
+
+.fullLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 0;
+  color: #888;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loadingSpinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e0e5ec;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+.heroCard {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  width: 100%;
+  margin: 18px 0 0;
+  border-radius: 16px;
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 24px rgba(21, 101, 192, 0.25);
+  flex-wrap: wrap;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.heroAmount {
+  color: #ffffff;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+
+.heroDate {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.heroStats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.heroStat {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroStatLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.heroStatValue {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.negative {
+  color: #ff6b6b !important;
+}
+
+
+.grid {
+  width: 100%;
+  display: grid;
+  gap: 16px;
+  padding: 18px 0 0;
+  box-sizing: border-box;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  border: 1px solid #eef0f3;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f2f5;
+  background: #fafbfc;
+}
+
+.cardIcon {
+  font-size: 17px;
+}
+
+.cardTitle {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1a2332;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.cardBody {
+  padding: 16px 20px;
+}
+
+
+.dataRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+}
+
+.borderTop {
+  border-top: 1px solid #f0f2f5;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.dataLabel {
+  font-size: 13px;
+  color: #555;
+  font-weight: 400;
+}
+
+.dataValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.bold {
+  color: #1a2332 !important;
+  font-weight: 800 !important;
+}
+
+
+.emptyState {
+  text-align: center;
+  color: #aaa;
+  font-size: 13px;
+  padding: 10px 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+
+.footer {
+  text-align: center;
+  padding: 18px 0 28px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 32px 36px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.modalTitle {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #1a2332;
+  font-weight: 800;
+}
+
+.modalSubtitle {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: #888;
+}
+
+.modalField {
+  margin-bottom: 16px;
+}
+
+.modalLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.expectedAmount {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1976d2;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e0e5ec;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.modalInput:focus {
+  border-color: #1976d2;
+}
+
+.modalTextarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e0e5ec;
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.modalTextarea:focus {
+  border-color: #1976d2;
+}
+
+.diffBadge {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.diffPositive {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.diffNegative {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #e0e5ec;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #666;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.btnCancel:hover {
+  background: #f5f7fa;
+}
+
+.btnConfirm {
+  flex: 2;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f97316, #ea6c0a);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.btnConfirm:hover {
+  opacity: 0.92;
+}
+
+@media print {
+  .overlay { display: none; }
+}
+
+@media (max-width: 520px) {
+  .pageContent {
+    padding: 14px 14px;
+  }
+
+  .heroCard {
+    padding: 18px 18px;
+  }
+
+  .heroAmount {
+    font-size: 34px;
+  }
+}

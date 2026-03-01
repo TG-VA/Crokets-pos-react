@@ -23,6 +23,16 @@ export const ProductsProvider = ({ children }) => {
       minimo: 5,
       maximo: 25,
     },
+        {
+      codigo: "1111222222",
+      descripcion: " ROYAL CANIN URINARY SO MODERATE",
+      departamento: "ROYAL CANIN",
+      costo: 1100,
+      precio: 1500,
+      existencia: 10,
+      minimo: 5,
+      maximo: 25,
+    },
     {
       codigo: "0987654321",
       descripcion: "NUPEC ADULTO RAZAS PEQUEÑAS 8KG",

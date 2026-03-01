@@ -1,26 +1,3 @@
-:root {
-  --color-primary: #0078d7;
-  --color-primary-dark: #005fa3;
-  --color-secondary: #fc8913;
-  --color-error: #d93025;
-
-  --color-white: #ffffff;
-  --color-light-gray: #f2f2f2;
-  --color-medium-gray: #05060f0a;
-  --color-dark-gray: #00000099;
-  --color-placeholder: #999;
-  --color-black: #000000;
-
-  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
-  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
-
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-
-  --croketsBlue: #1092b1;
-}
-
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -33,13 +10,14 @@
   align-items: center;
   z-index: 1000;
 }
+
 .modalActions {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  background-color: var(--lightGray);
-  border-top: 1px solid var(--mediumGray);
+  background-color: #f2f2f2;
+  border-top: 1px solid #e0e0e0;
   border-radius: 0 0 8px 8px;
 }
 
@@ -82,6 +60,7 @@
 .closeButton:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
 .searchBarContainer {
   padding: 1rem 1.5rem;
 }
@@ -111,7 +90,7 @@
 
 .clientItem:hover,
 .clientItemSelected {
-  background-color: #e3f2fd; /* Azul claro para selección */
+  background-color: #e3f2fd;
 }
 
 .clientName {
@@ -126,7 +105,7 @@
 .clientPoints {
   text-align: right;
   font-weight: bold;
-  color: var(--croketsOrange);
+  color: #fc8913;
 }
 
 .noClientsMessage {
@@ -146,7 +125,7 @@
 }
 
 .saveButton {
-  background-color: var(--croketsBlue);
+  background-color: #1092b1;
   color: white;
 }
 
@@ -161,5 +140,5 @@
 }
 
 .cancelButton:hover {
-  background-color: #c7c7c7;
+  background-color: #5a6268;
 }

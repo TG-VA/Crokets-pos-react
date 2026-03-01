@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useProducts } from "../../../../context/ProductsContext";
+import { useProducts } from "../../../../contexts/ProductsContext";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import styles from "./ProductsDelete.module.css";
 
