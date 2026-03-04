@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarCashCut from "../../components/CashCutComponents/NavbarCashCut/NavbarCashCut";
+import CorteModal from "../../components/CashCutComponents/CashCutModal/CashCutModal";
 
 import styles from "./CashCut.module.css";
 
@@ -22,77 +23,6 @@ const fmtDate = (d) =>
 
 const fmtTime = (d) =>
   new Date(d).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
-
-// ─── Modal de Corte ───────────────────────────────────────────────────────────
-const CorteModal = ({ tipo, expected, onClose, onConfirm }) => {
-  const [counted, setCounted] = useState("");
-  const [notes, setNotes] = useState("");
-
-  const diff = parseFloat(counted) - expected;
-  const hasCounted = counted !== "";
-
-  return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <h2 className={styles.modalTitle}>
-          {tipo === "cajero" ? "🧾 Corte de Cajero" : "📅 Corte del Día"}
-        </h2>
-        <p className={styles.modalSubtitle}>Confirma el monto contado en caja</p>
-
-        <div className={styles.modalField}>
-          <label className={styles.modalLabel}>MONTO ESPERADO</label>
-          <div className={styles.expectedAmount}>{fmt(expected)}</div>
-        </div>
-
-        <div className={styles.modalField}>
-          <label className={styles.modalLabel}>MONTO CONTADO EN CAJA</label>
-          <input
-            type="number"
-            placeholder="0.00"
-            value={counted}
-            onChange={(e) => setCounted(e.target.value)}
-            className={styles.modalInput}
-          />
-        </div>
-
-        {hasCounted && (
-          <div
-            className={`${styles.diffBadge} ${
-              diff >= 0 ? styles.diffPositive : styles.diffNegative
-            }`}
-          >
-            Diferencia: {fmt(diff)}
-          </div>
-        )}
-
-        <div className={styles.modalField}>
-          <label className={styles.modalLabel}>NOTAS (opcional)</label>
-          <textarea
-            placeholder="Observaciones del corte..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className={styles.modalTextarea}
-            rows={3}
-          />
-        </div>
-
-        <div className={styles.modalActions}>
-          <button className={styles.btnCancel} onClick={onClose}>
-            Cancelar
-          </button>
-          <button
-            className={styles.btnConfirm}
-            onClick={() =>
-              onConfirm({ counted: parseFloat(counted) || 0, notes, expected })
-            }
-          >
-            Confirmar Corte
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 const SectionCard = ({ icon, title, children }) => (
@@ -176,7 +106,6 @@ const CashCut = () => {
 
     setSession(sessionData);
 
-    // Nombre de la sucursal — branches.name
     if (sessionData.branch_id) {
       const { data: branchData } = await supabase
         .from("branches")
@@ -218,7 +147,6 @@ const CashCut = () => {
       await fetchVentasPorMetodo(saleIds, branchId);
       await fetchVentasPorDepartamento(saleIds);
     } else {
-      // si no hay ventas, resetea (por si vienes de otra sesión)
       setVentasTotales(0);
       setSubtotal(0);
       setTax(0);
@@ -226,22 +154,18 @@ const CashCut = () => {
       setVentasPorDepartamento([]);
     }
 
-    // Devoluciones
     const { data: devData } = await supabase
       .from("canceled_sales")
       .select("refund_amount")
       .eq("user_id", user.id)
       .gte("canceled_at", turnoStart);
 
-    if (devData) {
-      setDevoluciones(devData.reduce((acc, d) => acc + parseFloat(d.refund_amount || 0), 0));
-    } else {
-      setDevoluciones(0);
-    }
+    setDevoluciones(
+      devData ? devData.reduce((acc, d) => acc + parseFloat(d.refund_amount || 0), 0) : 0
+    );
   };
 
   // ── Ventas por método de pago ─────────────────────────────────────────────
-  // sale_payments → payment_methods(name, affects_cash)
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
     const { data, error } = await supabase
       .from("sale_payments")
@@ -274,7 +198,6 @@ const CashCut = () => {
   };
 
   // ── Ventas por departamento ───────────────────────────────────────────────
-  // sale_details(total_price) → products(department_id) → departments(name)
   const fetchVentasPorDepartamento = async (saleIds) => {
     const { data, error } = await supabase
       .from("sale_details")
@@ -322,7 +245,6 @@ const CashCut = () => {
 
       if (cutError) throw cutError;
 
-      // Detalle por método de pago
       if (ventasPorMetodo.length > 0 && cutData?.id) {
         const details = ventasPorMetodo.map((m) => ({
           cash_cut_id: cutData.id,
@@ -372,136 +294,135 @@ const CashCut = () => {
   const now = new Date();
 
   // ── Render ────────────────────────────────────────────────────────────────
-return (
-  <div className={styles.container}>
-    <Navbar />
+  return (
+    <div className={styles.container}>
+      <Navbar />
 
-    <NavbarCashCut
-      onCorteCajero={() => setActiveModal("cajero")}
-      onCorteDelDia={() => setActiveModal("dia")}
-      onImprimir={() => window.print()}
-      onCerrarTurno={handleCerrarTurno}
-    />
+      <NavbarCashCut
+        onCorteCajero={() => setActiveModal("cajero")}
+        onCorteDelDia={() => setActiveModal("dia")}
+        onImprimir={() => window.print()}
+        onCerrarTurno={handleCerrarTurno}
+      />
 
-    <div className={styles.pageContent}>
+      <div className={styles.pageContent}>
+        {loading ? (
+          <div className={styles.fullLoading}>
+            <div className={styles.loadingSpinner} />
+            Cargando datos del turno...
+          </div>
+        ) : (
+          <>
+            <div className={styles.heroCard}>
+              <div className={styles.heroLeft}>
+                <span className={styles.heroLabel}>Ventas Totales del Turno</span>
+                <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
+                <span className={styles.heroDate}>
+                  {fmtDate(now)} ·{" "}
+                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} –{" "}
+                  {fmtTime(now)}
+                </span>
+              </div>
 
-      {loading ? (
-        <div className={styles.fullLoading}>
-          <div className={styles.loadingSpinner} />
-          Cargando datos del turno...
-        </div>
-      ) : (
-        <>
-          <div className={styles.heroCard}>
-            <div className={styles.heroLeft}>
-              <span className={styles.heroLabel}>Ventas Totales del Turno</span>
-              <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
-              <span className={styles.heroDate}>
-                {fmtDate(now)} ·{" "}
-                {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} –{" "}
-                {fmtTime(now)}
-              </span>
+              <div className={styles.heroStats}>
+                {ventasPorMetodo.map((m) => (
+                  <div key={m.name} className={styles.heroStat}>
+                    <span className={styles.heroStatLabel}>
+                      {m.affects_cash ? "💵" : "💳"} {m.name}
+                    </span>
+                    <span className={styles.heroStatValue}>{fmt(m.total)}</span>
+                  </div>
+                ))}
+                {devoluciones > 0 && (
+                  <div className={styles.heroStat}>
+                    <span className={styles.heroStatLabel}>↩️ Devoluciones</span>
+                    <span className={`${styles.heroStatValue} ${styles.negative}`}>
+                      -{fmt(devoluciones)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className={styles.heroStats}>
-              {ventasPorMetodo.map((m) => (
-                <div key={m.name} className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>
-                    {m.affects_cash ? "💵" : "💳"} {m.name}
-                  </span>
-                  <span className={styles.heroStatValue}>{fmt(m.total)}</span>
-                </div>
-              ))}
-              {devoluciones > 0 && (
-                <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>↩️ Devoluciones</span>
-                  <span className={`${styles.heroStatValue} ${styles.negative}`}>
-                    -{fmt(devoluciones)}
-                  </span>
-                </div>
-              )}
+            <div className={styles.grid}>
+              <SectionCard icon="💰" title="Dinero en Caja">
+                <DataRow label="Fondo de caja inicial" value={fmt(openingAmount)} />
+                <DataRow label="Ventas en efectivo" value={`+ ${fmt(efectivoVentas)}`} color="#2e7d32" />
+                <DataRow label="Devoluciones en efectivo" value={`- ${fmt(devoluciones)}`} color="#c62828" />
+                <DataRow label="Total en caja" value={fmt(dineroCaja)} bold borderTop />
+              </SectionCard>
+
+              <SectionCard icon="💳" title="Ventas por Método de Pago">
+                {ventasPorMetodo.length === 0 ? (
+                  <EmptyState msg="No hubo ventas en este turno" />
+                ) : (
+                  <>
+                    {ventasPorMetodo.map((m) => (
+                      <DataRow key={m.name} label={m.name} value={`+ ${fmt(m.total)}`} color="#2e7d32" />
+                    ))}
+                    {devoluciones > 0 && (
+                      <DataRow label="Devoluciones" value={`- ${fmt(devoluciones)}`} color="#c62828" />
+                    )}
+                    <DataRow label="Total" value={fmt(ventasTotales)} bold borderTop />
+                  </>
+                )}
+              </SectionCard>
+
+              <SectionCard icon="⬇️" title="Entradas de Efectivo">
+                <EmptyState msg="No hubo entradas de efectivo" />
+              </SectionCard>
+
+              <SectionCard icon="⬆️" title="Salidas de Efectivo">
+                <EmptyState msg="No hubo salidas de efectivo" />
+              </SectionCard>
+
+              <SectionCard icon="📦" title="Ventas por Departamento">
+                {ventasPorDepartamento.length === 0 ? (
+                  <EmptyState msg="No hay datos de departamentos" />
+                ) : (
+                  <>
+                    {ventasPorDepartamento.map((dep) => (
+                      <DataRow key={dep.name} label={dep.name} value={fmt(dep.total)} />
+                    ))}
+                    <DataRow
+                      label="Total"
+                      value={fmt(ventasPorDepartamento.reduce((a, d) => a + d.total, 0))}
+                      bold
+                      borderTop
+                    />
+                  </>
+                )}
+              </SectionCard>
+
+              <SectionCard icon="🧾" title="Impuestos">
+                <DataRow label="Subtotal (sin IVA)" value={fmt(subtotal)} />
+                <DataRow label="IVA (16%) — Cobrado" value={fmt(tax)} color="#1976d2" />
+                <DataRow label="IVA (16%) — Ventas Gravadas" value={fmt(ventasTotales)} />
+                <DataRow label="Total con IVA" value={fmt(ventasTotales)} bold borderTop />
+              </SectionCard>
             </div>
-          </div>
 
-          <div className={styles.grid}>
-            <SectionCard icon="💰" title="Dinero en Caja">
-              <DataRow label="Fondo de caja inicial" value={fmt(openingAmount)} />
-              <DataRow label="Ventas en efectivo" value={`+ ${fmt(efectivoVentas)}`} color="#2e7d32" />
-              <DataRow label="Devoluciones en efectivo" value={`- ${fmt(devoluciones)}`} color="#c62828" />
-              <DataRow label="Total en caja" value={fmt(dineroCaja)} bold borderTop />
-            </SectionCard>
+            <div className={styles.footer}>
+              CROKETS · Sistema POS · Generado el {fmtDate(now)} a las {fmtTime(now)}
+            </div>
+          </>
+        )}
 
-            <SectionCard icon="💳" title="Ventas por Método de Pago">
-              {ventasPorMetodo.length === 0 ? (
-                <EmptyState msg="No hubo ventas en este turno" />
-              ) : (
-                <>
-                  {ventasPorMetodo.map((m) => (
-                    <DataRow key={m.name} label={m.name} value={`+ ${fmt(m.total)}`} color="#2e7d32" />
-                  ))}
-                  {devoluciones > 0 && (
-                    <DataRow label="Devoluciones" value={`- ${fmt(devoluciones)}`} color="#c62828" />
-                  )}
-                  <DataRow label="Total" value={fmt(ventasTotales)} bold borderTop />
-                </>
-              )}
-            </SectionCard>
+        {activeModal && (
+          <CorteModal
+            tipo={activeModal}
+            expected={activeModal === "cajero" ? openingAmount + efectivoVentas : ventasTotales}
+            onClose={() => setActiveModal(null)}
+            onConfirm={handleConfirmCorte}
+          />
+        )}
 
-            <SectionCard icon="⬇️" title="Entradas de Efectivo">
-              <EmptyState msg="No hubo entradas de efectivo" />
-            </SectionCard>
+        <style>{`@media print { button { display: none !important; } }`}</style>
+      </div>
 
-            <SectionCard icon="⬆️" title="Salidas de Efectivo">
-              <EmptyState msg="No hubo salidas de efectivo" />
-            </SectionCard>
-
-            <SectionCard icon="📦" title="Ventas por Departamento">
-              {ventasPorDepartamento.length === 0 ? (
-                <EmptyState msg="No hay datos de departamentos" />
-              ) : (
-                <>
-                  {ventasPorDepartamento.map((dep) => (
-                    <DataRow key={dep.name} label={dep.name} value={fmt(dep.total)} />
-                  ))}
-                  <DataRow
-                    label="Total"
-                    value={fmt(ventasPorDepartamento.reduce((a, d) => a + d.total, 0))}
-                    bold
-                    borderTop
-                  />
-                </>
-              )}
-            </SectionCard>
-
-            <SectionCard icon="🧾" title="Impuestos">
-              <DataRow label="Subtotal (sin IVA)" value={fmt(subtotal)} />
-              <DataRow label="IVA (16%) — Cobrado" value={fmt(tax)} color="#1976d2" />
-              <DataRow label="IVA (16%) — Ventas Gravadas" value={fmt(ventasTotales)} />
-              <DataRow label="Total con IVA" value={fmt(ventasTotales)} bold borderTop />
-            </SectionCard>
-          </div>
-
-          <div className={styles.footer}>
-            CROKETS · Sistema POS · Generado el {fmtDate(now)} a las {fmtTime(now)}
-          </div>
-        </>
-      )}
-
-      {activeModal && (
-        <CorteModal
-          tipo={activeModal}
-          expected={activeModal === "cajero" ? openingAmount + efectivoVentas : ventasTotales}
-          onClose={() => setActiveModal(null)}
-          onConfirm={handleConfirmCorte}
-        />
-      )}
-
-      <style>{`@media print { button { display: none !important; } }`}</style>
+      <Footer />
     </div>
-
-    <Footer />
-  </div>
-);
+  );
 };
 
 export default CashCut;
