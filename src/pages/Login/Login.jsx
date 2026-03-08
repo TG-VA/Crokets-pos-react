@@ -44,6 +44,15 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
+  const handleExitApp = async () => {
+    try {
+      await window.electronAPI.invoke('close-app');
+    } catch (err) {
+      console.error('Error al cerrar la aplicación:', err);
+      setError('No se pudo cerrar la aplicación.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -331,7 +340,23 @@ const Login = () => {
         )}
 
         <button className={styles.loginButton} type="submit" disabled={loading}>
-          {loading ? 'Ingresando...' : 'Ingresar'}
+          {loading ? (
+            <>
+              <span className={styles.spinner}></span>
+              Ingresando
+            </>
+          ) : (
+            'Ingresar'
+          )}
+        </button>
+
+        <button
+          type="button"
+          className={styles.exitButton}
+          onClick={handleExitApp}
+          disabled={loading}
+        >
+          Salir
         </button>
       </form>
     </div>
