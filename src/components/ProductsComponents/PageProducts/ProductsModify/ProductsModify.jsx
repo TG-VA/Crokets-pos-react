@@ -178,6 +178,21 @@ const ProductsModify = () => {
     handleSave();
   };
 
+  const SAT_CLAVE_PROD_SERV = [
+    { code: "01010101", description: "No existe en el catálogo" },
+    { code: "10121900", description: "Alimento para mascotas" },
+    { code: "10121800", description: "Alimento para animales" },
+    { code: "10111300", description: "Juguetes para mascotas" },
+    { code: "42121600", description: "Servicios veterinarios" },
+    { code: "10131700", description: "Productos para el cuidado de animales" },
+    { code: "53131600", description: "Artículos de tocador para animales" },
+    { code: "12131704", description: "Huesos o carnaza para perro" },
+    { code: "12352300", description: "Productos químicos para mascotas" },
+    { code: "10122100", description: "Alimento para aves" },
+    { code: "10121500", description: "Alimento para ganado" },
+    { code: "10121600", description: "Alimento para peces" },
+  ];
+
   return (
     <div className={styles.container}>
       <div
@@ -365,12 +380,18 @@ const ProductsModify = () => {
 
                   <div className={styles.formRow}>
                     <label className={styles.label}>CFDI clave SAT</label>
-                    <input
+                    <select
                       className={styles.input}
-                      type="text"
                       value={form.cfdi}
                       onChange={(e) => updateField("cfdi", e.target.value)}
-                    />
+                    >
+                      <option value="">Selecciona...</option>
+                      {SAT_CLAVE_PROD_SERV.map((item) => (
+                        <option key={item.code} value={item.code}>
+                          {item.code} - {item.description}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className={styles.formRow}>
