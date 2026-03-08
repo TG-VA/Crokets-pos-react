@@ -1,0 +1,200 @@
+:root {
+  --croketsBlue: #1092b1;
+  --croketsBlueDark: #0d7a94;
+  --croketsOrange: #fc8913;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+  --errorColor: #e74c3c;
+  --successColor: #27ae60;
+}
+
+.container {
+  min-height: 85vh;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.innerContainer {
+  background-color: var(--white);
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 30px;
+}
+
+.header {
+  margin-bottom: 30px;
+  text-align: center;
+  width: 100%;
+}
+
+.title {
+  color: var(--croketsBlue);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.content {
+  width: 100%;
+  max-width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dropZone {
+  border: 3px dashed var(--mediumGray);
+  border-radius: 12px;
+  padding: 50px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #fafafa;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.dropZone:hover, .dropZone.dragOver {
+  border-color: var(--croketsBlue);
+  background-color: rgba(16, 146, 177, 0.05);
+}
+
+.dropZone.hasFile {
+  border-style: solid;
+  border-color: var(--successColor);
+  background-color: rgba(39, 174, 96, 0.05);
+}
+
+.uploadPrompt .icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  color: var(--croketsBlue);
+}
+
+.uploadPrompt h3 {
+  margin: 0 0 10px 0;
+  color: var(--darkGray);
+  font-size: 1.3rem;
+}
+
+.uploadPrompt p {
+  margin: 0;
+  color: #888;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileInfo .icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.fileName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--darkGray);
+}
+
+.fileSize {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.removeBtn {
+  margin-top: 15px;
+  background: none;
+  border: none;
+  color: var(--errorColor);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.importBtn, .downloadTemplateBtn {
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.importBtn {
+  background-color: var(--croketsBlue);
+  color: white;
+}
+
+.importBtn:hover:not(:disabled) {
+  background-color: var(--croketsBlueDark);
+  transform: translateY(-2px);
+}
+
+.importBtn:disabled {
+  background-color: var(--mediumGray);
+  cursor: not-allowed;
+}
+
+.downloadTemplateBtn {
+  background-color: transparent;
+  border: 2px solid var(--croketsBlue);
+  color: var(--croketsBlue);
+}
+
+.downloadTemplateBtn:hover {
+  background-color: rgba(16, 146, 177, 0.1);
+}
+
+.instructions {
+  margin-top: 10px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid var(--croketsOrange);
+}
+
+.instructions h3 {
+  margin: 0 0 15px 0;
+  color: var(--darkGray);
+  font-size: 1.1rem;
+}
+
+.instructions ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+}
+
+.instructions li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}

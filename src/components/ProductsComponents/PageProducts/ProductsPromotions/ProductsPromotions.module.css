@@ -1,0 +1,205 @@
+:root {
+  --croketsBlue: #1092b1;
+  --croketsBlueDark: #0d7a94;
+  --croketsOrange: #fc8913;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+  --errorColor: #e74c3c;
+  --successColor: #27ae60;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  --shadow-focus: 0 0 0 2px rgba(16, 146, 177, 0.15);
+}
+
+.container {
+  min-height: 85vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.innerContainer {
+  background-color: var(--white);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 30px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  color: var(--croketsBlue);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.card {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.topSection {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.formColumn {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.listColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.formRow {
+  display: flex;
+  align-items: center;
+}
+
+.label {
+  width: 140px;
+  font-weight: 700;
+  color: var(--darkGray);
+  font-size: 0.95rem;
+}
+
+.input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--mediumGray);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.1);
+}
+
+.columnHeader {
+  background-color: #e9ecef;
+  padding: 10px 15px;
+  font-weight: 700;
+  color: var(--darkGray);
+  border-bottom: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.listArea {
+  flex: 1;
+  min-height: 200px;
+  padding: 10px;
+  background-color: var(--white);
+}
+
+.emptyState {
+  color: #888;
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}
+
+.actionsSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leftButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s;
+  font-size: 0.95rem;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btnSave {
+  background-color: var(--croketsOrange);
+}
+
+.btnDelete {
+  background-color: var(--errorColor);
+}
+
+.btnRemove {
+  background-color: var(--errorColor);
+}
+
+.cardHeader {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: var(--darkGray);
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.card:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardContent {
+  min-height: 100px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .topSection {
+    flex-direction: column;
+  }
+  
+  .formColumn {
+    flex: auto;
+  }
+  
+  .actionsSection {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .leftButtons, .rightButtons {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

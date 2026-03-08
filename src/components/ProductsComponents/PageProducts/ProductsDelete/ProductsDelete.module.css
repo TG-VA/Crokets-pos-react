@@ -15,7 +15,7 @@
 
 .container {
   min-height: 80vh;
-  width: 100vw;
+  width: 100%;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -42,8 +42,8 @@
 
 .title {
   color: var(--croketsBlue);
-  margin: 0;
-  font-size: 1.6rem;
+  margin: -10px;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
@@ -52,7 +52,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 1rem;
+  padding-top: 3px;
 }
 
 .formRow {
@@ -64,7 +64,7 @@
 .label {
   font-weight: 700;
   color: var(--darkGray);
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 .input {

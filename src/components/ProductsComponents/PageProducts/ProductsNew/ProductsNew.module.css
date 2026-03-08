@@ -25,6 +25,7 @@
 .content {
   background-color: var(--white);
   border-radius: 8px;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   padding: 1rem 1.5rem;
@@ -53,7 +54,7 @@
   color: var(--croketsBlue);
   margin: -10px;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .form {
@@ -61,7 +62,7 @@
   flex-direction:column;
   margin-top: 15px;
   gap: 8px;
-  width: 45%; 
+  width: 50%; 
 }
 
 .formRow {
@@ -126,13 +127,14 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  margin-top: 1rem;
+  margin-top: auto;
 }
+
 .containerSecunday {
   display: flex;
   flex-direction: column;
   margin-left: auto;
-  width: 45%;
+  width: 50%;
 }
 
 .formSecondary {
