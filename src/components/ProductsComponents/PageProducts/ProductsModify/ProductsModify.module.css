@@ -42,8 +42,8 @@
 
 .title {
   color: var(--croketsBlue);
-  margin: 0;
-  font-size: 1.6rem;
+  margin: -10px;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
@@ -52,7 +52,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 1rem;
+  padding-top: 3px;
 }
 
 .body {
@@ -62,6 +62,7 @@
 }
 
 .form {
+  padding-top: 3px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -91,7 +92,7 @@
 .label {
   font-weight: 700;
   color: var(--darkGray);
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 .input {
@@ -100,7 +101,7 @@
   border-radius: 6px;
   border: 2px solid var(--mediumGray);
   padding: 0 12px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
   background-color: var(--white);
 }
@@ -134,7 +135,8 @@
   background-color: var(--croketsBlue);
   color: var(--white);
   border: none;
-  padding: 8px 16px;
+  padding: 12px 20px;
+  font-size: 1rem;
   border-radius: 6px;
   font-weight: 700;
   cursor: pointer;
