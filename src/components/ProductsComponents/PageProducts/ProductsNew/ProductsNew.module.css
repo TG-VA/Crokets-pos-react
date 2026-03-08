@@ -1,4 +1,12 @@
-:root {
+.container {
+  min-height: 80vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 10px;
+
+  /* Variables locales del componente */
   --croketsBlue: #1092b1;
   --croketsBlueDark: #0d7a94;
   --croketsOrange: #fc8913;
@@ -12,15 +20,6 @@
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   --shadow-focus: 0 0 0 2px rgba(16, 146, 177, 0.15);
 }
-
-.container {
-  min-height: 80vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 10px;
-} 
 
 .content {
   background-color: var(--white);
@@ -59,7 +58,7 @@
 
 .form {
   display: flex;
-  flex-direction:column;
+  flex-direction: column;
   margin-top: 15px;
   gap: 8px;
   width: 50%; 
@@ -101,7 +100,7 @@
 
 .actions {
   display: flex;
-  justify-content:flex-end;
+  justify-content: flex-end;
   margin-top: 8px;
 }
 

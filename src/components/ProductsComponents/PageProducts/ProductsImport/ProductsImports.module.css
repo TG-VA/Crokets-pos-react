@@ -1,4 +1,11 @@
-:root {
+.container {
+  min-height: 85vh;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+
+  /* Variables locales del componente */
   --croketsBlue: #1092b1;
   --croketsBlueDark: #0d7a94;
   --croketsOrange: #fc8913;
@@ -9,14 +16,6 @@
   --white: #ffffff;
   --errorColor: #e74c3c;
   --successColor: #27ae60;
-}
-
-.container {
-  min-height: 85vh;
-  width: 100%;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
 }
 
 .innerContainer {
@@ -175,7 +174,6 @@
 }
 
 .instructions {
-  margin-top: 10px;
   padding: 20px;
   background-color: #f8f9fa;
   border-radius: 8px;

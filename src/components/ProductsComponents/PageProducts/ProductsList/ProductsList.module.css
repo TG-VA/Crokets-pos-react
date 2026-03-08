@@ -1,4 +1,10 @@
-:root {
+.productsContainer {
+  flex: 1;
+  min-height: 0;        
+  display: flex;
+  flex-direction: column;
+
+  /* Variables locales del componente */
   --croketsOrange: #fc8913;
   --croketsOrangeDark: #e07a0d;
   --croketsBlue: #1092b1;
@@ -7,13 +13,6 @@
   --darkGray: #333333;
   --textColor: #333333;
   --white: #ffffff;
-}
-
-.productsContainer {
-  flex: 1;
-  min-height: 0;        
-  display: flex;
-  flex-direction: column;
 }
 
 .content {
@@ -95,8 +94,6 @@
   background-color: var(--lightGray);
   color: var(--croketsOrange);
 }
-
-/* Botón de limpiar filtros */
 
 /* Información de resultados */
 .resultsInfo {
@@ -360,6 +357,13 @@
   z-index: 1000;
 }
 
+.toolbarActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 /* Responsivo */
 @media (max-width: 768px) {
   .searchInput {
@@ -430,10 +434,4 @@
   .productsTable td {
     padding: 0.4rem 0.2rem;
   }
-}
-.toolbarActions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
