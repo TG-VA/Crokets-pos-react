@@ -1,7 +1,7 @@
 // Módulos de Electron y utilidades del sistema
-const { app, BrowserWindow, ipcMain } = require('electron'); 
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const isDev = require('electron-is-dev'); 
+const isDev = require('electron-is-dev');
 const Store = require('electron-store').default;
 const { randomUUID } = require('crypto');
 
@@ -29,16 +29,16 @@ let cashRegisterState = {
 };
 
 function createMainWindow() {
-  const iconPath = isDev 
-  ? path.join(__dirname, '../icon.ico')
-  : path.join(__dirname, '../icon.ico'); 
+  const iconPath = isDev
+    ? path.join(__dirname, '../icon.ico')
+    : path.join(__dirname, '../icon.ico');
 
-   console.log('Ruta del icono:', iconPath); // Para debug
+  console.log('Ruta del icono:', iconPath); // Para debug
   console.log('¿Existe el icono?', require('fs').existsSync(iconPath)); // Para debug
-  
+
   // Configuración de la ventana principal
   mainWindow = new BrowserWindow({
-   icon: iconPath,
+    icon: iconPath,
     webPreferences: {
       // Configuración de seguridad para la ventana de renderizado
       nodeIntegration: false,
@@ -53,13 +53,13 @@ function createMainWindow() {
   const appUrl = isDev
     ? 'http://localhost:5173'
     : `file://${path.join(__dirname, '../dist/index.html')}`;
-  
+
   mainWindow.loadURL(appUrl);
 
   // Eventos de la ventana principal
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
-    mainWindow.setFullScreen(true); 
+    mainWindow.setFullScreen(true);
     if (process.platform === 'darwin') app.dock.show();
   });
 
@@ -74,11 +74,17 @@ function createMainWindow() {
   }
 }
 
-// Manejadores de IPC 
+// Manejadores de IPC
 
 // Devuelve el device_code único de esta PC
 ipcMain.handle('get-device-code', async () => {
   return { deviceCode: getOrCreateDeviceCode() };
+});
+
+// Cerrar la aplicación
+ipcMain.handle('close-app', async () => {
+  app.quit();
+  return { success: true };
 });
 
 // Abre la caja registradora con un monto inicial
@@ -89,7 +95,7 @@ ipcMain.handle('set-initial-cash', (event, amount) => {
     currentAmount: amount,
     startTime: new Date()
   };
-  
+
   return {
     success: true,
     message: `Caja abierta con $${amount.toFixed(2)}`
@@ -115,7 +121,7 @@ ipcMain.handle('close-cash-register', () => {
     currentAmount: 0,
     startTime: null
   };
-  
+
   return result;
 });
 
@@ -131,23 +137,23 @@ ipcMain.handle('login', async (event, { username, password }) => {
     });
 
     const data = await response.json();
-    
+
     if (data.success) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: data.message,
         user: data.user
       };
     } else {
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: data.message || 'Credenciales incorrectas'
       };
     }
   } catch (error) {
     console.error('Error en login de Electron:', error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       message: 'Error de conexión con el servidor'
     };
   }

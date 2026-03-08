@@ -31,7 +31,7 @@
   box-shadow: var(--shadow-default);
   display: flex;
   flex-direction: column;
-  gap: 1.8rem;
+  gap: 1.4rem;
   align-items: center;
 }
 
@@ -146,20 +146,49 @@
   min-height: 20px;
 }
 
-.loginButton {
+.loginButton,
+.exitButton {
+  width: 120px;
+  height: 40px;
   padding: 12px 24px;
   font-size: 1rem;
-  border-radius: 10px;
-  background-color: var(--color-primary);
-  color: var(--color-white);
+  font-weight: 100;
   border: none;
+  border-radius: 10px;
+  color: var(--color-white);
   box-shadow: var(--shadow-button);
   transition: all var(--transition-normal);
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: -10px;
+}
+
+.loginButton {
+  background-color: var(--color-primary);
+  margin-top: 0;
+  display: flex;
+  align-items:center ;
+  justify-content: center;
 }
 
 .loginButton:hover {
   background-color: var(--color-primary-dark);
-  cursor: pointer;
+}
+
+.exitButton {
+  background-color: #fc8913;
+  margin-top: 8px;
+}
+
+.exitButton:hover {
+  background-color: #e06b00; 
+}
+
+.loginButton:active,
+.exitButton:active {
+  transform: scale(0.98);
 }
 
 .recoveryBox {
@@ -205,7 +234,25 @@
 }
 
 .recoveryButton:disabled,
-.loginButton:disabled {
+.loginButton:disabled,
+.exitButton:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
