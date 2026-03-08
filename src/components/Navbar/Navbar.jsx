@@ -17,25 +17,21 @@ import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
 
-  // Función para manejar el cierre de sesión.
-  const handleLogout = async () => {
-    const confirmLogout = window.confirm(
-      "¿Estás seguro de que deseas cerrar sesión?",
+  // "Salir" = bloquear pantalla y volver al login SIN cerrar sesión real
+  const handleLockScreen = () => {
+    const confirmLock = window.confirm(
+      "¿Deseas salir a la pantalla de inicio de sesión sin cerrar la sesión actual?"
     );
 
-    if (confirmLogout) {
-      await logout(); // Esperamos a que el logout termine
-      setTimeout(() => {
-        // Damos tiempo a que el estado se limpie
-        navigate("/login", { replace: true });
-      }, 0);
+    if (confirmLock) {
+      lockScreen();
+      navigate("/login", { replace: true });
     }
   };
 
-  // Array de objetos que define los ítems de navegación.
   const navItems = [
     {
       id: "btnVentas",
@@ -64,7 +60,12 @@ const Navbar = () => {
       icon: InvoicesIcon,
       path: "/invoices",
     },
-    { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashcut" },
+    {
+      id: "btnCorte",
+      label: "Corte",
+      icon: CashoutIcon,
+      path: "/cashcut",
+    },
     {
       id: "btnReportes",
       label: "Reportes",
@@ -79,12 +80,11 @@ const Navbar = () => {
     },
   ];
 
-  //useEffect para manejar atajos de teclado
   useEffect(() => {
     const handleKeyDown = (e) => {
       const item = navItems.find((nav) => nav.shortcut === e.key);
       if (item) {
-        e.preventDefault(); //evita que F1 abra la ayuda del navegador
+        e.preventDefault();
         navigate(item.path);
       }
     };
@@ -103,7 +103,7 @@ const Navbar = () => {
         {navItems.map((item) => (
           <button
             key={item.id}
-            className={`${styles.navButton} ${styles[item.id]}`} // tooltip y estilos de botón
+            className={`${styles.navButton} ${styles[item.id]}`}
             onClick={() => navigate(item.path)}
           >
             <img
@@ -119,7 +119,12 @@ const Navbar = () => {
       <div className={styles.navbarUser}>
         <div className={styles.userInfo}>
           <div className={styles.userName}>
-            Usuario: {(user?.username ?? user?.email ?? "—").toUpperCase()}
+            Usuario: {(
+  user?.username ??
+  user?.user_metadata?.username ??
+  user?.email?.split("@")[0] ??
+  "—"
+).toUpperCase()}
           </div>
           <div className={styles.branchInfo}>
             Sucursal:{" "}
@@ -131,7 +136,7 @@ const Navbar = () => {
 
         <button
           className={`${styles.navButton} ${styles.logoutButton}`}
-          onClick={handleLogout}
+          onClick={handleLockScreen}
         >
           <img src={LogoutIcon} alt="Salir" className={styles.navIcon} />
           Salir

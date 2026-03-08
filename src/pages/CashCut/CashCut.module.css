@@ -3,6 +3,7 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  overflow-y: auto;
 }
 
 .pageContent {
@@ -230,6 +231,61 @@
   padding: 18px 0 28px;
   font-size: 12px;
   color: #aaa;
+}
+
+/* Mensaje de error arriba */
+.errorMsg {
+  background: #ffe5e5;
+  border: 2px solid #ff4d4f;
+  color: #b71c1c;
+  font-weight: 800;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.errorMsg::before {
+  content: "⚠️";
+  font-size: 16px;
+}
+
+.errorMsg {
+  animation: pulseWarning 1.4s infinite;
+}
+
+@keyframes pulseWarning {
+  0% { box-shadow: 0 0 0 0 rgba(255,77,79,0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(255,77,79,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,77,79,0); }
+}
+/* Info del turno dentro del hero (alineado + legible) */
+.sessionInfoHero {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.sessionRow {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+}
+
+.sessionLabel {
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.sessionValue {
+  font-weight: 900;
+  letter-spacing: 0.6px;
 }
 
 

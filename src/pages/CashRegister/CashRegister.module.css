@@ -1,7 +1,7 @@
 html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 body {
@@ -136,10 +136,25 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 
+
 @media (max-height: 500px) {
     .container {
         transform: scale(0.9);
         gap: 1rem;
         padding: 1.5rem;
     }
+}
+
+.branchText {
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+.infoText {
+  opacity: 0.8;
+}
+
+.confirmButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
