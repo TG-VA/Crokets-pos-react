@@ -1,4 +1,11 @@
-:root {
+.container {
+  min-height: 85vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+
+  /* Variables locales del componente */
   --croketsBlue: #1092b1;
   --croketsBlueDark: #0d7a94;
   --croketsOrange: #fc8913;
@@ -11,14 +18,6 @@
   --successColor: #27ae60;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   --shadow-focus: 0 0 0 2px rgba(16, 146, 177, 0.15);
-}
-
-.container {
-  min-height: 85vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
 }
 
 .innerContainer {
