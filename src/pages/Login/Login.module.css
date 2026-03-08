@@ -165,3 +165,51 @@
     align-items: center;
     background-color: #f2f2f2; /* opcional */
   }
+
+  .recoveryBox {
+  width: 100%;
+  margin-top: 14px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff7e6;
+  border: 1px solid #f5c26b;
+  box-sizing: border-box;
+}
+
+.recoveryTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #8a5a00;
+  margin-bottom: 6px;
+}
+
+.recoveryText {
+  font-size: 13px;
+  color: #6f4b00;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.recoveryButton {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #f59e0b;
+  color: #fff;
+  transition: 0.2s ease;
+}
+
+.recoveryButton:hover {
+  background: #d97706;
+}
+
+.recoveryButton:disabled,
+.loginButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

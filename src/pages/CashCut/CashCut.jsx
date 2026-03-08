@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -51,12 +52,21 @@ const EmptyState = ({ msg }) => <div className={styles.emptyState}>— {msg} —
 
 // ─── Página Principal ─────────────────────────────────────────────────────────
 const CashCut = () => {
-  const { user, closeCashRegister } = useAuth();
+  const navigate = useNavigate();
+
+  // ✅ IMPORTANTE: usa también setCashRegistered para “cerrar caja” en el estado global
+  const { user, setCashRegistered, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState(null);
 
-  // Sesión
+  // UX
+  const [errorMsg, setErrorMsg] = useState("");
+  const [closingShift, setClosingShift] = useState(false);
+  const [hasShiftCut, setHasShiftCut] = useState(false);
+  const [hasFinalCut, setHasFinalCut] = useState(false);
+
+  // Sesión (turno)
   const [session, setSession] = useState(null);
   const [branchName, setBranchName] = useState("");
   const [username, setUsername] = useState("");
@@ -74,21 +84,54 @@ const CashCut = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      const sessionData = await fetchSession();
-      if (sessionData) await fetchSalesData(sessionData);
-    } catch (err) {
-      console.error("Error cargando datos del corte:", err);
-    } finally {
-      setLoading(false);
-    }
+  const resetSalesState = () => {
+    setVentasTotales(0);
+    setSubtotal(0);
+    setTax(0);
+    setVentasPorMetodo([]);
+    setVentasPorDepartamento([]);
+    setDevoluciones(0);
   };
 
-  // ── Sesión activa ─────────────────────────────────────────────────────────
+const resetLocalState = () => {
+  setActiveModal(null);
+  setErrorMsg("");
+  setSession(null);
+  setBranchName("");
+  setUsername("");
+  setHasShiftCut(false);
+  setHasFinalCut(false);
+  resetSalesState();
+};
+
+  const fetchAllData = async () => {
+  setLoading(true);
+  setErrorMsg("");
+  try {
+    const sessionData = await fetchSession();
+    if (sessionData) {
+      await fetchSalesData(sessionData);
+      await fetchExistingCuts(sessionData.id);
+    } else {
+      resetSalesState();
+      setHasShiftCut(false);
+      setHasFinalCut(false);
+    }
+  } catch (err) {
+    console.error("Error cargando datos del corte:", err);
+    setErrorMsg("No se pudieron cargar los datos del turno.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // ── Sesión activa (turno open) ─────────────────────────────────────────────
   const fetchSession = async () => {
-    setUsername(user?.user_metadata?.username || user?.email || "Usuario");
+    setUsername(
+      user?.user_metadata?.username
+        ? user.user_metadata.username.toUpperCase()
+        : user?.email?.split("@")[0].toUpperCase() || "USUARIO"
+    );
 
     const { data: sessionData, error } = await supabase
       .from("cash_register_sessions")
@@ -97,32 +140,72 @@ const CashCut = () => {
       .eq("status", "open")
       .order("opened_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error || !sessionData) {
-      console.warn("No se encontró sesión activa:", error?.message);
+    if (error) {
+      console.warn("Error obteniendo sesión activa:", error.message);
+      setSession(null);
+      setBranchName("");
+      return null;
+    }
+
+    if (!sessionData) {
+      setSession(null);
+      setBranchName("");
       return null;
     }
 
     setSession(sessionData);
 
     if (sessionData.branch_id) {
-      const { data: branchData } = await supabase
+      const { data: branchData, error: branchErr } = await supabase
         .from("branches")
         .select("name")
         .eq("id", sessionData.branch_id)
-        .single();
+        .maybeSingle();
 
-      if (branchData) setBranchName(branchData.name);
+      if (!branchErr && branchData?.name) setBranchName(branchData.name);
+      else setBranchName("");
+    } else {
+      setBranchName("");
     }
 
     return sessionData;
   };
 
+  const fetchExistingCuts = async (sessionId) => {
+  if (!sessionId) {
+    setHasShiftCut(false);
+    setHasFinalCut(false);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("cash_cuts")
+    .select("cut_type")
+    .eq("cash_register_session_id", sessionId);
+
+  if (error) {
+    console.error("Error obteniendo cortes existentes:", error.message);
+    setHasShiftCut(false);
+    setHasFinalCut(false);
+    return;
+  }
+
+  const cutTypes = data?.map((c) => c.cut_type) || [];
+  setHasShiftCut(cutTypes.includes("shift"));
+  setHasFinalCut(cutTypes.includes("final"));
+};
+
   // ── Ventas del turno ──────────────────────────────────────────────────────
   const fetchSalesData = async (sessionData) => {
     const turnoStart = sessionData.opened_at;
     const branchId = sessionData.branch_id;
+
+    if (!turnoStart || !branchId) {
+      setErrorMsg("El turno activo no tiene sucursal o fecha de apertura válidas.");
+      return;
+    }
 
     const { data: salesData, error: salesError } = await supabase
       .from("sales")
@@ -134,6 +217,7 @@ const CashCut = () => {
 
     if (salesError) {
       console.error("Error obteniendo ventas:", salesError.message);
+      setErrorMsg("Error obteniendo ventas del turno.");
       return;
     }
 
@@ -154,11 +238,16 @@ const CashCut = () => {
       setVentasPorDepartamento([]);
     }
 
-    const { data: devData } = await supabase
+    const { data: devData, error: devErr } = await supabase
       .from("canceled_sales")
       .select("refund_amount")
       .eq("user_id", user.id)
       .gte("canceled_at", turnoStart);
+
+    if (devErr) {
+      console.error("Error obteniendo devoluciones:", devErr.message);
+      return;
+    }
 
     setDevoluciones(
       devData ? devData.reduce((acc, d) => acc + parseFloat(d.refund_amount || 0), 0) : 0
@@ -225,15 +314,23 @@ const CashCut = () => {
 
   // ── Guardar corte en Supabase ─────────────────────────────────────────────
   const handleConfirmCorte = async ({ counted, notes, expected }) => {
+    setErrorMsg("");
+
+    if (!session?.id || !session?.branch_id) {
+      setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+      return;
+    }
+
     const diferencia = counted - expected;
+
     try {
       const { data: cutData, error: cutError } = await supabase
         .from("cash_cuts")
         .insert({
-          branch_id: session?.branch_id,
+          branch_id: session.branch_id,
           user_id: user.id,
-          cash_register_session_id: session?.id || null,
-          cut_type: activeModal === "cajero" ? "cashier" : "daily",
+          cash_register_session_id: session.id,
+          cut_type: activeModal === "cajero" ? "shift" : "final",
           expected_amount: expected,
           counted_amount: counted,
           difference: diferencia,
@@ -243,45 +340,86 @@ const CashCut = () => {
         .select()
         .single();
 
-      if (cutError) throw cutError;
+      if (cutError) {
+  if (cutError.code === "23505") {
+    const tipoTexto = activeModal === "cajero" ? "de cajero" : "del día";
+    setErrorMsg(`Ya existe un corte ${tipoTexto} para este turno.`);
+    return;
+  }
+  throw cutError;
+}
 
       if (ventasPorMetodo.length > 0 && cutData?.id) {
-        const details = ventasPorMetodo.map((m) => ({
-          cash_cut_id: cutData.id,
-          payment_method_id: m.id,
-          expected_amount: m.total,
-          counted_amount: m.total,
-          difference: 0,
-        }));
-        await supabase.from("cash_cut_details").insert(details);
+        const details = ventasPorMetodo
+          .filter((m) => !!m.id)
+          .map((m) => ({
+            cash_cut_id: cutData.id,
+            payment_method_id: m.id,
+            expected_amount: m.total,
+            counted_amount: m.total,
+            difference: 0,
+          }));
+
+        if (details.length > 0) {
+          const { error: detErr } = await supabase.from("cash_cut_details").insert(details);
+          if (detErr) throw detErr;
+        }
       }
 
       setActiveModal(null);
       alert(`Corte realizado exitosamente.\nDiferencia: ${fmt(diferencia)}`);
+      await fetchAllData();
     } catch (err) {
       console.error("Error guardando corte:", err);
+      setErrorMsg(err?.message || "Ocurrió un error al guardar el corte.");
       alert("Ocurrió un error al guardar el corte.");
     }
   };
 
-  // ── Cerrar turno ──────────────────────────────────────────────────────────
+  // ── Cerrar turno (RPC + signOut + redirect login) ──────────────────────────
   const handleCerrarTurno = async () => {
+    setErrorMsg("");
+    if (closingShift) return;
+
+    if (!session?.id) {
+      setErrorMsg("No hay turno activo para cerrar.");
+      return;
+    }
+
     if (!window.confirm("¿Estás seguro de que deseas cerrar el turno actual?")) return;
+
     try {
-      if (session?.id) {
-        await supabase
-          .from("cash_register_sessions")
-          .update({
-            status: "closed",
-            closed_at: new Date().toISOString(),
-            closing_amount: ventasTotales,
-          })
-          .eq("id", session.id);
+      setClosingShift(true);
+
+      const { data, error } = await supabase.rpc("close_cash_register_session", {
+        p_session_id: session.id,
+      });
+
+      if (error) throw error;
+
+      if (!data?.ok) {
+        setErrorMsg(data?.message || "No se puede cerrar turno.");
+        return;
       }
-      closeCashRegister();
+
+      // ✅ MUY IMPORTANTE: marca que ya NO hay caja abierta
+if (typeof setCashRegistered === "function") {
+  setCashRegistered(false);
+}
+
+await logout();
+
+      // 3) limpiar estado local
+      resetLocalState();
+
+      // 4) ir al login (replace para que no regrese con back)
+      navigate("/login", { replace: true });
     } catch (err) {
       console.error("Error cerrando turno:", err);
+      setErrorMsg(err?.message || "Ocurrió un error al cerrar el turno.");
       alert("Ocurrió un error al cerrar el turno.");
+    } finally {
+      setClosingShift(false);
     }
   };
 
@@ -293,19 +431,45 @@ const CashCut = () => {
   const dineroCaja = openingAmount + efectivoVentas - devoluciones;
   const now = new Date();
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
       <Navbar />
 
       <NavbarCashCut
-        onCorteCajero={() => setActiveModal("cajero")}
-        onCorteDelDia={() => setActiveModal("dia")}
-        onImprimir={() => window.print()}
-        onCerrarTurno={handleCerrarTurno}
-      />
+  onCorteCajero={() => {
+    setErrorMsg("");
+    if (!session?.id || !session?.branch_id) {
+      setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+      return;
+    }
+    if (hasShiftCut) {
+      setErrorMsg("Ya existe un corte de cajero para este turno.");
+      return;
+    }
+    setActiveModal("cajero");
+  }}
+  onCorteDelDia={() => {
+    setErrorMsg("");
+    if (!session?.id || !session?.branch_id) {
+      setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+      return;
+    }
+    if (hasFinalCut) {
+      setErrorMsg("Ya existe un corte del día para este turno.");
+      return;
+    }
+    setActiveModal("dia");
+  }}
+  onImprimir={() => window.print()}
+  onCerrarTurno={handleCerrarTurno}
+  disableCorteCajero={!session?.id || hasShiftCut}
+  disableCorteDelDia={!session?.id || hasFinalCut}
+  disableCerrarTurno={!session?.id || !hasShiftCut || closingShift}
+/>
 
       <div className={styles.pageContent}>
+        {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
+
         {loading ? (
           <div className={styles.fullLoading}>
             <div className={styles.loadingSpinner} />
@@ -319,9 +483,29 @@ const CashCut = () => {
                 <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
                 <span className={styles.heroDate}>
                   {fmtDate(now)} ·{" "}
-                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} –{" "}
-                  {fmtTime(now)}
+                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} – {fmtTime(now)}
                 </span>
+
+                <div className={styles.sessionInfoHero}>
+                  <div className={styles.sessionRow}>
+                    <span className={styles.sessionLabel}>Sucursal:</span>
+                    <span className={styles.sessionValue}>
+                      {branchName ? branchName.toUpperCase() : "—"}
+                    </span>
+                  </div>
+
+                  <div className={styles.sessionRow}>
+                    <span className={styles.sessionLabel}>Cajero:</span>
+                    <span className={styles.sessionValue}>{username || "—"}</span>
+                  </div>
+
+                  <div className={styles.sessionRow}>
+                    <span className={styles.sessionLabel}>Turno:</span>
+                    <span className={styles.sessionValue}>
+                      {session?.id ? `#${session.id.slice(0, 8).toUpperCase()}` : "—"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className={styles.heroStats}>
@@ -333,6 +517,7 @@ const CashCut = () => {
                     <span className={styles.heroStatValue}>{fmt(m.total)}</span>
                   </div>
                 ))}
+
                 {devoluciones > 0 && (
                   <div className={styles.heroStat}>
                     <span className={styles.heroStatLabel}>↩️ Devoluciones</span>

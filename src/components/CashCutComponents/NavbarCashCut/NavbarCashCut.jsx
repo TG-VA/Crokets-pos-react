@@ -1,7 +1,15 @@
 import React from "react";
 import styles from "./NavbarCashCut.module.css";
 
-const NavbarCashCut = ({ onCorteCajero, onCorteDelDia, onImprimir, onCerrarTurno }) => {
+const NavbarCashCut = ({
+  onCorteCajero,
+  onCorteDelDia,
+  onImprimir,
+  onCerrarTurno,
+  disableCorteCajero = false,
+  disableCorteDelDia = false,
+  disableCerrarTurno = false,
+}) => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.left}>
@@ -9,11 +17,21 @@ const NavbarCashCut = ({ onCorteCajero, onCorteDelDia, onImprimir, onCerrarTurno
       </div>
 
       <div className={styles.right}>
-        <button className={styles.btn} onClick={onCorteCajero}>
+        <button
+          className={styles.btn}
+          onClick={onCorteCajero}
+          disabled={disableCorteCajero}
+          title={disableCorteCajero ? "Este corte ya fue realizado o no hay turno activo" : ""}
+        >
           🧾 Corte Cajero
         </button>
 
-        <button className={styles.btn} onClick={onCorteDelDia}>
+        <button
+          className={styles.btn}
+          onClick={onCorteDelDia}
+          disabled={disableCorteDelDia}
+          title={disableCorteDelDia ? "Este corte ya fue realizado o no hay turno activo" : ""}
+        >
           📅 Corte del Día
         </button>
 
@@ -21,7 +39,12 @@ const NavbarCashCut = ({ onCorteCajero, onCorteDelDia, onImprimir, onCerrarTurno
           🖨️ Imprimir
         </button>
 
-        <button className={`${styles.btn} ${styles.danger}`} onClick={onCerrarTurno}>
+        <button
+          className={`${styles.btn} ${styles.danger}`}
+          onClick={onCerrarTurno}
+          disabled={disableCerrarTurno}
+          title={disableCerrarTurno ? "Debes realizar primero el corte de cajero" : ""}
+        >
           🔒 Cerrar Turno
         </button>
       </div>
