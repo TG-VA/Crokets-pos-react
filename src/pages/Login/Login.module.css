@@ -1,167 +1,258 @@
-  :root {
-    --color-primary: #0078d7;
-    --color-primary-dark: #005fa3;
-    --color-secondary: #fc8913;
-    --color-error: #d93025;
+.loginWrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f2f2f2;
 
-    --color-white: #ffffff;
-    --color-light-gray: #f2f2f2;
-    --color-medium-gray: #05060f0a;
-    --color-dark-gray: #00000099;
-    --color-placeholder: #999;
+  /* Variables locales del componente */
+  --color-primary: #0078d7;
+  --color-primary-dark: #005fa3;
+  --color-secondary: #fc8913;
+  --color-error: #d93025;
+  --color-white: #ffffff;
+  --color-light-gray: #f2f2f2;
+  --color-medium-gray: #05060f0a;
+  --color-dark-gray: #00000099;
+  --color-placeholder: #999;
+  --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
 
-    --shadow-default: 0 0 10px rgba(0, 0, 0, 0.2);
-    --shadow-button: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-focus: 0 0 0 2px rgba(0, 120, 215, 0.3);
+.loginContainer {
+  background: var(--color-white);
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: var(--shadow-default);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  align-items: center;
+}
 
-    --transition-fast: 0.2s ease;
-    --transition-normal: 0.3s ease;
-  }
+.logo {
+  width: 70%;
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 1rem;
+}
 
-  .loginContainer {
-    background: var(--color-white);
-    padding: 2rem;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 320px;
-    box-shadow: var(--shadow-default);
-    display: flex;
-    flex-direction: column;
-    gap: 1.8rem;
-    align-items: center;
-  }
+.inputGroup {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
 
-  .logo {
-    width: 70%;
-    max-width: 200px;
-    height: auto;
-    margin-bottom: 1rem;
-  }
+.inputIconWrapper {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-medium-gray);
+  border-radius: 0.5rem;
+  padding: 0 1rem;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+  height: 44px;
+  position: relative;
+}
 
-  .inputGroup {
-    width: 100%;
-    margin-bottom: 1.5rem;
-  }
+.inputIconWrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
 
-  .inputIconWrapper {
-    display: flex;
-    align-items: center;
-    background-color: var(--color-medium-gray);
-    border-radius: 0.5rem;
-    padding: 0 1rem;
-    border: 2px solid transparent;
-    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
-    height: 44px;
-    position: relative;
-  }
+.inputIconWrapperError {
+  border-color: var(--color-error);
+  background-color: #ffe5e5;
+}
 
-  .inputIconWrapper:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: var(--shadow-focus);
-  }
+.input {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  padding-right: 30px;
+  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color var(--transition-normal), color var(--transition-normal), background var(--transition-fast);
+}
 
-  .inputIconWrapperError {
-    border-color: var(--color-error);
-    background-color: #ffe5e5;
-  }
+.input::placeholder {
+  color: var(--color-placeholder);
+  font-style: italic;
+}
 
-  .input {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    padding-right: 30px;
-    border-radius: 0.5rem;
-    border: 2px solid transparent;
-    font-size: 1rem;
-    outline: none;
-    transition: border-color var(--transition-normal), color var(--transition-normal), background var(--transition-fast);
-  }
+.label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-dark-gray);
+}
 
-  .input::placeholder {
-    color: var(--color-placeholder);
-    font-style: italic;
-  }
+.inputIcon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  opacity: 0.7;
+}
 
-  .label {
-    display: block;
-    margin-bottom: 0.3rem;
-    font-size: 1rem;
-    font-weight: bold;
-    color: var(--color-dark-gray);
-  }
+.eyeButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: 0;
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+}
 
-  .inputIcon {
-    width: 20px;
-    height: 20px;
-    margin-right: 12px;
-    opacity: 0.7;
-  }
+.eyeButton img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
 
-  .eyeButton {
-    background: none;
-    border: none;
-    padding: 8px;
-    margin:0;
-    position: absolute;
-    right: 10px;
-    cursor: pointer;
-  }
+.eyeButton:hover img {
+  opacity: 1;
+}
 
-  .eyeButton img {
-    width: 22px;
-    height: 22px;
-    opacity: 0.7;
-    transition: opacity var(--transition-fast);
-  }
+.linkButton {
+  font-size: 1rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
 
-  .eyeButton:hover img {
-    opacity: 1;
-  }
+.linkButton:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
 
-  .linkButton {
-    font-size: 1rem;
-    color: var(--color-primary);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    transition: color var(--transition-fast);
-  }
+.errorMessage {
+  color: var(--color-error);
+  text-align: center;
+  margin: 10px 0;
+  font-weight: bold;
+  min-height: 20px;
+}
 
-  .linkButton:hover {
-    color: var(--color-primary-dark);
-    text-decoration: underline;
-  }
+.loginButton,
+.exitButton {
+  width: 120px;
+  height: 40px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 100;
+  border: none;
+  border-radius: 10px;
+  color: var(--color-white);
+  box-shadow: var(--shadow-button);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: -10px;
+}
 
-  .errorMessage {
-    color: var(--color-error);
-    text-align: center;
-    margin: 10px 0;
-    font-weight: bold;
-    min-height: 20px;
-  }
+.loginButton {
+  background-color: var(--color-primary);
+  margin-top: 0;
+  display: flex;
+  align-items:center ;
+  justify-content: center;
+}
 
-  .loginButton {
-    padding: 12px 24px;
-    font-size: 1rem;
-    border-radius: 10px;
-    background-color: var(--color-primary);
-    color: var(--color-white);
-    border: none;
-    box-shadow: var(--shadow-button);
-    transition: all var(--transition-normal);
-  }
+.loginButton:hover {
+  background-color: var(--color-primary-dark);
+}
 
-  .loginButton:hover {
-    background-color: var(--color-primary-dark);
-    cursor: pointer;
-  }
+.exitButton {
+  background-color: #fc8913;
+  margin-top: 8px;
+}
 
-  .loginWrapper {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f2f2f2; /* opcional */
-  }
+.exitButton:hover {
+  background-color: #e06b00; 
+}
+
+.loginButton:active,
+.exitButton:active {
+  transform: scale(0.98);
+}
+
+.recoveryBox {
+  width: 100%;
+  margin-top: 14px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff7e6;
+  border: 1px solid #f5c26b;
+  box-sizing: border-box;
+}
+
+.recoveryTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #8a5a00;
+  margin-bottom: 6px;
+}
+
+.recoveryText {
+  font-size: 13px;
+  color: #6f4b00;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.recoveryButton {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #f59e0b;
+  color: #fff;
+  transition: 0.2s ease;
+}
+
+.recoveryButton:hover {
+  background: #d97706;
+}
+
+.recoveryButton:disabled,
+.loginButton:disabled,
+.exitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 8px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
