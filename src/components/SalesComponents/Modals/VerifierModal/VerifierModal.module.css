@@ -1,10 +1,6 @@
-/* Modal Overlay */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
@@ -12,68 +8,66 @@
   z-index: 1000;
 }
 
-/* Modal Container */
 .verifierModal {
-  background: white;
-  border-radius: 8px;
+  background: #ffffff;
+  border-radius: 10px;
   width: 90%;
-  max-width: 600px;
+  max-width: 640px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
   animation: modalSlideIn 0.2s ease-out;
 }
 
-/* Modal Header */
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
   background: #1092b1;
-  color: white;
+  color: #ffffff;
   border-bottom: 1px solid #1092b1;
 }
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .closeButton {
   background: none;
   border: none;
-  color: white;
-  font-size: 1.5rem;
+  color: #ffffff;
+  font-size: 1.75rem;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
 .closeButton:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.03);
 }
 
-/* Modal Body */
 .verifierModalBody {
   padding: 24px;
   flex-grow: 1;
   overflow-y: auto;
 }
 
-/* Barcode Section */
 .barcodeSection {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .barcodeSection label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
   font-size: 1rem;
 }
@@ -86,79 +80,89 @@
 .barcodeInput {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #bdc3c7;
-  border-radius: 6px;
+  border: 2px solid #bcc8d1;
+  border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #243746;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .barcodeInput:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #1092b1;
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
 }
 
 .searchButton {
-  padding: 12px 20px;
+  padding: 12px 22px;
   background: #3498db;
-  color: white;
+  color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
-  min-width: 100px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  min-width: 120px;
 }
 
 .searchButton:hover:not(:disabled) {
   background: #2980b9;
+  transform: translateY(-1px);
 }
 
 .searchButton:disabled {
-  background: #bdc3c7;
+  background: #c3ccd3;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* Error Message */
+.branchHint {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #667786;
+}
+
 .errorMessage {
   background: #e74c3c;
-  color: white;
+  color: #ffffff;
   padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-weight: 600;
   text-align: center;
+  line-height: 1.35;
 }
 
-/* Product Info */
 .productInfo {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  background: #f8fafb;
+  border: 1px solid #dfe6eb;
+  border-radius: 10px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .productInfo h3 {
   margin: 0 0 16px 0;
   color: #2c3e50;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .productDetails {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .productRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #e9ecef;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e7edf1;
 }
 
 .productRow:last-child {
@@ -166,81 +170,99 @@
 }
 
 .label {
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.95rem;
+  font-weight: 700;
+  color: #4d5d68;
+  font-size: 0.96rem;
 }
 
 .value {
-  font-weight: 500;
+  font-weight: 600;
   color: #212529;
   text-align: right;
+  word-break: break-word;
 }
 
 .price {
   color: #27ae60;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.08rem;
+  font-weight: 800;
 }
 
 .inStock {
   color: #27ae60;
+  font-weight: 700;
 }
 
 .outOfStock {
   color: #e74c3c;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Modal Actions */
+.statusBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.statusActive {
+  background: #eaf8ef;
+  color: #2e7d32;
+}
+
+.statusInactive {
+  background: #fdecea;
+  color: #c62828;
+}
+
 .modalActions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 18px 24px;
   background: #f8f9fa;
   border-top: 1px solid #e9ecef;
   gap: 12px;
 }
 
-.cancelButton {
-  padding: 12px 24px;
-  background: #6c757d;
-  color: white;
+.cancelButton,
+.addButton {
+  padding: 12px 22px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  min-width: 190px;
+}
+
+.cancelButton {
+  background: #6c757d;
+  color: #ffffff;
 }
 
 .cancelButton:hover {
   background: #5a6268;
+  transform: translateY(-1px);
 }
 
 .addButton {
-  padding: 12px 24px;
   background: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  color: #ffffff;
 }
 
 .addButton:hover:not(:disabled) {
   background: #219a52;
+  transform: translateY(-1px);
 }
 
 .addButton:disabled {
-  background: #bdc3c7;
+  background: #c3ccd3;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .verifierModal {
     width: 95%;
@@ -252,6 +274,10 @@
     padding: 16px 20px;
   }
 
+  .modalHeader h2 {
+    font-size: 1.3rem;
+  }
+
   .verifierModalBody {
     padding: 20px;
   }
@@ -259,12 +285,13 @@
   .modalActions {
     padding: 16px 20px;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .cancelButton,
   .addButton {
     width: 100%;
+    min-width: 0;
   }
 
   .inputContainer {
@@ -275,9 +302,17 @@
   .searchButton {
     width: 100%;
   }
+
+  .productRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .value {
+    text-align: left;
+  }
 }
 
-/* Animation */
 @keyframes modalSlideIn {
   from {
     opacity: 0;

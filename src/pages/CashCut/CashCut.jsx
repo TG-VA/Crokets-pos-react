@@ -8,11 +8,17 @@ import Footer from "../../components/Footer/Footer";
 import NavbarCashCut from "../../components/CashCutComponents/NavbarCashCut/NavbarCashCut";
 import CorteModal from "../../components/CashCutComponents/CashCutModal/CashCutModal";
 
+import { buildCashCutText } from "../../utils/cashCutBuilder";
+import { printTicket } from "../../utils/ticketPrinter";
+
 import styles from "./CashCut.module.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
-  new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n || 0);
+  new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+  }).format(Number(n) || 0);
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString("es-MX", {
@@ -22,8 +28,21 @@ const fmtDate = (d) =>
     day: "numeric",
   });
 
+const fmtShortDate = (d) =>
+  new Date(d).toLocaleDateString("es-MX", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
 const fmtTime = (d) =>
-  new Date(d).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  new Date(d).toLocaleTimeString("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const getFolio = (saleId) =>
+  saleId ? `#${String(saleId).slice(0, 8).toUpperCase()}` : "—";
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 const SectionCard = ({ icon, title, children }) => (
@@ -38,7 +57,9 @@ const SectionCard = ({ icon, title, children }) => (
 
 const DataRow = ({ label, value, color, bold, borderTop }) => (
   <div className={`${styles.dataRow} ${borderTop ? styles.borderTop : ""}`}>
-    <span className={`${styles.dataLabel} ${bold ? styles.bold : ""}`}>{label}</span>
+    <span className={`${styles.dataLabel} ${bold ? styles.bold : ""}`}>
+      {label}
+    </span>
     <span
       className={`${styles.dataValue} ${bold ? styles.bold : ""}`}
       style={{ color: color || undefined }}
@@ -48,13 +69,77 @@ const DataRow = ({ label, value, color, bold, borderTop }) => (
   </div>
 );
 
-const EmptyState = ({ msg }) => <div className={styles.emptyState}>— {msg} —</div>;
+const EmptyState = ({ msg }) => (
+  <div className={styles.emptyState}>— {msg} —</div>
+);
+
+const CancellationItem = ({ item }) => {
+  return (
+    <div className={styles.cancellationItem}>
+      <div className={styles.cancellationTop}>
+        <div className={styles.cancellationLeft}>
+          <div className={styles.cancellationFolio}>
+            Folio {getFolio(item.sale_id)}
+          </div>
+
+          <div className={styles.cancellationDate}>
+            {fmtShortDate(item.canceled_at)} · {fmtTime(item.canceled_at)}
+          </div>
+
+          <div className={styles.cancellationReason}>
+            Motivo: {item.cancel_reason?.trim() || "Sin motivo registrado"}
+          </div>
+        </div>
+
+        <div className={styles.cancellationRight}>
+          <div className={styles.cancellationAmount}>
+            - {fmt(item.refund_amount)}
+          </div>
+
+          <div className={styles.cancellationMethod}>
+            {item.refund_method_name || "Sin método"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PartialReturnItem = ({ item }) => {
+  return (
+    <div className={styles.cancellationItem}>
+      <div className={styles.cancellationTop}>
+        <div className={styles.cancellationLeft}>
+          <div className={styles.cancellationFolio}>
+            Folio {getFolio(item.sale_id)}
+          </div>
+
+          <div className={styles.cancellationDate}>
+            {fmtShortDate(item.created_at)} · {fmtTime(item.created_at)}
+          </div>
+
+          <div className={styles.cancellationReason}>
+            Motivo: {item.return_reason?.trim() || "Sin motivo registrado"}
+          </div>
+        </div>
+
+        <div className={styles.cancellationRight}>
+          <div className={styles.cancellationAmount}>
+            - {fmt(item.total_refund)}
+          </div>
+
+          <div className={styles.cancellationMethod}>
+            {item.refund_method_name || "Sin método"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Página Principal ─────────────────────────────────────────────────────────
 const CashCut = () => {
   const navigate = useNavigate();
-
-  // ✅ IMPORTANTE: usa también setCashRegistered para “cerrar caja” en el estado global
   const { user, setCashRegistered, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -66,7 +151,7 @@ const CashCut = () => {
   const [hasShiftCut, setHasShiftCut] = useState(false);
   const [hasFinalCut, setHasFinalCut] = useState(false);
 
-  // Sesión (turno)
+  // Sesión
   const [session, setSession] = useState(null);
   const [branchName, setBranchName] = useState("");
   const [username, setUsername] = useState("");
@@ -75,9 +160,30 @@ const CashCut = () => {
   const [ventasTotales, setVentasTotales] = useState(0);
   const [ventasPorMetodo, setVentasPorMetodo] = useState([]);
   const [ventasPorDepartamento, setVentasPorDepartamento] = useState([]);
-  const [devoluciones, setDevoluciones] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
   const [tax, setTax] = useState(0);
+
+  // Dólares
+  const [ventasDolaresUsd, setVentasDolaresUsd] = useState(0);
+  const [ventasDolaresMxn, setVentasDolaresMxn] = useState(0);
+
+  // Cancelaciones
+  const [devolucionesTotales, setDevolucionesTotales] = useState(0);
+  const [devolucionesAfectanCaja, setDevolucionesAfectanCaja] = useState(0);
+  const [cancelaciones, setCancelaciones] = useState([]);
+
+  // Devoluciones parciales
+  const [devolucionesParcialesTotales, setDevolucionesParcialesTotales] =
+    useState(0);
+  const [devolucionesParcialesAfectanCaja, setDevolucionesParcialesAfectanCaja] =
+    useState(0);
+  const [devolucionesParciales, setDevolucionesParciales] = useState([]);
+
+  // Movimientos de efectivo
+  const [entradasEfectivo, setEntradasEfectivo] = useState([]);
+  const [salidasEfectivo, setSalidasEfectivo] = useState([]);
+  const [totalEntradas, setTotalEntradas] = useState(0);
+  const [totalSalidas, setTotalSalidas] = useState(0);
 
   useEffect(() => {
     if (user) fetchAllData();
@@ -90,42 +196,59 @@ const CashCut = () => {
     setTax(0);
     setVentasPorMetodo([]);
     setVentasPorDepartamento([]);
-    setDevoluciones(0);
+    setVentasDolaresUsd(0);
+    setVentasDolaresMxn(0);
+
+    setDevolucionesTotales(0);
+    setDevolucionesAfectanCaja(0);
+    setCancelaciones([]);
+
+    setDevolucionesParcialesTotales(0);
+    setDevolucionesParcialesAfectanCaja(0);
+    setDevolucionesParciales([]);
+
+    setEntradasEfectivo([]);
+    setSalidasEfectivo([]);
+    setTotalEntradas(0);
+    setTotalSalidas(0);
   };
 
-const resetLocalState = () => {
-  setActiveModal(null);
-  setErrorMsg("");
-  setSession(null);
-  setBranchName("");
-  setUsername("");
-  setHasShiftCut(false);
-  setHasFinalCut(false);
-  resetSalesState();
-};
+  const resetLocalState = () => {
+    setActiveModal(null);
+    setErrorMsg("");
+    setSession(null);
+    setBranchName("");
+    setUsername("");
+    setHasShiftCut(false);
+    setHasFinalCut(false);
+    resetSalesState();
+  };
 
   const fetchAllData = async () => {
-  setLoading(true);
-  setErrorMsg("");
-  try {
-    const sessionData = await fetchSession();
-    if (sessionData) {
-      await fetchSalesData(sessionData);
-      await fetchExistingCuts(sessionData.id);
-    } else {
-      resetSalesState();
-      setHasShiftCut(false);
-      setHasFinalCut(false);
-    }
-  } catch (err) {
-    console.error("Error cargando datos del corte:", err);
-    setErrorMsg("No se pudieron cargar los datos del turno.");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    setErrorMsg("");
 
-  // ── Sesión activa (turno open) ─────────────────────────────────────────────
+    try {
+      const sessionData = await fetchSession();
+
+      if (sessionData) {
+        await fetchSalesData(sessionData);
+        await fetchCashMovements(sessionData.id);
+        await fetchExistingCuts(sessionData.id);
+      } else {
+        resetSalesState();
+        setHasShiftCut(false);
+        setHasFinalCut(false);
+      }
+    } catch (err) {
+      console.error("Error cargando datos del corte:", err);
+      setErrorMsg("No se pudieron cargar los datos del turno.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Sesión activa ──────────────────────────────────────────────────────────
   const fetchSession = async () => {
     setUsername(
       user?.user_metadata?.username
@@ -164,8 +287,11 @@ const resetLocalState = () => {
         .eq("id", sessionData.branch_id)
         .maybeSingle();
 
-      if (!branchErr && branchData?.name) setBranchName(branchData.name);
-      else setBranchName("");
+      if (!branchErr && branchData?.name) {
+        setBranchName(branchData.name);
+      } else {
+        setBranchName("");
+      }
     } else {
       setBranchName("");
     }
@@ -174,28 +300,28 @@ const resetLocalState = () => {
   };
 
   const fetchExistingCuts = async (sessionId) => {
-  if (!sessionId) {
-    setHasShiftCut(false);
-    setHasFinalCut(false);
-    return;
-  }
+    if (!sessionId) {
+      setHasShiftCut(false);
+      setHasFinalCut(false);
+      return;
+    }
 
-  const { data, error } = await supabase
-    .from("cash_cuts")
-    .select("cut_type")
-    .eq("cash_register_session_id", sessionId);
+    const { data, error } = await supabase
+      .from("cash_cuts")
+      .select("cut_type")
+      .eq("cash_register_session_id", sessionId);
 
-  if (error) {
-    console.error("Error obteniendo cortes existentes:", error.message);
-    setHasShiftCut(false);
-    setHasFinalCut(false);
-    return;
-  }
+    if (error) {
+      console.error("Error obteniendo cortes existentes:", error.message);
+      setHasShiftCut(false);
+      setHasFinalCut(false);
+      return;
+    }
 
-  const cutTypes = data?.map((c) => c.cut_type) || [];
-  setHasShiftCut(cutTypes.includes("shift"));
-  setHasFinalCut(cutTypes.includes("final"));
-};
+    const cutTypes = data?.map((c) => c.cut_type) || [];
+    setHasShiftCut(cutTypes.includes("shift"));
+    setHasFinalCut(cutTypes.includes("final"));
+  };
 
   // ── Ventas del turno ──────────────────────────────────────────────────────
   const fetchSalesData = async (sessionData) => {
@@ -224,37 +350,150 @@ const resetLocalState = () => {
     if (salesData && salesData.length > 0) {
       const saleIds = salesData.map((s) => s.id);
 
-      setVentasTotales(salesData.reduce((acc, s) => acc + parseFloat(s.total || 0), 0));
-      setSubtotal(salesData.reduce((acc, s) => acc + parseFloat(s.subtotal || 0), 0));
+      setVentasTotales(
+        salesData.reduce((acc, s) => acc + parseFloat(s.total || 0), 0)
+      );
+      setSubtotal(
+        salesData.reduce((acc, s) => acc + parseFloat(s.subtotal || 0), 0)
+      );
       setTax(salesData.reduce((acc, s) => acc + parseFloat(s.tax || 0), 0));
 
       await fetchVentasPorMetodo(saleIds, branchId);
       await fetchVentasPorDepartamento(saleIds);
+      await fetchVentasDolares(saleIds, branchId);
     } else {
       setVentasTotales(0);
       setSubtotal(0);
       setTax(0);
       setVentasPorMetodo([]);
       setVentasPorDepartamento([]);
+      setVentasDolaresUsd(0);
+      setVentasDolaresMxn(0);
     }
 
-    const { data: devData, error: devErr } = await supabase
+    const { data: refundRows, error: refundErr } = await supabase
       .from("canceled_sales")
-      .select("refund_amount")
+      .select(`
+        id,
+        sale_id,
+        cancel_reason,
+        refund_amount,
+        refund_method_id,
+        canceled_at,
+        user_id,
+        branch_id,
+        payment_methods (
+          id,
+          name,
+          affects_cash
+        )
+      `)
+      .eq("branch_id", branchId)
       .eq("user_id", user.id)
-      .gte("canceled_at", turnoStart);
+      .gte("canceled_at", turnoStart)
+      .order("canceled_at", { ascending: false });
 
-    if (devErr) {
-      console.error("Error obteniendo devoluciones:", devErr.message);
+    if (refundErr) {
+      console.error("Error obteniendo devoluciones:", refundErr.message);
+      setDevolucionesTotales(0);
+      setDevolucionesAfectanCaja(0);
+      setCancelaciones([]);
+    } else {
+      const totalRefunds = (refundRows || []).reduce(
+        (acc, row) => acc + parseFloat(row.refund_amount || 0),
+        0
+      );
+
+      const totalRefundsCashImpact = (refundRows || []).reduce((acc, row) => {
+        const affectsCash = row.payment_methods?.affects_cash ?? false;
+        if (affectsCash) {
+          return acc + parseFloat(row.refund_amount || 0);
+        }
+        return acc;
+      }, 0);
+
+      setDevolucionesTotales(totalRefunds);
+      setDevolucionesAfectanCaja(totalRefundsCashImpact);
+
+      setCancelaciones(
+        (refundRows || []).map((row) => ({
+          id: row.id,
+          sale_id: row.sale_id,
+          cancel_reason: row.cancel_reason,
+          refund_amount: Number(row.refund_amount || 0),
+          canceled_at: row.canceled_at,
+          refund_method_name: row.payment_methods?.name || "Sin método",
+          affects_cash: row.payment_methods?.affects_cash ?? false,
+        }))
+      );
+    }
+
+    const { data: partialReturnRows, error: partialReturnErr } = await supabase
+      .from("sale_returns")
+      .select(`
+        id,
+        sale_id,
+        return_reason,
+        total_refund,
+        refund_method_id,
+        created_at,
+        user_id,
+        branch_id,
+        payment_methods (
+          id,
+          name,
+          affects_cash
+        )
+      `)
+      .eq("branch_id", branchId)
+      .eq("user_id", user.id)
+      .gte("created_at", turnoStart)
+      .order("created_at", { ascending: false });
+
+    if (partialReturnErr) {
+      console.error(
+        "Error obteniendo devoluciones parciales:",
+        partialReturnErr.message
+      );
+      setDevolucionesParcialesTotales(0);
+      setDevolucionesParcialesAfectanCaja(0);
+      setDevolucionesParciales([]);
       return;
     }
 
-    setDevoluciones(
-      devData ? devData.reduce((acc, d) => acc + parseFloat(d.refund_amount || 0), 0) : 0
+    const totalPartialReturns = (partialReturnRows || []).reduce(
+      (acc, row) => acc + parseFloat(row.total_refund || 0),
+      0
+    );
+
+    const totalPartialReturnsCashImpact = (partialReturnRows || []).reduce(
+      (acc, row) => {
+        const affectsCash = row.payment_methods?.affects_cash ?? false;
+        if (affectsCash) {
+          return acc + parseFloat(row.total_refund || 0);
+        }
+        return acc;
+      },
+      0
+    );
+
+    setDevolucionesParcialesTotales(totalPartialReturns);
+    setDevolucionesParcialesAfectanCaja(totalPartialReturnsCashImpact);
+
+    setDevolucionesParciales(
+      (partialReturnRows || []).map((row) => ({
+        id: row.id,
+        sale_id: row.sale_id,
+        return_reason: row.return_reason,
+        total_refund: Number(row.total_refund || 0),
+        created_at: row.created_at,
+        refund_method_name: row.payment_methods?.name || "Sin método",
+        affects_cash: row.payment_methods?.affects_cash ?? false,
+      }))
     );
   };
 
-  // ── Ventas por método de pago ─────────────────────────────────────────────
+  // ── Ventas por método ─────────────────────────────────────────────────────
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
     const { data, error } = await supabase
       .from("sale_payments")
@@ -268,11 +507,20 @@ const resetLocalState = () => {
     }
 
     const grouped = {};
+
     data?.forEach((p) => {
       const name = p.payment_methods?.name || "Otro";
       const id = p.payment_methods?.id || null;
       const affectsCash = p.payment_methods?.affects_cash ?? false;
-      if (!grouped[name]) grouped[name] = { id, total: 0, affects_cash: affectsCash };
+
+      if (!grouped[name]) {
+        grouped[name] = {
+          id,
+          total: 0,
+          affects_cash: affectsCash,
+        };
+      }
+
       grouped[name].total += parseFloat(p.amount || 0);
     });
 
@@ -284,6 +532,37 @@ const resetLocalState = () => {
         affects_cash: val.affects_cash,
       }))
     );
+  };
+
+  // ── Ventas en dólares ─────────────────────────────────────────────────────
+  const fetchVentasDolares = async (saleIds, branchId) => {
+    const { data, error } = await supabase
+      .from("sale_payments")
+      .select("amount, currency, exchange_rate")
+      .in("sale_id", saleIds)
+      .eq("branch_id", branchId)
+      .eq("currency", "USD");
+
+    if (error) {
+      console.error("Error obteniendo ventas en dólares:", error.message);
+      setVentasDolaresUsd(0);
+      setVentasDolaresMxn(0);
+      return;
+    }
+
+    const totalUsd = (data || []).reduce(
+      (acc, row) => acc + Number(row.amount || 0),
+      0
+    );
+
+    const totalMxn = (data || []).reduce((acc, row) => {
+      const amount = Number(row.amount || 0);
+      const exchangeRate = Number(row.exchange_rate || 0);
+      return acc + amount * exchangeRate;
+    }, 0);
+
+    setVentasDolaresUsd(totalUsd);
+    setVentasDolaresMxn(totalMxn);
   };
 
   // ── Ventas por departamento ───────────────────────────────────────────────
@@ -299,6 +578,7 @@ const resetLocalState = () => {
     }
 
     const grouped = {};
+
     data?.forEach((item) => {
       const deptName = item.products?.departments?.name || "Sin departamento";
       if (!grouped[deptName]) grouped[deptName] = 0;
@@ -312,7 +592,47 @@ const resetLocalState = () => {
     );
   };
 
-  // ── Guardar corte en Supabase ─────────────────────────────────────────────
+  // ── Movimientos de caja ───────────────────────────────────────────────────
+  const fetchCashMovements = async (sessionId) => {
+    if (!sessionId) {
+      setEntradasEfectivo([]);
+      setSalidasEfectivo([]);
+      setTotalEntradas(0);
+      setTotalSalidas(0);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("cash_movements")
+      .select("id, movement_type, amount, description, created_at")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error obteniendo movimientos de caja:", error.message);
+      setEntradasEfectivo([]);
+      setSalidasEfectivo([]);
+      setTotalEntradas(0);
+      setTotalSalidas(0);
+      return;
+    }
+
+    const entradas = (data || []).filter((m) => m.movement_type === "entrada");
+    const salidas = (data || []).filter((m) => m.movement_type === "salida");
+
+    setEntradasEfectivo(entradas);
+    setSalidasEfectivo(salidas);
+
+    setTotalEntradas(
+      entradas.reduce((acc, mov) => acc + parseFloat(mov.amount || 0), 0)
+    );
+
+    setTotalSalidas(
+      salidas.reduce((acc, mov) => acc + parseFloat(mov.amount || 0), 0)
+    );
+  };
+
+  // ── Guardar corte ─────────────────────────────────────────────────────────
   const handleConfirmCorte = async ({ counted, notes, expected }) => {
     setErrorMsg("");
 
@@ -321,7 +641,7 @@ const resetLocalState = () => {
       return;
     }
 
-    const diferencia = counted - expected;
+    const diferencia = Number(counted || 0) - Number(expected || 0);
 
     try {
       const { data: cutData, error: cutError } = await supabase
@@ -341,13 +661,13 @@ const resetLocalState = () => {
         .single();
 
       if (cutError) {
-  if (cutError.code === "23505") {
-    const tipoTexto = activeModal === "cajero" ? "de cajero" : "del día";
-    setErrorMsg(`Ya existe un corte ${tipoTexto} para este turno.`);
-    return;
-  }
-  throw cutError;
-}
+        if (cutError.code === "23505") {
+          const tipoTexto = activeModal === "cajero" ? "de cajero" : "del día";
+          setErrorMsg(`Ya existe un corte ${tipoTexto} para este turno.`);
+          return;
+        }
+        throw cutError;
+      }
 
       if (ventasPorMetodo.length > 0 && cutData?.id) {
         const details = ventasPorMetodo
@@ -361,7 +681,10 @@ const resetLocalState = () => {
           }));
 
         if (details.length > 0) {
-          const { error: detErr } = await supabase.from("cash_cut_details").insert(details);
+          const { error: detErr } = await supabase
+            .from("cash_cut_details")
+            .insert(details);
+
           if (detErr) throw detErr;
         }
       }
@@ -376,9 +699,10 @@ const resetLocalState = () => {
     }
   };
 
-  // ── Cerrar turno (RPC + signOut + redirect login) ──────────────────────────
+  // ── Cerrar turno ──────────────────────────────────────────────────────────
   const handleCerrarTurno = async () => {
     setErrorMsg("");
+
     if (closingShift) return;
 
     if (!session?.id) {
@@ -386,7 +710,9 @@ const resetLocalState = () => {
       return;
     }
 
-    if (!window.confirm("¿Estás seguro de que deseas cerrar el turno actual?")) return;
+    if (!window.confirm("¿Estás seguro de que deseas cerrar el turno actual?")) {
+      return;
+    }
 
     try {
       setClosingShift(true);
@@ -402,17 +728,12 @@ const resetLocalState = () => {
         return;
       }
 
-      // ✅ MUY IMPORTANTE: marca que ya NO hay caja abierta
-if (typeof setCashRegistered === "function") {
-  setCashRegistered(false);
-}
+      if (typeof setCashRegistered === "function") {
+        setCashRegistered(false);
+      }
 
-await logout();
-
-      // 3) limpiar estado local
+      await logout();
       resetLocalState();
-
-      // 4) ir al login (replace para que no regrese con back)
       navigate("/login", { replace: true });
     } catch (err) {
       console.error("Error cerrando turno:", err);
@@ -425,47 +746,123 @@ await logout();
 
   // ── Cálculos ──────────────────────────────────────────────────────────────
   const openingAmount = parseFloat(session?.opening_amount || 0);
-  const efectivoVentas = ventasPorMetodo
-    .filter((m) => m.affects_cash)
+
+  const ventasEfectivo = ventasPorMetodo
+    .filter((m) => m.name?.toLowerCase() === "efectivo")
     .reduce((acc, m) => acc + m.total, 0);
-  const dineroCaja = openingAmount + efectivoVentas - devoluciones;
+
+  const ventasTerminal = ventasPorMetodo
+    .filter((m) => {
+      const name = m.name?.toLowerCase() || "";
+      return name.includes("terminal") || name.includes("tarjeta");
+    })
+    .reduce((acc, m) => acc + m.total, 0);
+
+  const ventasTransferencia = ventasPorMetodo
+    .filter((m) => {
+      const name = m.name?.toLowerCase() || "";
+      return name.includes("transferencia");
+    })
+    .reduce((acc, m) => acc + m.total, 0);
+
+  const descuentoTotal = subtotal + tax - ventasTotales;
+
+  const dineroCaja =
+    openingAmount +
+    totalEntradas +
+    ventasEfectivo +
+    ventasDolaresMxn -
+    totalSalidas -
+    devolucionesAfectanCaja -
+    devolucionesParcialesAfectanCaja;
+
   const now = new Date();
+
+  const handlePrint = async () => {
+    try {
+      const text = buildCashCutText({
+        branchName: branchName || "SUCURSAL",
+        username: username || "USUARIO",
+        sessionId: session?.id
+          ? `#${session.id.slice(0, 8).toUpperCase()}`
+          : "—",
+        openedAt: session?.opened_at || new Date(),
+
+        ventasTotales,
+        dineroCaja,
+        ventasTerminal,
+        ventasTransferencia,
+
+        openingAmount,
+        totalEntradas,
+        ventasEfectivo,
+        ventasDolaresUsd,
+        ventasDolaresMxn,
+        totalSalidas,
+        devolucionesCaja: devolucionesAfectanCaja,
+        devolucionesParcialesCaja: devolucionesParcialesAfectanCaja,
+
+        ventasPorMetodo,
+
+        entradas: entradasEfectivo,
+        salidas: salidasEfectivo,
+
+        subtotal,
+        discount: descuentoTotal,
+        tax,
+
+        cancelaciones,
+        devolucionesParciales,
+      });
+
+      const result = await printTicket(text);
+
+      if (!result?.success) {
+        throw new Error(result?.message || "No se pudo generar el corte.");
+      }
+
+      alert("Corte generado correctamente.");
+    } catch (error) {
+      console.error("Error imprimiendo corte:", error);
+      alert(error.message || "No se pudo generar el corte.");
+    }
+  };
 
   return (
     <div className={styles.container}>
       <Navbar />
 
       <NavbarCashCut
-  onCorteCajero={() => {
-    setErrorMsg("");
-    if (!session?.id || !session?.branch_id) {
-      setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
-      return;
-    }
-    if (hasShiftCut) {
-      setErrorMsg("Ya existe un corte de cajero para este turno.");
-      return;
-    }
-    setActiveModal("cajero");
-  }}
-  onCorteDelDia={() => {
-    setErrorMsg("");
-    if (!session?.id || !session?.branch_id) {
-      setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
-      return;
-    }
-    if (hasFinalCut) {
-      setErrorMsg("Ya existe un corte del día para este turno.");
-      return;
-    }
-    setActiveModal("dia");
-  }}
-  onImprimir={() => window.print()}
-  onCerrarTurno={handleCerrarTurno}
-  disableCorteCajero={!session?.id || hasShiftCut}
-  disableCorteDelDia={!session?.id || hasFinalCut}
-  disableCerrarTurno={!session?.id || !hasShiftCut || closingShift}
-/>
+        onCorteCajero={() => {
+          setErrorMsg("");
+          if (!session?.id || !session?.branch_id) {
+            setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+            return;
+          }
+          if (hasShiftCut) {
+            setErrorMsg("Ya existe un corte de cajero para este turno.");
+            return;
+          }
+          setActiveModal("cajero");
+        }}
+        onCorteDelDia={() => {
+          setErrorMsg("");
+          if (!session?.id || !session?.branch_id) {
+            setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+            return;
+          }
+          if (hasFinalCut) {
+            setErrorMsg("Ya existe un corte del día para este turno.");
+            return;
+          }
+          setActiveModal("dia");
+        }}
+        onImprimir={handlePrint}
+        onCerrarTurno={handleCerrarTurno}
+        disableCorteCajero={!session?.id || hasShiftCut}
+        disableCorteDelDia={!session?.id || hasFinalCut}
+        disableCerrarTurno={!session?.id || !hasShiftCut || closingShift}
+      />
 
       <div className={styles.pageContent}>
         {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
@@ -479,11 +876,12 @@ await logout();
           <>
             <div className={styles.heroCard}>
               <div className={styles.heroLeft}>
-                <span className={styles.heroLabel}>Ventas Totales del Turno</span>
+                <span className={styles.heroLabel}>VENTAS TOTALES DEL TURNO</span>
                 <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
                 <span className={styles.heroDate}>
                   {fmtDate(now)} ·{" "}
-                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} – {fmtTime(now)}
+                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} -{" "}
+                  {fmtTime(now)}
                 </span>
 
                 <div className={styles.sessionInfoHero}>
@@ -509,59 +907,169 @@ await logout();
               </div>
 
               <div className={styles.heroStats}>
-                {ventasPorMetodo.map((m) => (
-                  <div key={m.name} className={styles.heroStat}>
-                    <span className={styles.heroStatLabel}>
-                      {m.affects_cash ? "💵" : "💳"} {m.name}
-                    </span>
-                    <span className={styles.heroStatValue}>{fmt(m.total)}</span>
-                  </div>
-                ))}
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>💰 Total en caja</span>
+                  <span className={styles.heroStatValue}>{fmt(dineroCaja)}</span>
+                </div>
 
-                {devoluciones > 0 && (
-                  <div className={styles.heroStat}>
-                    <span className={styles.heroStatLabel}>↩️ Devoluciones</span>
-                    <span className={`${styles.heroStatValue} ${styles.negative}`}>
-                      -{fmt(devoluciones)}
-                    </span>
-                  </div>
-                )}
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>💳 Terminal</span>
+                  <span className={styles.heroStatValue}>{fmt(ventasTerminal)}</span>
+                </div>
+
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>🏦 Transferencia</span>
+                  <span className={styles.heroStatValue}>
+                    {fmt(ventasTransferencia)}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className={styles.grid}>
-              <SectionCard icon="💰" title="Dinero en Caja">
+              <SectionCard icon="💰" title="DINERO EN CAJA">
                 <DataRow label="Fondo de caja inicial" value={fmt(openingAmount)} />
-                <DataRow label="Ventas en efectivo" value={`+ ${fmt(efectivoVentas)}`} color="#2e7d32" />
-                <DataRow label="Devoluciones en efectivo" value={`- ${fmt(devoluciones)}`} color="#c62828" />
+                <DataRow
+                  label="Entradas de efectivo"
+                  value={`+ ${fmt(totalEntradas)}`}
+                  color="#2e7d32"
+                />
+                <DataRow
+                  label="Ventas en efectivo"
+                  value={`+ ${fmt(ventasEfectivo)}`}
+                  color="#2e7d32"
+                />
+                <DataRow
+                  label="Ventas en dólares"
+                  value={`+ USD ${ventasDolaresUsd.toFixed(2)}`}
+                  color="#2e7d32"
+                />
+                <DataRow
+                  label="Equivalente en MXN"
+                  value={`+ ${fmt(ventasDolaresMxn)}`}
+                  color="#2e7d32"
+                />
+                <DataRow
+                  label="Salidas de efectivo"
+                  value={`- ${fmt(totalSalidas)}`}
+                  color="#c62828"
+                />
+                <DataRow
+                  label="Devoluciones que afectan caja"
+                  value={`- ${fmt(devolucionesAfectanCaja)}`}
+                  color="#c62828"
+                />
+                <DataRow
+                  label="Dev. parciales que afectan caja"
+                  value={`- ${fmt(devolucionesParcialesAfectanCaja)}`}
+                  color="#c62828"
+                />
                 <DataRow label="Total en caja" value={fmt(dineroCaja)} bold borderTop />
               </SectionCard>
 
-              <SectionCard icon="💳" title="Ventas por Método de Pago">
+              <SectionCard icon="💳" title="VENTAS POR MÉTODO DE PAGO">
                 {ventasPorMetodo.length === 0 ? (
                   <EmptyState msg="No hubo ventas en este turno" />
                 ) : (
                   <>
-                    {ventasPorMetodo.map((m) => (
-                      <DataRow key={m.name} label={m.name} value={`+ ${fmt(m.total)}`} color="#2e7d32" />
-                    ))}
-                    {devoluciones > 0 && (
-                      <DataRow label="Devoluciones" value={`- ${fmt(devoluciones)}`} color="#c62828" />
+                    {ventasPorMetodo.map((m) => {
+                      const isDollars =
+                        m.name === "Dólares" || m.name === "Dolares";
+
+                      return (
+                        <React.Fragment key={m.name}>
+                          <DataRow
+                            label={m.name}
+                            value={
+                              isDollars
+                                ? `+ USD ${ventasDolaresUsd.toFixed(2)}`
+                                : `+ ${fmt(m.total)}`
+                            }
+                            color="#2e7d32"
+                          />
+                          {isDollars && ventasDolaresUsd > 0 && (
+                            <DataRow
+                              label="Equivalente en MXN"
+                              value={`+ ${fmt(ventasDolaresMxn)}`}
+                              color="#2e7d32"
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {devolucionesTotales > 0 && (
+                      <DataRow
+                        label="Devoluciones totales"
+                        value={`- ${fmt(devolucionesTotales)}`}
+                        color="#c62828"
+                      />
                     )}
+
+                    {devolucionesParcialesTotales > 0 && (
+                      <DataRow
+                        label="Devoluciones parciales"
+                        value={`- ${fmt(devolucionesParcialesTotales)}`}
+                        color="#c62828"
+                      />
+                    )}
+
                     <DataRow label="Total" value={fmt(ventasTotales)} bold borderTop />
                   </>
                 )}
               </SectionCard>
 
-              <SectionCard icon="⬇️" title="Entradas de Efectivo">
-                <EmptyState msg="No hubo entradas de efectivo" />
+              <SectionCard icon="⬇️" title="ENTRADAS DE EFECTIVO">
+                {entradasEfectivo.length === 0 ? (
+                  <EmptyState msg="No hubo entradas de efectivo" />
+                ) : (
+                  <>
+                    {entradasEfectivo.map((mov) => (
+                      <DataRow
+                        key={mov.id}
+                        label={`${
+                          mov.description || "Entrada"
+                        } · ${fmtTime(mov.created_at)}`}
+                        value={`+ ${fmt(mov.amount)}`}
+                        color="#2e7d32"
+                      />
+                    ))}
+                    <DataRow
+                      label="Total entradas"
+                      value={fmt(totalEntradas)}
+                      bold
+                      borderTop
+                    />
+                  </>
+                )}
               </SectionCard>
 
-              <SectionCard icon="⬆️" title="Salidas de Efectivo">
-                <EmptyState msg="No hubo salidas de efectivo" />
+              <SectionCard icon="⬆️" title="SALIDAS DE EFECTIVO">
+                {salidasEfectivo.length === 0 ? (
+                  <EmptyState msg="No hubo salidas de efectivo" />
+                ) : (
+                  <>
+                    {salidasEfectivo.map((mov) => (
+                      <DataRow
+                        key={mov.id}
+                        label={`${
+                          mov.description || "Salida"
+                        } · ${fmtTime(mov.created_at)}`}
+                        value={`- ${fmt(mov.amount)}`}
+                        color="#c62828"
+                      />
+                    ))}
+                    <DataRow
+                      label="Total salidas"
+                      value={fmt(totalSalidas)}
+                      bold
+                      borderTop
+                    />
+                  </>
+                )}
               </SectionCard>
 
-              <SectionCard icon="📦" title="Ventas por Departamento">
+              <SectionCard icon="📦" title="VENTAS POR DEPARTAMENTO">
                 {ventasPorDepartamento.length === 0 ? (
                   <EmptyState msg="No hay datos de departamentos" />
                 ) : (
@@ -571,7 +1079,9 @@ await logout();
                     ))}
                     <DataRow
                       label="Total"
-                      value={fmt(ventasPorDepartamento.reduce((a, d) => a + d.total, 0))}
+                      value={fmt(
+                        ventasPorDepartamento.reduce((a, d) => a + d.total, 0)
+                      )}
                       bold
                       borderTop
                     />
@@ -579,11 +1089,57 @@ await logout();
                 )}
               </SectionCard>
 
-              <SectionCard icon="🧾" title="Impuestos">
-                <DataRow label="Subtotal (sin IVA)" value={fmt(subtotal)} />
-                <DataRow label="IVA (16%) — Cobrado" value={fmt(tax)} color="#1976d2" />
-                <DataRow label="IVA (16%) — Ventas Gravadas" value={fmt(ventasTotales)} />
-                <DataRow label="Total con IVA" value={fmt(ventasTotales)} bold borderTop />
+              <SectionCard icon="🧾" title="RESUMEN DE VENTAS">
+                <DataRow label="Subtotal registrado" value={fmt(subtotal)} />
+                <DataRow
+                  label="Descuento aplicado"
+                  value={`- ${fmt(descuentoTotal)}`}
+                  color="#c62828"
+                />
+                <DataRow
+                  label="Impuestos registrados"
+                  value={fmt(tax)}
+                  color="#1976d2"
+                />
+                <DataRow label="Total vendido" value={fmt(ventasTotales)} bold borderTop />
+              </SectionCard>
+
+              <SectionCard icon="↩️" title="CANCELACIONES">
+                {cancelaciones.length === 0 ? (
+                  <EmptyState msg="No hubo cancelaciones en este turno" />
+                ) : (
+                  <>
+                    {cancelaciones.map((c) => (
+                      <CancellationItem key={c.id} item={c} />
+                    ))}
+
+                    <DataRow
+                      label="Total cancelado"
+                      value={fmt(devolucionesTotales)}
+                      bold
+                      borderTop
+                    />
+                  </>
+                )}
+              </SectionCard>
+
+              <SectionCard icon="↩️" title="DEVOLUCIONES PARCIALES">
+                {devolucionesParciales.length === 0 ? (
+                  <EmptyState msg="No hubo devoluciones parciales en este turno" />
+                ) : (
+                  <>
+                    {devolucionesParciales.map((item) => (
+                      <PartialReturnItem key={item.id} item={item} />
+                    ))}
+
+                    <DataRow
+                      label="Total devoluciones parciales"
+                      value={fmt(devolucionesParcialesTotales)}
+                      bold
+                      borderTop
+                    />
+                  </>
+                )}
               </SectionCard>
             </div>
 
@@ -592,18 +1148,15 @@ await logout();
             </div>
           </>
         )}
-
-        {activeModal && (
-          <CorteModal
-            tipo={activeModal}
-            expected={activeModal === "cajero" ? openingAmount + efectivoVentas : ventasTotales}
-            onClose={() => setActiveModal(null)}
-            onConfirm={handleConfirmCorte}
-          />
-        )}
-
-        <style>{`@media print { button { display: none !important; } }`}</style>
       </div>
+
+      <CorteModal
+        isOpen={activeModal === "cajero" || activeModal === "dia"}
+        onClose={() => setActiveModal(null)}
+        onConfirm={handleConfirmCorte}
+        cutType={activeModal}
+        expectedAmount={dineroCaja}
+      />
 
       <Footer />
     </div>

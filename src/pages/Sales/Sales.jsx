@@ -1,5 +1,11 @@
-import React, { useState, useRef, useCallback, useEffect, use } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import styles from "../../pages/Sales/Sales.module.css";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBranch } from "../../contexts/BranchContext";
+import { v4 as uuidv4 } from "uuid";
+import { buildTicketText } from "../../utils/ticketBuilder";
+import { printTicket } from "../../utils/ticketPrinter";
 
 // Importar iconos
 import searchIcon from "../../assets/icons/searchIcon.svg";
@@ -28,16 +34,19 @@ import DeleteItemModal from "../../components/SalesComponents/Modals/DeleteItemM
 import SalesHistoryModal from "../../components/SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal";
 
 const Sales = () => {
-  // Estados para tickets
+  const { user } = useAuth();
+  const { branch } = useBranch();
+
+  const [saleToken, setSaleToken] = useState(null);
+  const [saleNotes, setSaleNotes] = useState("");
   const [ticketNumber, setTicketNumber] = useState(1);
   const [pendingTickets, setPendingTickets] = useState([]);
+  const [barcode, setBarcode] = useState("");
 
-  // Configuración de anchos de columna en píxeles
   const MIN_COLUMN_WIDTH = 80;
   const [columnWidths, setColumnWidths] = useState([400, 150, 80, 150, 150]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Referencia optimizada para redimensionamiento
   const resizeRef = useRef({
     isResizing: false,
     columnIndex: -1,
@@ -48,7 +57,6 @@ const Sales = () => {
 
   const tableRef = useRef(null);
 
-  // Estados para los modales
   const [isExitModalOpen, setExitModalOpen] = useState(false);
   const [isEntryModalOpen, setEntryModalOpen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -63,82 +71,698 @@ const Sales = () => {
   const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
   const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
 
-  // Estados para movimientos de caja
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
+  const [processingSale, setProcessingSale] = useState(false);
 
-  // Datos de ejemplo para la tabla
-  const [productos, setProductos] = useState([
-    {
-      id: 1,
-      codigo: "NUPEC ADULTO RAZA PEQUEÑA 2KG",
-      precio: 332.0,
-      costo: 250.0,
-      cantidad: 1,
-      importe: 332.0,
-      existencia: 10,
-    },
-    {
-      id: 2,
-      codigo: "NUPEC ADULTO 20KG",
-      precio: 2089.0,
-      costo: 1200.0,
-      cantidad: 1,
-      importe: 69.0,
-      existencia: 6,
-    },
-    {
-      id: 3,
-      codigo: "NEXGARD SPECTRA 15-30 KG",
-      precio: 890,
-      costo: 600,
-      cantidad: 1,
-      importe: 890,
-      existencia: 5,
-    },
-  ]);
+  const [productos, setProductos] = useState([]);
 
-  // Función para seleccionar/deseleccionar producto
+  const subtotal = productos.reduce(
+    (sum, producto) =>
+      sum +
+      Number(producto.precioOriginal ?? producto.precio ?? 0) *
+        Number(producto.cantidad || 0),
+    0
+  );
+
+  const discountTotal = productos.reduce(
+    (sum, producto) => sum + Number(producto.descuentoMonto || 0),
+    0
+  );
+
+  const total = subtotal - discountTotal;
+
+  const resetCurrentSale = () => {
+    setProductos([]);
+    setSelectedProduct(null);
+    setCurrentSaleClient(null);
+    setTicketNumber((prev) => prev + 1);
+    setBarcode("");
+    setSaleToken(null);
+    setSaleNotes("");
+  };
+
+  const openPaymentFlow = () => {
+    if (productos.length === 0) {
+      alert("No hay productos en la venta.");
+      return;
+    }
+
+    if (processingSale) return;
+
+    setSaleToken((prev) => prev || uuidv4());
+    setShowPaymentModal(true);
+  };
+
+  const isValidUuid = (value) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value || "")
+    );
+  };
+
+  const getBranchInventoryRow = async (productId) => {
+    if (!branch?.id) {
+      throw new Error("No se detectó la sucursal.");
+    }
+
+    const { data, error } = await supabase
+      .from("branch_inventory")
+      .select("stock, is_active, cost_price, sale_price")
+      .eq("branch_id", branch.id)
+      .eq("product_id", productId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return data;
+  };
+
+  const getOpenCashSession = async () => {
+    if (!branch?.id || !user?.id) {
+      throw new Error("No se detectó la sucursal o el usuario.");
+    }
+
+    const { data, error } = await supabase
+      .from("cash_register_sessions")
+      .select("id, branch_id, user_id, status, opened_at, opening_amount")
+      .eq("branch_id", branch.id)
+      .eq("user_id", user.id)
+      .eq("status", "open")
+      .order("opened_at", { ascending: false })
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error("No hay una sesión de caja abierta para este usuario.");
+    }
+
+    return data;
+  };
+
+const getAvailableCash = async (sessionId) => {
+  try {
+    const { data: session, error: sessionError } = await supabase
+      .from("cash_register_sessions")
+      .select("id, branch_id, opening_amount, opened_at")
+      .eq("id", sessionId)
+      .single();
+
+    if (sessionError) throw sessionError;
+
+    const openingAmount = Number(session?.opening_amount || 0);
+    const openedAt = session?.opened_at;
+    const branchId = session?.branch_id;
+
+    const { data: movements, error: movementsError } = await supabase
+      .from("cash_movements")
+      .select("movement_type, amount")
+      .eq("session_id", sessionId);
+
+    if (movementsError) throw movementsError;
+
+    let entradas = 0;
+    let salidas = 0;
+
+    for (const movement of movements || []) {
+      if (movement.movement_type === "entrada") {
+        entradas += Number(movement.amount || 0);
+      } else if (movement.movement_type === "salida") {
+        salidas += Number(movement.amount || 0);
+      }
+    }
+
+    const { data: cashMethods, error: cashMethodsError } = await supabase
+      .from("payment_methods")
+      .select("id, name")
+      .eq("name", "Efectivo");
+
+    if (cashMethodsError) throw cashMethodsError;
+
+    const cashMethodIds = (cashMethods || []).map((pm) => pm.id);
+
+    let ventasEfectivo = 0;
+
+    if (cashMethodIds.length > 0 && openedAt && branchId) {
+      const { data: cashPayments, error: cashPaymentsError } = await supabase
+        .from("sale_payments")
+        .select("amount, currency, exchange_rate, payment_method_id, created_at, branch_id")
+        .eq("branch_id", branchId)
+        .gte("created_at", openedAt)
+        .in("payment_method_id", cashMethodIds);
+
+      if (cashPaymentsError) throw cashPaymentsError;
+
+      ventasEfectivo = (cashPayments || []).reduce((sum, payment) => {
+        const amount = Number(payment.amount || 0);
+        const currency = String(payment.currency || "MXN").toUpperCase();
+        const exchangeRate = Number(payment.exchange_rate || 0);
+
+        if (currency === "MXN") {
+          return sum + amount;
+        }
+
+        if (currency === "USD" && exchangeRate > 0) {
+          return sum + amount * exchangeRate;
+        }
+
+        return sum;
+      }, 0);
+    }
+
+    const available = openingAmount + entradas + ventasEfectivo - salidas;
+
+    console.log("openingAmount:", openingAmount);
+    console.log("entradas:", entradas);
+    console.log("ventasEfectivo:", ventasEfectivo);
+    console.log("salidas:", salidas);
+    console.log("available:", available);
+
+    return available;
+  } catch (error) {
+    console.error("Error calculando efectivo disponible:", error);
+    return 0;
+  }
+};
+  const buildPaymentsPayload = (paymentData) => {
+    if (!paymentData?.method) {
+      throw new Error("No se detectó el método de pago.");
+    }
+
+    if (paymentData.method === "Mixto") {
+      const rows = [
+        {
+          payment_method_name: "Efectivo",
+          amount: Number(paymentData?.details?.efectivo || 0),
+          currency: "MXN",
+          exchange_rate: null,
+        },
+        {
+          payment_method_name: "Terminal",
+          amount: Number(paymentData?.details?.tarjeta || 0),
+          currency: "MXN",
+          exchange_rate: null,
+        },
+        {
+          payment_method_name: "Dólares",
+          amount: Number(paymentData?.details?.dolares || 0),
+          currency: "USD",
+          exchange_rate: Number(paymentData?.details?.exchangeRate || 0) || null,
+        },
+      ].filter((row) => row.amount > 0);
+
+      if (rows.length === 0) {
+        throw new Error("El pago mixto no contiene montos válidos.");
+      }
+
+      return rows;
+    }
+
+    const paymentMethodNameMap = {
+      Efectivo: "Efectivo",
+      Dolares: "Dólares",
+      Terminal: "Terminal",
+      Transferencia: "Transferencia",
+    };
+
+    const paymentMethodName = paymentMethodNameMap[paymentData.method];
+
+    if (!paymentMethodName) {
+      throw new Error("Método de pago no válido.");
+    }
+
+    return [
+      {
+        payment_method_name: paymentMethodName,
+        amount:
+          paymentData.method === "Dolares"
+            ? Number(paymentData?.details?.dollarAmount || 0)
+            : Number(paymentData.total || 0),
+        currency: paymentData.method === "Dolares" ? "USD" : "MXN",
+        exchange_rate:
+          paymentData.method === "Dolares"
+            ? Number(paymentData?.details?.exchangeRate || 0) || null
+            : null,
+        reference:
+          paymentData.method === "Transferencia"
+            ? paymentData?.details?.trackingCode?.trim() || null
+            : null,
+      },
+    ];
+  };
+
+  const buildProductsPayload = () => {
+    return productos.map((p) => ({
+      product_id: p.id,
+      quantity: Number(p.cantidad),
+      unit_price: Number(p.precio),
+      total_price: Number(p.importe),
+      original_unit_price: Number(p.precioOriginal ?? p.precio),
+      final_unit_price: Number(p.precio),
+      discount_type:
+        Number(p.descuentoMonto || 0) > 0 ? p.descuentoTipo || "amount" : null,
+      discount_value: Number(p.descuentoValor || 0),
+      discount_amount: Number(p.descuentoMonto || 0),
+    }));
+  };
+
+  const printSaleTicket = async ({
+    saleId,
+    paymentData,
+    paymentPayload,
+    notes,
+    saleDate,
+  }) => {
+    try {
+      const { data: detailsRows, error: detailsError } = await supabase
+        .from("sale_details")
+        .select(`
+          id,
+          quantity,
+          unit_price,
+          total_price,
+          product_id,
+          original_unit_price,
+          final_unit_price,
+          discount_type,
+          discount_value,
+          discount_amount
+        `)
+        .eq("sale_id", saleId);
+
+      if (detailsError) throw detailsError;
+
+      const productIds = [
+        ...new Set((detailsRows || []).map((d) => d.product_id).filter(Boolean)),
+      ];
+
+      const { data: productsRows, error: productsError } = productIds.length
+        ? await supabase
+            .from("products")
+            .select("id, name, barcode")
+            .in("id", productIds)
+        : { data: [], error: null };
+
+      if (productsError) throw productsError;
+
+      const productMap = {};
+      for (const product of productsRows || []) {
+        productMap[product.id] = product.name || product.barcode || "PRODUCTO";
+      }
+
+      const itemsForPrint = (detailsRows || []).map((item) => ({
+        quantity: Number(item.quantity || 0),
+        description: productMap[item.product_id] || "PRODUCTO",
+        unit_price: Number(item.final_unit_price || item.unit_price || 0),
+        original_unit_price: Number(
+          item.original_unit_price || item.unit_price || 0
+        ),
+        discount_amount: Number(item.discount_amount || 0),
+        line_total: Number(item.total_price || 0),
+      }));
+
+      const totalPaid = (paymentPayload || []).reduce((acc, payment) => {
+        const amount = Number(payment.amount || 0);
+        const currency = String(payment.currency || "MXN").toUpperCase();
+        const exchangeRate = Number(payment.exchange_rate || 0);
+
+        if (currency === "USD") {
+          return acc + (exchangeRate > 0 ? amount * exchangeRate : 0);
+        }
+
+        return acc + amount;
+      }, 0);
+
+      const ticketText = buildTicketText({
+        branch: {
+          name: branch?.name || "SUCURSAL",
+          phone: branch?.phone || "",
+          address: branch?.address || "",
+          city: branch?.city || "",
+          state: branch?.state || "",
+          postal_code: branch?.postal_code || branch?.zip_code || "",
+        },
+        sale: {
+          folio: String(saleId).slice(0, 8).toUpperCase(),
+          created_at: saleDate,
+          subtotal: Number(subtotal),
+          tax: 0,
+          discount_total: Number(discountTotal || 0),
+          total: Number(total),
+          amount_received: totalPaid || Number(total),
+          change_amount: Math.max(Number(paymentData?.change || 0), 0),
+          payment_method: paymentData?.method || "",
+          payments: paymentPayload || [],
+          status: "completed",
+          notes: notes || paymentData?.notes || "",
+          cashier_name: (user?.username || user?.email || "CAJERO").toUpperCase(),
+        },
+        items: itemsForPrint,
+        cashierName: (user?.username || user?.email || "CAJERO").toUpperCase(),
+        footer: {
+          line1: "Gracias por su compra",
+          line2: "Agenda tu cita de baño",
+          phone: "998 117 5387",
+          returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
+        },
+        isReprint: false,
+      });
+
+      const printResult = await printTicket(ticketText);
+
+      if (!printResult?.success) {
+        console.error("No se pudo imprimir el ticket automáticamente.");
+      }
+    } catch (error) {
+      console.error("Error al generar/imprimir ticket automático:", error);
+    }
+  };
+
+  const increaseSelectedProductQuantity = () => {
+    if (!selectedProduct) return;
+
+    let inventoryExceeded = false;
+
+    setProductos((prev) =>
+      prev.map((p) => {
+        if (p.id !== selectedProduct.id) return p;
+
+        if (p.cantidad >= p.stockReal) {
+          inventoryExceeded = true;
+          return p;
+        }
+
+        const nuevaCantidad = p.cantidad + 1;
+        const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+        const precioFinal = Number(p.precio ?? 0);
+        const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+        return {
+          ...p,
+          cantidad: nuevaCantidad,
+          importe: nuevaCantidad * precioFinal,
+          descuentoMonto: descuentoUnitario * nuevaCantidad,
+          existencia: p.stockReal - nuevaCantidad,
+        };
+      })
+    );
+
+    if (inventoryExceeded) {
+      alert("No hay suficiente inventario.");
+      return;
+    }
+
+    setSelectedProduct((prev) => {
+      if (!prev) return prev;
+      if (prev.cantidad >= prev.stockReal) return prev;
+
+      const nuevaCantidad = prev.cantidad + 1;
+      const precioOriginal = Number(prev.precioOriginal ?? prev.precio ?? 0);
+      const precioFinal = Number(prev.precio ?? 0);
+      const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+      return {
+        ...prev,
+        cantidad: nuevaCantidad,
+        importe: nuevaCantidad * precioFinal,
+        descuentoMonto: descuentoUnitario * nuevaCantidad,
+        existencia: prev.stockReal - nuevaCantidad,
+      };
+    });
+  };
+
+  const decreaseSelectedProductQuantity = () => {
+    if (!selectedProduct) return;
+
+    const productoActual = productos.find((p) => p.id === selectedProduct.id);
+    if (!productoActual) return;
+
+    if (productoActual.cantidad === 1) {
+      const updatedProductos = productos.filter((p) => p.id !== selectedProduct.id);
+      setProductos(updatedProductos);
+      setSelectedProduct(null);
+      return;
+    }
+
+    setProductos((prev) =>
+      prev.map((p) => {
+        if (p.id !== selectedProduct.id) return p;
+
+        const nuevaCantidad = p.cantidad - 1;
+        const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+        const precioFinal = Number(p.precio ?? 0);
+        const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+        return {
+          ...p,
+          cantidad: nuevaCantidad,
+          importe: nuevaCantidad * precioFinal,
+          descuentoMonto: descuentoUnitario * nuevaCantidad,
+          existencia: p.stockReal - nuevaCantidad,
+        };
+      })
+    );
+
+    setSelectedProduct((prev) => {
+      if (!prev) return prev;
+
+      const nuevaCantidad = prev.cantidad - 1;
+      const precioOriginal = Number(prev.precioOriginal ?? prev.precio ?? 0);
+      const precioFinal = Number(prev.precio ?? 0);
+      const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+      return {
+        ...prev,
+        cantidad: nuevaCantidad,
+        importe: nuevaCantidad * precioFinal,
+        descuentoMonto: descuentoUnitario * nuevaCantidad,
+        existencia: prev.stockReal - nuevaCantidad,
+      };
+    });
+  };
+
+  const addProductToCart = async (product) => {
+    if (!product?.id) return;
+
+    const inventoryRow = await getBranchInventoryRow(product.id);
+
+    if (!inventoryRow || inventoryRow.is_active === false) {
+      alert("Este producto no está activo en el inventario de esta sucursal.");
+      return;
+    }
+
+    const stock = Number(inventoryRow.stock || 0);
+
+    if (stock <= 0) {
+      alert("No hay existencia disponible.");
+      return;
+    }
+
+    const existingProduct = productos.find((p) => p.id === product.id);
+
+    if (existingProduct) {
+      if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
+        alert("No hay suficiente inventario.");
+        return;
+      }
+
+      const updatedProducts = productos.map((p) => {
+        if (p.id !== product.id) return p;
+
+        const nuevaCantidad = p.cantidad + 1;
+        const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+        const precioFinal = Number(p.precio ?? 0);
+        const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+        return {
+          ...p,
+          cantidad: nuevaCantidad,
+          importe: nuevaCantidad * precioFinal,
+          descuentoMonto: descuentoUnitario * nuevaCantidad,
+          existencia: p.stockReal - nuevaCantidad,
+        };
+      });
+
+      setProductos(updatedProducts);
+
+      if (selectedProduct?.id === product.id) {
+        const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+        setSelectedProduct(updatedSelected || null);
+      }
+
+      return;
+    }
+
+    const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+    const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+
+    const newProduct = {
+      id: product.id,
+      codigo: product.barcode,
+      nombre: product.name,
+      precioOriginal: salePrice,
+      precio: salePrice,
+      costo: costPrice,
+      cantidad: 1,
+      importe: salePrice,
+      descuentoTipo: null,
+      descuentoValor: 0,
+      descuentoMonto: 0,
+      stockReal: stock,
+      existencia: stock - 1,
+      is_kit: !!product.is_kit,
+    };
+
+    setProductos((prev) => [...prev, newProduct]);
+  };
+
+  const handleBarcodeSearch = async () => {
+    if (!branch?.id) {
+      alert("La sucursal aún no está cargada.");
+      return;
+    }
+
+    const cleanBarcode = barcode.trim();
+    if (!cleanBarcode) return;
+
+    try {
+      const { data: product, error: productError } = await supabase
+        .from("products")
+        .select("id, barcode, name, cost_price, sale_price, is_kit, status")
+        .eq("barcode", cleanBarcode)
+        .eq("status", true)
+        .maybeSingle();
+
+      if (productError) throw productError;
+
+      if (!product) {
+        alert("Producto no encontrado.");
+        setBarcode("");
+        return;
+      }
+
+      const { data: inventoryRow, error: inventoryError } = await supabase
+        .from("branch_inventory")
+        .select("stock, is_active, cost_price, sale_price")
+        .eq("branch_id", branch.id)
+        .eq("product_id", product.id)
+        .maybeSingle();
+
+      if (inventoryError) throw inventoryError;
+
+      if (!inventoryRow) {
+        alert("Este producto no existe en el inventario de esta sucursal.");
+        setBarcode("");
+        return;
+      }
+
+      if (inventoryRow.is_active === false) {
+        alert("Este producto está inactivo en esta sucursal.");
+        setBarcode("");
+        return;
+      }
+
+      if (Number(inventoryRow.stock || 0) <= 0) {
+        alert("No hay existencia disponible en esta sucursal.");
+        setBarcode("");
+        return;
+      }
+
+      await addProductToCart(product);
+      setBarcode("");
+    } catch (err) {
+      console.error("Error buscando producto:", err);
+      alert(err.message || "Error buscando producto.");
+    }
+  };
+
+  const handleAddProductFromVerifier = async (product) => {
+    if (!product) return;
+
+    try {
+      await addProductToCart(product);
+      console.log("Producto agregado desde verificador:", product);
+    } catch (err) {
+      console.error("Error agregando producto desde verificador:", err);
+      alert("No se pudo agregar el producto.");
+    }
+  };
+
   const handleProductSelect = (producto) => {
-    if (selectedProduct && selectedProduct.id === producto.id) {
+    if (selectedProduct?.id === producto.id) {
       setSelectedProduct(null);
     } else {
       setSelectedProduct(producto);
     }
   };
 
-  // Función para eliminar producto seleccionado
   const handleDeleteSelectedProduct = () => {
-    if (selectedProduct) {
-      const updatedProductos = productos.filter(
-        (p) => p.id !== selectedProduct.id
-      );
-      setProductos(updatedProductos);
-      setSelectedProduct(null);
-      console.log("Producto eliminado:", selectedProduct);
-    }
+    if (!selectedProduct) return;
+
+    const updatedProductos = productos.filter((p) => p.id !== selectedProduct.id);
+    setProductos(updatedProductos);
+    setSelectedProduct(null);
   };
 
-  // Función para manejar el descuento aplicado
   const handleApplyDiscount = (discountData) => {
-    if (selectedProduct) {
-      const updatedProductos = productos.map((producto) =>
-        producto.id === selectedProduct.id
-          ? {
-              ...producto,
-              precio: parseFloat(discountData.newPrice),
-              importe: parseFloat(discountData.newPrice) * producto.cantidad,
-            }
-          : producto
-      );
-      setProductos(updatedProductos);
-      setSelectedProduct(null);
+    if (!selectedProduct) return;
+
+    const newPrice = Number.parseFloat(discountData.newPrice);
+
+    if (Number.isNaN(newPrice) || newPrice < 0) {
+      alert("Precio de descuento inválido.");
+      return;
     }
+
+    const updatedProductos = productos.map((producto) => {
+      if (producto.id !== selectedProduct.id) return producto;
+
+      const precioOriginal = Number(producto.precioOriginal ?? producto.precio ?? 0);
+      const cantidad = Number(producto.cantidad || 0);
+      const precioFinal = newPrice;
+      const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+      const descuentoTotalProducto = descuentoUnitario * cantidad;
+
+      return {
+        ...producto,
+        precioOriginal,
+        precio: precioFinal,
+        importe: precioFinal * cantidad,
+        descuentoTipo: descuentoTotalProducto > 0 ? "amount" : null,
+        descuentoValor: descuentoUnitario,
+        descuentoMonto: descuentoTotalProducto,
+      };
+    });
+
+    setProductos(updatedProductos);
+
+    const updatedSelected = updatedProductos.find(
+      (producto) => producto.id === selectedProduct.id
+    );
+    setSelectedProduct(updatedSelected || null);
   };
 
-  // ========== CÓDIGO PARA REDIMENSIONAMIENTO ==========
+  const validateCartStockBeforeSale = async () => {
+    for (const item of productos) {
+      const inventoryRow = await getBranchInventoryRow(item.id);
+      const currentStock = Number(inventoryRow?.stock || 0);
 
-  // Función para el movimiento del mouse
+      if (currentStock <= 0) {
+        alert(`El producto "${item.nombre || item.codigo}" ya no tiene existencia.`);
+        return false;
+      }
+
+      if (item.cantidad > currentStock) {
+        alert(
+          `La cantidad de "${item.nombre || item.codigo}" excede el inventario disponible.`
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleMouseMove = useCallback((e) => {
     const { isResizing, columnIndex, startX, startWidth, nextStartWidth } =
       resizeRef.current;
@@ -147,11 +771,9 @@ const Sales = () => {
 
     const deltaX = e.clientX - startX;
 
-    // Calcular anchos
     let newWidth = startWidth + deltaX;
     let newNextWidth = nextStartWidth - deltaX;
 
-    // Aplicar límites mínimos
     if (newWidth < MIN_COLUMN_WIDTH) {
       newWidth = MIN_COLUMN_WIDTH;
       newNextWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
@@ -162,7 +784,6 @@ const Sales = () => {
       newWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
     }
 
-    // Actualizar solo las columnas afectadas
     setColumnWidths((prev) => {
       const newWidths = [...prev];
       newWidths[columnIndex] = newWidth;
@@ -171,7 +792,6 @@ const Sales = () => {
     });
   }, []);
 
-  // Función para finalizar redimensionamiento
   const handleMouseUp = useCallback(() => {
     resizeRef.current.isResizing = false;
     resizeRef.current.columnIndex = -1;
@@ -183,13 +803,11 @@ const Sales = () => {
     document.body.style.userSelect = "";
   }, [handleMouseMove]);
 
-  // Función para iniciar redimensionamiento
   const handleMouseDown = useCallback(
     (e, index) => {
       e.preventDefault();
       e.stopPropagation();
 
-      // No permitir redimensionar la última columna
       if (index >= columnWidths.length - 1) return;
 
       resizeRef.current = {
@@ -209,7 +827,6 @@ const Sales = () => {
     [columnWidths, handleMouseMove, handleMouseUp]
   );
 
-  // Efecto para limpieza al desmontar el componente
   useEffect(() => {
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
@@ -217,22 +834,16 @@ const Sales = () => {
     };
   }, [handleMouseMove, handleMouseUp]);
 
-  // Efecto para calcular anchos iniciales basados en el contenedor
   useEffect(() => {
     if (tableRef.current && !isInitialized) {
       const tableWidth = tableRef.current.offsetWidth;
-
-      // Restar: border de la tabla (2px), padding del header (20px), y margen adicional
       const availableWidth = tableWidth - 22;
-
-      // Proporciones deseadas para cada columna (excepto la última)
-      const proportions = [0.4, 0.15, 0.1, 0.15]; // Solo las primeras 4 columnas
+      const proportions = [0.4, 0.15, 0.1, 0.15];
 
       const calculatedWidths = proportions.map((prop) =>
         Math.max(MIN_COLUMN_WIDTH, Math.floor(availableWidth * prop))
       );
 
-      // La última columna toma el espacio restante
       const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
       const lastColumnWidth = Math.max(
         MIN_COLUMN_WIDTH,
@@ -244,111 +855,259 @@ const Sales = () => {
     }
   }, [isInitialized]);
 
-  // ========== FIN CÓDIGO REDIMENSIONAMIENTO ==========
+  const handleSaveEntry = async (newMovement) => {
+    try {
+      if (!user?.id) {
+        alert("No se detectó el usuario.");
+        return false;
+      }
 
-  // Calcular totales
-  const subtotal = productos.reduce(
-    (sum, producto) => sum + producto.importe,
-    0
+      if (!branch?.id) {
+        alert("No se detectó la sucursal.");
+        return false;
+      }
+
+      const openSession = await getOpenCashSession();
+
+      const { data, error } = await supabase
+        .from("cash_movements")
+        .insert([
+          {
+            session_id: openSession.id,
+            user_id: user.id,
+            movement_type: newMovement.type,
+            amount: Number(newMovement.amount),
+            description: newMovement.description?.trim() || null,
+            branch_id: branch.id,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCashMovements((prev) => [...prev, data]);
+      alert("Entrada de efectivo registrada correctamente.");
+      return true;
+    } catch (error) {
+      console.error("Error al guardar entrada de efectivo:", error);
+      alert(error.message || "No se pudo guardar la entrada de efectivo.");
+      return false;
+    }
+  };
+
+  const handleSaveExit = async (newMovement) => {
+    try {
+      if (!user?.id) {
+        alert("No se detectó el usuario.");
+        return false;
+      }
+
+      if (!branch?.id) {
+        alert("No se detectó la sucursal.");
+        return false;
+      }
+
+      const openSession = await getOpenCashSession();
+
+      if (!openSession) {
+        alert("No hay sesión de caja abierta.");
+        return false;
+      }
+
+const rawAvailableCash = await getAvailableCash(openSession.id);
+const availableCash = Math.max(rawAvailableCash, 0);
+const exitAmount = Number(newMovement.amount);
+
+      console.log("Sesión abierta:", openSession);
+      console.log("Disponible en caja:", availableCash);
+      console.log("Intentando retirar:", exitAmount);
+
+if (exitAmount > availableCash) {
+  alert(
+    `No puedes retirar $${exitAmount.toFixed(
+      2
+    )}. Disponible en caja: $${availableCash.toFixed(2)}`
   );
-  const total = subtotal;
+  return false;
+}
 
-  // Funciones para manejar movimientos de caja
-  const handleSaveEntry = (newMovement) => {
-    const updatedMovements = [...cashMovements, newMovement];
-    setCashMovements(updatedMovements);
-    console.log("Movimientos de caja actualizados:", updatedMovements);
+      const payload = {
+        session_id: openSession.id,
+        user_id: user.id,
+        movement_type: newMovement.type,
+        amount: exitAmount,
+        description: newMovement.description?.trim() || null,
+        branch_id: branch.id,
+      };
+
+      console.log("Payload salida:", payload);
+
+      const { data, error } = await supabase
+        .from("cash_movements")
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCashMovements((prev) => [...prev, data]);
+      alert("Salida de efectivo registrada correctamente.");
+      return true;
+    } catch (error) {
+      console.error("Error al guardar salida de efectivo:", error);
+      alert(error.message || "No se pudo guardar la salida de efectivo.");
+      return false;
+    }
   };
 
-  const handleSaveExit = (newMovement) => {
-    const updatedMovements = [...cashMovements, newMovement];
-    setCashMovements(updatedMovements);
-    console.log("Movimientos de caja actualizados:", updatedMovements);
-  };
-
-  // Funciones para asignar cliente
   const openClientModal = () => {
     setClientModalOpen(true);
   };
 
   const handleAssignClient = (client) => {
     setCurrentSaleClient(client);
-    console.log("Cliente asignado a la venta:", client);
   };
 
-  // Función para procesar pagos
-  const handleProcessPayment = (paymentData) => {
-    console.log("Procesando pago:", paymentData);
-    alert(`Pago procesado: $${paymentData.total} con ${paymentData.method}`);
+  const handleProcessPayment = async (paymentData) => {
+    if (processingSale) return false;
+
+    try {
+      setProcessingSale(true);
+
+      if (!user?.id) {
+        alert("No se detectó el usuario.");
+        return false;
+      }
+
+      if (!branch?.id) {
+        alert("No se detectó la sucursal.");
+        return false;
+      }
+
+      if (productos.length === 0) {
+        alert("No hay productos en la venta.");
+        return false;
+      }
+
+      if (!saleToken) {
+        alert("No se generó el token de venta.");
+        return false;
+      }
+
+      const invalidProduct = productos.find((p) => !isValidUuid(p.id));
+      if (invalidProduct) {
+        alert("Hay productos sin UUID real. No se puede guardar la venta.");
+        return false;
+      }
+
+      const stockIsValid = await validateCartStockBeforeSale();
+      if (!stockIsValid) {
+        return false;
+      }
+
+      const productsPayload = buildProductsPayload();
+      const paymentsPayload = buildPaymentsPayload(paymentData);
+      const saleDate = new Date().toISOString();
+
+      const { data: saleId, error } = await supabase.rpc(
+        "create_sale_transaction",
+        {
+          p_branch_id: branch.id,
+          p_user_id: user.id,
+          p_customer_id: currentSaleClient?.id || null,
+          p_subtotal: Number(subtotal),
+          p_tax: 0,
+          p_total: Number(total),
+          p_sale_date: saleDate,
+          p_products: productsPayload,
+          p_payments: paymentsPayload,
+          p_client_sale_token: saleToken,
+          p_notes: paymentData?.notes?.trim() || null,
+        }
+      );
+
+      if (error) throw error;
+
+      if (paymentData?.shouldPrint) {
+        await printSaleTicket({
+          saleId,
+          paymentData,
+          paymentPayload: paymentsPayload,
+          notes: paymentData?.notes?.trim() || null,
+          saleDate,
+        });
+      }
+
+      resetCurrentSale();
+      setShowPaymentModal(false);
+
+      alert("Venta registrada correctamente.");
+      return true;
+    } catch (error) {
+      console.error("Error al registrar venta:", error);
+      alert(error.message || "Error al registrar la venta.");
+      return false;
+    } finally {
+      setProcessingSale(false);
+    }
   };
 
-  // Función para agregar producto desde el verificador
-  const handleAddProductFromVerifier = (product) => {
-    console.log("Producto agregado desde verificador:", product);
-  };
-
-  // Función para manejar ticket pendiente
   const handleSavePendingTicket = (ticketName) => {
     const pendingTicket = {
       number: ticketNumber,
       name: ticketName,
       products: productos,
       client: currentSaleClient,
-      subtotal: subtotal,
-      total: total,
+      subtotal,
+      discountTotal,
+      total,
       date: new Date().toISOString(),
     };
 
-    setPendingTickets([...pendingTickets, pendingTicket]);
-    console.log("Ticket guardado como pendiente:", pendingTicket);
+    setPendingTickets((prev) => [...prev, pendingTicket]);
 
-    // Limpiar la venta actual y crear un nuevo ticket
     setProductos([]);
     setCurrentSaleClient(null);
     setSelectedProduct(null);
-    setTicketNumber(ticketNumber + 1);
+    setTicketNumber((prev) => prev + 1);
+    setBarcode("");
+    setSaleToken(null);
   };
 
-  // Función para cambiar a un ticket pendiente
   const handleChangeToTicket = (ticket) => {
-    // Guardar el ticket actual como pendiente si tiene productos
     if (productos.length > 0) {
       const currentTicket = {
         number: ticketNumber,
         name: `Ticket ${ticketNumber}`,
         products: productos,
         client: currentSaleClient,
-        subtotal: subtotal,
-        total: total,
+        subtotal,
+        discountTotal,
+        total,
         date: new Date().toISOString(),
       };
 
-      // Actualizar tickets pendientes (agregar el actual y quitar el seleccionado)
       const updatedPendingTickets = pendingTickets.filter((t) => t !== ticket);
       setPendingTickets([...updatedPendingTickets, currentTicket]);
     } else {
-      // Si no hay productos en el ticket actual, solo quitar el ticket seleccionado de pendientes
       const updatedPendingTickets = pendingTickets.filter((t) => t !== ticket);
       setPendingTickets(updatedPendingTickets);
     }
 
-    // Cargar el ticket seleccionado
     setProductos(ticket.products);
     setCurrentSaleClient(ticket.client);
     setTicketNumber(ticket.number);
     setSelectedProduct(null);
-
-    console.log("Cambiado a ticket:", ticket);
+    setBarcode("");
+    setSaleToken(null);
   };
 
-  // Función para eliminar un ticket pendiente
   const handleDeleteTicket = (index) => {
     const updatedPendingTickets = pendingTickets.filter((_, i) => i !== index);
     setPendingTickets(updatedPendingTickets);
-    console.log("Ticket eliminado");
   };
 
-  // Función para abrir modal de cambio
   const handleOpenChangeModal = () => {
     if (pendingTickets.length === 0) {
       alert("No hay tickets pendientes");
@@ -357,7 +1116,6 @@ const Sales = () => {
     }
   };
 
-  // Función para abrir modal de eliminar
   const handleOpenDeleteModal = () => {
     if (pendingTickets.length === 0) {
       alert("No hay tickets pendientes por eliminar");
@@ -366,10 +1124,8 @@ const Sales = () => {
     }
   };
 
-  // Manejo de teclas para todos los modales y navegación de productos
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Si hay algún modal abierto, no procesar las flechas en la tabla principal
       const isAnyModalOpen =
         showPaymentModal ||
         isEntryModalOpen ||
@@ -384,14 +1140,18 @@ const Sales = () => {
         isDeleteItemModalOpen ||
         isSalesHistoryModalOpen;
 
-      // Navegación con flechas arriba/abajo entre productos (solo si no hay modal abierto)
+      const target = e.target;
+      const isInputElement =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
       if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
         e.preventDefault();
 
         if (productos.length === 0) return;
 
         if (!selectedProduct) {
-          // Si no hay producto seleccionado, seleccionar el primero
           setSelectedProduct(productos[0]);
         } else {
           const currentIndex = productos.findIndex(
@@ -399,11 +1159,9 @@ const Sales = () => {
           );
 
           if (e.key === "ArrowDown") {
-            // Mover hacia abajo
             const nextIndex = (currentIndex + 1) % productos.length;
             setSelectedProduct(productos[nextIndex]);
           } else if (e.key === "ArrowUp") {
-            // Mover hacia arriba
             const prevIndex =
               currentIndex === 0 ? productos.length - 1 : currentIndex - 1;
             setSelectedProduct(productos[prevIndex]);
@@ -412,56 +1170,67 @@ const Sales = () => {
         return;
       }
 
-      // Ctrl + D para abrir modal de descuento cuando hay un producto seleccionado
-      if (e.ctrlKey && e.key === "d") {
+      if (e.ctrlKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
         if (selectedProduct) {
           setDiscountModalOpen(true);
         }
+        return;
       }
+
+      if (!isAnyModalOpen && selectedProduct && !isInputElement) {
+        if (e.key === "+" || e.key === "=" || e.key === "Add") {
+          e.preventDefault();
+          increaseSelectedProductQuantity();
+          return;
+        }
+
+        if (e.key === "-" || e.key === "Subtract") {
+          e.preventDefault();
+          decreaseSelectedProductQuantity();
+          return;
+        }
+      }
+
       switch (e.key) {
         case "F12":
           e.preventDefault();
-          setShowPaymentModal(true);
+          openPaymentFlow();
           break;
+
         case "F5":
           e.preventDefault();
           handleOpenChangeModal();
           break;
+
         case "F6":
           e.preventDefault();
           setPendingModalOpen(true);
           break;
+
         case "F7":
           e.preventDefault();
           setEntryModalOpen(true);
           break;
+
         case "F8":
           e.preventDefault();
           setExitModalOpen(true);
           break;
+
         case "F9":
           e.preventDefault();
           setVerifierModalOpen(true);
           break;
+
         case "F10":
           e.preventDefault();
           setSearchModalOpen(true);
           break;
+
         case "Backspace":
-          // Detectar si está en un input
-          const target = e.target;
-          const isInputElement =
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable;
+          if (isInputElement) return;
 
-          // Si está en un input, permitir el comportamiento normal
-          if (isInputElement) {
-            return; // No hacer nada, dejar que funcione normalmente
-          }
-
-          // Solo ejecutar la lógica si NO hay modales abiertos
           if (!isAnyModalOpen) {
             e.preventDefault();
             if (selectedProduct) {
@@ -471,11 +1240,15 @@ const Sales = () => {
             }
           }
           break;
+
         case "Delete":
           e.preventDefault();
           handleOpenDeleteModal();
           break;
+
         case "Escape":
+          if (processingSale) return;
+
           if (showPaymentModal) {
             setShowPaymentModal(false);
           } else if (isEntryModalOpen) {
@@ -502,6 +1275,7 @@ const Sales = () => {
             setSalesHistoryModalOpen(false);
           }
           break;
+
         default:
           break;
       }
@@ -528,14 +1302,13 @@ const Sales = () => {
     selectedProduct,
     productos,
     pendingTickets,
+    processingSale,
   ]);
 
-  // Generar el template de columnas para CSS Grid
   const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
 
   return (
     <div className={styles.ventasContainer}>
-      {/* Título de venta y número de ticket */}
       <div className={styles.saleHeader}>
         <h2>VENTA - Ticket {ticketNumber}</h2>
         {currentSaleClient && (
@@ -545,7 +1318,6 @@ const Sales = () => {
         )}
       </div>
 
-      {/* Barra superior de acciones*/}
       <div className={styles.topActionBar}>
         <div
           className={styles.horizontalActionButton}
@@ -555,6 +1327,7 @@ const Sales = () => {
           <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Buscar</span>
         </div>
+
         <div
           className={styles.horizontalActionButton}
           onClick={() => setEntryModalOpen(true)}
@@ -563,6 +1336,7 @@ const Sales = () => {
           <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Entradas</span>
         </div>
+
         <div
           className={styles.horizontalActionButton}
           onClick={() => setExitModalOpen(true)}
@@ -571,6 +1345,7 @@ const Sales = () => {
           <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
           <span className={styles.actionText}>Salidas</span>
         </div>
+
         <div
           className={styles.horizontalActionButton}
           onClick={() => {
@@ -585,6 +1360,7 @@ const Sales = () => {
           <img src={deleteIcon} alt="Borrar" className={styles.buttonIcon} />
           <span className={styles.actionText}>Borrar Art.</span>
         </div>
+
         <div
           className={styles.horizontalActionButton}
           onClick={() => setVerifierModalOpen(true)}
@@ -599,19 +1375,29 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* Barra de entrada de productos */}
       <div className={styles.productInputBar}>
         <div className={styles.inputSection}>
           <label>Código de Barras:</label>
-          <input type="text" className={styles.barcodeInput} />
+          <input
+            type="text"
+            className={styles.barcodeInput}
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleBarcodeSearch();
+              }
+            }}
+            placeholder="Escanea o escribe código"
+          />
         </div>
-        <div className={styles.addProductBtn}>
+
+        <div className={styles.addProductBtn} onClick={handleBarcodeSearch}>
           <span className={styles.actionKey2}>ENTER</span>
           <span className={styles.actionText2}>Agregar Producto</span>
         </div>
       </div>
 
-      {/* Tabla de productos redimensionable */}
       <div className={styles.productsTable} ref={tableRef}>
         <div
           className={styles.tableHeader}
@@ -624,6 +1410,7 @@ const Sales = () => {
               onMouseDown={(e) => handleMouseDown(e, 0)}
             />
           </span>
+
           <span>
             Precio Venta
             <div
@@ -631,6 +1418,7 @@ const Sales = () => {
               onMouseDown={(e) => handleMouseDown(e, 1)}
             />
           </span>
+
           <span>
             Cant.
             <div
@@ -638,6 +1426,7 @@ const Sales = () => {
               onMouseDown={(e) => handleMouseDown(e, 2)}
             />
           </span>
+
           <span>
             Importe
             <div
@@ -645,8 +1434,10 @@ const Sales = () => {
               onMouseDown={(e) => handleMouseDown(e, 3)}
             />
           </span>
+
           <span>Existencia</span>
         </div>
+
         <div className={styles.tableBody}>
           {productos.map((producto) => (
             <div
@@ -657,13 +1448,15 @@ const Sales = () => {
               style={{ gridTemplateColumns: gridTemplate }}
               onClick={() => handleProductSelect(producto)}
             >
-              <span className={styles.tableCell}>{producto.codigo}</span>
               <span className={styles.tableCell}>
-                ${producto.precio.toFixed(2)}
+                {producto.nombre || producto.codigo}
+              </span>
+              <span className={styles.tableCell}>
+                ${Number(producto.precio || 0).toFixed(2)}
               </span>
               <span className={styles.tableCell}>{producto.cantidad}</span>
               <span className={styles.tableCell}>
-                ${producto.importe.toFixed(2)}
+                ${Number(producto.importe || 0).toFixed(2)}
               </span>
               <span className={styles.tableCell}>{producto.existencia}</span>
             </div>
@@ -671,7 +1464,6 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* Pie de página con acciones y total */}
       <div className={styles.footerBar}>
         <div className={styles.leftActions}>
           <div
@@ -683,6 +1475,7 @@ const Sales = () => {
             <span className={styles.squareKey}>F5</span>
             <span className={styles.squareText}>Cambiar</span>
           </div>
+
           <div
             className={styles.squareButton}
             onClick={() => setPendingModalOpen(true)}
@@ -691,6 +1484,7 @@ const Sales = () => {
             <span className={styles.squareKey}>F6</span>
             <span className={styles.squareText}>Pendiente</span>
           </div>
+
           <div className={styles.squareButton} onClick={handleOpenDeleteModal}>
             <img
               src={deleteIcon}
@@ -699,6 +1493,7 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Eliminar</span>
           </div>
+
           <div
             className={styles.squareButton}
             onClick={() => {
@@ -717,6 +1512,7 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Descuento</span>
           </div>
+
           <div className={styles.squareButton} onClick={openClientModal}>
             <img
               src={assignClientIcon}
@@ -725,6 +1521,7 @@ const Sales = () => {
             />
             <span className={styles.squareText}>Asignar cliente</span>
           </div>
+
           <div
             className={styles.SquareButtonSecondary}
             onClick={() => setSalesHistoryModalOpen(true)}
@@ -735,23 +1532,30 @@ const Sales = () => {
               className={styles.squareIconSecondary}
             />
             <span className={styles.squareText}>
-              Ventas del día y Devoluciones{" "}
+              Ventas del día y Devoluciones
             </span>
           </div>
         </div>
+
         <div className={styles.rightActions}>
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Subtotal:</span>
             <span className={styles.totalAmount}>${subtotal.toFixed(2)}</span>
           </div>
+
+          <div className={styles.totalSection}>
+            <span className={styles.totalLabel}>Descuento:</span>
+            <span className={styles.totalAmount}>
+              -${discountTotal.toFixed(2)}
+            </span>
+          </div>
+
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Total:</span>
             <span className={styles.totalAmount}>${total.toFixed(2)}</span>
           </div>
-          <div
-            className={styles.payButton}
-            onClick={() => setShowPaymentModal(true)}
-          >
+
+          <div className={styles.payButton} onClick={openPaymentFlow}>
             <img src={payIcon} alt="Cobrar" className={styles.payIcon} />
             <span className={styles.payKey}>F12</span>
             <span className={styles.payText}>Cobrar</span>
@@ -759,7 +1563,6 @@ const Sales = () => {
         </div>
       </div>
 
-      {/* MODALES */}
       <EntryModal
         isOpen={isEntryModalOpen}
         onClose={() => setEntryModalOpen(false)}
@@ -769,14 +1572,21 @@ const Sales = () => {
       <ExitModal
         isOpen={isExitModalOpen}
         onClose={() => setExitModalOpen(false)}
-        onSaveExit={handleSaveExit}
+        onSave={handleSaveExit}
       />
 
       <PaymentModal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          if (!processingSale) {
+            setShowPaymentModal(false);
+          }
+        }}
         total={total}
         onProcessPayment={handleProcessPayment}
+        processingSale={processingSale}
+        saleNotes={saleNotes}
+        setSaleNotes={setSaleNotes}
       />
 
       <ClientModal
@@ -826,12 +1636,14 @@ const Sales = () => {
         onDeleteTicket={handleDeleteTicket}
         pendingTickets={pendingTickets}
       />
+
       <DeleteItemModal
         isOpen={isDeleteItemModalOpen}
         onClose={() => setDeleteItemModalOpen(false)}
         onConfirmDelete={handleDeleteSelectedProduct}
         selectedProduct={selectedProduct}
       />
+
       <SalesHistoryModal
         isOpen={isSalesHistoryModalOpen}
         onClose={() => setSalesHistoryModalOpen(false)}
