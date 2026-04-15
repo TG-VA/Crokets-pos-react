@@ -63,7 +63,7 @@
 .label {
   font-weight: 700;
   color: var(--darkGray);
-  font-size: 1.25rem;
+  font-size: 1rem;
 }
 
 .input {

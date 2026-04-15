@@ -24,13 +24,6 @@
   min-height: 0;
   overflow: hidden;
   margin-top: 30px;
-  height: calc(100vh - 130px);
-}
-
-@media (max-width: 1366px) and (max-height: 850px) {
-  .content {
-    margin-top: 45px;
-  }
 }
 
 .toolbar {
@@ -362,76 +355,4 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-/* Responsivo */
-@media (max-width: 768px) {
-  .searchInput {
-    width: 100%;
-  }
-
-  .filterButton {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .productsTable {
-    font-size: 0.8rem;
-  }
-
-  .productsTable th,
-  .productsTable td {
-    padding: 0.5rem 0.25rem;
-  }
-
-  .productsTable th:first-child,
-  .productsTable td:first-child {
-    padding-left: 0.5rem;
-  }
-
-  .productsTable th:last-child,
-  .productsTable td:last-child {
-    padding-right: 0.5rem;
-  }
-
-  .descriptionCell {
-    font-size: 0.75rem;
-  }
-
-  /* Ajustar anchos de columnas en móvil */
-  .productsTable th:nth-child(1) { width: 15%; }
-  .productsTable th:nth-child(2) { width: 30%; }
-  .productsTable th:nth-child(3) { width: 15%; }
-  .productsTable th:nth-child(4) { width: 10%; }
-  .productsTable th:nth-child(5) { width: 10%; }
-  .productsTable th:nth-child(6) { width: 8%; }
-  .productsTable th:nth-child(7) { width: 6%; }
-  .productsTable th:nth-child(8) { width: 6%; }
-}
-
-@media (max-width: 480px) {
-  .header {
-    padding: 1rem;
-  }
-
-  .header h1 {
-    font-size: 1.3rem;
-  }
-
-  .toolbar {
-    padding: 0.75rem;
-  }
-
-  .productsTable {
-    font-size: 0.7rem;
-  }
-
-  .descriptionCell {
-    font-size: 0.65rem;
-  }
-
-  .productsTable th,
-  .productsTable td {
-    padding: 0.4rem 0.2rem;
-  }
 }

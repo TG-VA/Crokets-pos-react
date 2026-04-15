@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useProducts } from "../../../../contexts/ProductsContext";
 import styles from "./ProductsNew.module.css";
 
@@ -6,6 +7,10 @@ const ProductsNew = () => {
   const bodyRef = useRef(null);
   const [submitArmed, setSubmitArmed] = useState(false);
   const { departments, addProduct, getProductByCodigo } = useProducts();
+  const discountAnchorRef = useRef(null);
+  const discountInputRef = useRef(null);
+  const [discountPopoverStyle, setDiscountPopoverStyle] = useState(null);
+  const [showDiscountPopover, setShowDiscountPopover] = useState(false);
 
   const [form, setForm] = useState({
     codigo: "",
@@ -16,6 +21,10 @@ const ProductsNew = () => {
     existencia: 0,
     minimo: 0,
     maximo: 0,
+    use_inventory: true,
+    discount_enable: false,
+    discount_percent: 0,
+    discount_concept: "",
     sale_type: "unidad",
     unit: "pz",
     tax: 16,
@@ -37,6 +46,10 @@ const ProductsNew = () => {
       existencia: 0,
       minimo: 0,
       maximo: 0,
+      use_inventory: true,
+      discount_enable: false,
+      discount_percent: 0,
+      discount_concept: "",
       sale_type: "unidad",
       unit: "pz",
       tax: 16,
@@ -59,6 +72,44 @@ const ProductsNew = () => {
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  const updateDiscountPopoverPosition = () => {
+    const el = discountAnchorRef.current;
+    if (!el || typeof el.getBoundingClientRect !== "function") return;
+    const rect = el.getBoundingClientRect();
+
+    const desiredWidth = 420;
+    const padding = 12;
+    const width = Math.min(desiredWidth, window.innerWidth - padding * 2);
+    const left = Math.max(padding, Math.min(rect.left, window.innerWidth - width - padding));
+    const top = Math.min(rect.bottom + 10, window.innerHeight - padding);
+
+    setDiscountPopoverStyle({ top, left, width });
+  };
+
+  useEffect(() => {
+    if (!form.discount_enable || !showDiscountPopover) {
+      setDiscountPopoverStyle(null);
+      return;
+    }
+
+    updateDiscountPopoverPosition();
+
+    const onResize = () => updateDiscountPopoverPosition();
+    window.addEventListener("resize", onResize);
+
+    const raf = window.requestAnimationFrame(() => {
+      discountInputRef.current?.focus();
+      if (typeof discountInputRef.current?.select === "function") {
+        discountInputRef.current.select();
+      }
+    });
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.cancelAnimationFrame(raf);
+    };
+  }, [form.discount_enable, showDiscountPopover]);
 
   const getFocusableBodyElements = () => {
     if (!bodyRef.current) return [];
@@ -134,6 +185,10 @@ const ProductsNew = () => {
       existencia: parseInt(form.existencia) || 0,
       minimo: parseInt(form.minimo) || 0,
       maximo: parseInt(form.maximo) || 0,
+      use_inventory: !!form.use_inventory,
+      discount_enable: !!form.discount_enable,
+      discount_percent: parseFloat(form.discount_percent) || 0,
+      discount_concept: form.discount_enable ? form.discount_concept.trim() : "",
       sale_type: form.sale_type,
       unit: form.unit,
       tax: parseFloat(form.tax) || 0,
@@ -149,6 +204,7 @@ const ProductsNew = () => {
     console.log("Nuevo producto", payload);
     alert("Producto agregado correctamente");
     resetForm();
+    setShowDiscountPopover(false);
     
     // Enfocar de nuevo el primer input si es posible
     setTimeout(() => {
@@ -228,6 +284,85 @@ const ProductsNew = () => {
           />
         </div>
 
+        <div className={styles.formRow} ref={discountAnchorRef}>
+          <label className={styles.label}>¿Aplica descuento?</label>
+          <div className={styles.discountSelectWrapper}>
+            <select
+              className={styles.input}
+              value={form.discount_enable ? "si" : "no"}
+              onChange={(e) => {
+                const enabled = e.target.value === "si";
+                updateField("discount_enable", enabled);
+                setShowDiscountPopover(enabled);
+                if (!enabled) {
+                  updateField("discount_concept", "");
+                  updateField("discount_percent", 0);
+                }
+              }}
+            >
+              <option value="no">No</option>
+              <option value="si">Sí</option>
+            </select>
+            {form.discount_enable && !showDiscountPopover && (
+              <button
+                type="button"
+                className={styles.editDiscountBtn}
+                onClick={() => setShowDiscountPopover(true)}
+                title="Editar descuento"
+              >
+                ✏️
+              </button>
+            )}
+          </div>
+        </div>
+
+        {form.discount_enable &&
+          showDiscountPopover &&
+          discountPopoverStyle &&
+          createPortal(
+            <div
+              className={styles.discountPopover}
+              style={discountPopoverStyle}
+              role="dialog"
+              aria-label="Detalles del descuento"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setShowDiscountPopover(false);
+                }
+              }}
+            >
+              <div className={styles.discountPopoverTitle}>Detalles del descuento</div>
+              <div className={styles.formRow}>
+                <label className={styles.label}>Porcentaje de descuento (%)</label>
+                <input
+                  ref={discountInputRef}
+                  className={styles.input}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={form.discount_percent}
+                  onChange={(e) => updateField("discount_percent", e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.label}>Concepto del descuento</label>
+                <input
+                  className={styles.input}
+                  type="text"
+                  value={form.discount_concept}
+                  onChange={(e) => updateField("discount_concept", e.target.value)}
+                  placeholder="Ej. descuento buen fin"
+                />
+              </div>
+              <div className={styles.discountPopoverHint}>
+                Presiona <strong>Enter</strong> para cerrar y guardar
+              </div>
+            </div>,
+            document.body
+          )}
+
         <div className={styles.formRow}>
           <label className={styles.label}>Precio venta</label>
           <input
@@ -290,6 +425,18 @@ const ProductsNew = () => {
             value={form.maximo}
             onChange={(e) => updateField("maximo", e.target.value)}
           />
+        </div>
+
+        <div className={styles.formRow}>
+          <label className={styles.label}>¿Usa inventario?</label>
+          <select
+            className={styles.input}
+            value={form.use_inventory ? "si" : "no"}
+            onChange={(e) => updateField("use_inventory", e.target.value === "si")}
+          >
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
         </div>
 
         </form>

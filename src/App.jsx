@@ -8,9 +8,9 @@ import Products from './pages/Products/Products';
 import Settings from './pages/Settings/Settings';
 import Profiles from './pages/Profiles/Profiles';
 import CashCut from './pages/CashCut/CashCut';
-
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProductsProvider } from './contexts/ProductsContext';
+import useResponsiveScale from './hooks/useResponsiveScale';
 
 function AppRoutes() {
   const {
@@ -150,6 +150,8 @@ function AppRoutes() {
 }
 
 function App() {
+  useResponsiveScale(1200, 1080);
+
   return (
     <AuthProvider>
       <ProductsProvider>

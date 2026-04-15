@@ -136,7 +136,6 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 
-
 @media (max-height: 500px) {
     .container {
         transform: scale(0.9);

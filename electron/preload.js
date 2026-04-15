@@ -9,7 +9,11 @@ const allowedInvokeChannels = [
   'close-cash-register',
   'login',
   'get-device-code',
-  'close-app'
+  'close-app',
+  'set-zoom-factor',
+  'configure-zoom',
+  'reset-zoom',
+  'get-zoom-debug'
 ];
 
 // Canales permitidos para enviar mensajes al proceso principal (una sola vía).
