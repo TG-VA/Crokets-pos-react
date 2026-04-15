@@ -1,81 +1,169 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./EntryModal.module.css";
 
 const EntryModal = ({ isOpen, onClose, onSaveEntry }) => {
-  // Estados locales del modal
-  const [entryAmount, setEntryAmount] = useState('');
-  const [entryReason, setEntryReason] = useState('');
-  const [entryError, setEntryError] = useState('');
+  const [entryAmount, setEntryAmount] = useState("");
+  const [entryDescription, setEntryDescription] = useState("");
+  const [entryError, setEntryError] = useState("");
 
-  // Función para cerrar el modal
+  const amountInputRef = useRef(null);
+
+  const resetForm = () => {
+    setEntryAmount("");
+    setEntryDescription("");
+    setEntryError("");
+  };
+
   const closeEntryModal = () => {
-    setEntryAmount('');
-    setEntryReason('');
-    setEntryError('');
+    resetForm();
     onClose();
   };
 
-  // Función para guardar la entrada
-  const handleSaveEntry = () => {
-    if (!entryAmount || parseFloat(entryAmount) <= 0) {
-      setEntryError('Por favor, ingrese un monto válido.');
-      return;
-    }
-    if (!entryReason.trim()) {
-      setEntryError('Por favor, ingrese una razón.');
-      return;
-    }
-    
-    const newMovement = {
-      id: Date.now(),
-      type: 'entry', 
-      amount: parseFloat(entryAmount),
-      reason: entryReason,
-      createdAt: new Date().toISOString()
+  useEffect(() => {
+    if (!isOpen) return;
+
+    resetForm();
+
+    const timer = setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeEntryModal();
+      }
+
+      if (e.key === "Enter") {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+
+        if (tag === "textarea") return;
+
+        e.preventDefault();
+        handleSaveEntry();
+      }
     };
-    
-    onSaveEntry(newMovement);
-    closeEntryModal();
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const handleAmountChange = (e) => {
+    let value = e.target.value;
+
+    value = value.replace(/[^0-9.]/g, "");
+
+    const parts = value.split(".");
+    if (parts.length > 2) {
+      value = `${parts[0]}.${parts.slice(1).join("")}`;
+    }
+
+    if (parts[1]?.length > 2) {
+      value = `${parts[0]}.${parts[1].slice(0, 2)}`;
+    }
+
+    setEntryAmount(value);
+    if (entryError) setEntryError("");
   };
 
-  // Si el modal no está abierto, no renderizar nada
+  const handleDescriptionChange = (e) => {
+    setEntryDescription(e.target.value);
+    if (entryError) setEntryError("");
+  };
+
+  const handleSaveEntry = async () => {
+    const amount = parseFloat(entryAmount);
+
+    if (!entryAmount.trim() || Number.isNaN(amount) || amount <= 0) {
+      setEntryError("Por favor, ingrese un monto válido.");
+      amountInputRef.current?.focus();
+      return;
+    }
+
+    if (!entryDescription.trim()) {
+      setEntryError("Por favor, ingrese una descripción.");
+      return;
+    }
+
+    const newMovement = {
+      amount,
+      description: entryDescription.trim(),
+      type: "entrada",
+      createdAt: new Date().toISOString(),
+    };
+
+    const result = await onSaveEntry(newMovement);
+
+    if (result !== false) {
+      closeEntryModal();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={closeEntryModal}>
-      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modalContainer}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.modalHeader}>
           <h2>Registrar Entrada de Efectivo</h2>
-          <button className={styles.closeButton} onClick={closeEntryModal}>✕</button>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={closeEntryModal}
+          >
+            ✕
+          </button>
         </div>
+
         <div className={styles.modalBody}>
           <div className={styles.formGroup}>
             <label htmlFor="entryAmount">Monto:</label>
             <input
-              type="number"
+              ref={amountInputRef}
+              type="text"
+              inputMode="decimal"
               id="entryAmount"
               value={entryAmount}
-              onChange={(e) => { setEntryAmount(e.target.value); setEntryError(''); }}
+              onChange={handleAmountChange}
               placeholder="0.00"
-              autoFocus
+              autoComplete="off"
             />
           </div>
+
           <div className={styles.formGroup}>
-            <label htmlFor="entryReason">Razón:</label>
+            <label htmlFor="entryDescription">Descripción:</label>
             <textarea
-              id="entryReason"
-              value={entryReason}
-              onChange={(e) => { setEntryReason(e.target.value); setEntryError(''); }}
+              id="entryDescription"
+              value={entryDescription}
+              onChange={handleDescriptionChange}
               placeholder="Ej. Cambio, fondo de caja, etc."
+              rows={4}
             />
           </div>
+
           {entryError && <p className={styles.errorMessage}>{entryError}</p>}
         </div>
+
         <div className={styles.modalActions}>
-          <button className={styles.cancelButton} onClick={closeEntryModal}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={closeEntryModal}
+          >
             Esc - Cancelar
           </button>
-          <button className={styles.saveButton} onClick={handleSaveEntry}>
+          <button
+            type="button"
+            className={styles.saveButton}
+            onClick={handleSaveEntry}
+          >
             Guardar Entrada
           </button>
         </div>

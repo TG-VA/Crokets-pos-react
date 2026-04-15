@@ -122,8 +122,23 @@ const Login = () => {
         return;
       }
 
-      const currentBranch = branchData.branch;
-      setBranch(currentBranch);
+      const currentBranchId = branchData.branch?.id;
+
+const { data: fullBranch, error: fullBranchError } = await supabase
+  .from('branches')
+  .select('id, code, name, phone, email, address, city, state, created_at, updated_at')
+  .eq('id', currentBranchId)
+  .single();
+
+if (fullBranchError || !fullBranch) {
+  console.error('Error cargando sucursal completa:', fullBranchError);
+  await supabase.auth.signOut();
+  setError('No se pudo cargar la información completa de la sucursal');
+  return;
+}
+
+const currentBranch = fullBranch;
+setBranch(currentBranch);
 
       // 5) Verificar si ya hay una sesión activa en esta sucursal
       const { data: activeSession, error: activeSessionError } = await supabase

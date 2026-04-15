@@ -2,31 +2,37 @@ import React, { useState, useEffect } from "react";
 import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 
-const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
-  // Estados para diferentes métodos de pago
+const PaymentModal = ({
+  isOpen,
+  onClose,
+  total,
+  onProcessPayment,
+  processingSale,
+}) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("Terminal");
   const [paidAmount, setPaidAmount] = useState("");
   const [dollarAmount, setDollarAmount] = useState("");
-  const [exchangeRate] = useState(18.5); // Tipo de cambio fijo
+  const [exchangeRate, setExchangeRate] = useState("18.50");
   const [mixedPayments, setMixedPayments] = useState({
     efectivo: "",
     tarjeta: "",
     dolares: "",
   });
   const [trackingCode, setTrackingCode] = useState("");
-
-  // Estados para modal de notas
   const [isNotesModalOpen, setNotesModalOpen] = useState(false);
   const [saleNotes, setSaleNotes] = useState("");
+  const [processing, setProcessing] = useState(false);
 
-  // Función para convertir valores a número, manejando NaN y valores vacíos
+  const effectiveProcessing = processing || processingSale;
+
   const toNumber = (value) => {
-    if (!value || value.trim() === "") return 0;
+    if (!value || String(value).trim() === "") return 0;
     const num = parseFloat(value);
-    return isNaN(num) ? 0 : num;
+    return Number.isNaN(num) ? 0 : num;
   };
 
-  // Calcular cambio según método de pago
+  const numericExchangeRate = toNumber(exchangeRate);
+
   const calculateChange = () => {
     const numericPaidAmount = toNumber(paidAmount);
     const numericDollarAmount = toNumber(dollarAmount);
@@ -37,11 +43,48 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
     switch (selectedPaymentMethod) {
       case "Efectivo":
         return Math.max(0, numericPaidAmount - total);
+
       case "Dolares":
-        return Math.max(0, numericDollarAmount * exchangeRate - total);
-      case "Mixto":
-        const totalMixed = numericEfectivo + numericTarjeta + (numericDolares * exchangeRate);
+        return Math.max(0, numericDollarAmount * numericExchangeRate - total);
+
+      case "Mixto": {
+        const totalMixed =
+          numericEfectivo +
+          numericTarjeta +
+          numericDolares * numericExchangeRate;
         return Math.max(0, totalMixed - total);
+      }
+
+      default:
+        return 0;
+    }
+  };
+
+  const getPaidTotalInMxn = () => {
+    const numericPaidAmount = toNumber(paidAmount);
+    const numericDollarAmount = toNumber(dollarAmount);
+    const numericEfectivo = toNumber(mixedPayments.efectivo);
+    const numericTarjeta = toNumber(mixedPayments.tarjeta);
+    const numericDolares = toNumber(mixedPayments.dolares);
+
+    switch (selectedPaymentMethod) {
+      case "Efectivo":
+        return numericPaidAmount;
+
+      case "Dolares":
+        return numericDollarAmount * numericExchangeRate;
+
+      case "Mixto":
+        return (
+          numericEfectivo +
+          numericTarjeta +
+          numericDolares * numericExchangeRate
+        );
+
+      case "Terminal":
+      case "Transferencia":
+        return total;
+
       default:
         return 0;
     }
@@ -57,53 +100,223 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
     { id: "Transferencia", name: "Transferencia", icon: "🏦" },
   ];
 
-  const closePaymentModal = () => {
-    // Cerrar modal de notas si está abierto
-    if (isNotesModalOpen) {
-      setNotesModalOpen(false);
-    }
-    // Resetear todos los estados
+  const resetModalState = () => {
     setPaidAmount("");
     setDollarAmount("");
+    setExchangeRate("18.50");
     setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
     setTrackingCode("");
     setSaleNotes("");
     setSelectedPaymentMethod("Terminal");
+    setNotesModalOpen(false);
+    setProcessing(false);
+  };
+
+  const closePaymentModal = () => {
+    if (effectiveProcessing) return;
+    resetModalState();
     onClose();
   };
 
-  // Funciones para modal de notas
   const openNotesModal = () => {
+    if (effectiveProcessing) return;
     setNotesModalOpen(true);
   };
 
   const closeNotesModal = () => {
+    if (effectiveProcessing) return;
     setNotesModalOpen(false);
   };
 
   const handleSaveNotes = (notes) => {
     setSaleNotes(notes);
     console.log("Notas de venta guardadas:", notes);
-    // Aquí podrías enviar las notas al backend o almacenarlas localmente
   };
 
-  // useEffect para manejar teclas F4 y ESC
+  const validatePayment = () => {
+    const paidTotalMxn = getPaidTotalInMxn();
+
+    if (
+      (selectedPaymentMethod === "Dolares" || selectedPaymentMethod === "Mixto") &&
+      numericExchangeRate <= 0
+    ) {
+      alert("Ingresa un tipo de cambio válido.");
+      return false;
+    }
+
+    switch (selectedPaymentMethod) {
+      case "Efectivo":
+        if (toNumber(paidAmount) <= 0) {
+          alert("Ingrese el monto pagado en efectivo.");
+          return false;
+        }
+        if (paidTotalMxn < total) {
+          alert("El monto en efectivo no cubre el total de la venta.");
+          return false;
+        }
+        return true;
+
+      case "Dolares":
+        if (toNumber(dollarAmount) <= 0) {
+          alert("Ingrese el monto pagado en dólares.");
+          return false;
+        }
+        if (paidTotalMxn < total) {
+          alert("El monto en dólares no cubre el total de la venta.");
+          return false;
+        }
+        return true;
+
+      case "Mixto": {
+        const efectivo = toNumber(mixedPayments.efectivo);
+        const tarjeta = toNumber(mixedPayments.tarjeta);
+        const dolares = toNumber(mixedPayments.dolares);
+
+        if (efectivo <= 0 && tarjeta <= 0 && dolares <= 0) {
+          alert("Ingrese al menos un monto en el pago mixto.");
+          return false;
+        }
+
+        if (paidTotalMxn < total) {
+          alert("La suma del pago mixto no cubre el total de la venta.");
+          return false;
+        }
+
+        return true;
+      }
+
+      case "Transferencia":
+        if (!trackingCode.trim()) {
+          alert("Ingrese la referencia o clave de rastreo.");
+          return false;
+        }
+        return true;
+
+      case "Terminal":
+        return true;
+
+      default:
+        alert("Seleccione un método de pago válido.");
+        return false;
+    }
+  };
+
+  const buildPaymentData = (shouldPrint = false) => {
+    const baseData = {
+      method: selectedPaymentMethod,
+      total,
+      change,
+      shouldPrint,
+      notes: saleNotes,
+      details: {},
+    };
+
+    switch (selectedPaymentMethod) {
+      case "Efectivo":
+        return {
+          ...baseData,
+          method: "Efectivo",
+          details: {
+            paidAmount: toNumber(paidAmount),
+          },
+        };
+
+      case "Dolares":
+        return {
+          ...baseData,
+          method: "Dolares",
+          details: {
+            dollarAmount: toNumber(dollarAmount),
+            exchangeRate: numericExchangeRate,
+            equivalentMXN: toNumber(dollarAmount) * numericExchangeRate,
+          },
+        };
+
+      case "Mixto":
+        return {
+          ...baseData,
+          method: "Mixto",
+          details: {
+            efectivo: toNumber(mixedPayments.efectivo),
+            tarjeta: toNumber(mixedPayments.tarjeta),
+            dolares: toNumber(mixedPayments.dolares),
+            exchangeRate: numericExchangeRate,
+          },
+        };
+
+      case "Transferencia":
+        return {
+          ...baseData,
+          method: "Transferencia",
+          details: {
+            trackingCode: trackingCode.trim(),
+          },
+        };
+
+      case "Terminal":
+      default:
+        return {
+          ...baseData,
+          method: "Terminal",
+          details: {},
+        };
+    }
+  };
+
+  const processPayment = async (shouldPrint = false) => {
+    if (effectiveProcessing) return;
+
+    const isValid = validatePayment();
+    if (!isValid) return;
+
+    const paymentData = buildPaymentData(shouldPrint);
+
+    console.log("selectedPaymentMethod:", selectedPaymentMethod);
+    console.log("paymentData construido en PaymentModal:", paymentData);
+
+    try {
+      setProcessing(true);
+
+      let success = true;
+
+      if (onProcessPayment) {
+        success = await onProcessPayment(paymentData);
+      }
+
+      if (success) {
+        resetModalState();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error procesando pago:", error);
+      alert("Ocurrió un error al procesar el pago.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
-      
+
       if (e.key === "Escape") {
-        // Solo manejar ESC si el modal de notas NO está abierto
-        if (!isNotesModalOpen) {
+        if (!isNotesModalOpen && !effectiveProcessing) {
           e.preventDefault();
           e.stopPropagation();
           closePaymentModal();
         }
-        // Si el modal de notas está abierto, dejar que NotesModal maneje el ESC
-      } else if (e.key === "F4" && !isNotesModalOpen) {
+      } else if (e.key === "F4" && !isNotesModalOpen && !effectiveProcessing) {
         e.preventDefault();
         e.stopPropagation();
         openNotesModal();
+      } else if (e.key === "F1" && !isNotesModalOpen && !effectiveProcessing) {
+        e.preventDefault();
+        e.stopPropagation();
+        processPayment(true);
+      } else if (e.key === "F2" && !isNotesModalOpen && !effectiveProcessing) {
+        e.preventDefault();
+        e.stopPropagation();
+        processPayment(false);
       }
     };
 
@@ -114,49 +327,57 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, isNotesModalOpen]);
+  }, [
+    isOpen,
+    isNotesModalOpen,
+    effectiveProcessing,
+    selectedPaymentMethod,
+    mixedPayments,
+    paidAmount,
+    dollarAmount,
+    exchangeRate,
+    saleNotes,
+    total,
+    change,
+  ]);
 
-  const processPayment = () => {
-    const paymentData = {
-      method: selectedPaymentMethod,
-      total: total,
-      change: change,
-      details: {}
-    };
+  useEffect(() => {
+    if (!isOpen) {
+      resetModalState();
+    }
+  }, [isOpen]);
 
-    // Agregar detalles específicos según el método de pago
-    switch (selectedPaymentMethod) {
-      case "Efectivo":
-        paymentData.details = { paidAmount: toNumber(paidAmount) };
-        break;
-      case "Dolares":
-        paymentData.details = { 
-          dollarAmount: toNumber(dollarAmount),
-          exchangeRate: exchangeRate,
-          equivalentMXN: toNumber(dollarAmount) * exchangeRate
-        };
-        break;
-      case "Mixto":
-        paymentData.details = {
-          efectivo: toNumber(mixedPayments.efectivo),
-          tarjeta: toNumber(mixedPayments.tarjeta),
-          dolares: toNumber(mixedPayments.dolares),
-          exchangeRate: exchangeRate
-        };
-        break;
-      case "Transferencia":
-        paymentData.details = { trackingCode: trackingCode };
-        break;
+  const renderExchangeRateInput = () => {
+    if (
+      selectedPaymentMethod !== "Dolares" &&
+      selectedPaymentMethod !== "Mixto"
+    ) {
+      return null;
     }
 
-    if (onProcessPayment) {
-      onProcessPayment(paymentData);
-    }
-    
-    closePaymentModal();
+    return (
+      <div className={styles.paymentRow}>
+        <span>Tipo de cambio:</span>
+        <div className={styles.inputWithSymbol}>
+          <span className={styles.currencySymbol}>$</span>
+          <input
+            type="text"
+            className={styles.paymentInput}
+            value={exchangeRate}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                setExchangeRate(val === "." ? "0." : val);
+              }
+            }}
+            placeholder="0.00"
+            disabled={effectiveProcessing}
+          />
+        </div>
+      </div>
+    );
   };
 
-  // Función para renderizar el contenido del método de pago
   const renderPaymentContent = () => {
     switch (selectedPaymentMethod) {
       case "Efectivo":
@@ -178,6 +399,7 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                   }}
                   placeholder="0.00"
                   autoFocus
+                  disabled={effectiveProcessing}
                 />
               </div>
             </div>
@@ -191,9 +413,8 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
       case "Dolares":
         return (
           <div className={styles.paymentInfo}>
-            <div className={styles.exchangeRateDisplay}>
-              <span>Tipo de cambio: ${exchangeRate.toFixed(2)} MXN por USD</span>
-            </div>
+            {renderExchangeRateInput()}
+
             <div className={styles.paymentRow}>
               <span>Pagó Con (USD):</span>
               <div className={styles.inputWithSymbol}>
@@ -210,13 +431,14 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                   }}
                   placeholder="0.00"
                   autoFocus
+                  disabled={effectiveProcessing}
                 />
               </div>
             </div>
             <div className={styles.paymentRow}>
               <span>Equivalente en MXN:</span>
               <span className={styles.equivalentAmount}>
-                ${(toNumber(dollarAmount) * exchangeRate).toFixed(2)}
+                ${(toNumber(dollarAmount) * numericExchangeRate).toFixed(2)}
               </span>
             </div>
             <div className={styles.paymentRow}>
@@ -232,7 +454,8 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
             <div className={styles.mixedPaymentSection}>
               <h3>Desglose de Pago</h3>
 
-              {/* Efectivo */}
+              {renderExchangeRateInput()}
+
               <div className={styles.paymentRow}>
                 <span>Efectivo:</span>
                 <div className={styles.inputWithSymbol}>
@@ -252,11 +475,11 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                     }}
                     placeholder="0.00"
                     autoFocus
+                    disabled={effectiveProcessing}
                   />
                 </div>
               </div>
 
-              {/* Tarjeta */}
               <div className={styles.paymentRow}>
                 <span>Tarjeta:</span>
                 <div className={styles.inputWithSymbol}>
@@ -275,11 +498,11 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                       }
                     }}
                     placeholder="0.00"
+                    disabled={effectiveProcessing}
                   />
                 </div>
               </div>
 
-              {/* Dólares */}
               <div className={styles.paymentRow}>
                 <span>Dólares (USD):</span>
                 <div className={styles.inputWithSymbol}>
@@ -298,11 +521,11 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                       }
                     }}
                     placeholder="0.00"
+                    disabled={effectiveProcessing}
                   />
                 </div>
               </div>
 
-              {/* Total */}
               <div className={styles.totalMixedRow}>
                 <span>Total Pagado:</span>
                 <span className={styles.totalMixedAmount}>
@@ -310,17 +533,14 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                   {(
                     toNumber(mixedPayments.efectivo) +
                     toNumber(mixedPayments.tarjeta) +
-                    toNumber(mixedPayments.dolares) * exchangeRate
+                    toNumber(mixedPayments.dolares) * numericExchangeRate
                   ).toFixed(2)}
                 </span>
               </div>
 
-              {/* Cambio */}
               <div className={styles.paymentRow}>
                 <span>Su Cambio:</span>
-                <span className={styles.changeAmount}>
-                  ${change.toFixed(2)}
-                </span>
+                <span className={styles.changeAmount}>${change.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -350,6 +570,7 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                   value={trackingCode}
                   onChange={(e) => setTrackingCode(e.target.value)}
                   placeholder="Clave de rastreo, referencia, etc."
+                  disabled={effectiveProcessing}
                 />
               </div>
               <div className={styles.paymentRow}>
@@ -365,7 +586,6 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
     }
   };
 
-  // Si el modal no está abierto, no renderizar nada
   if (!isOpen) return null;
 
   return (
@@ -373,7 +593,11 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
       <div className={styles.paymentModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2>COBRAR</h2>
-          <button className={styles.closeButton} onClick={closePaymentModal}>
+          <button
+            className={styles.closeButton}
+            onClick={closePaymentModal}
+            disabled={effectiveProcessing}
+          >
             ✕
           </button>
         </div>
@@ -389,7 +613,12 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
                   ? styles.paymentMethodSelected
                   : ""
               }`}
-              onClick={() => setSelectedPaymentMethod(method.id)}
+              onClick={() => {
+                if (!effectiveProcessing) {
+                  console.log("Método seleccionado:", method.id);
+                  setSelectedPaymentMethod(method.id);
+                }
+              }}
             >
               <div className={styles.methodIcon}>{method.icon}</div>
               <div className={styles.methodName}>{method.name}</div>
@@ -397,29 +626,43 @@ const PaymentModal = ({ isOpen, onClose, total = 207.0, onProcessPayment }) => {
           ))}
         </div>
 
-        {/* Contenido dinámico según método de pago */}
         {renderPaymentContent()}
 
         <div className={styles.modalActions}>
-          <button className={styles.modalActionBtn}>
-            F1 - Cobrar e Imprimir
+          <button
+            className={styles.modalActionBtn}
+            onClick={() => processPayment(true)}
+            disabled={effectiveProcessing}
+          >
+            {effectiveProcessing ? "Procesando..." : "F1 - Cobrar e Imprimir"}
           </button>
-          <button className={styles.modalActionBtn}>
-            F2 - Cobrar sin imprimir
+
+          <button
+            className={styles.modalActionBtn}
+            onClick={() => processPayment(false)}
+            disabled={effectiveProcessing}
+          >
+            {effectiveProcessing ? "Procesando..." : "F2 - Cobrar sin imprimir"}
           </button>
-          <button className={styles.modalActionBtn} onClick={closePaymentModal}>
-            ESC - Cancelar
+
+          <button
+            className={styles.modalActionBtn}
+            onClick={closePaymentModal}
+            disabled={effectiveProcessing}
+          >
+            {effectiveProcessing ? "Procesando..." : "ESC - Cancelar"}
           </button>
-          <button 
+
+          <button
             className={styles.modalActionBtn}
             onClick={openNotesModal}
+            disabled={effectiveProcessing}
           >
-            F4 - Ingresar notas
+            {effectiveProcessing ? "Procesando..." : "F4 - Ingresar notas"}
           </button>
         </div>
       </div>
-      
-      {/* Modal de Notas */}
+
       <NotesModal
         isOpen={isNotesModalOpen}
         onClose={closeNotesModal}

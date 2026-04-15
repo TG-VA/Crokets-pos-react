@@ -1,10 +1,6 @@
-/* Modal Overlay */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
@@ -12,28 +8,26 @@
   z-index: 1000;
 }
 
-/* Modal Container */
 .searchModal {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 600px;
-  min-height: 500px;
+  background: #ffffff;
+  border-radius: 10px;
+  width: 95%;
+  max-width: 1180px;
+  height: 86vh;
+  max-height: 760px;
+  min-height: 560px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
   animation: modalSlideIn 0.2s ease-out;
 }
 
-/* Modal Header */
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 22px 24px;
   background: #1092b1;
   color: white;
   border-bottom: 1px solid #1092b1;
@@ -41,36 +35,36 @@
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .closeButton {
   background: none;
   border: none;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.9rem;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
 .closeButton:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.03);
 }
 
-/* Modal Body */
 .searchModalBody {
-  padding: 24px;
+  padding: 22px 24px 18px;
   flex-grow: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
-/* Search Section */
 .searchSection {
   flex-shrink: 0;
 }
@@ -78,7 +72,7 @@
 .searchSection label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
   font-size: 1rem;
 }
@@ -90,55 +84,66 @@
 .searchInput {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #bdc3c7;
-  border-radius: 6px;
+  border: 2px solid #bcc8d1;
+  border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #243746;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #1092b1;
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
 }
 
 .searchHelp {
-  font-size: 0.85rem;
-  color: #7f8c8d;
-  font-style: italic;
+  font-size: 0.9rem;
+  color: #667786;
 }
 
-/* Results Section */
-.resultsSection {
-  height: 380px;
+.contentGrid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.resultsSection,
+.detailSection {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .resultsHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 2px solid #ecf0f1;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
+  font-size: 1rem;
 }
 
 .resultsCount {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  font-weight: 500;
+  font-size: 0.95rem;
+  color: #7b8a94;
+  font-weight: 600;
 }
 
 .resultsContainer {
-  height: 320px;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  background: #f8f9fa;
+  border: 1px solid #dce5eb;
+  border-radius: 10px;
+  background: #f8fafb;
 }
 
 .emptyMessage {
@@ -149,23 +154,23 @@
   text-align: center;
   color: #7f8c8d;
   font-style: italic;
-  padding: 20px;
+  padding: 24px;
 }
 
 .resultsList {
   height: 100%;
   overflow-y: auto;
-  padding: 8px;
+  padding: 12px;
 }
 
 .resultItem {
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #dfe7ec;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .resultItem:last-child {
@@ -173,48 +178,67 @@
 }
 
 .resultItem:hover {
-  border-color: #3498db;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+  border-color: #1092b1;
+  box-shadow: 0 3px 10px rgba(16, 146, 177, 0.1);
 }
 
 .selectedResult {
-  border-color: #3498db !important;
-  background: rgba(52, 152, 219, 0.05) !important;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1) !important;
+  border-color: #1092b1 !important;
+  background: rgba(16, 146, 177, 0.06) !important;
+  box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.1) !important;
 }
 
-.productInfo {
+.productTopRow {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .productName {
-  font-weight: 600;
-  color: #2c3e50;
+  font-weight: 700;
+  color: #243746;
   font-size: 1rem;
   line-height: 1.3;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background: #e9f7ee;
+  color: #2e7d32;
+}
+
+.statusInactive {
+  background: #fdecea;
+  color: #c62828;
 }
 
 .productDetails {
   display: flex;
   gap: 16px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   flex-wrap: wrap;
 }
 
 .productCode {
-  color: #7f8c8d;
+  color: #6f7f89;
 }
 
 .productPrice {
   color: #27ae60;
   font-weight: 700;
-  font-size: 0.9rem;
 }
 
 .productStock {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .inStock {
@@ -225,96 +249,269 @@
   color: #e74c3c;
 }
 
-/* Modal Actions */
+.detailCard {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #dce5eb;
+  border-radius: 10px;
+  background: #f8fafb;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.detailTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.detailEmpty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #7f8c8d;
+  font-style: italic;
+  padding: 24px;
+}
+
+.selectedProductSummary {
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 10px;
+  padding: 13px 14px;
+  margin-bottom: 14px;
+}
+
+.selectedProductName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #243746;
+  margin-bottom: 6px;
+}
+
+.selectedProductMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: #6f7f89;
+}
+
+.stockBlock {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stockBlockTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.stockLoading {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.branchStockList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.branchStockItem {
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dce4ea;
+  background: #ffffff;
+}
+
+.currentBranchItem {
+  border-color: #1092b1;
+  background: rgba(16, 146, 177, 0.08);
+}
+
+.otherBranchItem {
+  opacity: 0.98;
+}
+
+.branchStockInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.branchStockName {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 0.98rem;
+}
+
+.branchStockMeta {
+  font-size: 0.84rem;
+  color: #6f7f89;
+}
+
+.branchStockRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.branchStockQty {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.branchStockPositive {
+  color: #2e7d32;
+}
+
+.branchStockZero {
+  color: #c62828;
+}
+
+.miniStatusBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.miniStatusActive {
+  background: #eaf8ef;
+  color: #2e7d32;
+}
+
+.miniStatusInactive {
+  background: #fdecea;
+  color: #c62828;
+}
+
+.infoNotice {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #eef7fb;
+  border: 1px solid #d0e8f1;
+  color: #29586a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 .modalActions {
   display: flex;
   flex-direction: column;
-  padding: 16px 24px;
+  padding: 16px 24px 18px;
   background: #f8f9fa;
   border-top: 1px solid #e9ecef;
   gap: 8px;
   flex-shrink: 0;
 }
 
-/* Action Buttons Row */
 .actionButtons {
   display: flex;
-  gap: 12px;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .actionButton {
-  padding: 10px 16px;
+  min-width: 220px;
+  padding: 11px 18px;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #95a5a6;
-  color: white;
-  flex: 1;
-  min-width: 0;
+  transition: all 0.2s ease;
+  color: #ffffff;
 }
 
 .actionButton:hover:not(:disabled) {
-  background: #7f8c8d;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .actionButton:disabled {
-  background: #bdc3c7;
+  background: #c7d0d1;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.75;
+  box-shadow: none;
+  transform: none;
 }
 
 .addButton {
-  background: #27ae60 !important;
+  background: #27ae60;
 }
 
 .addButton:hover:not(:disabled) {
-  background: #219a52 !important;
+  background: #219a52;
 }
 
 .cancelButton {
-  background: #6c757d !important;
+  background: #6c757d;
 }
 
-.cancelButton:hover {
-  background: #5a6268 !important;
+.cancelButton:hover:not(:disabled) {
+  background: #5a6268;
 }
 
 .actionHints {
   text-align: center;
   color: #7f8c8d;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-style: italic;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
-/* Scrollbar */
-.resultsList::-webkit-scrollbar {
+.resultsList::-webkit-scrollbar,
+.branchStockList::-webkit-scrollbar {
   width: 8px;
 }
 
-.resultsList::-webkit-scrollbar-track {
+.resultsList::-webkit-scrollbar-track,
+.branchStockList::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.resultsList::-webkit-scrollbar-thumb {
+.resultsList::-webkit-scrollbar-thumb,
+.branchStockList::-webkit-scrollbar-thumb {
   background: #bdc3c7;
   border-radius: 4px;
 }
 
-.resultsList::-webkit-scrollbar-thumb:hover {
+.resultsList::-webkit-scrollbar-thumb:hover,
+.branchStockList::-webkit-scrollbar-thumb:hover {
   background: #95a5a6;
 }
 
-/* Animation */
 @keyframes modalSlideIn {
   from {
     opacity: 0;

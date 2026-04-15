@@ -1,100 +1,76 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./SearchModal.module.css";
+import { supabase } from "../../../../lib/supabaseClient";
+import { useBranch } from "../../../../contexts/BranchContext";
 
 const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
+  const { branch } = useBranch();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedProductStocks, setSelectedProductStocks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingStocks, setLoadingStocks] = useState(false);
+  const [error, setError] = useState("");
+
   const resultsListRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  // Productos de ejemplo para búsqueda
-  const sampleProducts = [
-    {
-      codigo: "1234567890",
-      nombre: "Royal canin urinary so small dog 4kg",
-      precio: 1299,
-      existencia: 10,
-    },
-    {
-      codigo: "0987654321", 
-      nombre: "Nupec adulto razas pequeñas 8kg",
-      precio: 1135,
-      existencia: 15,
-    },
-    {
-      codigo: "1111222233",
-      nombre: "Six barrilito",
-      precio: 120,
-      existencia: 5,
-    },
-    {
-      codigo: "2222333344",
-      nombre: "Royal canin mini adult 2kg",
-      precio: 665,
-      existencia: 8,
-    },
-    {
-      codigo: "3333444455",
-      nombre: "Pro plan puppy small breed 3kg",
-      precio: 899,
-      existencia: 12,
-    },
-    {
-      codigo: "4444555566",
-      nombre: "Hills science diet adult large breed 15kg",
-      precio: 2299,
-      existencia: 4,
-    },
-    {
-      codigo: "5555666677",
-      nombre: "Whiskas adult chicken 1.5kg",
-      precio: 189,
-      existencia: 20,
-    },
-    {
-      codigo: "6666777788",
-      nombre: "Royal canin mature large dog 13kg",
-      precio: 2899,
-      existencia: 3,
-    }
-  ];
-
-  // Efecto para hacer scroll automático cuando cambia selectedIndex
-  useEffect(() => {
-    if (selectedIndex >= 0 && resultsListRef.current) {
-      const container = resultsListRef.current;
-      const items = container.querySelectorAll(`.${styles.resultItem}`);
-      
-      if (items[selectedIndex]) {
-        const selectedElement = items[selectedIndex];
-        
-        // Usar scrollIntoView para un scroll suave y automático
-        selectedElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'nearest'
-        });
-      }
-    }
-  }, [selectedIndex]);
+  // 🔥 Control para invalidar búsquedas viejas
+  const searchRequestIdRef = useRef(0);
+  const stockRequestIdRef = useRef(0);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    setSearchTerm("");
+    setSearchResults([]);
+    setSelectedIndex(-1);
+    setSelectedProductStocks([]);
+    setLoading(false);
+    setLoadingStocks(false);
+    setError("");
+
+    searchRequestIdRef.current += 1;
+    stockRequestIdRef.current += 1;
+
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         handleClose();
-      } else if (e.key === "ArrowDown") {
+        return;
+      }
+
+      if (e.key === "ArrowDown") {
+        if (searchResults.length === 0) return;
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex((prev) =>
           prev < searchResults.length - 1 ? prev + 1 : prev
         );
-      } else if (e.key === "ArrowUp") {
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        if (searchResults.length === 0) return;
         e.preventDefault();
-        setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-      } else if (e.key === "Enter") {
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        return;
+      }
+
+      if (e.key === "Enter") {
+        if (searchResults.length === 0) return;
         e.preventDefault();
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleSelectProduct(searchResults[selectedIndex]);
@@ -102,172 +78,565 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown, true);
-    }
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [isOpen, searchResults, selectedIndex]);
 
-  // Reset search when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setSearchTerm("");
-      setSearchResults([]);
-      setSelectedIndex(-1);
+    if (selectedIndex >= 0 && resultsListRef.current) {
+      const container = resultsListRef.current;
+      const items = container.querySelectorAll(`.${styles.resultItem}`);
+
+      if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
+      }
     }
-  }, [isOpen]);
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    const selectedProduct =
+      selectedIndex >= 0 ? searchResults[selectedIndex] : null;
+
+    if (selectedProduct?.id) {
+      fetchProductStocks(selectedProduct.id);
+    } else {
+      stockRequestIdRef.current += 1;
+      setSelectedProductStocks([]);
+    }
+  }, [selectedIndex, searchResults]);
 
   const handleClose = () => {
+    searchRequestIdRef.current += 1;
+    stockRequestIdRef.current += 1;
+
     setSearchTerm("");
     setSearchResults([]);
     setSelectedIndex(-1);
+    setSelectedProductStocks([]);
+    setLoading(false);
+    setLoadingStocks(false);
+    setError("");
     onClose();
   };
 
-  const handleSearch = (term) => {
-    if (!term.trim()) {
+  const normalizeText = (text) =>
+    String(text || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const performSearch = async (term) => {
+    const cleanTerm = String(term || "").trim();
+
+    // 🔥 id único para esta búsqueda
+    const currentRequestId = ++searchRequestIdRef.current;
+
+    if (!cleanTerm) {
       setSearchResults([]);
       setSelectedIndex(-1);
+      setSelectedProductStocks([]);
+      setLoading(false);
+      setLoadingStocks(false);
+      setError("");
       return;
     }
 
-    // Búsqueda inmediata sin loading para evitar parpadeos
-    const results = performSearch(term.trim());
-    setSearchResults(results);
-    setSelectedIndex(results.length > 0 ? 0 : -1);
-  };
+    if (!branch?.id) {
+      if (currentRequestId !== searchRequestIdRef.current) return;
 
-  const performSearch = (term) => {
-    const isPartialSearch = term.startsWith("%");
-    const searchQuery = isPartialSearch ? term.substring(1) : term;
+      setError("La sucursal actual no está cargada.");
+      setSearchResults([]);
+      setSelectedIndex(-1);
+      setSelectedProductStocks([]);
+      return;
+    }
 
-    if (isPartialSearch) {
-      // Búsqueda parcial: busca cada palabra en cualquier parte del nombre
-      const searchWords = searchQuery.toLowerCase().split(" ").filter(word => word.length > 0);
-      
-      return sampleProducts.filter(product => {
-        const productName = product.nombre.toLowerCase();
-        return searchWords.every(word => productName.includes(word));
-      });
-    } else {
-      // Búsqueda exacta: busca la frase completa
-      const searchLower = searchQuery.toLowerCase();
-      return sampleProducts.filter(product => 
-        product.nombre.toLowerCase().includes(searchLower)
-      );
+    try {
+      setLoading(true);
+      setError("");
+
+      const normalizedTerm = normalizeText(cleanTerm);
+
+      const { data: inventoryRows, error: inventoryError } = await supabase
+        .from("branch_inventory")
+        .select(`
+          id,
+          branch_id,
+          product_id,
+          stock,
+          is_active,
+          cost_price,
+          sale_price,
+          updated_at
+        `)
+        .eq("branch_id", branch.id)
+        .order("updated_at", { ascending: false });
+
+      // 🔥 si ya hay una búsqueda más nueva, ignoramos esta
+      if (currentRequestId !== searchRequestIdRef.current) return;
+
+      if (inventoryError) throw inventoryError;
+
+      if (!inventoryRows?.length) {
+        setSearchResults([]);
+        setSelectedIndex(-1);
+        setSelectedProductStocks([]);
+        return;
+      }
+
+      const productIds = [
+        ...new Set(inventoryRows.map((row) => row.product_id).filter(Boolean)),
+      ];
+
+      if (!productIds.length) {
+        setSearchResults([]);
+        setSelectedIndex(-1);
+        setSelectedProductStocks([]);
+        return;
+      }
+
+      const { data: productsRows, error: productsError } = await supabase
+        .from("products")
+        .select(`
+          id,
+          barcode,
+          name,
+          sale_price,
+          cost_price,
+          status,
+          is_kit
+        `)
+        .in("id", productIds)
+        .eq("status", true);
+
+      // 🔥 otra validación después del await
+      if (currentRequestId !== searchRequestIdRef.current) return;
+
+      if (productsError) throw productsError;
+
+      const productMap = {};
+      for (const product of productsRows || []) {
+        productMap[product.id] = product;
+      }
+
+      const mergedResults = (inventoryRows || [])
+        .map((inventory) => {
+          const product = productMap[inventory.product_id];
+          if (!product) return null;
+
+          return {
+            ...product,
+            inventory_id: inventory.id,
+            branch_id: inventory.branch_id,
+            stock: Number(inventory.stock || 0),
+            is_active_in_branch: inventory.is_active !== false,
+            branch_sale_price: Number(
+              inventory.sale_price ?? product.sale_price ?? 0
+            ),
+            branch_cost_price: Number(
+              inventory.cost_price ?? product.cost_price ?? 0
+            ),
+          };
+        })
+        .filter(Boolean)
+        .filter((product) => {
+          const searchable = normalizeText(
+            `${product.name} ${product.barcode || ""}`
+          );
+          return searchable.includes(normalizedTerm);
+        })
+        .sort((a, b) => {
+          const aActive = a.is_active_in_branch ? 1 : 0;
+          const bActive = b.is_active_in_branch ? 1 : 0;
+
+          if (aActive !== bActive) return bActive - aActive;
+          if (a.stock !== b.stock) return b.stock - a.stock;
+
+          return String(a.name || "").localeCompare(String(b.name || ""), "es", {
+            sensitivity: "base",
+          });
+        });
+
+      if (currentRequestId !== searchRequestIdRef.current) return;
+
+      setSearchResults(mergedResults);
+      setSelectedIndex(mergedResults.length > 0 ? 0 : -1);
+      setSelectedProductStocks([]);
+    } catch (err) {
+      if (currentRequestId !== searchRequestIdRef.current) return;
+
+      console.error("Error buscando productos:", err);
+      setError("No se pudieron cargar los productos.");
+      setSearchResults([]);
+      setSelectedIndex(-1);
+      setSelectedProductStocks([]);
+    } finally {
+      if (currentRequestId === searchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  const handleSelectProduct = (product) => {
-    if (product && onAddToSale) {
-      onAddToSale({
-        ...product,
-        cantidad: 1,
-        importe: product.precio
-      });
-      console.log("Producto agregado desde búsqueda:", product);
+  const fetchProductStocks = async (productId) => {
+    if (!productId) {
+      setSelectedProductStocks([]);
+      return;
     }
+
+    const currentStockRequestId = ++stockRequestIdRef.current;
+
+    try {
+      setLoadingStocks(true);
+
+      const { data: stockRows, error: stockError } = await supabase
+        .from("branch_inventory")
+        .select(`
+          branch_id,
+          stock,
+          is_active,
+          sale_price
+        `)
+        .eq("product_id", productId);
+
+      if (currentStockRequestId !== stockRequestIdRef.current) return;
+
+      if (stockError) throw stockError;
+
+      const branchIds = [
+        ...new Set((stockRows || []).map((row) => row.branch_id).filter(Boolean)),
+      ];
+
+      if (!branchIds.length) {
+        setSelectedProductStocks([]);
+        return;
+      }
+
+      const { data: branchRows, error: branchError } = await supabase
+        .from("branches")
+        .select("id, code, name")
+        .in("id", branchIds);
+
+      if (currentStockRequestId !== stockRequestIdRef.current) return;
+
+      if (branchError) throw branchError;
+
+      const branchMap = {};
+      for (const branchRow of branchRows || []) {
+        branchMap[branchRow.id] = branchRow;
+      }
+
+      const mergedStocks = (stockRows || [])
+        .map((row) => {
+          const branchData = branchMap[row.branch_id];
+
+          return {
+            branch_id: row.branch_id,
+            branch_code: branchData?.code || "",
+            branch_name: branchData?.name || "Sucursal",
+            stock: Number(row.stock || 0),
+            is_active: row.is_active !== false,
+            sale_price: Number(row.sale_price || 0),
+            is_current_branch: row.branch_id === branch?.id,
+          };
+        })
+        .sort((a, b) => {
+          if (a.is_current_branch && !b.is_current_branch) return -1;
+          if (!a.is_current_branch && b.is_current_branch) return 1;
+          return a.branch_name.localeCompare(b.branch_name, "es", {
+            sensitivity: "base",
+          });
+        });
+
+      if (currentStockRequestId !== stockRequestIdRef.current) return;
+
+      setSelectedProductStocks(mergedStocks);
+    } catch (err) {
+      if (currentStockRequestId !== stockRequestIdRef.current) return;
+
+      console.error("Error cargando existencias por sucursal:", err);
+      setSelectedProductStocks([]);
+    } finally {
+      if (currentStockRequestId === stockRequestIdRef.current) {
+        setLoadingStocks(false);
+      }
+    }
+  };
+
+  const handleInputChange = async (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (!value.trim()) {
+      // 🔥 invalidamos cualquier búsqueda pendiente
+      searchRequestIdRef.current += 1;
+      stockRequestIdRef.current += 1;
+
+      setSearchResults([]);
+      setSelectedIndex(-1);
+      setSelectedProductStocks([]);
+      setError("");
+      setLoading(false);
+      setLoadingStocks(false);
+      return;
+    }
+
+    await performSearch(value);
+  };
+
+  const handleSelectRow = (index) => {
+    setSelectedIndex(index);
+  };
+
+  const handleSelectProduct = async (product) => {
+    if (!product) return;
+
+    if (!product.is_active_in_branch) {
+      alert("Este producto está inactivo en la sucursal actual.");
+      return;
+    }
+
+    if (Number(product.stock || 0) <= 0) {
+      alert("Este producto no tiene existencia disponible en la sucursal actual.");
+      return;
+    }
+
+    if (onAddToSale) {
+      await onAddToSale({
+        id: product.id,
+        barcode: product.barcode,
+        name: product.name,
+        sale_price: product.branch_sale_price,
+        cost_price: product.branch_cost_price,
+        is_kit: !!product.is_kit,
+      });
+    }
+
     handleClose();
   };
 
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    handleSearch(value);
-  };
+  const selectedProduct =
+    selectedIndex >= 0 ? searchResults[selectedIndex] : null;
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
-      <div
-        className={styles.searchModal}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2>Búsqueda de Productos</h2>
-          <button
-            className={styles.closeButton}
-            onClick={handleClose}
-          >
+          <button className={styles.closeButton} onClick={handleClose}>
             ✕
           </button>
         </div>
 
         <div className={styles.searchModalBody}>
-          {/* Input para búsqueda */}
           <div className={styles.searchSection}>
-            <label htmlFor="searchInput">Nombre del Producto:</label>
+            <label htmlFor="searchInput">Nombre o código del producto:</label>
             <div className={styles.inputContainer}>
               <input
+                ref={searchInputRef}
                 id="searchInput"
                 type="text"
                 className={styles.searchInput}
                 value={searchTerm}
                 onChange={handleInputChange}
-                placeholder="Escribe el nombre del producto...  "
-                autoFocus
+                placeholder="Escribe nombre o código de barras..."
+                autoComplete="off"
               />
             </div>
+
             <div className={styles.searchHelp}>
-              <span>Escribe parte del nombre del producto (ej. "kg", "adulto", "pollo")</span>
+              Busca solo dentro del inventario de la sucursal actual:{" "}
+              <strong>
+                {branch?.code ? `${branch.code} - ` : ""}
+                {branch?.name || "Sucursal actual"}
+              </strong>
             </div>
           </div>
 
-          {/* Resultados de búsqueda */}
-          <div className={styles.resultsSection}>
-            <div className={styles.resultsHeader}>
-              <span>Resultados de Búsqueda:</span>
-              {searchResults.length > 0 && (
-                <span className={styles.resultsCount}>
-                  {searchResults.length} producto(s) encontrado(s)
-                </span>
-              )}
-            </div>
+          <div className={styles.contentGrid}>
+            <div className={styles.resultsSection}>
+              <div className={styles.resultsHeader}>
+                <span>Resultados de búsqueda</span>
 
-            <div className={styles.resultsContainer} ref={resultsListRef}>
-              {searchResults.length === 0 ? (
-                <div className={styles.emptyMessage}>
-                  {searchTerm.trim() ? 
-                    "No se encontraron productos" : 
-                    "Ingresa el nombre de un producto para buscar"
-                  }
-                </div>
-              ) : (
-                <div className={styles.resultsList}>
-                  {searchResults.map((product, index) => (
-                    <div
-                      key={product.codigo}
-                      className={`${styles.resultItem} ${
-                        index === selectedIndex ? styles.selectedResult : ""
-                      }`}
-                      onClick={() => handleSelectProduct(product)}
-                    >
-                      <div className={styles.productInfo}>
-                        <div className={styles.productName}>
-                          {product.nombre}
+                {loading ? (
+                  <span className={styles.resultsCount}>Buscando...</span>
+                ) : searchResults.length > 0 ? (
+                  <span className={styles.resultsCount}>
+                    {searchResults.length} producto(s)
+                  </span>
+                ) : null}
+              </div>
+
+              <div className={styles.resultsContainer} ref={resultsListRef}>
+                {error ? (
+                  <div className={styles.emptyMessage}>{error}</div>
+                ) : loading ? (
+                  <div className={styles.emptyMessage}>Cargando productos...</div>
+                ) : searchResults.length === 0 ? (
+                  <div className={styles.emptyMessage}>
+                    {searchTerm.trim()
+                      ? "No se encontraron productos en esta sucursal"
+                      : "Ingresa el nombre o código de un producto para buscar"}
+                  </div>
+                ) : (
+                  <div className={styles.resultsList}>
+                    {searchResults.map((product, index) => (
+                      <div
+                        key={`${product.id}-${index}`}
+                        className={`${styles.resultItem} ${
+                          index === selectedIndex ? styles.selectedResult : ""
+                        }`}
+                        onClick={() => handleSelectRow(index)}
+                        onDoubleClick={() => handleSelectProduct(product)}
+                      >
+                        <div className={styles.productTopRow}>
+                          <div className={styles.productName}>{product.name}</div>
+
+                          <span
+                            className={`${styles.statusBadge} ${
+                              product.is_active_in_branch
+                                ? styles.statusActive
+                                : styles.statusInactive
+                            }`}
+                          >
+                            {product.is_active_in_branch ? "Activo" : "Inactivo"}
+                          </span>
                         </div>
+
                         <div className={styles.productDetails}>
                           <span className={styles.productCode}>
-                            Código: {product.codigo}
+                            Código: {product.barcode || "Sin código"}
                           </span>
+
                           <span className={styles.productPrice}>
-                            ${product.precio.toFixed(2)}
+                            ${Number(product.branch_sale_price || 0).toFixed(2)}
                           </span>
-                          <span className={`${styles.productStock} ${
-                            product.existencia > 0 ? styles.inStock : styles.outOfStock
-                          }`}>
-                            Stock: {product.existencia}
+
+                          <span
+                            className={`${styles.productStock} ${
+                              Number(product.stock || 0) > 0
+                                ? styles.inStock
+                                : styles.outOfStock
+                            }`}
+                          >
+                            Stock actual: {Number(product.stock || 0)}
                           </span>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.detailSection}>
+              <div className={styles.detailCard}>
+                <div className={styles.detailTitle}>Detalle del producto</div>
+
+                {!selectedProduct ? (
+                  <div className={styles.detailEmpty}>
+                    Selecciona un producto para ver sus existencias por sucursal
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.selectedProductSummary}>
+                      <div className={styles.selectedProductName}>
+                        {selectedProduct.name}
+                      </div>
+
+                      <div className={styles.selectedProductMeta}>
+                        <span>
+                          Código: {selectedProduct.barcode || "Sin código"}
+                        </span>
+                        <span>
+                          Precio actual: $
+                          {Number(selectedProduct.branch_sale_price || 0).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    <div className={styles.stockBlock}>
+                      <div className={styles.stockBlockTitle}>
+                        Existencia por sucursal
+                      </div>
+
+                      {loadingStocks ? (
+                        <div className={styles.stockLoading}>
+                          Cargando existencias...
+                        </div>
+                      ) : selectedProductStocks.length === 0 ? (
+                        <div className={styles.stockLoading}>
+                          No hay existencias registradas para este producto.
+                        </div>
+                      ) : (
+                        <div className={styles.branchStockList}>
+                          {selectedProductStocks.map((stockRow) => (
+                            <div
+                              key={stockRow.branch_id}
+                              className={`${styles.branchStockItem} ${
+                                stockRow.is_current_branch
+                                  ? styles.currentBranchItem
+                                  : styles.otherBranchItem
+                              }`}
+                            >
+                              <div className={styles.branchStockInfo}>
+                                <div className={styles.branchStockName}>
+                                  {stockRow.branch_code
+                                    ? `${stockRow.branch_code} - `
+                                    : ""}
+                                  {stockRow.branch_name}
+                                </div>
+
+                                <div className={styles.branchStockMeta}>
+                                  {stockRow.is_current_branch
+                                    ? "Sucursal actual"
+                                    : "Solo consulta"}
+                                </div>
+                              </div>
+
+                              <div className={styles.branchStockRight}>
+                                <span
+                                  className={`${styles.branchStockQty} ${
+                                    stockRow.stock > 0
+                                      ? styles.branchStockPositive
+                                      : styles.branchStockZero
+                                  }`}
+                                >
+                                  {stockRow.stock}
+                                </span>
+
+                                <span
+                                  className={`${styles.miniStatusBadge} ${
+                                    stockRow.is_active
+                                      ? styles.miniStatusActive
+                                      : styles.miniStatusInactive
+                                  }`}
+                                >
+                                  {stockRow.is_active ? "Activa" : "Inactiva"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.infoNotice}>
+                      Solo puedes agregar a la venta productos del inventario de
+                      la sucursal actual.
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -277,34 +646,19 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             <button
               className={`${styles.actionButton} ${styles.addButton}`}
               onClick={() => {
-                if (selectedIndex >= 0 && searchResults[selectedIndex]) {
-                  handleSelectProduct(searchResults[selectedIndex]);
+                if (selectedProduct) {
+                  handleSelectProduct(selectedProduct);
                 }
               }}
-              disabled={selectedIndex < 0 || !searchResults[selectedIndex]}
+              disabled={
+                !selectedProduct ||
+                !selectedProduct.is_active_in_branch ||
+                Number(selectedProduct.stock || 0) <= 0
+              }
             >
               Agregar a la venta
             </button>
-            <button
-              className={styles.actionButton}
-              onClick={() => {
-                console.log('Modificar producto');
-                // Funcionalidad por implementar
-              }}
-              disabled={selectedIndex < 0 || !searchResults[selectedIndex]}
-            >
-              Modificar producto
-            </button>
-            <button
-              className={styles.actionButton}
-              onClick={() => {
-                console.log('Revisar Kardex');
-                // Funcionalidad por implementar
-              }}
-              disabled={selectedIndex < 0 || !searchResults[selectedIndex]}
-            >
-              Revisar Kardex
-            </button>
+
             <button
               className={`${styles.actionButton} ${styles.cancelButton}`}
               onClick={handleClose}
@@ -312,8 +666,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
               ESC - Cerrar
             </button>
           </div>
+
           <div className={styles.actionHints}>
-            <span>↑↓ Navegar • Enter - Agregar a venta</span>
+            <span>↑↓ Navegar • Enter o doble clic para agregar</span>
           </div>
         </div>
       </div>
