@@ -1,88 +1,103 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useProducts } from '../../../../contexts/ProductsContext';
-import styles from './ProductsList.module.css';
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useProducts } from "../../../../contexts/ProductsContext";
+import styles from "./ProductsList.module.css";
 
 const ProductsList = () => {
-  const { products } = useProducts();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const { products, loadingProducts, productsError } = useProducts();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [showDepartmentFilter, setShowDepartmentFilter] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(0);
-  const tableContainerRef = useRef(null);
 
-  const normalizeDept = (d) => (d || '').trim().toLowerCase();
-  const formatDept = (d) => d.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const tableContainerRef = useRef(null);
+  const filterRef = useRef(null);
+
+  const normalizeDept = (dept) => (dept || "").trim().toLowerCase();
+
+  const formatDept = (dept) =>
+    (dept || "")
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
   const departments = useMemo(() => {
-    const set = new Set(products.map(p => normalizeDept(p.departamento)).filter(Boolean));
-    return Array.from(set).sort();
+    const uniqueDepartments = new Set(
+      products.map((product) => normalizeDept(product.departamento)).filter(Boolean)
+    );
+    return Array.from(uniqueDepartments).sort();
   }, [products]);
 
-  // Filtrar productos basado en búsqueda y departamento
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const s = searchTerm.trim().toLowerCase();
-      const matchesSearch = !s || (
-        product.descripcion.toLowerCase().includes(s)
-      );
-      const matchesDepartment = !selectedDepartment || (
-        normalizeDept(product.departamento) === selectedDepartment.toLowerCase()
-      );
+    const search = searchTerm.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const matchesSearch =
+        !search ||
+        (product.descripcion || "").toLowerCase().includes(search) ||
+        (product.codigo || "").toLowerCase().includes(search);
+
+      const matchesDepartment =
+        !selectedDepartment ||
+        normalizeDept(product.departamento) === selectedDepartment.toLowerCase();
+
       return matchesSearch && matchesDepartment;
     });
-  }, [searchTerm, selectedDepartment]);
+  }, [products, searchTerm, selectedDepartment]);
 
-  // Efecto para hacer scroll automático cuando cambia selectedRowIndex
   useEffect(() => {
-    // Buscar el tbody dentro del contenedor de la tabla
-    const tbody = tableContainerRef.current?.querySelector('tbody');
+    setSelectedRowIndex(0);
+  }, [searchTerm, selectedDepartment, products.length]);
+
+  useEffect(() => {
+    const tbody = tableContainerRef.current?.querySelector("tbody");
     if (!tbody) return;
 
-    const rows = tbody.querySelectorAll('tr');
-    const row = rows[selectedRowIndex];
+    const rows = tbody.querySelectorAll("tr");
+    const selectedRow = rows[selectedRowIndex];
 
-    if (row) {
-      const rowTop = row.offsetTop;
-      const rowBottom = rowTop + row.offsetHeight;
-      const containerTop = tbody.scrollTop;
-      const containerBottom = containerTop + tbody.clientHeight;
+    if (!selectedRow) return;
 
-      if (rowTop < containerTop) {
-        // Scroll hacia arriba
-        tbody.scrollTo({
-          top: rowTop,
-          behavior: 'smooth'
-        });
-      } else if (rowBottom > containerBottom) {
-        // Scroll hacia abajo
-        tbody.scrollTo({
-          top: rowBottom - tbody.clientHeight,
-          behavior: 'smooth'
-        });
-      }
+    const rowTop = selectedRow.offsetTop;
+    const rowBottom = rowTop + selectedRow.offsetHeight;
+    const containerTop = tbody.scrollTop;
+    const containerBottom = containerTop + tbody.clientHeight;
+
+    if (rowTop < containerTop) {
+      tbody.scrollTo({
+        top: rowTop,
+        behavior: "smooth",
+      });
+    } else if (rowBottom > containerBottom) {
+      tbody.scrollTo({
+        top: rowBottom - tbody.clientHeight,
+        behavior: "smooth",
+      });
     }
-  }, [selectedRowIndex]);
+  }, [selectedRowIndex, filteredProducts]);
 
-  // Efectos para navegación por teclado
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowDown') {
+      if (!filteredProducts.length) return;
+
+      if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedRowIndex(prev =>
+        setSelectedRowIndex((prev) =>
           prev < filteredProducts.length - 1 ? prev + 1 : prev
         );
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedRowIndex(prev => (prev > 0 ? prev - 1 : 0));
-      } else if (e.key === 'Escape') {
+        setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : 0));
+      } else if (e.key === "Escape") {
         setShowDepartmentFilter(false);
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [filteredProducts.length]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [filteredProducts]);
 
-  const filterRef = useRef(null);
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!showDepartmentFilter) return;
@@ -90,14 +105,10 @@ const ProductsList = () => {
         setShowDepartmentFilter(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDepartmentFilter]);
 
-  // Reset selectedRowIndex cuando cambian los filtros
-  useEffect(() => {
-    setSelectedRowIndex(0);
-  }, [searchTerm, selectedDepartment]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDepartmentFilter]);
 
   const handleDepartmentSelect = (department) => {
     setSelectedDepartment(department);
@@ -110,149 +121,223 @@ const ProductsList = () => {
   };
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedDepartment('');
+    setSearchTerm("");
+    setSelectedDepartment("");
     setSelectedRowIndex(0);
+    setShowDepartmentFilter(false);
   };
 
-  return (
+  const formatMoney = (value) => {
+    const amount = Number(value || 0);
+    return `$${amount.toFixed(2)}`;
+  };
+
+  if (loadingProducts) {
+    return (
       <div className={styles.content}>
-        {/* Barra de búsqueda y filtros */}
         <div className={styles.toolbar}>
-          <h1> LISTA DE PRODUCTOS</h1>
-          <div className={styles.toolbarActions}>
-            <div className={styles.searchContainer}>
-              <input
-                type="text"
-                placeholder="Buscar por nombre..."
-                className={styles.searchInput}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setShowDepartmentFilter(false)}
-              />
-              {searchTerm && (
-                <button 
-                  className={styles.clearSearchButton}
-                  onClick={() => setSearchTerm('')}
-                  title="Limpiar búsqueda"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div className={styles.filterContainer} ref={filterRef}>
-              <button
-                className={styles.filterButton}
-                onClick={() => setShowDepartmentFilter(!showDepartmentFilter)}
-              >
-                {selectedDepartment ? formatDept(selectedDepartment) : 'Departamentos'} ▼
-              </button>
-
-              {showDepartmentFilter && (
-                <div className={styles.filterDropdown}>
-                  <div
-                    className={styles.filterOption}
-                    onClick={() => handleDepartmentSelect('')}
-                  >
-                    Todo
-                  </div>
-                  {departments.map(dept => (
-                    <div
-                      key={dept}
-                      className={styles.filterOption}
-                      onClick={() => handleDepartmentSelect(dept)}
-                    >
-                      {formatDept(dept)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <h1>LISTA DE PRODUCTOS</h1>
         </div>
-        
-        {/* Contador de resultados */}
         <div className={styles.resultsInfo}>
-          {filteredProducts.length === 0 ? (
-            <span className={styles.noResultsText}>No se encontraron productos</span>
-          ) : (
-            <span className={styles.resultsCount}>
-              Mostrando {filteredProducts.length} de {products.length} productos
-              {selectedDepartment && ` en ${selectedDepartment}`}
-            </span>
-          )}
+          <span className={styles.resultsCount}>Cargando productos...</span>
         </div>
+      </div>
+    );
+  }
 
-        {/* Tabla de productos */}
-        <div
-          className={styles.productsContainer}
-          ref={tableContainerRef}
-        >
-          <table className={styles.productsTable}>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Descripción producto</th>
-                <th>Departamento</th>
-                <th>Costo</th>
-                <th>Precio</th>
-                <th>Existencia</th>
-                <th>Mínimo</th>
-                <th>Máximo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product, index) => (
-                <tr
-                  key={product.codigo}
-                  className={`${styles.productRow} ${index === selectedRowIndex ? styles.selectedRow : ''}`}
-                  onClick={() => handleRowClick(index)}
+  if (productsError) {
+    return (
+      <div className={styles.content}>
+        <div className={styles.toolbar}>
+          <h1>LISTA DE PRODUCTOS</h1>
+        </div>
+        <div className={styles.noResults}>
+          Error al cargar productos: {productsError}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.content}>
+      <div className={styles.toolbar}>
+        <h1>LISTA DE PRODUCTOS</h1>
+
+        <div className={styles.toolbarActions}>
+          <div className={styles.searchContainer}>
+            <input
+              type="text"
+              placeholder="Buscar por nombre o código..."
+              className={styles.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowDepartmentFilter(false)}
+            />
+
+            {searchTerm && (
+              <button
+                className={styles.clearSearchButton}
+                onClick={() => setSearchTerm("")}
+                title="Limpiar búsqueda"
+                type="button"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className={styles.filterContainer} ref={filterRef}>
+            <button
+              className={`${styles.filterButton} ${
+                selectedDepartment ? styles.filterButtonActive : ""
+              } ${showDepartmentFilter ? styles.filterButtonOpen : ""}`}
+              onClick={() => setShowDepartmentFilter((prev) => !prev)}
+              type="button"
+            >
+              <span className={styles.filterButtonLabel}>
+                {selectedDepartment
+                  ? formatDept(selectedDepartment)
+                  : "Departamentos"}
+              </span>
+
+              <span className={styles.filterArrow}>▾</span>
+            </button>
+
+            {showDepartmentFilter && (
+              <div className={styles.filterDropdown}>
+                <div
+                  className={`${styles.filterOption} ${
+                    !selectedDepartment ? styles.filterOptionSelected : ""
+                  }`}
+                  onClick={() => handleDepartmentSelect("")}
                 >
-                  <td>{product.codigo}</td>
-                  <td
-                    className={styles.descriptionCell}
-                    onMouseEnter={(e) => {
-                      const container = e.currentTarget;
-                      const content = container.querySelector(`.${styles.scrollText}`);
-                      if (!content) return;
-                      const distance = content.scrollWidth - container.clientWidth;
-                      if (distance > 2) {
-                        content.style.setProperty('--scroll-distance', `${distance + 12}px`);
-                        content.classList.add(styles.marquee);
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      const content = e.currentTarget.querySelector(`.${styles.scrollText}`);
-                      if (content) {
-                        content.classList.remove(styles.marquee);
-                        content.style.removeProperty('--scroll-distance');
-                        content.style.transform = '';
-                      }
-                    }}
-                  >
-                    <span className={styles.scrollText}>{product.descripcion}</span>
-                  </td>
-                  <td className={styles.departmentCell}>{product.departamento}</td>
-                  <td className={styles.priceCell}>${product.costo.toFixed(2)}</td>
-                  <td className={styles.priceCell}>${product.precio.toFixed(2)}</td>
-                  <td className={`${styles.stockCell} ${product.existencia <= product.minimo ? styles.lowStock : styles.normalStock}`}>
-                    {product.existencia}
-                  </td>
-                  <td>{product.minimo}</td>
-                  <td>{product.maximo}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  Todo
+                </div>
 
-          {filteredProducts.length === 0 && (
-            <div className={styles.noResults}>
-              No se encontraron productos que coincidan con los criterios de búsqueda.
-            </div>
+                {departments.map((dept) => (
+                  <div
+                    key={dept}
+                    className={`${styles.filterOption} ${
+                      selectedDepartment === dept ? styles.filterOptionSelected : ""
+                    }`}
+                    onClick={() => handleDepartmentSelect(dept)}
+                  >
+                    {formatDept(dept)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(searchTerm || selectedDepartment) && (
+            <button
+              className={styles.clearFiltersButton}
+              onClick={clearFilters}
+              type="button"
+            >
+              Limpiar filtros
+            </button>
           )}
         </div>
       </div>
+
+      <div className={styles.resultsInfo}>
+        {filteredProducts.length === 0 ? (
+          <span className={styles.noResultsText}>No se encontraron productos</span>
+        ) : (
+          <span className={styles.resultsCount}>
+            Mostrando {filteredProducts.length} de {products.length} productos
+            {selectedDepartment && ` en ${formatDept(selectedDepartment).toUpperCase()}`}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.productsContainer} ref={tableContainerRef}>
+        <table className={styles.productsTable}>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción producto</th>
+              <th>Departamento</th>
+              <th>Costo</th>
+              <th>Precio</th>
+              <th>Existencia</th>
+              <th>Mínimo</th>
+              <th>Máximo</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredProducts.map((product, index) => (
+              <tr
+                key={`${product.product_id || product.id || product.codigo}-${index}`}
+                className={`${styles.productRow} ${
+                  index === selectedRowIndex ? styles.selectedRow : ""
+                }`}
+                onClick={() => handleRowClick(index)}
+              >
+                <td>{product.codigo}</td>
+
+                <td
+                  className={styles.descriptionCell}
+                  onMouseEnter={(e) => {
+                    const container = e.currentTarget;
+                    const content = container.querySelector(`.${styles.scrollText}`);
+                    if (!content) return;
+
+                    const distance = content.scrollWidth - container.clientWidth;
+                    if (distance > 2) {
+                      content.style.setProperty(
+                        "--scroll-distance",
+                        `${distance + 12}px`
+                      );
+                      content.classList.add(styles.marquee);
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const content = e.currentTarget.querySelector(
+                      `.${styles.scrollText}`
+                    );
+                    if (content) {
+                      content.classList.remove(styles.marquee);
+                      content.style.removeProperty("--scroll-distance");
+                      content.style.transform = "";
+                    }
+                  }}
+                >
+                  <span className={styles.scrollText}>{product.descripcion}</span>
+                </td>
+
+                <td className={styles.departmentCell}>{product.departamento}</td>
+                <td className={styles.priceCell}>{formatMoney(product.costo)}</td>
+                <td className={styles.priceCell}>{formatMoney(product.precio)}</td>
+
+                <td
+                  className={`${styles.stockCell} ${
+                    Number(product.existencia) <= Number(product.minimo)
+                      ? styles.lowStock
+                      : styles.normalStock
+                  }`}
+                >
+                  {product.existencia}
+                </td>
+
+                <td>{product.minimo}</td>
+                <td>{product.maximo}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filteredProducts.length === 0 && (
+          <div className={styles.noResults}>
+            No se encontraron productos que coincidan con los criterios de
+            búsqueda.
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
+
 export default ProductsList;

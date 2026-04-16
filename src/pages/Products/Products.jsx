@@ -27,7 +27,7 @@ const Products = () => {
           <Route path="/modificar" element={<ProductsModify />} />
           <Route path="/eliminar" element={<ProductsDelete />} />
           <Route path="/promociones" element={<ProductsPromotions />} />
-          <Route path="/importar" element={<ProductsImports />} />|
+          <Route path="/importar" element={<ProductsImports />} />
           <Route path="/departamentos" element={<Departments />} /> 
           {/* Redirección si no se encuentra la ruta */}
           <Route path="*" element={<Navigate to="/products" replace />} />

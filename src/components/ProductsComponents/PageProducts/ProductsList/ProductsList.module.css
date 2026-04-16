@@ -1,13 +1,8 @@
-.productsContainer {
-  flex: 1;
-  min-height: 0;        
-  display: flex;
-  flex-direction: column;
-
-  /* Variables locales del componente */
+:root {
   --croketsOrange: #fc8913;
   --croketsOrangeDark: #e07a0d;
   --croketsBlue: #1092b1;
+  --croketsBlueDark: #0d7a94;
   --lightGray: #f2f2f2;
   --mediumGray: #e0e0e0;
   --darkGray: #333333;
@@ -28,11 +23,11 @@
 
 .toolbar {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--mediumGray);
-  gap: 1rem;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -46,41 +41,53 @@
   flex-shrink: 0;
 }
 
-.toolbar .searchInput {
+.toolbarActions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* =========================
+   BUSCADOR
+========================= */
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .searchInput {
-  padding: 0.75rem 1rem;
+  width: 375px;
+  height: 48px;
+  padding: 0.75rem 2.4rem 0.75rem 1rem;
   border: 2px solid var(--mediumGray);
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 1rem;
-  width: 300px;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  background-color: var(--white);
+  color: var(--darkGray);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--croketsOrange);
-}
-
-/* Contenedor de búsqueda con botón de limpiar */
-.searchContainer {
-  display: flex;
-  align-items: center;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
 }
 
 .clearSearchButton {
   position: absolute;
-  right: 8px;
+  right: 10px;
   background: none;
   border: none;
-  color: var(--darkGray);
+  color: #64748b;
   font-size: 16px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
   transition: all 0.2s ease;
+  line-height: 1;
 }
 
 .clearSearchButton:hover {
@@ -88,12 +95,136 @@
   color: var(--croketsOrange);
 }
 
-/* Información de resultados */
+/* =========================
+   FILTRO DEPARTAMENTOS
+========================= */
+.filterContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.filterButton {
+  background: linear-gradient(135deg, #1092b1, #0d7a94);
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  min-width: 270px;
+  height: 48px;
+  padding: 0 1rem 0 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(16, 146, 177, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease,
+    background 0.2s ease;
+}
+
+.filterButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(16, 146, 177, 0.28);
+  filter: brightness(1.02);
+}
+
+.filterButtonOpen {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(16, 146, 177, 0.3);
+}
+
+.filterButtonActive {
+  background: linear-gradient(135deg, #fc8913, #e07a0d);
+  box-shadow: 0 6px 14px rgba(252, 137, 19, 0.28);
+}
+
+.filterButtonLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.filterArrow {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.95;
+  transition: transform 0.2s ease;
+}
+
+.filterButtonOpen .filterArrow {
+  transform: rotate(180deg);
+}
+
+.filterDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background-color: var(--white);
+  border: 1px solid #dbe2ea;
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+  z-index: 1000;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.35rem;
+}
+
+.filterOption {
+  padding: 0.8rem 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  border-radius: 8px;
+
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.filterOption:hover {
+  background-color: #f1f5f9;
+}
+
+.filterOptionSelected {
+  background-color: rgba(16, 146, 177, 0.12);
+  color: var(--croketsBlueDark);
+  font-weight: 600;
+}
+
+/* =========================
+   BOTÓN LIMPIAR FILTROS
+========================= */
+.clearFiltersButton {
+  height: 42px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+    transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.clearFiltersButton:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+/* =========================
+   INFO DE RESULTADOS
+========================= */
 .resultsInfo {
-  padding: 0.5rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   background-color: var(--lightGray);
   border-bottom: 1px solid var(--mediumGray);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .resultsCount {
@@ -105,63 +236,17 @@
   color: #d32f2f;
   font-weight: 500;
 }
-.filterContainer {
-  position: relative;
-  display: inline-block;
-}
 
-.filterButton {
-  background-color: var(--croketsBlue);
-  color: var(--white);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  min-width: 200px;
-  text-align: left;
-}
-
-.filterButton:hover {
-  background-color: #0d7a94;
-}
-
-.filterDropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: var(--white);
-  border: 1px solid var(--mediumGray);
-  border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.filterOption {
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  text-transform: capitalize;
-}
-
-.filterOption:hover {
-  background-color: var(--lightGray);
-}
-
-/* ----------- SCROLL SOLO EN LA TABLA ----------- */
+/* =========================
+   CONTENEDOR TABLA
+========================= */
 .productsContainer {
   flex: 1;
-  /* overflow: auto;  Removido para mover scroll al tbody */
-  height: 70%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* Tabla */
 .productsTable {
   width: 100%;
   border-collapse: collapse;
@@ -195,7 +280,6 @@
   table-layout: fixed;
 }
 
-/* Scrollbar WebKit - Movido para aplicar al tbody */
 .productsTable tbody::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -219,26 +303,70 @@
   text-align: left;
   font-weight: bold;
   border-bottom: none;
+  font-size: 0.95rem;
 }
 
-/* Anchos específicos por columna - Aplicar a th y td */
-.productsTable th:nth-child(1), .productsTable td:nth-child(1) { width: 12%; } /* Código */
-.productsTable th:nth-child(2), .productsTable td:nth-child(2) { width: 35%; } /* Descripción */
-.productsTable th:nth-child(3), .productsTable td:nth-child(3) { width: 15%; } /* Departamento */
-.productsTable th:nth-child(4), .productsTable td:nth-child(4) { width: 10%; } /* Costo */
-.productsTable th:nth-child(5), .productsTable td:nth-child(5) { width: 10%; } /* Precio */
-.productsTable th:nth-child(6), .productsTable td:nth-child(6) { width: 8%; }  /* Existencia */
-.productsTable th:nth-child(7), .productsTable td:nth-child(7) { width: 5%; }  /* Mínimo */
-.productsTable th:nth-child(8), .productsTable td:nth-child(8) { width: 5%; }  /* Máximo */
+.productsTable td {
+  padding: 0.85rem 0.5rem;
+  border-bottom: 1px solid var(--mediumGray);
+  vertical-align: middle;
+  color: var(--darkGray);
+}
 
-.productsTable th:first-child {
+/* Anchos por columna */
+.productsTable th:nth-child(1),
+.productsTable td:nth-child(1) {
+  width: 12%;
+}
+
+.productsTable th:nth-child(2),
+.productsTable td:nth-child(2) {
+  width: 40%;
+}
+
+.productsTable th:nth-child(3),
+.productsTable td:nth-child(3) {
+  width: 16%;
+}
+
+.productsTable th:nth-child(4),
+.productsTable td:nth-child(4) {
+  width: 10%;
+}
+
+.productsTable th:nth-child(5),
+.productsTable td:nth-child(5) {
+  width: 10%;
+}
+
+.productsTable th:nth-child(6),
+.productsTable td:nth-child(6) {
+  width: 8%;
+}
+
+.productsTable th:nth-child(7),
+.productsTable td:nth-child(7) {
+  width: 6%;
+}
+
+.productsTable th:nth-child(8),
+.productsTable td:nth-child(8) {
+  width: 6%;
+}
+
+.productsTable th:first-child,
+.productsTable td:first-child {
   padding-left: 1.5rem;
 }
 
-.productsTable th:last-child {
+.productsTable th:last-child,
+.productsTable td:last-child {
   padding-right: 1.5rem;
 }
 
+/* =========================
+   FILAS
+========================= */
 .productRow {
   transition: background-color 0.2s ease;
   cursor: pointer;
@@ -261,28 +389,14 @@
   background-color: #e3f2fd !important;
 }
 
-.productsTable td {
-  padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid var(--mediumGray);
-  vertical-align: middle;
-}
-
-.productsTable td:first-child {
-  padding-left: 1.5rem;
-  font-family: 'Courier New', monospace;
-  font-weight: bold;
-}
-
-.productsTable td:last-child {
-  padding-right: 1.5rem;
-}
-
+/* =========================
+   CELDAS ESPECIALES
+========================= */
 .descriptionCell {
-  word-wrap: break-word;
-  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .scrollText {
@@ -296,9 +410,15 @@
 }
 
 @keyframes marqueeScroll {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(calc(-1 * var(--scroll-distance))); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(calc(-1 * var(--scroll-distance)));
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .departmentCell {
@@ -327,6 +447,9 @@
   color: #2e7d32;
 }
 
+/* =========================
+   MENSAJES
+========================= */
 .noResults {
   text-align: center;
   padding: 3rem;
@@ -335,7 +458,9 @@
   font-style: italic;
 }
 
-/* Indicador de navegación  */
+/* =========================
+   AYUDA DE NAVEGACIÓN
+========================= */
 .navigationHint {
   position: fixed;
   bottom: 20px;
@@ -350,9 +475,62 @@
   z-index: 1000;
 }
 
-.toolbarActions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 1400px) {
+  .searchInput {
+    width: 320px;
+  }
+
+  .filterButton {
+    min-width: 230px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .toolbarActions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .searchInput {
+    width: 280px;
+  }
+
+  .filterButton {
+    min-width: 210px;
+  }
+}
+
+@media (max-width: 900px) {
+  .toolbarActions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .searchContainer {
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .searchInput {
+    width: 100%;
+    min-width: 240px;
+  }
+
+  .filterContainer {
+    min-width: 220px;
+  }
+
+  .filterButton {
+    width: 100%;
+    min-width: unset;
+  }
 }
