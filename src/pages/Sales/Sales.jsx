@@ -160,90 +160,91 @@ const Sales = () => {
     return data;
   };
 
-const getAvailableCash = async (sessionId) => {
-  try {
-    const { data: session, error: sessionError } = await supabase
-      .from("cash_register_sessions")
-      .select("id, branch_id, opening_amount, opened_at")
-      .eq("id", sessionId)
-      .single();
+  const getAvailableCash = async (sessionId) => {
+    try {
+      const { data: session, error: sessionError } = await supabase
+        .from("cash_register_sessions")
+        .select("id, branch_id, opening_amount, opened_at")
+        .eq("id", sessionId)
+        .single();
 
-    if (sessionError) throw sessionError;
+      if (sessionError) throw sessionError;
 
-    const openingAmount = Number(session?.opening_amount || 0);
-    const openedAt = session?.opened_at;
-    const branchId = session?.branch_id;
+      const openingAmount = Number(session?.opening_amount || 0);
+      const openedAt = session?.opened_at;
+      const branchId = session?.branch_id;
 
-    const { data: movements, error: movementsError } = await supabase
-      .from("cash_movements")
-      .select("movement_type, amount")
-      .eq("session_id", sessionId);
+      const { data: movements, error: movementsError } = await supabase
+        .from("cash_movements")
+        .select("movement_type, amount")
+        .eq("session_id", sessionId);
 
-    if (movementsError) throw movementsError;
+      if (movementsError) throw movementsError;
 
-    let entradas = 0;
-    let salidas = 0;
+      let entradas = 0;
+      let salidas = 0;
 
-    for (const movement of movements || []) {
-      if (movement.movement_type === "entrada") {
-        entradas += Number(movement.amount || 0);
-      } else if (movement.movement_type === "salida") {
-        salidas += Number(movement.amount || 0);
+      for (const movement of movements || []) {
+        if (movement.movement_type === "entrada") {
+          entradas += Number(movement.amount || 0);
+        } else if (movement.movement_type === "salida") {
+          salidas += Number(movement.amount || 0);
+        }
       }
+
+      const { data: cashMethods, error: cashMethodsError } = await supabase
+        .from("payment_methods")
+        .select("id, name")
+        .eq("name", "Efectivo");
+
+      if (cashMethodsError) throw cashMethodsError;
+
+      const cashMethodIds = (cashMethods || []).map((pm) => pm.id);
+
+      let ventasEfectivo = 0;
+
+      if (cashMethodIds.length > 0 && openedAt && branchId) {
+        const { data: cashPayments, error: cashPaymentsError } = await supabase
+          .from("sale_payments")
+          .select("amount, currency, exchange_rate, payment_method_id, created_at, branch_id")
+          .eq("branch_id", branchId)
+          .gte("created_at", openedAt)
+          .in("payment_method_id", cashMethodIds);
+
+        if (cashPaymentsError) throw cashPaymentsError;
+
+        ventasEfectivo = (cashPayments || []).reduce((sum, payment) => {
+          const amount = Number(payment.amount || 0);
+          const currency = String(payment.currency || "MXN").toUpperCase();
+          const exchangeRate = Number(payment.exchange_rate || 0);
+
+          if (currency === "MXN") {
+            return sum + amount;
+          }
+
+          if (currency === "USD" && exchangeRate > 0) {
+            return sum + amount * exchangeRate;
+          }
+
+          return sum;
+        }, 0);
+      }
+
+      const available = openingAmount + entradas + ventasEfectivo - salidas;
+
+      console.log("openingAmount:", openingAmount);
+      console.log("entradas:", entradas);
+      console.log("ventasEfectivo:", ventasEfectivo);
+      console.log("salidas:", salidas);
+      console.log("available:", available);
+
+      return available;
+    } catch (error) {
+      console.error("Error calculando efectivo disponible:", error);
+      return 0;
     }
+  };
 
-    const { data: cashMethods, error: cashMethodsError } = await supabase
-      .from("payment_methods")
-      .select("id, name")
-      .eq("name", "Efectivo");
-
-    if (cashMethodsError) throw cashMethodsError;
-
-    const cashMethodIds = (cashMethods || []).map((pm) => pm.id);
-
-    let ventasEfectivo = 0;
-
-    if (cashMethodIds.length > 0 && openedAt && branchId) {
-      const { data: cashPayments, error: cashPaymentsError } = await supabase
-        .from("sale_payments")
-        .select("amount, currency, exchange_rate, payment_method_id, created_at, branch_id")
-        .eq("branch_id", branchId)
-        .gte("created_at", openedAt)
-        .in("payment_method_id", cashMethodIds);
-
-      if (cashPaymentsError) throw cashPaymentsError;
-
-      ventasEfectivo = (cashPayments || []).reduce((sum, payment) => {
-        const amount = Number(payment.amount || 0);
-        const currency = String(payment.currency || "MXN").toUpperCase();
-        const exchangeRate = Number(payment.exchange_rate || 0);
-
-        if (currency === "MXN") {
-          return sum + amount;
-        }
-
-        if (currency === "USD" && exchangeRate > 0) {
-          return sum + amount * exchangeRate;
-        }
-
-        return sum;
-      }, 0);
-    }
-
-    const available = openingAmount + entradas + ventasEfectivo - salidas;
-
-    console.log("openingAmount:", openingAmount);
-    console.log("entradas:", entradas);
-    console.log("ventasEfectivo:", ventasEfectivo);
-    console.log("salidas:", salidas);
-    console.log("available:", available);
-
-    return available;
-  } catch (error) {
-    console.error("Error calculando efectivo disponible:", error);
-    return 0;
-  }
-};
   const buildPaymentsPayload = (paymentData) => {
     if (!paymentData?.method) {
       throw new Error("No se detectó el método de pago.");
@@ -447,7 +448,7 @@ const getAvailableCash = async (sessionId) => {
       prev.map((p) => {
         if (p.id !== selectedProduct.id) return p;
 
-        if (p.cantidad >= p.stockReal) {
+        if (p.tracks_inventory && p.cantidad >= p.stockReal) {
           inventoryExceeded = true;
           return p;
         }
@@ -462,7 +463,7 @@ const getAvailableCash = async (sessionId) => {
           cantidad: nuevaCantidad,
           importe: nuevaCantidad * precioFinal,
           descuentoMonto: descuentoUnitario * nuevaCantidad,
-          existencia: p.stockReal - nuevaCantidad,
+          existencia: p.tracks_inventory ? p.stockReal - nuevaCantidad : "∞",
         };
       })
     );
@@ -474,7 +475,7 @@ const getAvailableCash = async (sessionId) => {
 
     setSelectedProduct((prev) => {
       if (!prev) return prev;
-      if (prev.cantidad >= prev.stockReal) return prev;
+      if (prev.tracks_inventory && prev.cantidad >= prev.stockReal) return prev;
 
       const nuevaCantidad = prev.cantidad + 1;
       const precioOriginal = Number(prev.precioOriginal ?? prev.precio ?? 0);
@@ -486,7 +487,7 @@ const getAvailableCash = async (sessionId) => {
         cantidad: nuevaCantidad,
         importe: nuevaCantidad * precioFinal,
         descuentoMonto: descuentoUnitario * nuevaCantidad,
-        existencia: prev.stockReal - nuevaCantidad,
+        existencia: prev.tracks_inventory ? prev.stockReal - nuevaCantidad : "∞",
       };
     });
   };
@@ -518,7 +519,7 @@ const getAvailableCash = async (sessionId) => {
           cantidad: nuevaCantidad,
           importe: nuevaCantidad * precioFinal,
           descuentoMonto: descuentoUnitario * nuevaCantidad,
-          existencia: p.stockReal - nuevaCantidad,
+          existencia: p.tracks_inventory ? p.stockReal - nuevaCantidad : "∞",
         };
       })
     );
@@ -536,7 +537,7 @@ const getAvailableCash = async (sessionId) => {
         cantidad: nuevaCantidad,
         importe: nuevaCantidad * precioFinal,
         descuentoMonto: descuentoUnitario * nuevaCantidad,
-        existencia: prev.stockReal - nuevaCantidad,
+        existencia: prev.tracks_inventory ? prev.stockReal - nuevaCantidad : "∞",
       };
     });
   };
@@ -544,28 +545,86 @@ const getAvailableCash = async (sessionId) => {
   const addProductToCart = async (product) => {
     if (!product?.id) return;
 
-    const inventoryRow = await getBranchInventoryRow(product.id);
+    const tracksInventory = !!product.tracks_inventory;
 
-    if (!inventoryRow || inventoryRow.is_active === false) {
-      alert("Este producto no está activo en el inventario de esta sucursal.");
-      return;
-    }
+    if (tracksInventory) {
+      const inventoryRow = await getBranchInventoryRow(product.id);
 
-    const stock = Number(inventoryRow.stock || 0);
+      if (!inventoryRow || inventoryRow.is_active === false) {
+        alert("Este producto no está activo en el inventario de esta sucursal.");
+        return;
+      }
 
-    if (stock <= 0) {
-      alert("No hay existencia disponible.");
+      const stock = Number(inventoryRow.stock || 0);
+
+      if (stock <= 0) {
+        alert("No hay existencia disponible.");
+        return;
+      }
+
+      const existingProduct = productos.find((p) => p.id === product.id);
+
+      if (existingProduct) {
+        if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
+          alert("No hay suficiente inventario.");
+          return;
+        }
+
+        const updatedProducts = productos.map((p) => {
+          if (p.id !== product.id) return p;
+
+          const nuevaCantidad = p.cantidad + 1;
+          const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+          const precioFinal = Number(p.precio ?? 0);
+          const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+          return {
+            ...p,
+            cantidad: nuevaCantidad,
+            importe: nuevaCantidad * precioFinal,
+            descuentoMonto: descuentoUnitario * nuevaCantidad,
+            existencia: p.stockReal - nuevaCantidad,
+          };
+        });
+
+        setProductos(updatedProducts);
+
+        if (selectedProduct?.id === product.id) {
+          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+          setSelectedProduct(updatedSelected || null);
+        }
+
+        return;
+      }
+
+      const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+      const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+
+      const newProduct = {
+        id: product.id,
+        codigo: product.barcode,
+        nombre: product.name,
+        precioOriginal: salePrice,
+        precio: salePrice,
+        costo: costPrice,
+        cantidad: 1,
+        importe: salePrice,
+        descuentoTipo: null,
+        descuentoValor: 0,
+        descuentoMonto: 0,
+        stockReal: stock,
+        existencia: stock - 1,
+        is_kit: !!product.is_kit,
+        tracks_inventory: true,
+      };
+
+      setProductos((prev) => [...prev, newProduct]);
       return;
     }
 
     const existingProduct = productos.find((p) => p.id === product.id);
 
     if (existingProduct) {
-      if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
-        alert("No hay suficiente inventario.");
-        return;
-      }
-
       const updatedProducts = productos.map((p) => {
         if (p.id !== product.id) return p;
 
@@ -579,7 +638,7 @@ const getAvailableCash = async (sessionId) => {
           cantidad: nuevaCantidad,
           importe: nuevaCantidad * precioFinal,
           descuentoMonto: descuentoUnitario * nuevaCantidad,
-          existencia: p.stockReal - nuevaCantidad,
+          existencia: "∞",
         };
       });
 
@@ -593,8 +652,8 @@ const getAvailableCash = async (sessionId) => {
       return;
     }
 
-    const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
-    const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+    const salePrice = Number(product.sale_price ?? 0);
+    const costPrice = Number(product.cost_price ?? 0);
 
     const newProduct = {
       id: product.id,
@@ -608,9 +667,10 @@ const getAvailableCash = async (sessionId) => {
       descuentoTipo: null,
       descuentoValor: 0,
       descuentoMonto: 0,
-      stockReal: stock,
-      existencia: stock - 1,
+      stockReal: null,
+      existencia: "∞",
       is_kit: !!product.is_kit,
+      tracks_inventory: false,
     };
 
     setProductos((prev) => [...prev, newProduct]);
@@ -628,7 +688,7 @@ const getAvailableCash = async (sessionId) => {
     try {
       const { data: product, error: productError } = await supabase
         .from("products")
-        .select("id, barcode, name, cost_price, sale_price, is_kit, status")
+        .select("id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory")
         .eq("barcode", cleanBarcode)
         .eq("status", true)
         .maybeSingle();
@@ -637,6 +697,18 @@ const getAvailableCash = async (sessionId) => {
 
       if (!product) {
         alert("Producto no encontrado.");
+        setBarcode("");
+        return;
+      }
+
+      if (!product.tracks_inventory) {
+        if (!product.is_global) {
+          alert("Este producto no está disponible para esta sucursal.");
+          setBarcode("");
+          return;
+        }
+
+        await addProductToCart(product);
         setBarcode("");
         return;
       }
@@ -744,6 +816,8 @@ const getAvailableCash = async (sessionId) => {
 
   const validateCartStockBeforeSale = async () => {
     for (const item of productos) {
+      if (!item.tracks_inventory) continue;
+
       const inventoryRow = await getBranchInventoryRow(item.id);
       const currentStock = Number(inventoryRow?.stock || 0);
 
@@ -915,22 +989,22 @@ const getAvailableCash = async (sessionId) => {
         return false;
       }
 
-const rawAvailableCash = await getAvailableCash(openSession.id);
-const availableCash = Math.max(rawAvailableCash, 0);
-const exitAmount = Number(newMovement.amount);
+      const rawAvailableCash = await getAvailableCash(openSession.id);
+      const availableCash = Math.max(rawAvailableCash, 0);
+      const exitAmount = Number(newMovement.amount);
 
       console.log("Sesión abierta:", openSession);
       console.log("Disponible en caja:", availableCash);
       console.log("Intentando retirar:", exitAmount);
 
-if (exitAmount > availableCash) {
-  alert(
-    `No puedes retirar $${exitAmount.toFixed(
-      2
-    )}. Disponible en caja: $${availableCash.toFixed(2)}`
-  );
-  return false;
-}
+      if (exitAmount > availableCash) {
+        alert(
+          `No puedes retirar $${exitAmount.toFixed(
+            2
+          )}. Disponible en caja: $${availableCash.toFixed(2)}`
+        );
+        return false;
+      }
 
       const payload = {
         session_id: openSession.id,

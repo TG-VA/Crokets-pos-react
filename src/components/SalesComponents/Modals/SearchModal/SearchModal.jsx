@@ -17,7 +17,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const resultsListRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // 🔥 Control para invalidar búsquedas viejas
   const searchRequestIdRef = useRef(0);
   const stockRequestIdRef = useRef(0);
 
@@ -104,7 +103,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     const selectedProduct =
       selectedIndex >= 0 ? searchResults[selectedIndex] : null;
 
-    if (selectedProduct?.id) {
+    if (selectedProduct?.id && selectedProduct.tracks_inventory) {
       fetchProductStocks(selectedProduct.id);
     } else {
       stockRequestIdRef.current += 1;
@@ -135,8 +134,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
   const performSearch = async (term) => {
     const cleanTerm = String(term || "").trim();
-
-    // 🔥 id único para esta búsqueda
     const currentRequestId = ++searchRequestIdRef.current;
 
     if (!cleanTerm) {
@@ -165,6 +162,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
       const normalizedTerm = normalizeText(cleanTerm);
 
+      // 1) Inventario local de la sucursal actual
       const { data: inventoryRows, error: inventoryError } = await supabase
         .from("branch_inventory")
         .select(`
@@ -180,54 +178,66 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         .eq("branch_id", branch.id)
         .order("updated_at", { ascending: false });
 
-      // 🔥 si ya hay una búsqueda más nueva, ignoramos esta
       if (currentRequestId !== searchRequestIdRef.current) return;
-
       if (inventoryError) throw inventoryError;
 
-      if (!inventoryRows?.length) {
-        setSearchResults([]);
-        setSelectedIndex(-1);
-        setSelectedProductStocks([]);
-        return;
-      }
-
       const productIds = [
-        ...new Set(inventoryRows.map((row) => row.product_id).filter(Boolean)),
+        ...new Set((inventoryRows || []).map((row) => row.product_id).filter(Boolean)),
       ];
 
-      if (!productIds.length) {
-        setSearchResults([]);
-        setSelectedIndex(-1);
-        setSelectedProductStocks([]);
-        return;
+      let inventoryProductsRows = [];
+
+      if (productIds.length > 0) {
+        const { data, error: productsError } = await supabase
+          .from("products")
+          .select(`
+            id,
+            barcode,
+            name,
+            sale_price,
+            cost_price,
+            status,
+            is_kit,
+            is_global,
+            tracks_inventory
+          `)
+          .in("id", productIds)
+          .eq("status", true);
+
+        if (currentRequestId !== searchRequestIdRef.current) return;
+        if (productsError) throw productsError;
+
+        inventoryProductsRows = data || [];
       }
 
-      const { data: productsRows, error: productsError } = await supabase
-        .from("products")
-        .select(`
-          id,
-          barcode,
-          name,
-          sale_price,
-          cost_price,
-          status,
-          is_kit
-        `)
-        .in("id", productIds)
-        .eq("status", true);
+      // 2) Productos globales que NO usan inventario
+      const { data: nonInventoryProductsRows, error: nonInventoryError } =
+        await supabase
+          .from("products")
+          .select(`
+            id,
+            barcode,
+            name,
+            sale_price,
+            cost_price,
+            status,
+            is_kit,
+            is_global,
+            tracks_inventory
+          `)
+          .eq("status", true)
+          .eq("is_global", true)
+          .eq("tracks_inventory", false);
 
-      // 🔥 otra validación después del await
       if (currentRequestId !== searchRequestIdRef.current) return;
-
-      if (productsError) throw productsError;
+      if (nonInventoryError) throw nonInventoryError;
 
       const productMap = {};
-      for (const product of productsRows || []) {
+      for (const product of inventoryProductsRows || []) {
         productMap[product.id] = product;
       }
 
-      const mergedResults = (inventoryRows || [])
+      const inventoryResults = (inventoryRows || [])
         .map((inventory) => {
           const product = productMap[inventory.product_id];
           if (!product) return null;
@@ -244,9 +254,27 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             branch_cost_price: Number(
               inventory.cost_price ?? product.cost_price ?? 0
             ),
+            tracks_inventory: true,
           };
         })
-        .filter(Boolean)
+        .filter(Boolean);
+
+      const inventoryProductIdSet = new Set(inventoryResults.map((p) => p.id));
+
+      const nonInventoryResults = (nonInventoryProductsRows || [])
+        .filter((product) => !inventoryProductIdSet.has(product.id))
+        .map((product) => ({
+          ...product,
+          inventory_id: null,
+          branch_id: branch.id,
+          stock: null,
+          is_active_in_branch: true,
+          branch_sale_price: Number(product.sale_price ?? 0),
+          branch_cost_price: Number(product.cost_price ?? 0),
+          tracks_inventory: false,
+        }));
+
+      const mergedResults = [...inventoryResults, ...nonInventoryResults]
         .filter((product) => {
           const searchable = normalizeText(
             `${product.name} ${product.barcode || ""}`
@@ -254,11 +282,20 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           return searchable.includes(normalizedTerm);
         })
         .sort((a, b) => {
+          const aTracks = a.tracks_inventory ? 1 : 0;
+          const bTracks = b.tracks_inventory ? 1 : 0;
+
+          if (aTracks !== bTracks) return bTracks - aTracks;
+
           const aActive = a.is_active_in_branch ? 1 : 0;
           const bActive = b.is_active_in_branch ? 1 : 0;
 
           if (aActive !== bActive) return bActive - aActive;
-          if (a.stock !== b.stock) return b.stock - a.stock;
+
+          const aStock = Number(a.stock ?? -1);
+          const bStock = Number(b.stock ?? -1);
+
+          if (aStock !== bStock) return bStock - aStock;
 
           return String(a.name || "").localeCompare(String(b.name || ""), "es", {
             sensitivity: "base",
@@ -307,7 +344,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         .eq("product_id", productId);
 
       if (currentStockRequestId !== stockRequestIdRef.current) return;
-
       if (stockError) throw stockError;
 
       const branchIds = [
@@ -325,7 +361,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         .in("id", branchIds);
 
       if (currentStockRequestId !== stockRequestIdRef.current) return;
-
       if (branchError) throw branchError;
 
       const branchMap = {};
@@ -375,7 +410,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     setSearchTerm(value);
 
     if (!value.trim()) {
-      // 🔥 invalidamos cualquier búsqueda pendiente
       searchRequestIdRef.current += 1;
       stockRequestIdRef.current += 1;
 
@@ -398,14 +432,17 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const handleSelectProduct = async (product) => {
     if (!product) return;
 
-    if (!product.is_active_in_branch) {
-      alert("Este producto está inactivo en la sucursal actual.");
-      return;
-    }
+    // Solo validar inventario local si el producto sí usa inventario
+    if (product.tracks_inventory) {
+      if (!product.is_active_in_branch) {
+        alert("Este producto está inactivo en la sucursal actual.");
+        return;
+      }
 
-    if (Number(product.stock || 0) <= 0) {
-      alert("Este producto no tiene existencia disponible en la sucursal actual.");
-      return;
+      if (Number(product.stock || 0) <= 0) {
+        alert("Este producto no tiene existencia disponible en la sucursal actual.");
+        return;
+      }
     }
 
     if (onAddToSale) {
@@ -416,6 +453,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         sale_price: product.branch_sale_price,
         cost_price: product.branch_cost_price,
         is_kit: !!product.is_kit,
+        tracks_inventory: !!product.tracks_inventory,
       });
     }
 
@@ -454,7 +492,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             </div>
 
             <div className={styles.searchHelp}>
-              Busca solo dentro del inventario de la sucursal actual:{" "}
+              Busca dentro de los productos vendibles para la sucursal actual:{" "}
               <strong>
                 {branch?.code ? `${branch.code} - ` : ""}
                 {branch?.name || "Sucursal actual"}
@@ -484,7 +522,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                 ) : searchResults.length === 0 ? (
                   <div className={styles.emptyMessage}>
                     {searchTerm.trim()
-                      ? "No se encontraron productos en esta sucursal"
+                      ? "No se encontraron productos vendibles para esta sucursal"
                       : "Ingresa el nombre o código de un producto para buscar"}
                   </div>
                 ) : (
@@ -508,7 +546,11 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                                 : styles.statusInactive
                             }`}
                           >
-                            {product.is_active_in_branch ? "Activo" : "Inactivo"}
+                            {product.tracks_inventory
+                              ? product.is_active_in_branch
+                                ? "Activo"
+                                : "Inactivo"
+                              : "Activo"}
                           </span>
                         </div>
 
@@ -523,12 +565,16 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
                           <span
                             className={`${styles.productStock} ${
-                              Number(product.stock || 0) > 0
+                              !product.tracks_inventory
+                                ? styles.inStock
+                                : Number(product.stock || 0) > 0
                                 ? styles.inStock
                                 : styles.outOfStock
                             }`}
                           >
-                            Stock actual: {Number(product.stock || 0)}
+                            {product.tracks_inventory
+                              ? `Stock actual: ${Number(product.stock || 0)}`
+                              : "Sin control de inventario"}
                           </span>
                         </div>
                       </div>
@@ -544,7 +590,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
                 {!selectedProduct ? (
                   <div className={styles.detailEmpty}>
-                    Selecciona un producto para ver sus existencias por sucursal
+                    Selecciona un producto para ver más detalles
                   </div>
                 ) : (
                   <>
@@ -564,75 +610,83 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                       </div>
                     </div>
 
-                    <div className={styles.stockBlock}>
-                      <div className={styles.stockBlockTitle}>
-                        Existencia por sucursal
+                    {selectedProduct.tracks_inventory ? (
+                      <div className={styles.stockBlock}>
+                        <div className={styles.stockBlockTitle}>
+                          Existencia por sucursal
+                        </div>
+
+                        {loadingStocks ? (
+                          <div className={styles.stockLoading}>
+                            Cargando existencias...
+                          </div>
+                        ) : selectedProductStocks.length === 0 ? (
+                          <div className={styles.stockLoading}>
+                            No hay existencias registradas para este producto.
+                          </div>
+                        ) : (
+                          <div className={styles.branchStockList}>
+                            {selectedProductStocks.map((stockRow) => (
+                              <div
+                                key={stockRow.branch_id}
+                                className={`${styles.branchStockItem} ${
+                                  stockRow.is_current_branch
+                                    ? styles.currentBranchItem
+                                    : styles.otherBranchItem
+                                }`}
+                              >
+                                <div className={styles.branchStockInfo}>
+                                  <div className={styles.branchStockName}>
+                                    {stockRow.branch_code
+                                      ? `${stockRow.branch_code} - `
+                                      : ""}
+                                    {stockRow.branch_name}
+                                  </div>
+
+                                  <div className={styles.branchStockMeta}>
+                                    {stockRow.is_current_branch
+                                      ? "Sucursal actual"
+                                      : "Solo consulta"}
+                                  </div>
+                                </div>
+
+                                <div className={styles.branchStockRight}>
+                                  <span
+                                    className={`${styles.branchStockQty} ${
+                                      stockRow.stock > 0
+                                        ? styles.branchStockPositive
+                                        : styles.branchStockZero
+                                    }`}
+                                  >
+                                    {stockRow.stock}
+                                  </span>
+
+                                  <span
+                                    className={`${styles.miniStatusBadge} ${
+                                      stockRow.is_active
+                                        ? styles.miniStatusActive
+                                        : styles.miniStatusInactive
+                                    }`}
+                                  >
+                                    {stockRow.is_active ? "Activa" : "Inactiva"}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-
-                      {loadingStocks ? (
-                        <div className={styles.stockLoading}>
-                          Cargando existencias...
-                        </div>
-                      ) : selectedProductStocks.length === 0 ? (
-                        <div className={styles.stockLoading}>
-                          No hay existencias registradas para este producto.
-                        </div>
-                      ) : (
-                        <div className={styles.branchStockList}>
-                          {selectedProductStocks.map((stockRow) => (
-                            <div
-                              key={stockRow.branch_id}
-                              className={`${styles.branchStockItem} ${
-                                stockRow.is_current_branch
-                                  ? styles.currentBranchItem
-                                  : styles.otherBranchItem
-                              }`}
-                            >
-                              <div className={styles.branchStockInfo}>
-                                <div className={styles.branchStockName}>
-                                  {stockRow.branch_code
-                                    ? `${stockRow.branch_code} - `
-                                    : ""}
-                                  {stockRow.branch_name}
-                                </div>
-
-                                <div className={styles.branchStockMeta}>
-                                  {stockRow.is_current_branch
-                                    ? "Sucursal actual"
-                                    : "Solo consulta"}
-                                </div>
-                              </div>
-
-                              <div className={styles.branchStockRight}>
-                                <span
-                                  className={`${styles.branchStockQty} ${
-                                    stockRow.stock > 0
-                                      ? styles.branchStockPositive
-                                      : styles.branchStockZero
-                                  }`}
-                                >
-                                  {stockRow.stock}
-                                </span>
-
-                                <span
-                                  className={`${styles.miniStatusBadge} ${
-                                    stockRow.is_active
-                                      ? styles.miniStatusActive
-                                      : styles.miniStatusInactive
-                                  }`}
-                                >
-                                  {stockRow.is_active ? "Activa" : "Inactiva"}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    ) : (
+                      <div className={styles.infoNotice}>
+                        Este producto no utiliza inventario. Puede venderse sin
+                        control de existencias.
+                      </div>
+                    )}
 
                     <div className={styles.infoNotice}>
-                      Solo puedes agregar a la venta productos del inventario de
-                      la sucursal actual.
+                      {selectedProduct.tracks_inventory
+                        ? "Solo puedes agregar a la venta productos con inventario de la sucursal actual."
+                        : "Producto disponible para venta sin control de inventario."}
                     </div>
                   </>
                 )}
@@ -652,8 +706,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
               }}
               disabled={
                 !selectedProduct ||
-                !selectedProduct.is_active_in_branch ||
-                Number(selectedProduct.stock || 0) <= 0
+                (selectedProduct.tracks_inventory &&
+                  (!selectedProduct.is_active_in_branch ||
+                    Number(selectedProduct.stock || 0) <= 0))
               }
             >
               Agregar a la venta
