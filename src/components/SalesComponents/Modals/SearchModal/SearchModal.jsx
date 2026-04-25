@@ -71,6 +71,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (e.key === "Enter") {
         if (searchResults.length === 0) return;
         e.preventDefault();
+
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleSelectProduct(searchResults[selectedIndex]);
         }
@@ -132,6 +133,50 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
 
+  const fetchDiscountsMap = async (productIds = []) => {
+    if (!productIds.length) return {};
+
+    const { data, error } = await supabase
+      .from("product_discounts")
+      .select(`
+        product_id,
+        enabled,
+        discount_percent,
+        discount_concept
+      `)
+      .in("product_id", productIds);
+
+    if (error) throw error;
+
+    const discountsMap = {};
+
+    for (const row of data || []) {
+      discountsMap[row.product_id] = {
+        discount_enabled: !!row.enabled,
+        discount_percent: Number(row.discount_percent || 0),
+        discount_concept: row.discount_concept || "",
+      };
+    }
+
+    return discountsMap;
+  };
+
+  const applyDiscountToProduct = (product, discountsMap) => {
+    const discount = discountsMap[product.id];
+
+    const discountEnabled =
+      !!discount?.discount_enabled && Number(discount?.discount_percent || 0) > 0;
+
+    return {
+      ...product,
+      discount_enabled: discountEnabled,
+      discount_percent: discountEnabled
+        ? Number(discount.discount_percent || 0)
+        : 0,
+      discount_concept: discountEnabled ? discount.discount_concept || "" : "",
+    };
+  };
+
   const performSearch = async (term) => {
     const cleanTerm = String(term || "").trim();
     const currentRequestId = ++searchRequestIdRef.current;
@@ -162,7 +207,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
       const normalizedTerm = normalizeText(cleanTerm);
 
-      // 1) Inventario local de la sucursal actual
       const { data: inventoryRows, error: inventoryError } = await supabase
         .from("branch_inventory")
         .select(`
@@ -182,7 +226,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (inventoryError) throw inventoryError;
 
       const productIds = [
-        ...new Set((inventoryRows || []).map((row) => row.product_id).filter(Boolean)),
+        ...new Set(
+          (inventoryRows || []).map((row) => row.product_id).filter(Boolean)
+        ),
       ];
 
       let inventoryProductsRows = [];
@@ -210,7 +256,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         inventoryProductsRows = data || [];
       }
 
-      // 2) Productos globales que NO usan inventario
       const { data: nonInventoryProductsRows, error: nonInventoryError } =
         await supabase
           .from("products")
@@ -232,6 +277,17 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (currentRequestId !== searchRequestIdRef.current) return;
       if (nonInventoryError) throw nonInventoryError;
 
+      const allProductIds = [
+        ...new Set([
+          ...(inventoryProductsRows || []).map((product) => product.id),
+          ...(nonInventoryProductsRows || []).map((product) => product.id),
+        ]),
+      ].filter(Boolean);
+
+      const discountsMap = await fetchDiscountsMap(allProductIds);
+
+      if (currentRequestId !== searchRequestIdRef.current) return;
+
       const productMap = {};
       for (const product of inventoryProductsRows || []) {
         productMap[product.id] = product;
@@ -242,7 +298,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           const product = productMap[inventory.product_id];
           if (!product) return null;
 
-          return {
+          const baseProduct = {
             ...product,
             inventory_id: inventory.id,
             branch_id: inventory.branch_id,
@@ -256,6 +312,8 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             ),
             tracks_inventory: true,
           };
+
+          return applyDiscountToProduct(baseProduct, discountsMap);
         })
         .filter(Boolean);
 
@@ -263,16 +321,20 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
       const nonInventoryResults = (nonInventoryProductsRows || [])
         .filter((product) => !inventoryProductIdSet.has(product.id))
-        .map((product) => ({
-          ...product,
-          inventory_id: null,
-          branch_id: branch.id,
-          stock: null,
-          is_active_in_branch: true,
-          branch_sale_price: Number(product.sale_price ?? 0),
-          branch_cost_price: Number(product.cost_price ?? 0),
-          tracks_inventory: false,
-        }));
+        .map((product) => {
+          const baseProduct = {
+            ...product,
+            inventory_id: null,
+            branch_id: branch.id,
+            stock: null,
+            is_active_in_branch: true,
+            branch_sale_price: Number(product.sale_price ?? 0),
+            branch_cost_price: Number(product.cost_price ?? 0),
+            tracks_inventory: false,
+          };
+
+          return applyDiscountToProduct(baseProduct, discountsMap);
+        });
 
       const mergedResults = [...inventoryResults, ...nonInventoryResults]
         .filter((product) => {
@@ -347,7 +409,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (stockError) throw stockError;
 
       const branchIds = [
-        ...new Set((stockRows || []).map((row) => row.branch_id).filter(Boolean)),
+        ...new Set(
+          (stockRows || []).map((row) => row.branch_id).filter(Boolean)
+        ),
       ];
 
       if (!branchIds.length) {
@@ -385,6 +449,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         .sort((a, b) => {
           if (a.is_current_branch && !b.is_current_branch) return -1;
           if (!a.is_current_branch && b.is_current_branch) return 1;
+
           return a.branch_name.localeCompare(b.branch_name, "es", {
             sensitivity: "base",
           });
@@ -432,7 +497,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const handleSelectProduct = async (product) => {
     if (!product) return;
 
-    // Solo validar inventario local si el producto sí usa inventario
     if (product.tracks_inventory) {
       if (!product.is_active_in_branch) {
         alert("Este producto está inactivo en la sucursal actual.");
@@ -454,6 +518,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         cost_price: product.branch_cost_price,
         is_kit: !!product.is_kit,
         tracks_inventory: !!product.tracks_inventory,
+        discount_enabled: !!product.discount_enabled,
+        discount_percent: Number(product.discount_percent || 0),
+        discount_concept: product.discount_concept || "",
       });
     }
 
@@ -462,6 +529,28 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
   const selectedProduct =
     selectedIndex >= 0 ? searchResults[selectedIndex] : null;
+
+  const getDisplayPrice = (product) => {
+    const price = Number(product?.branch_sale_price || 0);
+    const discountPercent = Number(product?.discount_percent || 0);
+
+    if (!product?.discount_enabled || discountPercent <= 0) {
+      return {
+        originalPrice: price,
+        finalPrice: price,
+        discountAmount: 0,
+      };
+    }
+
+    const discountAmount = price * (discountPercent / 100);
+    const finalPrice = Math.max(price - discountAmount, 0);
+
+    return {
+      originalPrice: price,
+      finalPrice,
+      discountAmount,
+    };
+  };
 
   if (!isOpen) return null;
 
@@ -527,58 +616,70 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                   </div>
                 ) : (
                   <div className={styles.resultsList}>
-                    {searchResults.map((product, index) => (
-                      <div
-                        key={`${product.id}-${index}`}
-                        className={`${styles.resultItem} ${
-                          index === selectedIndex ? styles.selectedResult : ""
-                        }`}
-                        onClick={() => handleSelectRow(index)}
-                        onDoubleClick={() => handleSelectProduct(product)}
-                      >
-                        <div className={styles.productTopRow}>
-                          <div className={styles.productName}>{product.name}</div>
+                    {searchResults.map((product, index) => {
+                      const displayPrice = getDisplayPrice(product);
 
-                          <span
-                            className={`${styles.statusBadge} ${
-                              product.is_active_in_branch
-                                ? styles.statusActive
-                                : styles.statusInactive
-                            }`}
-                          >
-                            {product.tracks_inventory
-                              ? product.is_active_in_branch
-                                ? "Activo"
-                                : "Inactivo"
-                              : "Activo"}
-                          </span>
+                      return (
+                        <div
+                          key={`${product.id}-${index}`}
+                          className={`${styles.resultItem} ${
+                            index === selectedIndex ? styles.selectedResult : ""
+                          }`}
+                          onClick={() => handleSelectRow(index)}
+                          onDoubleClick={() => handleSelectProduct(product)}
+                        >
+                          <div className={styles.productTopRow}>
+                            <div className={styles.productName}>
+                              {product.name}
+                            </div>
+
+                            <span
+                              className={`${styles.statusBadge} ${
+                                product.is_active_in_branch
+                                  ? styles.statusActive
+                                  : styles.statusInactive
+                              }`}
+                            >
+                              {product.tracks_inventory
+                                ? product.is_active_in_branch
+                                  ? "Activo"
+                                  : "Inactivo"
+                                : "Activo"}
+                            </span>
+                          </div>
+
+                          <div className={styles.productDetails}>
+                            <span className={styles.productCode}>
+                              Código: {product.barcode || "Sin código"}
+                            </span>
+
+                            <span className={styles.productPrice}>
+                              ${Number(displayPrice.finalPrice || 0).toFixed(2)}
+                            </span>
+
+                            {product.discount_enabled && (
+                              <span className={styles.productStock}>
+                                Desc. {Number(product.discount_percent || 0)}%
+                              </span>
+                            )}
+
+                            <span
+                              className={`${styles.productStock} ${
+                                !product.tracks_inventory
+                                  ? styles.inStock
+                                  : Number(product.stock || 0) > 0
+                                  ? styles.inStock
+                                  : styles.outOfStock
+                              }`}
+                            >
+                              {product.tracks_inventory
+                                ? `Stock actual: ${Number(product.stock || 0)}`
+                                : "Sin control de inventario"}
+                            </span>
+                          </div>
                         </div>
-
-                        <div className={styles.productDetails}>
-                          <span className={styles.productCode}>
-                            Código: {product.barcode || "Sin código"}
-                          </span>
-
-                          <span className={styles.productPrice}>
-                            ${Number(product.branch_sale_price || 0).toFixed(2)}
-                          </span>
-
-                          <span
-                            className={`${styles.productStock} ${
-                              !product.tracks_inventory
-                                ? styles.inStock
-                                : Number(product.stock || 0) > 0
-                                ? styles.inStock
-                                : styles.outOfStock
-                            }`}
-                          >
-                            {product.tracks_inventory
-                              ? `Stock actual: ${Number(product.stock || 0)}`
-                              : "Sin control de inventario"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -603,10 +704,29 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                         <span>
                           Código: {selectedProduct.barcode || "Sin código"}
                         </span>
-                        <span>
-                          Precio actual: $
-                          {Number(selectedProduct.branch_sale_price || 0).toFixed(2)}
-                        </span>
+
+                        {(() => {
+                          const displayPrice = getDisplayPrice(selectedProduct);
+
+                          return (
+                            <>
+                              <span>
+                                Precio actual: $
+                                {Number(displayPrice.finalPrice || 0).toFixed(2)}
+                              </span>
+
+                              {selectedProduct.discount_enabled && (
+                                <span>
+                                  Descuento:{" "}
+                                  {Number(
+                                    selectedProduct.discount_percent || 0
+                                  ).toFixed(2)}
+                                  %
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -680,6 +800,15 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                       <div className={styles.infoNotice}>
                         Este producto no utiliza inventario. Puede venderse sin
                         control de existencias.
+                      </div>
+                    )}
+
+                    {selectedProduct.discount_enabled && (
+                      <div className={styles.infoNotice}>
+                        Este producto tiene descuento automático aplicado.
+                        {selectedProduct.discount_concept
+                          ? ` Motivo: ${selectedProduct.discount_concept}.`
+                          : ""}
                       </div>
                     )}
 

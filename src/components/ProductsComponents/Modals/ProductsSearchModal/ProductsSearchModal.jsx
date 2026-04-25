@@ -130,7 +130,7 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                 <div className={styles.emptyMessage}>
                   {searchTerm.trim()
                     ? "No se encontraron productos"
-                    : "Ingresa un texto para buscar"}
+                    : "Ingresa nombre, código o departamento del producto"}
                 </div>
               ) : (
                 <div className={styles.resultsList}>

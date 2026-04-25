@@ -14,9 +14,11 @@ const ProductsContext = createContext(null);
 
 export const useProducts = () => {
   const context = useContext(ProductsContext);
+
   if (!context) {
     throw new Error("useProducts debe usarse dentro de ProductsProvider");
   }
+
   return context;
 };
 
@@ -112,29 +114,30 @@ export const ProductsProvider = ({ children }) => {
 
       if (inventoryError) throw inventoryError;
 
-      const { data: globalProducts, error: globalProductsError } = await supabase
-        .from("products")
-        .select(`
-          id,
-          barcode,
-          name,
-          department_id,
-          status,
-          is_global,
-          sale_type,
-          unit,
-          tax,
-          cost_price,
-          sale_price,
-          profit,
-          commission_enabled,
-          commission_percent,
-          clave_sat,
-          tracks_inventory,
-          created_at
-        `)
-        .eq("is_global", true)
-        .order("created_at", { ascending: true });
+      const { data: globalProducts, error: globalProductsError } =
+        await supabase
+          .from("products")
+          .select(`
+            id,
+            barcode,
+            name,
+            department_id,
+            status,
+            is_global,
+            sale_type,
+            unit,
+            tax,
+            cost_price,
+            sale_price,
+            profit,
+            commission_enabled,
+            commission_percent,
+            clave_sat,
+            tracks_inventory,
+            created_at
+          `)
+          .eq("is_global", true)
+          .order("created_at", { ascending: true });
 
       if (globalProductsError) throw globalProductsError;
 
@@ -236,10 +239,12 @@ export const ProductsProvider = ({ children }) => {
   const getProductByCodigo = useCallback(
     (codigo) => {
       const key = (codigo ?? "").toString().trim();
+
       if (!key) return null;
 
       return (
-        products.find((p) => (p?.codigo ?? "").toString().trim() === key) || null
+        products.find((p) => (p?.codigo ?? "").toString().trim() === key) ||
+        null
       );
     },
     [products]
@@ -248,6 +253,7 @@ export const ProductsProvider = ({ children }) => {
   const addDepartment = useCallback(
     async (name) => {
       const cleanName = (name || "").trim();
+
       if (!cleanName) return false;
 
       try {
@@ -294,6 +300,7 @@ export const ProductsProvider = ({ children }) => {
 
         await loadDepartments();
         await loadProducts();
+
         return true;
       } catch (error) {
         console.error("Error actualizando departamento:", error);
@@ -317,6 +324,7 @@ export const ProductsProvider = ({ children }) => {
 
         await loadDepartments();
         await loadProducts();
+
         return true;
       } catch (error) {
         console.error("Error eliminando departamento:", error);
@@ -329,7 +337,6 @@ export const ProductsProvider = ({ children }) => {
   const addProduct = useCallback(
     async (payload) => {
       if (!branch?.id) {
-        console.error("No hay sucursal activa");
         return {
           success: false,
           error: "No hay sucursal activa",
@@ -379,9 +386,7 @@ export const ProductsProvider = ({ children }) => {
           .select("id")
           .single();
 
-        if (productError) {
-          throw productError;
-        }
+        if (productError) throw productError;
 
         if (payload.use_inventory) {
           const { error: inventoryError } = await supabase
@@ -432,12 +437,268 @@ export const ProductsProvider = ({ children }) => {
     [branch?.id, departments, loadProducts]
   );
 
-  const updateProductByCodigo = useCallback(async () => {
-    console.warn(
-      "updateProductByCodigo aún no está conectado a Supabase desde este contexto."
-    );
-    return false;
+  const updateProductByCodigo = useCallback(
+    async (codigoOriginal, payload) => {
+      if (!branch?.id) {
+        return {
+          success: false,
+          error: "No hay sucursal activa.",
+        };
+      }
+
+      try {
+        const cleanCodigoOriginal = (codigoOriginal || "").trim();
+        const cleanCodigo = (payload.codigo || "").trim();
+        const cleanDescripcion = (payload.descripcion || "").trim();
+        const cleanDepartamento = (payload.departamento || "").trim();
+
+        if (!cleanCodigoOriginal) {
+          return {
+            success: false,
+            error: "No se recibió el código original del producto.",
+          };
+        }
+
+        if (!cleanCodigo || !cleanDescripcion) {
+          return {
+            success: false,
+            error: "Código y descripción son obligatorios.",
+          };
+        }
+
+        const { data: currentProduct, error: currentProductError } =
+          await supabase
+            .from("products")
+            .select("id, barcode")
+            .eq("barcode", cleanCodigoOriginal)
+            .maybeSingle();
+
+        if (currentProductError) throw currentProductError;
+
+        if (!currentProduct) {
+          return {
+            success: false,
+            error: "Producto no encontrado.",
+          };
+        }
+
+        if (cleanCodigo !== cleanCodigoOriginal) {
+          const { data: duplicatedProduct, error: duplicatedError } =
+            await supabase
+              .from("products")
+              .select("id")
+              .eq("barcode", cleanCodigo)
+              .neq("id", currentProduct.id)
+              .maybeSingle();
+
+          if (duplicatedError) throw duplicatedError;
+
+          if (duplicatedProduct) {
+            return {
+              success: false,
+              error: "Ya existe otro producto con ese código de barras.",
+            };
+          }
+        }
+
+        const department = departments.find(
+          (d) =>
+            d.name.trim().toLowerCase() === cleanDepartamento.toLowerCase()
+        );
+
+        const departmentId = department?.id || null;
+
+        const costPrice = Number(payload.costo || 0);
+        const salePrice = Number(payload.precio || 0);
+        const tracksInventory = !!payload.use_inventory;
+
+const { error: productUpdateError } = await supabase
+  .from("products")
+  .update({
+    barcode: cleanCodigo,
+    name: cleanDescripcion,
+    department_id: departmentId,
+    sale_type: payload.sale_type || "unidad",
+    unit: payload.unit || "pieza",
+    tax: Number(payload.tax || 0),
+    cost_price: costPrice,
+    sale_price: salePrice,
+    commission_enabled: !!payload.commission_enable,
+    commission_percent: Number(payload.commission_percent || 0),
+    clave_sat: payload.cfdi ? payload.cfdi.trim() : null,
+    status: payload.status === "activo",
+    is_global: !!payload.isGlobal,
+    tracks_inventory: tracksInventory,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", currentProduct.id);
+
+        if (productUpdateError) throw productUpdateError;
+
+        const { data: inventoryRow, error: inventoryFetchError } =
+          await supabase
+            .from("branch_inventory")
+            .select("id")
+            .eq("branch_id", branch.id)
+            .eq("product_id", currentProduct.id)
+            .maybeSingle();
+
+        if (inventoryFetchError) throw inventoryFetchError;
+
+        if (tracksInventory) {
+          const inventoryPayload = {
+            branch_id: branch.id,
+            product_id: currentProduct.id,
+            min_stock: Number(payload.minimo || 0),
+            max_stock: Number(payload.maximo || 0),
+            is_active: payload.status === "activo",
+            cost_price: costPrice,
+            sale_price: salePrice,
+            updated_at: new Date().toISOString(),
+          };
+
+          if (inventoryRow?.id) {
+            const { error: inventoryUpdateError } = await supabase
+              .from("branch_inventory")
+              .update(inventoryPayload)
+              .eq("id", inventoryRow.id);
+
+            if (inventoryUpdateError) throw inventoryUpdateError;
+          } else {
+            const { error: inventoryInsertError } = await supabase
+              .from("branch_inventory")
+              .insert({
+                ...inventoryPayload,
+                stock: 0,
+                created_at: new Date().toISOString(),
+              });
+
+            if (inventoryInsertError) throw inventoryInsertError;
+          }
+        } else if (inventoryRow?.id) {
+          const { error: inventoryDisableError } = await supabase
+            .from("branch_inventory")
+            .update({
+              is_active: false,
+              min_stock: 0,
+              max_stock: 0,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", inventoryRow.id);
+
+          if (inventoryDisableError) throw inventoryDisableError;
+        }
+
+        await loadProducts();
+
+        return {
+          success: true,
+          error: null,
+        };
+      } catch (error) {
+        console.error("Error actualizando producto:", error);
+
+        return {
+          success: false,
+          error: error.message || "Error al actualizar producto.",
+        };
+      }
+    },
+    [branch?.id, departments, loadProducts]
+  );
+
+  const getProductDiscountByProductId = useCallback(async (productId) => {
+    if (!productId) {
+      return {
+        success: false,
+        data: null,
+        error: "No se recibió el producto.",
+      };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("product_discounts")
+        .select(`
+          id,
+          product_id,
+          enabled,
+          discount_percent,
+          discount_concept,
+          created_at,
+          updated_at
+        `)
+        .eq("product_id", productId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        data: data || null,
+        error: null,
+      };
+    } catch (error) {
+      console.error("Error cargando descuento del producto:", error);
+
+      return {
+        success: false,
+        data: null,
+        error: error.message || "Error al cargar descuento del producto.",
+      };
+    }
   }, []);
+
+  const upsertProductDiscount = useCallback(
+    async (productId, payload) => {
+      if (!productId) {
+        return {
+          success: false,
+          error: "No se recibió el producto.",
+        };
+      }
+
+      try {
+        const enabled = !!payload.enabled;
+        const discountPercent = enabled
+          ? Number(payload.discount_percent || 0)
+          : 0;
+        const discountConcept = enabled
+          ? (payload.discount_concept || "").trim()
+          : "";
+
+        const { error } = await supabase.from("product_discounts").upsert(
+          {
+            product_id: productId,
+            enabled,
+            discount_percent: discountPercent,
+            discount_concept: discountConcept || null,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "product_id",
+          }
+        );
+
+        if (error) throw error;
+
+        await loadProducts();
+
+        return {
+          success: true,
+          error: null,
+        };
+      } catch (error) {
+        console.error("Error guardando descuento del producto:", error);
+
+        return {
+          success: false,
+          error: error.message || "Error al guardar descuento del producto.",
+        };
+      }
+    },
+    [loadProducts]
+  );
 
   const deleteProductByCodigo = useCallback(async () => {
     console.warn(
@@ -478,6 +739,17 @@ export const ProductsProvider = ({ children }) => {
           await loadProducts();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "product_discounts",
+        },
+        async () => {
+          await loadProducts();
+        }
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           console.log("Realtime de productos activo");
@@ -508,6 +780,8 @@ export const ProductsProvider = ({ children }) => {
       addProduct,
       updateProductByCodigo,
       deleteProductByCodigo,
+      getProductDiscountByProductId,
+      upsertProductDiscount,
       addDepartment,
       updateDepartment,
       deleteDepartment,
@@ -525,6 +799,8 @@ export const ProductsProvider = ({ children }) => {
       addProduct,
       updateProductByCodigo,
       deleteProductByCodigo,
+      getProductDiscountByProductId,
+      upsertProductDiscount,
       addDepartment,
       updateDepartment,
       deleteDepartment,
