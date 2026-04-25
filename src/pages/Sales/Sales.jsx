@@ -542,89 +542,66 @@ const Sales = () => {
     });
   };
 
-  const addProductToCart = async (product) => {
-    if (!product?.id) return;
+  const calculateDiscountedProduct = (basePrice, product) => {
+  const originalPrice = Number(basePrice || 0);
+  const discountEnabled =
+    !!product.discount_enabled && Number(product.discount_percent || 0) > 0;
 
-    const tracksInventory = !!product.tracks_inventory;
+  if (!discountEnabled) {
+    return {
+      precioOriginal: originalPrice,
+      precioFinal: originalPrice,
+      descuentoTipo: null,
+      descuentoValor: 0,
+      descuentoMontoUnitario: 0,
+      discountPercent: 0,
+      discountConcept: "",
+    };
+  }
 
-    if (tracksInventory) {
-      const inventoryRow = await getBranchInventoryRow(product.id);
+  const discountPercent = Number(product.discount_percent || 0);
+  const descuentoMontoUnitario = originalPrice * (discountPercent / 100);
+  const precioFinal = Math.max(originalPrice - descuentoMontoUnitario, 0);
 
-      if (!inventoryRow || inventoryRow.is_active === false) {
-        alert("Este producto no está activo en el inventario de esta sucursal.");
-        return;
-      }
+  return {
+    precioOriginal: originalPrice,
+    precioFinal,
+    descuentoTipo: "percent",
+    descuentoValor: discountPercent,
+    descuentoMontoUnitario,
+    discountPercent,
+    discountConcept: product.discount_concept || "",
+  };
+};
 
-      const stock = Number(inventoryRow.stock || 0);
+const addProductToCart = async (product) => {
+  if (!product?.id) return;
 
-      if (stock <= 0) {
-        alert("No hay existencia disponible.");
-        return;
-      }
+  const tracksInventory = !!product.tracks_inventory;
 
-      const existingProduct = productos.find((p) => p.id === product.id);
+  if (tracksInventory) {
+    const inventoryRow = await getBranchInventoryRow(product.id);
 
-      if (existingProduct) {
-        if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
-          alert("No hay suficiente inventario.");
-          return;
-        }
+    if (!inventoryRow || inventoryRow.is_active === false) {
+      alert("Este producto no está activo en el inventario de esta sucursal.");
+      return;
+    }
 
-        const updatedProducts = productos.map((p) => {
-          if (p.id !== product.id) return p;
+    const stock = Number(inventoryRow.stock || 0);
 
-          const nuevaCantidad = p.cantidad + 1;
-          const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
-          const precioFinal = Number(p.precio ?? 0);
-          const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
-
-          return {
-            ...p,
-            cantidad: nuevaCantidad,
-            importe: nuevaCantidad * precioFinal,
-            descuentoMonto: descuentoUnitario * nuevaCantidad,
-            existencia: p.stockReal - nuevaCantidad,
-          };
-        });
-
-        setProductos(updatedProducts);
-
-        if (selectedProduct?.id === product.id) {
-          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
-          setSelectedProduct(updatedSelected || null);
-        }
-
-        return;
-      }
-
-      const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
-      const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
-
-      const newProduct = {
-        id: product.id,
-        codigo: product.barcode,
-        nombre: product.name,
-        precioOriginal: salePrice,
-        precio: salePrice,
-        costo: costPrice,
-        cantidad: 1,
-        importe: salePrice,
-        descuentoTipo: null,
-        descuentoValor: 0,
-        descuentoMonto: 0,
-        stockReal: stock,
-        existencia: stock - 1,
-        is_kit: !!product.is_kit,
-        tracks_inventory: true,
-      };
-
-      setProductos((prev) => [...prev, newProduct]);
+    if (stock <= 0) {
+      alert("No hay existencia disponible.");
       return;
     }
 
     const existingProduct = productos.find((p) => p.id === product.id);
 
     if (existingProduct) {
+      if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
+        alert("No hay suficiente inventario.");
+        return;
+      }
+
       const updatedProducts = productos.map((p) => {
         if (p.id !== product.id) return p;
 
@@ -638,7 +615,7 @@ const Sales = () => {
           cantidad: nuevaCantidad,
           importe: nuevaCantidad * precioFinal,
           descuentoMonto: descuentoUnitario * nuevaCantidad,
-          existencia: "∞",
+          existencia: p.stockReal - nuevaCantidad,
         };
       });
 
@@ -652,29 +629,96 @@ const Sales = () => {
       return;
     }
 
-    const salePrice = Number(product.sale_price ?? 0);
-    const costPrice = Number(product.cost_price ?? 0);
+    const salePrice = Number(
+      product.sale_price ?? inventoryRow.sale_price ?? 0
+    );
+
+    const costPrice = Number(
+      product.cost_price ?? inventoryRow.cost_price ?? 0
+    );
+
+    const discountData = calculateDiscountedProduct(salePrice, product);
 
     const newProduct = {
       id: product.id,
       codigo: product.barcode,
       nombre: product.name,
-      precioOriginal: salePrice,
-      precio: salePrice,
+      precioOriginal: discountData.precioOriginal,
+      precio: discountData.precioFinal,
       costo: costPrice,
       cantidad: 1,
-      importe: salePrice,
-      descuentoTipo: null,
-      descuentoValor: 0,
-      descuentoMonto: 0,
-      stockReal: null,
-      existencia: "∞",
+      importe: discountData.precioFinal,
+      descuentoTipo: discountData.descuentoTipo,
+      descuentoValor: discountData.descuentoValor,
+      descuentoMonto: discountData.descuentoMontoUnitario,
+      discountPercent: discountData.discountPercent,
+      discountConcept: discountData.discountConcept,
+      stockReal: stock,
+      existencia: stock - 1,
       is_kit: !!product.is_kit,
-      tracks_inventory: false,
+      tracks_inventory: true,
     };
 
     setProductos((prev) => [...prev, newProduct]);
+    return;
+  }
+
+  const existingProduct = productos.find((p) => p.id === product.id);
+
+  if (existingProduct) {
+    const updatedProducts = productos.map((p) => {
+      if (p.id !== product.id) return p;
+
+      const nuevaCantidad = p.cantidad + 1;
+      const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+      const precioFinal = Number(p.precio ?? 0);
+      const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+      return {
+        ...p,
+        cantidad: nuevaCantidad,
+        importe: nuevaCantidad * precioFinal,
+        descuentoMonto: descuentoUnitario * nuevaCantidad,
+        existencia: "∞",
+      };
+    });
+
+    setProductos(updatedProducts);
+
+    if (selectedProduct?.id === product.id) {
+      const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+      setSelectedProduct(updatedSelected || null);
+    }
+
+    return;
+  }
+
+  const salePrice = Number(product.sale_price ?? 0);
+  const costPrice = Number(product.cost_price ?? 0);
+  const discountData = calculateDiscountedProduct(salePrice, product);
+
+  const newProduct = {
+    id: product.id,
+    codigo: product.barcode,
+    nombre: product.name,
+    precioOriginal: discountData.precioOriginal,
+    precio: discountData.precioFinal,
+    costo: costPrice,
+    cantidad: 1,
+    importe: discountData.precioFinal,
+    descuentoTipo: discountData.descuentoTipo,
+    descuentoValor: discountData.descuentoValor,
+    descuentoMonto: discountData.descuentoMontoUnitario,
+    discountPercent: discountData.discountPercent,
+    discountConcept: discountData.discountConcept,
+    stockReal: null,
+    existencia: "∞",
+    is_kit: !!product.is_kit,
+    tracks_inventory: false,
   };
+
+  setProductos((prev) => [...prev, newProduct]);
+};
 
   const handleBarcodeSearch = async () => {
     if (!branch?.id) {

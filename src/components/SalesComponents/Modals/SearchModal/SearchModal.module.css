@@ -258,7 +258,8 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .detailTitle {
@@ -268,6 +269,7 @@
   margin-bottom: 14px;
   padding-bottom: 8px;
   border-bottom: 2px solid #ecf0f1;
+  flex-shrink: 0;
 }
 
 .detailEmpty {
@@ -286,7 +288,8 @@
   border: 1px solid #e1e8ed;
   border-radius: 10px;
   padding: 13px 14px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .selectedProductName {
@@ -305,17 +308,19 @@
 }
 
 .stockBlock {
-  flex: 1;
-  min-height: 0;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: auto;
 }
 
 .stockBlockTitle {
   font-size: 0.95rem;
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .stockLoading {
@@ -326,24 +331,26 @@
 }
 
 .branchStockList {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-right: 4px;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 6px;
+  flex: 0 0 auto;
 }
 
 .branchStockItem {
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   border: 1px solid #dce4ea;
   background: #ffffff;
+  min-height: 58px;
+  flex-shrink: 0;
 }
 
 .currentBranchItem {
@@ -412,15 +419,16 @@
 }
 
 .infoNotice {
-  margin-top: 14px;
-  padding: 11px 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
   border-radius: 10px;
   background: #eef7fb;
   border: 1px solid #d0e8f1;
   color: #29586a;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
+  flex-shrink: 0;
 }
 
 .modalActions {
@@ -491,24 +499,28 @@
 }
 
 .resultsList::-webkit-scrollbar,
-.branchStockList::-webkit-scrollbar {
+.branchStockList::-webkit-scrollbar,
+.detailCard::-webkit-scrollbar {
   width: 8px;
 }
 
 .resultsList::-webkit-scrollbar-track,
-.branchStockList::-webkit-scrollbar-track {
+.branchStockList::-webkit-scrollbar-track,
+.detailCard::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
 .resultsList::-webkit-scrollbar-thumb,
-.branchStockList::-webkit-scrollbar-thumb {
+.branchStockList::-webkit-scrollbar-thumb,
+.detailCard::-webkit-scrollbar-thumb {
   background: #bdc3c7;
   border-radius: 4px;
 }
 
 .resultsList::-webkit-scrollbar-thumb:hover,
-.branchStockList::-webkit-scrollbar-thumb:hover {
+.branchStockList::-webkit-scrollbar-thumb:hover,
+.detailCard::-webkit-scrollbar-thumb:hover {
   background: #95a5a6;
 }
 
@@ -517,6 +529,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
