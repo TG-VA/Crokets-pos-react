@@ -127,7 +127,7 @@ const Sales = () => {
 
     const { data, error } = await supabase
       .from("branch_inventory")
-      .select("stock, is_active, cost_price, sale_price")
+      .select("stock, is_active, has_been_stocked, cost_price, sale_price")
       .eq("branch_id", branch.id)
       .eq("product_id", productId)
       .maybeSingle();
@@ -135,6 +135,28 @@ const Sales = () => {
     if (error) throw error;
 
     return data;
+  };
+
+  const getProductWithDiscount = async (product) => {
+    if (!product?.id) return product;
+
+    const { data: discountRow, error: discountError } = await supabase
+      .from("product_discounts")
+      .select("enabled, discount_percent, discount_concept")
+      .eq("product_id", product.id)
+      .maybeSingle();
+
+    if (discountError) throw discountError;
+
+    const hasDiscount =
+      !!discountRow?.enabled && Number(discountRow?.discount_percent || 0) > 0;
+
+    return {
+      ...product,
+      discount_enabled: hasDiscount,
+      discount_percent: hasDiscount ? Number(discountRow.discount_percent || 0) : 0,
+      discount_concept: hasDiscount ? discountRow?.discount_concept || "" : "",
+    };
   };
 
   const getOpenCashSession = async () => {
@@ -206,7 +228,9 @@ const Sales = () => {
       if (cashMethodIds.length > 0 && openedAt && branchId) {
         const { data: cashPayments, error: cashPaymentsError } = await supabase
           .from("sale_payments")
-          .select("amount, currency, exchange_rate, payment_method_id, created_at, branch_id")
+          .select(
+            "amount, currency, exchange_rate, payment_method_id, created_at, branch_id"
+          )
           .eq("branch_id", branchId)
           .gte("created_at", openedAt)
           .in("payment_method_id", cashMethodIds);
@@ -358,10 +382,7 @@ const Sales = () => {
       ];
 
       const { data: productsRows, error: productsError } = productIds.length
-        ? await supabase
-            .from("products")
-            .select("id, name, barcode")
-            .in("id", productIds)
+        ? await supabase.from("products").select("id, name, barcode").in("id", productIds)
         : { data: [], error: null };
 
       if (productsError) throw productsError;
@@ -375,9 +396,7 @@ const Sales = () => {
         quantity: Number(item.quantity || 0),
         description: productMap[item.product_id] || "PRODUCTO",
         unit_price: Number(item.final_unit_price || item.unit_price || 0),
-        original_unit_price: Number(
-          item.original_unit_price || item.unit_price || 0
-        ),
+        original_unit_price: Number(item.original_unit_price || item.unit_price || 0),
         discount_amount: Number(item.discount_amount || 0),
         line_total: Number(item.total_price || 0),
       }));
@@ -543,65 +562,129 @@ const Sales = () => {
   };
 
   const calculateDiscountedProduct = (basePrice, product) => {
-  const originalPrice = Number(basePrice || 0);
-  const discountEnabled =
-    !!product.discount_enabled && Number(product.discount_percent || 0) > 0;
+    const originalPrice = Number(basePrice || 0);
+    const discountEnabled =
+      !!product.discount_enabled && Number(product.discount_percent || 0) > 0;
 
-  if (!discountEnabled) {
-    return {
-      precioOriginal: originalPrice,
-      precioFinal: originalPrice,
-      descuentoTipo: null,
-      descuentoValor: 0,
-      descuentoMontoUnitario: 0,
-      discountPercent: 0,
-      discountConcept: "",
-    };
-  }
-
-  const discountPercent = Number(product.discount_percent || 0);
-  const descuentoMontoUnitario = originalPrice * (discountPercent / 100);
-  const precioFinal = Math.max(originalPrice - descuentoMontoUnitario, 0);
-
-  return {
-    precioOriginal: originalPrice,
-    precioFinal,
-    descuentoTipo: "percent",
-    descuentoValor: discountPercent,
-    descuentoMontoUnitario,
-    discountPercent,
-    discountConcept: product.discount_concept || "",
-  };
-};
-
-const addProductToCart = async (product) => {
-  if (!product?.id) return;
-
-  const tracksInventory = !!product.tracks_inventory;
-
-  if (tracksInventory) {
-    const inventoryRow = await getBranchInventoryRow(product.id);
-
-    if (!inventoryRow || inventoryRow.is_active === false) {
-      alert("Este producto no está activo en el inventario de esta sucursal.");
-      return;
+    if (!discountEnabled) {
+      return {
+        precioOriginal: originalPrice,
+        precioFinal: originalPrice,
+        descuentoTipo: null,
+        descuentoValor: 0,
+        descuentoMontoUnitario: 0,
+        discountPercent: 0,
+        discountConcept: "",
+      };
     }
 
-    const stock = Number(inventoryRow.stock || 0);
+    const discountPercent = Number(product.discount_percent || 0);
+    const descuentoMontoUnitario = originalPrice * (discountPercent / 100);
+    const precioFinal = Math.max(originalPrice - descuentoMontoUnitario, 0);
 
-    if (stock <= 0) {
-      alert("No hay existencia disponible.");
+    return {
+      precioOriginal: originalPrice,
+      precioFinal,
+      descuentoTipo: "percent",
+      descuentoValor: discountPercent,
+      descuentoMontoUnitario,
+      discountPercent,
+      discountConcept: product.discount_concept || "",
+    };
+  };
+
+  const addProductToCart = async (product) => {
+    if (!product?.id) return;
+
+    const tracksInventory = !!product.tracks_inventory;
+
+    if (tracksInventory) {
+      const inventoryRow = await getBranchInventoryRow(product.id);
+
+      if (!inventoryRow || inventoryRow.is_active === false) {
+        alert("Este producto no está activo en el inventario de esta sucursal.");
+        return;
+      }
+
+      const stock = Number(inventoryRow.stock || 0);
+      const hasBeenStocked = !!inventoryRow.has_been_stocked;
+
+      if (!hasBeenStocked && stock <= 0) {
+        alert("Este producto aún no tiene inventario inicial registrado.");
+        return;
+      }
+
+      if (stock <= 0) {
+        alert("No hay existencia disponible.");
+        return;
+      }
+
+      const existingProduct = productos.find((p) => p.id === product.id);
+
+      if (existingProduct) {
+        if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
+          alert("No hay suficiente inventario.");
+          return;
+        }
+
+        const updatedProducts = productos.map((p) => {
+          if (p.id !== product.id) return p;
+
+          const nuevaCantidad = p.cantidad + 1;
+          const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+          const precioFinal = Number(p.precio ?? 0);
+          const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+          return {
+            ...p,
+            cantidad: nuevaCantidad,
+            importe: nuevaCantidad * precioFinal,
+            descuentoMonto: descuentoUnitario * nuevaCantidad,
+            existencia: p.stockReal - nuevaCantidad,
+          };
+        });
+
+        setProductos(updatedProducts);
+
+        if (selectedProduct?.id === product.id) {
+          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+          setSelectedProduct(updatedSelected || null);
+        }
+
+        return;
+      }
+
+      const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+      const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+      const discountData = calculateDiscountedProduct(salePrice, product);
+
+      const newProduct = {
+        id: product.id,
+        codigo: product.barcode,
+        nombre: product.name,
+        precioOriginal: discountData.precioOriginal,
+        precio: discountData.precioFinal,
+        costo: costPrice,
+        cantidad: 1,
+        importe: discountData.precioFinal,
+        descuentoTipo: discountData.descuentoTipo,
+        descuentoValor: discountData.descuentoValor,
+        descuentoMonto: discountData.descuentoMontoUnitario,
+        discountPercent: discountData.discountPercent,
+        discountConcept: discountData.discountConcept,
+        stockReal: stock,
+        existencia: stock - 1,
+        is_kit: !!product.is_kit,
+        tracks_inventory: true,
+      };
+
+      setProductos((prev) => [...prev, newProduct]);
       return;
     }
 
     const existingProduct = productos.find((p) => p.id === product.id);
 
     if (existingProduct) {
-      if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
-        alert("No hay suficiente inventario.");
-        return;
-      }
-
       const updatedProducts = productos.map((p) => {
         if (p.id !== product.id) return p;
 
@@ -615,7 +698,7 @@ const addProductToCart = async (product) => {
           cantidad: nuevaCantidad,
           importe: nuevaCantidad * precioFinal,
           descuentoMonto: descuentoUnitario * nuevaCantidad,
-          existencia: p.stockReal - nuevaCantidad,
+          existencia: "∞",
         };
       });
 
@@ -629,14 +712,8 @@ const addProductToCart = async (product) => {
       return;
     }
 
-    const salePrice = Number(
-      product.sale_price ?? inventoryRow.sale_price ?? 0
-    );
-
-    const costPrice = Number(
-      product.cost_price ?? inventoryRow.cost_price ?? 0
-    );
-
+    const salePrice = Number(product.sale_price ?? 0);
+    const costPrice = Number(product.cost_price ?? 0);
     const discountData = calculateDiscountedProduct(salePrice, product);
 
     const newProduct = {
@@ -653,72 +730,14 @@ const addProductToCart = async (product) => {
       descuentoMonto: discountData.descuentoMontoUnitario,
       discountPercent: discountData.discountPercent,
       discountConcept: discountData.discountConcept,
-      stockReal: stock,
-      existencia: stock - 1,
+      stockReal: null,
+      existencia: "∞",
       is_kit: !!product.is_kit,
-      tracks_inventory: true,
+      tracks_inventory: false,
     };
 
     setProductos((prev) => [...prev, newProduct]);
-    return;
-  }
-
-  const existingProduct = productos.find((p) => p.id === product.id);
-
-  if (existingProduct) {
-    const updatedProducts = productos.map((p) => {
-      if (p.id !== product.id) return p;
-
-      const nuevaCantidad = p.cantidad + 1;
-      const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
-      const precioFinal = Number(p.precio ?? 0);
-      const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
-
-      return {
-        ...p,
-        cantidad: nuevaCantidad,
-        importe: nuevaCantidad * precioFinal,
-        descuentoMonto: descuentoUnitario * nuevaCantidad,
-        existencia: "∞",
-      };
-    });
-
-    setProductos(updatedProducts);
-
-    if (selectedProduct?.id === product.id) {
-      const updatedSelected = updatedProducts.find((p) => p.id === product.id);
-      setSelectedProduct(updatedSelected || null);
-    }
-
-    return;
-  }
-
-  const salePrice = Number(product.sale_price ?? 0);
-  const costPrice = Number(product.cost_price ?? 0);
-  const discountData = calculateDiscountedProduct(salePrice, product);
-
-  const newProduct = {
-    id: product.id,
-    codigo: product.barcode,
-    nombre: product.name,
-    precioOriginal: discountData.precioOriginal,
-    precio: discountData.precioFinal,
-    costo: costPrice,
-    cantidad: 1,
-    importe: discountData.precioFinal,
-    descuentoTipo: discountData.descuentoTipo,
-    descuentoValor: discountData.descuentoValor,
-    descuentoMonto: discountData.descuentoMontoUnitario,
-    discountPercent: discountData.discountPercent,
-    discountConcept: discountData.discountConcept,
-    stockReal: null,
-    existencia: "∞",
-    is_kit: !!product.is_kit,
-    tracks_inventory: false,
   };
-
-  setProductos((prev) => [...prev, newProduct]);
-};
 
   const handleBarcodeSearch = async () => {
     if (!branch?.id) {
@@ -732,7 +751,9 @@ const addProductToCart = async (product) => {
     try {
       const { data: product, error: productError } = await supabase
         .from("products")
-        .select("id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory")
+        .select(
+          "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory"
+        )
         .eq("barcode", cleanBarcode)
         .eq("status", true)
         .maybeSingle();
@@ -752,14 +773,15 @@ const addProductToCart = async (product) => {
           return;
         }
 
-        await addProductToCart(product);
+        const productWithDiscount = await getProductWithDiscount(product);
+        await addProductToCart(productWithDiscount);
         setBarcode("");
         return;
       }
 
       const { data: inventoryRow, error: inventoryError } = await supabase
         .from("branch_inventory")
-        .select("stock, is_active, cost_price, sale_price")
+        .select("stock, is_active, has_been_stocked, cost_price, sale_price")
         .eq("branch_id", branch.id)
         .eq("product_id", product.id)
         .maybeSingle();
@@ -778,13 +800,23 @@ const addProductToCart = async (product) => {
         return;
       }
 
-      if (Number(inventoryRow.stock || 0) <= 0) {
+      const currentStock = Number(inventoryRow.stock || 0);
+      const hasBeenStocked = !!inventoryRow.has_been_stocked;
+
+      if (!hasBeenStocked && currentStock <= 0) {
+        alert("Este producto aún no tiene inventario inicial registrado en esta sucursal.");
+        setBarcode("");
+        return;
+      }
+
+      if (currentStock <= 0) {
         alert("No hay existencia disponible en esta sucursal.");
         setBarcode("");
         return;
       }
 
-      await addProductToCart(product);
+      const productWithDiscount = await getProductWithDiscount(product);
+      await addProductToCart(productWithDiscount);
       setBarcode("");
     } catch (err) {
       console.error("Error buscando producto:", err);
@@ -864,6 +896,16 @@ const addProductToCart = async (product) => {
 
       const inventoryRow = await getBranchInventoryRow(item.id);
       const currentStock = Number(inventoryRow?.stock || 0);
+      const hasBeenStocked = !!inventoryRow?.has_been_stocked;
+
+      if (!hasBeenStocked && currentStock <= 0) {
+        alert(
+          `El producto "${
+            item.nombre || item.codigo
+          }" aún no tiene inventario inicial registrado.`
+        );
+        return false;
+      }
 
       if (currentStock <= 0) {
         alert(`El producto "${item.nombre || item.codigo}" ya no tiene existencia.`);
@@ -872,7 +914,9 @@ const addProductToCart = async (product) => {
 
       if (item.cantidad > currentStock) {
         alert(
-          `La cantidad de "${item.nombre || item.codigo}" excede el inventario disponible.`
+          `La cantidad de "${
+            item.nombre || item.codigo
+          }" excede el inventario disponible.`
         );
         return false;
       }
@@ -963,10 +1007,7 @@ const addProductToCart = async (product) => {
       );
 
       const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
-      const lastColumnWidth = Math.max(
-        MIN_COLUMN_WIDTH,
-        availableWidth - usedWidth
-      );
+      const lastColumnWidth = Math.max(MIN_COLUMN_WIDTH, availableWidth - usedWidth);
 
       setColumnWidths([...calculatedWidths, lastColumnWidth]);
       setIsInitialized(true);
@@ -1037,10 +1078,6 @@ const addProductToCart = async (product) => {
       const availableCash = Math.max(rawAvailableCash, 0);
       const exitAmount = Number(newMovement.amount);
 
-      console.log("Sesión abierta:", openSession);
-      console.log("Disponible en caja:", availableCash);
-      console.log("Intentando retirar:", exitAmount);
-
       if (exitAmount > availableCash) {
         alert(
           `No puedes retirar $${exitAmount.toFixed(
@@ -1058,8 +1095,6 @@ const addProductToCart = async (product) => {
         description: newMovement.description?.trim() || null,
         branch_id: branch.id,
       };
-
-      console.log("Payload salida:", payload);
 
       const { data, error } = await supabase
         .from("cash_movements")
@@ -1285,14 +1320,17 @@ const addProductToCart = async (product) => {
             setSelectedProduct(productos[prevIndex]);
           }
         }
+
         return;
       }
 
       if (e.ctrlKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
+
         if (selectedProduct) {
           setDiscountModalOpen(true);
         }
+
         return;
       }
 
@@ -1315,42 +1353,36 @@ const addProductToCart = async (product) => {
           e.preventDefault();
           openPaymentFlow();
           break;
-
         case "F5":
           e.preventDefault();
           handleOpenChangeModal();
           break;
-
         case "F6":
           e.preventDefault();
           setPendingModalOpen(true);
           break;
-
         case "F7":
           e.preventDefault();
           setEntryModalOpen(true);
           break;
-
         case "F8":
           e.preventDefault();
           setExitModalOpen(true);
           break;
-
         case "F9":
           e.preventDefault();
           setVerifierModalOpen(true);
           break;
-
         case "F10":
           e.preventDefault();
           setSearchModalOpen(true);
           break;
-
         case "Backspace":
           if (isInputElement) return;
 
           if (!isAnyModalOpen) {
             e.preventDefault();
+
             if (selectedProduct) {
               setDeleteItemModalOpen(true);
             } else {
@@ -1358,42 +1390,26 @@ const addProductToCart = async (product) => {
             }
           }
           break;
-
         case "Delete":
           e.preventDefault();
           handleOpenDeleteModal();
           break;
-
         case "Escape":
           if (processingSale) return;
 
-          if (showPaymentModal) {
-            setShowPaymentModal(false);
-          } else if (isEntryModalOpen) {
-            setEntryModalOpen(false);
-          } else if (isExitModalOpen) {
-            setExitModalOpen(false);
-          } else if (isClientModalOpen) {
-            setClientModalOpen(false);
-          } else if (isVerifierModalOpen) {
-            setVerifierModalOpen(false);
-          } else if (isSearchModalOpen) {
-            setSearchModalOpen(false);
-          } else if (isDiscountModalOpen) {
-            setDiscountModalOpen(false);
-          } else if (isPendingModalOpen) {
-            setPendingModalOpen(false);
-          } else if (isChangeModalOpen) {
-            setChangeModalOpen(false);
-          } else if (isDeleteModalOpen) {
-            setDeleteModalOpen(false);
-          } else if (isDeleteItemModalOpen) {
-            setDeleteItemModalOpen(false);
-          } else if (isSalesHistoryModalOpen) {
-            setSalesHistoryModalOpen(false);
-          }
+          if (showPaymentModal) setShowPaymentModal(false);
+          else if (isEntryModalOpen) setEntryModalOpen(false);
+          else if (isExitModalOpen) setExitModalOpen(false);
+          else if (isClientModalOpen) setClientModalOpen(false);
+          else if (isVerifierModalOpen) setVerifierModalOpen(false);
+          else if (isSearchModalOpen) setSearchModalOpen(false);
+          else if (isDiscountModalOpen) setDiscountModalOpen(false);
+          else if (isPendingModalOpen) setPendingModalOpen(false);
+          else if (isChangeModalOpen) setChangeModalOpen(false);
+          else if (isDeleteModalOpen) setDeleteModalOpen(false);
+          else if (isDeleteItemModalOpen) setDeleteItemModalOpen(false);
+          else if (isSalesHistoryModalOpen) setSalesHistoryModalOpen(false);
           break;
-
         default:
           break;
       }
@@ -1429,6 +1445,7 @@ const addProductToCart = async (product) => {
     <div className={styles.ventasContainer}>
       <div className={styles.saleHeader}>
         <h2>VENTA - Ticket {ticketNumber}</h2>
+
         {currentSaleClient && (
           <div className={styles.clientInfo}>
             <span>Cliente: {currentSaleClient.name}</span>
@@ -1484,11 +1501,7 @@ const addProductToCart = async (product) => {
           onClick={() => setVerifierModalOpen(true)}
         >
           <span className={styles.actionKey}>F9</span>
-          <img
-            src={verifyIcon}
-            alt="Verificador"
-            className={styles.buttonIcon}
-          />
+          <img src={verifyIcon} alt="Verificador" className={styles.buttonIcon} />
           <span className={styles.actionText}>Verificador</span>
         </div>
       </div>
@@ -1496,6 +1509,7 @@ const addProductToCart = async (product) => {
       <div className={styles.productInputBar}>
         <div className={styles.inputSection}>
           <label>Código de Barras:</label>
+
           <input
             type="text"
             className={styles.barcodeInput}
@@ -1569,13 +1583,17 @@ const addProductToCart = async (product) => {
               <span className={styles.tableCell}>
                 {producto.nombre || producto.codigo}
               </span>
+
               <span className={styles.tableCell}>
                 ${Number(producto.precio || 0).toFixed(2)}
               </span>
+
               <span className={styles.tableCell}>{producto.cantidad}</span>
+
               <span className={styles.tableCell}>
                 ${Number(producto.importe || 0).toFixed(2)}
               </span>
+
               <span className={styles.tableCell}>{producto.existencia}</span>
             </div>
           ))}
@@ -1604,11 +1622,7 @@ const addProductToCart = async (product) => {
           </div>
 
           <div className={styles.squareButton} onClick={handleOpenDeleteModal}>
-            <img
-              src={deleteIcon}
-              alt="Eliminar"
-              className={styles.squareIcon}
-            />
+            <img src={deleteIcon} alt="Eliminar" className={styles.squareIcon} />
             <span className={styles.squareText}>Eliminar</span>
           </div>
 
@@ -1649,9 +1663,7 @@ const addProductToCart = async (product) => {
               alt="Ventas del día y Devoluciones"
               className={styles.squareIconSecondary}
             />
-            <span className={styles.squareText}>
-              Ventas del día y Devoluciones
-            </span>
+            <span className={styles.squareText}>Ventas del día y Devoluciones</span>
           </div>
         </div>
 
@@ -1663,9 +1675,7 @@ const addProductToCart = async (product) => {
 
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Descuento:</span>
-            <span className={styles.totalAmount}>
-              -${discountTotal.toFixed(2)}
-            </span>
+            <span className={styles.totalAmount}>-${discountTotal.toFixed(2)}</span>
           </div>
 
           <div className={styles.totalSection}>

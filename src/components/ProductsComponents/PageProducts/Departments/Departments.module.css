@@ -6,10 +6,8 @@
   background-color: var(--lightGray);
   margin-top: 30px;
 
-  /* Variables locales del componente */
   --croketsBlue: #1092b1;
   --croketsBlueDark: #0d7a94;
-  --croketsOrange: #fc8913;
   --lightGray: #f2f2f2;
   --mediumGray: #e0e0e0;
   --darkGray: #333333;
@@ -17,14 +15,13 @@
   --white: #ffffff;
   --errorColor: #e74c3c;
   --successColor: #27ae60;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
   --shadow-focus: 0 0 0 2px rgba(16, 146, 177, 0.15);
 }
 
 .sidebar {
   width: 30%;
-  background-color: #fff;
-  border-right: 1px solid #ddd;
+  background-color: var(--white);
+  border-right: 1px solid #dddddd;
   border-radius: 8px 0 0 8px;
   overflow-y: auto;
   display: flex;
@@ -42,16 +39,20 @@
 }
 
 .sidebarHeader {
+  width: 100%;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
-  font-weight: bold;
-  background-color: #f0f0f0;
+  border: none;
+  border-bottom: 1px solid #eeeeee;
+  font-weight: 700;
+  background-color: #f0f8fb;
   cursor: pointer;
-  color: var(--croketsBlueDark);    
+  color: var(--croketsBlueDark);
+  text-align: left;
+  font-size: 1rem;
 }
 
 .sidebarHeader:hover {
-  background-color: #e0e0e0;
+  background-color: #e3f3f7;
 }
 
 .departmentList {
@@ -62,9 +63,13 @@
 
 .departmentItem {
   padding: 1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eeeeee;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease, border-left 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .departmentItem:hover {
@@ -73,69 +78,178 @@
 
 .activeItem {
   background-color: #e6f7ff;
-  border-left: 4px solid #1890ff;
+  border-left: 4px solid var(--croketsBlue);
+}
+
+.inactiveItem {
+  background-color: #f7f7f7;
+}
+
+.inactiveItem .departmentName {
+  color: #8a8a8a;
+  text-decoration: line-through;
+}
+
+.departmentName {
+  font-weight: 700;
+  color: var(--darkGray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusBadge,
+.headerBadge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background-color: #e9f7ee;
+  color: #2e7d32;
+}
+
+.statusInactive {
+  background-color: #fdecea;
+  color: #c62828;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .formTitle {
-  margin-bottom: 2rem;
+  margin: 0;
   color: var(--croketsBlueDark);
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 8px 0 0 0;
+  color: #666666;
+  font-size: 0.95rem;
+}
+
+.form {
+  max-width: 100%;
 }
 
 .formGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #555;
+  font-weight: 700;
+  color: var(--darkGray);
 }
 
 .input {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  height: 46px;
+  padding: 0 0.85rem;
+  border: 1px solid #d6d6d6;
+  border-radius: 6px;
   font-size: 1rem;
+  background-color: var(--white);
+  color: var(--textColor);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: var(--shadow-focus);
 }
 
 .input:disabled {
-  background-color: #eee;
-  color: #666;
+  background-color: #eeeeee;
+  color: #666666;
+  cursor: not-allowed;
 }
 
 .actions {
   display: flex;
   gap: 1rem;
   margin-top: 2rem;
+  flex-wrap: wrap;
 }
 
 .button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 4px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  min-width: 190px;
+}
+
+.button:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .primaryButton {
-  background-color: #1890ff;
-  color: white;
+  background-color: var(--croketsBlue);
+  color: var(--white);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background-color: var(--croketsBlueDark);
 }
 
 .dangerButton {
-  background-color: #ff4d4f;
-  color: white;
+  background-color: var(--errorColor);
+  color: var(--white);
 }
 
-.secondaryButton {
-  background-color: #fff;
-  border: 1px solid #d9d9d9;
-  color: #333;
+.successButton {
+  background-color: var(--successColor);
+  color: var(--white);
 }
 
-.button:hover {
-  opacity: 0.9;
+@media (max-width: 1000px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar,
+  .content {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .sidebar {
+    max-height: 280px;
+    border-right: none;
+    border-bottom: 1px solid #dddddd;
+  }
+
+  .content {
+    margin-top: 0.8rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .button {
+    width: 100%;
+  }
 }
