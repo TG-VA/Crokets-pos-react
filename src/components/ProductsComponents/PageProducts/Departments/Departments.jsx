@@ -1,28 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
 import styles from "./Departments.module.css";
 
 const Departments = () => {
-  const { departments, addDepartment, updateDepartment, deleteDepartment } = useProducts();
+  const { departments, addDepartment, updateDepartment } = useProducts();
+
   const [selectedId, setSelectedId] = useState("new");
-  // Eliminar isEditing ya que siempre será editable
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     status: true,
   });
 
+  const selectedDept = useMemo(
+    () => departments.find((d) => d.id === selectedId) || null,
+    [departments, selectedId]
+  );
+
   useEffect(() => {
     if (selectedId === "new") {
-      setFormData({ name: "", status: true });
-    } else {
-      const dept = departments.find((d) => d.id === selectedId);
-      if (dept) {
-        setFormData({ name: dept.name, status: dept.status });
-      } else {
-        setSelectedId("new");
-      }
+      setFormData({
+        name: "",
+        status: true,
+      });
+      return;
     }
-  }, [selectedId]);
+
+    if (selectedDept) {
+      setFormData({
+        name: selectedDept.name || "",
+        status: selectedDept.status !== false,
+      });
+    } else {
+      setSelectedId("new");
+    }
+  }, [selectedId, selectedDept]);
 
   const handleCreate = () => {
     setSelectedId("new");
@@ -32,147 +45,252 @@ const Departments = () => {
     setSelectedId(id);
   };
 
-  const handleSave = (e) => {
+  const validateDuplicateName = () => {
+    const cleanName = formData.name.trim().toLowerCase();
+
+    return departments.some(
+      (department) =>
+        department.id !== selectedId &&
+        department.name?.trim().toLowerCase() === cleanName
+    );
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      alert("El nombre es requerido");
+
+    const cleanName = formData.name.trim();
+
+    if (!cleanName) {
+      alert("El nombre del departamento es obligatorio.");
       return;
     }
 
-    if (selectedId === "new") {
-      if (departments.some(d => d.name.toLowerCase() === formData.name.trim().toLowerCase())) {
-        alert("Ya existe un departamento con este nombre");
+    if (validateDuplicateName()) {
+      alert("Ya existe un departamento con ese nombre.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      if (selectedId === "new") {
+        const success = await addDepartment(cleanName);
+
+        if (!success) {
+          alert("No se pudo crear el departamento.");
+          return;
+        }
+
+        alert("Departamento creado correctamente.");
+        setFormData({
+          name: "",
+          status: true,
+        });
+        setSelectedId("new");
         return;
       }
-      addDepartment(formData.name.trim());
-      alert("Departamento creado");
-      setFormData({ name: "", status: true });
-    } else {
-      if (departments.some(d => d.id !== selectedId && d.name.toLowerCase() === formData.name.trim().toLowerCase())) {
-        alert("Ya existe un departamento con este nombre");
-        return;
-      }
-      updateDepartment(selectedId, {
-        name: formData.name.trim(),
-        status: formData.status
+
+      const success = await updateDepartment(selectedId, {
+        name: cleanName,
+        status: formData.status,
       });
-      alert("Departamento actualizado");
+
+      if (!success) {
+        alert("No se pudo actualizar el departamento.");
+        return;
+      }
+
+      alert("Departamento actualizado correctamente.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm("¿Estás seguro de eliminar este departamento?")) {
-      deleteDepartment(selectedId);
-      setSelectedId("new");
+  const handleToggleStatus = async () => {
+    if (!selectedDept) return;
+
+    const nextStatus = !selectedDept.status;
+
+    const confirmMessage = nextStatus
+      ? `¿Deseas activar el departamento "${selectedDept.name}"?`
+      : `¿Deseas desactivar el departamento "${selectedDept.name}"?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      setSaving(true);
+
+      const success = await updateDepartment(selectedDept.id, {
+        name: selectedDept.name,
+        status: nextStatus,
+      });
+
+      if (!success) {
+        alert("No se pudo cambiar el estatus del departamento.");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        status: nextStatus,
+      }));
+
+      alert(
+        nextStatus
+          ? "Departamento activado correctamente."
+          : "Departamento desactivado correctamente."
+      );
+    } finally {
+      setSaving(false);
     }
   };
-
-  const selectedDept = departments.find(d => d.id === selectedId);
 
   return (
     <div className={styles.container}>
       <div className={styles.sidebar}>
-        <div 
-          className={`${styles.sidebarHeader} ${selectedId === "new" ? styles.activeItem : ""}`}
+        <button
+          type="button"
+          className={`${styles.sidebarHeader} ${
+            selectedId === "new" ? styles.activeItem : ""
+          }`}
           onClick={handleCreate}
         >
           + Crear nuevo departamento
-        </div>
+        </button>
+
         <ul className={styles.departmentList}>
-          {departments.map((dept) => (
-            <li
-              key={dept.id}
-              className={`${styles.departmentItem} ${selectedId === dept.id ? styles.activeItem : ""}`}
-              onClick={() => handleSelect(dept.id)}
-            >
-              {dept.name}
-            </li>
-          ))}
+          {departments.map((dept) => {
+            const isInactive = dept.status === false;
+
+            return (
+              <li
+                key={dept.id}
+                className={`${styles.departmentItem} ${
+                  selectedId === dept.id ? styles.activeItem : ""
+                } ${isInactive ? styles.inactiveItem : ""}`}
+                onClick={() => handleSelect(dept.id)}
+              >
+                <div className={styles.departmentName}>
+                  {dept.name}
+                </div>
+
+                <span
+                  className={`${styles.statusBadge} ${
+                    isInactive
+                      ? styles.statusInactive
+                      : styles.statusActive
+                  }`}
+                >
+                  {isInactive ? "Inactivo" : "Activo"}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
       <div className={styles.content}>
-        <h2 className={styles.formTitle}>
-          {selectedId === "new" ? "Nuevo Departamento" : "Detalles del Departamento"}
-        </h2>
-        
-        <form onSubmit={handleSave}>
-          {selectedId !== "new" && selectedDept && (
-             <div className={styles.formGroup}>
-                <label className={styles.label}>ID</label>
-                <input 
-                  className={styles.input} 
-                  value={selectedDept.id} 
-                  disabled 
-                />
-             </div>
-          )}
+        <div className={styles.contentHeader}>
+          <div>
+            <h2 className={styles.formTitle}>
+              {selectedId === "new"
+                ? "Nuevo departamento"
+                : "Detalles del departamento"}
+            </h2>
 
+            <p className={styles.subtitle}>
+              {selectedId === "new"
+                ? "Crea departamentos para clasificar los productos del catálogo."
+                : "Edita el nombre o cambia el estatus del departamento."}
+            </p>
+          </div>
+
+          {selectedId !== "new" && selectedDept && (
+            <span
+              className={`${styles.headerBadge} ${
+                selectedDept.status === false
+                  ? styles.statusInactive
+                  : styles.statusActive
+              }`}
+            >
+              {selectedDept.status === false
+                ? "Inactivo"
+                : "Activo"}
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleSave} className={styles.form}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Nombre</label>
+            <label className={styles.label}>
+              Nombre *
+            </label>
+
             <input
               className={styles.input}
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  name: e.target.value.toUpperCase(),
+                })
+              }
               placeholder="Nombre del departamento"
+              disabled={saving}
+              autoFocus
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>Estatus</label>
+            <label className={styles.label}>
+              Estatus
+            </label>
+
             <select
               className={styles.input}
               value={formData.status ? "active" : "inactive"}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value === "active" })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  status: e.target.value === "active",
+                })
+              }
+              disabled={saving}
             >
               <option value="active">Activo</option>
               <option value="inactive">Inactivo</option>
             </select>
           </div>
 
-          {selectedId !== "new" && selectedDept && (
-            <>
-               <div className={styles.formGroup}>
-                  <label className={styles.label}>Fecha de creación</label>
-                  <input 
-                    className={styles.input} 
-                    value={new Date(selectedDept.created_at).toLocaleString()} 
-                    disabled 
-                  />
-               </div>
-               <div className={styles.formGroup}>
-                  <label className={styles.label}>Última actualización</label>
-                  <input 
-                    className={styles.input} 
-                    value={new Date(selectedDept.updated_at).toLocaleString()} 
-                    disabled 
-                  />
-               </div>
-            </>
-          )}
-
           <div className={styles.actions}>
-            {selectedId === "new" ? (
-              <button type="submit" className={`${styles.button} ${styles.primaryButton}`}>
-                Guardar
+            <button
+              type="submit"
+              className={`${styles.button} ${styles.primaryButton}`}
+              disabled={saving}
+            >
+              {saving
+                ? "Guardando..."
+                : selectedId === "new"
+                ? "Guardar"
+                : "Actualizar información"}
+            </button>
+
+            {selectedId !== "new" && selectedDept && (
+              <button
+                type="button"
+                className={`${styles.button} ${
+                  selectedDept.status === false
+                    ? styles.successButton
+                    : styles.dangerButton
+                }`}
+                onClick={handleToggleStatus}
+                disabled={saving}
+              >
+                {selectedDept.status === false
+                  ? "Activar departamento"
+                  : "Desactivar departamento"}
               </button>
-            ) : (
-              <>
-                <button 
-                  type="submit" 
-                  className={`${styles.button} ${styles.primaryButton}`}
-                >
-                  Actualizar información
-                </button>
-                <button 
-                  type="button" 
-                  className={`${styles.button} ${styles.dangerButton}`}
-                  onClick={handleDelete}
-                >
-                  Eliminar
-                </button>
-              </>
             )}
           </div>
         </form>

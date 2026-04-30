@@ -7,6 +7,10 @@ const ProductsNew = () => {
 
   const { departments, addProduct, getProductByCodigo } = useProducts();
 
+  const activeDepartments = useMemo(() => {
+    return (departments || []).filter((dep) => dep.status === true);
+  }, [departments]);
+
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -46,8 +50,7 @@ const ProductsNew = () => {
     commission_percent: false,
   });
 
-  const resetForm = () => {
-    setForm(createInitialForm());
+  const resetTouched = () => {
     setTouched({
       codigo: false,
       descripcion: false,
@@ -60,6 +63,11 @@ const ProductsNew = () => {
       tax: false,
       commission_percent: false,
     });
+  };
+
+  const resetForm = () => {
+    setForm(createInitialForm());
+    resetTouched();
     setSubmitArmed(false);
   };
 
@@ -75,6 +83,24 @@ const ProductsNew = () => {
     return ((p - c) / c) * 100;
   }, [form.costo, form.precio]);
 
+  const getFriendlySaveError = (errorMessage = "") => {
+    const message = String(errorMessage || "").toLowerCase();
+
+    if (
+      message.includes("products_barcode_key") ||
+      message.includes("duplicate key value") ||
+      message.includes("barcode")
+    ) {
+      return (
+        "Ya existe un producto registrado con ese código de barras.\n\n" +
+        "Aunque el producto haya sido retirado del sistema, su código no puede reutilizarse.\n" +
+        "Por favor utiliza otro código de barras."
+      );
+    }
+
+    return errorMessage || "Error al guardar el producto.";
+  };
+
   const markTouched = (key) => {
     setTouched((prev) => ({ ...prev, [key]: true }));
   };
@@ -83,14 +109,10 @@ const ProductsNew = () => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
 
-      if (key === "use_inventory") {
-        const usesInv = !!value;
-
-        if (!usesInv) {
-          next.existencia = 0;
-          next.minimo = 0;
-          next.maximo = 0;
-        }
+      if (key === "use_inventory" && !value) {
+        next.existencia = 0;
+        next.minimo = 0;
+        next.maximo = 0;
       }
 
       if (key === "commission_enable" && !value) {
@@ -116,7 +138,6 @@ const ProductsNew = () => {
 
     const codigo = form.codigo.trim();
     const descripcion = form.descripcion.trim();
-    const departamento = form.departamento.trim();
 
     const costo =
       form.costo === "" || form.costo === null ? NaN : Number(form.costo);
@@ -144,10 +165,6 @@ const ProductsNew = () => {
 
     if (!descripcion) {
       nextErrors.descripcion = "La descripción es obligatoria.";
-    }
-
-    if (!departamento) {
-      nextErrors.departamento = "Debes seleccionar un departamento.";
     }
 
     if (!Number.isFinite(costo)) {
@@ -262,7 +279,6 @@ const ProductsNew = () => {
     const order = [
       "codigo",
       "descripcion",
-      "departamento",
       "costo",
       "precio",
       "tax",
@@ -275,7 +291,6 @@ const ProductsNew = () => {
         const selectorMap = {
           codigo: 'input[name="codigo"]',
           descripcion: 'input[name="descripcion"]',
-          departamento: 'select[name="departamento"]',
           costo: 'input[name="costo"]',
           precio: 'input[name="precio"]',
           tax: 'input[name="tax"]',
@@ -286,10 +301,15 @@ const ProductsNew = () => {
         };
 
         const target = bodyRef.current?.querySelector(selectorMap[field]);
+
         if (target) {
           target.focus();
-          if (typeof target.select === "function") target.select();
+
+          if (typeof target.select === "function") {
+            target.select();
+          }
         }
+
         break;
       }
     }
@@ -335,22 +355,25 @@ const ProductsNew = () => {
       if (!result?.success) {
         if (result?.partial) {
           alert(
-            `El producto sí se creó en el catálogo global, pero no se pudo crear su inventario en la sucursal.\n\nDetalle: ${result.error}`
+            `El producto sí se creó en el catálogo, pero no se pudo crear su inventario en la sucursal.\n\nDetalle: ${getFriendlySaveError(
+              result.error
+            )}`
           );
           return;
         }
 
-        alert(result?.error || "Error al guardar el producto.");
+        alert(getFriendlySaveError(result?.error));
         return;
       }
 
-      alert("Producto agregado correctamente");
+      alert("Producto agregado correctamente.");
       resetForm();
 
       setTimeout(() => {
         const firstInput = bodyRef.current?.querySelector(
           'input[name="codigo"]'
         );
+
         if (firstInput) firstInput.focus();
       }, 0);
     } finally {
@@ -363,18 +386,22 @@ const ProductsNew = () => {
 
     const onKeyDown = (e) => {
       if (e.key !== "Enter") return;
+
       e.preventDefault();
       e.stopPropagation();
+
       setSubmitArmed(false);
       handleSubmit();
     };
 
     document.addEventListener("keydown", onKeyDown, true);
+
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [submitArmed, isFormValid, errors, form]);
 
   const handleContentKeyDown = (e) => {
     if (e.key !== "Enter") return;
+
     e.preventDefault();
 
     const focusables = getFocusableBodyElements();
@@ -385,15 +412,25 @@ const ProductsNew = () => {
 
     if (index < focusables.length - 1) {
       setSubmitArmed(false);
+
       const next = focusables[index + 1];
+
       next.focus();
-      if (typeof next.select === "function") next.select();
+
+      if (typeof next.select === "function") {
+        next.select();
+      }
+
       return;
     }
 
     if (!submitArmed) {
       setSubmitArmed(true);
-      if (active && typeof active.blur === "function") active.blur();
+
+      if (active && typeof active.blur === "function") {
+        active.blur();
+      }
+
       return;
     }
 
@@ -444,6 +481,7 @@ const ProductsNew = () => {
                   <h2 className={styles.sectionTitle}>
                     Datos generales del producto
                   </h2>
+
                   <p className={styles.sectionDescription}>
                     Esta información pertenece al catálogo general.
                   </p>
@@ -451,6 +489,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Código de barras *</label>
+
                   <input
                     name="codigo"
                     className={inputClassName("codigo")}
@@ -460,11 +499,13 @@ const ProductsNew = () => {
                     onBlur={() => markTouched("codigo")}
                     autoFocus
                   />
+
                   {renderError("codigo")}
                 </div>
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Descripción *</label>
+
                   <input
                     name="descripcion"
                     className={inputClassName("descripcion")}
@@ -475,11 +516,13 @@ const ProductsNew = () => {
                     }
                     onBlur={() => markTouched("descripcion")}
                   />
+
                   {renderError("descripcion")}
                 </div>
 
                 <div className={styles.formRow}>
-                  <label className={styles.label}>Departamento *</label>
+                  <label className={styles.label}>Departamento</label>
+
                   <select
                     name="departamento"
                     className={inputClassName("departamento")}
@@ -489,18 +532,21 @@ const ProductsNew = () => {
                     }
                     onBlur={() => markTouched("departamento")}
                   >
-                    <option value="">Selecciona...</option>
-                    {departments.map((dep) => (
+                    <option value="">Sin departamento</option>
+
+                    {activeDepartments.map((dep) => (
                       <option key={dep.id} value={dep.name}>
                         {dep.name}
                       </option>
                     ))}
                   </select>
+
                   {renderError("departamento")}
                 </div>
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Tipo de venta</label>
+
                   <select
                     className={styles.input}
                     value={form.sale_type}
@@ -513,6 +559,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Unidad</label>
+
                   <select
                     className={styles.input}
                     value={form.unit}
@@ -526,6 +573,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>IVA (%)</label>
+
                   <input
                     name="tax"
                     className={inputClassName("tax")}
@@ -538,17 +586,20 @@ const ProductsNew = () => {
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
                   />
+
                   {renderError("tax")}
                 </div>
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>CFDI clave SAT</label>
+
                   <select
                     className={styles.input}
                     value={form.cfdi}
                     onChange={(e) => updateField("cfdi", e.target.value)}
                   >
                     <option value="">Selecciona...</option>
+
                     {SAT_CLAVE_PROD_SERV.map((item) => (
                       <option key={item.code} value={item.code}>
                         {item.code} - {item.description}
@@ -559,6 +610,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Estado</label>
+
                   <select
                     className={styles.input}
                     value={form.status}
@@ -571,6 +623,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Global</label>
+
                   <select
                     className={styles.input}
                     value={form.isGlobal ? "activo" : "inactivo"}
@@ -585,6 +638,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Fecha de creación</label>
+
                   <input
                     className={styles.input}
                     type="date"
@@ -599,6 +653,7 @@ const ProductsNew = () => {
                   <h2 className={styles.sectionTitle}>
                     Precios y control comercial
                   </h2>
+
                   <p className={styles.sectionDescription}>
                     Estos valores son globales y aplican en todas las
                     sucursales.
@@ -607,6 +662,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Precio costo global *</label>
+
                   <input
                     name="costo"
                     className={inputClassName("costo")}
@@ -619,11 +675,13 @@ const ProductsNew = () => {
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
                   />
+
                   {renderError("costo")}
                 </div>
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Precio venta global *</label>
+
                   <input
                     name="precio"
                     className={inputClassName("precio")}
@@ -636,11 +694,13 @@ const ProductsNew = () => {
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
                   />
+
                   {renderError("precio")}
                 </div>
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Ganancia (%)</label>
+
                   <input
                     className={styles.input}
                     type="text"
@@ -656,6 +716,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>Genera comisión</label>
+
                   <select
                     className={styles.input}
                     value={form.commission_enable ? "activo" : "inactivo"}
@@ -675,6 +736,7 @@ const ProductsNew = () => {
                   <label className={styles.label}>
                     Porcentaje comisión (%)
                   </label>
+
                   <input
                     name="commission_percent"
                     className={inputClassName("commission_percent")}
@@ -690,6 +752,7 @@ const ProductsNew = () => {
                     onKeyDown={preventNumberArrows}
                     disabled={!form.commission_enable}
                   />
+
                   {renderError("commission_percent")}
                 </div>
               </section>
@@ -701,6 +764,7 @@ const ProductsNew = () => {
                   <h2 className={styles.sectionTitle}>
                     Configuración de inventario en esta sucursal
                   </h2>
+
                   <p className={styles.sectionDescription}>
                     Estos valores aplican solo para la sucursal actual.
                   </p>
@@ -708,6 +772,7 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>¿Usa inventario?</label>
+
                   <select
                     className={styles.input}
                     value={form.use_inventory ? "si" : "no"}
@@ -731,6 +796,7 @@ const ProductsNew = () => {
                   <label className={styles.label}>
                     Existencia inicial en esta sucursal
                   </label>
+
                   <input
                     name="existencia"
                     className={inputClassName("existencia")}
@@ -744,6 +810,7 @@ const ProductsNew = () => {
                     onKeyDown={preventNumberArrows}
                     disabled={!usesInventory}
                   />
+
                   {renderError("existencia")}
                 </div>
 
@@ -751,6 +818,7 @@ const ProductsNew = () => {
                   <label className={styles.label}>
                     Stock mínimo en esta sucursal
                   </label>
+
                   <input
                     name="minimo"
                     className={inputClassName("minimo")}
@@ -764,6 +832,7 @@ const ProductsNew = () => {
                     onKeyDown={preventNumberArrows}
                     disabled={!usesInventory}
                   />
+
                   {renderError("minimo")}
                 </div>
 
@@ -771,6 +840,7 @@ const ProductsNew = () => {
                   <label className={styles.label}>
                     Stock máximo en esta sucursal
                   </label>
+
                   <input
                     name="maximo"
                     className={inputClassName("maximo")}
@@ -784,6 +854,7 @@ const ProductsNew = () => {
                     onKeyDown={preventNumberArrows}
                     disabled={!usesInventory}
                   />
+
                   {renderError("maximo")}
                 </div>
               </section>

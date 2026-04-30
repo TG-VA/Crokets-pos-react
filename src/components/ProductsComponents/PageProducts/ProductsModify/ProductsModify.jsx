@@ -65,6 +65,31 @@ const ProductsModify = () => {
 
   const usesInventory = !!form.use_inventory;
 
+  const activeDepartments = useMemo(() => {
+    const active = (departments || []).filter((dep) => dep.status === true);
+
+    if (
+      form.departamento &&
+      !active.some(
+        (dep) =>
+          dep.name.trim().toLowerCase() ===
+          form.departamento.trim().toLowerCase()
+      )
+    ) {
+      const currentDepartment = (departments || []).find(
+        (dep) =>
+          dep.name.trim().toLowerCase() ===
+          form.departamento.trim().toLowerCase()
+      );
+
+      if (currentDepartment) {
+        return [...active, currentDepartment];
+      }
+    }
+
+    return active;
+  }, [departments, form.departamento]);
+
   const ganancia = useMemo(() => {
     const c = parseFloat(form.costo);
     const p = parseFloat(form.precio);
@@ -128,13 +153,9 @@ const ProductsModify = () => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
 
-      if (key === "use_inventory") {
-        const usesInv = !!value;
-
-        if (!usesInv) {
-          next.minimo = 0;
-          next.maximo = 0;
-        }
+      if (key === "use_inventory" && !value) {
+        next.minimo = 0;
+        next.maximo = 0;
       }
 
       if (key === "commission_enable" && !value) {
@@ -219,13 +240,15 @@ const ProductsModify = () => {
     resetTouched();
 
     const salePrice = product.precio ?? "";
+    const productDepartment =
+      product.departamento === "Sin departamento" ? "" : product.departamento ?? "";
 
     setForm({
       codigo: product.codigo ?? "",
       descripcion: product.descripcion ?? "",
       costo: (product.costo ?? "").toString(),
       precio: (salePrice ?? "").toString(),
-      departamento: product.departamento ?? "",
+      departamento: productDepartment,
       minimo: product.minimo ?? 0,
       maximo: product.maximo ?? 0,
       use_inventory: product.use_inventory ?? product.tracks_inventory ?? true,
@@ -269,7 +292,6 @@ const ProductsModify = () => {
 
     const codigo = form.codigo.trim();
     const descripcion = form.descripcion.trim();
-    const departamento = form.departamento.trim();
 
     const costo =
       form.costo === "" || form.costo === null ? NaN : Number(form.costo);
@@ -305,10 +327,6 @@ const ProductsModify = () => {
 
     if (!descripcion) {
       nextErrors.descripcion = "La descripción es obligatoria.";
-    }
-
-    if (!departamento) {
-      nextErrors.departamento = "Debes seleccionar un departamento.";
     }
 
     if (!Number.isFinite(costo)) {
@@ -374,13 +392,11 @@ const ProductsModify = () => {
         nextErrors.discount_percent =
           "El descuento debe ser mayor a 0 cuando está activo.";
       } else if (discountPercent >= 100) {
-        nextErrors.discount_percent =
-          "El descuento debe ser menor a 100%.";
+        nextErrors.discount_percent = "El descuento debe ser menor a 100%.";
       }
 
       if (!Number.isFinite(discountPrice)) {
-        nextErrors.discount_price =
-          "Debes capturar el precio con descuento.";
+        nextErrors.discount_price = "Debes capturar el precio con descuento.";
       } else if (discountPrice <= 0) {
         nextErrors.discount_price =
           "El precio con descuento debe ser mayor a 0.";
@@ -431,7 +447,6 @@ const ProductsModify = () => {
     const order = [
       "codigo",
       "descripcion",
-      "departamento",
       "costo",
       "precio",
       "tax",
@@ -447,7 +462,6 @@ const ProductsModify = () => {
         const selectorMap = {
           codigo: 'input[name="codigo"]',
           descripcion: 'input[name="descripcion"]',
-          departamento: 'select[name="departamento"]',
           costo: 'input[name="costo"]',
           precio: 'input[name="precio"]',
           tax: 'input[name="tax"]',
@@ -659,7 +673,9 @@ const ProductsModify = () => {
             configuración local de inventario.
           </p>
 
-          <p className={styles.requiredNote}>Los campos con * son obligatorios.</p>
+          <p className={styles.requiredNote}>
+            Los campos con * son obligatorios.
+          </p>
         </div>
 
         {!selectedProduct && (
@@ -737,7 +753,7 @@ const ProductsModify = () => {
                     </div>
 
                     <div className={styles.formRow}>
-                      <label className={styles.label}>Departamento *</label>
+                      <label className={styles.label}>Departamento</label>
 
                       <select
                         name="departamento"
@@ -748,11 +764,12 @@ const ProductsModify = () => {
                         }
                         onBlur={() => markTouched("departamento")}
                       >
-                        <option value="">Selecciona...</option>
+                        <option value="">Sin departamento</option>
 
-                        {departments.map((dep) => (
+                        {activeDepartments.map((dep) => (
                           <option key={dep.id} value={dep.name}>
                             {dep.name}
+                            {dep.status === false ? " (Inactivo)" : ""}
                           </option>
                         ))}
                       </select>
@@ -889,7 +906,9 @@ const ProductsModify = () => {
                     </div>
 
                     <div className={styles.formRow}>
-                      <label className={styles.label}>Precio venta global *</label>
+                      <label className={styles.label}>
+                        Precio venta global *
+                      </label>
 
                       <input
                         name="precio"
@@ -1008,8 +1027,6 @@ const ProductsModify = () => {
 
                     <div className={styles.infoBox}>
                       La existencia actual no se modifica desde esta pantalla.
-                      Para mover inventario usa entradas, salidas, ajustes,
-                      devoluciones o transferencias.
                     </div>
 
                     <div className={styles.formRow}>
@@ -1075,7 +1092,8 @@ const ProductsModify = () => {
                       </h2>
 
                       <p className={styles.sectionDescription}>
-                        Define si este producto tendrá un descuento automático al venderse.
+                        Define si este producto tendrá un descuento automático
+                        al venderse.
                       </p>
                     </div>
 

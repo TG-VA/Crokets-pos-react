@@ -24,8 +24,11 @@ const ProductsList = () => {
 
   const departments = useMemo(() => {
     const uniqueDepartments = new Set(
-      products.map((product) => normalizeDept(product.departamento)).filter(Boolean)
+      products
+        .map((product) => normalizeDept(product.departamento))
+        .filter(Boolean)
     );
+
     return Array.from(uniqueDepartments).sort();
   }, [products]);
 
@@ -83,11 +86,13 @@ const ProductsList = () => {
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
+
         setSelectedRowIndex((prev) =>
           prev < filteredProducts.length - 1 ? prev + 1 : prev
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+
         setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : 0));
       } else if (e.key === "Escape") {
         setShowDepartmentFilter(false);
@@ -95,18 +100,21 @@ const ProductsList = () => {
     };
 
     document.addEventListener("keydown", handleKeyDown);
+
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [filteredProducts]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!showDepartmentFilter) return;
+
       if (filterRef.current && !filterRef.current.contains(e.target)) {
         setShowDepartmentFilter(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDepartmentFilter]);
 
@@ -138,6 +146,7 @@ const ProductsList = () => {
         <div className={styles.toolbar}>
           <h1>LISTA DE PRODUCTOS</h1>
         </div>
+
         <div className={styles.resultsInfo}>
           <span className={styles.resultsCount}>Cargando productos...</span>
         </div>
@@ -151,6 +160,7 @@ const ProductsList = () => {
         <div className={styles.toolbar}>
           <h1>LISTA DE PRODUCTOS</h1>
         </div>
+
         <div className={styles.noResults}>
           Error al cargar productos: {productsError}
         </div>
@@ -218,7 +228,9 @@ const ProductsList = () => {
                   <div
                     key={dept}
                     className={`${styles.filterOption} ${
-                      selectedDepartment === dept ? styles.filterOptionSelected : ""
+                      selectedDepartment === dept
+                        ? styles.filterOptionSelected
+                        : ""
                     }`}
                     onClick={() => handleDepartmentSelect(dept)}
                   >
@@ -243,11 +255,14 @@ const ProductsList = () => {
 
       <div className={styles.resultsInfo}>
         {filteredProducts.length === 0 ? (
-          <span className={styles.noResultsText}>No se encontraron productos</span>
+          <span className={styles.noResultsText}>
+            No se encontraron productos
+          </span>
         ) : (
           <span className={styles.resultsCount}>
             Mostrando {filteredProducts.length} de {products.length} productos
-            {selectedDepartment && ` en ${formatDept(selectedDepartment).toUpperCase()}`}
+            {selectedDepartment &&
+              ` en ${formatDept(selectedDepartment).toUpperCase()}`}
           </span>
         )}
       </div>
@@ -261,9 +276,6 @@ const ProductsList = () => {
               <th>Departamento</th>
               <th>Costo</th>
               <th>Precio</th>
-              <th>Existencia</th>
-              <th>Mínimo</th>
-              <th>Máximo</th>
             </tr>
           </thead>
 
@@ -282,15 +294,20 @@ const ProductsList = () => {
                   className={styles.descriptionCell}
                   onMouseEnter={(e) => {
                     const container = e.currentTarget;
-                    const content = container.querySelector(`.${styles.scrollText}`);
+                    const content = container.querySelector(
+                      `.${styles.scrollText}`
+                    );
+
                     if (!content) return;
 
                     const distance = content.scrollWidth - container.clientWidth;
+
                     if (distance > 2) {
                       content.style.setProperty(
                         "--scroll-distance",
                         `${distance + 12}px`
                       );
+
                       content.classList.add(styles.marquee);
                     }
                   }}
@@ -298,6 +315,7 @@ const ProductsList = () => {
                     const content = e.currentTarget.querySelector(
                       `.${styles.scrollText}`
                     );
+
                     if (content) {
                       content.classList.remove(styles.marquee);
                       content.style.removeProperty("--scroll-distance");
@@ -305,25 +323,22 @@ const ProductsList = () => {
                     }
                   }}
                 >
-                  <span className={styles.scrollText}>{product.descripcion}</span>
+                  <span className={styles.scrollText}>
+                    {product.descripcion}
+                  </span>
                 </td>
 
-                <td className={styles.departmentCell}>{product.departamento}</td>
-                <td className={styles.priceCell}>{formatMoney(product.costo)}</td>
-                <td className={styles.priceCell}>{formatMoney(product.precio)}</td>
-
-                <td
-                  className={`${styles.stockCell} ${
-                    Number(product.existencia) <= Number(product.minimo)
-                      ? styles.lowStock
-                      : styles.normalStock
-                  }`}
-                >
-                  {product.existencia}
+                <td className={styles.departmentCell}>
+                  {product.departamento}
                 </td>
 
-                <td>{product.minimo}</td>
-                <td>{product.maximo}</td>
+                <td className={styles.priceCell}>
+                  {formatMoney(product.costo)}
+                </td>
+
+                <td className={styles.priceCell}>
+                  {formatMoney(product.precio)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -340,4 +355,4 @@ const ProductsList = () => {
   );
 };
 
-export default ProductsList;
+export default ProductsList;  

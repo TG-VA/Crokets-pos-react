@@ -165,7 +165,8 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     const discount = discountsMap[product.id];
 
     const discountEnabled =
-      !!discount?.discount_enabled && Number(discount?.discount_percent || 0) > 0;
+      !!discount?.discount_enabled &&
+      Number(discount?.discount_percent || 0) > 0;
 
     return {
       ...product,
@@ -215,6 +216,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           product_id,
           stock,
           is_active,
+          has_been_stocked,
           cost_price,
           sale_price,
           updated_at
@@ -289,6 +291,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (currentRequestId !== searchRequestIdRef.current) return;
 
       const productMap = {};
+
       for (const product of inventoryProductsRows || []) {
         productMap[product.id] = product;
       }
@@ -304,6 +307,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             branch_id: inventory.branch_id,
             stock: Number(inventory.stock || 0),
             is_active_in_branch: inventory.is_active !== false,
+            has_been_stocked: !!inventory.has_been_stocked,
             branch_sale_price: Number(
               inventory.sale_price ?? product.sale_price ?? 0
             ),
@@ -328,6 +332,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             branch_id: branch.id,
             stock: null,
             is_active_in_branch: true,
+            has_been_stocked: true,
             branch_sale_price: Number(product.sale_price ?? 0),
             branch_cost_price: Number(product.cost_price ?? 0),
             tracks_inventory: false,
@@ -338,9 +343,15 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
       const mergedResults = [...inventoryResults, ...nonInventoryResults]
         .filter((product) => {
+          if (product.tracks_inventory) {
+            if (!product.is_active_in_branch) return false;
+            if (!product.has_been_stocked) return false;
+          }
+
           const searchable = normalizeText(
             `${product.name} ${product.barcode || ""}`
           );
+
           return searchable.includes(normalizedTerm);
         })
         .sort((a, b) => {
@@ -359,9 +370,11 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
           if (aStock !== bStock) return bStock - aStock;
 
-          return String(a.name || "").localeCompare(String(b.name || ""), "es", {
-            sensitivity: "base",
-          });
+          return String(a.name || "").localeCompare(
+            String(b.name || ""),
+            "es",
+            { sensitivity: "base" }
+          );
         });
 
       if (currentRequestId !== searchRequestIdRef.current) return;
@@ -401,6 +414,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           branch_id,
           stock,
           is_active,
+          has_been_stocked,
           sale_price
         `)
         .eq("product_id", productId);
@@ -408,10 +422,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (currentStockRequestId !== stockRequestIdRef.current) return;
       if (stockError) throw stockError;
 
+      const validStockRows = (stockRows || []).filter(
+        (row) => row.is_active !== false && row.has_been_stocked === true
+      );
+
       const branchIds = [
-        ...new Set(
-          (stockRows || []).map((row) => row.branch_id).filter(Boolean)
-        ),
+        ...new Set(validStockRows.map((row) => row.branch_id).filter(Boolean)),
       ];
 
       if (!branchIds.length) {
@@ -428,11 +444,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (branchError) throw branchError;
 
       const branchMap = {};
+
       for (const branchRow of branchRows || []) {
         branchMap[branchRow.id] = branchRow;
       }
 
-      const mergedStocks = (stockRows || [])
+      const mergedStocks = validStockRows
         .map((row) => {
           const branchData = branchMap[row.branch_id];
 
@@ -442,6 +459,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             branch_name: branchData?.name || "Sucursal",
             stock: Number(row.stock || 0),
             is_active: row.is_active !== false,
+            has_been_stocked: !!row.has_been_stocked,
             sale_price: Number(row.sale_price || 0),
             is_current_branch: row.branch_id === branch?.id,
           };
@@ -503,8 +521,15 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         return;
       }
 
+      if (!product.has_been_stocked) {
+        alert("Este producto aún no tiene inventario inicial registrado.");
+        return;
+      }
+
       if (Number(product.stock || 0) <= 0) {
-        alert("Este producto no tiene existencia disponible en la sucursal actual.");
+        alert(
+          "Este producto no tiene existencia disponible en la sucursal actual."
+        );
         return;
       }
     }
@@ -567,6 +592,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         <div className={styles.searchModalBody}>
           <div className={styles.searchSection}>
             <label htmlFor="searchInput">Nombre o código del producto:</label>
+
             <div className={styles.inputContainer}>
               <input
                 ref={searchInputRef}
@@ -607,7 +633,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                 {error ? (
                   <div className={styles.emptyMessage}>{error}</div>
                 ) : loading ? (
-                  <div className={styles.emptyMessage}>Cargando productos...</div>
+                  <div className={styles.emptyMessage}>
+                    Cargando productos...
+                  </div>
                 ) : searchResults.length === 0 ? (
                   <div className={styles.emptyMessage}>
                     {searchTerm.trim()
@@ -712,7 +740,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                             <>
                               <span>
                                 Precio actual: $
-                                {Number(displayPrice.finalPrice || 0).toFixed(2)}
+                                {Number(displayPrice.finalPrice || 0).toFixed(
+                                  2
+                                )}
                               </span>
 
                               {selectedProduct.discount_enabled && (
@@ -742,7 +772,8 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                           </div>
                         ) : selectedProductStocks.length === 0 ? (
                           <div className={styles.stockLoading}>
-                            No hay existencias registradas para este producto.
+                            No hay existencias activas registradas para este
+                            producto.
                           </div>
                         ) : (
                           <div className={styles.branchStockList}>
@@ -837,6 +868,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                 !selectedProduct ||
                 (selectedProduct.tracks_inventory &&
                   (!selectedProduct.is_active_in_branch ||
+                    !selectedProduct.has_been_stocked ||
                     Number(selectedProduct.stock || 0) <= 0))
               }
             >
