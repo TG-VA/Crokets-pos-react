@@ -61,9 +61,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let watchdogId = null;
 
     const initSession = async () => {
       try {
+        watchdogId = window.setTimeout(() => {
+          if (isMounted) setLoading(false);
+        }, 3000);
+
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -89,6 +94,10 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       } finally {
+        if (watchdogId) {
+          clearTimeout(watchdogId);
+          watchdogId = null;
+        }
         if (isMounted) {
           setLoading(false);
         }
@@ -126,6 +135,10 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       isMounted = false;
+      if (watchdogId) {
+        clearTimeout(watchdogId);
+        watchdogId = null;
+      }
       subscription.unsubscribe();
     };
   }, []);

@@ -5,6 +5,7 @@ import Login from "./pages/Login/Login";
 import CashRegister from "./pages/CashRegister/CashRegister";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Products from "./pages/Products/Products";
+import Inventory from "./pages/Inventory/Inventory";
 import Settings from "./pages/Settings/Settings";
 import Profiles from "./pages/Profiles/Profiles";
 import CashCut from "./pages/CashCut/CashCut";
@@ -101,6 +102,21 @@ function AppRoutes() {
               <Navigate to="/cash-register" replace />
             ) : (
               <CashCut />
+            )
+          }
+        />
+
+        <Route
+          path="/inventory/*"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : isLocked ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
+              <Navigate to="/cash-register" replace />
+            ) : (
+              <Inventory />
             )
           }
         />
