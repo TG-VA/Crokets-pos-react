@@ -470,16 +470,10 @@
   color: #666;
   margin-top: -0.5rem;
 }
-
-@media (max-width: 600px) {
-  .notesModal {
-    max-width: 95%;
-    margin: 0 10px;
-  }
-
-  .notesTextarea {
-    min-height: 120px;
-  }
+.payButtonDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(0.2);
 }
 
 .selectedRow {
@@ -533,6 +527,56 @@
   z-index: 1000;
   margin-bottom: 2px;
   pointer-events: none;
+}
+
+.shiftCutWarning {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 10px 16px;
+
+  border-radius: 12px;
+  border: 2px solid #ff4d4f;
+  background: #fff1f0;
+  color: #cf1322;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.08);
+}
+
+.shiftCutWarning::before {
+  content: "⚠️";
+  margin-right: 10px;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.shiftCutWarning span:first-child {
+  flex: 1;
+  text-align: left;
+  padding-left: 6px;
+}
+
+.shiftCutWarning span:last-child {
+  white-space: nowrap;
+  margin-left: 18px;
+}
+
+@media (max-width: 600px) {
+  .notesModal {
+    max-width: 95%;
+    margin: 0 10px;
+  }
+
+  .notesTextarea {
+    min-height: 120px;
+  }
 }
 
 @media screen and (width: 1200px) and (height: 800px) {

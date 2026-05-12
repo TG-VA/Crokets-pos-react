@@ -8,6 +8,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
   const [barcode, setBarcode] = useState("");
   const [product, setProduct] = useState(null);
+  const [kitItems, setKitItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,6 +20,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
     setBarcode("");
     setProduct(null);
+    setKitItems([]);
     setError("");
     setIsLoading(false);
     requestIdRef.current += 1;
@@ -62,6 +64,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     requestIdRef.current += 1;
     setBarcode("");
     setProduct(null);
+    setKitItems([]);
     setError("");
     setIsLoading(false);
     onClose();
@@ -77,6 +80,47 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     if (error) throw error;
 
     return data || null;
+  };
+
+  const getKitItems = async (productId) => {
+    const { data: kitRow, error: kitError } = await supabase
+      .from("product_kits")
+      .select("id, is_active")
+      .eq("kit_product_id", productId)
+      .maybeSingle();
+
+    if (kitError) throw kitError;
+
+    if (!kitRow?.id) {
+      return {
+        isActive: false,
+        items: [],
+      };
+    }
+
+    const { data: itemsRows, error: itemsError } = await supabase
+      .from("product_kit_items")
+      .select(`
+        id,
+        quantity,
+        component_product_id,
+        products:component_product_id (
+          id,
+          barcode,
+          name,
+          sale_price,
+          tracks_inventory
+        )
+      `)
+      .eq("kit_id", kitRow.id)
+      .order("created_at", { ascending: true });
+
+    if (itemsError) throw itemsError;
+
+    return {
+      isActive: kitRow.is_active !== false,
+      items: itemsRows || [],
+    };
   };
 
   const applyDiscountToPrice = (salePrice, discountRow) => {
@@ -117,12 +161,14 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
     if (!cleanBarcode) {
       setProduct(null);
+      setKitItems([]);
       setError("Por favor ingrese un código de barras.");
       return;
     }
 
     if (!branch?.id) {
       setProduct(null);
+      setKitItems([]);
       setError("La sucursal actual no está cargada.");
       return;
     }
@@ -133,6 +179,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
       setIsLoading(true);
       setError("");
       setProduct(null);
+      setKitItems([]);
 
       const { data: productRow, error: productError } = await supabase
         .from("products")
@@ -156,6 +203,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
       if (!productRow) {
         setProduct(null);
+        setKitItems([]);
         setError("Producto no encontrado.");
         return;
       }
@@ -165,9 +213,26 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
       if (currentRequestId !== requestIdRef.current) return;
 
+      let loadedKitItems = [];
+      let kitIsActive = true;
+
+      if (productRow.is_kit) {
+        const kitInfo = await getKitItems(productRow.id);
+
+        if (currentRequestId !== requestIdRef.current) return;
+
+        loadedKitItems = kitInfo.items;
+        kitIsActive = kitInfo.isActive;
+
+        if (!kitIsActive) {
+          setError("Este kit está inactivo.");
+        }
+      }
+
       if (!tracksInventory) {
         if (!productRow.is_global) {
           setProduct(null);
+          setKitItems([]);
           setError("Este producto no está disponible para esta sucursal.");
           return;
         }
@@ -183,7 +248,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
           precio: discountInfo.finalPrice,
           costo: Number(productRow.cost_price || 0),
           existencia: "∞",
-          is_active_in_branch: true,
+          is_active_in_branch: kitIsActive,
           has_been_stocked: true,
           is_kit: !!productRow.is_kit,
           tracks_inventory: false,
@@ -193,6 +258,15 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
         };
 
         setProduct(mappedProduct);
+        setKitItems(loadedKitItems);
+
+        if (!kitIsActive) return;
+
+        if (mappedProduct.is_kit && loadedKitItems.length === 0) {
+          setError("Este kit no tiene componentes registrados.");
+          return;
+        }
+
         setError("");
         return;
       }
@@ -209,6 +283,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
       if (!inventoryRow) {
         setProduct(null);
+        setKitItems([]);
         setError("Este producto no tiene inventario registrado en esta sucursal.");
         return;
       }
@@ -237,6 +312,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
       };
 
       setProduct(mappedProduct);
+      setKitItems(loadedKitItems);
 
       if (mappedProduct.is_active_in_branch === false) {
         setError("Este producto está inactivo en esta sucursal.");
@@ -253,12 +329,18 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
         return;
       }
 
+      if (mappedProduct.is_kit && loadedKitItems.length === 0) {
+        setError("Este kit no tiene componentes registrados.");
+        return;
+      }
+
       setError("");
     } catch (err) {
       if (currentRequestId !== requestIdRef.current) return;
 
       console.error("Error buscando producto en verificador:", err);
       setProduct(null);
+      setKitItems([]);
       setError("Error buscando producto.");
     } finally {
       if (currentRequestId === requestIdRef.current) {
@@ -271,7 +353,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     if (!product || !onAddToSale) return;
 
     if (product.is_active_in_branch === false) {
-      setError("Este producto está inactivo en esta sucursal.");
+      setError(product.is_kit ? "Este kit está inactivo." : "Este producto está inactivo en esta sucursal.");
       return;
     }
 
@@ -282,6 +364,11 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
     if (product.tracks_inventory && Number(product.existencia || 0) <= 0) {
       setError("Este producto no tiene existencia disponible.");
+      return;
+    }
+
+    if (product.is_kit && kitItems.length === 0) {
+      setError("Este kit no tiene componentes registrados.");
       return;
     }
 
@@ -307,7 +394,8 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     product &&
     product.is_active_in_branch !== false &&
     (!product.tracks_inventory ||
-      (product.has_been_stocked && Number(product.existencia || 0) > 0));
+      (product.has_been_stocked && Number(product.existencia || 0) > 0)) &&
+    (!product.is_kit || kitItems.length > 0);
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
@@ -340,6 +428,7 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
                   if (!e.target.value.trim()) {
                     requestIdRef.current += 1;
                     setProduct(null);
+                    setKitItems([]);
                     setIsLoading(false);
                   }
                 }}
@@ -375,7 +464,12 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
           {product && (
             <div className={styles.productInfo}>
-              <h3>Producto encontrado</h3>
+              <h3>
+                Producto encontrado
+                {product.is_kit && (
+                  <span className={styles.kitBadge}>KIT</span>
+                )}
+              </h3>
 
               <div className={styles.productDetails}>
                 <div className={styles.productRow}>
@@ -428,6 +522,8 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
                   >
                     {product.tracks_inventory
                       ? `${product.existencia} unidades`
+                      : product.is_kit
+                      ? "Kit sin inventario propio"
                       : "Sin control de inventario"}
                   </span>
                 </div>
@@ -445,6 +541,38 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
                   </span>
                 </div>
               </div>
+
+              {product.is_kit && (
+                <div className={styles.kitSection}>
+                  <h4>Componentes del kit</h4>
+
+                  {kitItems.length === 0 ? (
+                    <div className={styles.kitEmpty}>
+                      No se encontraron componentes registrados.
+                    </div>
+                  ) : (
+                    <div className={styles.kitList}>
+                      {kitItems.map((item) => (
+                        <div key={item.id} className={styles.kitItem}>
+                          <div>
+                            <span className={styles.kitItemName}>
+                              {item.products?.name || "Producto"}
+                            </span>
+
+                            <div className={styles.kitItemCode}>
+                              Código: {item.products?.barcode || "Sin código"}
+                            </div>
+                          </div>
+
+                          <span className={styles.kitItemQty}>
+                            x{Number(item.quantity || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

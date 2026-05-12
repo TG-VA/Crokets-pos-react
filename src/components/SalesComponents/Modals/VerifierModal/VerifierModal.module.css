@@ -148,6 +148,19 @@
   color: #2c3e50;
   font-size: 1.2rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kitBadge {
+  background: #fc8913;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
 }
 
 .productDetails {
@@ -213,6 +226,70 @@
 .statusInactive {
   background: #fdecea;
   color: #c62828;
+}
+
+.kitSection {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #dfe6eb;
+}
+
+.kitSection h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.kitList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kitItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e7edf1;
+  border-radius: 8px;
+}
+
+.kitItemName {
+  display: block;
+  color: #212529;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.kitItemCode {
+  color: #667786;
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.kitItemQty {
+  min-width: 48px;
+  text-align: center;
+  background: #eaf8ef;
+  color: #2e7d32;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.kitEmpty {
+  padding: 12px;
+  background: #ffffff;
+  border: 1px dashed #cfd8df;
+  border-radius: 8px;
+  color: #667786;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .modalActions {
@@ -311,6 +388,15 @@
   .value {
     text-align: left;
   }
+
+  .kitItem {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .kitItemQty {
+    min-width: 0;
+  }
 }
 
 @keyframes modalSlideIn {
@@ -318,6 +404,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

@@ -1,34 +1,137 @@
 const WIDTH = 32;
+const TIME_ZONE = "America/Cancun";
+
+const repeat = (char, times) => String(char).repeat(times);
+
+const line = () => repeat("=", WIDTH);
+const dash = () => repeat("-", WIDTH);
+
+const normalizeSpaces = (text = "") =>
+  String(text ?? "").replace(/\s+/g, " ").trim();
 
 const centerText = (text = "") => {
   const clean = String(text ?? "");
-  const spaces = Math.max(0, Math.floor((WIDTH - clean.length) / 2));
-  return " ".repeat(spaces) + clean;
+  if (clean.length >= WIDTH) return clean.slice(0, WIDTH);
+
+  const left = Math.floor((WIDTH - clean.length) / 2);
+  const right = WIDTH - clean.length - left;
+
+  return `${" ".repeat(left)}${clean}${" ".repeat(right)}`;
 };
 
-const line = () => "=".repeat(WIDTH);
-const dash = () => "-".repeat(WIDTH);
+const padRight = (text = "", width = 0) => {
+  const clean = String(text ?? "");
+  if (clean.length >= width) return clean.slice(0, width);
+  return clean + " ".repeat(width - clean.length);
+};
 
-const formatMoney = (n) => `$${Number(n || 0).toFixed(2)}`;
+const formatMoney = (value) => {
+  const number = Number(value || 0);
+  const sign = number < 0 ? "-" : "";
+  return `${sign}$${Math.abs(number).toFixed(2)}`;
+};
 
-const formatDate = (date) =>
-  new Date(date).toLocaleDateString("es-MX");
+const formatPositiveMoney = (value) => `+${formatMoney(Math.abs(Number(value || 0)))}`;
 
-const formatTime = (date) =>
-  new Date(date).toLocaleTimeString("es-MX", {
+const formatNegativeMoney = (value) => `-${formatMoney(Math.abs(Number(value || 0)))}`;
+
+const formatSignedMoney = (value) => {
+  const number = Number(value || 0);
+  if (number > 0) return formatPositiveMoney(number);
+  if (number < 0) return formatNegativeMoney(number);
+  return formatMoney(0);
+};
+
+const formatDate = (dateValue) => {
+  if (!dateValue) return "--/--/----";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "--/--/----";
+
+  return date.toLocaleDateString("es-MX", {
+    timeZone: TIME_ZONE,
+  });
+};
+
+const formatTime = (dateValue) => {
+  if (!dateValue) return "--:--";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "--:--";
+
+  return date.toLocaleTimeString("es-MX", {
+    timeZone: TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
   });
+};
 
-const getShortFolio = (saleId) =>
-  saleId ? String(saleId).slice(0, 6).toLowerCase() : "------";
+const formatDateTime = (dateValue) => {
+  if (!dateValue) return "--/--/---- --:--";
+  return `${formatDate(dateValue)} ${formatTime(dateValue)}`;
+};
+
+const wrapText = (text = "", width = WIDTH) => {
+  const clean = normalizeSpaces(text);
+  if (!clean) return [];
+
+  const words = clean.split(" ");
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+
+    if (test.length <= width) {
+      current = test;
+      continue;
+    }
+
+    if (current) lines.push(current);
+
+    if (word.length > width) {
+      let remaining = word;
+
+      while (remaining.length > width) {
+        lines.push(remaining.slice(0, width));
+        remaining = remaining.slice(width);
+      }
+
+      current = remaining;
+    } else {
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+
+  return lines;
+};
+
+const pushWrapped = (lines, text = "", width = WIDTH) => {
+  wrapText(text, width).forEach((row) => lines.push(row));
+};
 
 const formatTotalLine = (label = "", value = "") => {
-  const safeLabel = String(label ?? "");
   const safeValue = String(value ?? "");
-  const spaces = Math.max(1, WIDTH - safeLabel.length - safeValue.length);
-  return `${safeLabel}${" ".repeat(spaces)}${safeValue}`;
+  const labelWidth = WIDTH - safeValue.length;
+
+  return padRight(label, Math.max(1, labelWidth)) + safeValue;
 };
+
+const sectionTitle = (title = "") => {
+  const clean = ` ${String(title).toUpperCase()} `;
+  if (clean.length >= WIDTH) return clean.slice(0, WIDTH);
+
+  const left = Math.floor((WIDTH - clean.length) / 2);
+  const right = WIDTH - clean.length - left;
+
+  return `${repeat("-", left)}${clean}${repeat("-", right)}`;
+};
+
+const getShortFolio = (saleId) =>
+  saleId ? String(saleId).slice(0, 8).toUpperCase() : "--------";
 
 const getMethodShort = (methodName = "") => {
   const name = String(methodName || "").trim().toUpperCase();
@@ -37,16 +140,23 @@ const getMethodShort = (methodName = "") => {
   if (name.includes("EFECTIVO")) return "EFE";
   if (name.includes("TERMINAL") || name.includes("TARJETA")) return "TER";
   if (name.includes("TRANSFER")) return "TRA";
-  if (
-    name.includes("DÓLAR") ||
-    name.includes("DOLAR") ||
-    name.includes("USD")
-  ) {
+  if (name.includes("DÓLAR") || name.includes("DOLAR") || name.includes("USD")) {
     return "USD";
   }
   if (name.includes("MIXTO")) return "MIX";
 
   return "OTR";
+};
+
+const safeUpper = (value = "") => String(value || "").toUpperCase();
+
+const getDifferenceLabel = (difference) => {
+  const diff = Number(difference || 0);
+
+  if (diff > 0) return "Sobrante:";
+  if (diff < 0) return "Faltante:";
+
+  return "Diferencia:";
 };
 
 export const buildCashCutText = (data = {}) => {
@@ -55,6 +165,14 @@ export const buildCashCutText = (data = {}) => {
     username,
     sessionId,
     openedAt,
+    closedAt,
+
+    cutCreatedAt,
+    expectedAmount,
+    countedAmount,
+    difference,
+    notes,
+    isHistorical = false,
 
     ventasTotales,
     dineroCaja,
@@ -71,7 +189,6 @@ export const buildCashCutText = (data = {}) => {
     devolucionesParcialesCaja,
 
     ventasPorMetodo = [],
-
     entradas = [],
     salidas = [],
 
@@ -83,10 +200,22 @@ export const buildCashCutText = (data = {}) => {
     devolucionesParciales = [],
   } = data;
 
-  const totalMetodos = ventasPorMetodo.reduce(
-    (acc, item) => acc + Number(item.total || 0),
-    0
-  );
+  const expected =
+    expectedAmount !== null && expectedAmount !== undefined
+      ? Number(expectedAmount || 0)
+      : Number(dineroCaja || 0);
+
+  const counted =
+    countedAmount !== null && countedAmount !== undefined
+      ? Number(countedAmount || 0)
+      : null;
+
+  const diff =
+    difference !== null && difference !== undefined
+      ? Number(difference || 0)
+      : counted !== null
+      ? counted - expected
+      : null;
 
   const totalCancelaciones = cancelaciones.reduce(
     (acc, item) => acc + Number(item.refund_amount || 0),
@@ -98,129 +227,258 @@ export const buildCashCutText = (data = {}) => {
     0
   );
 
-  let t = "";
+  const ventasNetas =
+    Number(ventasTotales || 0) -
+    Number(totalCancelaciones || 0) -
+    Number(totalDevolucionesParciales || 0);
 
-  // ───── HEADER ─────
-  t += `${line()}\n`;
-  t += `${centerText("CROKETS")}\n`;
-  t += `${centerText("CORTE DE CAJA")}\n`;
-  t += `${line()}\n`;
+  const totalMetodos = ventasPorMetodo.reduce(
+    (acc, item) => acc + Number(item.total || 0),
+    0
+  );
 
-  t += `Sucursal: ${branchName || "SUCURSAL"}\n`;
-  t += `Cajero: ${username || "USUARIO"}\n`;
-  t += `Turno: ${sessionId || "—"}\n`;
-  t += `Apertura: ${formatTime(openedAt || new Date())}\n`;
-  t += `Fecha: ${formatDate(new Date())}\n`;
+  const generatedAt = new Date();
+  const cutDateToPrint = cutCreatedAt || generatedAt;
 
-  t += `${dash()}\n`;
+  const lines = [];
 
-  // ───── RESUMEN ─────
-  t += `RESUMEN\n`;
-  t += `${formatTotalLine("Ventas:", formatMoney(ventasTotales))}\n`;
-  t += `${formatTotalLine("Caja:", formatMoney(dineroCaja))}\n`;
-  t += `${formatTotalLine("Terminal:", formatMoney(ventasTerminal))}\n`;
-  t += `${formatTotalLine("Transferencia:", formatMoney(ventasTransferencia))}\n`;
+  lines.push(line());
+  lines.push(centerText("CROKETS"));
+  lines.push(centerText("CORTE DE CAJA"));
+  lines.push(centerText(isHistorical ? "REIMPRESION" : "CORTE REALIZADO"));
+  lines.push(line());
 
-  t += `${dash()}\n`;
+  lines.push(`Sucursal: ${safeUpper(branchName || "SUCURSAL")}`);
+  lines.push(`Cajero: ${safeUpper(username || "USUARIO")}`);
+  lines.push(`Turno: ${sessionId || "—"}`);
+  lines.push(`Apertura: ${formatDateTime(openedAt)}`);
+  lines.push(`Corte: ${formatDateTime(cutDateToPrint)}`);
 
-  // ───── DINERO EN CAJA ─────
-  t += `DINERO EN CAJA\n`;
-  t += `${formatTotalLine("Fondo:", formatMoney(openingAmount))}\n`;
-  t += `${formatTotalLine("Entradas:", `+${formatMoney(totalEntradas)}`)}\n`;
-  t += `${formatTotalLine("Efectivo:", `+${formatMoney(ventasEfectivo)}`)}\n`;
-  t += `${formatTotalLine("USD:", `+${formatMoney(ventasDolaresUsd)}`)}\n`;
-  t += `${formatTotalLine("USD->MXN:", `+${formatMoney(ventasDolaresMxn)}`)}\n`;
-  t += `${formatTotalLine("Salidas:", `-${formatMoney(totalSalidas)}`)}\n`;
-  t += `${formatTotalLine("Cancelaciones:", `-${formatMoney(devolucionesCaja)}`)}\n`;
-  t += `${formatTotalLine("Dev parciales:", `-${formatMoney(devolucionesParcialesCaja)}`)}\n`;
-  t += `${formatTotalLine("TOTAL:", formatMoney(dineroCaja))}\n`;
+  if (closedAt) {
+    lines.push(`Cierre: ${formatDateTime(closedAt)}`);
+  }
 
-  t += `${dash()}\n`;
+  lines.push(`Generado: ${formatDateTime(generatedAt)}`);
+  lines.push(line());
 
-  // ───── MÉTODOS ─────
-  t += `METODOS DE PAGO\n`;
+  lines.push(centerText("RESULTADO DEL CORTE"));
+  lines.push(line());
+  lines.push(formatTotalLine("Esperado:", formatMoney(expected)));
+
+  if (counted !== null) {
+    lines.push(formatTotalLine("Contado:", formatMoney(counted)));
+  }
+
+  if (diff !== null) {
+    lines.push(formatTotalLine(getDifferenceLabel(diff), formatMoney(diff)));
+  }
+
+  if (notes) {
+    lines.push(dash());
+    lines.push("Notas:");
+    pushWrapped(lines, notes, WIDTH);
+  }
+
+  lines.push(dash());
+
+  lines.push(sectionTitle("RESUMEN NETO"));
+  lines.push(formatTotalLine("Ventas brutas:", formatMoney(ventasTotales)));
+  lines.push(formatTotalLine("Cancelaciones:", formatNegativeMoney(totalCancelaciones)));
+  lines.push(formatTotalLine("Dev. parciales:", formatNegativeMoney(totalDevolucionesParciales)));
+  lines.push(formatTotalLine("Ventas netas:", formatMoney(ventasNetas)));
+  lines.push(formatTotalLine("Caja esperada:", formatMoney(expected)));
+  lines.push(dash());
+
+  lines.push(sectionTitle("DINERO EN CAJA"));
+  lines.push(formatTotalLine("Fondo inicial:", formatMoney(openingAmount)));
+  lines.push(formatTotalLine("Entradas:", formatPositiveMoney(totalEntradas)));
+  lines.push(formatTotalLine("Vtas efectivo:", formatPositiveMoney(ventasEfectivo)));
+
+  if (Number(ventasDolaresUsd || 0) > 0 || Number(ventasDolaresMxn || 0) > 0) {
+    lines.push(
+      formatTotalLine(
+        "Vtas USD:",
+        `+USD ${Number(ventasDolaresUsd || 0).toFixed(2)}`
+      )
+    );
+    lines.push(formatTotalLine("USD a MXN:", formatPositiveMoney(ventasDolaresMxn)));
+  }
+
+  lines.push(formatTotalLine("Salidas:", formatNegativeMoney(totalSalidas)));
+  lines.push(formatTotalLine("Canc. caja:", formatNegativeMoney(devolucionesCaja)));
+  lines.push(
+    formatTotalLine(
+      "Dev. caja:",
+      formatNegativeMoney(devolucionesParcialesCaja)
+    )
+  );
+  lines.push(formatTotalLine("TOTAL CAJA:", formatMoney(expected)));
+  lines.push(dash());
+
+  lines.push(sectionTitle("METODOS DE PAGO"));
 
   if (ventasPorMetodo.length === 0) {
-    t += `Sin registros\n`;
+    lines.push("Sin registros");
   } else {
-    ventasPorMetodo.forEach((m) => {
-      t += `${formatTotalLine(`${m.name}:`, formatMoney(m.total))}\n`;
+    ventasPorMetodo.forEach((method) => {
+      const name = String(method.name || "OTRO").slice(0, 15);
+      const isDollars =
+        String(method.name || "").toUpperCase().includes("DOLAR") ||
+        String(method.name || "").toUpperCase().includes("DÓLAR");
+
+      if (isDollars) {
+        lines.push(
+          formatTotalLine(
+            `${name}:`,
+            `USD ${Number(ventasDolaresUsd || method.total || 0).toFixed(2)}`
+          )
+        );
+
+        if (Number(ventasDolaresMxn || 0) > 0) {
+          lines.push(formatTotalLine("Eq. MXN:", formatMoney(ventasDolaresMxn)));
+        }
+      } else {
+        lines.push(formatTotalLine(`${name}:`, formatMoney(method.total)));
+      }
     });
-    t += `${formatTotalLine("TOTAL:", formatMoney(totalMetodos))}\n`;
+
+    lines.push(formatTotalLine("TOTAL BRUTO:", formatMoney(totalMetodos)));
   }
 
-  t += `${dash()}\n`;
+  lines.push(dash());
 
-  // ───── ENTRADAS ─────
-  t += `ENTRADAS\n`;
+  lines.push(sectionTitle("ENTRADAS"));
 
   if (entradas.length === 0) {
-    t += `Sin registros\n`;
+    lines.push("Sin registros");
   } else {
-    entradas.forEach((e) => {
-      t += `${formatTotalLine(formatTime(e.created_at), formatMoney(e.amount))}\n`;
+    entradas.forEach((entry) => {
+      const label = entry.description
+        ? String(entry.description).slice(0, 17)
+        : formatTime(entry.created_at);
+
+      lines.push(formatTotalLine(label, formatPositiveMoney(entry.amount)));
     });
-    t += `${formatTotalLine("TOTAL ENTRADAS:", formatMoney(totalEntradas))}\n`;
+
+    lines.push(formatTotalLine("TOTAL ENTR:", formatPositiveMoney(totalEntradas)));
   }
 
-  t += `${dash()}\n`;
+  lines.push(dash());
 
-  // ───── SALIDAS ─────
-  t += `SALIDAS\n`;
+  lines.push(sectionTitle("SALIDAS"));
 
   if (salidas.length === 0) {
-    t += `Sin registros\n`;
+    lines.push("Sin registros");
   } else {
-    salidas.forEach((s) => {
-      t += `${formatTotalLine(formatTime(s.created_at), formatMoney(s.amount))}\n`;
+    salidas.forEach((exit) => {
+      const label = exit.description
+        ? String(exit.description).slice(0, 17)
+        : formatTime(exit.created_at);
+
+      lines.push(formatTotalLine(label, formatNegativeMoney(exit.amount)));
     });
-    t += `${formatTotalLine("TOTAL SALIDAS:", formatMoney(totalSalidas))}\n`;
+
+    lines.push(formatTotalLine("TOTAL SAL:", formatNegativeMoney(totalSalidas)));
   }
 
-  t += `${dash()}\n`;
+  lines.push(dash());
 
-  // ───── RESUMEN VENTAS ─────
-  t += `RESUMEN VENTAS\n`;
-  t += `${formatTotalLine("Subtotal:", formatMoney(subtotal))}\n`;
-  t += `${formatTotalLine("Descuento:", `-${formatMoney(discount)}`)}\n`;
-  t += `${formatTotalLine("IVA:", formatMoney(tax))}\n`;
-  t += `${formatTotalLine("TOTAL:", formatMoney(ventasTotales))}\n`;
+  lines.push(sectionTitle("VENTAS"));
+  lines.push(formatTotalLine("Subtotal:", formatMoney(subtotal)));
 
-  t += `${dash()}\n`;
+  if (Number(discount || 0) > 0) {
+    lines.push(formatTotalLine("Descuento:", formatNegativeMoney(discount)));
+  } else {
+    lines.push(formatTotalLine("Descuento:", formatMoney(0)));
+  }
 
-  // ───── CANCELACIONES ─────
-  t += `CANCELACIONES\n`;
+  lines.push(formatTotalLine("IVA:", formatMoney(tax)));
+  lines.push(formatTotalLine("TOTAL BRUTO:", formatMoney(ventasTotales)));
+  lines.push(formatTotalLine("TOTAL NETO:", formatMoney(ventasNetas)));
+  lines.push(dash());
+
+  lines.push(sectionTitle("CANCELACIONES"));
 
   if (cancelaciones.length === 0) {
-    t += `Sin registros\n`;
+    lines.push("Sin registros");
   } else {
-    cancelaciones.forEach((c) => {
-      const folio = getShortFolio(c.sale_id);
-      const method = getMethodShort(c.refund_method_name);
-      const left = `${folio} ${method}`;
-      t += `${formatTotalLine(left, formatMoney(c.refund_amount))}\n`;
+    cancelaciones.forEach((cancelation) => {
+      const folio = getShortFolio(cancelation.sale_id);
+      const method = getMethodShort(cancelation.refund_method_name);
+
+      lines.push(
+        formatTotalLine(
+          `${folio} ${method}`,
+          formatNegativeMoney(cancelation.refund_amount)
+        )
+      );
+
+      if (cancelation.canceled_at) {
+        lines.push(`Hora: ${formatTime(cancelation.canceled_at)}`);
+      }
+
+      const reason =
+        cancelation.cancel_reason?.trim() || "Sin motivo registrado";
+
+      pushWrapped(lines, `Motivo: ${reason}`, WIDTH);
+      lines.push("");
     });
-    t += `${formatTotalLine("TOTAL CANCELADO:", formatMoney(totalCancelaciones))}\n`;
+
+    lines.push(
+      formatTotalLine("TOTAL CANC:", formatNegativeMoney(totalCancelaciones))
+    );
   }
 
-  t += `${dash()}\n`;
+  lines.push(dash());
 
-  // ───── DEV PARCIALES ─────
-  t += `DEV PARCIALES\n`;
+  lines.push(sectionTitle("DEV PARCIALES"));
 
   if (devolucionesParciales.length === 0) {
-    t += `Sin registros\n`;
+    lines.push("Sin registros");
   } else {
-    devolucionesParciales.forEach((d) => {
-      const folio = getShortFolio(d.sale_id);
-      const method = getMethodShort(d.refund_method_name);
-      const left = `${folio} ${method}`;
-      t += `${formatTotalLine(left, formatMoney(d.total_refund))}\n`;
+    devolucionesParciales.forEach((partialReturn) => {
+      const folio = getShortFolio(partialReturn.sale_id);
+      const method = getMethodShort(partialReturn.refund_method_name);
+
+      lines.push(
+        formatTotalLine(
+          `${folio} ${method}`,
+          formatNegativeMoney(partialReturn.total_refund)
+        )
+      );
+
+      if (partialReturn.created_at) {
+        lines.push(`Hora: ${formatTime(partialReturn.created_at)}`);
+      }
+
+      const reason =
+        partialReturn.return_reason?.trim() || "Sin motivo registrado";
+
+      pushWrapped(lines, `Motivo: ${reason}`, WIDTH);
+      lines.push("");
     });
-    t += `${formatTotalLine("TOTAL DEV PARC:", formatMoney(totalDevolucionesParciales))}\n`;
+
+    lines.push(
+      formatTotalLine(
+        "TOTAL DEV:",
+        formatNegativeMoney(totalDevolucionesParciales)
+      )
+    );
   }
 
-  t += `${line()}\n`;
+  lines.push(dash());
+  lines.push("");
+  lines.push("");
+  lines.push(centerText("Firma cajero"));
+  lines.push("");
+  lines.push("");
+  lines.push(dash());
+  lines.push("");
+  lines.push("");
+  lines.push(centerText("Firma supervisor"));
+  lines.push("");
+  lines.push("");
+  lines.push(line());
 
-  return t;
+  return lines.join("\n");
 };

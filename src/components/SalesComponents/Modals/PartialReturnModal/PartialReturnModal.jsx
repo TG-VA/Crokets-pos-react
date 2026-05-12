@@ -37,6 +37,7 @@ const PartialReturnModal = ({
         const matched = (ret.items || []).filter(
           (ri) => ri.saleDetailId === item.id
         );
+
         return (
           acc +
           matched.reduce((sum, ri) => sum + Number(ri.quantity || 0), 0)
@@ -44,6 +45,7 @@ const PartialReturnModal = ({
       }, 0);
 
       const availableQty = Math.max(Number(item.cant || 0) - returnedQty, 0);
+      const isKit = !!(item.isKit || item.is_kit);
 
       return {
         saleDetailId: item.id,
@@ -53,6 +55,8 @@ const PartialReturnModal = ({
         returnedQty,
         availableQty,
         unitPrice: Number(item.finalUnitPrice || item.unitPrice || 0),
+        isKit,
+        components: item.components || [],
       };
     });
 
@@ -100,6 +104,7 @@ const PartialReturnModal = ({
 
     for (const item of itemsWithLimits) {
       const qty = Number(quantities[item.saleDetailId] || 0);
+
       if (qty > 0) {
         selectedProducts += 1;
         totalUnitsToReturn += qty;
@@ -108,16 +113,34 @@ const PartialReturnModal = ({
     }
 
     const totalUnitsAfterReturn = totalUnitsStillInSale - totalUnitsToReturn;
+    const refundMethodName =
+      paymentMethods.find((method) => method.id === refundMethodId)?.name || "";
 
     return {
       selectedProducts,
       totalUnitsToReturn,
       totalUnitsAfterReturn,
       totalRefund,
+      refundMethodName,
     };
-  }, [itemsWithLimits, quantities, totalUnitsStillInSale]);
+  }, [
+    itemsWithLimits,
+    quantities,
+    totalUnitsStillInSale,
+    paymentMethods,
+    refundMethodId,
+  ]);
 
   if (!isOpen) return null;
+
+  const setQty = (saleDetailId, nextValue, max) => {
+    const numericValue = Math.max(Math.min(Number(nextValue || 0), max), 0);
+
+    setQuantities((prev) => ({
+      ...prev,
+      [saleDetailId]: numericValue > 0 ? String(numericValue) : "",
+    }));
+  };
 
   const handleQtyChange = (saleDetailId, rawValue, max) => {
     let value = rawValue.replace(/[^\d]/g, "");
@@ -130,15 +153,17 @@ const PartialReturnModal = ({
       return;
     }
 
-    let numericValue = Number(value);
+    setQty(saleDetailId, Number(value), max);
+  };
 
-    if (numericValue < 0) numericValue = 0;
-    if (numericValue > max) numericValue = max;
+  const handleDecreaseQty = (saleDetailId, max) => {
+    const current = Number(quantities[saleDetailId] || 0);
+    setQty(saleDetailId, current - 1, max);
+  };
 
-    setQuantities((prev) => ({
-      ...prev,
-      [saleDetailId]: String(numericValue),
-    }));
+  const handleIncreaseQty = (saleDetailId, max) => {
+    const current = Number(quantities[saleDetailId] || 0);
+    setQty(saleDetailId, current + 1, max);
   };
 
   const handleSave = async () => {
@@ -172,6 +197,8 @@ const PartialReturnModal = ({
         .map((item) => ({
           sale_detail_id: item.saleDetailId,
           quantity: Number(quantities[item.saleDetailId] || 0),
+          isKit: item.isKit,
+          description: item.description,
         }))
         .filter((item) => item.quantity > 0);
 
@@ -203,7 +230,10 @@ const PartialReturnModal = ({
         p_branch_id: branch.id,
         p_return_reason: returnReason.trim(),
         p_refund_method_id: refundMethodId,
-        p_items: selectedItems,
+        p_items: selectedItems.map((item) => ({
+          sale_detail_id: item.sale_detail_id,
+          quantity: item.quantity,
+        })),
       });
 
       if (error) throw error;
@@ -227,7 +257,13 @@ const PartialReturnModal = ({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.title}>DEVOLUCIÓN PARCIAL</h2>
+          <div>
+            <h2 className={styles.title}>↩ DEVOLUCIÓN PARCIAL</h2>
+            <div className={styles.headerMeta}>
+              Folio: <strong>{selectedTicket?.folio || "—"}</strong>
+            </div>
+          </div>
+
           <button className={styles.closeButton} onClick={onClose}>
             ✕
           </button>
@@ -236,149 +272,189 @@ const PartialReturnModal = ({
         <div className={styles.content}>
           <div className={styles.saleInfo}>
             <div>
-              <strong>Folio:</strong> {selectedTicket?.folio || "—"}
+              <span>Cliente</span>
+              <strong>{selectedTicket?.client || "PÚBLICO EN GENERAL"}</strong>
             </div>
+
             <div>
-              <strong>Cliente:</strong>{" "}
-              {selectedTicket?.client || "PÚBLICO EN GENERAL"}
+              <span>Total original</span>
+              <strong>{formatCurrency(selectedTicket?.total || 0)}</strong>
             </div>
+
             <div>
-              <strong>Total original:</strong>{" "}
-              {formatCurrency(selectedTicket?.total || 0)}
+              <span>Devuelto acumulado</span>
+              <strong>{formatCurrency(selectedTicket?.totalReturned || 0)}</strong>
             </div>
+
             <div>
-              <strong>Devuelto acumulado:</strong>{" "}
-              {formatCurrency(selectedTicket?.totalReturned || 0)}
-            </div>
-            <div>
-              <strong>Neto actual:</strong>{" "}
-              {formatCurrency(
-                selectedTicket?.netTotal || selectedTicket?.total || 0
-              )}
+              <span>Neto actual</span>
+              <strong>
+                {formatCurrency(
+                  selectedTicket?.netTotal || selectedTicket?.total || 0
+                )}
+              </strong>
             </div>
           </div>
 
-          <div className={styles.summaryBox}>
-            <div className={styles.summaryRow}>
-              <span>Unidades actualmente en la venta:</span>
-              <strong>{totalUnitsStillInSale}</strong>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Máximo total que puedes devolver ahora:</span>
-              <strong>{maxUnitsAllowedInOperation}</strong>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Debe quedar al menos:</span>
-              <strong>1 unidad en el ticket</strong>
-            </div>
+          <div className={styles.ruleBox}>
+            <strong>Regla de devolución:</strong> puedes devolver productos o
+            kits completos, pero debe quedar al menos 1 unidad en el ticket. Si
+            deseas devolver todo, corresponde cancelar la venta.
           </div>
+
+          {itemsWithLimits.some((item) => item.isKit) && (
+            <div className={styles.warningBox}>
+              Esta venta contiene kits. Si devuelves un kit, se regresará el
+              inventario de todos sus productos internos.
+            </div>
+          )}
 
           <div className={styles.section}>
             <div className={styles.sectionTitle}>
               PRODUCTOS DISPONIBLES PARA DEVOLUCIÓN
             </div>
 
-            <div className={styles.itemsTableWrapper}>
-              <table className={styles.itemsTable}>
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th className={styles.centerCell}>Vendida</th>
-                    <th className={styles.centerCell}>Ya devuelta</th>
-                    <th className={styles.centerCell}>Aún en la venta</th>
-                    <th className={styles.centerCell}>Máximo ahora</th>
-                    <th className={styles.rightCell}>P.U.</th>
-                    <th className={styles.centerCell}>A devolver</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itemsWithLimits.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className={styles.emptyCell}>
-                        No hay productos disponibles
-                      </td>
-                    </tr>
-                  ) : (
-                    itemsWithLimits.map((item) => {
-                      const disabled =
-                        processing || item.isFullyReturned || item.isBlockedByRule;
+            <div className={styles.productCards}>
+              {itemsWithLimits.length === 0 ? (
+                <div className={styles.emptyCell}>No hay productos disponibles</div>
+              ) : (
+                itemsWithLimits.map((item) => {
+                  const qty = Number(quantities[item.saleDetailId] || 0);
+                  const disabled =
+                    processing || item.isFullyReturned || item.isBlockedByRule;
 
-                      return (
-                        <tr
-                          key={item.saleDetailId}
-                          className={
-                            item.isFullyReturned || item.isBlockedByRule
-                              ? styles.disabledRow
-                              : ""
-                          }
-                        >
-                          <td>
-                            <div
-                              className={
-                                item.isFullyReturned || item.isBlockedByRule
-                                  ? styles.disabledText
-                                  : undefined
-                              }
-                            >
-                              {item.description}
-                            </div>
+                  return (
+                    <div
+                      key={item.saleDetailId}
+                      className={`${styles.productCard} ${
+                        disabled ? styles.productCardDisabled : ""
+                      }`}
+                    >
+                      <div className={styles.productCardHeader}>
+                        <div>
+                          <div className={styles.productName}>
+                            {item.description}
+                            {item.isKit ? " (KIT)" : ""}
+                          </div>
 
-                            <div className={styles.itemStatusRow}>
-                              {item.isFullyReturned ? (
-                                <span className={styles.fullyReturnedBadge}>
-                                  DEVOLUCIÓN COMPLETA
-                                </span>
-                              ) : item.isBlockedByRule ? (
-                                <span className={styles.fullyReturnedBadge}>
-                                  YA NO SE PUEDE DEVOLVER
-                                </span>
-                              ) : (
-                                <span className={styles.availableBadge}>
-                                  Puedes devolver hasta {item.maxReturnAllowed} pieza
-                                  {item.maxReturnAllowed !== 1 ? "s" : ""}
-                                </span>
-                              )}
-                            </div>
-                          </td>
+                          <div className={styles.productMeta}>
+                            P.U. {formatCurrency(item.unitPrice)}
+                          </div>
+                        </div>
 
-                          <td className={styles.centerCell}>{item.soldQty}</td>
-                          <td className={styles.centerCell}>{item.returnedQty}</td>
-                          <td className={styles.centerCell}>{item.availableQty}</td>
-                          <td className={styles.centerCell}>
-                            {item.maxReturnAllowed}
-                          </td>
+                        <div className={styles.productAmount}>
+                          {formatCurrency(qty * item.unitPrice)}
+                        </div>
+                      </div>
 
-                          <td className={styles.rightCell}>
-                            {formatCurrency(item.unitPrice)}
-                          </td>
+                      <div className={styles.productStats}>
+                        <div>
+                          <span>Vendida</span>
+                          <strong>{item.soldQty}</strong>
+                        </div>
+                        <div>
+                          <span>Ya devuelta</span>
+                          <strong>{item.returnedQty}</strong>
+                        </div>
+                        <div>
+                          <span>Aún en venta</span>
+                          <strong>{item.availableQty}</strong>
+                        </div>
+                        <div>
+                          <span>Máximo ahora</span>
+                          <strong>{item.maxReturnAllowed}</strong>
+                        </div>
+                      </div>
 
-                          <td className={styles.centerCell}>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={quantities[item.saleDetailId]}
-                              onChange={(e) =>
-                                handleQtyChange(
-                                  item.saleDetailId,
-                                  e.target.value,
-                                  item.maxReturnAllowed
-                                )
-                              }
-                              className={styles.qtyInput}
-                              disabled={disabled}
-                              placeholder={disabled ? "—" : "0"}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                      {item.components?.length > 0 && (
+                        <div className={styles.kitComponents}>
+                          <strong>Incluye:</strong>
+                          {item.components.map((component) => (
+                            <span key={component.productId || component.description}>
+                              {component.description || component.name} x
+                              {component.quantity}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className={styles.productCardFooter}>
+                        <div className={styles.itemStatusRow}>
+                          {item.isFullyReturned ? (
+                            <span className={styles.fullyReturnedBadge}>
+                              DEVOLUCIÓN COMPLETA
+                            </span>
+                          ) : item.isBlockedByRule ? (
+                            <span className={styles.fullyReturnedBadge}>
+                              YA NO SE PUEDE DEVOLVER
+                            </span>
+                          ) : item.isKit ? (
+                            <span className={styles.availableBadge}>
+                              Kit completo: puedes devolver hasta{" "}
+                              {item.maxReturnAllowed}
+                            </span>
+                          ) : (
+                            <span className={styles.availableBadge}>
+                              Puedes devolver hasta {item.maxReturnAllowed} pieza
+                              {item.maxReturnAllowed !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={styles.qtyStepper}>
+                          <button
+                            type="button"
+                            className={styles.qtyButton}
+                            onClick={() =>
+                              handleDecreaseQty(
+                                item.saleDetailId,
+                                item.maxReturnAllowed
+                              )
+                            }
+                            disabled={disabled || qty <= 0}
+                          >
+                            −
+                          </button>
+
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={quantities[item.saleDetailId]}
+                            onChange={(e) =>
+                              handleQtyChange(
+                                item.saleDetailId,
+                                e.target.value,
+                                item.maxReturnAllowed
+                              )
+                            }
+                            className={styles.qtyInput}
+                            disabled={disabled}
+                            placeholder={disabled ? "—" : "0"}
+                          />
+
+                          <button
+                            type="button"
+                            className={styles.qtyButton}
+                            onClick={() =>
+                              handleIncreaseQty(
+                                item.saleDetailId,
+                                item.maxReturnAllowed
+                              )
+                            }
+                            disabled={disabled || qty >= item.maxReturnAllowed}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          <div className={styles.section}>
+          <div className={styles.formGrid}>
             <div className={styles.formGroup}>
               <label className={styles.label}>Motivo de devolución</label>
               <input
@@ -409,25 +485,6 @@ const PartialReturnModal = ({
             </div>
           </div>
 
-          <div className={styles.summaryBox}>
-            <div className={styles.summaryRow}>
-              <span>Productos seleccionados:</span>
-              <strong>{summary.selectedProducts}</strong>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Unidades a devolver:</span>
-              <strong>{summary.totalUnitsToReturn}</strong>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Unidades restantes después:</span>
-              <strong>{summary.totalUnitsAfterReturn}</strong>
-            </div>
-            <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
-              <span>Total a devolver:</span>
-              <strong>{formatCurrency(summary.totalRefund)}</strong>
-            </div>
-          </div>
-
           {summary.totalUnitsAfterReturn < 1 && (
             <div className={styles.warningBox}>
               Debe quedar al menos 1 unidad en la venta. Si deseas devolver todo,
@@ -437,21 +494,40 @@ const PartialReturnModal = ({
         </div>
 
         <div className={styles.footer}>
-          <button
-            className={`${styles.actionButton} ${styles.secondaryButton}`}
-            onClick={onClose}
-            disabled={processing}
-          >
-            Cerrar
-          </button>
+          <div className={styles.footerSummary}>
+            <div>
+              <span>Total a devolver</span>
+              <strong>{formatCurrency(summary.totalRefund)}</strong>
+            </div>
 
-          <button
-            className={`${styles.actionButton} ${styles.primaryButton}`}
-            onClick={handleSave}
-            disabled={processing}
-          >
-            {processing ? "Procesando..." : "Guardar devolución"}
-          </button>
+            <div>
+              <span>Método</span>
+              <strong>{summary.refundMethodName || "SIN SELECCIONAR"}</strong>
+            </div>
+
+            <div>
+              <span>Unidades después</span>
+              <strong>{summary.totalUnitsAfterReturn}</strong>
+            </div>
+          </div>
+
+          <div className={styles.footerActions}>
+            <button
+              className={`${styles.actionButton} ${styles.secondaryButton}`}
+              onClick={onClose}
+              disabled={processing}
+            >
+              Cerrar
+            </button>
+
+            <button
+              className={`${styles.actionButton} ${styles.primaryButton}`}
+              onClick={handleSave}
+              disabled={processing}
+            >
+              {processing ? "Procesando..." : "Guardar devolución"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
