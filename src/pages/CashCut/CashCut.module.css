@@ -354,6 +354,23 @@
   word-break: break-word;
 }
 
+.cutDoneAlert {
+  background: #e9f7ef;
+  border: 2px solid #27ae60;
+  color: #145a32;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+
 /* Responsive */
 @media (max-width: 520px) {
   .pageContent {
@@ -395,3 +412,4 @@
     margin-top: 2px;
   }
 }
+

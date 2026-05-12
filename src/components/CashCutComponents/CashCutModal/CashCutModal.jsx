@@ -7,13 +7,7 @@ const fmt = (n) =>
     currency: "MXN",
   }).format(Number(n) || 0);
 
-const CorteModal = ({
-  isOpen,
-  cutType,
-  expectedAmount,
-  onClose,
-  onConfirm,
-}) => {
+const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
   const [counted, setCounted] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -32,6 +26,11 @@ const CorteModal = ({
   const diff = countedNumber - expected;
 
   const handleConfirm = () => {
+    if (counted === "") {
+      alert("Debes capturar el monto contado en caja.");
+      return;
+    }
+
     onConfirm({
       counted: countedNumber,
       notes,
@@ -48,11 +47,11 @@ const CorteModal = ({
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div className={styles.modal}>
-        <h2 className={styles.modalTitle}>
-          {cutType === "cajero" ? "🧾 Corte de Cajero" : "📅 Corte del Día"}
-        </h2>
+        <h2 className={styles.modalTitle}>🧾 Corte de Cajero</h2>
 
-        <p className={styles.modalSubtitle}>Confirma el monto contado en caja</p>
+        <p className={styles.modalSubtitle}>
+          Confirma el monto contado en caja
+        </p>
 
         <div className={styles.modalField}>
           <label className={styles.modalLabel}>MONTO ESPERADO</label>
@@ -93,11 +92,7 @@ const CorteModal = ({
         </div>
 
         <div className={styles.modalActions}>
-          <button
-            type="button"
-            className={styles.btnCancel}
-            onClick={onClose}
-          >
+          <button type="button" className={styles.btnCancel} onClick={onClose}>
             Cancelar
           </button>
 

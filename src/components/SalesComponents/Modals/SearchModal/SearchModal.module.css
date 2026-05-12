@@ -524,6 +524,16 @@
   background: #95a5a6;
 }
 
+.errorNotice {
+  background-color: #fdecea;
+  border: 1px solid #f5c2c7;
+  color: #b42318;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;

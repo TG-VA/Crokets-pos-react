@@ -10,6 +10,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedProductStocks, setSelectedProductStocks] = useState([]);
+  const [kitValidation, setKitValidation] = useState({
+    isValid: true,
+    message: "",
+    items: [],
+  });
+
   const [loading, setLoading] = useState(false);
   const [loadingStocks, setLoadingStocks] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +25,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
   const searchRequestIdRef = useRef(0);
   const stockRequestIdRef = useRef(0);
+  const kitRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -27,12 +34,14 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     setSearchResults([]);
     setSelectedIndex(-1);
     setSelectedProductStocks([]);
+    setKitValidation({ isValid: true, message: "", items: [] });
     setLoading(false);
     setLoadingStocks(false);
     setError("");
 
     searchRequestIdRef.current += 1;
     stockRequestIdRef.current += 1;
+    kitRequestIdRef.current += 1;
 
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
@@ -83,7 +92,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, searchResults, selectedIndex]);
+  }, [isOpen, searchResults, selectedIndex, kitValidation]);
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
@@ -104,22 +113,34 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     const selectedProduct =
       selectedIndex >= 0 ? searchResults[selectedIndex] : null;
 
-    if (selectedProduct?.id && selectedProduct.tracks_inventory) {
+    stockRequestIdRef.current += 1;
+    kitRequestIdRef.current += 1;
+
+    setSelectedProductStocks([]);
+    setKitValidation({ isValid: true, message: "", items: [] });
+
+    if (!selectedProduct?.id) return;
+
+    if (selectedProduct.is_kit) {
+      validateKitStock(selectedProduct.id);
+      return;
+    }
+
+    if (selectedProduct.tracks_inventory) {
       fetchProductStocks(selectedProduct.id);
-    } else {
-      stockRequestIdRef.current += 1;
-      setSelectedProductStocks([]);
     }
   }, [selectedIndex, searchResults]);
 
   const handleClose = () => {
     searchRequestIdRef.current += 1;
     stockRequestIdRef.current += 1;
+    kitRequestIdRef.current += 1;
 
     setSearchTerm("");
     setSearchResults([]);
     setSelectedIndex(-1);
     setSelectedProductStocks([]);
+    setKitValidation({ isValid: true, message: "", items: [] });
     setLoading(false);
     setLoadingStocks(false);
     setError("");
@@ -178,6 +199,150 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     };
   };
 
+  const validateKitStock = async (kitProductId) => {
+    if (!kitProductId || !branch?.id) return;
+
+    const currentKitRequestId = ++kitRequestIdRef.current;
+
+    try {
+      setKitValidation({
+        isValid: false,
+        message: "Validando inventario del kit...",
+        items: [],
+      });
+
+      const { data: kitRow, error: kitError } = await supabase
+        .from("product_kits")
+        .select("id, is_active")
+        .eq("kit_product_id", kitProductId)
+        .maybeSingle();
+
+      if (currentKitRequestId !== kitRequestIdRef.current) return;
+      if (kitError) throw kitError;
+
+      if (!kitRow?.id) {
+        setKitValidation({
+          isValid: false,
+          message: "Este kit no tiene configuración registrada.",
+          items: [],
+        });
+        return;
+      }
+
+      if (kitRow.is_active === false) {
+        setKitValidation({
+          isValid: false,
+          message: "Este kit está inactivo.",
+          items: [],
+        });
+        return;
+      }
+
+      const { data: kitItems, error: itemsError } = await supabase
+        .from("product_kit_items")
+        .select(`
+          id,
+          component_product_id,
+          quantity,
+          products:component_product_id (
+            id,
+            barcode,
+            name,
+            tracks_inventory
+          )
+        `)
+        .eq("kit_id", kitRow.id)
+        .order("created_at", { ascending: true });
+
+      if (currentKitRequestId !== kitRequestIdRef.current) return;
+      if (itemsError) throw itemsError;
+
+      if (!kitItems || kitItems.length === 0) {
+        setKitValidation({
+          isValid: false,
+          message: "Este kit no tiene productos agregados.",
+          items: [],
+        });
+        return;
+      }
+
+      const componentIds = kitItems
+        .map((item) => item.component_product_id)
+        .filter(Boolean);
+
+      const { data: inventoryRows, error: inventoryError } = await supabase
+        .from("branch_inventory")
+        .select("product_id, stock, is_active, has_been_stocked")
+        .eq("branch_id", branch.id)
+        .in("product_id", componentIds);
+
+      if (currentKitRequestId !== kitRequestIdRef.current) return;
+      if (inventoryError) throw inventoryError;
+
+      const inventoryMap = {};
+
+      for (const row of inventoryRows || []) {
+        inventoryMap[row.product_id] = row;
+      }
+
+      const validationItems = kitItems.map((item) => {
+        const inventory = inventoryMap[item.component_product_id];
+        const requiredQty = Number(item.quantity || 0);
+        const stock = Number(inventory?.stock || 0);
+        const tracksInventory = item.products?.tracks_inventory !== false;
+
+        let ok = true;
+        let reason = "";
+
+        if (tracksInventory) {
+          if (!inventory) {
+            ok = false;
+            reason = "Sin inventario en esta sucursal";
+          } else if (inventory.is_active === false) {
+            ok = false;
+            reason = "Inventario inactivo";
+          } else if (inventory.has_been_stocked !== true) {
+            ok = false;
+            reason = "Sin inventario inicial";
+          } else if (stock < requiredQty) {
+            ok = false;
+            reason = `Stock insuficiente (${stock}/${requiredQty})`;
+          }
+        }
+
+        return {
+          product_id: item.component_product_id,
+          name: item.products?.name || "Producto",
+          barcode: item.products?.barcode || "",
+          requiredQty,
+          stock,
+          ok,
+          reason,
+        };
+      });
+
+      const invalidItems = validationItems.filter((item) => !item.ok);
+
+      setKitValidation({
+        isValid: invalidItems.length === 0,
+        message:
+          invalidItems.length === 0
+            ? "Kit disponible para venta."
+            : "Este kit no puede venderse porque uno o más productos no tienen inventario suficiente.",
+        items: validationItems,
+      });
+    } catch (err) {
+      if (currentKitRequestId !== kitRequestIdRef.current) return;
+
+      console.error("Error validando inventario del kit:", err);
+      setKitValidation({
+        isValid: false,
+        message: "No se pudo validar el inventario del kit.",
+        items: [],
+      });
+    }
+  };
+
   const performSearch = async (term) => {
     const cleanTerm = String(term || "").trim();
     const currentRequestId = ++searchRequestIdRef.current;
@@ -186,6 +351,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setSearchResults([]);
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
       setLoading(false);
       setLoadingStocks(false);
       setError("");
@@ -199,6 +365,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setSearchResults([]);
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
       return;
     }
 
@@ -355,15 +522,13 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           return searchable.includes(normalizedTerm);
         })
         .sort((a, b) => {
+          if (a.is_kit && !b.is_kit) return -1;
+          if (!a.is_kit && b.is_kit) return 1;
+
           const aTracks = a.tracks_inventory ? 1 : 0;
           const bTracks = b.tracks_inventory ? 1 : 0;
 
           if (aTracks !== bTracks) return bTracks - aTracks;
-
-          const aActive = a.is_active_in_branch ? 1 : 0;
-          const bActive = b.is_active_in_branch ? 1 : 0;
-
-          if (aActive !== bActive) return bActive - aActive;
 
           const aStock = Number(a.stock ?? -1);
           const bStock = Number(b.stock ?? -1);
@@ -382,6 +547,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setSearchResults(mergedResults);
       setSelectedIndex(mergedResults.length > 0 ? 0 : -1);
       setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
     } catch (err) {
       if (currentRequestId !== searchRequestIdRef.current) return;
 
@@ -390,6 +556,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setSearchResults([]);
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
     } finally {
       if (currentRequestId === searchRequestIdRef.current) {
         setLoading(false);
@@ -495,10 +662,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     if (!value.trim()) {
       searchRequestIdRef.current += 1;
       stockRequestIdRef.current += 1;
+      kitRequestIdRef.current += 1;
 
       setSearchResults([]);
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
       setError("");
       setLoading(false);
       setLoadingStocks(false);
@@ -512,8 +681,34 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     setSelectedIndex(index);
   };
 
+  const canAddSelectedProduct = (product) => {
+    if (!product) return false;
+
+    if (product.is_kit) {
+      return kitValidation.isValid;
+    }
+
+    if (product.tracks_inventory) {
+      return (
+        product.is_active_in_branch &&
+        product.has_been_stocked &&
+        Number(product.stock || 0) > 0
+      );
+    }
+
+    return true;
+  };
+
   const handleSelectProduct = async (product) => {
     if (!product) return;
+
+    if (product.is_kit && !kitValidation.isValid) {
+      alert(
+        kitValidation.message ||
+          "Este kit no tiene suficiente inventario en sus productos."
+      );
+      return;
+    }
 
     if (product.tracks_inventory) {
       if (!product.is_active_in_branch) {
@@ -646,6 +841,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                   <div className={styles.resultsList}>
                     {searchResults.map((product, index) => {
                       const displayPrice = getDisplayPrice(product);
+                      const canSell = canAddSelectedProduct(product);
 
                       return (
                         <div
@@ -659,20 +855,17 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                           <div className={styles.productTopRow}>
                             <div className={styles.productName}>
                               {product.name}
+                              {product.is_kit ? " (KIT)" : ""}
                             </div>
 
                             <span
                               className={`${styles.statusBadge} ${
-                                product.is_active_in_branch
+                                canSell
                                   ? styles.statusActive
                                   : styles.statusInactive
                               }`}
                             >
-                              {product.tracks_inventory
-                                ? product.is_active_in_branch
-                                  ? "Activo"
-                                  : "Inactivo"
-                                : "Activo"}
+                              {canSell ? "Activo" : "No vendible"}
                             </span>
                           </div>
 
@@ -693,14 +886,22 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
                             <span
                               className={`${styles.productStock} ${
-                                !product.tracks_inventory
+                                product.is_kit
+                                  ? canSell
+                                    ? styles.inStock
+                                    : styles.outOfStock
+                                  : !product.tracks_inventory
                                   ? styles.inStock
                                   : Number(product.stock || 0) > 0
                                   ? styles.inStock
                                   : styles.outOfStock
                               }`}
                             >
-                              {product.tracks_inventory
+                              {product.is_kit
+                                ? canSell
+                                  ? "Kit disponible"
+                                  : "Kit sin inventario completo"
+                                : product.tracks_inventory
                                 ? `Stock actual: ${Number(product.stock || 0)}`
                                 : "Sin control de inventario"}
                             </span>
@@ -726,6 +927,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                     <div className={styles.selectedProductSummary}>
                       <div className={styles.selectedProductName}>
                         {selectedProduct.name}
+                        {selectedProduct.is_kit ? " (KIT)" : ""}
                       </div>
 
                       <div className={styles.selectedProductMeta}>
@@ -760,7 +962,65 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                       </div>
                     </div>
 
-                    {selectedProduct.tracks_inventory ? (
+                    {selectedProduct.is_kit ? (
+                      <div className={styles.stockBlock}>
+                        <div className={styles.stockBlockTitle}>
+                          Componentes del kit
+                        </div>
+
+                        {kitValidation.items.length === 0 ? (
+                          <div className={styles.stockLoading}>
+                            {kitValidation.message ||
+                              "Validando componentes del kit..."}
+                          </div>
+                        ) : (
+                          <div className={styles.branchStockList}>
+                            {kitValidation.items.map((item) => (
+                              <div
+                                key={item.product_id}
+                                className={`${styles.branchStockItem} ${
+                                  item.ok
+                                    ? styles.otherBranchItem
+                                    : styles.currentBranchItem
+                                }`}
+                              >
+                                <div className={styles.branchStockInfo}>
+                                  <div className={styles.branchStockName}>
+                                    {item.name}
+                                  </div>
+
+                                  <div className={styles.branchStockMeta}>
+                                    Código: {item.barcode || "Sin código"}
+                                  </div>
+                                </div>
+
+                                <div className={styles.branchStockRight}>
+                                  <span
+                                    className={`${styles.branchStockQty} ${
+                                      item.ok
+                                        ? styles.branchStockPositive
+                                        : styles.branchStockZero
+                                    }`}
+                                  >
+                                    {item.stock}/{item.requiredQty}
+                                  </span>
+
+                                  <span
+                                    className={`${styles.miniStatusBadge} ${
+                                      item.ok
+                                        ? styles.miniStatusActive
+                                        : styles.miniStatusInactive
+                                    }`}
+                                  >
+                                    {item.ok ? "OK" : item.reason}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : selectedProduct.tracks_inventory ? (
                       <div className={styles.stockBlock}>
                         <div className={styles.stockBlockTitle}>
                           Existencia por sucursal
@@ -834,6 +1094,19 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                       </div>
                     )}
 
+                    {selectedProduct.is_kit && (
+                      <div
+                        className={
+                          kitValidation.isValid
+                            ? styles.infoNotice
+                            : styles.errorNotice || styles.infoNotice
+                        }
+                      >
+                        {kitValidation.message ||
+                          "Validando inventario de componentes del kit."}
+                      </div>
+                    )}
+
                     {selectedProduct.discount_enabled && (
                       <div className={styles.infoNotice}>
                         Este producto tiene descuento automático aplicado.
@@ -844,7 +1117,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                     )}
 
                     <div className={styles.infoNotice}>
-                      {selectedProduct.tracks_inventory
+                      {selectedProduct.is_kit
+                        ? "El kit no maneja inventario propio. Se valida el inventario de sus componentes en la sucursal actual."
+                        : selectedProduct.tracks_inventory
                         ? "Solo puedes agregar a la venta productos con inventario de la sucursal actual."
                         : "Producto disponible para venta sin control de inventario."}
                     </div>
@@ -864,13 +1139,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                   handleSelectProduct(selectedProduct);
                 }
               }}
-              disabled={
-                !selectedProduct ||
-                (selectedProduct.tracks_inventory &&
-                  (!selectedProduct.is_active_in_branch ||
-                    !selectedProduct.has_been_stocked ||
-                    Number(selectedProduct.stock || 0) <= 0))
-              }
+              disabled={!canAddSelectedProduct(selectedProduct)}
             >
               Agregar a la venta
             </button>

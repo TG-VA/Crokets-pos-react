@@ -74,6 +74,7 @@ const Sales = () => {
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
   const [processingSale, setProcessingSale] = useState(false);
+  const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
 
   const [productos, setProductos] = useState([]);
 
@@ -100,18 +101,6 @@ const Sales = () => {
     setBarcode("");
     setSaleToken(null);
     setSaleNotes("");
-  };
-
-  const openPaymentFlow = () => {
-    if (productos.length === 0) {
-      alert("No hay productos en la venta.");
-      return;
-    }
-
-    if (processingSale) return;
-
-    setSaleToken((prev) => prev || uuidv4());
-    setShowPaymentModal(true);
   };
 
   const isValidUuid = (value) => {
@@ -154,7 +143,9 @@ const Sales = () => {
     return {
       ...product,
       discount_enabled: hasDiscount,
-      discount_percent: hasDiscount ? Number(discountRow.discount_percent || 0) : 0,
+      discount_percent: hasDiscount
+        ? Number(discountRow.discount_percent || 0)
+        : 0,
       discount_concept: hasDiscount ? discountRow?.discount_concept || "" : "",
     };
   };
@@ -180,6 +171,97 @@ const Sales = () => {
     }
 
     return data;
+  };
+
+  const validateShiftNotCut = async () => {
+    try {
+      const session = await getOpenCashSession();
+
+      const { data, error } = await supabase
+        .from("cash_cuts")
+        .select("id")
+        .eq("cash_register_session_id", session.id)
+        .eq("cut_type", "shift")
+        .limit(1);
+
+      if (error) throw error;
+
+      const alreadyCut = (data || []).length > 0;
+
+      setShiftAlreadyCut(alreadyCut);
+
+      if (alreadyCut) {
+        localStorage.setItem("shift_cut_done", "true");
+      } else {
+        localStorage.removeItem("shift_cut_done");
+      }
+
+      return !alreadyCut;
+    } catch (error) {
+      console.error("Error validando corte:", error);
+      return false;
+    }
+  };
+
+  const syncShiftCutStatus = useCallback(async () => {
+    const localFlag = localStorage.getItem("shift_cut_done");
+
+    if (localFlag === "true") {
+      setShiftAlreadyCut(true);
+    }
+
+    if (branch?.id && user?.id) {
+      await validateShiftNotCut();
+    }
+  }, [branch?.id, user?.id]);
+
+  useEffect(() => {
+    syncShiftCutStatus();
+
+    const handleFocus = () => {
+      syncShiftCutStatus();
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === "shift_cut_done") {
+        syncShiftCutStatus();
+      }
+    };
+
+    const handleCutStatusChanged = () => {
+      syncShiftCutStatus();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("shift-cut-status-changed", handleCutStatusChanged);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("shift-cut-status-changed", handleCutStatusChanged);
+    };
+  }, [syncShiftCutStatus]);
+
+  const openPaymentFlow = async () => {
+    if (productos.length === 0) {
+      alert("No hay productos en la venta.");
+      return;
+    }
+
+    if (processingSale) return;
+
+    const canSell = await validateShiftNotCut();
+
+    if (!canSell) {
+      alert(
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+      );
+      return;
+    }
+
+    setSaleToken((prev) => prev || uuidv4());
+    setShowPaymentModal(true);
   };
 
   const getAvailableCash = async (sessionId) => {
@@ -254,15 +336,7 @@ const Sales = () => {
         }, 0);
       }
 
-      const available = openingAmount + entradas + ventasEfectivo - salidas;
-
-      console.log("openingAmount:", openingAmount);
-      console.log("entradas:", entradas);
-      console.log("ventasEfectivo:", ventasEfectivo);
-      console.log("salidas:", salidas);
-      console.log("available:", available);
-
-      return available;
+      return openingAmount + entradas + ventasEfectivo - salidas;
     } catch (error) {
       console.error("Error calculando efectivo disponible:", error);
       return 0;
@@ -359,47 +433,102 @@ const Sales = () => {
     saleDate,
   }) => {
     try {
-      const { data: detailsRows, error: detailsError } = await supabase
-        .from("sale_details")
-        .select(`
-          id,
-          quantity,
-          unit_price,
-          total_price,
-          product_id,
-          original_unit_price,
-          final_unit_price,
-          discount_type,
-          discount_value,
-          discount_amount
-        `)
-        .eq("sale_id", saleId);
+      const [detailsRes, kitItemsRes] = await Promise.all([
+        supabase
+          .from("sale_details")
+          .select(`
+            id,
+            quantity,
+            unit_price,
+            total_price,
+            product_id,
+            original_unit_price,
+            final_unit_price,
+            discount_type,
+            discount_value,
+            discount_amount
+          `)
+          .eq("sale_id", saleId),
 
-      if (detailsError) throw detailsError;
+        supabase
+          .from("sale_kit_items")
+          .select(`
+            id,
+            sale_id,
+            sale_detail_id,
+            kit_product_id,
+            component_product_id,
+            quantity
+          `)
+          .eq("sale_id", saleId),
+      ]);
+
+      if (detailsRes.error) throw detailsRes.error;
+      if (kitItemsRes.error) throw kitItemsRes.error;
+
+      const detailsRows = detailsRes.data || [];
+      const kitItemRows = kitItemsRes.data || [];
 
       const productIds = [
-        ...new Set((detailsRows || []).map((d) => d.product_id).filter(Boolean)),
+        ...new Set(
+          [
+            ...detailsRows.map((d) => d.product_id),
+            ...kitItemRows.map((k) => k.component_product_id),
+          ].filter(Boolean)
+        ),
       ];
 
       const { data: productsRows, error: productsError } = productIds.length
-        ? await supabase.from("products").select("id, name, barcode").in("id", productIds)
+        ? await supabase
+            .from("products")
+            .select("id, name, barcode, is_kit")
+            .in("id", productIds)
         : { data: [], error: null };
 
       if (productsError) throw productsError;
 
       const productMap = {};
+      const productIsKitMap = {};
+
       for (const product of productsRows || []) {
         productMap[product.id] = product.name || product.barcode || "PRODUCTO";
+        productIsKitMap[product.id] = !!product.is_kit;
       }
 
-      const itemsForPrint = (detailsRows || []).map((item) => ({
-        quantity: Number(item.quantity || 0),
-        description: productMap[item.product_id] || "PRODUCTO",
-        unit_price: Number(item.final_unit_price || item.unit_price || 0),
-        original_unit_price: Number(item.original_unit_price || item.unit_price || 0),
-        discount_amount: Number(item.discount_amount || 0),
-        line_total: Number(item.total_price || 0),
-      }));
+      const kitItemsByDetail = {};
+
+      for (const row of kitItemRows) {
+        if (!kitItemsByDetail[row.sale_detail_id]) {
+          kitItemsByDetail[row.sale_detail_id] = [];
+        }
+
+        kitItemsByDetail[row.sale_detail_id].push({
+          id: row.id,
+          productId: row.component_product_id,
+          quantity: Number(row.quantity || 0),
+          description: productMap[row.component_product_id] || "PRODUCTO",
+        });
+      }
+
+      const itemsForPrint = detailsRows.map((item) => {
+        const components = kitItemsByDetail[item.id] || [];
+
+        return {
+          quantity: Number(item.quantity || 0),
+          description: productMap[item.product_id] || "PRODUCTO",
+          unit_price: Number(item.final_unit_price || item.unit_price || 0),
+          original_unit_price: Number(
+            item.original_unit_price || item.unit_price || 0
+          ),
+          discount_amount: Number(item.discount_amount || 0),
+          line_total: Number(item.total_price || 0),
+          is_kit: productIsKitMap[item.product_id] || components.length > 0,
+          components: components.map((component) => ({
+            quantity: component.quantity,
+            description: component.description,
+          })),
+        };
+      });
 
       const totalPaid = (paymentPayload || []).reduce((acc, payment) => {
         const amount = Number(payment.amount || 0);
@@ -740,6 +869,13 @@ const Sales = () => {
   };
 
   const handleBarcodeSearch = async () => {
+    if (shiftAlreadyCut) {
+      alert(
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+      );
+      return;
+    }
+
     if (!branch?.id) {
       alert("La sucursal aún no está cargada.");
       return;
@@ -825,6 +961,13 @@ const Sales = () => {
   };
 
   const handleAddProductFromVerifier = async (product) => {
+    if (shiftAlreadyCut) {
+      alert(
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+      );
+      return;
+    }
+
     if (!product) return;
 
     try {
@@ -1015,6 +1158,11 @@ const Sales = () => {
   }, [isInitialized]);
 
   const handleSaveEntry = async (newMovement) => {
+    if (shiftAlreadyCut) {
+      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      return false;
+    }
+
     try {
       if (!user?.id) {
         alert("No se detectó el usuario.");
@@ -1056,6 +1204,11 @@ const Sales = () => {
   };
 
   const handleSaveExit = async (newMovement) => {
+    if (shiftAlreadyCut) {
+      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      return false;
+    }
+
     try {
       if (!user?.id) {
         alert("No se detectó el usuario.");
@@ -1127,6 +1280,16 @@ const Sales = () => {
 
     try {
       setProcessingSale(true);
+
+      const canSell = await validateShiftNotCut();
+
+      if (!canSell) {
+        alert(
+          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+        );
+        setShowPaymentModal(false);
+        return false;
+      }
 
       if (!user?.id) {
         alert("No se detectó el usuario.");
@@ -1363,11 +1526,19 @@ const Sales = () => {
           break;
         case "F7":
           e.preventDefault();
-          setEntryModalOpen(true);
+          if (shiftAlreadyCut) {
+            alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+          } else {
+            setEntryModalOpen(true);
+          }
           break;
         case "F8":
           e.preventDefault();
-          setExitModalOpen(true);
+          if (shiftAlreadyCut) {
+            alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+          } else {
+            setExitModalOpen(true);
+          }
           break;
         case "F9":
           e.preventDefault();
@@ -1437,6 +1608,7 @@ const Sales = () => {
     productos,
     pendingTickets,
     processingSale,
+    shiftAlreadyCut,
   ]);
 
   const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
@@ -1453,6 +1625,16 @@ const Sales = () => {
         )}
       </div>
 
+      {shiftAlreadyCut && (
+<div className={styles.shiftCutWarning}>
+  <span>
+    Corte de cajero realizado. Debes cerrar turno antes de seguir vendiendo.
+  </span>
+
+  <span>PENDIENTE CERRAR TURNO</span>
+</div>
+      )}
+
       <div className={styles.topActionBar}>
         <div
           className={styles.horizontalActionButton}
@@ -1464,8 +1646,16 @@ const Sales = () => {
         </div>
 
         <div
-          className={styles.horizontalActionButton}
-          onClick={() => setEntryModalOpen(true)}
+          className={`${styles.horizontalActionButton} ${
+            shiftAlreadyCut ? styles.actionButtonDisabled : ""
+          }`}
+          onClick={() => {
+            if (shiftAlreadyCut) {
+              alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+              return;
+            }
+            setEntryModalOpen(true);
+          }}
         >
           <span className={styles.actionKey}>F7</span>
           <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
@@ -1473,8 +1663,16 @@ const Sales = () => {
         </div>
 
         <div
-          className={styles.horizontalActionButton}
-          onClick={() => setExitModalOpen(true)}
+          className={`${styles.horizontalActionButton} ${
+            shiftAlreadyCut ? styles.actionButtonDisabled : ""
+          }`}
+          onClick={() => {
+            if (shiftAlreadyCut) {
+              alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+              return;
+            }
+            setExitModalOpen(true);
+          }}
         >
           <span className={styles.actionKey}>F8</span>
           <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
@@ -1521,10 +1719,16 @@ const Sales = () => {
               }
             }}
             placeholder="Escanea o escribe código"
+            disabled={shiftAlreadyCut}
           />
         </div>
 
-        <div className={styles.addProductBtn} onClick={handleBarcodeSearch}>
+        <div
+          className={`${styles.addProductBtn} ${
+            shiftAlreadyCut ? styles.actionButtonDisabled : ""
+          }`}
+          onClick={handleBarcodeSearch}
+        >
           <span className={styles.actionKey2}>ENTER</span>
           <span className={styles.actionText2}>Agregar Producto</span>
         </div>
@@ -1683,7 +1887,16 @@ const Sales = () => {
             <span className={styles.totalAmount}>${total.toFixed(2)}</span>
           </div>
 
-          <div className={styles.payButton} onClick={openPaymentFlow}>
+          <div
+            className={`${styles.payButton} ${
+              shiftAlreadyCut ? styles.payButtonDisabled : ""
+            }`}
+            onClick={() => {
+              if (!shiftAlreadyCut) {
+                openPaymentFlow();
+              }
+            }}
+          >
             <img src={payIcon} alt="Cobrar" className={styles.payIcon} />
             <span className={styles.payKey}>F12</span>
             <span className={styles.payText}>Cobrar</span>

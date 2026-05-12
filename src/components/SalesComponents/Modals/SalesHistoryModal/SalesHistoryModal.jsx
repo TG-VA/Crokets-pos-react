@@ -680,135 +680,181 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
     }
   };
 
-  const loadTicketDetail = async (ticket) => {
-    if (!ticket?.id) return;
+const loadTicketDetail = async (ticket) => {
+  if (!ticket?.id) return;
 
-    try {
-      setLoadingDetail(true);
+  try {
+    setLoadingDetail(true);
 
-      const [detailsRes, salePaymentsRes] = await Promise.all([
-        supabase
-          .from("sale_details")
-          .select(`
-            id,
-            quantity,
-            unit_price,
-            total_price,
-            product_id,
-            original_unit_price,
-            final_unit_price,
-            discount_type,
-            discount_value,
-            discount_amount
-          `)
-          .eq("sale_id", ticket.id),
+    const [detailsRes, salePaymentsRes, kitItemsRes] = await Promise.all([
+      supabase
+        .from("sale_details")
+        .select(`
+          id,
+          quantity,
+          unit_price,
+          total_price,
+          product_id,
+          original_unit_price,
+          final_unit_price,
+          discount_type,
+          discount_value,
+          discount_amount
+        `)
+        .eq("sale_id", ticket.id),
 
-        supabase
-          .from("sale_payments")
-          .select(`
-            id,
-            amount,
-            currency,
-            exchange_rate,
-            payment_method_id,
-            reference
-          `)
-          .eq("sale_id", ticket.id),
-      ]);
+      supabase
+        .from("sale_payments")
+        .select(`
+          id,
+          amount,
+          currency,
+          exchange_rate,
+          payment_method_id,
+          reference
+        `)
+        .eq("sale_id", ticket.id),
 
-      if (detailsRes.error) throw detailsRes.error;
-      if (salePaymentsRes.error) throw salePaymentsRes.error;
+      supabase
+        .from("sale_kit_items")
+        .select(`
+          id,
+          sale_id,
+          sale_detail_id,
+          kit_product_id,
+          component_product_id,
+          quantity
+        `)
+        .eq("sale_id", ticket.id),
+    ]);
 
-      const detailRows = detailsRes.data || [];
-      const paymentRows = salePaymentsRes.data || [];
+    if (detailsRes.error) throw detailsRes.error;
+    if (salePaymentsRes.error) throw salePaymentsRes.error;
+    if (kitItemsRes.error) throw kitItemsRes.error;
 
-      const productIds = [...new Set(
-        detailRows.map((d) => d.product_id).filter(Boolean)
-      )];
-      const paymentMethodIds = [
-        ...new Set(paymentRows.map((p) => p.payment_method_id).filter(Boolean)),
-      ];
+    const detailRows = detailsRes.data || [];
+    const paymentRows = salePaymentsRes.data || [];
+    const kitItemRows = kitItemsRes.data || [];
 
-      const [productsRes, methodsRes] = await Promise.all([
-        productIds.length
-          ? supabase
-              .from("products")
-              .select("id, name, barcode")
-              .in("id", productIds)
-          : Promise.resolve({ data: [], error: null }),
+    const productIds = [
+      ...new Set(
+        [
+          ...detailRows.map((d) => d.product_id),
+          ...kitItemRows.map((k) => k.component_product_id),
+        ].filter(Boolean)
+      ),
+    ];
 
-        paymentMethodIds.length
-          ? supabase
-              .from("payment_methods")
-              .select("id, name")
-              .in("id", paymentMethodIds)
-          : Promise.resolve({ data: [], error: null }),
-      ]);
+    const paymentMethodIds = [
+      ...new Set(paymentRows.map((p) => p.payment_method_id).filter(Boolean)),
+    ];
 
-      if (productsRes.error) throw productsRes.error;
-      if (methodsRes.error) throw methodsRes.error;
+    const [productsRes, methodsRes] = await Promise.all([
+      productIds.length
+        ? supabase
+            .from("products")
+            .select("id, name, barcode, is_kit")
+            .in("id", productIds)
+        : Promise.resolve({ data: [], error: null }),
 
-      const productMap = {};
-      for (const product of productsRes.data || []) {
-        productMap[product.id] = product.name || product.barcode || "PRODUCTO";
+      paymentMethodIds.length
+        ? supabase
+            .from("payment_methods")
+            .select("id, name")
+            .in("id", paymentMethodIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (productsRes.error) throw productsRes.error;
+    if (methodsRes.error) throw methodsRes.error;
+
+    const productMap = {};
+    const productIsKitMap = {};
+
+    for (const product of productsRes.data || []) {
+      productMap[product.id] = product.name || product.barcode || "PRODUCTO";
+      productIsKitMap[product.id] = !!product.is_kit;
+    }
+
+    const methodMap = {};
+    for (const method of methodsRes.data || []) {
+      methodMap[method.id] = method.name;
+    }
+
+    const kitItemsByDetail = {};
+
+    for (const row of kitItemRows) {
+      if (!kitItemsByDetail[row.sale_detail_id]) {
+        kitItemsByDetail[row.sale_detail_id] = [];
       }
 
-      const methodMap = {};
-      for (const method of methodsRes.data || []) {
-        methodMap[method.id] = method.name;
-      }
+      kitItemsByDetail[row.sale_detail_id].push({
+        id: row.id,
+        productId: row.component_product_id,
+        quantity: Number(row.quantity || 0),
+        description: productMap[row.component_product_id] || "PRODUCTO",
+      });
+    }
 
-      const items = detailRows.map((item) => ({
+    const items = detailRows.map((item) => {
+      const components = kitItemsByDetail[item.id] || [];
+
+      return {
         id: item.id,
         productId: item.product_id,
         cant: Number(item.quantity || 0),
         description: productMap[item.product_id] || "PRODUCTO",
         amount: Number(item.total_price || 0),
         unitPrice: Number(item.unit_price || 0),
-        originalUnitPrice: Number(item.original_unit_price || item.unit_price || 0),
+        originalUnitPrice: Number(
+          item.original_unit_price || item.unit_price || 0
+        ),
         finalUnitPrice: Number(item.final_unit_price || item.unit_price || 0),
         discountAmount: Number(item.discount_amount || 0),
         discountValue: Number(item.discount_value || 0),
         discountType: item.discount_type || null,
-      }));
+        isKit: productIsKitMap[item.product_id] || components.length > 0,
+        components,
+      };
+    });
 
-      const payments = paymentRows.map((payment) => ({
-        id: payment.id,
-        amount: Number(payment.amount || 0),
-        currency: payment.currency || "MXN",
-        exchangeRate: Number(payment.exchange_rate || 0),
-        reference: payment.reference || "",
-        paymentMethod: (
-          methodMap[payment.payment_method_id] || "DESCONOCIDO"
-        ).toUpperCase(),
-      }));
+    const payments = paymentRows.map((payment) => ({
+      id: payment.id,
+      amount: Number(payment.amount || 0),
+      currency: payment.currency || "MXN",
+      exchangeRate: Number(payment.exchange_rate || 0),
+      reference: payment.reference || "",
+      paymentMethod: (
+        methodMap[payment.payment_method_id] || "DESCONOCIDO"
+      ).toUpperCase(),
+    }));
 
-      const paymentMethodLabel =
-        payments.length === 0
-          ? "SIN PAGOS"
-          : payments.length === 1
-          ? payments[0].paymentMethod
-          : "MIXTO";
+    const paymentMethodLabel =
+      payments.length === 0
+        ? "SIN PAGOS"
+        : payments.length === 1
+        ? payments[0].paymentMethod
+        : "MIXTO";
 
-      const paymentSummary = getPaymentSummary(payments, ticket.total);
+    const paymentSummary = getPaymentSummary(payments, ticket.total);
 
-      setSelectedTicket((prev) =>
-        prev && prev.id === ticket.id
-          ? {
-              ...prev,
-              items,
-              payments,
-              paymentMethod: paymentMethodLabel,
-              ...paymentSummary,
-            }
-          : prev
-      );
-    } catch (error) {
-      console.error("Error cargando detalle del ticket:", error);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
+    setSelectedTicket((prev) =>
+      prev && prev.id === ticket.id
+        ? {
+            ...prev,
+            items,
+            payments,
+            paymentMethod: paymentMethodLabel,
+            ...paymentSummary,
+          }
+        : prev
+    );
+  } catch (error) {
+    console.error("Error cargando detalle del ticket:", error);
+  } finally {
+    setLoadingDetail(false);
+  }
+};  
 
   const loadReturnData = async (saleId) => {
     try {
@@ -1127,114 +1173,119 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
     }
   };
 
-  const handlePrintCopy = async () => {
-    if (!selectedTicket?.id) {
-      alert("Selecciona una venta primero.");
-      return;
-    }
+const handlePrintCopy = async () => {
+  if (!selectedTicket?.id) {
+    alert("Selecciona una venta primero.");
+    return;
+  }
 
-    if (loadingDetail) {
-      alert("Espera a que termine de cargar el detalle del ticket.");
-      return;
-    }
+  if (loadingDetail) {
+    alert("Espera a que termine de cargar el detalle del ticket.");
+    return;
+  }
 
-    try {
-      setPrintProcessing(true);
+  try {
+    setPrintProcessing(true);
 
-      const refundMethodName =
-        selectedTicket.refundMethodName ||
-        getPaymentMethodNameById(refundMethodId) ||
-        "";
+    const refundMethodName =
+      selectedTicket.refundMethodName ||
+      getPaymentMethodNameById(refundMethodId) ||
+      "";
 
-      const paymentSummary = getPaymentSummary(
-        selectedTicket.payments || [],
-        selectedTicket.total
-      );
+    const paymentSummary = getPaymentSummary(
+      selectedTicket.payments || [],
+      selectedTicket.total
+    );
 
-      const itemsForPrint = (selectedTicket.items || []).map((item) => ({
-        quantity: item.cant,
-        description: item.description,
-        unit_price: item.finalUnitPrice || item.unitPrice,
-        original_unit_price: item.originalUnitPrice || item.unitPrice,
-        discount_amount: item.discountAmount || 0,
-        line_total: item.amount,
-      }));
-
-      const paymentsForPrint = (selectedTicket.payments || []).map((payment) => ({
-        payment_method_name: payment.paymentMethod,
-        amount: payment.amount,
-        currency: payment.currency,
-        exchange_rate: payment.exchangeRate,
-        reference: payment.reference || "",
-      }));
-
-const ticketText = buildTicketText({
-  branch: {
-    name: branch?.name || "SUCURSAL",
-    phone: branch?.phone || "",
-    address: branch?.address || "",
-    city: branch?.city || "",
-    state: branch?.state || "",
-    postal_code: branch?.postal_code || branch?.zip_code || "",
-  },
-  sale: {
-    folio: selectedTicket.folio,
-    created_at: selectedTicket.date,
-    subtotal: selectedTicket.subtotal,
-    tax: selectedTicket.tax,
-    discount_total: selectedTicket.discountTotal || 0,
-    total: selectedTicket.total,
-    amount_received: paymentSummary.amountReceived,
-    change_amount: paymentSummary.changeAmount,
-    payment_method: selectedTicket.paymentMethod,
-    payments: paymentsForPrint,
-    status: selectedTicket.status,
-    notes: selectedTicket.notes || "",
-    cancelled_at: selectedTicket.cancelledAt,
-    cancellation_reason:
-      selectedTicket.cancelReason || cancelReason || "SIN MOTIVO REGISTRADO",
-    refund_method: refundMethodName,
-    cashier_name: selectedTicket.cashier,
-    total_returned: selectedTicket.totalReturned || 0,
-    net_total: selectedTicket.netTotal || selectedTicket.total,
-    returns: (selectedTicket.returns || []).map((ret) => ({
-      total_refund: ret.totalRefund || 0,
-      refund_method: ret.refundMethodName || "",
-      return_reason: ret.returnReason || "",
-      created_at: ret.createdAt || null,
-      items: (ret.items || []).map((item) => ({
-        quantity: item.quantity || 0,
-        description: item.description || "PRODUCTO",
-        total_price: item.totalPrice || 0,
+    const itemsForPrint = (selectedTicket.items || []).map((item) => ({
+      quantity: item.cant,
+      description: item.description,
+      unit_price: item.finalUnitPrice || item.unitPrice,
+      original_unit_price: item.originalUnitPrice || item.unitPrice,
+      discount_amount: item.discountAmount || 0,
+      line_total: item.amount,
+      is_kit: !!item.isKit,
+      components: (item.components || []).map((component) => ({
+        quantity: component.quantity,
+        description: component.description,
       })),
-    })),
-  },
-  items: itemsForPrint,
-  cashierName: selectedTicket.cashier,
-  footer: {
-    line1: "Gracias por su compra",
-    line2: "Agenda tu cita de baño",
-    phone: "998 117 5387",
-    returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
-  },
-  isReprint: true,
-  reprintedAt: new Date(),
-});
+    }));
 
-      const result = await printTicket(ticketText);
+    const paymentsForPrint = (selectedTicket.payments || []).map((payment) => ({
+      payment_method_name: payment.paymentMethod,
+      amount: payment.amount,
+      currency: payment.currency,
+      exchange_rate: payment.exchangeRate,
+      reference: payment.reference || "",
+    }));
 
-      if (!result?.success) {
-        throw new Error(result?.message || "No se pudo imprimir la copia.");
-      }
+    const ticketText = buildTicketText({
+      branch: {
+        name: branch?.name || "SUCURSAL",
+        phone: branch?.phone || "",
+        address: branch?.address || "",
+        city: branch?.city || "",
+        state: branch?.state || "",
+        postal_code: branch?.postal_code || branch?.zip_code || "",
+      },
+      sale: {
+        folio: selectedTicket.folio,
+        created_at: selectedTicket.date,
+        subtotal: selectedTicket.subtotal,
+        tax: selectedTicket.tax,
+        discount_total: selectedTicket.discountTotal || 0,
+        total: selectedTicket.total,
+        amount_received: paymentSummary.amountReceived,
+        change_amount: paymentSummary.changeAmount,
+        payment_method: selectedTicket.paymentMethod,
+        payments: paymentsForPrint,
+        status: selectedTicket.status,
+        notes: selectedTicket.notes || "",
+        cancelled_at: selectedTicket.cancelledAt,
+        cancellation_reason:
+          selectedTicket.cancelReason || cancelReason || "SIN MOTIVO REGISTRADO",
+        refund_method: refundMethodName,
+        cashier_name: selectedTicket.cashier,
+        total_returned: selectedTicket.totalReturned || 0,
+        net_total: selectedTicket.netTotal || selectedTicket.total,
+        returns: (selectedTicket.returns || []).map((ret) => ({
+          total_refund: ret.totalRefund || 0,
+          refund_method: ret.refundMethodName || "",
+          return_reason: ret.returnReason || "",
+          created_at: ret.createdAt || null,
+          items: (ret.items || []).map((item) => ({
+            quantity: item.quantity || 0,
+            description: item.description || "PRODUCTO",
+            total_price: item.totalPrice || 0,
+          })),
+        })),
+      },
+      items: itemsForPrint,
+      cashierName: selectedTicket.cashier,
+      footer: {
+        line1: "Gracias por su compra",
+        line2: "Agenda tu cita de baño",
+        phone: "998 117 5387",
+        returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
+      },
+      isReprint: true,
+      reprintedAt: new Date(),
+    });
 
-      alert("Copia del ticket generada correctamente.");
-    } catch (error) {
-      console.error("Error imprimiendo copia:", error);
-      alert(error.message || "No se pudo imprimir la copia del ticket.");
-    } finally {
-      setPrintProcessing(false);
+    const result = await printTicket(ticketText);
+
+    if (!result?.success) {
+      throw new Error(result?.message || "No se pudo imprimir la copia.");
     }
-  };
+
+    alert("Copia del ticket generada correctamente.");
+  } catch (error) {
+    console.error("Error imprimiendo copia:", error);
+    alert(error.message || "No se pudo imprimir la copia del ticket.");
+  } finally {
+    setPrintProcessing(false);
+  }
+};
 
   useEffect(() => {
     if (!isOpen) {

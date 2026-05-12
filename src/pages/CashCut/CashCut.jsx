@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +13,6 @@ import { printTicket } from "../../utils/ticketPrinter";
 
 import styles from "./CashCut.module.css";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
     style: "currency",
@@ -44,7 +43,6 @@ const fmtTime = (d) =>
 const getFolio = (saleId) =>
   saleId ? `#${String(saleId).slice(0, 8).toUpperCase()}` : "—";
 
-// ─── Sub-componentes ──────────────────────────────────────────────────────────
 const SectionCard = ({ icon, title, children }) => (
   <div className={styles.card}>
     <div className={styles.cardHeader}>
@@ -73,122 +71,255 @@ const EmptyState = ({ msg }) => (
   <div className={styles.emptyState}>— {msg} —</div>
 );
 
-const CancellationItem = ({ item }) => {
-  return (
-    <div className={styles.cancellationItem}>
-      <div className={styles.cancellationTop}>
-        <div className={styles.cancellationLeft}>
-          <div className={styles.cancellationFolio}>
-            Folio {getFolio(item.sale_id)}
-          </div>
-
-          <div className={styles.cancellationDate}>
-            {fmtShortDate(item.canceled_at)} · {fmtTime(item.canceled_at)}
-          </div>
-
-          <div className={styles.cancellationReason}>
-            Motivo: {item.cancel_reason?.trim() || "Sin motivo registrado"}
-          </div>
+const CancellationItem = ({ item }) => (
+  <div className={styles.cancellationItem}>
+    <div className={styles.cancellationTop}>
+      <div className={styles.cancellationLeft}>
+        <div className={styles.cancellationFolio}>
+          Folio {getFolio(item.sale_id)}
         </div>
 
-        <div className={styles.cancellationRight}>
-          <div className={styles.cancellationAmount}>
-            - {fmt(item.refund_amount)}
-          </div>
+        <div className={styles.cancellationDate}>
+          {fmtShortDate(item.canceled_at)} · {fmtTime(item.canceled_at)}
+        </div>
 
-          <div className={styles.cancellationMethod}>
-            {item.refund_method_name || "Sin método"}
-          </div>
+        <div className={styles.cancellationReason}>
+          Motivo: {item.cancel_reason?.trim() || "Sin motivo registrado"}
+        </div>
+      </div>
+
+      <div className={styles.cancellationRight}>
+        <div className={styles.cancellationAmount}>
+          - {fmt(item.refund_amount)}
+        </div>
+
+        <div className={styles.cancellationMethod}>
+          {item.refund_method_name || "Sin método"}
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-const PartialReturnItem = ({ item }) => {
-  return (
-    <div className={styles.cancellationItem}>
-      <div className={styles.cancellationTop}>
-        <div className={styles.cancellationLeft}>
-          <div className={styles.cancellationFolio}>
-            Folio {getFolio(item.sale_id)}
-          </div>
-
-          <div className={styles.cancellationDate}>
-            {fmtShortDate(item.created_at)} · {fmtTime(item.created_at)}
-          </div>
-
-          <div className={styles.cancellationReason}>
-            Motivo: {item.return_reason?.trim() || "Sin motivo registrado"}
-          </div>
+const PartialReturnItem = ({ item }) => (
+  <div className={styles.cancellationItem}>
+    <div className={styles.cancellationTop}>
+      <div className={styles.cancellationLeft}>
+        <div className={styles.cancellationFolio}>
+          Folio {getFolio(item.sale_id)}
         </div>
 
-        <div className={styles.cancellationRight}>
-          <div className={styles.cancellationAmount}>
-            - {fmt(item.total_refund)}
-          </div>
+        <div className={styles.cancellationDate}>
+          {fmtShortDate(item.created_at)} · {fmtTime(item.created_at)}
+        </div>
 
-          <div className={styles.cancellationMethod}>
-            {item.refund_method_name || "Sin método"}
-          </div>
+        <div className={styles.cancellationReason}>
+          Motivo: {item.return_reason?.trim() || "Sin motivo registrado"}
+        </div>
+      </div>
+
+      <div className={styles.cancellationRight}>
+        <div className={styles.cancellationAmount}>
+          - {fmt(item.total_refund)}
+        </div>
+
+        <div className={styles.cancellationMethod}>
+          {item.refund_method_name || "Sin método"}
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-// ─── Página Principal ─────────────────────────────────────────────────────────
 const CashCut = () => {
   const navigate = useNavigate();
   const { user, setCashRegistered, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [activeModal, setActiveModal] = useState(null);
+  const [isCutModalOpen, setIsCutModalOpen] = useState(false);
 
-  // UX
   const [errorMsg, setErrorMsg] = useState("");
   const [closingShift, setClosingShift] = useState(false);
   const [hasShiftCut, setHasShiftCut] = useState(false);
-  const [hasFinalCut, setHasFinalCut] = useState(false);
+  const [currentShiftCut, setCurrentShiftCut] = useState(null);
 
-  // Sesión
+  const [selectedCutId, setSelectedCutId] = useState("current");
+  const [cutsHistory, setCutsHistory] = useState([]);
+  const [historicalCut, setHistoricalCut] = useState(null);
+
   const [session, setSession] = useState(null);
   const [branchName, setBranchName] = useState("");
   const [username, setUsername] = useState("");
 
-  // Ventas
   const [ventasTotales, setVentasTotales] = useState(0);
   const [ventasPorMetodo, setVentasPorMetodo] = useState([]);
   const [ventasPorDepartamento, setVentasPorDepartamento] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [tax, setTax] = useState(0);
 
-  // Dólares
   const [ventasDolaresUsd, setVentasDolaresUsd] = useState(0);
   const [ventasDolaresMxn, setVentasDolaresMxn] = useState(0);
 
-  // Cancelaciones
   const [devolucionesTotales, setDevolucionesTotales] = useState(0);
   const [devolucionesAfectanCaja, setDevolucionesAfectanCaja] = useState(0);
   const [cancelaciones, setCancelaciones] = useState([]);
 
-  // Devoluciones parciales
   const [devolucionesParcialesTotales, setDevolucionesParcialesTotales] =
     useState(0);
   const [devolucionesParcialesAfectanCaja, setDevolucionesParcialesAfectanCaja] =
     useState(0);
   const [devolucionesParciales, setDevolucionesParciales] = useState([]);
 
-  // Movimientos de efectivo
   const [entradasEfectivo, setEntradasEfectivo] = useState([]);
   const [salidasEfectivo, setSalidasEfectivo] = useState([]);
   const [totalEntradas, setTotalEntradas] = useState(0);
   const [totalSalidas, setTotalSalidas] = useState(0);
+  const realtimeTimerRef = useRef(null);
+
+  const isHistoricalView = selectedCutId !== "current";
 
   useEffect(() => {
     if (user) fetchAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+  if (!user?.id || !session?.id || !session?.branch_id || isHistoricalView) {
+    return;
+  }
+
+  const refreshRealtimeData = () => {
+    if (realtimeTimerRef.current) {
+      clearTimeout(realtimeTimerRef.current);
+    }
+
+    realtimeTimerRef.current = setTimeout(async () => {
+      try {
+        const activeSession = await fetchSession();
+
+        if (!activeSession?.id) {
+          resetSalesState();
+          setHasShiftCut(false);
+          setCurrentShiftCut(null);
+          return;
+        }
+
+        if (activeSession.id !== session.id) {
+          await loadCurrentSession(activeSession);
+          await fetchCutsHistory(activeSession.branch_id);
+          return;
+        }
+
+        await fetchCutsHistory(activeSession.branch_id);
+
+        await fetchSalesData({
+          sessionData: activeSession,
+          userId: user.id,
+          endAt: null,
+        });
+
+        await fetchCashMovements(activeSession.id);
+        await fetchExistingCuts(activeSession.id);
+      } catch (err) {
+        console.error("Error actualizando corte en tiempo real:", err);
+      }
+    }, 700);
+  };
+
+  const channel = supabase
+    .channel(`cashcut-realtime-${session.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "sales",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "sale_payments",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "sale_details",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "cash_movements",
+        filter: `session_id=eq.${session.id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "canceled_sales",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "sale_returns",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "cash_cuts",
+        filter: `branch_id=eq.${session.branch_id}`,
+      },
+      refreshRealtimeData
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "cash_register_sessions",
+        filter: `id=eq.${session.id}`,
+      },
+      refreshRealtimeData
+    )
+    .subscribe();
+
+  return () => {
+    if (realtimeTimerRef.current) {
+      clearTimeout(realtimeTimerRef.current);
+    }
+
+    supabase.removeChannel(channel);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user?.id, session?.id, session?.branch_id, isHistoricalView]);
 
   const resetSalesState = () => {
     setVentasTotales(0);
@@ -214,14 +345,39 @@ const CashCut = () => {
   };
 
   const resetLocalState = () => {
-    setActiveModal(null);
+    setIsCutModalOpen(false);
     setErrorMsg("");
     setSession(null);
     setBranchName("");
     setUsername("");
     setHasShiftCut(false);
-    setHasFinalCut(false);
+    setCurrentShiftCut(null);
+    setSelectedCutId("current");
+    setHistoricalCut(null);
     resetSalesState();
+  };
+
+  const getDisplayUsername = (authUser = user) => {
+    return authUser?.user_metadata?.username
+      ? authUser.user_metadata.username.toUpperCase()
+      : authUser?.email?.split("@")[0].toUpperCase() || "USUARIO";
+  };
+
+  const getCutLabel = (cut) => {
+    const cutDate = cut.created_at ? fmtShortDate(cut.created_at) : "Sin fecha";
+    const cutTime = cut.created_at ? fmtTime(cut.created_at) : "--:--";
+    const cashier =
+      cut.users?.username ||
+      cut.username ||
+      (cut.user_id ? String(cut.user_id).slice(0, 8).toUpperCase() : "USUARIO");
+
+    const sessionFolio = cut.cash_register_session_id
+      ? `#${String(cut.cash_register_session_id).slice(0, 8).toUpperCase()}`
+      : "#SIN-TURNO";
+
+    return `Corte ${sessionFolio} · ${cutDate} · ${cutTime} · ${String(
+      cashier
+    ).toUpperCase()}`;
   };
 
   const fetchAllData = async () => {
@@ -232,13 +388,12 @@ const CashCut = () => {
       const sessionData = await fetchSession();
 
       if (sessionData) {
-        await fetchSalesData(sessionData);
-        await fetchCashMovements(sessionData.id);
-        await fetchExistingCuts(sessionData.id);
+        await fetchCutsHistory(sessionData.branch_id);
+        await loadCurrentSession(sessionData);
       } else {
         resetSalesState();
         setHasShiftCut(false);
-        setHasFinalCut(false);
+        setCurrentShiftCut(null);
       }
     } catch (err) {
       console.error("Error cargando datos del corte:", err);
@@ -248,13 +403,8 @@ const CashCut = () => {
     }
   };
 
-  // ── Sesión activa ──────────────────────────────────────────────────────────
   const fetchSession = async () => {
-    setUsername(
-      user?.user_metadata?.username
-        ? user.user_metadata.username.toUpperCase()
-        : user?.email?.split("@")[0].toUpperCase() || "USUARIO"
-    );
+    setUsername(getDisplayUsername());
 
     const { data: sessionData, error } = await supabase
       .from("cash_register_sessions")
@@ -287,11 +437,7 @@ const CashCut = () => {
         .eq("id", sessionData.branch_id)
         .maybeSingle();
 
-      if (!branchErr && branchData?.name) {
-        setBranchName(branchData.name);
-      } else {
-        setBranchName("");
-      }
+      setBranchName(!branchErr && branchData?.name ? branchData.name : "");
     } else {
       setBranchName("");
     }
@@ -299,47 +445,242 @@ const CashCut = () => {
     return sessionData;
   };
 
-  const fetchExistingCuts = async (sessionId) => {
-    if (!sessionId) {
-      setHasShiftCut(false);
-      setHasFinalCut(false);
+  const fetchCutsHistory = async (branchId) => {
+    if (!branchId) {
+      setCutsHistory([]);
       return;
     }
 
     const { data, error } = await supabase
       .from("cash_cuts")
-      .select("cut_type")
-      .eq("cash_register_session_id", sessionId);
+      .select(`
+        id,
+        branch_id,
+        user_id,
+        cash_register_session_id,
+        cut_type,
+        expected_amount,
+        counted_amount,
+        difference,
+        notes,
+        cut_date,
+        created_at,
+        users (
+          username
+        ),
+        cash_register_sessions (
+          id,
+          branch_id,
+          user_id,
+          opened_at,
+          closed_at,
+          opening_amount,
+          closing_amount,
+          difference,
+          status
+        )
+      `)
+      .eq("branch_id", branchId)
+      .eq("cut_type", "shift")
+      .order("created_at", { ascending: false })
+      .limit(300);
 
     if (error) {
-      console.error("Error obteniendo cortes existentes:", error.message);
-      setHasShiftCut(false);
-      setHasFinalCut(false);
+      console.error("Error obteniendo historial de cortes:", error.message);
+      setCutsHistory([]);
       return;
     }
 
-    const cutTypes = data?.map((c) => c.cut_type) || [];
-    setHasShiftCut(cutTypes.includes("shift"));
-    setHasFinalCut(cutTypes.includes("final"));
+    setCutsHistory(
+      (data || []).map((cut) => ({
+        ...cut,
+        label: getCutLabel(cut),
+      }))
+    );
   };
 
-  // ── Ventas del turno ──────────────────────────────────────────────────────
-  const fetchSalesData = async (sessionData) => {
+  const loadCurrentSession = async (sessionData) => {
+    setSelectedCutId("current");
+    setHistoricalCut(null);
+    setUsername(getDisplayUsername());
+    setSession(sessionData);
+    resetSalesState();
+
+    await fetchSalesData({
+      sessionData,
+      userId: user.id,
+      endAt: null,
+    });
+
+    await fetchCashMovements(sessionData.id);
+    await fetchExistingCuts(sessionData.id);
+  };
+
+  const handleChangeCut = async (cutId) => {
+    setErrorMsg("");
+    setSelectedCutId(cutId);
+
+    if (cutId === "current") {
+      const activeSession = await fetchSession();
+      if (activeSession) {
+        await loadCurrentSession(activeSession);
+      }
+      return;
+    }
+
+    await loadHistoricalCut(cutId);
+  };
+
+  const loadHistoricalCut = async (cutId) => {
+    setLoading(true);
+
+    try {
+      const found = cutsHistory.find((cut) => cut.id === cutId);
+
+      let cutData = found;
+
+      if (!cutData) {
+        const { data, error } = await supabase
+          .from("cash_cuts")
+          .select(`
+            id,
+            branch_id,
+            user_id,
+            cash_register_session_id,
+            cut_type,
+            expected_amount,
+            counted_amount,
+            difference,
+            notes,
+            cut_date,
+            created_at,
+            users (
+              username
+            ),
+            cash_register_sessions (
+              id,
+              branch_id,
+              user_id,
+              opened_at,
+              closed_at,
+              opening_amount,
+              closing_amount,
+              difference,
+              status
+            )
+          `)
+          .eq("id", cutId)
+          .maybeSingle();
+
+        if (error) throw error;
+        cutData = data;
+      }
+
+      if (!cutData) {
+        setErrorMsg("No se encontró el corte seleccionado.");
+        return;
+      }
+
+      const historicalSession = cutData.cash_register_sessions;
+
+      if (!historicalSession?.id) {
+        setErrorMsg("El corte seleccionado no tiene turno relacionado.");
+        return;
+      }
+
+      resetSalesState();
+
+      setHistoricalCut(cutData);
+      setCurrentShiftCut(null);
+      setSession(historicalSession);
+      setUsername(
+        cutData.users?.username
+          ? String(cutData.users.username).toUpperCase()
+          : cutData.user_id
+          ? String(cutData.user_id).slice(0, 8).toUpperCase()
+          : "USUARIO"
+      );
+
+      if (cutData.branch_id) {
+        const { data: branchData } = await supabase
+          .from("branches")
+          .select("name")
+          .eq("id", cutData.branch_id)
+          .maybeSingle();
+
+        setBranchName(branchData?.name || branchName || "");
+      }
+
+      await fetchSalesData({
+        sessionData: historicalSession,
+        userId: cutData.user_id,
+        endAt: cutData.created_at,
+      });
+
+      await fetchCashMovements(historicalSession.id, cutData.created_at);
+      setHasShiftCut(true);
+    } catch (err) {
+      console.error("Error cargando corte histórico:", err);
+      setErrorMsg("No se pudo cargar el corte histórico.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchExistingCuts = async (sessionId) => {
+    if (!sessionId) {
+      setHasShiftCut(false);
+      setCurrentShiftCut(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("cash_cuts")
+      .select("*")
+      .eq("cash_register_session_id", sessionId)
+      .eq("cut_type", "shift")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error obteniendo corte existente:", error.message);
+      setHasShiftCut(false);
+      setCurrentShiftCut(null);
+      return;
+    }
+
+    setHasShiftCut(!!data);
+    setCurrentShiftCut(data || null);
+
+    if (data) {
+      localStorage.setItem("shift_cut_done", "true");
+      window.dispatchEvent(new Event("shift-cut-status-changed"));
+    }
+  };
+
+  const fetchSalesData = async ({ sessionData, userId, endAt = null }) => {
     const turnoStart = sessionData.opened_at;
     const branchId = sessionData.branch_id;
 
     if (!turnoStart || !branchId) {
-      setErrorMsg("El turno activo no tiene sucursal o fecha de apertura válidas.");
+      setErrorMsg("El turno no tiene sucursal o fecha de apertura válidas.");
       return;
     }
 
-    const { data: salesData, error: salesError } = await supabase
+    let salesQuery = supabase
       .from("sales")
-      .select("id, subtotal, tax, total")
+      .select("id, subtotal, tax, total, created_at")
       .eq("branch_id", branchId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "completed")
       .gte("created_at", turnoStart);
+
+    if (endAt) {
+      salesQuery = salesQuery.lte("created_at", endAt);
+    }
+
+    const { data: salesData, error: salesError } = await salesQuery;
 
     if (salesError) {
       console.error("Error obteniendo ventas:", salesError.message);
@@ -351,12 +692,12 @@ const CashCut = () => {
       const saleIds = salesData.map((s) => s.id);
 
       setVentasTotales(
-        salesData.reduce((acc, s) => acc + parseFloat(s.total || 0), 0)
+        salesData.reduce((acc, s) => acc + Number(s.total || 0), 0)
       );
       setSubtotal(
-        salesData.reduce((acc, s) => acc + parseFloat(s.subtotal || 0), 0)
+        salesData.reduce((acc, s) => acc + Number(s.subtotal || 0), 0)
       );
-      setTax(salesData.reduce((acc, s) => acc + parseFloat(s.tax || 0), 0));
+      setTax(salesData.reduce((acc, s) => acc + Number(s.tax || 0), 0));
 
       await fetchVentasPorMetodo(saleIds, branchId);
       await fetchVentasPorDepartamento(saleIds);
@@ -371,7 +712,7 @@ const CashCut = () => {
       setVentasDolaresMxn(0);
     }
 
-    const { data: refundRows, error: refundErr } = await supabase
+    let refundQuery = supabase
       .from("canceled_sales")
       .select(`
         id,
@@ -389,27 +730,30 @@ const CashCut = () => {
         )
       `)
       .eq("branch_id", branchId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("canceled_at", turnoStart)
       .order("canceled_at", { ascending: false });
 
+    if (endAt) {
+      refundQuery = refundQuery.lte("canceled_at", endAt);
+    }
+
+    const { data: refundRows, error: refundErr } = await refundQuery;
+
     if (refundErr) {
-      console.error("Error obteniendo devoluciones:", refundErr.message);
+      console.error("Error obteniendo cancelaciones:", refundErr.message);
       setDevolucionesTotales(0);
       setDevolucionesAfectanCaja(0);
       setCancelaciones([]);
     } else {
       const totalRefunds = (refundRows || []).reduce(
-        (acc, row) => acc + parseFloat(row.refund_amount || 0),
+        (acc, row) => acc + Number(row.refund_amount || 0),
         0
       );
 
       const totalRefundsCashImpact = (refundRows || []).reduce((acc, row) => {
         const affectsCash = row.payment_methods?.affects_cash ?? false;
-        if (affectsCash) {
-          return acc + parseFloat(row.refund_amount || 0);
-        }
-        return acc;
+        return affectsCash ? acc + Number(row.refund_amount || 0) : acc;
       }, 0);
 
       setDevolucionesTotales(totalRefunds);
@@ -422,13 +766,14 @@ const CashCut = () => {
           cancel_reason: row.cancel_reason,
           refund_amount: Number(row.refund_amount || 0),
           canceled_at: row.canceled_at,
+          refund_method_id: row.refund_method_id,
           refund_method_name: row.payment_methods?.name || "Sin método",
           affects_cash: row.payment_methods?.affects_cash ?? false,
         }))
       );
     }
 
-    const { data: partialReturnRows, error: partialReturnErr } = await supabase
+    let partialReturnQuery = supabase
       .from("sale_returns")
       .select(`
         id,
@@ -446,9 +791,16 @@ const CashCut = () => {
         )
       `)
       .eq("branch_id", branchId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("created_at", turnoStart)
       .order("created_at", { ascending: false });
+
+    if (endAt) {
+      partialReturnQuery = partialReturnQuery.lte("created_at", endAt);
+    }
+
+    const { data: partialReturnRows, error: partialReturnErr } =
+      await partialReturnQuery;
 
     if (partialReturnErr) {
       console.error(
@@ -462,17 +814,14 @@ const CashCut = () => {
     }
 
     const totalPartialReturns = (partialReturnRows || []).reduce(
-      (acc, row) => acc + parseFloat(row.total_refund || 0),
+      (acc, row) => acc + Number(row.total_refund || 0),
       0
     );
 
     const totalPartialReturnsCashImpact = (partialReturnRows || []).reduce(
       (acc, row) => {
         const affectsCash = row.payment_methods?.affects_cash ?? false;
-        if (affectsCash) {
-          return acc + parseFloat(row.total_refund || 0);
-        }
-        return acc;
+        return affectsCash ? acc + Number(row.total_refund || 0) : acc;
       },
       0
     );
@@ -487,13 +836,13 @@ const CashCut = () => {
         return_reason: row.return_reason,
         total_refund: Number(row.total_refund || 0),
         created_at: row.created_at,
+        refund_method_id: row.refund_method_id,
         refund_method_name: row.payment_methods?.name || "Sin método",
         affects_cash: row.payment_methods?.affects_cash ?? false,
       }))
     );
   };
 
-  // ── Ventas por método ─────────────────────────────────────────────────────
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
     const { data, error } = await supabase
       .from("sale_payments")
@@ -521,7 +870,7 @@ const CashCut = () => {
         };
       }
 
-      grouped[name].total += parseFloat(p.amount || 0);
+      grouped[name].total += Number(p.amount || 0);
     });
 
     setVentasPorMetodo(
@@ -534,7 +883,6 @@ const CashCut = () => {
     );
   };
 
-  // ── Ventas en dólares ─────────────────────────────────────────────────────
   const fetchVentasDolares = async (saleIds, branchId) => {
     const { data, error } = await supabase
       .from("sale_payments")
@@ -565,7 +913,6 @@ const CashCut = () => {
     setVentasDolaresMxn(totalMxn);
   };
 
-  // ── Ventas por departamento ───────────────────────────────────────────────
   const fetchVentasPorDepartamento = async (saleIds) => {
     const { data, error } = await supabase
       .from("sale_details")
@@ -582,7 +929,7 @@ const CashCut = () => {
     data?.forEach((item) => {
       const deptName = item.products?.departments?.name || "Sin departamento";
       if (!grouped[deptName]) grouped[deptName] = 0;
-      grouped[deptName] += parseFloat(item.total_price || 0);
+      grouped[deptName] += Number(item.total_price || 0);
     });
 
     setVentasPorDepartamento(
@@ -592,8 +939,7 @@ const CashCut = () => {
     );
   };
 
-  // ── Movimientos de caja ───────────────────────────────────────────────────
-  const fetchCashMovements = async (sessionId) => {
+  const fetchCashMovements = async (sessionId, endAt = null) => {
     if (!sessionId) {
       setEntradasEfectivo([]);
       setSalidasEfectivo([]);
@@ -602,11 +948,17 @@ const CashCut = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("cash_movements")
       .select("id, movement_type, amount, description, created_at")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false });
+
+    if (endAt) {
+      query = query.lte("created_at", endAt);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error obteniendo movimientos de caja:", error.message);
@@ -624,20 +976,48 @@ const CashCut = () => {
     setSalidasEfectivo(salidas);
 
     setTotalEntradas(
-      entradas.reduce((acc, mov) => acc + parseFloat(mov.amount || 0), 0)
+      entradas.reduce((acc, mov) => acc + Number(mov.amount || 0), 0)
     );
 
     setTotalSalidas(
-      salidas.reduce((acc, mov) => acc + parseFloat(mov.amount || 0), 0)
+      salidas.reduce((acc, mov) => acc + Number(mov.amount || 0), 0)
     );
   };
 
-  // ── Guardar corte ─────────────────────────────────────────────────────────
+  const getNetPaymentMethodDetails = () => {
+    return ventasPorMetodo
+      .filter((method) => !!method.id)
+      .map((method) => {
+        const cancelacionesMetodo = cancelaciones
+          .filter((item) => item.refund_method_id === method.id)
+          .reduce((acc, item) => acc + Number(item.refund_amount || 0), 0);
+
+        const devolucionesMetodo = devolucionesParciales
+          .filter((item) => item.refund_method_id === method.id)
+          .reduce((acc, item) => acc + Number(item.total_refund || 0), 0);
+
+        const expectedNetAmount =
+          Number(method.total || 0) - cancelacionesMetodo - devolucionesMetodo;
+
+        return {
+          payment_method_id: method.id,
+          expected_amount: Math.max(expectedNetAmount, 0),
+          counted_amount: Math.max(expectedNetAmount, 0),
+          difference: 0,
+        };
+      });
+  };
+
   const handleConfirmCorte = async ({ counted, notes, expected }) => {
     setErrorMsg("");
 
     if (!session?.id || !session?.branch_id) {
       setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+      return;
+    }
+
+    if (counted === "" || counted === null || counted === undefined) {
+      setErrorMsg("Debes capturar el monto contado en caja.");
       return;
     }
 
@@ -650,9 +1030,9 @@ const CashCut = () => {
           branch_id: session.branch_id,
           user_id: user.id,
           cash_register_session_id: session.id,
-          cut_type: activeModal === "cajero" ? "shift" : "final",
-          expected_amount: expected,
-          counted_amount: counted,
+          cut_type: "shift",
+          expected_amount: Number(expected || 0),
+          counted_amount: Number(counted || 0),
           difference: diferencia,
           notes: notes || null,
           cut_date: new Date().toISOString().split("T")[0],
@@ -662,23 +1042,20 @@ const CashCut = () => {
 
       if (cutError) {
         if (cutError.code === "23505") {
-          const tipoTexto = activeModal === "cajero" ? "de cajero" : "del día";
-          setErrorMsg(`Ya existe un corte ${tipoTexto} para este turno.`);
+          setErrorMsg("Ya existe un corte de cajero para este turno.");
           return;
         }
         throw cutError;
       }
 
-      if (ventasPorMetodo.length > 0 && cutData?.id) {
-        const details = ventasPorMetodo
-          .filter((m) => !!m.id)
-          .map((m) => ({
-            cash_cut_id: cutData.id,
-            payment_method_id: m.id,
-            expected_amount: m.total,
-            counted_amount: m.total,
-            difference: 0,
-          }));
+      if (cutData?.id) {
+        const details = getNetPaymentMethodDetails().map((detail) => ({
+          cash_cut_id: cutData.id,
+          payment_method_id: detail.payment_method_id,
+          expected_amount: detail.expected_amount,
+          counted_amount: detail.counted_amount,
+          difference: detail.difference,
+        }));
 
         if (details.length > 0) {
           const { error: detErr } = await supabase
@@ -689,9 +1066,20 @@ const CashCut = () => {
         }
       }
 
-      setActiveModal(null);
+      setCurrentShiftCut(cutData || null);
+      setHasShiftCut(true);
+      setIsCutModalOpen(false);
+
+      localStorage.setItem("shift_cut_done", "true");
+      window.dispatchEvent(new Event("shift-cut-status-changed"));
+
       alert(`Corte realizado exitosamente.\nDiferencia: ${fmt(diferencia)}`);
-      await fetchAllData();
+
+      const activeSession = await fetchSession();
+      if (activeSession) {
+        await fetchCutsHistory(activeSession.branch_id);
+        await loadCurrentSession(activeSession);
+      }
     } catch (err) {
       console.error("Error guardando corte:", err);
       setErrorMsg(err?.message || "Ocurrió un error al guardar el corte.");
@@ -699,13 +1087,12 @@ const CashCut = () => {
     }
   };
 
-  // ── Cerrar turno ──────────────────────────────────────────────────────────
   const handleCerrarTurno = async () => {
     setErrorMsg("");
 
     if (closingShift) return;
 
-    if (!session?.id) {
+    if (!session?.id || isHistoricalView) {
       setErrorMsg("No hay turno activo para cerrar.");
       return;
     }
@@ -728,6 +1115,9 @@ const CashCut = () => {
         return;
       }
 
+      localStorage.removeItem("shift_cut_done");
+      window.dispatchEvent(new Event("shift-cut-status-changed"));
+
       if (typeof setCashRegistered === "function") {
         setCashRegistered(false);
       }
@@ -744,26 +1134,25 @@ const CashCut = () => {
     }
   };
 
-  // ── Cálculos ──────────────────────────────────────────────────────────────
-  const openingAmount = parseFloat(session?.opening_amount || 0);
+  const openingAmount = Number(session?.opening_amount || 0);
 
   const ventasEfectivo = ventasPorMetodo
     .filter((m) => m.name?.toLowerCase() === "efectivo")
-    .reduce((acc, m) => acc + m.total, 0);
+    .reduce((acc, m) => acc + Number(m.total || 0), 0);
 
   const ventasTerminal = ventasPorMetodo
     .filter((m) => {
       const name = m.name?.toLowerCase() || "";
       return name.includes("terminal") || name.includes("tarjeta");
     })
-    .reduce((acc, m) => acc + m.total, 0);
+    .reduce((acc, m) => acc + Number(m.total || 0), 0);
 
   const ventasTransferencia = ventasPorMetodo
     .filter((m) => {
       const name = m.name?.toLowerCase() || "";
       return name.includes("transferencia");
     })
-    .reduce((acc, m) => acc + m.total, 0);
+    .reduce((acc, m) => acc + Number(m.total || 0), 0);
 
   const descuentoTotal = subtotal + tax - ventasTotales;
 
@@ -776,6 +1165,22 @@ const CashCut = () => {
     devolucionesAfectanCaja -
     devolucionesParcialesAfectanCaja;
 
+  const expectedDisplay = isHistoricalView
+    ? Number(historicalCut?.expected_amount || 0)
+    : dineroCaja;
+
+  const countedDisplay = isHistoricalView
+    ? Number(historicalCut?.counted_amount || 0)
+    : currentShiftCut
+    ? Number(currentShiftCut.counted_amount || 0)
+    : null;
+
+  const differenceDisplay = isHistoricalView
+    ? Number(historicalCut?.difference || 0)
+    : currentShiftCut
+    ? Number(currentShiftCut.difference || 0)
+    : null;
+
   const now = new Date();
 
   const handlePrint = async () => {
@@ -787,9 +1192,18 @@ const CashCut = () => {
           ? `#${session.id.slice(0, 8).toUpperCase()}`
           : "—",
         openedAt: session?.opened_at || new Date(),
+        closedAt: session?.closed_at || null,
+
+        cutCreatedAt:
+          historicalCut?.created_at || currentShiftCut?.created_at || null,
+        expectedAmount: expectedDisplay,
+        countedAmount: countedDisplay,
+        difference: differenceDisplay,
+        notes: historicalCut?.notes || currentShiftCut?.notes || null,
+        isHistorical: isHistoricalView,
 
         ventasTotales,
-        dineroCaja,
+        dineroCaja: expectedDisplay,
         ventasTerminal,
         ventasTransferencia,
 
@@ -833,39 +1247,42 @@ const CashCut = () => {
       <Navbar />
 
       <NavbarCashCut
+        cutsHistory={cutsHistory}
+        selectedCutId={selectedCutId}
+        onChangeCut={handleChangeCut}
+        isHistoricalView={isHistoricalView}
         onCorteCajero={() => {
           setErrorMsg("");
+
           if (!session?.id || !session?.branch_id) {
             setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
             return;
           }
+
           if (hasShiftCut) {
             setErrorMsg("Ya existe un corte de cajero para este turno.");
             return;
           }
-          setActiveModal("cajero");
-        }}
-        onCorteDelDia={() => {
-          setErrorMsg("");
-          if (!session?.id || !session?.branch_id) {
-            setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
-            return;
-          }
-          if (hasFinalCut) {
-            setErrorMsg("Ya existe un corte del día para este turno.");
-            return;
-          }
-          setActiveModal("dia");
+
+          setIsCutModalOpen(true);
         }}
         onImprimir={handlePrint}
         onCerrarTurno={handleCerrarTurno}
-        disableCorteCajero={!session?.id || hasShiftCut}
-        disableCorteDelDia={!session?.id || hasFinalCut}
-        disableCerrarTurno={!session?.id || !hasShiftCut || closingShift}
+        disableCorteCajero={!session?.id || hasShiftCut || isHistoricalView}
+        disableCerrarTurno={
+          !session?.id || !hasShiftCut || closingShift || isHistoricalView
+        }
       />
 
       <div className={styles.pageContent}>
         {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
+
+        {!isHistoricalView && hasShiftCut && currentShiftCut && (
+          <div className={styles.cutDoneAlert}>
+            <strong>✅ Corte de cajero realizado.</strong>
+            <span> Pendiente cerrar turno.</span>
+          </div>
+        )}
 
         {loading ? (
           <div className={styles.fullLoading}>
@@ -874,14 +1291,32 @@ const CashCut = () => {
           </div>
         ) : (
           <>
+            {isHistoricalView && historicalCut && (
+              <div className={styles.errorMsg}>
+                Estás viendo un corte histórico. Esta vista es solo lectura.
+              </div>
+            )}
+
             <div className={styles.heroCard}>
               <div className={styles.heroLeft}>
-                <span className={styles.heroLabel}>VENTAS TOTALES DEL TURNO</span>
+                <span className={styles.heroLabel}>
+                  {isHistoricalView
+                    ? "CORTE HISTÓRICO"
+                    : hasShiftCut
+                    ? "TURNO CORTADO"
+                    : "VENTAS TOTALES DEL TURNO"}
+                </span>
+
                 <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
+
                 <span className={styles.heroDate}>
-                  {fmtDate(now)} ·{" "}
-                  {session?.opened_at ? fmtTime(session.opened_at) : "--:--"} -{" "}
-                  {fmtTime(now)}
+                  {isHistoricalView
+                    ? `${fmtDate(historicalCut?.created_at || now)} · ${fmtTime(
+                        historicalCut?.created_at || now
+                      )}`
+                    : `${fmtDate(now)} · ${
+                        session?.opened_at ? fmtTime(session.opened_at) : "--:--"
+                      } - ${fmtTime(now)}`}
                 </span>
 
                 <div className={styles.sessionInfoHero}>
@@ -900,7 +1335,9 @@ const CashCut = () => {
                   <div className={styles.sessionRow}>
                     <span className={styles.sessionLabel}>Turno:</span>
                     <span className={styles.sessionValue}>
-                      {session?.id ? `#${session.id.slice(0, 8).toUpperCase()}` : "—"}
+                      {session?.id
+                        ? `#${session.id.slice(0, 8).toUpperCase()}`
+                        : "—"}
                     </span>
                   </div>
                 </div>
@@ -908,8 +1345,8 @@ const CashCut = () => {
 
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💰 Total en caja</span>
-                  <span className={styles.heroStatValue}>{fmt(dineroCaja)}</span>
+                  <span className={styles.heroStatLabel}>💵 Ventas en efectivo</span>
+                  <span className={styles.heroStatValue}>{fmt(ventasEfectivo)}</span>
                 </div>
 
                 <div className={styles.heroStat}>
@@ -927,6 +1364,34 @@ const CashCut = () => {
             </div>
 
             <div className={styles.grid}>
+              {(isHistoricalView || currentShiftCut) && (
+                <SectionCard icon="📌" title="INFORMACIÓN DEL CORTE">
+                  <DataRow
+                    label="Fecha del corte"
+                    value={`${fmtShortDate(
+                      historicalCut?.created_at || currentShiftCut?.created_at
+                    )} · ${fmtTime(
+                      historicalCut?.created_at || currentShiftCut?.created_at
+                    )}`}
+                  />
+                  <DataRow label="Monto esperado" value={fmt(expectedDisplay)} bold />
+                  <DataRow label="Monto contado" value={fmt(countedDisplay)} bold />
+                  <DataRow
+                    label="Diferencia"
+                    value={fmt(differenceDisplay)}
+                    color={differenceDisplay < 0 ? "#c62828" : "#2e7d32"}
+                    bold
+                    borderTop
+                  />
+                  <DataRow
+                    label="Notas"
+                    value={
+                      historicalCut?.notes || currentShiftCut?.notes || "Sin notas"
+                    }
+                  />
+                </SectionCard>
+              )}
+
               <SectionCard icon="💰" title="DINERO EN CAJA">
                 <DataRow label="Fondo de caja inicial" value={fmt(openingAmount)} />
                 <DataRow
@@ -964,7 +1429,12 @@ const CashCut = () => {
                   value={`- ${fmt(devolucionesParcialesAfectanCaja)}`}
                   color="#c62828"
                 />
-                <DataRow label="Total en caja" value={fmt(dineroCaja)} bold borderTop />
+                <DataRow
+                  label={isHistoricalView || hasShiftCut ? "Total esperado" : "Total en caja"}
+                  value={fmt(expectedDisplay)}
+                  bold
+                  borderTop
+                />
               </SectionCard>
 
               <SectionCard icon="💳" title="VENTAS POR MÉTODO DE PAGO">
@@ -1151,10 +1621,9 @@ const CashCut = () => {
       </div>
 
       <CorteModal
-        isOpen={activeModal === "cajero" || activeModal === "dia"}
-        onClose={() => setActiveModal(null)}
+        isOpen={isCutModalOpen}
+        onClose={() => setIsCutModalOpen(false)}
         onConfirm={handleConfirmCorte}
-        cutType={activeModal}
         expectedAmount={dineroCaja}
       />
 
