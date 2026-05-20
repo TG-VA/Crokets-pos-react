@@ -77,6 +77,12 @@ const Sales = () => {
   const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
 
   const [productos, setProductos] = useState([]);
+  const [draftReady, setDraftReady] = useState(false);
+
+  const draftKeyRef = useRef(null);
+
+  const salesDraftKey =
+    branch?.id && user?.id ? `sales_draft_${branch.id}_${user.id}` : null;
 
   const subtotal = productos.reduce(
     (sum, producto) =>
@@ -92,6 +98,112 @@ const Sales = () => {
   );
 
   const total = subtotal - discountTotal;
+
+  useEffect(() => {
+    if (!salesDraftKey) {
+      setDraftReady(false);
+      return;
+    }
+
+    if (draftKeyRef.current === salesDraftKey) return;
+
+    draftKeyRef.current = salesDraftKey;
+    setDraftReady(false);
+
+    try {
+      const rawDraft = localStorage.getItem(salesDraftKey);
+
+      if (!rawDraft) {
+        setDraftReady(true);
+        return;
+      }
+
+      const draft = JSON.parse(rawDraft);
+
+      if (!draft || draft.version !== 1) {
+        setDraftReady(true);
+        return;
+      }
+
+      setProductos(Array.isArray(draft.productos) ? draft.productos : []);
+      setSelectedProduct(null);
+      setCurrentSaleClient(draft.currentSaleClient || null);
+      setTicketNumber(Number(draft.ticketNumber || 1));
+      setSaleToken(draft.saleToken || null);
+      setSaleNotes(draft.saleNotes || "");
+      setBarcode(draft.barcode || "");
+      setPendingTickets(
+        Array.isArray(draft.pendingTickets) ? draft.pendingTickets : []
+      );
+
+      setDraftReady(true);
+    } catch (error) {
+      console.error("Error restaurando venta en curso:", error);
+      localStorage.removeItem(salesDraftKey);
+      setDraftReady(true);
+    }
+  }, [salesDraftKey]);
+
+  useEffect(() => {
+    if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey) return;
+
+    const hasDraftData =
+      productos.length > 0 ||
+      pendingTickets.length > 0 ||
+      !!currentSaleClient ||
+      !!saleToken ||
+      saleNotes.trim().length > 0 ||
+      barcode.trim().length > 0;
+
+    if (!hasDraftData) {
+      localStorage.removeItem(salesDraftKey);
+      return;
+    }
+
+    const draft = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      branchId: branch?.id || null,
+      userId: user?.id || null,
+      productos,
+      currentSaleClient,
+      ticketNumber,
+      saleToken,
+      saleNotes,
+      barcode,
+      pendingTickets,
+      subtotal,
+      discountTotal,
+      total,
+    };
+
+    try {
+      localStorage.setItem(salesDraftKey, JSON.stringify(draft));
+    } catch (error) {
+      console.error("Error guardando venta en curso:", error);
+    }
+  }, [
+    draftReady,
+    salesDraftKey,
+    productos,
+    pendingTickets,
+    currentSaleClient,
+    saleToken,
+    saleNotes,
+    barcode,
+    ticketNumber,
+    subtotal,
+    discountTotal,
+    total,
+    branch?.id,
+    user?.id,
+  ]);
+
+  const clearSalesDraft = () => {
+    if (salesDraftKey) {
+      localStorage.removeItem(salesDraftKey);
+    }
+  };
 
   const resetCurrentSale = () => {
     setProductos([]);
