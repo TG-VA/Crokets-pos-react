@@ -77,9 +77,12 @@ const Sales = () => {
   const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
 
   const [productos, setProductos] = useState([]);
+  const [stockWarningMsg, setStockWarningMsg] = useState("");
   const [draftReady, setDraftReady] = useState(false);
 
   const draftKeyRef = useRef(null);
+  const realtimeTimerRef = useRef(null);
+  const productosRef = useRef([]);
 
   const salesDraftKey =
     branch?.id && user?.id ? `sales_draft_${branch.id}_${user.id}` : null;
@@ -198,6 +201,14 @@ const Sales = () => {
     branch?.id,
     user?.id,
   ]);
+
+  useEffect(() => {
+    productosRef.current = productos;
+
+    if (productos.length === 0) {
+      setStockWarningMsg("");
+    }
+  }, [productos]);
 
   const clearSalesDraft = () => {
     if (salesDraftKey) {
@@ -327,11 +338,106 @@ const Sales = () => {
     }
   }, [branch?.id, user?.id]);
 
+  const refreshCartInventoryFromRealtime = useCallback(async () => {
+    if (!branch?.id) return;
+
+    const currentProducts = productosRef.current || [];
+    const trackedProducts = currentProducts.filter(
+      (product) => product?.tracks_inventory
+    );
+
+    if (trackedProducts.length === 0) {
+      setStockWarningMsg("");
+      return;
+    }
+
+    const productIds = [
+      ...new Set(trackedProducts.map((product) => product.id).filter(Boolean)),
+    ];
+
+    if (productIds.length === 0) {
+      setStockWarningMsg("");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("branch_inventory")
+        .select(
+          "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
+        )
+        .eq("branch_id", branch.id)
+        .in("product_id", productIds);
+
+      if (error) throw error;
+
+      const inventoryByProduct = {};
+
+      (data || []).forEach((row) => {
+        inventoryByProduct[row.product_id] = row;
+      });
+
+      let warning = "";
+
+      const updateProductInventory = (product) => {
+        if (!product?.tracks_inventory) return product;
+
+        const inventoryRow = inventoryByProduct[product.id];
+
+        if (!inventoryRow || inventoryRow.is_active === false) {
+          if (!warning) {
+            warning = `El producto "${
+              product.nombre || product.codigo
+            }" ya no está activo en esta sucursal.`;
+          }
+
+          return {
+            ...product,
+            stockReal: 0,
+            existencia: 0,
+          };
+        }
+
+        const stock = Number(inventoryRow.stock || 0);
+        const quantity = Number(product.cantidad || 0);
+        const availableAfterCart = Math.max(stock - quantity, 0);
+
+        if (quantity > stock && !warning) {
+          warning = `Stock actualizado: "${
+            product.nombre || product.codigo
+          }" ahora tiene ${stock} disponible y tienes ${quantity} en venta.`;
+        }
+
+        return {
+          ...product,
+          stockReal: stock,
+          existencia: availableAfterCart,
+          costo: Number(inventoryRow.cost_price ?? product.costo ?? 0),
+        };
+      };
+
+      setProductos((prev) => {
+        const updated = prev.map(updateProductInventory);
+        productosRef.current = updated;
+        return updated;
+      });
+
+      setSelectedProduct((prev) =>
+        prev ? updateProductInventory(prev) : prev
+      );
+
+      setStockWarningMsg(warning);
+    } catch (error) {
+      console.error("Error actualizando inventario del carrito:", error);
+    }
+  }, [branch?.id]);
+
   useEffect(() => {
     syncShiftCutStatus();
 
     const handleFocus = () => {
       syncShiftCutStatus();
+      refreshCartInventoryFromRealtime();
     };
 
     const handleStorage = (event) => {
@@ -353,7 +459,90 @@ const Sales = () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("shift-cut-status-changed", handleCutStatusChanged);
     };
-  }, [syncShiftCutStatus]);
+  }, [syncShiftCutStatus, refreshCartInventoryFromRealtime]);
+
+  useEffect(() => {
+    if (!draftReady || !branch?.id || !user?.id) return;
+
+    const refreshSafely = async () => {
+      try {
+        await syncShiftCutStatus();
+        await refreshCartInventoryFromRealtime();
+      } catch (error) {
+        console.error("Error actualizando ventas en tiempo real:", error);
+      }
+    };
+
+    const scheduleRealtimeRefresh = () => {
+      if (realtimeTimerRef.current) {
+        clearTimeout(realtimeTimerRef.current);
+      }
+
+      realtimeTimerRef.current = setTimeout(refreshSafely, 500);
+    };
+
+    refreshSafely();
+
+    const intervalId = setInterval(() => {
+      const hasTrackedProducts = (productosRef.current || []).some(
+        (product) => product?.tracks_inventory
+      );
+
+      if (hasTrackedProducts) {
+        refreshCartInventoryFromRealtime();
+      }
+    }, 2500);
+
+    const channel = supabase
+      .channel(`sales-realtime-${branch.id}-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "branch_inventory",
+          filter: `branch_id=eq.${branch.id}`,
+        },
+        scheduleRealtimeRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cash_cuts",
+          filter: `branch_id=eq.${branch.id}`,
+        },
+        scheduleRealtimeRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cash_register_sessions",
+          filter: `branch_id=eq.${branch.id}`,
+        },
+        scheduleRealtimeRefresh
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(intervalId);
+
+      if (realtimeTimerRef.current) {
+        clearTimeout(realtimeTimerRef.current);
+      }
+
+      supabase.removeChannel(channel);
+    };
+  }, [
+    branch?.id,
+    user?.id,
+    draftReady,
+    refreshCartInventoryFromRealtime,
+    syncShiftCutStatus,
+  ]);
 
   const openPaymentFlow = async () => {
     if (productos.length === 0) {
@@ -863,7 +1052,7 @@ const Sales = () => {
       const existingProduct = productos.find((p) => p.id === product.id);
 
       if (existingProduct) {
-        if (existingProduct.cantidad + 1 > existingProduct.stockReal) {
+        if (existingProduct.cantidad + 1 > stock) {
           alert("No hay suficiente inventario.");
           return;
         }
@@ -881,7 +1070,8 @@ const Sales = () => {
             cantidad: nuevaCantidad,
             importe: nuevaCantidad * precioFinal,
             descuentoMonto: descuentoUnitario * nuevaCantidad,
-            existencia: p.stockReal - nuevaCantidad,
+            stockReal: stock,
+            existencia: Math.max(stock - nuevaCantidad, 0),
           };
         });
 
@@ -1146,7 +1336,9 @@ const Sales = () => {
   };
 
   const validateCartStockBeforeSale = async () => {
-    for (const item of productos) {
+    await refreshCartInventoryFromRealtime();
+
+    for (const item of productosRef.current) {
       if (!item.tracks_inventory) continue;
 
       const inventoryRow = await getBranchInventoryRow(item.id);
@@ -1467,6 +1659,7 @@ const Sales = () => {
         });
       }
 
+      clearSalesDraft();
       resetCurrentSale();
       setShowPaymentModal(false);
 
@@ -1738,13 +1931,20 @@ const Sales = () => {
       </div>
 
       {shiftAlreadyCut && (
-<div className={styles.shiftCutWarning}>
-  <span>
-    Corte de cajero realizado. Debes cerrar turno antes de seguir vendiendo.
-  </span>
+        <div className={styles.shiftCutWarning}>
+          <span>
+            Corte de cajero realizado. Debes cerrar turno antes de seguir vendiendo.
+          </span>
 
-  <span>PENDIENTE CERRAR TURNO</span>
-</div>
+          <span>PENDIENTE CERRAR TURNO</span>
+        </div>
+      )}
+
+      {!shiftAlreadyCut && stockWarningMsg && (
+        <div className={styles.shiftCutWarning}>
+          <span>{stockWarningMsg}</span>
+          <span>REVISAR STOCK</span>
+        </div>
       )}
 
       <div className={styles.topActionBar}>
@@ -2105,4 +2305,4 @@ const Sales = () => {
   );
 };
 
-export default Sales;
+export default Sales; 
