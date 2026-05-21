@@ -17,8 +17,33 @@ const CashRegister = ({ setCashRegistered }) => {
   const { branch } = useBranch();
   const { user } = useAuth();
 
+  const getOwnerMessage = (session) => {
+    const owner =
+      session?.users?.username ||
+      session?.user?.username ||
+      session?.username ||
+      'otro usuario';
+
+    return `Ya existe una caja abierta en esta sucursal por ${String(
+      owner
+    ).toUpperCase()}. Debe cerrarse antes de abrir otra caja.`;
+  };
+
+  const handleExistingSession = (session) => {
+    if (!session) return false;
+
+    if (session.user_id === user?.id) {
+      setCashRegistered(true);
+      navigate('/dashboard', { replace: true });
+      return true;
+    }
+
+    setError(getOwnerMessage(session));
+    return true;
+  };
+
   useEffect(() => {
-    if (!branch?.id) {
+    if (!branch?.id || !user?.id) {
       setChecking(false);
       return;
     }
@@ -36,8 +61,7 @@ const CashRegister = ({ setCashRegistered }) => {
         const data = await res.json();
 
         if (data?.success && data?.session) {
-          setCashRegistered(true);
-          navigate('/dashboard', { replace: true });
+          handleExistingSession(data.session);
           return;
         }
       } catch (err) {
@@ -49,7 +73,8 @@ const CashRegister = ({ setCashRegistered }) => {
     };
 
     checkCashRegister();
-  }, [branch?.id, navigate, setCashRegistered]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch?.id, user?.id, navigate, setCashRegistered]);
 
   useEffect(() => {
     if (!checking) {
@@ -74,6 +99,7 @@ const CashRegister = ({ setCashRegistered }) => {
         e.preventDefault();
         return;
       }
+
       if (cursorPos === 0) {
         e.preventDefault();
         setInitialCash('0.');
@@ -111,7 +137,7 @@ const CashRegister = ({ setCashRegistered }) => {
       setOpening(true);
       setError('');
 
-      // 1) Verificación preventiva antes de abrir
+      // 1) Verificación preventiva antes de abrir.
       const checkRes = await fetch('http://localhost:3000/cash/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -121,12 +147,11 @@ const CashRegister = ({ setCashRegistered }) => {
       const checkData = await checkRes.json();
 
       if (checkData?.success && checkData?.session) {
-        setCashRegistered(true);
-        navigate('/dashboard', { replace: true });
+        handleExistingSession(checkData.session);
         return;
       }
 
-      // 2) Intentar abrir caja
+      // 2) Intentar abrir caja.
       const res = await fetch('http://localhost:3000/cash/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,17 +170,23 @@ const CashRegister = ({ setCashRegistered }) => {
         return;
       }
 
-      // 3) Mensajes claros de error
+      // 3) Mensajes claros de error.
+      if (data?.session?.user_id && data.session.user_id !== user.id) {
+        setError(getOwnerMessage(data.session));
+        return;
+      }
+
       const backendMessage = (data?.message || '').toLowerCase();
 
       if (
         backendMessage.includes('already open') ||
         backendMessage.includes('ya existe') ||
+        backendMessage.includes('ya hay') ||
         backendMessage.includes('open per branch') ||
         backendMessage.includes('duplicate') ||
         backendMessage.includes('23505')
       ) {
-        setError('Ya existe una caja abierta en esta sucursal.');
+        setError(data?.message || 'Ya existe una caja abierta en esta sucursal.');
         return;
       }
 
@@ -170,6 +201,7 @@ const CashRegister = ({ setCashRegistered }) => {
 
   const handleChange = (e) => {
     const value = e.target.value;
+
     if (!value.startsWith('-')) {
       setInitialCash(value);
       setError('');
@@ -200,6 +232,7 @@ const CashRegister = ({ setCashRegistered }) => {
           <label htmlFor="initialCash" className={styles.label}>
             Dinero inicial en caja:
           </label>
+
           <div className={styles.currencyInput}>
             <input
               ref={inputRef}
