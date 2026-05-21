@@ -79,6 +79,8 @@ const Sales = () => {
   const [productos, setProductos] = useState([]);
   const [stockWarningMsg, setStockWarningMsg] = useState("");
   const [draftReady, setDraftReady] = useState(false);
+  const [recoveredDraft, setRecoveredDraft] = useState(false);
+  const [recoveredDraftSavedAt, setRecoveredDraftSavedAt] = useState(null);
 
   const draftKeyRef = useRef(null);
   const realtimeTimerRef = useRef(null);
@@ -86,6 +88,10 @@ const Sales = () => {
 
   const salesDraftKey =
     branch?.id && user?.id ? `sales_draft_${branch.id}_${user.id}` : null;
+
+  const salesDraftSessionKey = salesDraftKey
+    ? `${salesDraftKey}_session_ack`
+    : null;
 
   const subtotal = productos.reduce(
     (sum, producto) =>
@@ -105,6 +111,8 @@ const Sales = () => {
   useEffect(() => {
     if (!salesDraftKey) {
       setDraftReady(false);
+      setRecoveredDraft(false);
+      setRecoveredDraftSavedAt(null);
       return;
     }
 
@@ -112,6 +120,8 @@ const Sales = () => {
 
     draftKeyRef.current = salesDraftKey;
     setDraftReady(false);
+    setRecoveredDraft(false);
+    setRecoveredDraftSavedAt(null);
 
     try {
       const rawDraft = localStorage.getItem(salesDraftKey);
@@ -128,7 +138,11 @@ const Sales = () => {
         return;
       }
 
-      setProductos(Array.isArray(draft.productos) ? draft.productos : []);
+      const restoredProducts = Array.isArray(draft.productos)
+        ? draft.productos
+        : [];
+
+      setProductos(restoredProducts);
       setSelectedProduct(null);
       setCurrentSaleClient(draft.currentSaleClient || null);
       setTicketNumber(Number(draft.ticketNumber || 1));
@@ -139,13 +153,35 @@ const Sales = () => {
         Array.isArray(draft.pendingTickets) ? draft.pendingTickets : []
       );
 
+      const hasRecoverableSale =
+        restoredProducts.length > 0 ||
+        !!draft.currentSaleClient ||
+        !!draft.saleToken ||
+        String(draft.saleNotes || "").trim().length > 0 ||
+        String(draft.barcode || "").trim().length > 0;
+
+      const alreadyAcknowledged =
+        salesDraftSessionKey &&
+        sessionStorage.getItem(salesDraftSessionKey) === "true";
+
+      if (hasRecoverableSale && !alreadyAcknowledged) {
+        setRecoveredDraft(true);
+        setRecoveredDraftSavedAt(draft.savedAt || null);
+
+        if (salesDraftSessionKey) {
+          sessionStorage.setItem(salesDraftSessionKey, "true");
+        }
+      }
+
       setDraftReady(true);
     } catch (error) {
       console.error("Error restaurando venta en curso:", error);
       localStorage.removeItem(salesDraftKey);
+      setRecoveredDraft(false);
+      setRecoveredDraftSavedAt(null);
       setDraftReady(true);
     }
-  }, [salesDraftKey]);
+  }, [salesDraftKey, salesDraftSessionKey]);
 
   useEffect(() => {
     if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey) return;
@@ -214,6 +250,27 @@ const Sales = () => {
     if (salesDraftKey) {
       localStorage.removeItem(salesDraftKey);
     }
+
+    if (salesDraftSessionKey) {
+      sessionStorage.removeItem(salesDraftSessionKey);
+    }
+  };
+
+  const dismissRecoveredDraft = () => {
+    setRecoveredDraft(false);
+  };
+
+  const discardRecoveredDraft = () => {
+    clearSalesDraft();
+    setProductos([]);
+    setSelectedProduct(null);
+    setCurrentSaleClient(null);
+    setBarcode("");
+    setSaleToken(null);
+    setSaleNotes("");
+    setStockWarningMsg("");
+    setRecoveredDraft(false);
+    setRecoveredDraftSavedAt(null);
   };
 
   const resetCurrentSale = () => {
@@ -224,6 +281,9 @@ const Sales = () => {
     setBarcode("");
     setSaleToken(null);
     setSaleNotes("");
+    setStockWarningMsg("");
+    setRecoveredDraft(false);
+    setRecoveredDraftSavedAt(null);
   };
 
   const isValidUuid = (value) => {
@@ -1694,6 +1754,8 @@ const Sales = () => {
     setTicketNumber((prev) => prev + 1);
     setBarcode("");
     setSaleToken(null);
+    setRecoveredDraft(false);
+    setRecoveredDraftSavedAt(null);
   };
 
   const handleChangeToTicket = (ticket) => {
@@ -1937,6 +1999,39 @@ const Sales = () => {
           </span>
 
           <span>PENDIENTE CERRAR TURNO</span>
+        </div>
+      )}
+
+      {!shiftAlreadyCut && recoveredDraft && productos.length > 0 && (
+        <div className={styles.recoveredDraftWarning}>
+          <div className={styles.recoveredDraftText}>
+            <strong>Se recuperó una venta pendiente.</strong>
+            <span>
+              {recoveredDraftSavedAt
+                ? `Guardada automáticamente el ${new Date(
+                    recoveredDraftSavedAt
+                  ).toLocaleString("es-MX")}.`
+                : "La venta fue guardada automáticamente antes de cerrar el POS."}
+            </span>
+          </div>
+
+          <div className={styles.recoveredDraftActions}>
+            <button
+              type="button"
+              className={styles.recoveredDraftContinue}
+              onClick={dismissRecoveredDraft}
+            >
+              Continuar
+            </button>
+
+            <button
+              type="button"
+              className={styles.recoveredDraftDiscard}
+              onClick={discardRecoveredDraft}
+            >
+              Descartar
+            </button>
+          </div>
         </div>
       )}
 
