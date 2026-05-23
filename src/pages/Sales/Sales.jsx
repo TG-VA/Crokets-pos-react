@@ -333,6 +333,139 @@ const Sales = () => {
     };
   };
 
+
+  const getKitAvailableStock = async (kitProductId) => {
+    if (!kitProductId || !branch?.id) {
+      return {
+        availableStock: 0,
+        isValid: false,
+        message: "No se detectó la sucursal para validar el kit.",
+      };
+    }
+
+    const { data: kitRow, error: kitError } = await supabase
+      .from("product_kits")
+      .select("id, is_active")
+      .eq("kit_product_id", kitProductId)
+      .maybeSingle();
+
+    if (kitError) throw kitError;
+
+    if (!kitRow?.id) {
+      return {
+        availableStock: 0,
+        isValid: false,
+        message: "Este kit no tiene configuración registrada.",
+      };
+    }
+
+    if (kitRow.is_active === false) {
+      return {
+        availableStock: 0,
+        isValid: false,
+        message: "Este kit está inactivo.",
+      };
+    }
+
+    const { data: kitItems, error: itemsError } = await supabase
+      .from("product_kit_items")
+      .select(`
+        id,
+        component_product_id,
+        quantity,
+        products:component_product_id (
+          id,
+          name,
+          barcode,
+          tracks_inventory
+        )
+      `)
+      .eq("kit_id", kitRow.id);
+
+    if (itemsError) throw itemsError;
+
+    if (!kitItems || kitItems.length === 0) {
+      return {
+        availableStock: 0,
+        isValid: false,
+        message: "Este kit no tiene productos agregados.",
+      };
+    }
+
+    const inventoryComponentIds = kitItems
+      .filter((item) => item.products?.tracks_inventory !== false)
+      .map((item) => item.component_product_id)
+      .filter(Boolean);
+
+    let inventoryRows = [];
+
+    if (inventoryComponentIds.length > 0) {
+      const { data, error: inventoryError } = await supabase
+        .from("branch_inventory")
+        .select("product_id, stock, is_active, has_been_stocked")
+        .eq("branch_id", branch.id)
+        .in("product_id", inventoryComponentIds);
+
+      if (inventoryError) throw inventoryError;
+      inventoryRows = data || [];
+    }
+
+    const inventoryMap = {};
+    for (const row of inventoryRows) {
+      inventoryMap[row.product_id] = row;
+    }
+
+    let availableStock = Infinity;
+    let invalidMessage = "";
+
+    for (const item of kitItems) {
+      const requiredQty = Number(item.quantity || 0);
+      const tracksInventory = item.products?.tracks_inventory !== false;
+
+      if (!tracksInventory) continue;
+
+      if (requiredQty <= 0) {
+        invalidMessage = `El componente "${item.products?.name || "Producto"}" tiene cantidad inválida.`;
+        availableStock = 0;
+        break;
+      }
+
+      const inventory = inventoryMap[item.component_product_id];
+
+      if (!inventory) {
+        invalidMessage = `El componente "${item.products?.name || "Producto"}" no tiene inventario en esta sucursal.`;
+        availableStock = 0;
+        break;
+      }
+
+      if (inventory.is_active === false) {
+        invalidMessage = `El componente "${item.products?.name || "Producto"}" está inactivo en esta sucursal.`;
+        availableStock = 0;
+        break;
+      }
+
+      if (inventory.has_been_stocked !== true) {
+        invalidMessage = `El componente "${item.products?.name || "Producto"}" aún no tiene inventario inicial.`;
+        availableStock = 0;
+        break;
+      }
+
+      const componentStock = Number(inventory.stock || 0);
+      const possibleKits = Math.floor(componentStock / requiredQty);
+      availableStock = Math.min(availableStock, possibleKits);
+    }
+
+    if (availableStock === Infinity) {
+      availableStock = 0;
+    }
+
+    return {
+      availableStock: Math.max(Number(availableStock || 0), 0),
+      isValid: !invalidMessage && Number(availableStock || 0) > 0,
+      message: invalidMessage,
+    };
+  };
+
   const getOpenCashSession = async () => {
     if (!branch?.id || !user?.id) {
       throw new Error("No se detectó la sucursal o el usuario.");
@@ -411,36 +544,72 @@ const Sales = () => {
       return;
     }
 
+    const kitProducts = trackedProducts.filter((product) => product?.is_kit);
+    const normalTrackedProducts = trackedProducts.filter(
+      (product) => !product?.is_kit
+    );
+
     const productIds = [
-      ...new Set(trackedProducts.map((product) => product.id).filter(Boolean)),
+      ...new Set(
+        normalTrackedProducts.map((product) => product.id).filter(Boolean)
+      ),
     ];
 
-    if (productIds.length === 0) {
-      setStockWarningMsg("");
-      return;
-    }
-
     try {
-      const { data, error } = await supabase
-        .from("branch_inventory")
-        .select(
-          "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
-        )
-        .eq("branch_id", branch.id)
-        .in("product_id", productIds);
+      let inventoryRows = [];
 
-      if (error) throw error;
+      if (productIds.length > 0) {
+        const { data, error } = await supabase
+          .from("branch_inventory")
+          .select(
+            "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
+          )
+          .eq("branch_id", branch.id)
+          .in("product_id", productIds);
+
+        if (error) throw error;
+        inventoryRows = data || [];
+      }
 
       const inventoryByProduct = {};
 
-      (data || []).forEach((row) => {
+      inventoryRows.forEach((row) => {
         inventoryByProduct[row.product_id] = row;
       });
+
+      const kitAvailabilityByProduct = {};
+
+      for (const kitProduct of kitProducts) {
+        kitAvailabilityByProduct[kitProduct.id] = await getKitAvailableStock(
+          kitProduct.id
+        );
+      }
 
       let warning = "";
 
       const updateProductInventory = (product) => {
         if (!product?.tracks_inventory) return product;
+
+        if (product.is_kit) {
+          const kitAvailability = kitAvailabilityByProduct[product.id];
+          const stock = Number(kitAvailability?.availableStock || 0);
+          const quantity = Number(product.cantidad || 0);
+          const availableAfterCart = Math.max(stock - quantity, 0);
+
+          if (quantity > stock && !warning) {
+            warning = `Stock actualizado: el kit "${
+              product.nombre || product.codigo
+            }" ahora permite vender ${stock} kit(s) y tienes ${quantity} en venta.`;
+          } else if (kitAvailability?.message && !warning) {
+            warning = kitAvailability.message;
+          }
+
+          return {
+            ...product,
+            stockReal: stock,
+            existencia: availableAfterCart,
+          };
+        }
 
         const inventoryRow = inventoryByProduct[product.id];
 
@@ -1086,6 +1255,82 @@ const Sales = () => {
   const addProductToCart = async (product) => {
     if (!product?.id) return;
 
+    if (product.is_kit) {
+      const kitAvailability = await getKitAvailableStock(product.id);
+      const stock = Number(kitAvailability.availableStock || 0);
+
+      if (!kitAvailability.isValid || stock <= 0) {
+        alert(
+          kitAvailability.message ||
+            "Este kit no tiene inventario suficiente en sus componentes."
+        );
+        return;
+      }
+
+      const existingProduct = productos.find((p) => p.id === product.id);
+
+      if (existingProduct) {
+        if (existingProduct.cantidad + 1 > stock) {
+          alert("No hay suficiente inventario para vender otro kit.");
+          return;
+        }
+
+        const updatedProducts = productos.map((p) => {
+          if (p.id !== product.id) return p;
+
+          const nuevaCantidad = p.cantidad + 1;
+          const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
+          const precioFinal = Number(p.precio ?? 0);
+          const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
+
+          return {
+            ...p,
+            cantidad: nuevaCantidad,
+            importe: nuevaCantidad * precioFinal,
+            descuentoMonto: descuentoUnitario * nuevaCantidad,
+            stockReal: stock,
+            existencia: Math.max(stock - nuevaCantidad, 0),
+          };
+        });
+
+        setProductos(updatedProducts);
+
+        if (selectedProduct?.id === product.id) {
+          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+          setSelectedProduct(updatedSelected || null);
+        }
+
+        return;
+      }
+
+      const salePrice = Number(product.sale_price ?? 0);
+      const costPrice = Number(product.cost_price ?? 0);
+      const discountData = calculateDiscountedProduct(salePrice, product);
+
+      const newProduct = {
+        id: product.id,
+        codigo: product.barcode,
+        nombre: product.name,
+        precioOriginal: discountData.precioOriginal,
+        precio: discountData.precioFinal,
+        costo: costPrice,
+        cantidad: 1,
+        importe: discountData.precioFinal,
+        descuentoTipo: discountData.descuentoTipo,
+        descuentoValor: discountData.descuentoValor,
+        descuentoMonto: discountData.descuentoMontoUnitario,
+        discountPercent: discountData.discountPercent,
+        discountConcept: discountData.discountConcept,
+        stockReal: stock,
+        existencia: Math.max(stock - 1, 0),
+        is_kit: true,
+        tracks_inventory: true,
+      };
+
+      setProductos((prev) => [...prev, newProduct]);
+      return;
+    }
+
     const tracksInventory = !!product.tracks_inventory;
 
     if (tracksInventory) {
@@ -1264,6 +1509,13 @@ const Sales = () => {
         return;
       }
 
+      if (product.is_kit) {
+        const productWithDiscount = await getProductWithDiscount(product);
+        await addProductToCart(productWithDiscount);
+        setBarcode("");
+        return;
+      }
+
       if (!product.tracks_inventory) {
         if (!product.is_global) {
           alert("Este producto no está disponible para esta sucursal.");
@@ -1400,6 +1652,30 @@ const Sales = () => {
 
     for (const item of productosRef.current) {
       if (!item.tracks_inventory) continue;
+
+      if (item.is_kit) {
+        const kitAvailability = await getKitAvailableStock(item.id);
+        const currentStock = Number(kitAvailability.availableStock || 0);
+
+        if (!kitAvailability.isValid || currentStock <= 0) {
+          alert(
+            kitAvailability.message ||
+              `El kit "${item.nombre || item.codigo}" ya no tiene inventario suficiente.`
+          );
+          return false;
+        }
+
+        if (item.cantidad > currentStock) {
+          alert(
+            `La cantidad del kit "${
+              item.nombre || item.codigo
+            }" excede el inventario disponible. Disponible: ${currentStock}.`
+          );
+          return false;
+        }
+
+        continue;
+      }
 
       const inventoryRow = await getBranchInventoryRow(item.id);
       const currentStock = Number(inventoryRow?.stock || 0);

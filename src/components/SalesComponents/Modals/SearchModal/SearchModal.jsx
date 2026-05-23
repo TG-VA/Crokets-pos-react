@@ -446,10 +446,32 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (currentRequestId !== searchRequestIdRef.current) return;
       if (nonInventoryError) throw nonInventoryError;
 
+      // Los kits no tienen inventario propio en branch_inventory.
+      // Por eso se buscan aparte directamente desde products.
+      const { data: kitProductsRows, error: kitsError } = await supabase
+        .from("products")
+        .select(`
+          id,
+          barcode,
+          name,
+          sale_price,
+          cost_price,
+          status,
+          is_kit,
+          is_global,
+          tracks_inventory
+        `)
+        .eq("status", true)
+        .eq("is_kit", true);
+
+      if (currentRequestId !== searchRequestIdRef.current) return;
+      if (kitsError) throw kitsError;
+
       const allProductIds = [
         ...new Set([
           ...(inventoryProductsRows || []).map((product) => product.id),
           ...(nonInventoryProductsRows || []).map((product) => product.id),
+          ...(kitProductsRows || []).map((product) => product.id),
         ]),
       ].filter(Boolean);
 
@@ -508,9 +530,36 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           return applyDiscountToProduct(baseProduct, discountsMap);
         });
 
-      const mergedResults = [...inventoryResults, ...nonInventoryResults]
+      const existingProductIds = new Set([
+        ...inventoryResults.map((p) => p.id),
+        ...nonInventoryResults.map((p) => p.id),
+      ]);
+
+      const kitResults = (kitProductsRows || [])
+        .filter((product) => !existingProductIds.has(product.id))
+        .map((product) => {
+          const baseProduct = {
+            ...product,
+            inventory_id: null,
+            branch_id: branch.id,
+            stock: null,
+            is_active_in_branch: true,
+            has_been_stocked: true,
+            branch_sale_price: Number(product.sale_price ?? 0),
+            branch_cost_price: Number(product.cost_price ?? 0),
+            tracks_inventory: true,
+          };
+
+          return applyDiscountToProduct(baseProduct, discountsMap);
+        });
+
+      const mergedResults = [
+        ...inventoryResults,
+        ...nonInventoryResults,
+        ...kitResults,
+      ]
         .filter((product) => {
-          if (product.tracks_inventory) {
+          if (!product.is_kit && product.tracks_inventory) {
             if (!product.is_active_in_branch) return false;
             if (!product.has_been_stocked) return false;
           }
@@ -710,7 +759,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       return;
     }
 
-    if (product.tracks_inventory) {
+    if (!product.is_kit && product.tracks_inventory) {
       if (!product.is_active_in_branch) {
         alert("Este producto está inactivo en la sucursal actual.");
         return;
