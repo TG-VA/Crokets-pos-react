@@ -5,19 +5,40 @@ const useResponsiveScale = (baseWidth = 1600, baseHeight = 900) => {
     const electronInvoke = window?.electronAPI?.invoke;
     if (typeof electronInvoke !== "function") return;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    let cancelled = false;
+    const timers = [];
 
-    // En Full HD o mayor, no escales
-    if (width >= 1920 && height >= 900) {
-      electronInvoke("reset-zoom").catch(() => {});
-      return;
-    }
+    const applyZoom = async () => {
+      if (cancelled) return;
 
-    electronInvoke("configure-zoom", { baseWidth, baseHeight }).catch(() => {});
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+
+      const physicalWidth = Math.round(width * dpr);
+      const physicalHeight = Math.round(height * dpr);
+
+      if (!width || !height) return;
+
+      // Si la pantalla física es Full HD o mayor, NO escalar
+      if (physicalWidth >= 1920 && physicalHeight >= 1080) {
+        await electronInvoke("reset-zoom").catch(() => {});
+        return;
+      }
+
+      await electronInvoke("configure-zoom", {
+        baseWidth,
+        baseHeight,
+      }).catch(() => {});
+    };
+
+    timers.push(setTimeout(applyZoom, 150));
+    timers.push(setTimeout(applyZoom, 500));
+    timers.push(setTimeout(applyZoom, 1000));
 
     return () => {
-      electronInvoke("reset-zoom").catch(() => {});
+      cancelled = true;
+      timers.forEach(clearTimeout);
     };
   }, [baseWidth, baseHeight]);
 };
