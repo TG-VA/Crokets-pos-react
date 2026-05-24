@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
+import { supabase } from "../../../../lib/supabaseClient";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import styles from "./ProductsModify.module.css";
 
@@ -21,6 +22,8 @@ const ProductsModify = () => {
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingDiscount, setLoadingDiscount] = useState(false);
+  const [satClaves, setSatClaves] = useState([]);
+  const [loadingSatClaves, setLoadingSatClaves] = useState(false);
 
   const createInitialForm = () => ({
     codigo: "",
@@ -89,6 +92,31 @@ const ProductsModify = () => {
 
     return active;
   }, [departments, form.departamento]);
+
+  useEffect(() => {
+    const loadSatClaves = async () => {
+      try {
+        setLoadingSatClaves(true);
+
+        const { data, error } = await supabase
+          .from("sat_claves_productos_servicios")
+          .select("clave, descripcion")
+          .eq("status", true)
+          .order("descripcion", { ascending: true });
+
+        if (error) throw error;
+
+        setSatClaves(data || []);
+      } catch (error) {
+        console.error("Error cargando claves SAT:", error);
+        setSatClaves([]);
+      } finally {
+        setLoadingSatClaves(false);
+      }
+    };
+
+    loadSatClaves();
+  }, []);
 
   const ganancia = useMemo(() => {
     const c = parseFloat(form.costo);
@@ -643,20 +671,7 @@ const ProductsModify = () => {
     handleSave();
   };
 
-  const SAT_CLAVE_PROD_SERV = [
-    { code: "01010101", description: "No existe en el catálogo" },
-    { code: "10121900", description: "Alimento para mascotas" },
-    { code: "10121800", description: "Alimento para animales" },
-    { code: "10111300", description: "Juguetes para mascotas" },
-    { code: "42121600", description: "Servicios veterinarios" },
-    { code: "10131700", description: "Productos para el cuidado de animales" },
-    { code: "53131600", description: "Artículos de tocador para animales" },
-    { code: "12131704", description: "Huesos o carnaza para perro" },
-    { code: "12352300", description: "Productos químicos para mascotas" },
-    { code: "10122100", description: "Alimento para aves" },
-    { code: "10121500", description: "Alimento para ganado" },
-    { code: "10121600", description: "Alimento para peces" },
-  ];
+
 
   return (
     <div className={styles.container}>
@@ -835,11 +850,18 @@ const ProductsModify = () => {
                       >
                         <option value="">Selecciona...</option>
 
-                        {SAT_CLAVE_PROD_SERV.map((item) => (
-                          <option key={item.code} value={item.code}>
-                            {item.code} - {item.description}
+                        {loadingSatClaves && (
+                          <option value="" disabled>
+                            Cargando claves SAT...
                           </option>
-                        ))}
+                        )}
+
+                        {!loadingSatClaves &&
+                          satClaves.map((item) => (
+                            <option key={item.clave} value={item.clave}>
+                              {item.clave} - {item.descripcion}
+                            </option>
+                          ))}
                       </select>
                     </div>
 
