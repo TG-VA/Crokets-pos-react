@@ -5,7 +5,7 @@ import { useBranch } from '../../contexts/BranchContext';
 import styles from './Login.module.css';
 import { supabase } from '../../lib/supabaseClient';
 
-// Importa los recursos gráficos.
+// Recursos gráficos
 import logo from '../../assets/images/LOGOCROKETS.png';
 import userIcon from '../../assets/icons/user-solid.svg';
 import lockIcon from '../../assets/icons/lock-solid.svg';
@@ -32,9 +32,7 @@ const Login = () => {
     setError('');
 
     const focusTimer = setTimeout(() => {
-      if (usernameRef.current) {
-        usernameRef.current.focus();
-      }
+      usernameRef.current?.focus();
     }, 100);
 
     return () => clearTimeout(focusTimer);
@@ -48,7 +46,7 @@ const Login = () => {
     try {
       await window.electronAPI.invoke('close-app');
     } catch (err) {
-      console.error('Error al cerrar la aplicación:', err);
+      console.error('Error cerrando app:', err);
       setError('No se pudo cerrar la aplicación.');
     }
   };
@@ -56,7 +54,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanUsername = username.trim();
+    // NORMALIZAR USUARIO
+    const cleanUsername = username.trim().toLowerCase();
 
     if (!cleanUsername || !password.trim()) {
       setError('Por favor, complete todos los campos.');
@@ -68,7 +67,9 @@ const Login = () => {
       setError('');
       setRecoverableSession(null);
 
-      // 1) Obtener email usando username
+      /*
+        1. Obtener email por username
+      */
       const { data: email, error: rpcError } = await supabase.rpc(
         'get_email_by_username',
         { p_username: cleanUsername }
@@ -79,33 +80,23 @@ const Login = () => {
         return;
       }
 
-      // 2) Login real con Supabase Auth
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      /*
+        2. Obtener usuario ANTES del login
+      */
+      const { data: dbUser, error: userLookupError } = await supabase
+        .from('users')
+        .select('id, username')
+        .ilike('username', cleanUsername)
+        .maybeSingle();
 
-      if (signInError || !data?.user) {
-        setError('Credenciales incorrectas');
+      if (userLookupError || !dbUser) {
+        setError('Usuario no encontrado');
         return;
       }
 
-      const authUser = data.user;
-
-      // 3) Traer perfil público
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('username')
-        .eq('id', authUser.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error obteniendo perfil:', profileError);
-      }
-
-      const resolvedUsername = profile?.username || cleanUsername;
-
-      // 4) Resolver sucursal por device_code y guardarla en contexto
+      /*
+        3. Resolver sucursal por device
+      */
       const { deviceCode } = await window.electronAPI.invoke('get-device-code');
 
       const branchRes = await fetch('http://localhost:3000/device/branch', {
@@ -117,30 +108,42 @@ const Login = () => {
       const branchData = await branchRes.json();
 
       if (!branchData.success || !branchData.branch?.id) {
-        await supabase.auth.signOut();
         setError(branchData.message || 'Este POS no está asignado a ninguna sucursal');
         return;
       }
 
-      const currentBranchId = branchData.branch?.id;
+      /*
+        4. Obtener sucursal completa
+      */
+      const { data: fullBranch, error: fullBranchError } = await supabase
+        .from('branches')
+        .select(`
+          id,
+          code,
+          name,
+          phone,
+          email,
+          address,
+          city,
+          state,
+          created_at,
+          updated_at
+        `)
+        .eq('id', branchData.branch.id)
+        .single();
 
-const { data: fullBranch, error: fullBranchError } = await supabase
-  .from('branches')
-  .select('id, code, name, phone, email, address, city, state, created_at, updated_at')
-  .eq('id', currentBranchId)
-  .single();
+      if (fullBranchError || !fullBranch) {
+        console.error(fullBranchError);
+        setError('No se pudo cargar la sucursal');
+        return;
+      }
 
-if (fullBranchError || !fullBranch) {
-  console.error('Error cargando sucursal completa:', fullBranchError);
-  await supabase.auth.signOut();
-  setError('No se pudo cargar la información completa de la sucursal');
-  return;
-}
+      const currentBranch = fullBranch;
+      setBranch(currentBranch);
 
-const currentBranch = fullBranch;
-setBranch(currentBranch);
-
-      // 5) Verificar si ya hay una sesión activa en esta sucursal
+      /*
+        5. Revisar sesiones activas EN ESA SUCURSAL
+      */
       const { data: activeSession, error: activeSessionError } = await supabase
         .from('user_sessions')
         .select('id, user_id, status, ended_at')
@@ -150,55 +153,74 @@ setBranch(currentBranch);
         .maybeSingle();
 
       if (activeSessionError) {
-        console.error('Error validando sesión activa:', activeSessionError);
-        await supabase.auth.signOut();
-        setError('No se pudo validar la sesión activa en este punto de venta');
+        console.error(activeSessionError);
+        setError('No se pudo validar la sesión activa.');
         return;
       }
 
-      // 6) Si ya hay sesión activa en la sucursal
+      /*
+        6. Si ya existe sesión activa
+      */
       if (activeSession) {
-        // Si es otro usuario, bloquear acceso
-        if (activeSession.user_id !== authUser.id) {
-          const { data: activeUserProfile, error: activeUserError } = await supabase
-            .from('users')
-            .select('username')
-            .eq('id', activeSession.user_id)
-            .maybeSingle();
+        // mismo usuario → recuperar
+        if (activeSession.user_id === dbUser.id) {
+          const { data: authData, error: signInError } =
+            await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
 
-          if (activeUserError) {
-            console.error('Error obteniendo usuario activo:', activeUserError);
+          if (signInError || !authData?.user) {
+            setError('Credenciales incorrectas');
+            return;
           }
 
-          const activeUsername =
-            activeUserProfile?.username?.toUpperCase() || 'OTRO USUARIO';
+          setRecoverableSession({
+            authUser: authData.user,
+            resolvedUsername: dbUser.username,
+            branch: currentBranch,
+          });
 
-          await supabase.auth.signOut();
-
-          setError(
-            `No puedes ingresar porque ${activeUsername} tiene la sesión abierta en este punto de venta.`
-          );
           return;
         }
 
-        // Si es el mismo usuario, ofrecer recuperación
-        setRecoverableSession({
-          authUser,
-          resolvedUsername,
-          branch: currentBranch,
-        });
+        // otro usuario → bloquear
+        const { data: activeUserProfile } = await supabase
+          .from('users')
+          .select('username')
+          .eq('id', activeSession.user_id)
+          .maybeSingle();
 
-        setError('');
+        const activeUsername =
+          activeUserProfile?.username?.toUpperCase() || 'OTRO USUARIO';
+
+        setError(
+          `No puedes ingresar porque ${activeUsername} tiene la sesión abierta en este punto de venta.`
+        );
+
         return;
       }
 
-      // 7) No hay sesión activa: crear una nueva
+      /*
+        7. NO hay sesión activa → login normal
+      */
+      const { data: authData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (signInError || !authData?.user) {
+        setError('Credenciales incorrectas');
+        return;
+      }
+
       const sessionToken = crypto.randomUUID();
 
       const { error: userSessionError } = await supabase
         .from('user_sessions')
         .insert({
-          user_id: authUser.id,
+          user_id: dbUser.id,
           branch_id: currentBranch.id,
           session_token: sessionToken,
           user_agent: navigator.userAgent,
@@ -207,29 +229,22 @@ setBranch(currentBranch);
         });
 
       if (userSessionError) {
-        console.error('Error creando user_session:', userSessionError);
-
-        if (userSessionError.code === '23505') {
-          await supabase.auth.signOut();
-          setError('Ya existe una sesión activa en este punto de venta.');
-          return;
-        }
-
-        await supabase.auth.signOut();
-        setError('No se pudo registrar la sesión del usuario');
+        console.error(userSessionError);
+        setError('No se pudo registrar la sesión.');
         return;
       }
 
       localStorage.setItem('user_session_token', sessionToken);
-      localStorage.setItem('cachedUsername', resolvedUsername);
+      localStorage.setItem('cachedUsername', dbUser.username);
 
       login({
-        ...authUser,
-        username: resolvedUsername,
+        ...authData.user,
+        username: dbUser.username,
       });
 
       unlockScreen();
       navigate('/cash-register', { replace: true });
+
     } catch (err) {
       console.error(err);
       setError('Error al conectar con el servidor');
@@ -257,59 +272,64 @@ setBranch(currentBranch);
 
       unlockScreen();
       setRecoverableSession(null);
+
       navigate('/cash-register', { replace: true });
+
     } catch (err) {
-      console.error('Error recuperando sesión:', err);
-      setError('No se pudo recuperar la sesión anterior.');
+      console.error(err);
+      setError('No se pudo recuperar la sesión.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(''), 5000);
-      return () => clearTimeout(timer);
-    }
+    if (!error) return;
+
+    const timer = setTimeout(() => setError(''), 5000);
+    return () => clearTimeout(timer);
   }, [error]);
 
   return (
     <div className={styles.loginWrapper}>
       <form className={styles.loginContainer} onSubmit={handleSubmit} noValidate>
-        <img
-          src={logo}
-          alt="Logo de Crokets"
-          className={styles.logo}
-        />
+        <img src={logo} alt="Logo Crokets" className={styles.logo} />
 
         <div className={styles.inputGroup}>
-          <label htmlFor="username" className={styles.label}>Usuario</label>
+          <label htmlFor="username" className={styles.label}>
+            Usuario
+          </label>
+
           <div className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ''}`}>
-            <img src={userIcon} alt="Icono usuario" className={styles.inputIcon} />
+            <img src={userIcon} alt="" className={styles.inputIcon} />
+
             <input
               ref={usernameRef}
-              autoComplete="off"
               id="username"
-              className={styles.input}
               type="text"
+              autoComplete="off"
+              className={styles.input}
               placeholder="Ingrese el usuario"
               value={username}
               onChange={(e) => {
-                setUsername(e.target.value);
+                setUsername(e.target.value.trimStart());
                 setError('');
               }}
-              required
             />
           </div>
         </div>
 
         <div className={styles.inputGroup}>
-          <label htmlFor="password" className={styles.label}>Contraseña</label>
+          <label htmlFor="password" className={styles.label}>
+            Contraseña
+          </label>
+
           <div className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ''}`}>
-            <img src={lockIcon} alt="Icono contraseña" className={styles.inputIcon} />
+            <img src={lockIcon} alt="" className={styles.inputIcon} />
+
             <input
-              autoComplete="off"
               id="password"
+              autoComplete="off"
               className={styles.input}
               type={showPassword ? 'text' : 'password'}
               placeholder="Ingrese la contraseña"
@@ -318,13 +338,12 @@ setBranch(currentBranch);
                 setPassword(e.target.value);
                 setError('');
               }}
-              required
             />
+
             <button
               type="button"
               className={styles.eyeButton}
               onClick={togglePasswordVisibility}
-              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               <img
                 src={showPassword ? eyeSlashIcon : eyeIcon}
@@ -338,7 +357,10 @@ setBranch(currentBranch);
 
         {recoverableSession && (
           <div className={styles.recoveryBox}>
-            <div className={styles.recoveryTitle}>Sesión anterior detectada</div>
+            <div className={styles.recoveryTitle}>
+              Sesión anterior detectada
+            </div>
+
             <div className={styles.recoveryText}>
               Se detectó una sesión activa de este mismo usuario en este punto de venta.
             </div>
@@ -354,15 +376,12 @@ setBranch(currentBranch);
           </div>
         )}
 
-        <button className={styles.loginButton} type="submit" disabled={loading}>
-          {loading ? (
-            <>
-              <span className={styles.spinner}></span>
-              Ingresando
-            </>
-          ) : (
-            'Ingresar'
-          )}
+        <button
+          className={styles.loginButton}
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Ingresando...' : 'Ingresar'}
         </button>
 
         <button
