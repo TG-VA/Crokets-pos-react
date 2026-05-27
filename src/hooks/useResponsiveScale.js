@@ -5,40 +5,28 @@ const useResponsiveScale = (baseWidth = 1600, baseHeight = 900) => {
     const electronInvoke = window?.electronAPI?.invoke;
     if (typeof electronInvoke !== "function") return;
 
-    let cancelled = false;
-    const timers = [];
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const ratio = window.devicePixelRatio || 1;
 
-    const applyZoom = async () => {
-      if (cancelled) return;
+    const isRetinaLike = ratio > 1.5;
 
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
+    // En Full HD o mayor, no escales,
+    // excepto pantallas Retina/Mac donde visualmente se ve más pequeño.
+    if (width >= 1920 && height >= 900 && !isRetinaLike) {
+      electronInvoke("reset-zoom").catch(() => {});
+      return;
+    }
 
-      const physicalWidth = Math.round(width * dpr);
-      const physicalHeight = Math.round(height * dpr);
-
-      if (!width || !height) return;
-
-      // Si la pantalla física es Full HD o mayor, NO escalar
-      if (physicalWidth >= 1920 && physicalHeight >= 1080) {
-        await electronInvoke("reset-zoom").catch(() => {});
-        return;
-      }
-
-      await electronInvoke("configure-zoom", {
-        baseWidth,
-        baseHeight,
-      }).catch(() => {});
-    };
-
-    timers.push(setTimeout(applyZoom, 150));
-    timers.push(setTimeout(applyZoom, 500));
-    timers.push(setTimeout(applyZoom, 1000));
+    electronInvoke("configure-zoom", {
+      baseWidth,
+      baseHeight,
+      minZoom: 0.9,
+      maxZoom: isRetinaLike ? 1.18 : 1.1,
+    }).catch(() => {});
 
     return () => {
-      cancelled = true;
-      timers.forEach(clearTimeout);
+      electronInvoke("reset-zoom").catch(() => {});
     };
   }, [baseWidth, baseHeight]);
 };

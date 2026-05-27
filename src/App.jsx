@@ -150,7 +150,7 @@ function AppRoutes() {
 }
 
 function App() {
-  useResponsiveScale(1200, 1080);
+  useResponsiveScale(1500, 850);
 
   return (
     <AuthProvider>
