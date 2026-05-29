@@ -19,6 +19,8 @@
   min-height: 0;
   overflow: hidden;
   margin-top: 30px;
+  /* FIX: necesita altura para que productsContainer pueda hacer scroll */
+  height: 0;
 }
 
 .toolbar {
@@ -28,10 +30,8 @@
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--mediumGray);
-  position: sticky;
-  top: 0;
-  z-index: 2;
   background-color: var(--white);
+  flex-shrink: 0;
 }
 
 .toolbar h1 {
@@ -48,10 +48,6 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
-
-/* =========================
-   BUSCADOR
-========================= */
 
 .searchContainer {
   position: relative;
@@ -96,10 +92,6 @@
   color: var(--croketsOrange);
 }
 
-/* =========================
-   FILTRO DEPARTAMENTOS
-========================= */
-
 .filterContainer {
   position: relative;
   display: inline-block;
@@ -119,10 +111,7 @@
   gap: 12px;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(16, 146, 177, 0.22);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease,
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease,
     background 0.2s ease;
 }
 
@@ -181,9 +170,7 @@
 .filterOption {
   padding: 0.8rem 0.95rem;
   cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
   border-radius: 8px;
   text-transform: uppercase;
   font-weight: 500;
@@ -200,10 +187,6 @@
   font-weight: 600;
 }
 
-/* =========================
-   BOTÓN LIMPIAR FILTROS
-========================= */
-
 .clearFiltersButton {
   height: 42px;
   padding: 0 1rem;
@@ -213,9 +196,7 @@
   color: #1e293b;
   font-size: 0.95rem;
   cursor: pointer;
-  transition:
-    background 0.18s ease,
-    border-color 0.18s ease,
+  transition: background 0.18s ease, border-color 0.18s ease,
     transform 0.18s ease;
   white-space: nowrap;
 }
@@ -226,15 +207,12 @@
   transform: translateY(-1px);
 }
 
-/* =========================
-   INFO DE RESULTADOS
-========================= */
-
 .resultsInfo {
   padding: 0.75rem 1.5rem;
   background-color: var(--lightGray);
   border-bottom: 1px solid var(--mediumGray);
   font-size: 0.95rem;
+  flex-shrink: 0;
 }
 
 .resultsCount {
@@ -247,66 +225,48 @@
   font-weight: 500;
 }
 
-/* =========================
-   CONTENEDOR TABLA
-========================= */
-
 .productsContainer {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 24px;
+  scroll-padding-top: 56px;
+  scroll-padding-bottom: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--croketsOrange) var(--lightGray);
+}
+
+.productsContainer::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.productsContainer::-webkit-scrollbar-track {
+  background: var(--lightGray);
+}
+
+.productsContainer::-webkit-scrollbar-thumb {
+  background: var(--croketsOrange);
+  border-radius: 4px;
+}
+
+.productsContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--croketsOrangeDark);
 }
 
 .productsTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 }
 
 .productsTable thead {
   background-color: var(--croketsOrange);
   color: var(--white);
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-  flex: 0 0 auto;
-}
-
-.productsTable tbody {
-  display: block;
-  overflow-y: auto;
-  flex: 1;
-  width: 100%;
-  scrollbar-width: thin;
-  scrollbar-color: var(--croketsOrange) var(--lightGray);
-}
-
-.productsTable tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-.productsTable tbody::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.productsTable tbody::-webkit-scrollbar-track {
-  background: var(--lightGray);
-}
-
-.productsTable tbody::-webkit-scrollbar-thumb {
-  background: var(--croketsOrange);
-  border-radius: 4px;
-}
-
-.productsTable tbody::-webkit-scrollbar-thumb:hover {
-  background: var(--croketsOrangeDark);
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .productsTable th {
@@ -323,10 +283,6 @@
   vertical-align: middle;
   color: var(--darkGray);
 }
-
-/* =========================
-   NUEVOS ANCHOS (5 COLUMNAS)
-========================= */
 
 .productsTable th:nth-child(1),
 .productsTable td:nth-child(1) {
@@ -363,10 +319,6 @@
   padding-right: 1.5rem;
 }
 
-/* =========================
-   FILAS
-========================= */
-
 .productRow {
   transition: background-color 0.2s ease;
   cursor: pointer;
@@ -388,10 +340,6 @@
 .selectedRow:hover {
   background-color: #e3f2fd !important;
 }
-
-/* =========================
-   CELDAS ESPECIALES
-========================= */
 
 .descriptionCell {
   overflow: hidden;
@@ -436,10 +384,6 @@
   color: var(--darkGray);
 }
 
-/* =========================
-   MENSAJES
-========================= */
-
 .noResults {
   text-align: center;
   padding: 3rem;
@@ -447,10 +391,6 @@
   font-size: 1.1rem;
   font-style: italic;
 }
-
-/* =========================
-   RESPONSIVE
-========================= */
 
 @media (max-width: 1400px) {
   .searchInput {
