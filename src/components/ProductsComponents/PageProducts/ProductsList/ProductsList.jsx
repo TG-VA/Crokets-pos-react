@@ -12,6 +12,7 @@ const ProductsList = () => {
 
   const tableContainerRef = useRef(null);
   const filterRef = useRef(null);
+  const selectedRowRef = useRef(null);
 
   const normalizeDept = (dept) => (dept || "").trim().toLowerCase();
 
@@ -28,93 +29,86 @@ const ProductsList = () => {
         .map((product) => normalizeDept(product.departamento))
         .filter(Boolean)
     );
-
     return Array.from(uniqueDepartments).sort();
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
-
     return products.filter((product) => {
       const matchesSearch =
         !search ||
         (product.descripcion || "").toLowerCase().includes(search) ||
         (product.codigo || "").toLowerCase().includes(search);
-
       const matchesDepartment =
         !selectedDepartment ||
         normalizeDept(product.departamento) === selectedDepartment.toLowerCase();
-
       return matchesSearch && matchesDepartment;
     });
   }, [products, searchTerm, selectedDepartment]);
 
   useEffect(() => {
     setSelectedRowIndex(0);
+    document.body.scrollTop = 0;
   }, [searchTerm, selectedDepartment, products.length]);
 
   useEffect(() => {
-    const tbody = tableContainerRef.current?.querySelector("tbody");
-    if (!tbody) return;
+    const row = selectedRowRef.current;
+    if (!row) return;
 
-    const rows = tbody.querySelectorAll("tr");
-    const selectedRow = rows[selectedRowIndex];
+    const body = document.body;
+    const rowRect = row.getBoundingClientRect();
 
-    if (!selectedRow) return;
+    // Altura del navbar fijo + navbarProducts encima
+    const topOffset = 450;
 
-    const rowTop = selectedRow.offsetTop;
-    const rowBottom = rowTop + selectedRow.offsetHeight;
-    const containerTop = tbody.scrollTop;
-    const containerBottom = containerTop + tbody.clientHeight;
-
-    if (rowTop < containerTop) {
-      tbody.scrollTo({
-        top: rowTop,
-        behavior: "smooth",
-      });
-    } else if (rowBottom > containerBottom) {
-      tbody.scrollTo({
-        top: rowBottom - tbody.clientHeight,
-        behavior: "smooth",
-      });
+    if (rowRect.top < topOffset) {
+      body.scrollTop = body.scrollTop + rowRect.top - topOffset;
+    } else if (rowRect.bottom > window.innerHeight) {
+      body.scrollTop = body.scrollTop + rowRect.bottom - window.innerHeight + 30;
     }
-  }, [selectedRowIndex, filteredProducts]);
+  }, [selectedRowIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!filteredProducts.length) return;
 
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        if (e.key === "Escape") setShowDepartmentFilter(false);
+        return;
+      }
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
-
         setSelectedRowIndex((prev) =>
           prev < filteredProducts.length - 1 ? prev + 1 : prev
         );
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
+      }
 
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
         setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else if (e.key === "Escape") {
+      }
+
+      if (e.key === "Escape") {
         setShowDepartmentFilter(false);
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [filteredProducts]);
+  }, [filteredProducts.length]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!showDepartmentFilter) return;
-
       if (filterRef.current && !filterRef.current.contains(e.target)) {
         setShowDepartmentFilter(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDepartmentFilter]);
 
@@ -146,7 +140,6 @@ const ProductsList = () => {
         <div className={styles.toolbar}>
           <h1>LISTA DE PRODUCTOS</h1>
         </div>
-
         <div className={styles.resultsInfo}>
           <span className={styles.resultsCount}>Cargando productos...</span>
         </div>
@@ -160,7 +153,6 @@ const ProductsList = () => {
         <div className={styles.toolbar}>
           <h1>LISTA DE PRODUCTOS</h1>
         </div>
-
         <div className={styles.noResults}>
           Error al cargar productos: {productsError}
         </div>
@@ -183,7 +175,6 @@ const ProductsList = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={() => setShowDepartmentFilter(false)}
             />
-
             {searchTerm && (
               <button
                 className={styles.clearSearchButton}
@@ -209,7 +200,6 @@ const ProductsList = () => {
                   ? formatDept(selectedDepartment)
                   : "Departamentos"}
               </span>
-
               <span className={styles.filterArrow}>▾</span>
             </button>
 
@@ -223,7 +213,6 @@ const ProductsList = () => {
                 >
                   Todo
                 </div>
-
                 {departments.map((dept) => (
                   <div
                     key={dept}
@@ -283,59 +272,24 @@ const ProductsList = () => {
             {filteredProducts.map((product, index) => (
               <tr
                 key={`${product.product_id || product.id || product.codigo}-${index}`}
+                ref={index === selectedRowIndex ? selectedRowRef : null}
                 className={`${styles.productRow} ${
                   index === selectedRowIndex ? styles.selectedRow : ""
                 }`}
                 onClick={() => handleRowClick(index)}
               >
                 <td>{product.codigo}</td>
-
-                <td
-                  className={styles.descriptionCell}
-                  onMouseEnter={(e) => {
-                    const container = e.currentTarget;
-                    const content = container.querySelector(
-                      `.${styles.scrollText}`
-                    );
-
-                    if (!content) return;
-
-                    const distance = content.scrollWidth - container.clientWidth;
-
-                    if (distance > 2) {
-                      content.style.setProperty(
-                        "--scroll-distance",
-                        `${distance + 12}px`
-                      );
-
-                      content.classList.add(styles.marquee);
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const content = e.currentTarget.querySelector(
-                      `.${styles.scrollText}`
-                    );
-
-                    if (content) {
-                      content.classList.remove(styles.marquee);
-                      content.style.removeProperty("--scroll-distance");
-                      content.style.transform = "";
-                    }
-                  }}
-                >
+                <td className={styles.descriptionCell}>
                   <span className={styles.scrollText}>
                     {product.descripcion}
                   </span>
                 </td>
-
                 <td className={styles.departmentCell}>
                   {product.departamento}
                 </td>
-
                 <td className={styles.priceCell}>
                   {formatMoney(product.costo)}
                 </td>
-
                 <td className={styles.priceCell}>
                   {formatMoney(product.precio)}
                 </td>
@@ -355,4 +309,4 @@ const ProductsList = () => {
   );
 };
 
-export default ProductsList;  
+export default ProductsList;
