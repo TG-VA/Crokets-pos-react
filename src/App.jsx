@@ -8,6 +8,7 @@ import Products from './pages/Products/Products';
 import Settings from './pages/Settings/Settings';
 import Profiles from './pages/Profiles/Profiles';
 import CashCut from './pages/CashCut/CashCut';
+import Invoices from './pages/Invoices/Invoices';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProductsProvider } from './contexts/ProductsContext';
 import useResponsiveScale from './hooks/useResponsiveScale';
@@ -106,6 +107,21 @@ function AppRoutes() {
             )
           }
         />
+
+        <Route
+  path="/invoices/*"
+  element={
+    !isAuthenticated ? (
+      <Navigate to="/login" replace />
+    ) : isLocked ? (
+      <Navigate to="/login" replace />
+    ) : !cashRegistered ? (
+      <Navigate to="/cash-register" replace />
+    ) : (
+      <Invoices />
+    )
+  }
+/>
 
         <Route
           path="/settings"

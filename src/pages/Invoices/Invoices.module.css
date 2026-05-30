@@ -1,0 +1,15 @@
+.container {
+  min-height: 100vh;
+  background-color: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pageContent {
+  margin-top: 130px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
