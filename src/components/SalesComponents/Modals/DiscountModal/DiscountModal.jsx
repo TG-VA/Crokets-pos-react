@@ -1,57 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./DiscountModal.module.css";
 
 const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) => {
-  // Usar el precio del producto seleccionado o un valor por defecto
   const [price, setPrice] = useState(selectedProduct ? selectedProduct.precio : 100);
   const [newPrice, setNewPrice] = useState("");
   const [discount, setDiscount] = useState("");
-  //Obtener el costo del producto seleccionado
   const costPrice = selectedProduct ? selectedProduct.costo : 0;
   const [showWarning, setShowWarning] = useState(false);
+  const editingField = useRef(null);
 
-  // Actualizar el precio cuando cambia el producto seleccionado
   useEffect(() => {
     if (selectedProduct) {
       setPrice(selectedProduct.precio);
       setNewPrice("");
       setDiscount("");
+      setShowWarning(false);
+      editingField.current = null;
     }
-  }, [selectedProduct]);
+  }, [selectedProduct?.id]); // ← ÚNICO CAMBIO: solo el ID, no el objeto completo
 
-  // Efecto para manejar la tecla ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    if (isOpen) document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    // Verifica si el nuevo precio es menor al costo
-    if (newPrice && parseFloat(newPrice) < costPrice) {
+    if (newPrice !== "" && parseFloat(newPrice) < costPrice) {
       setShowWarning(true);
     } else {
       setShowWarning(false);
     }
-  }, [newPrice,costPrice]);
+  }, [newPrice, costPrice]);
+
+  const sanitize = (value) =>
+    value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
 
   const handlePriceChange = (e) => {
-    const value = e.target.value;
+    const value = sanitize(e.target.value);
+    editingField.current = "price";
     setNewPrice(value);
-    
-    if (value && !isNaN(parseFloat(value))) {
-      const numericValue = parseFloat(value);
-      const calculatedDiscount = ((price - numericValue) / price) * 100;
+
+    const num = parseFloat(value);
+    if (value !== "" && !isNaN(num)) {
+      const calculatedDiscount = ((price - num) / price) * 100;
       setDiscount(calculatedDiscount.toFixed(2));
     } else {
       setDiscount("");
@@ -59,16 +53,29 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
   };
 
   const handleDiscountChange = (e) => {
-    const value = e.target.value;
+    const value = sanitize(e.target.value);
+    editingField.current = "discount";
     setDiscount(value);
-    
-    if (value && !isNaN(parseFloat(value))) {
-      const numericValue = parseFloat(value);
-      const calculatedPrice = price - (price * numericValue) / 100;
+
+    const num = parseFloat(value);
+    if (value !== "" && !isNaN(num)) {
+      const calculatedPrice = price - (price * num) / 100;
       setNewPrice(calculatedPrice.toFixed(2));
     } else {
       setNewPrice("");
     }
+  };
+
+  const handlePriceBlur = () => {
+    editingField.current = null;
+    const num = parseFloat(newPrice);
+    if (!isNaN(num)) setNewPrice(num.toFixed(2));
+  };
+
+  const handleDiscountBlur = () => {
+    editingField.current = null;
+    const num = parseFloat(discount);
+    if (!isNaN(num)) setDiscount(num.toFixed(2));
   };
 
   const handleConfirm = () => {
@@ -76,23 +83,16 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
       const discountData = {
         originalPrice: price,
         newPrice: parseFloat(newPrice),
-        discount: discount ? parseFloat(discount) : 0,
-        costPrice: costPrice
+        discount: parseFloat(discount) || 0,
+        costPrice: costPrice,
       };
-      
-      if (onApplyDiscount) {
-        onApplyDiscount(discountData);
-      }
-      
-      console.log(`Nuevo precio confirmado: $${parseFloat(newPrice).toFixed(2)}`);
+      if (onApplyDiscount) onApplyDiscount(discountData);
     }
     onClose();
   };
 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    if (e.target === e.currentTarget) onClose();
   };
 
   if (!isOpen) return null;
@@ -111,7 +111,7 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
               <div className={styles.productName}>{selectedProduct.codigo}</div>
             </div>
           )}
-          
+
           <div className={styles.inputGroup}>
             <label>Precio Actual</label>
             <div className={styles.currentPriceDisplay}>${price.toFixed(2)}</div>
@@ -121,12 +121,12 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
             <label htmlFor="newPrice">Nuevo Precio</label>
             <input
               id="newPrice"
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={newPrice}
               onChange={handlePriceChange}
+              onBlur={handlePriceBlur}
               placeholder="0.00"
-              min="0"
-              step="0.01"
               autoFocus
             />
           </div>
@@ -135,13 +135,12 @@ const DiscountModal = ({ isOpen, onClose, onApplyDiscount, selectedProduct }) =>
             <label htmlFor="discount">Descuento (%)</label>
             <input
               id="discount"
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={discount}
               onChange={handleDiscountChange}
+              onBlur={handleDiscountBlur}
               placeholder="0.00"
-              min="0"
-              max="100"
-              step="0.01"
             />
           </div>
 

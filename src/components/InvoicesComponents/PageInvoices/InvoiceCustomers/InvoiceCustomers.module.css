@@ -1,0 +1,251 @@
+.content {
+  padding: 24px;
+  background: #ffffff;
+  min-height: 100%;
+  color: #333333;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0 0 8px;
+  color: #333333;
+  font-size: 1.8rem;
+}
+
+.header p {
+  margin: 0;
+  color: #555555;
+  font-size: 0.95rem;
+}
+
+.newButton {
+  background: #fc8913;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.newButton:hover {
+  background: #e07a0d;
+  transform: translateY(-1px);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 14px;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 38px 0 12px;
+  font-size: 0.95rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #fc8913;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
+}
+
+.clearSearchButton {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+  color: #666666;
+}
+
+.refreshButton {
+  background: #1092b1;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.resultsInfo {
+  background: #f2f2f2;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.tableContainer {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: auto;
+  max-height: calc(100vh - 330px);
+}
+
+.customersTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.customersTable thead {
+  background: #fc8913;
+  color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.customersTable th,
+.customersTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.customersTable tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.customersTable tbody tr:hover {
+  background: #e3f2fd;
+}
+
+.textCenter {
+  text-align: center !important;
+  padding: 28px !important;
+  color: #666666;
+}
+
+.rfcCell {
+  font-weight: 800;
+  color: #1092b1;
+  white-space: nowrap;
+}
+
+.businessName {
+  font-weight: 800;
+  color: #333333;
+}
+
+.customerName {
+  font-size: 0.78rem;
+  color: #666666;
+  margin-top: 2px;
+}
+
+.catalogCode {
+  font-weight: 800;
+  color: #333333;
+}
+
+.catalogDescription {
+  font-size: 0.75rem;
+  color: #666666;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusInactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editButton,
+.activateButton,
+.deactivateButton {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 0.8rem;
+}
+
+.editButton {
+  background: #1092b1;
+  color: #ffffff;
+}
+
+.editButton:hover {
+  background: #0d7a94;
+}
+
+.activateButton {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.deactivateButton {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.activateButton:hover,
+.deactivateButton:hover,
+.editButton:hover {
+  transform: translateY(-1px);
+}
