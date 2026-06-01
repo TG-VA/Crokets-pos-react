@@ -209,29 +209,32 @@
 
 .actions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.editButton,
-.activateButton,
-.deactivateButton {
+.actionButton {
+  width: 110px;
+  height: 38px;
+
   border: none;
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-weight: 800;
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: 700;
+
   cursor: pointer;
   transition: 0.2s ease;
-  font-size: 0.8rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .editButton {
   background: #1092b1;
   color: #ffffff;
-}
-
-.editButton:hover {
-  background: #0d7a94;
 }
 
 .activateButton {
@@ -244,8 +247,7 @@
   color: #ffffff;
 }
 
-.activateButton:hover,
-.deactivateButton:hover,
-.editButton:hover {
+.actionButton:hover {
   transform: translateY(-1px);
+  opacity: 0.92;
 }

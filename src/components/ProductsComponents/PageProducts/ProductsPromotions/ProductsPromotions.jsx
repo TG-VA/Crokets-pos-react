@@ -83,39 +83,41 @@ const ProductsPromotions = () => {
     resetForm();
   };
 
-  const loadKits = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("product_kits")
-        .select(`
+const loadKits = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("product_kits")
+      .select(`
+        id,
+        kit_product_id,
+        is_active,
+        created_at,
+        updated_at,
+        products:product_kits_kit_product_id_fkey (
           id,
-          kit_product_id,
-          is_active,
-          created_at,
-          updated_at,
-          products:kit_product_id (
-            id,
-            barcode,
-            name,
-            sale_price,
-            status
-          )
-        `)
-        .order("created_at", { ascending: false });
+          barcode,
+          name,
+          sale_price,
+          status,
+          is_global
+        )
+      `)
+      .order("created_at", { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const visibleKits = (data || []).filter(
-        (kit) => kit.products?.status === true
-      );
+    console.log("Kits data:", JSON.stringify(data, null, 2)); // ← agrega esto
 
-      setKits(visibleKits);
-    } catch (error) {
-      console.error("Error cargando kits:", error);
-      setKits([]);
-    }
-  };
+    const visibleKits = (data || []).filter(
+      (kit) => kit.products?.status === true
+    );
 
+    setKits(visibleKits);
+  } catch (error) {
+    console.error("Error cargando kits:", error);
+    setKits([]);
+  }
+};
   useEffect(() => {
     loadKits();
   }, []);
