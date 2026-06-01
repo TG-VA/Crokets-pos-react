@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./InvoiceCustomers.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import FiscalCustomerModal from "../../Modals/FiscalCustomerModal/FiscalCustomerModal";
 
 const InvoiceCustomers = () => {
   const [customers, setCustomers] = useState([]);
@@ -9,6 +10,8 @@ const InvoiceCustomers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [error, setError] = useState("");
+  const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
   const formatStatus = (status) => (status === false ? "INACTIVO" : "ACTIVO");
 
@@ -23,9 +26,9 @@ const InvoiceCustomers = () => {
 
         supabase
           .from("tax_regimes")
-          .select("code, description")
+          .select("id, description")
           .eq("status", true)
-          .order("code", { ascending: true }),
+          .order("id", { ascending: true }),
       ]);
 
       if (cfdiRes.error) throw cfdiRes.error;
@@ -47,7 +50,6 @@ const InvoiceCustomers = () => {
         .from("customers")
         .select(`
           id,
-          name,
           phone,
           email,
           fiscal_email,
@@ -82,6 +84,40 @@ const InvoiceCustomers = () => {
     loadCustomers();
   }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("invoice-customers-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customers",
+        },
+        (payload) => {
+          const newRow = payload.new;
+          const oldRow = payload.old;
+
+          const affectsBillingCustomers =
+            newRow?.is_billing_customer === true ||
+            oldRow?.is_billing_customer === true;
+
+          if (affectsBillingCustomers) {
+            loadCustomers();
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Realtime activo: clientes fiscales");
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const cfdiUseMap = useMemo(() => {
     const map = {};
     for (const item of cfdiUses) {
@@ -93,7 +129,7 @@ const InvoiceCustomers = () => {
   const taxRegimeMap = useMemo(() => {
     const map = {};
     for (const item of taxRegimes) {
-      map[item.code] = item.description;
+      map[item.id] = item.description;
     }
     return map;
   }, [taxRegimes]);
@@ -107,7 +143,7 @@ const InvoiceCustomers = () => {
       const values = [
         customer.rfc,
         customer.razon_social,
-        customer.name,
+        customer.phone,
         customer.fiscal_email,
         customer.email,
         customer.postal_code,
@@ -122,18 +158,27 @@ const InvoiceCustomers = () => {
   }, [customers, searchTerm]);
 
   const handleNewCustomer = () => {
-    alert("Aquí abriremos el modal para crear cliente fiscal.");
+    setEditingCustomer(null);
+    setIsFiscalModalOpen(true);
   };
 
   const handleEditCustomer = (customer) => {
-    alert(`Aquí editaremos el cliente fiscal ${customer.rfc || customer.name}.`);
+    setEditingCustomer(customer);
+    setIsFiscalModalOpen(true);
+  };
+
+  const handleCloseFiscalModal = () => {
+    setIsFiscalModalOpen(false);
+    setEditingCustomer(null);
   };
 
   const handleToggleStatus = async (customer) => {
     const nextStatus = customer.status === false;
 
     const confirmed = window.confirm(
-      `¿Seguro que deseas ${nextStatus ? "activar" : "desactivar"} este cliente fiscal?`
+      `¿Seguro que deseas ${
+        nextStatus ? "activar" : "desactivar"
+      } este cliente fiscal?`
     );
 
     if (!confirmed) return;
@@ -161,7 +206,10 @@ const InvoiceCustomers = () => {
       <div className={styles.header}>
         <div>
           <h1>CLIENTES FISCALES</h1>
-          <p>Administra clientes con datos fiscales para emitir CFDI.</p>
+          <p>
+            Administra los clientes que cuentan con información fiscal para
+            emitir CFDI.
+          </p>
         </div>
 
         <button
@@ -169,7 +217,7 @@ const InvoiceCustomers = () => {
           className={styles.newButton}
           onClick={handleNewCustomer}
         >
-          + Nuevo cliente fiscal
+          + Agregar datos fiscales
         </button>
       </div>
 
@@ -177,7 +225,7 @@ const InvoiceCustomers = () => {
         <div className={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Buscar por RFC, razón social, nombre o correo..."
+            placeholder="Buscar por RFC, razón social, teléfono o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
@@ -220,6 +268,7 @@ const InvoiceCustomers = () => {
             <tr>
               <th>RFC</th>
               <th>Razón Social</th>
+              <th>Teléfono</th>
               <th>Correo Fiscal</th>
               <th>Código Postal</th>
               <th>Régimen Fiscal</th>
@@ -232,13 +281,13 @@ const InvoiceCustomers = () => {
           <tbody>
             {loadingCustomers ? (
               <tr>
-                <td colSpan="8" className={styles.textCenter}>
+                <td colSpan="9" className={styles.textCenter}>
                   Cargando clientes fiscales...
                 </td>
               </tr>
             ) : filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan="8" className={styles.textCenter}>
+                <td colSpan="9" className={styles.textCenter}>
                   No hay clientes fiscales registrados.
                 </td>
               </tr>
@@ -251,12 +300,11 @@ const InvoiceCustomers = () => {
 
                   <td>
                     <div className={styles.businessName}>
-                      {customer.razon_social || customer.name || "SIN NOMBRE"}
-                    </div>
-                    <div className={styles.customerName}>
-                      {customer.name || ""}
+                      {customer.razon_social || "SIN RAZÓN SOCIAL"}
                     </div>
                   </td>
+
+                  <td>{customer.phone || "SIN TELÉFONO"}</td>
 
                   <td>
                     {customer.fiscal_email || customer.email || "SIN CORREO"}
@@ -298,7 +346,7 @@ const InvoiceCustomers = () => {
                     <div className={styles.actions}>
                       <button
                         type="button"
-                        className={styles.editButton}
+                        className={`${styles.actionButton} ${styles.editButton}`}
                         onClick={() => handleEditCustomer(customer)}
                       >
                         Editar
@@ -306,11 +354,11 @@ const InvoiceCustomers = () => {
 
                       <button
                         type="button"
-                        className={
+                        className={`${styles.actionButton} ${
                           customer.status === false
                             ? styles.activateButton
                             : styles.deactivateButton
-                        }
+                        }`}
                         onClick={() => handleToggleStatus(customer)}
                       >
                         {customer.status === false ? "Activar" : "Desactivar"}
@@ -323,6 +371,13 @@ const InvoiceCustomers = () => {
           </tbody>
         </table>
       </div>
+
+      <FiscalCustomerModal
+        isOpen={isFiscalModalOpen}
+        onClose={handleCloseFiscalModal}
+        onSaved={loadCustomers}
+        customerToEdit={editingCustomer}
+      />
     </div>
   );
 };
