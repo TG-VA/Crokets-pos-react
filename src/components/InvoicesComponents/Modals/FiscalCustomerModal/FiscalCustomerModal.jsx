@@ -28,6 +28,9 @@ const FiscalCustomerModal = ({
   const [taxRegimes, setTaxRegimes] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [touched, setTouched] = useState({});
+  const [postalInfo, setPostalInfo] = useState(null);
+  const [postalLoading, setPostalLoading] = useState(false);
+  const [postalError, setPostalError] = useState("");
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -53,6 +56,9 @@ const FiscalCustomerModal = ({
 
   const isValidRFC = (value) =>
     /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(value);
+
+  const isPostalCodeComplete = onlyNumbers(form.postal_code).length === 5;
+  const isPostalCodeValid = isPostalCodeComplete && !!postalInfo && !postalError;
 
   const fieldStatus = {
     phone:
@@ -82,7 +88,7 @@ const FiscalCustomerModal = ({
     postal_code:
       form.postal_code.length === 0
         ? ""
-        : onlyNumbers(form.postal_code).length === 5
+        : isPostalCodeValid
         ? "valid"
         : "invalid",
 
@@ -127,9 +133,46 @@ const FiscalCustomerModal = ({
     isValidEmail(form.fiscal_email) &&
     isValidRFC(form.rfc) &&
     form.razon_social.trim().length > 0 &&
-    onlyNumbers(form.postal_code).length === 5 &&
+    isPostalCodeValid &&
     !!form.tax_regime &&
     !!form.cfdi_use;
+
+  const lookupPostalCode = async (postalCode) => {
+    const cp = onlyNumbers(postalCode).slice(0, 5);
+
+    setPostalInfo(null);
+    setPostalError("");
+
+    if (cp.length !== 5) return;
+
+    try {
+      setPostalLoading(true);
+
+      const { data, error: postalLookupError } = await supabase
+        .from("postal_codes")
+        .select("postal_code, municipality, state, city")
+        .eq("postal_code", cp)
+        .eq("status", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (postalLookupError) throw postalLookupError;
+
+      if (!data) {
+        setPostalError("Código postal no encontrado en catálogo SEPOMEX.");
+        setPostalInfo(null);
+        return;
+      }
+
+      setPostalInfo(data);
+    } catch (err) {
+      console.error("Error consultando código postal:", err);
+      setPostalError("No se pudo validar el código postal.");
+      setPostalInfo(null);
+    } finally {
+      setPostalLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -137,6 +180,8 @@ const FiscalCustomerModal = ({
     loadCatalogs();
 
     if (customerToEdit?.id) {
+      const postalCode = onlyNumbers(customerToEdit.postal_code || "").slice(0, 5);
+
       setMode("form");
       setTouched({});
       setForm({
@@ -145,11 +190,13 @@ const FiscalCustomerModal = ({
         fiscal_email: normalizeEmail(customerToEdit.fiscal_email || ""),
         rfc: normalizeRFC(customerToEdit.rfc || "").slice(0, 13),
         razon_social: normalizeUpperText(customerToEdit.razon_social || ""),
-        postal_code: onlyNumbers(customerToEdit.postal_code || "").slice(0, 5),
+        postal_code: postalCode,
         tax_regime: customerToEdit.tax_regime || "",
         cfdi_use: customerToEdit.cfdi_use || "",
         address: customerToEdit.address || "",
       });
+
+      lookupPostalCode(postalCode);
     } else {
       setMode("search");
       setSearchTerm("");
@@ -157,6 +204,8 @@ const FiscalCustomerModal = ({
       setHasSearched(false);
       setTouched({});
       setForm(emptyForm);
+      setPostalInfo(null);
+      setPostalError("");
     }
 
     setError("");
@@ -245,13 +294,15 @@ const FiscalCustomerModal = ({
   };
 
   const handleSelectCustomer = (customer) => {
+    const postalCode = onlyNumbers(customer.postal_code || "").slice(0, 5);
+
     setForm({
       customerId: customer.id,
       phone: onlyNumbers(customer.phone || "").slice(0, 10),
       fiscal_email: normalizeEmail(customer.fiscal_email || customer.email || ""),
       rfc: normalizeRFC(customer.rfc || "").slice(0, 13),
       razon_social: normalizeUpperText(customer.razon_social || ""),
-      postal_code: onlyNumbers(customer.postal_code || "").slice(0, 5),
+      postal_code: postalCode,
       tax_regime: customer.tax_regime || "",
       cfdi_use: customer.cfdi_use || "",
       address: customer.address || "",
@@ -260,11 +311,14 @@ const FiscalCustomerModal = ({
     setTouched({});
     setMode("form");
     setError("");
+    lookupPostalCode(postalCode);
   };
 
   const handleCreateNew = () => {
     setForm(emptyForm);
     setTouched({});
+    setPostalInfo(null);
+    setPostalError("");
     setMode("form");
     setError("");
   };
@@ -274,6 +328,16 @@ const FiscalCustomerModal = ({
       ...prev,
       [field]: value,
     }));
+
+    if (field === "postal_code") {
+      setPostalInfo(null);
+      setPostalError("");
+
+      const cp = onlyNumbers(value).slice(0, 5);
+      if (cp.length === 5) {
+        lookupPostalCode(cp);
+      }
+    }
 
     markTouched(field);
     setError("");
@@ -298,6 +362,10 @@ const FiscalCustomerModal = ({
 
     if (onlyNumbers(form.postal_code).length !== 5) {
       return "El código postal fiscal debe tener 5 dígitos.";
+    }
+
+    if (!isPostalCodeValid) {
+      return "El código postal fiscal no existe en el catálogo SEPOMEX.";
     }
 
     if (!form.tax_regime) return "Selecciona el régimen fiscal.";
@@ -330,7 +398,7 @@ const FiscalCustomerModal = ({
     const rfc = normalizeRFC(form.rfc);
 
     const confirmed = window.confirm(
-      `¿Deseas guardar estos datos fiscales?\n\nRFC: ${rfc}\nRazón social: ${razonSocial}`
+      `¿Deseas guardar estos datos fiscales?\n\nRFC: ${rfc}\nRazón social: ${razonSocial}\nCP: ${postalCode} - ${postalInfo?.municipality}, ${postalInfo?.state}`
     );
 
     if (!confirmed) return;
@@ -579,11 +647,33 @@ const FiscalCustomerModal = ({
                   }
                   maxLength={5}
                 />
-                {fieldStatus.postal_code === "invalid" && (
-                  <small className={styles.fieldError}>
-                    El código postal debe tener 5 dígitos.
+
+                {postalLoading && (
+                  <small className={styles.helpText}>
+                    Validando código postal...
                   </small>
                 )}
+
+                {postalInfo && (
+                  <small className={styles.validHelp}>
+                    {postalInfo.city ? `${postalInfo.city}, ` : ""}
+                    {postalInfo.municipality}, {postalInfo.state}
+                  </small>
+                )}
+
+                {postalError && (
+                  <small className={styles.fieldError}>{postalError}</small>
+                )}
+
+                {!postalLoading &&
+                  !postalInfo &&
+                  !postalError &&
+                  fieldStatus.postal_code === "invalid" && (
+                    <small className={styles.fieldError}>
+                      El código postal debe tener 5 dígitos.
+                    </small>
+                  )}
+
                 <small className={styles.helpText}>
                   Debe coincidir con el código postal registrado ante el SAT.
                 </small>
@@ -671,7 +761,7 @@ const FiscalCustomerModal = ({
                 type="button"
                 className={styles.saveButton}
                 onClick={handleSave}
-                disabled={saving || !isFormValid}
+                disabled={saving || postalLoading || !isFormValid}
               >
                 {saving ? "Guardando..." : "Guardar datos fiscales"}
               </button>

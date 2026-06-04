@@ -43,3 +43,17 @@ app-update.yml
 *.sqlite
 *.sqlite3
 *-journal
+
+# Archivos temporales SEPOMEX
+CPdescarga.xlsx
+CPdescarga*.xlsx
+CPdescarga*.csv
+CPdescarga*.zip
+
+# Catálogos fiscales temporales
+catalogos_sat/
+temp_catalogs/
+
+# Scripts locales de importación (si algún día generas respaldos)
+*.bak
+*.tmp
