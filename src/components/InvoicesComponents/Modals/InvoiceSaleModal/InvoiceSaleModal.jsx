@@ -21,6 +21,9 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
   const [selectedCfdiUse, setSelectedCfdiUse] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
 
+  const [postalInfo, setPostalInfo] = useState(null);
+  const [postalLoading, setPostalLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,6 +55,39 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
       total: Number(sale?.total || 0),
     };
   }, [sale]);
+
+  const lookupPostalCode = async (postalCode) => {
+    const cp = String(postalCode || "").replace(/\D/g, "").slice(0, 5);
+
+    setPostalInfo(null);
+
+    if (cp.length !== 5) return;
+
+    try {
+      setPostalLoading(true);
+
+      const { data, error: postalError } = await supabase
+        .from("postal_codes")
+        .select("postal_code, municipality, state, city")
+        .eq("postal_code", cp)
+        .eq("status", true)
+        .limit(1);
+
+      if (postalError) throw postalError;
+
+      if (!data || data.length === 0) {
+        setPostalInfo(null);
+        return;
+      }
+
+      setPostalInfo(data[0]);
+    } catch (err) {
+      console.error("Error consultando código postal:", err);
+      setPostalInfo(null);
+    } finally {
+      setPostalLoading(false);
+    }
+  };
 
   const loadSaleData = async () => {
     if (!sale?.id) return;
@@ -174,10 +210,12 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
     setSalePayments([]);
     setSelectedCustomer(null);
     setSelectedCfdiUse("");
+    setPostalInfo(null);
 
     if (isCustomerReady(saleCustomer)) {
       setSelectedCustomer(saleCustomer);
       setSelectedCfdiUse(saleCustomer.cfdi_use || "");
+      lookupPostalCode(saleCustomer.postal_code);
     }
 
     loadSaleData();
@@ -188,6 +226,12 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
   useEffect(() => {
     if (selectedCustomer?.cfdi_use) {
       setSelectedCfdiUse(selectedCustomer.cfdi_use);
+    }
+
+    if (selectedCustomer?.postal_code) {
+      lookupPostalCode(selectedCustomer.postal_code);
+    } else {
+      setPostalInfo(null);
     }
   }, [selectedCustomer]);
 
@@ -328,7 +372,6 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
       if (invoiceError) throw invoiceError;
 
       const invoiceId = invoiceData.id;
-
       const invoiceItems = buildInvoiceItems(invoiceId);
 
       const { error: itemsError } = await supabase
@@ -405,6 +448,7 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
                   onClick={() => {
                     setSelectedCustomer(null);
                     setSelectedCfdiUse("");
+                    setPostalInfo(null);
                   }}
                 >
                   Cambiar cliente
@@ -486,6 +530,19 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
                 <strong>
                   {selectedCustomer?.postal_code || "SIN CÓDIGO POSTAL"}
                 </strong>
+
+                {postalLoading && (
+                  <small className={styles.cfdiHelp}>
+                    Validando código postal...
+                  </small>
+                )}
+
+                {postalInfo && (
+                  <small className={styles.locationInfo}>
+                    {postalInfo.city ? `${postalInfo.city}, ` : ""}
+                    {postalInfo.municipality}, {postalInfo.state}
+                  </small>
+                )}
               </div>
 
               <div>
@@ -608,7 +665,13 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
             type="button"
             className={styles.saveButton}
             onClick={handleSaveInvoice}
-            disabled={saving || loading || !selectedCustomerReady || !selectedCfdiUse}
+            disabled={
+              saving ||
+              loading ||
+              postalLoading ||
+              !selectedCustomerReady ||
+              !selectedCfdiUse
+            }
           >
             {saving ? "Generando..." : "Generar factura interna"}
           </button>
