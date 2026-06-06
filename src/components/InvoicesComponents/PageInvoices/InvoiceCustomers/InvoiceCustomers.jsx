@@ -1,17 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./InvoiceCustomers.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { useBranch } from "../../../../contexts/BranchContext";
+import { checkUserIsAdmin } from "../../../../lib/permissionsService";
 import FiscalCustomerModal from "../../Modals/FiscalCustomerModal/FiscalCustomerModal";
+import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
 const InvoiceCustomers = () => {
+  const { user } = useAuth();
+  const { branch } = useBranch();
+
   const [customers, setCustomers] = useState([]);
   const [cfdiUses, setCfdiUses] = useState([]);
   const [taxRegimes, setTaxRegimes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [error, setError] = useState("");
   const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+
+  const [adminAuthOpen, setAdminAuthOpen] = useState(false);
+  const [pendingDeactivateCustomer, setPendingDeactivateCustomer] =
+    useState(null);
 
   const formatStatus = (status) => (status === false ? "INACTIVO" : "ACTIVO");
 
@@ -120,26 +132,37 @@ const InvoiceCustomers = () => {
 
   const cfdiUseMap = useMemo(() => {
     const map = {};
+
     for (const item of cfdiUses) {
       map[item.id] = item.description;
     }
+
     return map;
   }, [cfdiUses]);
 
   const taxRegimeMap = useMemo(() => {
     const map = {};
+
     for (const item of taxRegimes) {
       map[item.id] = item.description;
     }
+
     return map;
   }, [taxRegimes]);
 
   const filteredCustomers = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
-    if (!search) return customers;
-
     return customers.filter((customer) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && customer.status !== false) ||
+        (statusFilter === "inactive" && customer.status === false);
+
+      if (!matchesStatus) return false;
+
+      if (!search) return true;
+
       const values = [
         customer.rfc,
         customer.razon_social,
@@ -155,7 +178,7 @@ const InvoiceCustomers = () => {
         String(value || "").toLowerCase().includes(search)
       );
     });
-  }, [customers, searchTerm]);
+  }, [customers, searchTerm, statusFilter]);
 
   const handleNewCustomer = () => {
     setEditingCustomer(null);
@@ -172,9 +195,7 @@ const InvoiceCustomers = () => {
     setEditingCustomer(null);
   };
 
-  const handleToggleStatus = async (customer) => {
-    const nextStatus = customer.status === false;
-
+  const updateCustomerStatus = async (customer, nextStatus) => {
     const confirmed = window.confirm(
       `¿Seguro que deseas ${
         nextStatus ? "activar" : "desactivar"
@@ -199,6 +220,44 @@ const InvoiceCustomers = () => {
       console.error("Error actualizando cliente fiscal:", err);
       alert("No se pudo actualizar el estado del cliente fiscal.");
     }
+  };
+
+  const handleToggleStatus = async (customer) => {
+    const nextStatus = customer.status === false;
+
+    if (nextStatus) {
+      await updateCustomerStatus(customer, true);
+      return;
+    }
+
+    const isAdmin = await checkUserIsAdmin(user?.id);
+
+    if (isAdmin) {
+      await updateCustomerStatus(customer, false);
+      return;
+    }
+
+    setPendingDeactivateCustomer(customer);
+    setAdminAuthOpen(true);
+  };
+
+  const handleAdminAuthorizedDeactivate = async () => {
+    if (!pendingDeactivateCustomer) {
+      setAdminAuthOpen(false);
+      return;
+    }
+
+    const customerToDeactivate = pendingDeactivateCustomer;
+
+    setAdminAuthOpen(false);
+    setPendingDeactivateCustomer(null);
+
+    await updateCustomerStatus(customerToDeactivate, false);
+  };
+
+  const handleCloseAdminAuth = () => {
+    setAdminAuthOpen(false);
+    setPendingDeactivateCustomer(null);
   };
 
   return (
@@ -241,6 +300,16 @@ const InvoiceCustomers = () => {
             </button>
           )}
         </div>
+
+        <select
+          className={styles.statusFilter}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">Todos</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
 
         <button
           type="button"
@@ -288,7 +357,8 @@ const InvoiceCustomers = () => {
             ) : filteredCustomers.length === 0 ? (
               <tr>
                 <td colSpan="9" className={styles.textCenter}>
-                  No hay clientes fiscales registrados.
+                  No hay clientes fiscales registrados con los filtros
+                  seleccionados.
                 </td>
               </tr>
             ) : (
@@ -377,6 +447,25 @@ const InvoiceCustomers = () => {
         onClose={handleCloseFiscalModal}
         onSaved={loadCustomers}
         customerToEdit={editingCustomer}
+      />
+
+      <AdminAuthorizationModal
+        isOpen={adminAuthOpen}
+        onClose={handleCloseAdminAuth}
+        onAuthorized={handleAdminAuthorizedDeactivate}
+        action="deactivate_fiscal_customer"
+        title="Acceso restringido"
+        message={
+          pendingDeactivateCustomer
+            ? `Para desactivar al cliente fiscal "${
+                pendingDeactivateCustomer.razon_social ||
+                pendingDeactivateCustomer.rfc ||
+                "seleccionado"
+              }", se requiere autorización de un administrador.`
+            : "Para desactivar este cliente fiscal, se requiere autorización de un administrador."
+        }
+        targetId={pendingDeactivateCustomer?.id || null}
+        branchId={branch?.id || null}
       />
     </div>
   );

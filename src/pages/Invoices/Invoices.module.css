@@ -13,3 +13,14 @@
   overflow: hidden;
   padding: 0;
 }
+
+.accessMessage {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 16px 18px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 20px;
+}
