@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "./Navbar.module.css";
 import { useBranch } from "../../contexts/BranchContext";
 
-// Importa los recursos de la aplicación (imágenes e íconos).
 import Logo from "../../assets/images/LOGOCROKETS.png";
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
@@ -17,10 +16,11 @@ import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
 
-  // "Salir" = bloquear pantalla y volver al login SIN cerrar sesión real
   const handleLockScreen = () => {
     const confirmLock = window.confirm(
       "¿Deseas salir a la pantalla de inicio de sesión sin cerrar la sesión actual?"
@@ -39,6 +39,7 @@ const Navbar = () => {
       icon: SalesIcon,
       path: "/dashboard",
       shortcut: "F1",
+      matchPaths: ["/dashboard", "/sales"],
     },
     {
       id: "btnProductos",
@@ -46,6 +47,7 @@ const Navbar = () => {
       icon: ProductsIcon,
       path: "/products",
       shortcut: "F2",
+      matchPaths: ["/products"],
     },
     {
       id: "btnInventario",
@@ -53,36 +55,52 @@ const Navbar = () => {
       icon: InventoryIcon,
       path: "/inventory",
       shortcut: "F3",
+      matchPaths: ["/inventory"],
     },
     {
       id: "btnFacturas",
       label: "Facturas",
       icon: InvoicesIcon,
       path: "/invoices",
+      matchPaths: ["/invoices"],
     },
     {
       id: "btnCorte",
       label: "Corte",
       icon: CashoutIcon,
       path: "/cashcut",
+      matchPaths: ["/cashcut"],
     },
     {
       id: "btnReportes",
       label: "Reportes",
       icon: ReportsIcon,
       path: "/reports",
+      matchPaths: ["/reports"],
     },
     {
       id: "btnConfiguracion",
       label: "Configuración",
       icon: SettingsIcon,
       path: "/settings",
+      matchPaths: ["/settings"],
     },
   ];
+
+  const isItemActive = (item) => {
+    return item.matchPaths.some((path) => {
+      if (path === "/dashboard") {
+        return location.pathname === "/dashboard";
+      }
+
+      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    });
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       const item = navItems.find((nav) => nav.shortcut === e.key);
+
       if (item) {
         e.preventDefault();
         navigate(item.path);
@@ -90,6 +108,7 @@ const Navbar = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [navigate]);
 
@@ -100,32 +119,40 @@ const Navbar = () => {
       </div>
 
       <div className={styles.navbarMenu}>
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={`${styles.navButton} ${styles[item.id]}`}
-            onClick={() => navigate(item.path)}
-          >
-            <img
-              src={item.icon}
-              alt={`${item.label} icono`}
-              className={styles.navIcon}
-            />
-            {item.label}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const active = isItemActive(item);
+
+          return (
+            <button
+              key={item.id}
+              className={`${styles.navButton} ${styles[item.id]} ${
+                active ? styles.active : ""
+              }`}
+              onClick={() => navigate(item.path)}
+            >
+              <img
+                src={item.icon}
+                alt={`${item.label} icono`}
+                className={styles.navIcon}
+              />
+              {item.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className={styles.navbarUser}>
         <div className={styles.userInfo}>
           <div className={styles.userName}>
-            Usuario: {(
-  user?.username ??
-  user?.user_metadata?.username ??
-  user?.email?.split("@")[0] ??
-  "—"
-).toUpperCase()}
+            Usuario:{" "}
+            {(
+              user?.username ??
+              user?.user_metadata?.username ??
+              user?.email?.split("@")[0] ??
+              "—"
+            ).toUpperCase()}
           </div>
+
           <div className={styles.branchInfo}>
             Sucursal:{" "}
             {branch?.code

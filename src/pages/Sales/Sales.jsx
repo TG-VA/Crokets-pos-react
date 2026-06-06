@@ -6,6 +6,7 @@ import { useBranch } from "../../contexts/BranchContext";
 import { v4 as uuidv4 } from "uuid";
 import { buildTicketText } from "../../utils/ticketBuilder";
 import { printTicket } from "../../utils/ticketPrinter";
+import { checkUserIsAdmin } from "../../lib/permissionsService";
 
 // Importar iconos
 import searchIcon from "../../assets/icons/searchIcon.svg";
@@ -32,6 +33,7 @@ import ChangeTicketModal from "../../components/SalesComponents/Modals/ChangeTic
 import DeleteTicketModal from "../../components/SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal";
 import DeleteItemModal from "../../components/SalesComponents/Modals/DeleteItemModal/DeleteItemModal";
 import SalesHistoryModal from "../../components/SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal";
+import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
 
 const Sales = () => {
   const { user } = useAuth();
@@ -58,6 +60,7 @@ const Sales = () => {
   const tableRef = useRef(null);
 
   const [isExitModalOpen, setExitModalOpen] = useState(false);
+  const [isExitAuthModalOpen, setExitAuthModalOpen] = useState(false);
   const [isEntryModalOpen, setEntryModalOpen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isClientModalOpen, setClientModalOpen] = useState(false);
@@ -2083,12 +2086,38 @@ const Sales = () => {
     }
   };
 
+  const openExitFlow = useCallback(async () => {
+    if (shiftAlreadyCut) {
+      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      return;
+    }
+
+    const isAdmin = await checkUserIsAdmin(user?.id);
+
+    if (isAdmin) {
+      setExitModalOpen(true);
+      return;
+    }
+
+    setExitAuthModalOpen(true);
+  }, [shiftAlreadyCut, user?.id]);
+
+  const handleExitAuthorized = () => {
+    setExitAuthModalOpen(false);
+    setExitModalOpen(true);
+  };
+
+  const handleCloseExitAuth = () => {
+    setExitAuthModalOpen(false);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isAnyModalOpen =
         showPaymentModal ||
         isEntryModalOpen ||
         isExitModalOpen ||
+        isExitAuthModalOpen ||
         isClientModalOpen ||
         isVerifierModalOpen ||
         isSearchModalOpen ||
@@ -2177,11 +2206,7 @@ const Sales = () => {
           break;
         case "F8":
           e.preventDefault();
-          if (shiftAlreadyCut) {
-            alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
-          } else {
-            setExitModalOpen(true);
-          }
+          openExitFlow();
           break;
         case "F9":
           e.preventDefault();
@@ -2214,6 +2239,7 @@ const Sales = () => {
           if (showPaymentModal) setShowPaymentModal(false);
           else if (isEntryModalOpen) setEntryModalOpen(false);
           else if (isExitModalOpen) setExitModalOpen(false);
+          else if (isExitAuthModalOpen) setExitAuthModalOpen(false);
           else if (isClientModalOpen) setClientModalOpen(false);
           else if (isVerifierModalOpen) setVerifierModalOpen(false);
           else if (isSearchModalOpen) setSearchModalOpen(false);
@@ -2238,6 +2264,7 @@ const Sales = () => {
     showPaymentModal,
     isEntryModalOpen,
     isExitModalOpen,
+    isExitAuthModalOpen,
     isClientModalOpen,
     isVerifierModalOpen,
     isSearchModalOpen,
@@ -2252,6 +2279,7 @@ const Sales = () => {
     pendingTickets,
     processingSale,
     shiftAlreadyCut,
+    openExitFlow,
   ]);
 
   const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
@@ -2349,13 +2377,7 @@ const Sales = () => {
           className={`${styles.horizontalActionButton} ${
             shiftAlreadyCut ? styles.actionButtonDisabled : ""
           }`}
-          onClick={() => {
-            if (shiftAlreadyCut) {
-              alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
-              return;
-            }
-            setExitModalOpen(true);
-          }}
+          onClick={openExitFlow}
         >
           <span className={styles.actionKey}>F8</span>
           <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
@@ -2597,6 +2619,17 @@ const Sales = () => {
         isOpen={isExitModalOpen}
         onClose={() => setExitModalOpen(false)}
         onSave={handleSaveExit}
+      />
+
+      <AdminAuthorizationModal
+        isOpen={isExitAuthModalOpen}
+        onClose={handleCloseExitAuth}
+        onAuthorized={handleExitAuthorized}
+        action="cash_exit_access"
+        title="Acceso restringido"
+        message='Para realizar una "Salida" de efectivo, se requiere autorización de un administrador.'
+        targetId="sales_cash_exit"
+        branchId={branch?.id || null}
       />
 
       <PaymentModal
