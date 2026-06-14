@@ -7,6 +7,8 @@
   --darkGray: #333333;
   --textColor: #333333;
   --white: #ffffff;
+  --navIconColor: brightness(0) saturate(100%) invert(43%) sepia(94%)
+    saturate(641%) hue-rotate(147deg) brightness(89%) contrast(91%);
 
   background-color: var(--white);
   min-height: 80px;
@@ -105,8 +107,28 @@
   transition: all 0.2s ease;
 }
 
+/* Icono de Clientes: mismo color y tamaño visual más parejo */
+.btnClientes .navIcon {
+  width: 16px;
+  height: 16px;
+  filter: var(--navIconColor);
+}
+
+/* Hover / activo de iconos normales */
 .navButton:hover .navIcon,
-.navButton.active .navIcon,
+.navButton.active .navIcon {
+  filter: var(--navIconColor);
+  transform: scale(1.05);
+}
+
+/* Evita que el icono de Clientes se agrande demasiado */
+.btnClientes:hover .navIcon,
+.btnClientes.active .navIcon {
+  filter: var(--navIconColor);
+  transform: scale(1);
+}
+
+/* Icono del botón Salir */
 .logoutButton:hover .navIcon {
   filter: brightness(1.2);
   transform: scale(1.05);
@@ -116,6 +138,7 @@
 .btnProductos,
 .btnInventario,
 .btnFacturas,
+.btnClientes,
 .btnCorte,
 .btnReportes,
 .btnConfiguracion {
@@ -168,6 +191,7 @@
 }
 
 .btnFacturas:hover::after,
+.btnClientes:hover::after,
 .btnCorte:hover::after,
 .btnReportes:hover::after,
 .btnConfiguracion:hover::after {
@@ -212,6 +236,11 @@
     height: 18px;
     margin-right: 6px;
   }
+
+  .btnClientes .navIcon {
+    width: 15px;
+    height: 15px;
+  }
 }
 
 @media (max-width: 1366px) and (max-height: 850px) {
@@ -234,6 +263,11 @@
     width: 16px;
     height: 16px;
     margin-right: 0px;
+  }
+
+  .btnClientes .navIcon {
+    width: 15px;
+    height: 15px;
   }
 
   .userInfo {

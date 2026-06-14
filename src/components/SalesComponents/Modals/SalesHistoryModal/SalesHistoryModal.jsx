@@ -216,6 +216,194 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
     };
   };
 
+  const buildCustomerPointsMaps = async ({ saleIds = [], customerIds = [] }) => {
+  const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
+  const cleanCustomerIds = [...new Set((customerIds || []).filter(Boolean))];
+
+  const [salePointsRes, returnedPointsRes, balancePointsRes] =
+    await Promise.all([
+      cleanSaleIds.length
+        ? supabase
+            .from("customer_points")
+            .select("customer_id, related_sale_id, points, source")
+            .in("related_sale_id", cleanSaleIds)
+            .eq("source", "sale")
+        : Promise.resolve({ data: [], error: null }),
+
+      cleanSaleIds.length
+        ? supabase
+            .from("customer_points")
+            .select("customer_id, related_sale_id, points, source")
+            .in("related_sale_id", cleanSaleIds)
+            .eq("source", "partial_return")
+        : Promise.resolve({ data: [], error: null }),
+
+      cleanCustomerIds.length
+        ? supabase
+            .from("customer_points")
+            .select("customer_id, points")
+            .in("customer_id", cleanCustomerIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+  if (salePointsRes.error) throw salePointsRes.error;
+  if (returnedPointsRes.error) throw returnedPointsRes.error;
+  if (balancePointsRes.error) throw balancePointsRes.error;
+
+  const pointsBySale = {};
+  for (const row of salePointsRes.data || []) {
+    if (!row.related_sale_id) continue;
+
+    const points = Number(row.points || 0);
+    if (points <= 0) continue;
+
+    pointsBySale[row.related_sale_id] =
+      Number(pointsBySale[row.related_sale_id] || 0) + points;
+  }
+
+  const returnedPointsBySale = {};
+  for (const row of returnedPointsRes.data || []) {
+    if (!row.related_sale_id) continue;
+
+    const points = Number(row.points || 0);
+    if (points >= 0) continue;
+
+    returnedPointsBySale[row.related_sale_id] =
+      Number(returnedPointsBySale[row.related_sale_id] || 0) + Math.abs(points);
+  }
+
+  const balanceByCustomer = {};
+  for (const row of balancePointsRes.data || []) {
+    if (!row.customer_id) continue;
+
+    balanceByCustomer[row.customer_id] =
+      Number(balanceByCustomer[row.customer_id] || 0) + Number(row.points || 0);
+  }
+
+  return { pointsBySale, returnedPointsBySale, balanceByCustomer };
+};
+
+  const reverseCustomerPointsByCancellation = async ({
+    saleId,
+    customerId,
+    folio,
+    reason,
+  }) => {
+    if (!saleId || !customerId) {
+      return { reversed: false, points: 0, message: "Venta sin cliente." };
+    }
+
+    const { data: salePointRows, error: salePointsError } = await supabase
+      .from("customer_points")
+      .select("id, points, source")
+      .eq("customer_id", customerId)
+      .eq("related_sale_id", saleId)
+      .in("source", ["sale", "cancellation", "partial_return"]);
+
+    if (salePointsError) throw salePointsError;
+
+    const alreadyCancelled = (salePointRows || []).some(
+      (row) => row.source === "cancellation"
+    );
+
+    if (alreadyCancelled) {
+      return {
+        reversed: false,
+        points: 0,
+        message: "Los puntos de esta venta ya fueron descontados por cancelación.",
+      };
+    }
+
+    const earnedBySale = (salePointRows || []).reduce((sum, row) => {
+      if (row.source !== "sale") return sum;
+      const points = Number(row.points || 0);
+      return points > 0 ? sum + points : sum;
+    }, 0);
+
+    const alreadyReversedByReturns = Math.abs(
+      (salePointRows || []).reduce((sum, row) => {
+        if (row.source !== "partial_return") return sum;
+        const points = Number(row.points || 0);
+        return points < 0 ? sum + points : sum;
+      }, 0)
+    );
+
+    const pendingPointsToReverse = Math.max(
+      earnedBySale - alreadyReversedByReturns,
+      0
+    );
+
+    if (pendingPointsToReverse <= 0) {
+      return {
+        reversed: false,
+        points: 0,
+        message: "Esta venta no tiene puntos pendientes por descontar.",
+      };
+    }
+
+    const { data: balanceRows, error: balanceError } = await supabase
+      .from("customer_points")
+      .select("points")
+      .eq("customer_id", customerId);
+
+    if (balanceError) throw balanceError;
+
+    const currentBalance = (balanceRows || []).reduce(
+      (sum, row) => sum + Number(row.points || 0),
+      0
+    );
+
+    const pointsToReverse = Math.min(
+      pendingPointsToReverse,
+      Math.max(currentBalance, 0)
+    );
+
+    if (pointsToReverse <= 0) {
+      return {
+        reversed: false,
+        points: 0,
+        message: "El cliente no tiene saldo disponible para descontar puntos.",
+      };
+    }
+
+    const limitedByBalance = pointsToReverse < pendingPointsToReverse;
+
+    const notes = [
+      `PUNTOS DESCONTADOS POR CANCELACIÓN DE VENTA${folio ? ` #${folio}` : ""}.`,
+      reason ? `MOTIVO: ${String(reason).trim().toUpperCase()}.` : "",
+      limitedByBalance
+        ? "DESCUENTO LIMITADO POR SALDO DISPONIBLE DEL CLIENTE."
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const { error: insertError } = await supabase.from("customer_points").insert([
+      {
+        customer_id: customerId,
+        points: -pointsToReverse,
+        movement_type: "redeem",
+        source: "cancellation",
+        related_sale_id: saleId,
+        reward_id: null,
+        user_id: user?.id || null,
+        branch_id: branch?.id || null,
+        notes,
+      },
+    ]);
+
+    if (insertError) throw insertError;
+
+    return {
+      reversed: true,
+      points: pointsToReverse,
+      message: limitedByBalance
+        ? `Se descontaron ${pointsToReverse} punto(s). El descuento fue limitado por el saldo disponible del cliente.`
+        : `Se descontaron ${pointsToReverse} punto(s) del cliente.`,
+    };
+  };
+
+
   const buildTicketFromSaleRow = async (saleRow) => {
     const saleIds = [saleRow.id];
     const userIds = saleRow.user_id ? [saleRow.user_id] : [];
@@ -247,7 +435,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       customerIds.length
         ? supabase
             .from("customers")
-            .select("id, name")
+            .select("id, name, phone")
             .in("id", customerIds)
         : Promise.resolve({ data: [], error: null }),
 
@@ -311,6 +499,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
     if (methodsRes.error) throw methodsRes.error;
 
+    const { pointsBySale, returnedPointsBySale, balanceByCustomer } =
+  await buildCustomerPointsMaps({
+    saleIds,
+    customerIds,
+  });
+
     const detailCountBySale = {};
     for (const row of detailsRes.data || []) {
       detailCountBySale[row.sale_id] =
@@ -324,7 +518,10 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
     const customerMap = {};
     for (const row of customersRes.data || []) {
-      customerMap[row.id] = row.name;
+      customerMap[row.id] = {
+        name: row.name || "PÚBLICO EN GENERAL",
+        phone: row.phone || "",
+      };
     }
 
     const methodMap = {};
@@ -371,6 +568,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       0
     );
     const paymentSummary = getPaymentSummary(payments, saleRow.total);
+    const customerInfo = customerMap[saleRow.customer_id] || {};
 
     return {
       id: saleRow.id,
@@ -382,7 +580,14 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       tax: Number(saleRow.tax || 0),
       discountTotal: Number(saleRow.discount_total || 0),
       cashier: userMap[saleRow.user_id] || "SIN CAJERO",
-      client: customerMap[saleRow.customer_id] || "PÚBLICO EN GENERAL",
+      customerId: saleRow.customer_id || null,
+      client: customerInfo.name || "PÚBLICO EN GENERAL",
+      customerPhone: customerInfo.phone || "",
+      pointsEarned: Number(pointsBySale[saleRow.id] || 0),
+      pointsReturned: Number(returnedPointsBySale[saleRow.id] || 0),
+      pointsBalance: saleRow.customer_id
+        ? Number(balanceByCustomer[saleRow.customer_id] || 0)
+        : null,
       date: saleRow.sale_date,
       paymentMethod: getPaymentMethodLabel(payments),
       status: saleRow.status || "",
@@ -504,7 +709,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
         customerIds.length
           ? supabase
               .from("customers")
-              .select("id, name")
+              .select("id, name, phone")
               .in("id", customerIds)
           : Promise.resolve({ data: [], error: null }),
 
@@ -570,6 +775,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
       if (methodsRes.error) throw methodsRes.error;
 
+      const { pointsBySale, returnedPointsBySale, balanceByCustomer } =
+  await buildCustomerPointsMaps({
+    saleIds,
+    customerIds,
+  });
+
       const detailCountBySale = {};
       for (const row of detailsRes.data || []) {
         detailCountBySale[row.sale_id] =
@@ -583,7 +794,10 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
       const customerMap = {};
       for (const row of customersRes.data || []) {
-        customerMap[row.id] = row.name;
+        customerMap[row.id] = {
+          name: row.name || "PÚBLICO EN GENERAL",
+          phone: row.phone || "",
+        };
       }
 
       const methodMap = {};
@@ -639,6 +853,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
           0
         );
         const paymentSummary = getPaymentSummary(payments, sale.total);
+        const customerInfo = customerMap[sale.customer_id] || {};
 
         return {
           id: sale.id,
@@ -650,7 +865,14 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
           tax: Number(sale.tax || 0),
           discountTotal: Number(sale.discount_total || 0),
           cashier: userMap[sale.user_id] || "SIN CAJERO",
-          client: customerMap[sale.customer_id] || "PÚBLICO EN GENERAL",
+          customerId: sale.customer_id || null,
+          client: customerInfo.name || "PÚBLICO EN GENERAL",
+          customerPhone: customerInfo.phone || "",
+          pointsReturned: Number(returnedPointsBySale[sale.id] || 0),
+          pointsEarned: Number(pointsBySale[sale.id] || 0),
+          pointsBalance: sale.customer_id
+            ? Number(balanceByCustomer[sale.customer_id] || 0)
+            : null,
           date: sale.sale_date,
           paymentMethod: getPaymentMethodLabel(payments),
           status: sale.status || "",
@@ -1089,6 +1311,21 @@ const loadTicketDetail = async (ticket) => {
 
       if (error) throw error;
 
+      let pointsCancellationResult = null;
+      let pointsCancellationError = null;
+
+      try {
+        pointsCancellationResult = await reverseCustomerPointsByCancellation({
+          saleId: currentTicketId,
+          customerId: selectedTicket.customerId || null,
+          folio: selectedTicket.folio,
+          reason: cancelReason.trim(),
+        });
+      } catch (pointsError) {
+        console.error("Error descontando puntos por cancelación:", pointsError);
+        pointsCancellationError = pointsError;
+      }
+
       await loadTickets();
 
       const { data: refreshedSale, error: refreshedSaleError } = await supabase
@@ -1123,6 +1360,18 @@ const loadTicketDetail = async (ticket) => {
 
       if (onSaleCancelled) {
         onSaleCancelled(data);
+      }
+
+      if (pointsCancellationError) {
+        alert(
+          "Venta cancelada correctamente, pero no se pudieron descontar los puntos del cliente. Revisa el historial de puntos o realiza un ajuste manual."
+        );
+      } else if (pointsCancellationResult?.reversed) {
+        alert(
+          `Venta cancelada correctamente.\n\n${pointsCancellationResult.message}`
+        );
+      } else {
+        alert("Venta cancelada correctamente.");
       }
     } catch (error) {
       console.error("Error cancelando venta:", error);
@@ -1241,6 +1490,18 @@ const handlePrintCopy = async () => {
         payments: paymentsForPrint,
         status: selectedTicket.status,
         notes: selectedTicket.notes || "",
+        customer_name:
+          selectedTicket.client !== "PÚBLICO EN GENERAL"
+            ? selectedTicket.client
+            : "",
+        customer_phone: selectedTicket.customerPhone || "",
+        points_earned: Number(selectedTicket.pointsEarned || 0),
+        points_returned: Number(selectedTicket.pointsReturned || 0),
+        customer_points_balance:
+          selectedTicket.pointsBalance === null ||
+          selectedTicket.pointsBalance === undefined
+            ? null
+            : Number(selectedTicket.pointsBalance || 0),
         cancelled_at: selectedTicket.cancelledAt,
         cancellation_reason:
           selectedTicket.cancelReason || cancelReason || "SIN MOTIVO REGISTRADO",

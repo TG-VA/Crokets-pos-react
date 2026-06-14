@@ -1,0 +1,440 @@
+.content {
+  padding: 32px 24px 80px;
+  background: #ffffff;
+  min-height: 100%;
+  color: #333333;
+  overflow: visible;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0 0 8px;
+  color: #333333;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+}
+
+.header p {
+  margin: 0;
+  color: #555555;
+  font-size: 0.95rem;
+}
+
+.newButton {
+  background: #fc8913;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+
+.newButton:hover {
+  background: #e07a0d;
+  transform: translateY(-1px);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 14px;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 38px 0 12px;
+  font-size: 0.95rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #fc8913;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
+}
+
+.clearSearchButton {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+  color: #666666;
+}
+
+.statusFilter {
+  height: 42px;
+  min-width: 150px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: #333333;
+  cursor: pointer;
+}
+
+.statusFilter:focus {
+  outline: none;
+  border-color: #fc8913;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
+}
+
+.refreshButton {
+  background: #1092b1;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.resultsInfo {
+  background: #f2f2f2;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* IMPORTANTE:
+   Sin max-height y sin overflow interno.
+   Así solo queda el scroll general de la página, como en Products.
+*/
+.tableContainer {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rewardsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed;
+}
+
+.rewardsTable thead {
+  background: #fc8913;
+  color: #ffffff;
+}
+
+.rewardsTable th,
+.rewardsTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.rewardsTable th:nth-child(1),
+.rewardsTable td:nth-child(1) {
+  width: 16%;
+}
+
+.rewardsTable th:nth-child(2),
+.rewardsTable td:nth-child(2) {
+  width: 46%;
+}
+
+.rewardsTable th:nth-child(3),
+.rewardsTable td:nth-child(3) {
+  width: 16%;
+  text-align: center;
+}
+
+.rewardsTable th:nth-child(4),
+.rewardsTable td:nth-child(4) {
+  width: 10%;
+  text-align: center;
+}
+
+.rewardsTable th:nth-child(5),
+.rewardsTable td:nth-child(5) {
+  width: 12%;
+  text-align: center;
+}
+
+.rewardsTable tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.rewardsTable tbody tr:hover {
+  background: #e3f2fd;
+}
+
+.rewardsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.textCenter {
+  text-align: center !important;
+  padding: 28px !important;
+  color: #666666;
+}
+
+.rewardName {
+  font-weight: 800;
+  color: #333333;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+.descriptionText {
+  display: -webkit-box;
+  width: 100%;
+  color: #555555;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.pointsBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusInactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionButton {
+  width: 110px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editButton {
+  background: #1092b1;
+  color: #ffffff;
+}
+
+.activateButton {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.deactivateButton {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.actionButton:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.pointsRuleCard {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 5px solid #fc8913;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+
+.pointsRuleInfo h2 {
+  margin: 0 0 6px;
+  color: #9a3412;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.pointsRuleInfo p {
+  margin: 0 0 10px;
+  color: #7c2d12;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.pointsRuleExample {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: #7c2d12;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.pointsRuleExample strong {
+  margin: 0 4px;
+  color: #1092b1;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.pointsRuleForm {
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.pointsRuleForm label {
+  display: block;
+  color: #9a3412;
+  font-size: 0.82rem;
+  font-weight: 900;
+  margin-bottom: 7px;
+}
+
+.pointsRuleInputRow {
+  display: grid;
+  grid-template-columns: 28px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pointsRuleInputRow span,
+.pointsRuleInputRow strong {
+  color: #333333;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.pointsRuleInputRow input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #333333;
+  outline: none;
+}
+
+.pointsRuleInputRow input:focus {
+  border-color: #fc8913;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.14);
+}
+
+.savePointsRuleButton {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: #1092b1;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.16s ease;
+}
+
+.savePointsRuleButton:hover:not(:disabled) {
+  background: #0d7a94;
+  transform: translateY(-1px);
+}
+
+.savePointsRuleButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.successMessage {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 950px) {
+  .pointsRuleCard {
+    grid-template-columns: 1fr;
+  }
+}

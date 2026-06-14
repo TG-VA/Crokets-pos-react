@@ -1,0 +1,10 @@
+.container {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #333333;
+}
+
+.pageContent {
+  padding-top: 135px;
+  min-height: calc(100vh - 40px);
+}

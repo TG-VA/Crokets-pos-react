@@ -6,6 +6,9 @@ import { useBranch } from "../../../../contexts/BranchContext";
 
 const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
+const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
+const DEFAULT_POINTS_AMOUNT = 50;
+
 const PartialReturnModal = ({
   isOpen,
   onClose,
@@ -166,6 +169,170 @@ const PartialReturnModal = ({
     setQty(saleDetailId, current + 1, max);
   };
 
+  const getCustomerPointsAmountPerPoint = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("setting_value, is_active")
+        .eq("setting_key", POINTS_AMOUNT_SETTING_KEY)
+        .is("branch_id", null)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const configuredAmount = Number(data?.setting_value || 0);
+
+      if (
+        data?.is_active === false ||
+        !configuredAmount ||
+        configuredAmount <= 0
+      ) {
+        return DEFAULT_POINTS_AMOUNT;
+      }
+
+      return configuredAmount;
+    } catch (error) {
+      console.error("Error cargando regla de puntos:", error);
+      return DEFAULT_POINTS_AMOUNT;
+    }
+  };
+
+  const reverseCustomerPointsByPartialReturn = async ({ totalRefund }) => {
+    if (!selectedTicket?.id) {
+      return { registered: false, points: 0, reason: "NO_SALE" };
+    }
+
+    const amountPerPoint = await getCustomerPointsAmountPerPoint();
+
+    if (!amountPerPoint || amountPerPoint <= 0) {
+      return { registered: false, points: 0, reason: "INVALID_RULE" };
+    }
+
+    const { data: salePointRows, error: salePointsError } = await supabase
+      .from("customer_points")
+      .select("customer_id, points")
+      .eq("related_sale_id", selectedTicket.id)
+      .eq("source", "sale");
+
+    if (salePointsError) throw salePointsError;
+
+    const earnedPoints = (salePointRows || []).reduce((acc, row) => {
+      const points = Number(row.points || 0);
+      return points > 0 ? acc + points : acc;
+    }, 0);
+
+    const customerId = (salePointRows || []).find((row) => row.customer_id)
+      ?.customer_id;
+
+    if (!customerId || earnedPoints <= 0) {
+      return { registered: false, points: 0, reason: "NO_EARNED_POINTS" };
+    }
+
+    const [partialPointsRes, balanceRes, returnsRes] = await Promise.all([
+      supabase
+        .from("customer_points")
+        .select("points")
+        .eq("customer_id", customerId)
+        .eq("related_sale_id", selectedTicket.id)
+        .eq("source", "partial_return"),
+
+      supabase
+        .from("customer_points")
+        .select("points")
+        .eq("customer_id", customerId),
+
+      supabase
+        .from("sale_returns")
+        .select("total_refund")
+        .eq("sale_id", selectedTicket.id),
+    ]);
+
+    if (partialPointsRes.error) throw partialPointsRes.error;
+    if (balanceRes.error) throw balanceRes.error;
+    if (returnsRes.error) throw returnsRes.error;
+
+    const alreadyReversedByReturns = (partialPointsRes.data || []).reduce(
+      (acc, row) => acc + Math.abs(Math.min(Number(row.points || 0), 0)),
+      0
+    );
+
+    const currentBalance = (balanceRes.data || []).reduce(
+      (acc, row) => acc + Number(row.points || 0),
+      0
+    );
+
+    const dbReturnedTotal = (returnsRes.data || []).reduce(
+      (acc, row) => acc + Number(row.total_refund || 0),
+      0
+    );
+
+    const fallbackReturnedTotal =
+      Number(selectedTicket.totalReturned || 0) + Number(totalRefund || 0);
+
+    const totalReturnedForPoints = Math.max(
+      dbReturnedTotal,
+      fallbackReturnedTotal
+    );
+
+    const expectedReversedPoints = Math.min(
+      earnedPoints,
+      Math.floor(totalReturnedForPoints / amountPerPoint)
+    );
+
+    const pointsToReverse = expectedReversedPoints - alreadyReversedByReturns;
+
+    if (pointsToReverse <= 0) {
+      return { registered: false, points: 0, reason: "NO_POINTS_TO_REVERSE" };
+    }
+
+    const safePointsToReverse = Math.min(
+      pointsToReverse,
+      Math.max(Number(currentBalance || 0), 0)
+    );
+
+    if (safePointsToReverse <= 0) {
+      return { registered: false, points: 0, reason: "NO_AVAILABLE_BALANCE" };
+    }
+
+    const limitedByBalance = safePointsToReverse < pointsToReverse;
+    const notes = [
+      `PUNTOS DESCONTADOS POR DEVOLUCIÓN PARCIAL. MONTO DEVUELTO: ${formatCurrency(
+        totalRefund
+      )} MXN.`,
+      returnReason.trim() ? `MOTIVO: ${returnReason.trim()}.` : "",
+      limitedByBalance
+        ? "DESCUENTO LIMITADO POR SALDO DISPONIBLE DEL CLIENTE."
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const { error: insertError } = await supabase.from("customer_points").insert([
+      {
+        id: crypto.randomUUID(),
+        customer_id: customerId,
+        points: -safePointsToReverse,
+        movement_type: "redeem",
+        source: "partial_return",
+        related_sale_id: selectedTicket.id,
+        reward_id: null,
+        user_id: user?.id || null,
+        branch_id: branch?.id || null,
+        notes,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (insertError) throw insertError;
+
+    return {
+      registered: true,
+      points: safePointsToReverse,
+      limitedByBalance,
+      amountPerPoint,
+    };
+  };
+
   const handleSave = async () => {
     try {
       if (!selectedTicket?.id) {
@@ -238,7 +405,28 @@ const PartialReturnModal = ({
 
       if (error) throw error;
 
-      alert("Devolución parcial registrada correctamente.");
+      let pointsReverseResult = { registered: false, points: 0 };
+
+      try {
+        pointsReverseResult = await reverseCustomerPointsByPartialReturn({
+          totalRefund: summary.totalRefund,
+        });
+      } catch (pointsError) {
+        console.error(
+          "Error descontando puntos por devolución parcial:",
+          pointsError
+        );
+      }
+
+      if (pointsReverseResult.registered) {
+        alert(
+          `Devolución parcial registrada correctamente.\n\nSe descontaron ${
+            pointsReverseResult.points
+          } punto${pointsReverseResult.points !== 1 ? "s" : ""} del cliente.`
+        );
+      } else {
+        alert("Devolución parcial registrada correctamente.");
+      }
 
       if (typeof onReturnCreated === "function") {
         await onReturnCreated();

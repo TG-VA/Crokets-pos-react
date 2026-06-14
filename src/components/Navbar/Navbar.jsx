@@ -9,6 +9,7 @@ import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
 import InventoryIcon from "../../assets/icons/store-solid-full.svg";
 import InvoicesIcon from "../../assets/icons/file-invoice-dollar-solid-full.svg";
+import CustomersIcon from "../../assets/icons/user-solid.svg";
 import CashoutIcon from "../../assets/icons/money-check-dollar-solid-full.svg";
 import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
@@ -63,6 +64,13 @@ const Navbar = () => {
       icon: InvoicesIcon,
       path: "/invoices",
       matchPaths: ["/invoices"],
+    },
+    {
+      id: "btnClientes",
+      label: "Clientes",
+      icon: CustomersIcon,
+      path: "/customers",
+      matchPaths: ["/customers"],
     },
     {
       id: "btnCorte",

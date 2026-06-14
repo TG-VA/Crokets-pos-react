@@ -33,7 +33,11 @@ import ChangeTicketModal from "../../components/SalesComponents/Modals/ChangeTic
 import DeleteTicketModal from "../../components/SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal";
 import DeleteItemModal from "../../components/SalesComponents/Modals/DeleteItemModal/DeleteItemModal";
 import SalesHistoryModal from "../../components/SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal";
+import SaleSuccessModal from "../../components/SalesComponents/Modals/SaleSuccessModal/SaleSuccessModal";
 import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
+
+const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
+const DEFAULT_POINTS_AMOUNT = 50;
 
 const Sales = () => {
   const { user } = useAuth();
@@ -73,6 +77,7 @@ const Sales = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
   const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
+  const [saleSuccessData, setSaleSuccessData] = useState(null);
 
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
@@ -964,6 +969,8 @@ const Sales = () => {
     paymentPayload,
     notes,
     saleDate,
+    saleClient = null,
+    pointsResult = null,
   }) => {
     try {
       const [detailsRes, kitItemsRes] = await Promise.all([
@@ -1098,6 +1105,14 @@ const Sales = () => {
           status: "completed",
           notes: notes || paymentData?.notes || "",
           cashier_name: (user?.username || user?.email || "CAJERO").toUpperCase(),
+          customer_name: saleClient?.name || "",
+          customer_phone: saleClient?.phone || saleClient?.id || "",
+          customer_email: saleClient?.email || "",
+          points_earned: Number(pointsResult?.points || 0),
+          customer_points_balance:
+            pointsResult?.newBalance !== undefined && pointsResult?.newBalance !== null
+              ? Number(pointsResult.newBalance)
+              : null,
         },
         items: itemsForPrint,
         cashierName: (user?.username || user?.email || "CAJERO").toUpperCase(),
@@ -1918,6 +1933,142 @@ const Sales = () => {
     setCurrentSaleClient(client);
   };
 
+  const getCustomerPointsAmountPerPoint = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("setting_value, is_active")
+        .eq("setting_key", POINTS_AMOUNT_SETTING_KEY)
+        .is("branch_id", null)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const configuredAmount = Number(data?.setting_value || 0);
+
+      if (
+        data?.is_active === false ||
+        !configuredAmount ||
+        configuredAmount <= 0
+      ) {
+        return DEFAULT_POINTS_AMOUNT;
+      }
+
+      return configuredAmount;
+    } catch (error) {
+      console.error("Error cargando regla de puntos:", error);
+      return DEFAULT_POINTS_AMOUNT;
+    }
+  };
+
+  const calculateEarnedCustomerPoints = (saleTotal, amountPerPoint) => {
+    const numericTotal = Number(saleTotal || 0);
+    const numericAmountPerPoint = Number(amountPerPoint || 0);
+
+    if (!numericTotal || numericTotal <= 0) return 0;
+    if (!numericAmountPerPoint || numericAmountPerPoint <= 0) return 0;
+
+    return Math.floor(numericTotal / numericAmountPerPoint);
+  };
+
+  const getCustomerCurrentPointsBalance = async (customerId) => {
+    if (!customerId) return 0;
+
+    const { data, error } = await supabase
+      .from("customer_points")
+      .select("points")
+      .eq("customer_id", customerId);
+
+    if (error) throw error;
+
+    return (data || []).reduce((sum, movement) => {
+      return sum + Number(movement.points || 0);
+    }, 0);
+  };
+
+  const registerCustomerPointsForSale = async ({
+    saleId,
+    customerId,
+    saleTotal,
+    saleDate,
+  }) => {
+    if (!saleId || !customerId) {
+      return {
+        points: 0,
+        amountPerPoint: DEFAULT_POINTS_AMOUNT,
+        registered: false,
+        newBalance: null,
+      };
+    }
+
+    const amountPerPoint = await getCustomerPointsAmountPerPoint();
+    const earnedPoints = calculateEarnedCustomerPoints(saleTotal, amountPerPoint);
+
+    if (earnedPoints <= 0) {
+      const currentBalance = await getCustomerCurrentPointsBalance(customerId);
+
+      return {
+        points: 0,
+        amountPerPoint,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    const { data: existingMovement, error: existingError } = await supabase
+      .from("customer_points")
+      .select("id")
+      .eq("customer_id", customerId)
+      .eq("related_sale_id", saleId)
+      .eq("source", "sale")
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    if (existingMovement?.id) {
+      const currentBalance = await getCustomerCurrentPointsBalance(customerId);
+
+      return {
+        points: earnedPoints,
+        amountPerPoint,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    const { error: pointsInsertError } = await supabase
+      .from("customer_points")
+      .insert([
+        {
+          id: crypto.randomUUID(),
+          customer_id: customerId,
+          points: earnedPoints,
+          movement_type: "earn",
+          source: "sale",
+          related_sale_id: saleId,
+          reward_id: null,
+          user_id: user?.id || null,
+          branch_id: branch?.id || null,
+          notes: `PUNTOS GENERADOS POR VENTA. TOTAL DE VENTA: $${Number(
+            saleTotal || 0
+          ).toFixed(2)} MXN.`,
+          created_at: saleDate || new Date().toISOString(),
+        },
+      ]);
+
+    if (pointsInsertError) throw pointsInsertError;
+
+    const newBalance = await getCustomerCurrentPointsBalance(customerId);
+
+    return {
+      points: earnedPoints,
+      amountPerPoint,
+      registered: true,
+      newBalance,
+    };
+  };
+
   const handleProcessPayment = async (paymentData) => {
     if (processingSale) return false;
 
@@ -1988,6 +2139,35 @@ const Sales = () => {
 
       if (error) throw error;
 
+      let pointsResult = {
+        points: 0,
+        amountPerPoint: DEFAULT_POINTS_AMOUNT,
+        registered: false,
+        newBalance: null,
+        error: null,
+      };
+
+      if (currentSaleClient?.id) {
+        try {
+          pointsResult = await registerCustomerPointsForSale({
+            saleId,
+            customerId: currentSaleClient.id,
+            saleTotal: Number(total),
+            saleDate,
+          });
+        } catch (pointsError) {
+          console.error("Error registrando puntos de cliente:", pointsError);
+
+          pointsResult = {
+            points: 0,
+            amountPerPoint: DEFAULT_POINTS_AMOUNT,
+            registered: false,
+            newBalance: null,
+            error: pointsError,
+          };
+        }
+      }
+
       if (paymentData?.shouldPrint) {
         await printSaleTicket({
           saleId,
@@ -1995,14 +2175,39 @@ const Sales = () => {
           paymentPayload: paymentsPayload,
           notes: paymentData?.notes?.trim() || null,
           saleDate,
+          saleClient: currentSaleClient,
+          pointsResult,
         });
       }
+
+      const saleSuccessPayload = {
+        saleId,
+        folio: String(saleId).slice(0, 8).toUpperCase(),
+        customerId: currentSaleClient?.id || null,
+        customerName: currentSaleClient?.name || "PÚBLICO EN GENERAL",
+        customerPhone: currentSaleClient?.phone || "",
+        total: Number(total),
+        subtotal: Number(subtotal),
+        discountTotal: Number(discountTotal || 0),
+        paymentMethod: paymentData?.method || "",
+        printed: !!paymentData?.shouldPrint,
+        pointsEarned: Number(pointsResult?.points || 0),
+        pointsBalance:
+          pointsResult?.newBalance !== undefined && pointsResult?.newBalance !== null
+            ? Number(pointsResult.newBalance)
+            : null,
+        pointsError: pointsResult?.error || null,
+        noPointsReason:
+          currentSaleClient?.id && Number(pointsResult?.points || 0) <= 0
+            ? "La venta no generó puntos porque el total no alcanzó el monto mínimo configurado."
+            : "",
+      };
 
       clearSalesDraft();
       resetCurrentSale();
       setShowPaymentModal(false);
+      setSaleSuccessData(saleSuccessPayload);
 
-      alert("Venta registrada correctamente.");
       return true;
     } catch (error) {
       console.error("Error al registrar venta:", error);
@@ -2126,7 +2331,8 @@ const Sales = () => {
         isChangeModalOpen ||
         isDeleteModalOpen ||
         isDeleteItemModalOpen ||
-        isSalesHistoryModalOpen;
+        isSalesHistoryModalOpen ||
+        !!saleSuccessData;
 
       const target = e.target;
       const isInputElement =
@@ -2248,6 +2454,7 @@ const Sales = () => {
           else if (isChangeModalOpen) setChangeModalOpen(false);
           else if (isDeleteModalOpen) setDeleteModalOpen(false);
           else if (isDeleteItemModalOpen) setDeleteItemModalOpen(false);
+          else if (saleSuccessData) setSaleSuccessData(null);
           else if (isSalesHistoryModalOpen) setSalesHistoryModalOpen(false);
           break;
         default:
@@ -2274,6 +2481,7 @@ const Sales = () => {
     isDeleteModalOpen,
     isDeleteItemModalOpen,
     isSalesHistoryModalOpen,
+    saleSuccessData,
     selectedProduct,
     productos,
     pendingTickets,
@@ -2287,13 +2495,14 @@ const Sales = () => {
   return (
     <div className={styles.ventasContainer}>
       <div className={styles.saleHeader}>
-        <h2>VENTA - Ticket {ticketNumber}</h2>
+        <div className={styles.saleHeaderMain}>
+          <h2>VENTA - Ticket {ticketNumber}</h2>
+        </div>
 
-        {currentSaleClient && (
-          <div className={styles.clientInfo}>
-            <span>Cliente: {currentSaleClient.name}</span>
-          </div>
-        )}
+        <div className={styles.saleClientBadge}>
+          <span>{currentSaleClient ? "Cliente asignado:" : "Cliente:"}</span>
+          <strong>{currentSaleClient?.name || "PÚBLICO EN GENERAL"}</strong>
+        </div>
       </div>
 
       {shiftAlreadyCut && (
@@ -2700,6 +2909,12 @@ const Sales = () => {
         onConfirmDelete={handleDeleteSelectedProduct}
         selectedProduct={selectedProduct}
       />
+
+      <SaleSuccessModal
+  isOpen={!!saleSuccessData}
+  saleData={saleSuccessData}
+  onClose={() => setSaleSuccessData(null)}
+/>
 
       <SalesHistoryModal
         isOpen={isSalesHistoryModalOpen}
