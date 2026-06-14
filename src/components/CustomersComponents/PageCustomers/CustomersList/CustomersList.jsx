@@ -1,27 +1,27 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./InvoiceCustomers.module.css";
+import styles from "./CustomersList.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import CustomerModal from "../../Modals/CustomerModal/CustomerModal";
+
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { checkUserIsAdmin } from "../../../../lib/permissionsService";
-import FiscalCustomerModal from "../../Modals/FiscalCustomerModal/FiscalCustomerModal";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
-const InvoiceCustomers = () => {
+const CustomersList = () => {
   const { user } = useAuth();
   const { branch } = useBranch();
 
   const [customers, setCustomers] = useState([]);
-  const [cfdiUses, setCfdiUses] = useState([]);
-  const [taxRegimes, setTaxRegimes] = useState([]);
+  const [pointsByCustomer, setPointsByCustomer] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [searchingPointsCustomer, setSearchingPointsCustomer] = useState(false);
-  const [pointsCustomerFound, setPointsCustomerFound] = useState(null);
+  const [searchingFiscalCustomer, setSearchingFiscalCustomer] = useState(false);
+  const [fiscalCustomerFound, setFiscalCustomerFound] = useState(null);
   const [error, setError] = useState("");
 
-  const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
 
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
@@ -34,30 +34,34 @@ const InvoiceCustomers = () => {
     return String(value || "").replace(/\D/g, "").slice(0, 10);
   };
 
-  const loadCatalogs = async () => {
-    try {
-      const [cfdiRes, regimesRes] = await Promise.all([
-        supabase
-          .from("cfdi_uses")
-          .select("id, description")
-          .eq("status", true)
-          .order("id", { ascending: true }),
+  const calculateCustomerPoints = (pointsRows = []) => {
+    const pointsMap = {};
 
-        supabase
-          .from("tax_regimes")
-          .select("id, description")
-          .eq("status", true)
-          .order("id", { ascending: true }),
-      ]);
+    for (const row of pointsRows) {
+      const customerId = row.customer_id;
+      const movementType = String(row.movement_type || "").toLowerCase();
+      const rawPoints = Number(row.points || 0);
 
-      if (cfdiRes.error) throw cfdiRes.error;
-      if (regimesRes.error) throw regimesRes.error;
+      if (!customerId) continue;
 
-      setCfdiUses(cfdiRes.data || []);
-      setTaxRegimes(regimesRes.data || []);
-    } catch (err) {
-      console.error("Error cargando catálogos fiscales:", err);
+      if (!pointsMap[customerId]) {
+        pointsMap[customerId] = 0;
+      }
+
+      if (
+        movementType.includes("canje") ||
+        movementType.includes("redeem") ||
+        movementType.includes("used") ||
+        movementType.includes("uso") ||
+        movementType.includes("resta")
+      ) {
+        pointsMap[customerId] -= Math.abs(rawPoints);
+      } else {
+        pointsMap[customerId] += rawPoints;
+      }
     }
+
+    return pointsMap;
   };
 
   const loadCustomers = async () => {
@@ -72,92 +76,99 @@ const InvoiceCustomers = () => {
           name,
           phone,
           email,
-          fiscal_email,
-          rfc,
-          address,
-          razon_social,
-          postal_code,
-          tax_regime,
-          cfdi_use,
           status,
           is_billing_customer,
           is_points_customer,
           created_at,
           updated_at
         `)
-        .eq("is_billing_customer", true)
-        .order("razon_social", { ascending: true });
+        .eq("is_points_customer", true)
+        .order("name", { ascending: true });
 
       if (customersError) throw customersError;
 
-      setCustomers(data || []);
+      const customersData = data || [];
+      setCustomers(customersData);
+
+      const customerIds = customersData.map((customer) => customer.id);
+
+      if (customerIds.length === 0) {
+        setPointsByCustomer({});
+        return;
+      }
+
+      const { data: pointsRows, error: pointsError } = await supabase
+        .from("customer_points")
+        .select("customer_id, points, movement_type")
+        .in("customer_id", customerIds);
+
+      if (pointsError) throw pointsError;
+
+      setPointsByCustomer(calculateCustomerPoints(pointsRows || []));
     } catch (err) {
-      console.error("Error cargando clientes fiscales:", err);
-      setError("No se pudieron cargar los clientes fiscales.");
+      console.error("Error cargando clientes:", err);
+      setError("No se pudieron cargar los clientes.");
       setCustomers([]);
+      setPointsByCustomer({});
     } finally {
       setLoadingCustomers(false);
     }
   };
 
-  const searchPointsCustomerByPhone = async (phone) => {
+  const searchFiscalCustomerByPhone = async (phone) => {
     try {
-      setSearchingPointsCustomer(true);
-      setPointsCustomerFound(null);
+      setSearchingFiscalCustomer(true);
+      setFiscalCustomerFound(null);
 
       if (!phone || phone.length !== 10) {
         return;
       }
 
-      const alreadyFiscalCustomer = customers.some(
+      const alreadyPointCustomer = customers.some(
         (customer) => normalizePhone(customer.phone) === phone
       );
 
-      if (alreadyFiscalCustomer) {
+      if (alreadyPointCustomer) {
         return;
       }
 
-      const { data, error: pointsError } = await supabase
+      const { data, error: fiscalError } = await supabase
         .from("customers")
         .select(`
           id,
           name,
           phone,
           email,
-          fiscal_email,
           rfc,
           razon_social,
-          postal_code,
-          tax_regime,
-          cfdi_use,
+          fiscal_email,
           status,
           is_billing_customer,
           is_points_customer
         `)
         .eq("phone", phone)
-        .eq("is_points_customer", true)
-        .or("is_billing_customer.is.null,is_billing_customer.eq.false")
+        .eq("is_billing_customer", true)
+        .or("is_points_customer.is.null,is_points_customer.eq.false")
         .maybeSingle();
 
-      if (pointsError) throw pointsError;
+      if (fiscalError) throw fiscalError;
 
-      setPointsCustomerFound(data || null);
+      setFiscalCustomerFound(data || null);
     } catch (err) {
-      console.error("Error buscando cliente de puntos por teléfono:", err);
-      setPointsCustomerFound(null);
+      console.error("Error buscando cliente fiscal por teléfono:", err);
+      setFiscalCustomerFound(null);
     } finally {
-      setSearchingPointsCustomer(false);
+      setSearchingFiscalCustomer(false);
     }
   };
 
   useEffect(() => {
-    loadCatalogs();
     loadCustomers();
   }, []);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("invoice-customers-realtime")
+    const customersChannel = supabase
+      .channel("customers-list-realtime")
       .on(
         "postgres_changes",
         {
@@ -165,29 +176,25 @@ const InvoiceCustomers = () => {
           schema: "public",
           table: "customers",
         },
-        (payload) => {
-          const newRow = payload.new;
-          const oldRow = payload.old;
-
-          const affectsBillingCustomers =
-            newRow?.is_billing_customer === true ||
-            oldRow?.is_billing_customer === true ||
-            newRow?.is_points_customer === true ||
-            oldRow?.is_points_customer === true;
-
-          if (affectsBillingCustomers) {
-            loadCustomers();
-          }
+        () => {
+          loadCustomers();
         }
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime activo: clientes fiscales");
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customer_points",
+        },
+        () => {
+          loadCustomers();
         }
-      });
+      )
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(customersChannel);
     };
   }, []);
 
@@ -195,36 +202,16 @@ const InvoiceCustomers = () => {
     const phoneSearch = normalizePhone(searchTerm);
 
     if (phoneSearch.length !== 10) {
-      setPointsCustomerFound(null);
+      setFiscalCustomerFound(null);
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      searchPointsCustomerByPhone(phoneSearch);
+      searchFiscalCustomerByPhone(phoneSearch);
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, customers]);
-
-  const cfdiUseMap = useMemo(() => {
-    const map = {};
-
-    for (const item of cfdiUses) {
-      map[item.id] = item.description;
-    }
-
-    return map;
-  }, [cfdiUses]);
-
-  const taxRegimeMap = useMemo(() => {
-    const map = {};
-
-    for (const item of taxRegimes) {
-      map[item.id] = item.description;
-    }
-
-    return map;
-  }, [taxRegimes]);
 
   const filteredCustomers = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -239,16 +226,7 @@ const InvoiceCustomers = () => {
 
       if (!search) return true;
 
-      const values = [
-        customer.rfc,
-        customer.razon_social,
-        customer.phone,
-        customer.fiscal_email,
-        customer.email,
-        customer.postal_code,
-        customer.tax_regime,
-        customer.cfdi_use,
-      ];
+      const values = [customer.name, customer.phone, customer.email];
 
       return values.some((value) =>
         String(value || "").toLowerCase().includes(search)
@@ -258,48 +236,39 @@ const InvoiceCustomers = () => {
 
   const handleNewCustomer = () => {
     setEditingCustomer(null);
-    setIsFiscalModalOpen(true);
+    setIsCustomerModalOpen(true);
   };
 
   const handleEditCustomer = (customer) => {
     setEditingCustomer(customer);
-    setIsFiscalModalOpen(true);
+    setIsCustomerModalOpen(true);
   };
 
-  const handleAddPointsCustomerAsFiscalCustomer = () => {
-  if (!pointsCustomerFound?.id) return;
+  const handleAddFiscalCustomerAsPointsCustomer = () => {
+    if (!fiscalCustomerFound?.id) return;
 
-  const customerForFiscalModal = {
-    ...pointsCustomerFound,
-    razon_social: pointsCustomerFound.razon_social || "",
+    const fiscalCustomerForModal = {
+      ...fiscalCustomerFound,
+      name: fiscalCustomerFound.name || fiscalCustomerFound.razon_social || "",
+      email: fiscalCustomerFound.email || "",
+      phone: fiscalCustomerFound.phone || "",
+      status: fiscalCustomerFound.status !== false,
+    };
 
-    phone: pointsCustomerFound.phone || "",
-    fiscal_email:
-      pointsCustomerFound.fiscal_email || pointsCustomerFound.email || "",
-
-    status: pointsCustomerFound.status !== false,
+    setEditingCustomer(fiscalCustomerForModal);
+    setIsCustomerModalOpen(true);
   };
 
-  setEditingCustomer(customerForFiscalModal);
-  setIsFiscalModalOpen(true);
-};
-
-  const handleCloseFiscalModal = () => {
-    setIsFiscalModalOpen(false);
+  const handleCloseCustomerModal = () => {
+    setIsCustomerModalOpen(false);
     setEditingCustomer(null);
-  };
-
-  const handleFiscalSaved = async () => {
-    await loadCustomers();
-    setPointsCustomerFound(null);
-    setSearchTerm("");
   };
 
   const updateCustomerStatus = async (customer, nextStatus) => {
     const confirmed = window.confirm(
       `¿Seguro que deseas ${
         nextStatus ? "activar" : "desactivar"
-      } este cliente fiscal?`
+      } este cliente?`
     );
 
     if (!confirmed) return;
@@ -317,8 +286,8 @@ const InvoiceCustomers = () => {
 
       await loadCustomers();
     } catch (err) {
-      console.error("Error actualizando cliente fiscal:", err);
-      alert("No se pudo actualizar el estado del cliente fiscal.");
+      console.error("Error actualizando cliente:", err);
+      alert("No se pudo actualizar el estado del cliente.");
     }
   };
 
@@ -341,18 +310,15 @@ const InvoiceCustomers = () => {
     setAdminAuthOpen(true);
   };
 
-  const handleAdminAuthorizedDeactivate = async () => {
-    if (!pendingDeactivateCustomer) {
-      setAdminAuthOpen(false);
-      return;
-    }
-
-    const customerToDeactivate = pendingDeactivateCustomer;
+  const handleAdminAuthorized = async () => {
+    const customer = pendingDeactivateCustomer;
 
     setAdminAuthOpen(false);
     setPendingDeactivateCustomer(null);
 
-    await updateCustomerStatus(customerToDeactivate, false);
+    if (!customer?.id) return;
+
+    await updateCustomerStatus(customer, false);
   };
 
   const handleCloseAdminAuth = () => {
@@ -364,10 +330,10 @@ const InvoiceCustomers = () => {
     <div className={styles.content}>
       <div className={styles.header}>
         <div>
-          <h1>CLIENTES FISCALES</h1>
+          <h1>CLIENTES</h1>
           <p>
-            Administra los clientes que cuentan con información fiscal para
-            emitir CFDI.
+            Administra clientes registrados, datos de contacto, estado y puntos
+            acumulados.
           </p>
         </div>
 
@@ -376,7 +342,7 @@ const InvoiceCustomers = () => {
           className={styles.newButton}
           onClick={handleNewCustomer}
         >
-          + Agregar datos fiscales
+          + Nuevo cliente
         </button>
       </div>
 
@@ -384,10 +350,10 @@ const InvoiceCustomers = () => {
         <div className={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Buscar por RFC, razón social, teléfono o correo..."
+            className={styles.searchInput}
+            placeholder="Buscar por nombre, teléfono o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
           />
 
           {searchTerm && (
@@ -396,7 +362,7 @@ const InvoiceCustomers = () => {
               className={styles.clearSearchButton}
               onClick={() => {
                 setSearchTerm("");
-                setPointsCustomerFound(null);
+                setFiscalCustomerFound(null);
               }}
             >
               ✕
@@ -424,42 +390,48 @@ const InvoiceCustomers = () => {
         </button>
       </div>
 
-      {searchingPointsCustomer && (
+      {searchingFiscalCustomer && (
         <div className={styles.infoMessage}>
-          Buscando coincidencias de clientes por teléfono...
+          Buscando coincidencias fiscales por teléfono...
         </div>
       )}
 
-      {pointsCustomerFound && (
-        <div className={styles.pointsMatchCard}>
-          <div className={styles.pointsMatchInfo}>
-            <h3>Cliente de puntos encontrado</h3>
+      {fiscalCustomerFound && (
+        <div className={styles.fiscalMatchCard}>
+          <div className={styles.fiscalMatchInfo}>
+            <h3>Cliente fiscal encontrado</h3>
 
             <p>
-              Este teléfono ya existe en el módulo de clientes. Puedes agregarle
-              datos fiscales sin duplicarlo.
+              Este teléfono ya existe en clientes fiscales. Puedes agregarlo
+              como cliente de puntos sin duplicarlo.
             </p>
 
-            <div className={styles.pointsDataGrid}>
+            <div className={styles.fiscalDataGrid}>
               <div>
-                <span>Nombre</span>
-                <strong>{pointsCustomerFound.name || "SIN NOMBRE"}</strong>
+                <span>Razón social</span>
+                <strong>
+                  {fiscalCustomerFound.razon_social ||
+                    fiscalCustomerFound.name ||
+                    "SIN RAZÓN SOCIAL"}
+                </strong>
+              </div>
+
+              <div>
+                <span>RFC</span>
+                <strong>{fiscalCustomerFound.rfc || "SIN RFC"}</strong>
               </div>
 
               <div>
                 <span>Teléfono</span>
-                <strong>{pointsCustomerFound.phone || "SIN TELÉFONO"}</strong>
+                <strong>{fiscalCustomerFound.phone || "SIN TELÉFONO"}</strong>
               </div>
 
               <div>
-                <span>Correo</span>
-                <strong>{pointsCustomerFound.email || "SIN CORREO"}</strong>
-              </div>
-
-              <div>
-                <span>Estado</span>
+                <span>Correo fiscal</span>
                 <strong>
-                  {pointsCustomerFound.status === false ? "INACTIVO" : "ACTIVO"}
+                  {fiscalCustomerFound.fiscal_email ||
+                    fiscalCustomerFound.email ||
+                    "SIN CORREO"}
                 </strong>
               </div>
             </div>
@@ -467,10 +439,10 @@ const InvoiceCustomers = () => {
 
           <button
             type="button"
-            className={styles.linkPointsButton}
-            onClick={handleAddPointsCustomerAsFiscalCustomer}
+            className={styles.linkFiscalButton}
+            onClick={handleAddFiscalCustomerAsPointsCustomer}
           >
-            Agregar datos fiscales
+            Agregar a clientes
           </button>
         </div>
       )}
@@ -479,23 +451,21 @@ const InvoiceCustomers = () => {
 
       <div className={styles.resultsInfo}>
         {loadingCustomers
-          ? "Cargando clientes fiscales..."
+          ? "Cargando clientes..."
           : `Mostrando ${filteredCustomers.length} cliente${
               filteredCustomers.length !== 1 ? "s" : ""
-            } fiscal${filteredCustomers.length !== 1 ? "es" : ""}`}
+            }`}
       </div>
 
       <div className={styles.tableContainer}>
         <table className={styles.customersTable}>
           <thead>
             <tr>
-              <th>RFC</th>
-              <th>Razón Social</th>
+              <th>Nombre</th>
               <th>Teléfono</th>
-              <th>Correo Fiscal</th>
-              <th>Código Postal</th>
-              <th>Régimen Fiscal</th>
-              <th>Uso CFDI</th>
+              <th>Correo</th>
+              <th>Puntos</th>
+              <th>Tipo</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -504,53 +474,42 @@ const InvoiceCustomers = () => {
           <tbody>
             {loadingCustomers ? (
               <tr>
-                <td colSpan="9" className={styles.textCenter}>
-                  Cargando clientes fiscales...
+                <td colSpan="7" className={styles.textCenter}>
+                  Cargando clientes...
                 </td>
               </tr>
             ) : filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan="9" className={styles.textCenter}>
-                  No hay clientes fiscales registrados con los filtros
-                  seleccionados.
+                <td colSpan="7" className={styles.textCenter}>
+                  No hay clientes registrados con los filtros seleccionados.
                 </td>
               </tr>
             ) : (
               filteredCustomers.map((customer) => (
                 <tr key={customer.id}>
-                  <td className={styles.rfcCell}>
-                    {customer.rfc || "SIN RFC"}
-                  </td>
-
                   <td>
-                    <div className={styles.businessName}>
-                      {customer.razon_social || "SIN RAZÓN SOCIAL"}
+                    <div className={styles.customerName}>
+                      {customer.name || "SIN NOMBRE"}
                     </div>
                   </td>
 
                   <td>{customer.phone || "SIN TELÉFONO"}</td>
 
-                  <td>
-                    {customer.fiscal_email || customer.email || "SIN CORREO"}
-                  </td>
-
-                  <td>{customer.postal_code || "—"}</td>
+                  <td>{customer.email || "SIN CORREO"}</td>
 
                   <td>
-                    <div className={styles.catalogCode}>
-                      {customer.tax_regime || "—"}
-                    </div>
-                    <div className={styles.catalogDescription}>
-                      {taxRegimeMap[customer.tax_regime] || ""}
-                    </div>
+                    <span className={styles.pointsBadge}>
+                      {Number(pointsByCustomer[customer.id] || 0)}
+                    </span>
                   </td>
 
                   <td>
-                    <div className={styles.catalogCode}>
-                      {customer.cfdi_use || "—"}
-                    </div>
-                    <div className={styles.catalogDescription}>
-                      {cfdiUseMap[customer.cfdi_use] || ""}
+                    <div className={styles.typeBadges}>
+                      <span className={styles.pointsTypeBadge}>Puntos</span>
+
+                      {customer.is_billing_customer === true && (
+                        <span className={styles.fiscalTypeBadge}>Fiscal</span>
+                      )}
                     </div>
                   </td>
 
@@ -596,27 +555,27 @@ const InvoiceCustomers = () => {
         </table>
       </div>
 
-      <FiscalCustomerModal
-        isOpen={isFiscalModalOpen}
-        onClose={handleCloseFiscalModal}
-        onSaved={handleFiscalSaved}
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={handleCloseCustomerModal}
+        onSaved={async () => {
+          await loadCustomers();
+          setFiscalCustomerFound(null);
+          setSearchTerm("");
+        }}
         customerToEdit={editingCustomer}
       />
 
       <AdminAuthorizationModal
         isOpen={adminAuthOpen}
         onClose={handleCloseAdminAuth}
-        onAuthorized={handleAdminAuthorizedDeactivate}
-        action="deactivate_fiscal_customer"
+        onAuthorized={handleAdminAuthorized}
+        action="customers_deactivate"
         title="Acceso restringido"
         message={
           pendingDeactivateCustomer
-            ? `Para desactivar al cliente fiscal "${
-                pendingDeactivateCustomer.razon_social ||
-                pendingDeactivateCustomer.rfc ||
-                "seleccionado"
-              }", se requiere autorización de un administrador.`
-            : "Para desactivar este cliente fiscal, se requiere autorización de un administrador."
+            ? `Para desactivar al cliente "${pendingDeactivateCustomer.name}", se requiere autorización de un administrador.`
+            : "Para desactivar clientes se requiere autorización de un administrador."
         }
         targetId={pendingDeactivateCustomer?.id || null}
         branchId={branch?.id || null}
@@ -625,4 +584,4 @@ const InvoiceCustomers = () => {
   );
 };
 
-export default InvoiceCustomers;
+export default CustomersList;

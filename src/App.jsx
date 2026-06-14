@@ -1,17 +1,19 @@
-import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from "react";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-import Login from './pages/Login/Login';
-import CashRegister from './pages/CashRegister/CashRegister';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Products from './pages/Products/Products';
-import Settings from './pages/Settings/Settings';
-import Profiles from './pages/Profiles/Profiles';
-import CashCut from './pages/CashCut/CashCut';
-import Invoices from './pages/Invoices/Invoices';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ProductsProvider } from './contexts/ProductsContext';
-import useResponsiveScale from './hooks/useResponsiveScale';
+import Login from "./pages/Login/Login";
+import CashRegister from "./pages/CashRegister/CashRegister";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Products from "./pages/Products/Products";
+import Settings from "./pages/Settings/Settings";
+import Profiles from "./pages/Profiles/Profiles";
+import CashCut from "./pages/CashCut/CashCut";
+import Invoices from "./pages/Invoices/Invoices";
+import Customers from "./pages/Customers/Customers";
+
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ProductsProvider } from "./contexts/ProductsContext";
+import useResponsiveScale from "./hooks/useResponsiveScale";
 
 function AppRoutes() {
   const {
@@ -20,15 +22,10 @@ function AppRoutes() {
     setCashRegistered,
     loading,
     isLocked,
-    user,
   } = useAuth();
 
   if (loading) {
-    return (
-      <div>
-        Iniciando punto de venta...
-      </div>
-    );
+    return <div>Iniciando punto de venta...</div>;
   }
 
   return (
@@ -41,7 +38,7 @@ function AppRoutes() {
               <Login />
             ) : (
               <Navigate
-                to={cashRegistered ? '/dashboard' : '/cash-register'}
+                to={cashRegistered ? "/dashboard" : "/cash-register"}
                 replace
               />
             )
@@ -109,19 +106,34 @@ function AppRoutes() {
         />
 
         <Route
-  path="/invoices/*"
-  element={
-    !isAuthenticated ? (
-      <Navigate to="/login" replace />
-    ) : isLocked ? (
-      <Navigate to="/login" replace />
-    ) : !cashRegistered ? (
-      <Navigate to="/cash-register" replace />
-    ) : (
-      <Invoices />
-    )
-  }
-/>
+          path="/invoices/*"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : isLocked ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
+              <Navigate to="/cash-register" replace />
+            ) : (
+              <Invoices />
+            )
+          }
+        />
+
+        <Route
+          path="/customers/*"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : isLocked ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
+              <Navigate to="/cash-register" replace />
+            ) : (
+              <Customers />
+            )
+          }
+        />
 
         <Route
           path="/settings"
@@ -151,10 +163,10 @@ function AppRoutes() {
             <Navigate
               to={
                 !isAuthenticated || isLocked
-                  ? '/login'
+                  ? "/login"
                   : !cashRegistered
-                  ? '/cash-register'
-                  : '/dashboard'
+                  ? "/cash-register"
+                  : "/dashboard"
               }
               replace
             />

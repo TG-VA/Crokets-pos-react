@@ -17,6 +17,7 @@
   margin: 0 0 8px;
   color: #333333;
   font-size: 1.8rem;
+  letter-spacing: 0.04em;
 }
 
 .header p {
@@ -69,25 +70,6 @@
   box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
 }
 
-.statusFilter {
-  height: 42px;
-  min-width: 150px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 0 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #333333;
-  background: #ffffff;
-  cursor: pointer;
-}
-
-.statusFilter:focus {
-  outline: none;
-  border-color: #fc8913;
-  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
-}
-
 .clearSearchButton {
   position: absolute;
   right: 8px;
@@ -97,6 +79,25 @@
   cursor: pointer;
   font-weight: 700;
   color: #666666;
+}
+
+.statusFilter {
+  height: 42px;
+  min-width: 150px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: #333333;
+  cursor: pointer;
+}
+
+.statusFilter:focus {
+  outline: none;
+  border-color: #fc8913;
+  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
 }
 
 .refreshButton {
@@ -175,35 +176,23 @@
   color: #666666;
 }
 
-.rfcCell {
-  font-weight: 800;
-  color: #1092b1;
-  white-space: nowrap;
-}
-
-.businessName {
-  font-weight: 800;
-  color: #333333;
-}
-
 .customerName {
-  font-size: 0.78rem;
-  color: #666666;
-  margin-top: 2px;
-}
-
-.catalogCode {
   font-weight: 800;
   color: #333333;
+  text-transform: uppercase;
 }
 
-.catalogDescription {
-  font-size: 0.75rem;
-  color: #666666;
-  max-width: 220px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.pointsBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .statusBadge {
@@ -236,16 +225,12 @@
 .actionButton {
   width: 110px;
   height: 38px;
-
   border: none;
   border-radius: 10px;
-
   font-size: 14px;
   font-weight: 700;
-
   cursor: pointer;
   transition: 0.2s ease;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,7 +266,7 @@
   font-weight: 700;
 }
 
-.pointsMatchCard {
+.fiscalMatchCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -294,38 +279,38 @@
   margin-bottom: 12px;
 }
 
-.pointsMatchInfo {
+.fiscalMatchInfo {
   flex: 1;
 }
 
-.pointsMatchInfo h3 {
+.fiscalMatchInfo h3 {
   margin: 0 0 6px;
   color: #9a3412;
   font-size: 1rem;
   font-weight: 900;
 }
 
-.pointsMatchInfo p {
+.fiscalMatchInfo p {
   margin: 0 0 10px;
   color: #7c2d12;
   font-size: 0.9rem;
   font-weight: 600;
 }
 
-.pointsDataGrid {
+.fiscalDataGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: 10px;
 }
 
-.pointsDataGrid div {
+.fiscalDataGrid div {
   background: #ffffff;
   border: 1px solid #fed7aa;
   border-radius: 8px;
   padding: 8px 10px;
 }
 
-.pointsDataGrid span {
+.fiscalDataGrid span {
   display: block;
   color: #777777;
   font-size: 0.75rem;
@@ -333,14 +318,14 @@
   margin-bottom: 3px;
 }
 
-.pointsDataGrid strong {
+.fiscalDataGrid strong {
   display: block;
   color: #333333;
   font-size: 0.86rem;
   word-break: break-word;
 }
 
-.linkPointsButton {
+.linkFiscalButton {
   background: #fc8913;
   color: #ffffff;
   border: none;
@@ -352,28 +337,56 @@
   transition: 0.2s ease;
 }
 
-.linkPointsButton:hover {
+.linkFiscalButton:hover {
   background: #e07a0d;
   transform: translateY(-1px);
 }
+.typeBadges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pointsTypeBadge,
+.fiscalTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pointsTypeBadge {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.fiscalTypeBadge {
+  background: #fef3c7;
+  color: #92400e;
+}
 
 @media (max-width: 1100px) {
-  .pointsMatchCard {
+  .fiscalMatchCard {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .pointsDataGrid {
+  .fiscalDataGrid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
-  .linkPointsButton {
+  .linkFiscalButton {
     width: 100%;
   }
 }
 
 @media (max-width: 650px) {
-  .pointsDataGrid {
+  .fiscalDataGrid {
     grid-template-columns: 1fr;
   }
 }
