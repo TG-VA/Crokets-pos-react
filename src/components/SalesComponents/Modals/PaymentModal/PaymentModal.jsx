@@ -24,6 +24,8 @@ const PaymentModal = ({
   const [processing, setProcessing] = useState(false);
 
   const effectiveProcessing = processing || processingSale;
+  const safeTotal = Number(total || 0);
+  const isZeroTotalSale = safeTotal <= 0;
 
   const toNumber = (value) => {
     if (!value || String(value).trim() === "") return 0;
@@ -34,6 +36,8 @@ const PaymentModal = ({
   const numericExchangeRate = toNumber(exchangeRate);
 
   const calculateChange = () => {
+    if (isZeroTotalSale) return 0;
+
     const numericPaidAmount = toNumber(paidAmount);
     const numericDollarAmount = toNumber(dollarAmount);
     const numericEfectivo = toNumber(mixedPayments.efectivo);
@@ -42,17 +46,18 @@ const PaymentModal = ({
 
     switch (selectedPaymentMethod) {
       case "Efectivo":
-        return Math.max(0, numericPaidAmount - total);
+        return Math.max(0, numericPaidAmount - safeTotal);
 
       case "Dolares":
-        return Math.max(0, numericDollarAmount * numericExchangeRate - total);
+        return Math.max(
+          0,
+          numericDollarAmount * numericExchangeRate - safeTotal,
+        );
 
       case "Mixto": {
         const totalMixed =
-          numericEfectivo +
-          numericTarjeta +
-          numericDolares * numericExchangeRate;
-        return Math.max(0, totalMixed - total);
+          numericEfectivo + numericTarjeta + numericDolares * numericExchangeRate;
+        return Math.max(0, totalMixed - safeTotal);
       }
 
       default:
@@ -61,6 +66,8 @@ const PaymentModal = ({
   };
 
   const getPaidTotalInMxn = () => {
+    if (isZeroTotalSale) return 0;
+
     const numericPaidAmount = toNumber(paidAmount);
     const numericDollarAmount = toNumber(dollarAmount);
     const numericEfectivo = toNumber(mixedPayments.efectivo);
@@ -76,14 +83,12 @@ const PaymentModal = ({
 
       case "Mixto":
         return (
-          numericEfectivo +
-          numericTarjeta +
-          numericDolares * numericExchangeRate
+          numericEfectivo + numericTarjeta + numericDolares * numericExchangeRate
         );
 
       case "Terminal":
       case "Transferencia":
-        return total;
+        return safeTotal;
 
       default:
         return 0;
@@ -134,6 +139,10 @@ const PaymentModal = ({
   };
 
   const validatePayment = () => {
+    if (isZeroTotalSale) {
+      return true;
+    }
+
     const paidTotalMxn = getPaidTotalInMxn();
 
     if (
@@ -150,10 +159,12 @@ const PaymentModal = ({
           alert("Ingrese el monto pagado en efectivo.");
           return false;
         }
-        if (paidTotalMxn < total) {
+
+        if (paidTotalMxn < safeTotal) {
           alert("El monto en efectivo no cubre el total de la venta.");
           return false;
         }
+
         return true;
 
       case "Dolares":
@@ -161,10 +172,12 @@ const PaymentModal = ({
           alert("Ingrese el monto pagado en dólares.");
           return false;
         }
-        if (paidTotalMxn < total) {
+
+        if (paidTotalMxn < safeTotal) {
           alert("El monto en dólares no cubre el total de la venta.");
           return false;
         }
+
         return true;
 
       case "Mixto": {
@@ -177,7 +190,7 @@ const PaymentModal = ({
           return false;
         }
 
-        if (paidTotalMxn < total) {
+        if (paidTotalMxn < safeTotal) {
           alert("La suma del pago mixto no cubre el total de la venta.");
           return false;
         }
@@ -190,6 +203,7 @@ const PaymentModal = ({
           alert("Ingrese la referencia o clave de rastreo.");
           return false;
         }
+
         return true;
 
       case "Terminal":
@@ -202,12 +216,30 @@ const PaymentModal = ({
   };
 
   const buildPaymentData = (shouldPrint = false) => {
+    if (isZeroTotalSale) {
+      return {
+        method: "Terminal",
+        total: 0,
+        change: 0,
+        shouldPrint,
+        notes: saleNotes,
+        isZeroTotalSale: true,
+        isRewardRedemptionOnly: true,
+        details: {
+          paidAmount: 0,
+          zeroTotalReason: "reward_redemption",
+        },
+      };
+    }
+
     const baseData = {
       method: selectedPaymentMethod,
-      total,
+      total: safeTotal,
       change,
       shouldPrint,
       notes: saleNotes,
+      isZeroTotalSale: false,
+      isRewardRedemptionOnly: false,
       details: {},
     };
 
@@ -337,8 +369,9 @@ const PaymentModal = ({
     dollarAmount,
     exchangeRate,
     saleNotes,
-    total,
+    safeTotal,
     change,
+    isZeroTotalSale,
   ]);
 
   useEffect(() => {
@@ -346,6 +379,18 @@ const PaymentModal = ({
       resetModalState();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (isZeroTotalSale) {
+      setSelectedPaymentMethod("Terminal");
+      setPaidAmount("");
+      setDollarAmount("");
+      setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
+      setTrackingCode("");
+    }
+  }, [isOpen, isZeroTotalSale]);
 
   const renderExchangeRateInput = () => {
     if (
@@ -378,7 +423,34 @@ const PaymentModal = ({
     );
   };
 
+  const renderZeroTotalContent = () => {
+    return (
+      <div className={styles.paymentInfo}>
+        <div className={styles.terminalSection}>
+          <div className={styles.paymentRow}>
+            <span>Tipo de operación:</span>
+            <span className={styles.totalAmount}>Canje de recompensa</span>
+          </div>
+
+          <div className={styles.paymentRow}>
+            <span>Total a cobrar:</span>
+            <span className={styles.totalAmount}>$0.00</span>
+          </div>
+
+          <div className={styles.paymentRow}>
+            <span>Pago requerido:</span>
+            <span className={styles.changeAmount}>No se requiere pago</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPaymentContent = () => {
+    if (isZeroTotalSale) {
+      return renderZeroTotalContent();
+    }
+
     switch (selectedPaymentMethod) {
       case "Efectivo":
         return (
@@ -403,6 +475,7 @@ const PaymentModal = ({
                 />
               </div>
             </div>
+
             <div className={styles.paymentRow}>
               <span>Su Cambio:</span>
               <span className={styles.changeAmount}>${change.toFixed(2)}</span>
@@ -435,12 +508,14 @@ const PaymentModal = ({
                 />
               </div>
             </div>
+
             <div className={styles.paymentRow}>
               <span>Equivalente en MXN:</span>
               <span className={styles.equivalentAmount}>
                 ${(toNumber(dollarAmount) * numericExchangeRate).toFixed(2)}
               </span>
             </div>
+
             <div className={styles.paymentRow}>
               <span>Su Cambio:</span>
               <span className={styles.changeAmount}>${change.toFixed(2)}</span>
@@ -552,7 +627,7 @@ const PaymentModal = ({
             <div className={styles.terminalSection}>
               <div className={styles.paymentRow}>
                 <span>Total a Cobrar:</span>
-                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
+                <span className={styles.totalAmount}>${safeTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -573,9 +648,10 @@ const PaymentModal = ({
                   disabled={effectiveProcessing}
                 />
               </div>
+
               <div className={styles.paymentRow}>
                 <span>Total a Cobrar:</span>
-                <span className={styles.totalAmount}>${total.toFixed(2)}</span>
+                <span className={styles.totalAmount}>${safeTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -592,7 +668,8 @@ const PaymentModal = ({
     <div className={styles.modalOverlay} onClick={closePaymentModal}>
       <div className={styles.paymentModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>COBRAR</h2>
+          <h2>{isZeroTotalSale ? "FINALIZAR CANJE" : "COBRAR"}</h2>
+
           <button
             className={styles.closeButton}
             onClick={closePaymentModal}
@@ -602,29 +679,31 @@ const PaymentModal = ({
           </button>
         </div>
 
-        <div className={styles.totalDisplay}>${total.toFixed(2)}</div>
+        <div className={styles.totalDisplay}>${safeTotal.toFixed(2)}</div>
 
-        <div className={styles.paymentMethods}>
-          {paymentMethods.map((method) => (
-            <div
-              key={method.id}
-              className={`${styles.paymentMethod} ${
-                selectedPaymentMethod === method.id
-                  ? styles.paymentMethodSelected
-                  : ""
-              }`}
-              onClick={() => {
-                if (!effectiveProcessing) {
-                  console.log("Método seleccionado:", method.id);
-                  setSelectedPaymentMethod(method.id);
-                }
-              }}
-            >
-              <div className={styles.methodIcon}>{method.icon}</div>
-              <div className={styles.methodName}>{method.name}</div>
-            </div>
-          ))}
-        </div>
+        {!isZeroTotalSale && (
+          <div className={styles.paymentMethods}>
+            {paymentMethods.map((method) => (
+              <div
+                key={method.id}
+                className={`${styles.paymentMethod} ${
+                  selectedPaymentMethod === method.id
+                    ? styles.paymentMethodSelected
+                    : ""
+                }`}
+                onClick={() => {
+                  if (!effectiveProcessing) {
+                    console.log("Método seleccionado:", method.id);
+                    setSelectedPaymentMethod(method.id);
+                  }
+                }}
+              >
+                <div className={styles.methodIcon}>{method.icon}</div>
+                <div className={styles.methodName}>{method.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {renderPaymentContent()}
 
@@ -634,7 +713,11 @@ const PaymentModal = ({
             onClick={() => processPayment(true)}
             disabled={effectiveProcessing}
           >
-            {effectiveProcessing ? "Procesando..." : "F1 - Cobrar e Imprimir"}
+            {effectiveProcessing
+              ? "Procesando..."
+              : isZeroTotalSale
+                ? "F1 - Finalizar canje e imprimir"
+                : "F1 - Cobrar e Imprimir"}
           </button>
 
           <button
@@ -642,7 +725,11 @@ const PaymentModal = ({
             onClick={() => processPayment(false)}
             disabled={effectiveProcessing}
           >
-            {effectiveProcessing ? "Procesando..." : "F2 - Cobrar sin imprimir"}
+            {effectiveProcessing
+              ? "Procesando..."
+              : isZeroTotalSale
+                ? "F2 - Finalizar canje sin imprimir"
+                : "F2 - Cobrar sin imprimir"}
           </button>
 
           <button

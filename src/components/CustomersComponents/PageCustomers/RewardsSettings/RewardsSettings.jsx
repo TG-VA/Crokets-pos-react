@@ -7,6 +7,18 @@ const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
 const EXAMPLE_SALE_AMOUNT = 420;
 
+const emptyStatusConfirmModal = {
+  isOpen: false,
+  reward: null,
+  nextStatus: null,
+  loading: false,
+};
+
+const emptyRewardDetailsModal = {
+  isOpen: false,
+  reward: null,
+};
+
 const RewardsSettings = () => {
   const [rewards, setRewards] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,6 +36,13 @@ const RewardsSettings = () => {
 
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState(null);
+
+  const [statusConfirmModal, setStatusConfirmModal] = useState(
+    emptyStatusConfirmModal
+  );
+  const [rewardDetailsModal, setRewardDetailsModal] = useState(
+    emptyRewardDetailsModal
+  );
 
   const numericPointsAmountPerPoint = Number(pointsAmountPerPoint || 0);
 
@@ -48,6 +67,66 @@ const RewardsSettings = () => {
     !savingPointsRule &&
     !loadingPointsRule;
 
+  const normalizeRewardType = (type) => {
+    if (type === "product_discount") return "product_discount";
+    return "free_product";
+  };
+
+  const getRewardTypeLabel = (type) => {
+    const rewardType = normalizeRewardType(type);
+
+    if (rewardType === "free_product") return "PRODUCTO GRATIS";
+    if (rewardType === "product_discount") return "DESCUENTO EN PRODUCTO";
+
+    return "PRODUCTO GRATIS";
+  };
+
+  const getRewardBenefitLabel = (reward) => {
+    const rewardType = normalizeRewardType(reward.reward_type);
+    const quantity = Number(reward.reward_quantity || 1);
+    const discountType = reward.discount_type;
+    const discountValue = Number(reward.discount_value || 0);
+
+    if (rewardType === "free_product") {
+      return `${quantity} producto${quantity !== 1 ? "s" : ""} gratis`;
+    }
+
+    if (rewardType === "product_discount") {
+      if (discountType === "percent") {
+        return `${discountValue}% en ${quantity} unidad${
+          quantity !== 1 ? "es" : ""
+        }`;
+      }
+
+      if (discountType === "fixed") {
+        return `$${discountValue.toFixed(2)} en ${quantity} unidad${
+          quantity !== 1 ? "es" : ""
+        }`;
+      }
+
+      return `Descuento en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
+    }
+
+    return "Sin beneficio";
+  };
+
+  const getLinkedProductsLabel = (reward) => {
+    const rewardType = normalizeRewardType(reward.reward_type);
+    const linkedProductsCount = reward.reward_products?.length || 0;
+
+    if (rewardType === "product_discount") {
+      return "TODOS";
+    }
+
+    if (linkedProductsCount === 0) {
+      return "SIN PRODUCTOS";
+    }
+
+    return `${linkedProductsCount} producto${
+      linkedProductsCount !== 1 ? "s" : ""
+    }`;
+  };
+
   const loadRewards = async () => {
     try {
       setLoadingRewards(true);
@@ -61,8 +140,16 @@ const RewardsSettings = () => {
           description,
           points_required,
           is_active,
+          reward_type,
+          reward_quantity,
+          discount_type,
+          discount_value,
           created_at,
-          updated_at
+          updated_at,
+          reward_products (
+            id,
+            product_id
+          )
         `)
         .order("points_required", { ascending: true })
         .order("name", { ascending: true });
@@ -242,13 +329,28 @@ const RewardsSettings = () => {
 
   useEffect(() => {
     const rewardsChannel = supabase
-      .channel("rewards-settings-realtime")
+      .channel("rewards-settings-rewards-realtime")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "rewards",
+        },
+        () => {
+          loadRewards();
+        }
+      )
+      .subscribe();
+
+    const rewardProductsChannel = supabase
+      .channel("rewards-settings-reward-products-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reward_products",
         },
         () => {
           loadRewards();
@@ -274,6 +376,7 @@ const RewardsSettings = () => {
 
     return () => {
       supabase.removeChannel(rewardsChannel);
+      supabase.removeChannel(rewardProductsChannel);
       supabase.removeChannel(settingsChannel);
     };
   }, []);
@@ -295,6 +398,10 @@ const RewardsSettings = () => {
         reward.name,
         reward.description,
         reward.points_required,
+        normalizeRewardType(reward.reward_type),
+        getRewardTypeLabel(reward.reward_type),
+        getRewardBenefitLabel(reward),
+        getLinkedProductsLabel(reward),
       ];
 
       return values.some((value) =>
@@ -309,7 +416,10 @@ const RewardsSettings = () => {
   };
 
   const handleEditReward = (reward) => {
-    setEditingReward(reward);
+    setEditingReward({
+      ...reward,
+      reward_type: normalizeRewardType(reward.reward_type),
+    });
     setIsRewardModalOpen(true);
   };
 
@@ -318,18 +428,34 @@ const RewardsSettings = () => {
     setEditingReward(null);
   };
 
-  const handleToggleStatus = async (reward) => {
+  const handleOpenStatusConfirmModal = (reward) => {
     const nextStatus = reward.is_active === false;
 
-    const confirmed = window.confirm(
-      `¿Seguro que deseas ${
-        nextStatus ? "activar" : "desactivar"
-      } la recompensa "${reward.name}"?`
-    );
+    setStatusConfirmModal({
+      isOpen: true,
+      reward,
+      nextStatus,
+      loading: false,
+    });
+  };
 
-    if (!confirmed) return;
+  const handleCloseStatusConfirmModal = () => {
+    if (statusConfirmModal.loading) return;
+    setStatusConfirmModal(emptyStatusConfirmModal);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    const reward = statusConfirmModal.reward;
+    const nextStatus = statusConfirmModal.nextStatus;
+
+    if (!reward?.id || statusConfirmModal.loading) return;
 
     try {
+      setStatusConfirmModal((prev) => ({
+        ...prev,
+        loading: true,
+      }));
+
       const { error: updateError } = await supabase
         .from("rewards")
         .update({
@@ -341,11 +467,72 @@ const RewardsSettings = () => {
       if (updateError) throw updateError;
 
       await loadRewards();
+      setStatusConfirmModal(emptyStatusConfirmModal);
     } catch (err) {
       console.error("Error actualizando recompensa:", err);
-      alert("No se pudo actualizar el estado de la recompensa.");
+      setError("No se pudo actualizar el estado de la recompensa.");
+
+      setStatusConfirmModal((prev) => ({
+        ...prev,
+        loading: false,
+      }));
     }
   };
+
+  const handleOpenRewardDetailsModal = (reward) => {
+    setRewardDetailsModal({
+      isOpen: true,
+      reward,
+    });
+  };
+
+  const handleCloseRewardDetailsModal = () => {
+    setRewardDetailsModal(emptyRewardDetailsModal);
+  };
+
+  useEffect(() => {
+    const hasStatusModalOpen = statusConfirmModal.isOpen;
+    const hasDetailsModalOpen = rewardDetailsModal.isOpen;
+
+    if (!hasStatusModalOpen && !hasDetailsModalOpen) return;
+
+    const handleModalKeyDown = (event) => {
+      if (event.key !== "Enter" && event.key !== "Escape") return;
+
+      if (hasStatusModalOpen) {
+        if (statusConfirmModal.loading) return;
+
+        event.preventDefault();
+
+        if (event.key === "Enter") {
+          handleConfirmToggleStatus();
+          return;
+        }
+
+        if (event.key === "Escape") {
+          handleCloseStatusConfirmModal();
+          return;
+        }
+      }
+
+      if (hasDetailsModalOpen) {
+        event.preventDefault();
+        handleCloseRewardDetailsModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleModalKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleModalKeyDown);
+    };
+  }, [
+    statusConfirmModal.isOpen,
+    statusConfirmModal.loading,
+    statusConfirmModal.reward,
+    statusConfirmModal.nextStatus,
+    rewardDetailsModal.isOpen,
+  ]);
 
   return (
     <div className={styles.content}>
@@ -427,7 +614,7 @@ const RewardsSettings = () => {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Buscar por nombre, descripción o puntos..."
+            placeholder="Buscar por nombre, descripción, puntos, tipo o beneficio..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -483,8 +670,10 @@ const RewardsSettings = () => {
           <thead>
             <tr>
               <th>Recompensa</th>
-              <th>Descripción</th>
-              <th>Puntos requeridos</th>
+              <th>Tipo</th>
+              <th>Beneficio</th>
+              <th>Productos</th>
+              <th>Puntos</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -493,13 +682,13 @@ const RewardsSettings = () => {
           <tbody>
             {loadingRewards ? (
               <tr>
-                <td colSpan="5" className={styles.textCenter}>
+                <td colSpan="7" className={styles.textCenter}>
                   Cargando recompensas...
                 </td>
               </tr>
             ) : filteredRewards.length === 0 ? (
               <tr>
-                <td colSpan="5" className={styles.textCenter}>
+                <td colSpan="7" className={styles.textCenter}>
                   No hay recompensas registradas con los filtros seleccionados.
                 </td>
               </tr>
@@ -507,14 +696,41 @@ const RewardsSettings = () => {
               filteredRewards.map((reward) => (
                 <tr key={reward.id}>
                   <td>
-                    <div className={styles.rewardName}>
-                      {reward.name || "SIN NOMBRE"}
-                    </div>
+                    <button
+                      type="button"
+                      className={styles.rewardInfoButton}
+                      onClick={() => handleOpenRewardDetailsModal(reward)}
+                      title="Ver detalle de la recompensa"
+                    >
+                      <div className={styles.rewardName}>
+                        {reward.name || "SIN NOMBRE"}
+                      </div>
+
+                      <span className={styles.descriptionText}>
+                        {reward.description || "SIN DESCRIPCIÓN"}
+                      </span>
+
+                      <span className={styles.viewDetailText}>
+                        Ver detalle
+                      </span>
+                    </button>
                   </td>
 
                   <td>
                     <span className={styles.descriptionText}>
-                      {reward.description || "SIN DESCRIPCIÓN"}
+                      {getRewardTypeLabel(reward.reward_type)}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className={styles.descriptionText}>
+                      {getRewardBenefitLabel(reward)}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className={styles.descriptionText}>
+                      {getLinkedProductsLabel(reward)}
                     </span>
                   </td>
 
@@ -553,7 +769,7 @@ const RewardsSettings = () => {
                             ? styles.activateButton
                             : styles.deactivateButton
                         }`}
-                        onClick={() => handleToggleStatus(reward)}
+                        onClick={() => handleOpenStatusConfirmModal(reward)}
                       >
                         {reward.is_active === false ? "Activar" : "Desactivar"}
                       </button>
@@ -572,6 +788,143 @@ const RewardsSettings = () => {
         onSaved={loadRewards}
         rewardToEdit={editingReward}
       />
+
+      {statusConfirmModal.isOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModal}>
+            <div
+              className={`${styles.confirmIcon} ${
+                statusConfirmModal.nextStatus
+                  ? styles.confirmIconActive
+                  : styles.confirmIconDanger
+              }`}
+            >
+              {statusConfirmModal.nextStatus ? "✓" : "!"}
+            </div>
+
+            <h3>
+              {statusConfirmModal.nextStatus
+                ? "Activar recompensa"
+                : "Desactivar recompensa"}
+            </h3>
+
+            <p>
+              {statusConfirmModal.nextStatus
+                ? "¿Seguro que deseas activar esta recompensa? Volverá a estar disponible para canjearse en ventas."
+                : "¿Seguro que deseas desactivar esta recompensa? Ya no estará disponible para canjearse en ventas."}
+            </p>
+
+            <div className={styles.confirmRewardName}>
+              {statusConfirmModal.reward?.name || "SIN NOMBRE"}
+            </div>
+
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmCancelButton}
+                onClick={handleCloseStatusConfirmModal}
+                disabled={statusConfirmModal.loading}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className={
+                  statusConfirmModal.nextStatus
+                    ? styles.confirmActivateButton
+                    : styles.confirmDeactivateButton
+                }
+                onClick={handleConfirmToggleStatus}
+                disabled={statusConfirmModal.loading}
+                autoFocus
+              >
+                {statusConfirmModal.loading
+                  ? "Guardando..."
+                  : statusConfirmModal.nextStatus
+                  ? "Activar"
+                  : "Desactivar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rewardDetailsModal.isOpen && rewardDetailsModal.reward && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.detailsModal}>
+            <div className={styles.detailsHeader}>
+              <div>
+                <h3>Detalle de recompensa</h3>
+                <p>{rewardDetailsModal.reward.name || "SIN NOMBRE"}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.detailsCloseButton}
+                onClick={handleCloseRewardDetailsModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.detailsBody}>
+              <div className={styles.detailItem}>
+                <span>Descripción</span>
+                <strong>
+                  {rewardDetailsModal.reward.description || "SIN DESCRIPCIÓN"}
+                </strong>
+              </div>
+
+              <div className={styles.detailsGrid}>
+                <div className={styles.detailItem}>
+                  <span>Tipo</span>
+                  <strong>
+                    {getRewardTypeLabel(rewardDetailsModal.reward.reward_type)}
+                  </strong>
+                </div>
+
+                <div className={styles.detailItem}>
+                  <span>Beneficio</span>
+                  <strong>{getRewardBenefitLabel(rewardDetailsModal.reward)}</strong>
+                </div>
+
+                <div className={styles.detailItem}>
+                  <span>Productos aplicables</span>
+                  <strong>{getLinkedProductsLabel(rewardDetailsModal.reward)}</strong>
+                </div>
+
+                <div className={styles.detailItem}>
+                  <span>Puntos requeridos</span>
+                  <strong>
+                    {Number(rewardDetailsModal.reward.points_required || 0)}
+                  </strong>
+                </div>
+
+                <div className={styles.detailItem}>
+                  <span>Estado</span>
+                  <strong>
+                    {rewardDetailsModal.reward.is_active === false
+                      ? "INACTIVA"
+                      : "ACTIVA"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.detailsActions}>
+              <button
+                type="button"
+                className={styles.detailsPrimaryButton}
+                onClick={handleCloseRewardDetailsModal}
+                autoFocus
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

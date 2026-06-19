@@ -259,13 +259,13 @@
 
 .pointsTable th:nth-child(3),
 .pointsTable td:nth-child(3) {
-  width: 11%;
+  width: 12%;
   text-align: center;
 }
 
 .pointsTable th:nth-child(4),
 .pointsTable td:nth-child(4) {
-  width: 9%;
+  width: 8%;
   text-align: center;
 }
 
@@ -342,7 +342,7 @@
   justify-content: center;
   border-radius: 999px;
   padding: 5px 10px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -355,6 +355,11 @@
 .movementRedeem {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.movementReturn {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .pointsPositive {

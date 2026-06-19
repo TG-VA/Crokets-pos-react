@@ -9,6 +9,32 @@ const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
 
+const isRewardLine = (item = {}) => {
+  return Boolean(
+    item.isRewardItem ||
+      item.is_reward_item ||
+      item.rewardItem ||
+      item.reward_item ||
+      item.isRewardDiscountItem ||
+      item.is_reward_discount_item ||
+      item.rewardDiscountItem ||
+      item.reward_discount_item ||
+      item.saleRewardRedemptionId ||
+      item.sale_reward_redemption_id ||
+      item.rewardId ||
+      item.reward_id
+  );
+};
+
+const isRewardDiscountLine = (item = {}) => {
+  return Boolean(
+    item.isRewardDiscountItem ||
+      item.is_reward_discount_item ||
+      item.rewardDiscountItem ||
+      item.reward_discount_item
+  );
+};
+
 const PartialReturnModal = ({
   isOpen,
   onClose,
@@ -49,6 +75,8 @@ const PartialReturnModal = ({
 
       const availableQty = Math.max(Number(item.cant || 0) - returnedQty, 0);
       const isKit = !!(item.isKit || item.is_kit);
+      const rewardItem = isRewardLine(item);
+      const rewardDiscountItem = isRewardDiscountLine(item);
 
       return {
         saleDetailId: item.id,
@@ -59,6 +87,11 @@ const PartialReturnModal = ({
         availableQty,
         unitPrice: Number(item.finalUnitPrice || item.unitPrice || 0),
         isKit,
+        isRewardItem: rewardItem,
+        isRewardDiscountItem: rewardDiscountItem,
+        rewardReversedAt: item.rewardReversedAt || item.reward_reversed_at || null,
+        rewardReversalReason:
+          item.rewardReversalReason || item.reward_reversal_reason || "",
         components: item.components || [],
       };
     });
@@ -85,17 +118,24 @@ const PartialReturnModal = ({
 
   const itemsWithLimits = useMemo(() => {
     return items.map((item) => {
-      const maxReturnAllowed = Math.max(
-        Math.min(Number(item.availableQty || 0), maxUnitsAllowedInOperation),
-        0
-      );
+      const isBlockedByReward = Boolean(item.isRewardItem);
+
+      const maxReturnAllowed = isBlockedByReward
+        ? 0
+        : Math.max(
+            Math.min(Number(item.availableQty || 0), maxUnitsAllowedInOperation),
+            0
+          );
 
       return {
         ...item,
         maxReturnAllowed,
+        isBlockedByReward,
         isFullyReturned: Number(item.availableQty || 0) === 0,
         isBlockedByRule:
-          Number(item.availableQty || 0) > 0 && maxReturnAllowed === 0,
+          !isBlockedByReward &&
+          Number(item.availableQty || 0) > 0 &&
+          maxReturnAllowed === 0,
       };
     });
   }, [items, maxUnitsAllowedInOperation]);
@@ -146,7 +186,7 @@ const PartialReturnModal = ({
   };
 
   const handleQtyChange = (saleDetailId, rawValue, max) => {
-    let value = rawValue.replace(/[^\d]/g, "");
+    const value = rawValue.replace(/[^\d]/g, "");
 
     if (value === "") {
       setQuantities((prev) => ({
@@ -274,15 +314,45 @@ const PartialReturnModal = ({
       fallbackReturnedTotal
     );
 
-    const expectedReversedPoints = Math.min(
+    /*
+      Corrección importante:
+      Antes se calculaba así:
+      floor(totalReturnedForPoints / amountPerPoint)
+
+      Eso fallaba cuando la devolución era menor a la regla de puntos,
+      pero dejaba la venta neta por debajo del mínimo para conservar puntos.
+
+      Ahora se calcula por neto actual:
+      puntos originales ganados - puntos que debe conservar con el neto restante.
+    */
+    const originalSaleTotal = Number(selectedTicket.total || 0);
+    const netTotalAfterReturns = Math.max(
+      originalSaleTotal - totalReturnedForPoints,
+      0
+    );
+
+    const pointsCustomerShouldKeep = Math.min(
       earnedPoints,
-      Math.floor(totalReturnedForPoints / amountPerPoint)
+      Math.floor(netTotalAfterReturns / amountPerPoint)
+    );
+
+    const expectedReversedPoints = Math.max(
+      earnedPoints - pointsCustomerShouldKeep,
+      0
     );
 
     const pointsToReverse = expectedReversedPoints - alreadyReversedByReturns;
 
     if (pointsToReverse <= 0) {
-      return { registered: false, points: 0, reason: "NO_POINTS_TO_REVERSE" };
+      return {
+        registered: false,
+        points: 0,
+        reason: "NO_POINTS_TO_REVERSE",
+        earnedPoints,
+        pointsCustomerShouldKeep,
+        alreadyReversedByReturns,
+        netTotalAfterReturns,
+      };
     }
 
     const safePointsToReverse = Math.min(
@@ -299,6 +369,12 @@ const PartialReturnModal = ({
       `PUNTOS DESCONTADOS POR DEVOLUCIÓN PARCIAL. MONTO DEVUELTO: ${formatCurrency(
         totalRefund
       )} MXN.`,
+      `TOTAL DEVUELTO ACUMULADO: ${formatCurrency(
+        totalReturnedForPoints
+      )} MXN.`,
+      `NETO ACTUAL DE LA VENTA: ${formatCurrency(netTotalAfterReturns)} MXN.`,
+      `PUNTOS ORIGINALES: ${earnedPoints}.`,
+      `PUNTOS A CONSERVAR: ${pointsCustomerShouldKeep}.`,
       returnReason.trim() ? `MOTIVO: ${returnReason.trim()}.` : "",
       limitedByBalance
         ? "DESCUENTO LIMITADO POR SALDO DISPONIBLE DEL CLIENTE."
@@ -330,6 +406,9 @@ const PartialReturnModal = ({
       points: safePointsToReverse,
       limitedByBalance,
       amountPerPoint,
+      earnedPoints,
+      pointsCustomerShouldKeep,
+      netTotalAfterReturns,
     };
   };
 
@@ -365,9 +444,17 @@ const PartialReturnModal = ({
           sale_detail_id: item.saleDetailId,
           quantity: Number(quantities[item.saleDetailId] || 0),
           isKit: item.isKit,
+          isRewardItem: item.isRewardItem,
           description: item.description,
         }))
         .filter((item) => item.quantity > 0);
+
+      if (selectedItems.some((item) => item.isRewardItem)) {
+        alert(
+          "No se puede devolver parcialmente un producto de recompensa. Para revertir un canje, cancela la venta completa."
+        );
+        return;
+      }
 
       if (selectedItems.length === 0) {
         alert("Selecciona al menos un producto para devolución.");
@@ -478,7 +565,7 @@ const PartialReturnModal = ({
               <span>Neto actual</span>
               <strong>
                 {formatCurrency(
-                  selectedTicket?.netTotal || selectedTicket?.total || 0
+                  selectedTicket?.netTotal ?? selectedTicket?.total ?? 0
                 )}
               </strong>
             </div>
@@ -487,13 +574,21 @@ const PartialReturnModal = ({
           <div className={styles.ruleBox}>
             <strong>Regla de devolución:</strong> puedes devolver productos o
             kits completos, pero debe quedar al menos 1 unidad en el ticket. Si
-            deseas devolver todo, corresponde cancelar la venta.
+            deseas devolver todo, corresponde cancelar la venta completa. Los
+            productos de recompensa no se devuelven por parcial.
           </div>
 
           {itemsWithLimits.some((item) => item.isKit) && (
             <div className={styles.warningBox}>
               Esta venta contiene kits. Si devuelves un kit, se regresará el
               inventario de todos sus productos internos.
+            </div>
+          )}
+
+          {itemsWithLimits.some((item) => item.isRewardItem) && (
+            <div className={styles.warningBox}>
+              Esta venta contiene productos de recompensa. Para revertir un
+              canje, cancela la venta completa.
             </div>
           )}
 
@@ -509,7 +604,10 @@ const PartialReturnModal = ({
                 itemsWithLimits.map((item) => {
                   const qty = Number(quantities[item.saleDetailId] || 0);
                   const disabled =
-                    processing || item.isFullyReturned || item.isBlockedByRule;
+                    processing ||
+                    item.isFullyReturned ||
+                    item.isBlockedByRule ||
+                    item.isBlockedByReward;
 
                   return (
                     <div
@@ -568,13 +666,17 @@ const PartialReturnModal = ({
 
                       <div className={styles.productCardFooter}>
                         <div className={styles.itemStatusRow}>
-                          {item.isFullyReturned ? (
+                          {item.isRewardItem ? (
+                            <span className={styles.fullyReturnedBadge}>
+                              NO SE PUEDE DEVOLVER POR PARCIAL
+                            </span>
+                          ) : item.isFullyReturned ? (
                             <span className={styles.fullyReturnedBadge}>
                               DEVOLUCIÓN COMPLETA
                             </span>
                           ) : item.isBlockedByRule ? (
                             <span className={styles.fullyReturnedBadge}>
-                              YA NO SE PUEDE DEVOLVER
+                              DEVOLUCIÓN BLOQUEADA
                             </span>
                           ) : item.isKit ? (
                             <span className={styles.availableBadge}>
@@ -585,6 +687,12 @@ const PartialReturnModal = ({
                             <span className={styles.availableBadge}>
                               Puedes devolver hasta {item.maxReturnAllowed} pieza
                               {item.maxReturnAllowed !== 1 ? "s" : ""}
+                            </span>
+                          )}
+
+                          {item.isRewardItem && (
+                            <span className={styles.availableBadge}>
+                              Cancela la venta completa para revertir el canje.
                             </span>
                           )}
                         </div>
