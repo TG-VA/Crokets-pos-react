@@ -217,192 +217,196 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
   };
 
   const buildCustomerPointsMaps = async ({ saleIds = [], customerIds = [] }) => {
-  const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
-  const cleanCustomerIds = [...new Set((customerIds || []).filter(Boolean))];
+    const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
+    const cleanCustomerIds = [...new Set((customerIds || []).filter(Boolean))];
 
-  const [salePointsRes, returnedPointsRes, balancePointsRes] =
-    await Promise.all([
-      cleanSaleIds.length
-        ? supabase
-            .from("customer_points")
-            .select("customer_id, related_sale_id, points, source")
-            .in("related_sale_id", cleanSaleIds)
-            .eq("source", "sale")
-        : Promise.resolve({ data: [], error: null }),
+    const [salePointsRes, returnedPointsRes, rewardPointsRes, balancePointsRes] =
+      await Promise.all([
+        cleanSaleIds.length
+          ? supabase
+              .from("customer_points")
+              .select("customer_id, related_sale_id, points, source")
+              .in("related_sale_id", cleanSaleIds)
+              .eq("source", "sale")
+          : Promise.resolve({ data: [], error: null }),
 
-      cleanSaleIds.length
-        ? supabase
-            .from("customer_points")
-            .select("customer_id, related_sale_id, points, source")
-            .in("related_sale_id", cleanSaleIds)
-            .eq("source", "partial_return")
-        : Promise.resolve({ data: [], error: null }),
+        cleanSaleIds.length
+          ? supabase
+              .from("customer_points")
+              .select("customer_id, related_sale_id, points, source")
+              .in("related_sale_id", cleanSaleIds)
+              .eq("source", "partial_return")
+          : Promise.resolve({ data: [], error: null }),
 
-      cleanCustomerIds.length
-        ? supabase
-            .from("customer_points")
-            .select("customer_id, points")
-            .in("customer_id", cleanCustomerIds)
-        : Promise.resolve({ data: [], error: null }),
-    ]);
+        cleanSaleIds.length
+          ? supabase
+              .from("customer_points")
+              .select("customer_id, related_sale_id, points, source")
+              .in("related_sale_id", cleanSaleIds)
+              .eq("source", "reward")
+          : Promise.resolve({ data: [], error: null }),
 
-  if (salePointsRes.error) throw salePointsRes.error;
-  if (returnedPointsRes.error) throw returnedPointsRes.error;
-  if (balancePointsRes.error) throw balancePointsRes.error;
+        cleanCustomerIds.length
+          ? supabase
+              .from("customer_points")
+              .select("customer_id, points")
+              .in("customer_id", cleanCustomerIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-  const pointsBySale = {};
-  for (const row of salePointsRes.data || []) {
-    if (!row.related_sale_id) continue;
+    if (salePointsRes.error) throw salePointsRes.error;
+    if (returnedPointsRes.error) throw returnedPointsRes.error;
+    if (rewardPointsRes.error) throw rewardPointsRes.error;
+    if (balancePointsRes.error) throw balancePointsRes.error;
 
-    const points = Number(row.points || 0);
-    if (points <= 0) continue;
+    const pointsBySale = {};
+    for (const row of salePointsRes.data || []) {
+      if (!row.related_sale_id) continue;
 
-    pointsBySale[row.related_sale_id] =
-      Number(pointsBySale[row.related_sale_id] || 0) + points;
-  }
-
-  const returnedPointsBySale = {};
-  for (const row of returnedPointsRes.data || []) {
-    if (!row.related_sale_id) continue;
-
-    const points = Number(row.points || 0);
-    if (points >= 0) continue;
-
-    returnedPointsBySale[row.related_sale_id] =
-      Number(returnedPointsBySale[row.related_sale_id] || 0) + Math.abs(points);
-  }
-
-  const balanceByCustomer = {};
-  for (const row of balancePointsRes.data || []) {
-    if (!row.customer_id) continue;
-
-    balanceByCustomer[row.customer_id] =
-      Number(balanceByCustomer[row.customer_id] || 0) + Number(row.points || 0);
-  }
-
-  return { pointsBySale, returnedPointsBySale, balanceByCustomer };
-};
-
-  const reverseCustomerPointsByCancellation = async ({
-    saleId,
-    customerId,
-    folio,
-    reason,
-  }) => {
-    if (!saleId || !customerId) {
-      return { reversed: false, points: 0, message: "Venta sin cliente." };
-    }
-
-    const { data: salePointRows, error: salePointsError } = await supabase
-      .from("customer_points")
-      .select("id, points, source")
-      .eq("customer_id", customerId)
-      .eq("related_sale_id", saleId)
-      .in("source", ["sale", "cancellation", "partial_return"]);
-
-    if (salePointsError) throw salePointsError;
-
-    const alreadyCancelled = (salePointRows || []).some(
-      (row) => row.source === "cancellation"
-    );
-
-    if (alreadyCancelled) {
-      return {
-        reversed: false,
-        points: 0,
-        message: "Los puntos de esta venta ya fueron descontados por cancelación.",
-      };
-    }
-
-    const earnedBySale = (salePointRows || []).reduce((sum, row) => {
-      if (row.source !== "sale") return sum;
       const points = Number(row.points || 0);
-      return points > 0 ? sum + points : sum;
-    }, 0);
+      if (points <= 0) continue;
 
-    const alreadyReversedByReturns = Math.abs(
-      (salePointRows || []).reduce((sum, row) => {
-        if (row.source !== "partial_return") return sum;
-        const points = Number(row.points || 0);
-        return points < 0 ? sum + points : sum;
-      }, 0)
-    );
-
-    const pendingPointsToReverse = Math.max(
-      earnedBySale - alreadyReversedByReturns,
-      0
-    );
-
-    if (pendingPointsToReverse <= 0) {
-      return {
-        reversed: false,
-        points: 0,
-        message: "Esta venta no tiene puntos pendientes por descontar.",
-      };
+      pointsBySale[row.related_sale_id] =
+        Number(pointsBySale[row.related_sale_id] || 0) + points;
     }
 
-    const { data: balanceRows, error: balanceError } = await supabase
-      .from("customer_points")
-      .select("points")
-      .eq("customer_id", customerId);
+    const returnedPointsBySale = {};
+    for (const row of returnedPointsRes.data || []) {
+      if (!row.related_sale_id) continue;
 
-    if (balanceError) throw balanceError;
+      const points = Number(row.points || 0);
+      if (points >= 0) continue;
 
-    const currentBalance = (balanceRows || []).reduce(
-      (sum, row) => sum + Number(row.points || 0),
-      0
-    );
-
-    const pointsToReverse = Math.min(
-      pendingPointsToReverse,
-      Math.max(currentBalance, 0)
-    );
-
-    if (pointsToReverse <= 0) {
-      return {
-        reversed: false,
-        points: 0,
-        message: "El cliente no tiene saldo disponible para descontar puntos.",
-      };
+      returnedPointsBySale[row.related_sale_id] =
+        Number(returnedPointsBySale[row.related_sale_id] || 0) +
+        Math.abs(points);
     }
 
-    const limitedByBalance = pointsToReverse < pendingPointsToReverse;
+    const rewardPointsBySale = {};
+    for (const row of rewardPointsRes.data || []) {
+      if (!row.related_sale_id) continue;
 
-    const notes = [
-      `PUNTOS DESCONTADOS POR CANCELACIÓN DE VENTA${folio ? ` #${folio}` : ""}.`,
-      reason ? `MOTIVO: ${String(reason).trim().toUpperCase()}.` : "",
-      limitedByBalance
-        ? "DESCUENTO LIMITADO POR SALDO DISPONIBLE DEL CLIENTE."
-        : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+      const points = Number(row.points || 0);
+      if (points >= 0) continue;
 
-    const { error: insertError } = await supabase.from("customer_points").insert([
-      {
-        customer_id: customerId,
-        points: -pointsToReverse,
-        movement_type: "redeem",
-        source: "cancellation",
-        related_sale_id: saleId,
-        reward_id: null,
-        user_id: user?.id || null,
-        branch_id: branch?.id || null,
-        notes,
-      },
-    ]);
+      rewardPointsBySale[row.related_sale_id] =
+        Number(rewardPointsBySale[row.related_sale_id] || 0) +
+        Math.abs(points);
+    }
 
-    if (insertError) throw insertError;
+    const balanceByCustomer = {};
+    for (const row of balancePointsRes.data || []) {
+      if (!row.customer_id) continue;
+
+      balanceByCustomer[row.customer_id] =
+        Number(balanceByCustomer[row.customer_id] || 0) + Number(row.points || 0);
+    }
 
     return {
-      reversed: true,
-      points: pointsToReverse,
-      message: limitedByBalance
-        ? `Se descontaron ${pointsToReverse} punto(s). El descuento fue limitado por el saldo disponible del cliente.`
-        : `Se descontaron ${pointsToReverse} punto(s) del cliente.`,
+      pointsBySale,
+      returnedPointsBySale,
+      rewardPointsBySale,
+      balanceByCustomer,
     };
   };
 
+  const loadRewardRedemptionsForSale = async (saleId) => {
+    if (!saleId) return [];
+
+    const { data, error } = await supabase
+      .from("sale_reward_redemptions")
+      .select(`
+        id,
+        sale_id,
+        sale_detail_id,
+        customer_id,
+        reward_id,
+        product_id,
+        quantity,
+        total_points,
+        created_at,
+        reversed_at,
+        reversed_by,
+        reversal_reason
+      `)
+      .eq("sale_id", saleId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const rows = data || [];
+
+    if (rows.length === 0) return [];
+
+    const rewardIds = [
+      ...new Set(rows.map((row) => row.reward_id).filter(Boolean)),
+    ];
+
+    const productIds = [
+      ...new Set(rows.map((row) => row.product_id).filter(Boolean)),
+    ];
+
+    const [rewardsRes, productsRes] = await Promise.all([
+      rewardIds.length
+        ? supabase
+            .from("rewards")
+            .select("id, name, points_required")
+            .in("id", rewardIds)
+        : Promise.resolve({ data: [], error: null }),
+
+      productIds.length
+        ? supabase
+            .from("products")
+            .select("id, name, barcode, sale_price")
+            .in("id", productIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (rewardsRes.error) throw rewardsRes.error;
+    if (productsRes.error) throw productsRes.error;
+
+    const rewardMap = {};
+    for (const reward of rewardsRes.data || []) {
+      rewardMap[reward.id] = reward;
+    }
+
+    const productMap = {};
+    for (const product of productsRes.data || []) {
+      productMap[product.id] = product;
+    }
+
+    return rows.map((row) => {
+      const reward = rewardMap[row.reward_id] || {};
+      const product = productMap[row.product_id] || {};
+
+      const quantity = Number(row.quantity || 1);
+      const totalPoints = Math.abs(Number(row.total_points || 0));
+
+      const pointsPerUnit =
+        quantity > 0 && totalPoints > 0
+          ? totalPoints / quantity
+          : Math.abs(Number(reward.points_required || 0));
+
+      return {
+        id: row.id,
+        sale_id: row.sale_id,
+        sale_detail_id: row.sale_detail_id,
+        customer_id: row.customer_id,
+        reward_id: row.reward_id,
+        product_id: row.product_id,
+        reward_name: reward.name || "RECOMPENSA",
+        product_name: product.name || product.barcode || "PRODUCTO",
+        product_price: Number(product.sale_price || 0),
+        quantity,
+        points_per_unit: pointsPerUnit,
+        total_points: totalPoints > 0 ? totalPoints : pointsPerUnit * quantity,
+        created_at: row.created_at,
+        reversed_at: row.reversed_at || null,
+        reversed_by: row.reversed_by || null,
+        reversal_reason: row.reversal_reason || "",
+      };
+    });
+  };
 
   const buildTicketFromSaleRow = async (saleRow) => {
     const saleIds = [saleRow.id];
@@ -499,11 +503,17 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
     if (methodsRes.error) throw methodsRes.error;
 
-    const { pointsBySale, returnedPointsBySale, balanceByCustomer } =
-  await buildCustomerPointsMaps({
-    saleIds,
-    customerIds,
-  });
+    const {
+      pointsBySale,
+      returnedPointsBySale,
+      rewardPointsBySale,
+      balanceByCustomer,
+    } = await buildCustomerPointsMaps({
+      saleIds,
+      customerIds,
+    });
+
+    const rewardRedemptions = await loadRewardRedemptionsForSale(saleRow.id);
 
     const detailCountBySale = {};
     for (const row of detailsRes.data || []) {
@@ -580,11 +590,17 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       tax: Number(saleRow.tax || 0),
       discountTotal: Number(saleRow.discount_total || 0),
       cashier: userMap[saleRow.user_id] || "SIN CAJERO",
-      customerId: saleRow.customer_id || null,
       client: customerInfo.name || "PÚBLICO EN GENERAL",
       customerPhone: customerInfo.phone || "",
       pointsEarned: Number(pointsBySale[saleRow.id] || 0),
       pointsReturned: Number(returnedPointsBySale[saleRow.id] || 0),
+      rewardPointsUsed: Number(rewardPointsBySale[saleRow.id] || 0),
+      rewardsCount: rewardRedemptions.reduce(
+        (acc, reward) => acc + Number(reward.quantity || 0),
+        0
+      ),
+      hasRewardRedemptions: rewardRedemptions.length > 0,
+      rewardRedemptions,
       pointsBalance: saleRow.customer_id
         ? Number(balanceByCustomer[saleRow.customer_id] || 0)
         : null,
@@ -775,11 +791,10 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
       if (methodsRes.error) throw methodsRes.error;
 
-      const { pointsBySale, returnedPointsBySale, balanceByCustomer } =
-  await buildCustomerPointsMaps({
-    saleIds,
-    customerIds,
-  });
+      const { pointsBySale, balanceByCustomer } = await buildCustomerPointsMaps({
+        saleIds,
+        customerIds,
+      });
 
       const detailCountBySale = {};
       for (const row of detailsRes.data || []) {
@@ -865,10 +880,8 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
           tax: Number(sale.tax || 0),
           discountTotal: Number(sale.discount_total || 0),
           cashier: userMap[sale.user_id] || "SIN CAJERO",
-          customerId: sale.customer_id || null,
           client: customerInfo.name || "PÚBLICO EN GENERAL",
           customerPhone: customerInfo.phone || "",
-          pointsReturned: Number(returnedPointsBySale[sale.id] || 0),
           pointsEarned: Number(pointsBySale[sale.id] || 0),
           pointsBalance: sale.customer_id
             ? Number(balanceByCustomer[sale.customer_id] || 0)
@@ -902,181 +915,306 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
     }
   };
 
-const loadTicketDetail = async (ticket) => {
-  if (!ticket?.id) return;
+  const loadTicketDetail = async (ticket, options = {}) => {
+    if (!ticket?.id) return null;
 
-  try {
-    setLoadingDetail(true);
+    const { updateState = true } = options;
 
-    const [detailsRes, salePaymentsRes, kitItemsRes] = await Promise.all([
-      supabase
-        .from("sale_details")
-        .select(`
-          id,
-          quantity,
-          unit_price,
-          total_price,
-          product_id,
-          original_unit_price,
-          final_unit_price,
-          discount_type,
-          discount_value,
-          discount_amount
-        `)
-        .eq("sale_id", ticket.id),
-
-      supabase
-        .from("sale_payments")
-        .select(`
-          id,
-          amount,
-          currency,
-          exchange_rate,
-          payment_method_id,
-          reference
-        `)
-        .eq("sale_id", ticket.id),
-
-      supabase
-        .from("sale_kit_items")
-        .select(`
-          id,
-          sale_id,
-          sale_detail_id,
-          kit_product_id,
-          component_product_id,
-          quantity
-        `)
-        .eq("sale_id", ticket.id),
-    ]);
-
-    if (detailsRes.error) throw detailsRes.error;
-    if (salePaymentsRes.error) throw salePaymentsRes.error;
-    if (kitItemsRes.error) throw kitItemsRes.error;
-
-    const detailRows = detailsRes.data || [];
-    const paymentRows = salePaymentsRes.data || [];
-    const kitItemRows = kitItemsRes.data || [];
-
-    const productIds = [
-      ...new Set(
-        [
-          ...detailRows.map((d) => d.product_id),
-          ...kitItemRows.map((k) => k.component_product_id),
-        ].filter(Boolean)
-      ),
-    ];
-
-    const paymentMethodIds = [
-      ...new Set(paymentRows.map((p) => p.payment_method_id).filter(Boolean)),
-    ];
-
-    const [productsRes, methodsRes] = await Promise.all([
-      productIds.length
-        ? supabase
-            .from("products")
-            .select("id, name, barcode, is_kit")
-            .in("id", productIds)
-        : Promise.resolve({ data: [], error: null }),
-
-      paymentMethodIds.length
-        ? supabase
-            .from("payment_methods")
-            .select("id, name")
-            .in("id", paymentMethodIds)
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-
-    if (productsRes.error) throw productsRes.error;
-    if (methodsRes.error) throw methodsRes.error;
-
-    const productMap = {};
-    const productIsKitMap = {};
-
-    for (const product of productsRes.data || []) {
-      productMap[product.id] = product.name || product.barcode || "PRODUCTO";
-      productIsKitMap[product.id] = !!product.is_kit;
-    }
-
-    const methodMap = {};
-    for (const method of methodsRes.data || []) {
-      methodMap[method.id] = method.name;
-    }
-
-    const kitItemsByDetail = {};
-
-    for (const row of kitItemRows) {
-      if (!kitItemsByDetail[row.sale_detail_id]) {
-        kitItemsByDetail[row.sale_detail_id] = [];
+    try {
+      if (updateState) {
+        setLoadingDetail(true);
       }
 
-      kitItemsByDetail[row.sale_detail_id].push({
-        id: row.id,
-        productId: row.component_product_id,
-        quantity: Number(row.quantity || 0),
-        description: productMap[row.component_product_id] || "PRODUCTO",
-      });
-    }
+      const [detailsRes, salePaymentsRes, kitItemsRes] = await Promise.all([
+        supabase
+          .from("sale_details")
+          .select(`
+            id,
+            quantity,
+            unit_price,
+            total_price,
+            product_id,
+            original_unit_price,
+            final_unit_price,
+            discount_type,
+            discount_value,
+            discount_amount
+          `)
+          .eq("sale_id", ticket.id),
 
-    const items = detailRows.map((item) => {
-      const components = kitItemsByDetail[item.id] || [];
+        supabase
+          .from("sale_payments")
+          .select(`
+            id,
+            amount,
+            currency,
+            exchange_rate,
+            payment_method_id,
+            reference
+          `)
+          .eq("sale_id", ticket.id),
 
-      return {
-        id: item.id,
-        productId: item.product_id,
-        cant: Number(item.quantity || 0),
-        description: productMap[item.product_id] || "PRODUCTO",
-        amount: Number(item.total_price || 0),
-        unitPrice: Number(item.unit_price || 0),
-        originalUnitPrice: Number(
-          item.original_unit_price || item.unit_price || 0
+        supabase
+          .from("sale_kit_items")
+          .select(`
+            id,
+            sale_id,
+            sale_detail_id,
+            kit_product_id,
+            component_product_id,
+            quantity
+          `)
+          .eq("sale_id", ticket.id),
+      ]);
+
+      if (detailsRes.error) throw detailsRes.error;
+      if (salePaymentsRes.error) throw salePaymentsRes.error;
+      if (kitItemsRes.error) throw kitItemsRes.error;
+
+      const detailRows = detailsRes.data || [];
+      const paymentRows = salePaymentsRes.data || [];
+      const kitItemRows = kitItemsRes.data || [];
+      const rewardRedemptions = await loadRewardRedemptionsForSale(ticket.id);
+
+      const productIds = [
+        ...new Set(
+          [
+            ...detailRows.map((d) => d.product_id),
+            ...kitItemRows.map((k) => k.component_product_id),
+            ...rewardRedemptions.map((r) => r.product_id),
+          ].filter(Boolean)
         ),
-        finalUnitPrice: Number(item.final_unit_price || item.unit_price || 0),
-        discountAmount: Number(item.discount_amount || 0),
-        discountValue: Number(item.discount_value || 0),
-        discountType: item.discount_type || null,
-        isKit: productIsKitMap[item.product_id] || components.length > 0,
-        components,
-      };
-    });
+      ];
 
-    const payments = paymentRows.map((payment) => ({
-      id: payment.id,
-      amount: Number(payment.amount || 0),
-      currency: payment.currency || "MXN",
-      exchangeRate: Number(payment.exchange_rate || 0),
-      reference: payment.reference || "",
-      paymentMethod: (
-        methodMap[payment.payment_method_id] || "DESCONOCIDO"
-      ).toUpperCase(),
-    }));
+      const paymentMethodIds = [
+        ...new Set(paymentRows.map((p) => p.payment_method_id).filter(Boolean)),
+      ];
 
-    const paymentMethodLabel =
-      payments.length === 0
-        ? "SIN PAGOS"
-        : payments.length === 1
-        ? payments[0].paymentMethod
-        : "MIXTO";
+      const [productsRes, methodsRes] = await Promise.all([
+        productIds.length
+          ? supabase
+              .from("products")
+              .select("id, name, barcode, sale_price, is_kit")
+              .in("id", productIds)
+          : Promise.resolve({ data: [], error: null }),
 
-    const paymentSummary = getPaymentSummary(payments, ticket.total);
+        paymentMethodIds.length
+          ? supabase
+              .from("payment_methods")
+              .select("id, name")
+              .in("id", paymentMethodIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-    setSelectedTicket((prev) =>
-      prev && prev.id === ticket.id
-        ? {
-            ...prev,
-            items,
-            payments,
-            paymentMethod: paymentMethodLabel,
-            ...paymentSummary,
+      if (productsRes.error) throw productsRes.error;
+      if (methodsRes.error) throw methodsRes.error;
+
+      const productMap = {};
+      const productPriceMap = {};
+      const productIsKitMap = {};
+
+      for (const product of productsRes.data || []) {
+        productMap[product.id] = product.name || product.barcode || "PRODUCTO";
+        productPriceMap[product.id] = Number(product.sale_price || 0);
+        productIsKitMap[product.id] = !!product.is_kit;
+      }
+
+      const methodMap = {};
+      for (const method of methodsRes.data || []) {
+        methodMap[method.id] = method.name;
+      }
+
+      const kitItemsByDetail = {};
+
+      for (const row of kitItemRows) {
+        if (!kitItemsByDetail[row.sale_detail_id]) {
+          kitItemsByDetail[row.sale_detail_id] = [];
+        }
+
+        kitItemsByDetail[row.sale_detail_id].push({
+          id: row.id,
+          productId: row.component_product_id,
+          quantity: Number(row.quantity || 0),
+          description: productMap[row.component_product_id] || "PRODUCTO",
+        });
+      }
+
+      const rewardBySaleDetailId = {};
+      const rewardsByProductId = {};
+
+      for (const reward of rewardRedemptions) {
+        if (reward.sale_detail_id) {
+          rewardBySaleDetailId[reward.sale_detail_id] = reward;
+        }
+
+        if (reward.product_id) {
+          if (!rewardsByProductId[reward.product_id]) {
+            rewardsByProductId[reward.product_id] = [];
           }
-        : prev
-    );
-  } catch (error) {
-    console.error("Error cargando detalle del ticket:", error);
-  } finally {
-    setLoadingDetail(false);
-  }
-};  
+
+          rewardsByProductId[reward.product_id].push(reward);
+        }
+      }
+
+      const usedRewardIds = new Set();
+
+      const items = detailRows.map((item) => {
+        const components = kitItemsByDetail[item.id] || [];
+        const productRewards = rewardsByProductId[item.product_id] || [];
+        const rewardInfo =
+          rewardBySaleDetailId[item.id] ||
+          (Number(item.total_price || 0) === 0 ? productRewards[0] : null);
+
+        if (rewardInfo?.id) {
+          usedRewardIds.add(rewardInfo.id);
+        }
+
+        const isRewardItem = Boolean(rewardInfo);
+        const unitPrice = Number(item.unit_price || 0);
+        const originalUnitPrice = Number(
+          item.original_unit_price ||
+            productPriceMap[item.product_id] ||
+            item.unit_price ||
+            0
+        );
+
+        return {
+          id: item.id,
+          productId: item.product_id,
+          cant: Number(item.quantity || 0),
+          description: productMap[item.product_id] || "PRODUCTO",
+          amount: Number(item.total_price || 0),
+          unitPrice: isRewardItem ? 0 : unitPrice,
+          originalUnitPrice,
+          finalUnitPrice: isRewardItem
+            ? 0
+            : Number(item.final_unit_price || item.unit_price || 0),
+          discountAmount: isRewardItem ? 0 : Number(item.discount_amount || 0),
+          discountValue: isRewardItem ? 0 : Number(item.discount_value || 0),
+          discountType: isRewardItem ? null : item.discount_type || null,
+          isKit: productIsKitMap[item.product_id] || components.length > 0,
+          components,
+          isRewardItem,
+          is_reward_item: isRewardItem,
+          rewardId: rewardInfo?.reward_id || null,
+          reward_id: rewardInfo?.reward_id || null,
+          rewardName: rewardInfo?.reward_name || "",
+          reward_name: rewardInfo?.reward_name || "",
+          rewardPoints: Number(rewardInfo?.points_per_unit || 0),
+          reward_points: Number(rewardInfo?.points_per_unit || 0),
+          totalRewardPoints: Number(rewardInfo?.total_points || 0),
+          total_points: Number(rewardInfo?.total_points || 0),
+          saleRewardRedemptionId: rewardInfo?.id || null,
+          sale_reward_redemption_id: rewardInfo?.id || null,
+          rewardReversedAt: rewardInfo?.reversed_at || null,
+          reward_reversed_at: rewardInfo?.reversed_at || null,
+          rewardReversalReason: rewardInfo?.reversal_reason || "",
+          reward_reversal_reason: rewardInfo?.reversal_reason || "",
+        };
+      });
+
+      for (const reward of rewardRedemptions) {
+        if (reward.id && usedRewardIds.has(reward.id)) continue;
+
+        items.push({
+          id: `reward-${reward.id}`,
+          productId: reward.product_id,
+          cant: Number(reward.quantity || 1),
+          description: reward.product_name || productMap[reward.product_id] || "PRODUCTO",
+          amount: 0,
+          unitPrice: 0,
+          originalUnitPrice:
+            Number(reward.product_price || 0) ||
+            Number(productPriceMap[reward.product_id] || 0),
+          finalUnitPrice: 0,
+          discountAmount: 0,
+          discountValue: 0,
+          discountType: null,
+          isKit: false,
+          components: [],
+          isRewardItem: true,
+          is_reward_item: true,
+          rewardId: reward.reward_id || null,
+          reward_id: reward.reward_id || null,
+          rewardName: reward.reward_name || "",
+          reward_name: reward.reward_name || "",
+          rewardPoints: Number(reward.points_per_unit || 0),
+          reward_points: Number(reward.points_per_unit || 0),
+          totalRewardPoints: Number(reward.total_points || 0),
+          total_points: Number(reward.total_points || 0),
+          saleRewardRedemptionId: reward.id || null,
+          sale_reward_redemption_id: reward.id || null,
+          rewardReversedAt: reward.reversed_at || null,
+          reward_reversed_at: reward.reversed_at || null,
+          rewardReversalReason: reward.reversal_reason || "",
+          reward_reversal_reason: reward.reversal_reason || "",
+        });
+      }
+
+      const payments = paymentRows.map((payment) => ({
+        id: payment.id,
+        amount: Number(payment.amount || 0),
+        currency: payment.currency || "MXN",
+        exchangeRate: Number(payment.exchange_rate || 0),
+        reference: payment.reference || "",
+        paymentMethod: (
+          methodMap[payment.payment_method_id] || "DESCONOCIDO"
+        ).toUpperCase(),
+      }));
+
+      const paymentMethodLabel =
+        payments.length === 0
+          ? rewardRedemptions.length > 0 && Number(ticket.total || 0) <= 0
+            ? "SIN PAGO"
+            : "SIN PAGOS"
+          : payments.length === 1
+          ? payments[0].paymentMethod
+          : "MIXTO";
+
+      const paymentSummary = getPaymentSummary(payments, ticket.total);
+
+      const rewardPointsUsed = rewardRedemptions.reduce(
+        (acc, reward) => acc + Number(reward.total_points || 0),
+        0
+      );
+
+      const rewardsCount = rewardRedemptions.reduce(
+        (acc, reward) => acc + Number(reward.quantity || 0),
+        0
+      );
+
+      const detailData = {
+        items,
+        payments,
+        paymentMethod: paymentMethodLabel,
+        rewardRedemptions,
+        hasRewardRedemptions: rewardRedemptions.length > 0,
+        rewardPointsUsed,
+        rewardsCount,
+        ...paymentSummary,
+      };
+
+      if (updateState) {
+        setSelectedTicket((prev) =>
+          prev && prev.id === ticket.id
+            ? {
+                ...prev,
+                ...detailData,
+              }
+            : prev
+        );
+      }
+
+      return detailData;
+    } catch (error) {
+      console.error("Error cargando detalle del ticket:", error);
+      return null;
+    } finally {
+      if (updateState) {
+        setLoadingDetail(false);
+      }
+    }
+  };
 
   const loadReturnData = async (saleId) => {
     try {
@@ -1311,21 +1449,6 @@ const loadTicketDetail = async (ticket) => {
 
       if (error) throw error;
 
-      let pointsCancellationResult = null;
-      let pointsCancellationError = null;
-
-      try {
-        pointsCancellationResult = await reverseCustomerPointsByCancellation({
-          saleId: currentTicketId,
-          customerId: selectedTicket.customerId || null,
-          folio: selectedTicket.folio,
-          reason: cancelReason.trim(),
-        });
-      } catch (pointsError) {
-        console.error("Error descontando puntos por cancelación:", pointsError);
-        pointsCancellationError = pointsError;
-      }
-
       await loadTickets();
 
       const { data: refreshedSale, error: refreshedSaleError } = await supabase
@@ -1360,18 +1483,6 @@ const loadTicketDetail = async (ticket) => {
 
       if (onSaleCancelled) {
         onSaleCancelled(data);
-      }
-
-      if (pointsCancellationError) {
-        alert(
-          "Venta cancelada correctamente, pero no se pudieron descontar los puntos del cliente. Revisa el historial de puntos o realiza un ajuste manual."
-        );
-      } else if (pointsCancellationResult?.reversed) {
-        alert(
-          `Venta cancelada correctamente.\n\n${pointsCancellationResult.message}`
-        );
-      } else {
-        alert("Venta cancelada correctamente.");
       }
     } catch (error) {
       console.error("Error cancelando venta:", error);
@@ -1422,131 +1533,190 @@ const loadTicketDetail = async (ticket) => {
     }
   };
 
-const handlePrintCopy = async () => {
-  if (!selectedTicket?.id) {
-    alert("Selecciona una venta primero.");
-    return;
-  }
-
-  if (loadingDetail) {
-    alert("Espera a que termine de cargar el detalle del ticket.");
-    return;
-  }
-
-  try {
-    setPrintProcessing(true);
-
-    const refundMethodName =
-      selectedTicket.refundMethodName ||
-      getPaymentMethodNameById(refundMethodId) ||
-      "";
-
-    const paymentSummary = getPaymentSummary(
-      selectedTicket.payments || [],
-      selectedTicket.total
-    );
-
-    const itemsForPrint = (selectedTicket.items || []).map((item) => ({
-      quantity: item.cant,
-      description: item.description,
-      unit_price: item.finalUnitPrice || item.unitPrice,
-      original_unit_price: item.originalUnitPrice || item.unitPrice,
-      discount_amount: item.discountAmount || 0,
-      line_total: item.amount,
-      is_kit: !!item.isKit,
-      components: (item.components || []).map((component) => ({
-        quantity: component.quantity,
-        description: component.description,
-      })),
-    }));
-
-    const paymentsForPrint = (selectedTicket.payments || []).map((payment) => ({
-      payment_method_name: payment.paymentMethod,
-      amount: payment.amount,
-      currency: payment.currency,
-      exchange_rate: payment.exchangeRate,
-      reference: payment.reference || "",
-    }));
-
-    const ticketText = buildTicketText({
-      branch: {
-        name: branch?.name || "SUCURSAL",
-        phone: branch?.phone || "",
-        address: branch?.address || "",
-        city: branch?.city || "",
-        state: branch?.state || "",
-        postal_code: branch?.postal_code || branch?.zip_code || "",
-      },
-      sale: {
-        folio: selectedTicket.folio,
-        created_at: selectedTicket.date,
-        subtotal: selectedTicket.subtotal,
-        tax: selectedTicket.tax,
-        discount_total: selectedTicket.discountTotal || 0,
-        total: selectedTicket.total,
-        amount_received: paymentSummary.amountReceived,
-        change_amount: paymentSummary.changeAmount,
-        payment_method: selectedTicket.paymentMethod,
-        payments: paymentsForPrint,
-        status: selectedTicket.status,
-        notes: selectedTicket.notes || "",
-        customer_name:
-          selectedTicket.client !== "PÚBLICO EN GENERAL"
-            ? selectedTicket.client
-            : "",
-        customer_phone: selectedTicket.customerPhone || "",
-        points_earned: Number(selectedTicket.pointsEarned || 0),
-        points_returned: Number(selectedTicket.pointsReturned || 0),
-        customer_points_balance:
-          selectedTicket.pointsBalance === null ||
-          selectedTicket.pointsBalance === undefined
-            ? null
-            : Number(selectedTicket.pointsBalance || 0),
-        cancelled_at: selectedTicket.cancelledAt,
-        cancellation_reason:
-          selectedTicket.cancelReason || cancelReason || "SIN MOTIVO REGISTRADO",
-        refund_method: refundMethodName,
-        cashier_name: selectedTicket.cashier,
-        total_returned: selectedTicket.totalReturned || 0,
-        net_total: selectedTicket.netTotal || selectedTicket.total,
-        returns: (selectedTicket.returns || []).map((ret) => ({
-          total_refund: ret.totalRefund || 0,
-          refund_method: ret.refundMethodName || "",
-          return_reason: ret.returnReason || "",
-          created_at: ret.createdAt || null,
-          items: (ret.items || []).map((item) => ({
-            quantity: item.quantity || 0,
-            description: item.description || "PRODUCTO",
-            total_price: item.totalPrice || 0,
-          })),
-        })),
-      },
-      items: itemsForPrint,
-      cashierName: selectedTicket.cashier,
-      footer: {
-        line1: "Gracias por su compra",
-        line2: "Agenda tu cita de baño",
-        phone: "998 117 5387",
-        returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
-      },
-      isReprint: true,
-      reprintedAt: new Date(),
-    });
-
-    const result = await printTicket(ticketText);
-
-    if (!result?.success) {
-      throw new Error(result?.message || "No se pudo imprimir la copia.");
+  const handlePrintCopy = async () => {
+    if (!selectedTicket?.id) {
+      alert("Selecciona una venta primero.");
+      return;
     }
 
-    alert("Copia del ticket generada correctamente.");
-  } catch (error) {
-    console.error("Error imprimiendo copia:", error);
-    alert(error.message || "No se pudo imprimir la copia del ticket.");
-  } finally {
-    setPrintProcessing(false);
-  }
-};
+    try {
+      setPrintProcessing(true);
+
+      const detailData =
+        (await loadTicketDetail(selectedTicket, { updateState: false })) || {};
+
+      const ticketForPrint = {
+        ...selectedTicket,
+        ...detailData,
+        items: detailData.items || selectedTicket.items || [],
+        payments: detailData.payments || selectedTicket.payments || [],
+        rewardRedemptions:
+          detailData.rewardRedemptions || selectedTicket.rewardRedemptions || [],
+        hasRewardRedemptions: Boolean(
+          detailData.hasRewardRedemptions || selectedTicket.hasRewardRedemptions
+        ),
+        rewardPointsUsed: Number(
+          detailData.rewardPointsUsed || selectedTicket.rewardPointsUsed || 0
+        ),
+        rewardsCount: Number(
+          detailData.rewardsCount || selectedTicket.rewardsCount || 0
+        ),
+      };
+
+      const refundMethodName =
+        ticketForPrint.refundMethodName ||
+        getPaymentMethodNameById(refundMethodId) ||
+        "";
+
+      const paymentSummary = getPaymentSummary(
+        ticketForPrint.payments || [],
+        ticketForPrint.total
+      );
+
+      const rewardRedemptions = ticketForPrint.rewardRedemptions || [];
+      const rewardPointsUsed =
+        Number(ticketForPrint.rewardPointsUsed || 0) ||
+        rewardRedemptions.reduce(
+          (acc, reward) => acc + Number(reward.total_points || 0),
+          0
+        );
+
+      const rewardsCount =
+        Number(ticketForPrint.rewardsCount || 0) ||
+        rewardRedemptions.reduce(
+          (acc, reward) => acc + Number(reward.quantity || 0),
+          0
+        );
+
+      const itemsForPrint = (ticketForPrint.items || []).map((item) => ({
+        quantity: item.cant,
+        description: item.description,
+        unit_price: item.isRewardItem
+          ? 0
+          : item.finalUnitPrice || item.unitPrice,
+        original_unit_price: item.originalUnitPrice || item.unitPrice,
+        discount_amount: item.isRewardItem ? 0 : item.discountAmount || 0,
+        line_total: item.amount,
+        is_kit: !!item.isKit,
+        components: (item.components || []).map((component) => ({
+          quantity: component.quantity,
+          description: component.description,
+        })),
+        is_reward_item: !!item.isRewardItem,
+        isRewardItem: !!item.isRewardItem,
+        reward_id: item.rewardId || null,
+        rewardId: item.rewardId || null,
+        reward_name: item.rewardName || "",
+        rewardName: item.rewardName || "",
+        reward_points: item.rewardPoints || 0,
+        rewardPoints: item.rewardPoints || 0,
+        total_points: item.totalRewardPoints || 0,
+        totalPoints: item.totalRewardPoints || 0,
+        sale_reward_redemption_id: item.saleRewardRedemptionId || null,
+        saleRewardRedemptionId: item.saleRewardRedemptionId || null,
+        reversed_at: item.rewardReversedAt || null,
+        reversedAt: item.rewardReversedAt || null,
+        reversal_reason: item.rewardReversalReason || "",
+        reversalReason: item.rewardReversalReason || "",
+      }));
+
+      const paymentsForPrint = (ticketForPrint.payments || []).map((payment) => ({
+        payment_method_name: payment.paymentMethod,
+        amount: payment.amount,
+        currency: payment.currency,
+        exchange_rate: payment.exchangeRate,
+        reference: payment.reference || "",
+      }));
+
+      const ticketText = buildTicketText({
+        branch: {
+          name: branch?.name || "SUCURSAL",
+          phone: branch?.phone || "",
+          address: branch?.address || "",
+          city: branch?.city || "",
+          state: branch?.state || "",
+          postal_code: branch?.postal_code || branch?.zip_code || "",
+        },
+        sale: {
+          folio: ticketForPrint.folio,
+          created_at: ticketForPrint.date,
+          subtotal: ticketForPrint.subtotal,
+          tax: ticketForPrint.tax,
+          discount_total: ticketForPrint.discountTotal || 0,
+          total: ticketForPrint.total,
+          amount_received: paymentSummary.amountReceived,
+          change_amount: paymentSummary.changeAmount,
+          payment_method: ticketForPrint.paymentMethod,
+          payments: paymentsForPrint,
+          status: ticketForPrint.status,
+          notes: ticketForPrint.notes || "",
+          customer_name:
+            ticketForPrint.client !== "PÚBLICO EN GENERAL"
+              ? ticketForPrint.client
+              : "",
+          customer_phone: ticketForPrint.customerPhone || "",
+          points_earned: Number(ticketForPrint.pointsEarned || 0),
+          points_returned: Number(ticketForPrint.pointsReturned || 0),
+          reward_points_used: rewardPointsUsed,
+          rewards_count: rewardsCount,
+          has_reward_redemptions: rewardRedemptions.length > 0,
+          reward_redemptions: rewardRedemptions,
+          customer_points_balance:
+            ticketForPrint.pointsBalance === null ||
+            ticketForPrint.pointsBalance === undefined
+              ? null
+              : Number(ticketForPrint.pointsBalance || 0),
+          cancelled_at: ticketForPrint.cancelledAt,
+          cancellation_reason:
+            ticketForPrint.cancelReason ||
+            cancelReason ||
+            "SIN MOTIVO REGISTRADO",
+          refund_method: refundMethodName,
+          cashier_name: ticketForPrint.cashier,
+          total_returned: ticketForPrint.totalReturned || 0,
+          net_total:
+            ticketForPrint.netTotal === null ||
+            ticketForPrint.netTotal === undefined
+              ? ticketForPrint.total
+              : Number(ticketForPrint.netTotal || 0),
+          returns: (ticketForPrint.returns || []).map((ret) => ({
+            total_refund: ret.totalRefund || 0,
+            refund_method: ret.refundMethodName || "",
+            return_reason: ret.returnReason || "",
+            created_at: ret.createdAt || null,
+            items: (ret.items || []).map((item) => ({
+              quantity: item.quantity || 0,
+              description: item.description || "PRODUCTO",
+              total_price: item.totalPrice || 0,
+            })),
+          })),
+        },
+        items: itemsForPrint,
+        cashierName: ticketForPrint.cashier,
+        footer: {
+          line1: "Gracias por su compra",
+          line2: "Agenda tu cita de baño",
+          phone: "998 117 5387",
+          returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
+        },
+        isReprint: true,
+        reprintedAt: new Date(),
+      });
+
+      const result = await printTicket(ticketText);
+
+      if (!result?.success) {
+        throw new Error(result?.message || "No se pudo imprimir la copia.");
+      }
+
+      alert("Copia del ticket generada correctamente.");
+    } catch (error) {
+      console.error("Error imprimiendo copia:", error);
+      alert(error.message || "No se pudo imprimir la copia del ticket.");
+    } finally {
+      setPrintProcessing(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -1592,11 +1762,16 @@ const handlePrintCopy = async () => {
     }, 0);
 
     const remainingQty = Math.max(Number(item.cant || 0) - returnedQty, 0);
+    const isRewardReverted = Boolean(
+      item.isRewardItem &&
+        (isCancelled || item.rewardReversedAt || item.reward_reversed_at)
+    );
 
     return {
       ...item,
       returnedQty,
       remainingQty,
+      isRewardReverted,
     };
   });
 
@@ -1616,6 +1791,26 @@ const handlePrintCopy = async () => {
   const paymentSummary = getPaymentSummary(
     selectedTicket?.payments || [],
     selectedTicket?.total || 0
+  );
+
+  const rewardRedemptionsForSummary = selectedTicket?.rewardRedemptions || [];
+  const rewardSummaryCount =
+    Number(selectedTicket?.rewardsCount || 0) ||
+    rewardRedemptionsForSummary.reduce(
+      (acc, reward) => acc + Number(reward.quantity || 0),
+      0
+    );
+  const rewardSummaryPoints =
+    Number(selectedTicket?.rewardPointsUsed || 0) ||
+    rewardRedemptionsForSummary.reduce(
+      (acc, reward) => acc + Number(reward.total_points || 0),
+      0
+    );
+  const shouldShowRewardSummary = Boolean(
+    selectedTicket?.hasRewardRedemptions ||
+      rewardRedemptionsForSummary.length > 0 ||
+      rewardSummaryCount > 0 ||
+      rewardSummaryPoints > 0
   );
 
   return (
@@ -1855,26 +2050,30 @@ const handlePrintCopy = async () => {
                           const isBlockedByRule =
                             item.remainingQty > 0 && maxReturnAllowed === 0;
 
+                          const isRewardReverted = Boolean(item.isRewardReverted);
+                          const shouldDimItem =
+                            isFullyReturned || isBlockedByRule || isRewardReverted;
+
                           return (
                             <tr
                               key={item.id}
-                              className={
-                                isFullyReturned || isBlockedByRule
-                                  ? styles.returnedItemRow
-                                  : ""
-                              }
+                              className={shouldDimItem ? styles.returnedItemRow : ""}
                             >
                               <td className={styles.textCenter}>
                                 {item.cant}
-                                {(item.returnedQty > 0 || isBlockedByRule) && (
+                                {(item.returnedQty > 0 || isBlockedByRule || isRewardReverted) && (
                                   <div className={styles.returnedMeta}>
-                                    {isFullyReturned ? (
+                                    {isRewardReverted ? (
+                                      <span className={styles.rewardRevertedText}>
+                                        RECOMPENSA REVERTIDA
+                                      </span>
+                                    ) : isFullyReturned ? (
                                       <span className={styles.fullyReturnedText}>
                                         DEVOLUCIÓN COMPLETA
                                       </span>
                                     ) : isBlockedByRule ? (
                                       <span className={styles.fullyReturnedText}>
-                                        YA NO SE PUEDE DEVOLVER
+                                        DEVOLUCÓN BLOQUEADA
                                       </span>
                                     ) : (
                                       <span className={styles.availableReturnText}>
@@ -1888,9 +2087,7 @@ const handlePrintCopy = async () => {
 
                               <td
                                 className={
-                                  isFullyReturned || isBlockedByRule
-                                    ? styles.returnedItemText
-                                    : ""
+                                  shouldDimItem ? styles.returnedItemText : ""
                                 }
                               >
                                 {item.description}
@@ -1898,9 +2095,7 @@ const handlePrintCopy = async () => {
 
                               <td
                                 className={`${styles.textRight} ${
-                                  isFullyReturned || isBlockedByRule
-                                    ? styles.returnedItemText
-                                    : ""
+                                  shouldDimItem ? styles.returnedItemText : ""
                                 }`}
                               >
                                 {formatCurrency(item.amount)}
@@ -2013,6 +2208,47 @@ const handlePrintCopy = async () => {
                             <span className={styles.totalLabelBold}>Cambio:</span>
                             <span className={styles.totalAmountStrong}>
                               {formatCurrency(paymentSummary.changeAmount)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {shouldShowRewardSummary && (
+                        <div
+                          className={`${styles.summarySection} ${
+                            isCancelled
+                              ? styles.rewardSummaryCancelled
+                              : styles.rewardSummaryActive
+                          }`}
+                        >
+                          <div className={styles.rewardSummaryHeader}>
+                            <span>Recompensas</span>
+                            <span className={styles.rewardSummaryStatus}>
+                              {isCancelled ? "REVERTIDAS" : "APLICADAS"}
+                            </span>
+                          </div>
+
+                          <div className={styles.totalRow}>
+                            <span className={styles.totalLabel}>
+                              {isCancelled
+                                ? "Canjes revertidos:"
+                                : "Canjes aplicados:"}
+                            </span>
+                            <span className={styles.rewardSummaryValue}>
+                              {rewardSummaryCount}
+                            </span>
+                          </div>
+
+                          <div className={styles.totalRow}>
+                            <span className={styles.totalLabel}>
+                              {isCancelled
+                                ? "Puntos devueltos:"
+                                : "Puntos usados:"}
+                            </span>
+                            <span className={styles.rewardSummaryValue}>
+                              {isCancelled
+                                ? `+${rewardSummaryPoints}`
+                                : `-${rewardSummaryPoints}`}
                             </span>
                           </div>
                         </div>

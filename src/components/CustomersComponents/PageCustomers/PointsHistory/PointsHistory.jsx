@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./PointsHistory.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import { useBranch } from "../../../../contexts/BranchContext";
 
 const PointsHistory = () => {
+  const { branch } = useBranch();
+
   const [movements, setMovements] = useState([]);
   const [branches, setBranches] = useState([]);
 
@@ -76,6 +79,18 @@ const PointsHistory = () => {
     loadBranches();
     loadMovements();
   }, []);
+
+  useEffect(() => {
+    if (!branch?.id) return;
+
+    setBranchFilter((currentFilter) => {
+      if (!currentFilter || currentFilter === "all") {
+        return branch.id;
+      }
+
+      return currentFilter;
+    });
+  }, [branch?.id]);
 
   useEffect(() => {
     const pointsChannel = supabase
@@ -154,18 +169,49 @@ const PointsHistory = () => {
   };
 
   const getMovementLabel = (movement) => {
-    if (movement.source === "cancellation") return "CANCELACIÓN";
+    const points = Number(movement.points || 0);
+
+    if (movement.source === "cancellation") {
+      return points >= 0 ? "PUNTOS DEVUELTOS" : "PUNTOS DESCONTADOS";
+    }
+
     if (movement.source === "partial_return") return "DEVOLUCIÓN";
     if (movement.source === "reward") return "CANJE";
 
     if (movement.source === "manual") {
-      return Number(movement.points || 0) >= 0 ? "AJUSTE +" : "AJUSTE -";
+      return points >= 0 ? "AJUSTE +" : "AJUSTE -";
     }
 
     if (movement.movement_type === "earn") return "GANADO";
     if (movement.movement_type === "redeem") return "DESCONTADO";
 
     return "OTRO";
+  };
+
+  const getMovementBadgeClass = (movement) => {
+    const points = Number(movement.points || 0);
+
+    if (movement.source === "cancellation" && points > 0) {
+      return styles.movementReturn;
+    }
+
+    if (movement.source === "cancellation" && points < 0) {
+      return styles.movementRedeem;
+    }
+
+    if (movement.source === "manual" && points > 0) {
+      return styles.movementEarn;
+    }
+
+    if (movement.source === "manual" && points < 0) {
+      return styles.movementRedeem;
+    }
+
+    if (movement.movement_type === "earn") {
+      return styles.movementEarn;
+    }
+
+    return styles.movementRedeem;
   };
 
   const getSourceLabel = (source) => {
@@ -289,15 +335,18 @@ const PointsHistory = () => {
   const handleClearFilters = () => {
     setSearchTerm("");
     setMovementFilter("all");
-    setBranchFilter("all");
+    setBranchFilter(branch?.id || "all");
   };
 
   const hasActiveFilters =
-    searchTerm.trim() || movementFilter !== "all" || branchFilter !== "all";
+    searchTerm.trim() ||
+    movementFilter !== "all" ||
+    branchFilter !== (branch?.id || "all");
 
   const renderRelatedInfo = (movement) => {
     const notes = getMovementNotes(movement);
-    const absolutePoints = Math.abs(Number(movement.points || 0));
+    const points = Number(movement.points || 0);
+    const absolutePoints = Math.abs(points);
 
     if (movement.source === "manual") {
       return (
@@ -310,6 +359,7 @@ const PointsHistory = () => {
 
     if (movement.source === "cancellation") {
       const motive = getMotiveFromNotes(notes);
+      const isReturnedPoints = points > 0;
 
       return (
         <div className={styles.relatedInfo}>
@@ -317,7 +367,10 @@ const PointsHistory = () => {
           <span>{formatSaleFolio(movement.related_sale_id)}</span>
 
           <span>
-            <strong>Puntos descontados:</strong> {absolutePoints}
+            <strong>
+              {isReturnedPoints ? "Puntos devueltos:" : "Puntos descontados:"}
+            </strong>{" "}
+            {absolutePoints}
           </span>
 
           {motive && (
@@ -499,9 +552,9 @@ const PointsHistory = () => {
             >
               <option value="all">Todas</option>
 
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name || branch.code || "SIN NOMBRE"}
+              {branches.map((branchItem) => (
+                <option key={branchItem.id} value={branchItem.id}>
+                  {branchItem.name || branchItem.code || "SIN NOMBRE"}
                 </option>
               ))}
             </select>
@@ -578,11 +631,9 @@ const PointsHistory = () => {
 
                     <td>
                       <span
-                        className={`${styles.movementBadge} ${
-                          movement.movement_type === "earn"
-                            ? styles.movementEarn
-                            : styles.movementRedeem
-                        }`}
+                        className={`${styles.movementBadge} ${getMovementBadgeClass(
+                          movement
+                        )}`}
                       >
                         {getMovementLabel(movement)}
                       </span>

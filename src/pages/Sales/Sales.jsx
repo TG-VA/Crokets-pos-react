@@ -34,10 +34,13 @@ import DeleteTicketModal from "../../components/SalesComponents/Modals/DeleteTic
 import DeleteItemModal from "../../components/SalesComponents/Modals/DeleteItemModal/DeleteItemModal";
 import SalesHistoryModal from "../../components/SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal";
 import SaleSuccessModal from "../../components/SalesComponents/Modals/SaleSuccessModal/SaleSuccessModal";
+import RewardProductSelectionModal from "../../components/SalesComponents/Modals/RewardProductSelectionModal/RewardProductSelectionModal";
+import ProductDiscountRewardModal from "../../components/SalesComponents/Modals/ProductDiscountRewardModal/ProductDiscountRewardModal";
 import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
 
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
+const EMPTY_REWARDS = [];
 
 const Sales = () => {
   const { user } = useAuth();
@@ -78,9 +81,20 @@ const Sales = () => {
   const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
   const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
   const [saleSuccessData, setSaleSuccessData] = useState(null);
+  const [isRewardProductModalOpen, setRewardProductModalOpen] = useState(false);
+  const [pendingFreeProductRewards, setPendingFreeProductRewards] = useState(
+    [],
+  );
+  const [isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen] =
+    useState(false);
+  const [pendingProductDiscountRewards, setPendingProductDiscountRewards] =
+    useState([]);
+  const [activeProductDiscountReward, setActiveProductDiscountReward] =
+    useState(null);
 
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
+  const [currentSaleReward, setCurrentSaleReward] = useState(null);
   const [processingSale, setProcessingSale] = useState(false);
   const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
 
@@ -106,12 +120,12 @@ const Sales = () => {
       sum +
       Number(producto.precioOriginal ?? producto.precio ?? 0) *
         Number(producto.cantidad || 0),
-    0
+    0,
   );
 
   const discountTotal = productos.reduce(
     (sum, producto) => sum + Number(producto.descuentoMonto || 0),
-    0
+    0,
   );
 
   const total = subtotal - discountTotal;
@@ -153,17 +167,19 @@ const Sales = () => {
       setProductos(restoredProducts);
       setSelectedProduct(null);
       setCurrentSaleClient(draft.currentSaleClient || null);
+      setCurrentSaleReward(draft.currentSaleReward || null);
       setTicketNumber(Number(draft.ticketNumber || 1));
       setSaleToken(draft.saleToken || null);
       setSaleNotes(draft.saleNotes || "");
       setBarcode(draft.barcode || "");
       setPendingTickets(
-        Array.isArray(draft.pendingTickets) ? draft.pendingTickets : []
+        Array.isArray(draft.pendingTickets) ? draft.pendingTickets : [],
       );
 
       const hasRecoverableSale =
         restoredProducts.length > 0 ||
         !!draft.currentSaleClient ||
+        !!draft.currentSaleReward ||
         !!draft.saleToken ||
         String(draft.saleNotes || "").trim().length > 0 ||
         String(draft.barcode || "").trim().length > 0;
@@ -192,12 +208,14 @@ const Sales = () => {
   }, [salesDraftKey, salesDraftSessionKey]);
 
   useEffect(() => {
-    if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey) return;
+    if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey)
+      return;
 
     const hasDraftData =
       productos.length > 0 ||
       pendingTickets.length > 0 ||
       !!currentSaleClient ||
+      !!currentSaleReward ||
       !!saleToken ||
       saleNotes.trim().length > 0 ||
       barcode.trim().length > 0;
@@ -214,6 +232,7 @@ const Sales = () => {
       userId: user?.id || null,
       productos,
       currentSaleClient,
+      currentSaleReward,
       ticketNumber,
       saleToken,
       saleNotes,
@@ -235,6 +254,7 @@ const Sales = () => {
     productos,
     pendingTickets,
     currentSaleClient,
+    currentSaleReward,
     saleToken,
     saleNotes,
     barcode,
@@ -273,6 +293,12 @@ const Sales = () => {
     setProductos([]);
     setSelectedProduct(null);
     setCurrentSaleClient(null);
+    setCurrentSaleReward(null);
+    setPendingFreeProductRewards([]);
+    setRewardProductModalOpen(false);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+    setProductDiscountRewardModalOpen(false);
     setBarcode("");
     setSaleToken(null);
     setSaleNotes("");
@@ -285,6 +311,12 @@ const Sales = () => {
     setProductos([]);
     setSelectedProduct(null);
     setCurrentSaleClient(null);
+    setCurrentSaleReward(null);
+    setPendingFreeProductRewards([]);
+    setRewardProductModalOpen(false);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+    setProductDiscountRewardModalOpen(false);
     setTicketNumber((prev) => prev + 1);
     setBarcode("");
     setSaleToken(null);
@@ -296,8 +328,223 @@ const Sales = () => {
 
   const isValidUuid = (value) => {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      String(value || "")
+      String(value || ""),
     );
+  };
+
+  const getCartItemKey = (item) => {
+    return item?.cartLineId || item?.id || "";
+  };
+
+  const isSameCartItem = (firstItem, secondItem) => {
+    return getCartItemKey(firstItem) === getCartItemKey(secondItem);
+  };
+
+  const isRewardCartItem = (item) => {
+    return Boolean(item?.is_reward_item || item?.is_reward_discount_item);
+  };
+
+  const getSyncedRewardsFromCart = (cartItems = [], rewardsSource = currentSaleReward) => {
+    const rewardsMap = new Map();
+
+    normalizeRewardsArray(rewardsSource).forEach((reward) => {
+      if (reward?.id) {
+        rewardsMap.set(reward.id, reward);
+      }
+    });
+
+    const rewardSummaryById = new Map();
+
+    (Array.isArray(cartItems) ? cartItems : [])
+      .filter(isRewardCartItem)
+      .forEach((item) => {
+        const rewardId = item?.reward_id;
+        if (!rewardId) return;
+
+        const previous = rewardSummaryById.get(rewardId) || {
+          rewardId,
+          redeemQuantity: 0,
+          appliedProductQuantity: 0,
+          appliedDiscountAmount: 0,
+          hasProductDiscount: false,
+          productNames: [],
+        };
+
+        const lineRedeemQuantity = Math.max(
+          Number(item.reward_redeem_quantity || 0),
+          0,
+        );
+        const fallbackRedeemQuantity = Math.max(Number(item.cantidad || 1), 1);
+        const redeemQuantity = lineRedeemQuantity > 0
+          ? lineRedeemQuantity
+          : fallbackRedeemQuantity;
+
+        const productName = item.nombre || item.codigo || "PRODUCTO";
+
+        rewardSummaryById.set(rewardId, {
+          ...previous,
+          redeemQuantity: previous.redeemQuantity + redeemQuantity,
+          appliedProductQuantity:
+            previous.appliedProductQuantity + Math.max(Number(item.cantidad || 0), 0),
+          appliedDiscountAmount:
+            previous.appliedDiscountAmount +
+            Math.max(Number(item.reward_discount_amount ?? item.descuentoMonto ?? 0), 0),
+          hasProductDiscount:
+            previous.hasProductDiscount || Boolean(item.is_reward_discount_item),
+          productNames: previous.productNames.includes(productName)
+            ? previous.productNames
+            : [...previous.productNames, productName],
+        });
+      });
+
+    return Array.from(rewardSummaryById.values()).map((summary) => {
+      const baseReward = rewardsMap.get(summary.rewardId) || {};
+
+      return {
+        ...baseReward,
+        id: summary.rewardId,
+        name: baseReward.name || "RECOMPENSA",
+        redeemQuantity: Math.max(Number(summary.redeemQuantity || 1), 1),
+        appliedProductQuantity: Math.max(
+          Number(summary.appliedProductQuantity || 1),
+          1,
+        ),
+        appliedProductName: summary.productNames.join(", "),
+        appliedDiscountAmount: Number(summary.appliedDiscountAmount || 0),
+        reward_application_status: summary.hasProductDiscount
+          ? "applied_product_discount"
+          : baseReward.reward_application_status,
+      };
+    });
+  };
+
+  const syncCurrentSaleRewardsWithCart = (cartItems) => {
+    setCurrentSaleReward((prev) => getSyncedRewardsFromCart(cartItems, prev));
+  };
+
+  const normalizeRewardsArray = (value) => {
+    if (!value) return [];
+
+    const normalizeRewardItem = (item) => {
+      if (!item) return null;
+
+      if (item.reward?.id) {
+        return {
+          ...item.reward,
+          redeemQuantity: Math.max(Number(item.redeemQuantity || 1), 1),
+        };
+      }
+
+      if (item.id) {
+        return {
+          ...item,
+          redeemQuantity: Math.max(Number(item.redeemQuantity || 1), 1),
+        };
+      }
+
+      return null;
+    };
+
+    if (Array.isArray(value)) {
+      return value.map(normalizeRewardItem).filter(Boolean);
+    }
+
+    const normalized = normalizeRewardItem(value);
+    return normalized ? [normalized] : [];
+  };
+
+  const getRewardRedeemQuantity = (reward) => {
+    return Math.max(Number(reward?.redeemQuantity || 1), 1);
+  };
+
+  const getRewardTotalPoints = (reward) => {
+    return (
+      Number(reward?.points_required || 0) * getRewardRedeemQuantity(reward)
+    );
+  };
+
+  const getRewardType = (reward) => {
+    if (reward?.reward_type === "product_discount") return "product_discount";
+    return "free_product";
+  };
+
+
+  const isPendingProductDiscountReward = (reward) => {
+    return (
+      getRewardType(reward) === "product_discount" &&
+      reward?.reward_application_status !== "applied_product_discount"
+    );
+  };
+
+  const isAppliedProductDiscountReward = (reward) => {
+    return (
+      getRewardType(reward) === "product_discount" &&
+      reward?.reward_application_status === "applied_product_discount"
+    );
+  };
+
+  const getPendingProductDiscountRewards = (rewardsValue = currentSaleReward) => {
+    return normalizeRewardsArray(rewardsValue).filter(isPendingProductDiscountReward);
+  };
+
+  const getRewardDiscountUnitAmount = (reward, basePrice) => {
+    const price = Number(basePrice || 0);
+    const discountType = reward?.discount_type;
+    const discountValue = Number(reward?.discount_value || 0);
+
+    if (price <= 0 || discountValue <= 0) return 0;
+
+    if (discountType === "percent") {
+      return Math.min(Math.floor(price * (discountValue / 100)), price);
+    }
+
+    if (discountType === "fixed") {
+      return Math.min(Math.floor(discountValue), price);
+    }
+
+    return 0;
+  };
+
+  const getRewardDiscountLabel = (reward) => {
+    const discountType = reward?.discount_type;
+    const discountValue = Number(reward?.discount_value || 0);
+    const quantity = Math.max(Number(reward?.reward_quantity || 1), 1);
+
+    if (discountType === "percent") {
+      return `${discountValue}% en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
+    }
+
+    if (discountType === "fixed") {
+      return `$${discountValue.toFixed(2)} en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
+    }
+
+    return `Descuento en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
+  };
+
+  const getCartQuantityForProduct = (productId, cartItems = productosRef.current) => {
+    if (!productId) return 0;
+
+    return (cartItems || []).reduce((sum, item) => {
+      if (item?.id !== productId) return sum;
+      return sum + Number(item?.cantidad || 0);
+    }, 0);
+  };
+
+  const updateProductExistenceInCart = (cartItems, productId, stock) => {
+    if (!productId || stock === null || stock === undefined) return cartItems;
+
+    const totalInCart = getCartQuantityForProduct(productId, cartItems);
+    const nextExistence = Math.max(Number(stock || 0) - totalInCart, 0);
+
+    return cartItems.map((item) => {
+      if (item?.id !== productId || item?.tracks_inventory === false) return item;
+
+      return {
+        ...item,
+        stockReal: Number(stock || 0),
+        existencia: nextExistence,
+      };
+    });
   };
 
   const getBranchInventoryRow = async (productId) => {
@@ -341,7 +588,6 @@ const Sales = () => {
     };
   };
 
-
   const getKitAvailableStock = async (kitProductId) => {
     if (!kitProductId || !branch?.id) {
       return {
@@ -377,7 +623,8 @@ const Sales = () => {
 
     const { data: kitItems, error: itemsError } = await supabase
       .from("product_kit_items")
-      .select(`
+      .select(
+        `
         id,
         component_product_id,
         quantity,
@@ -387,7 +634,8 @@ const Sales = () => {
           barcode,
           tracks_inventory
         )
-      `)
+      `,
+      )
       .eq("kit_id", kitRow.id);
 
     if (itemsError) throw itemsError;
@@ -544,7 +792,7 @@ const Sales = () => {
 
     const currentProducts = productosRef.current || [];
     const trackedProducts = currentProducts.filter(
-      (product) => product?.tracks_inventory
+      (product) => product?.tracks_inventory,
     );
 
     if (trackedProducts.length === 0) {
@@ -554,12 +802,12 @@ const Sales = () => {
 
     const kitProducts = trackedProducts.filter((product) => product?.is_kit);
     const normalTrackedProducts = trackedProducts.filter(
-      (product) => !product?.is_kit
+      (product) => !product?.is_kit,
     );
 
     const productIds = [
       ...new Set(
-        normalTrackedProducts.map((product) => product.id).filter(Boolean)
+        normalTrackedProducts.map((product) => product.id).filter(Boolean),
       ),
     ];
 
@@ -570,7 +818,7 @@ const Sales = () => {
         const { data, error } = await supabase
           .from("branch_inventory")
           .select(
-            "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
+            "product_id, stock, is_active, has_been_stocked, cost_price, sale_price",
           )
           .eq("branch_id", branch.id)
           .in("product_id", productIds);
@@ -589,7 +837,7 @@ const Sales = () => {
 
       for (const kitProduct of kitProducts) {
         kitAvailabilityByProduct[kitProduct.id] = await getKitAvailableStock(
-          kitProduct.id
+          kitProduct.id,
         );
       }
 
@@ -660,7 +908,7 @@ const Sales = () => {
       });
 
       setSelectedProduct((prev) =>
-        prev ? updateProductInventory(prev) : prev
+        prev ? updateProductInventory(prev) : prev,
       );
 
       setStockWarningMsg(warning);
@@ -694,7 +942,10 @@ const Sales = () => {
     return () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("shift-cut-status-changed", handleCutStatusChanged);
+      window.removeEventListener(
+        "shift-cut-status-changed",
+        handleCutStatusChanged,
+      );
     };
   }, [syncShiftCutStatus, refreshCartInventoryFromRealtime]);
 
@@ -722,7 +973,7 @@ const Sales = () => {
 
     const intervalId = setInterval(() => {
       const hasTrackedProducts = (productosRef.current || []).some(
-        (product) => product?.tracks_inventory
+        (product) => product?.tracks_inventory,
       );
 
       if (hasTrackedProducts) {
@@ -740,7 +991,7 @@ const Sales = () => {
           table: "branch_inventory",
           filter: `branch_id=eq.${branch.id}`,
         },
-        scheduleRealtimeRefresh
+        scheduleRealtimeRefresh,
       )
       .on(
         "postgres_changes",
@@ -750,7 +1001,7 @@ const Sales = () => {
           table: "cash_cuts",
           filter: `branch_id=eq.${branch.id}`,
         },
-        scheduleRealtimeRefresh
+        scheduleRealtimeRefresh,
       )
       .on(
         "postgres_changes",
@@ -760,7 +1011,7 @@ const Sales = () => {
           table: "cash_register_sessions",
           filter: `branch_id=eq.${branch.id}`,
         },
-        scheduleRealtimeRefresh
+        scheduleRealtimeRefresh,
       )
       .subscribe();
 
@@ -793,8 +1044,13 @@ const Sales = () => {
 
     if (!canSell) {
       alert(
-        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
+      return;
+    }
+
+    if (pendingProductDiscountRewards.length > 0 || activeProductDiscountReward) {
+      alert("Termina de aplicar la recompensa de descuento antes de cobrar.");
       return;
     }
 
@@ -849,7 +1105,7 @@ const Sales = () => {
         const { data: cashPayments, error: cashPaymentsError } = await supabase
           .from("sale_payments")
           .select(
-            "amount, currency, exchange_rate, payment_method_id, created_at, branch_id"
+            "amount, currency, exchange_rate, payment_method_id, created_at, branch_id",
           )
           .eq("branch_id", branchId)
           .gte("created_at", openedAt)
@@ -904,7 +1160,8 @@ const Sales = () => {
           payment_method_name: "Dólares",
           amount: Number(paymentData?.details?.dolares || 0),
           currency: "USD",
-          exchange_rate: Number(paymentData?.details?.exchangeRate || 0) || null,
+          exchange_rate:
+            Number(paymentData?.details?.exchangeRate || 0) || null,
         },
       ].filter((row) => row.amount > 0);
 
@@ -949,18 +1206,103 @@ const Sales = () => {
   };
 
   const buildProductsPayload = () => {
-    return productos.map((p) => ({
-      product_id: p.id,
-      quantity: Number(p.cantidad),
-      unit_price: Number(p.precio),
-      total_price: Number(p.importe),
-      original_unit_price: Number(p.precioOriginal ?? p.precio),
-      final_unit_price: Number(p.precio),
-      discount_type:
-        Number(p.descuentoMonto || 0) > 0 ? p.descuentoTipo || "amount" : null,
-      discount_value: Number(p.descuentoValor || 0),
-      discount_amount: Number(p.descuentoMonto || 0),
-    }));
+    return productos.map((p) => {
+      const hasDiscount = Number(p.descuentoMonto || 0) > 0;
+      const cleanDiscountType =
+        p.descuentoTipo === "percent" ? "percent" : hasDiscount ? "amount" : null;
+
+      return {
+        product_id: p.id,
+        quantity: Number(p.cantidad),
+        unit_price: Number(p.precio),
+        total_price: Number(p.importe),
+        original_unit_price: Number(p.precioOriginal ?? p.precio),
+        final_unit_price: Number(p.precio),
+        discount_type: cleanDiscountType,
+        discount_value: Number(p.descuentoValor || 0),
+        discount_amount: Number(p.descuentoMonto || 0),
+      };
+    });
+  };
+
+  const buildRewardRowsFromCartItems = (rewardItems = []) => {
+    return (rewardItems || [])
+      .filter((item) => {
+        return (
+          (item?.is_reward_item || item?.is_reward_discount_item) &&
+          item?.reward_id &&
+          Number(item?.cantidad || 0) > 0
+        );
+      })
+      .map((item) => {
+        const quantity = Number(item.cantidad || 0);
+        const totalPoints = getRewardItemTotalPoints(item);
+        const pointsPerUnit = getRewardItemPointsPerUnit(item);
+        const unitPrice = Number(item.precioOriginal ?? item.precio ?? 0);
+        const discountAmount = Number(
+          item.reward_discount_amount ?? item.descuentoMonto ?? unitPrice * quantity ?? 0,
+        );
+
+        return {
+          id: item.sale_reward_redemption_id || `local_${item.reward_id}_${item.id}`,
+          sale_id: null,
+          sale_detail_id: item.sale_detail_id || null,
+          customer_id: currentSaleClient?.id || null,
+          reward_id: item.reward_id,
+          product_id: item.id,
+          quantity,
+          points_per_unit: pointsPerUnit,
+          total_points: Math.max(totalPoints, pointsPerUnit),
+          unit_price: unitPrice,
+          discount_amount: discountAmount,
+          reward_name: item.reward_name || item.discountConcept || "RECOMPENSA",
+          product_name: item.nombre || item.codigo || "PRODUCTO",
+          reward_type: item.is_reward_discount_item ? "product_discount" : "free_product",
+          created_at: new Date().toISOString(),
+        };
+      });
+  };
+
+  const loadRewardRedemptionsForPrintedSale = async (saleId, fallbackRewardItems = []) => {
+    const fallbackRows = buildRewardRowsFromCartItems(fallbackRewardItems);
+
+    if (!saleId) return fallbackRows;
+
+    try {
+      const { data, error } = await supabase
+        .from("sale_reward_redemptions")
+        .select(
+          `
+          id,
+          sale_id,
+          sale_detail_id,
+          customer_id,
+          reward_id,
+          product_id,
+          quantity,
+          points_per_unit,
+          total_points,
+          unit_price,
+          discount_amount,
+          reward_name,
+          product_name,
+          created_at
+        `,
+        )
+        .eq("sale_id", saleId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if ((data || []).length > 0) {
+        return data || [];
+      }
+
+      return fallbackRows;
+    } catch (error) {
+      console.error("Error cargando canjes para ticket:", error);
+      return fallbackRows;
+    }
   };
 
   const printSaleTicket = async ({
@@ -973,10 +1315,37 @@ const Sales = () => {
     pointsResult = null,
   }) => {
     try {
+      const rewardItemsForPrint = getRewardCartItems();
+      const rewardRedemptions = await loadRewardRedemptionsForPrintedSale(
+        saleId,
+        pointsResult?.rewardRedemptions?.length
+          ? []
+          : rewardItemsForPrint,
+      );
+
+      const rewardRowsForPrint =
+        pointsResult?.rewardRedemptions?.length > 0
+          ? pointsResult.rewardRedemptions
+          : rewardRedemptions;
+
+      const rewardBySaleDetailId = {};
+      const rewardByProductId = {};
+
+      for (const reward of rewardRowsForPrint || []) {
+        if (reward?.sale_detail_id) {
+          rewardBySaleDetailId[reward.sale_detail_id] = reward;
+        }
+
+        if (reward?.product_id && !rewardByProductId[reward.product_id]) {
+          rewardByProductId[reward.product_id] = reward;
+        }
+      }
+
       const [detailsRes, kitItemsRes] = await Promise.all([
         supabase
           .from("sale_details")
-          .select(`
+          .select(
+            `
             id,
             quantity,
             unit_price,
@@ -987,19 +1356,22 @@ const Sales = () => {
             discount_type,
             discount_value,
             discount_amount
-          `)
+          `,
+          )
           .eq("sale_id", saleId),
 
         supabase
           .from("sale_kit_items")
-          .select(`
+          .select(
+            `
             id,
             sale_id,
             sale_detail_id,
             kit_product_id,
             component_product_id,
             quantity
-          `)
+          `,
+          )
           .eq("sale_id", saleId),
       ]);
 
@@ -1014,7 +1386,8 @@ const Sales = () => {
           [
             ...detailsRows.map((d) => d.product_id),
             ...kitItemRows.map((k) => k.component_product_id),
-          ].filter(Boolean)
+            ...(rewardRowsForPrint || []).map((reward) => reward.product_id),
+          ].filter(Boolean),
         ),
       ];
 
@@ -1050,27 +1423,101 @@ const Sales = () => {
         });
       }
 
-      const itemsForPrint = detailsRows.map((item) => {
+      let itemsForPrint = detailsRows.map((item) => {
         const components = kitItemsByDetail[item.id] || [];
+        const rewardInfo =
+          rewardBySaleDetailId[item.id] ||
+          (Number(item.total_price || 0) === 0
+            ? rewardByProductId[item.product_id]
+            : null);
+
+        const isRewardLine = Boolean(rewardInfo) && Number(item.total_price || 0) === 0;
+        const originalUnitPrice = Number(
+          item.original_unit_price ||
+            rewardInfo?.unit_price ||
+            item.unit_price ||
+            0,
+        );
 
         return {
           quantity: Number(item.quantity || 0),
-          description: productMap[item.product_id] || "PRODUCTO",
-          unit_price: Number(item.final_unit_price || item.unit_price || 0),
-          original_unit_price: Number(
-            item.original_unit_price || item.unit_price || 0
-          ),
-          discount_amount: Number(item.discount_amount || 0),
+          description: productMap[item.product_id] || rewardInfo?.product_name || "PRODUCTO",
+          unit_price: isRewardLine
+            ? 0
+            : Number(item.final_unit_price || item.unit_price || 0),
+          original_unit_price: originalUnitPrice,
+          discount_amount: isRewardLine ? 0 : Number(item.discount_amount || 0),
           line_total: Number(item.total_price || 0),
           is_kit: productIsKitMap[item.product_id] || components.length > 0,
           components: components.map((component) => ({
             quantity: component.quantity,
             description: component.description,
           })),
+          is_reward_item: isRewardLine,
+          isRewardItem: isRewardLine,
+          reward_id: rewardInfo?.reward_id || null,
+          rewardId: rewardInfo?.reward_id || null,
+          reward_name: rewardInfo?.reward_name || "",
+          rewardName: rewardInfo?.reward_name || "",
+          reward_points: Number(rewardInfo?.points_per_unit || 0),
+          rewardPoints: Number(rewardInfo?.points_per_unit || 0),
+          total_points: Number(rewardInfo?.total_points || 0),
+          totalPoints: Number(rewardInfo?.total_points || 0),
+          sale_reward_redemption_id: rewardInfo?.id || null,
+          saleRewardRedemptionId: rewardInfo?.id || null,
         };
       });
 
-      const totalPaid = (paymentPayload || []).reduce((acc, payment) => {
+      if (itemsForPrint.length === 0 && (rewardRowsForPrint || []).length > 0) {
+        itemsForPrint = (rewardRowsForPrint || []).map((reward) => ({
+          quantity: Number(reward.quantity || 0),
+          description:
+            productMap[reward.product_id] ||
+            reward.product_name ||
+            "PRODUCTO",
+          unit_price: 0,
+          original_unit_price: Number(reward.unit_price || 0),
+          discount_amount: 0,
+          line_total: 0,
+          is_kit: false,
+          components: [],
+          is_reward_item: true,
+          isRewardItem: true,
+          reward_id: reward.reward_id || null,
+          rewardId: reward.reward_id || null,
+          reward_name: reward.reward_name || "RECOMPENSA",
+          rewardName: reward.reward_name || "RECOMPENSA",
+          reward_points: Number(reward.points_per_unit || 0),
+          rewardPoints: Number(reward.points_per_unit || 0),
+          total_points: Number(reward.total_points || 0),
+          totalPoints: Number(reward.total_points || 0),
+          sale_reward_redemption_id: reward.id || null,
+          saleRewardRedemptionId: reward.id || null,
+        }));
+      }
+
+      const rewardPointsUsed =
+        Number(pointsResult?.pointsUsed || 0) ||
+        (rewardRowsForPrint || []).reduce((acc, reward) => {
+          return acc + Number(reward.total_points || 0);
+        }, 0);
+
+      const rewardsCount = (rewardRowsForPrint || []).reduce((acc, reward) => {
+        return acc + Number(reward.quantity || 0);
+      }, 0);
+
+      const hasRewardRedemptions =
+        rewardRowsForPrint.length > 0 || rewardPointsUsed > 0 || rewardsCount > 0;
+
+      const isRewardOnlySale = hasRewardRedemptions && Number(total || 0) <= 0;
+
+      const paymentsForTicket = isRewardOnlySale
+        ? []
+        : (paymentPayload || []).filter((payment) => {
+            return Number(payment.amount || 0) > 0;
+          });
+
+      const totalPaid = paymentsForTicket.reduce((acc, payment) => {
         const amount = Number(payment.amount || 0);
         const currency = String(payment.currency || "MXN").toUpperCase();
         const exchangeRate = Number(payment.exchange_rate || 0);
@@ -1098,19 +1545,30 @@ const Sales = () => {
           tax: 0,
           discount_total: Number(discountTotal || 0),
           total: Number(total),
-          amount_received: totalPaid || Number(total),
-          change_amount: Math.max(Number(paymentData?.change || 0), 0),
-          payment_method: paymentData?.method || "",
-          payments: paymentPayload || [],
+          amount_received: isRewardOnlySale ? 0 : totalPaid || Number(total),
+          change_amount: isRewardOnlySale
+            ? 0
+            : Math.max(Number(paymentData?.change || 0), 0),
+          payment_method: isRewardOnlySale ? "SIN PAGO" : paymentData?.method || "",
+          payments: paymentsForTicket,
           status: "completed",
           notes: notes || paymentData?.notes || "",
-          cashier_name: (user?.username || user?.email || "CAJERO").toUpperCase(),
+          cashier_name: (
+            user?.username ||
+            user?.email ||
+            "CAJERO"
+          ).toUpperCase(),
           customer_name: saleClient?.name || "",
           customer_phone: saleClient?.phone || saleClient?.id || "",
           customer_email: saleClient?.email || "",
           points_earned: Number(pointsResult?.points || 0),
+          reward_points_used: rewardPointsUsed,
+          rewards_count: rewardsCount,
+          has_reward_redemptions: hasRewardRedemptions,
+          reward_redemptions: rewardRowsForPrint,
           customer_points_balance:
-            pointsResult?.newBalance !== undefined && pointsResult?.newBalance !== null
+            pointsResult?.newBalance !== undefined &&
+            pointsResult?.newBalance !== null
               ? Number(pointsResult.newBalance)
               : null,
         },
@@ -1120,7 +1578,8 @@ const Sales = () => {
           line1: "Gracias por su compra",
           line2: "Agenda tu cita de baño",
           phone: "998 117 5387",
-          returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
+          returnPolicy:
+            "Para cambios o devoluciones presentar ticket de compra",
         },
         isReprint: false,
       });
@@ -1138,11 +1597,18 @@ const Sales = () => {
   const increaseSelectedProductQuantity = () => {
     if (!selectedProduct) return;
 
+    if (isRewardCartItem(selectedProduct)) {
+      alert(
+        "No puedes modificar la cantidad de un producto aplicado como recompensa.",
+      );
+      return;
+    }
+
     let inventoryExceeded = false;
 
     setProductos((prev) =>
       prev.map((p) => {
-        if (p.id !== selectedProduct.id) return p;
+        if (!isSameCartItem(p, selectedProduct)) return p;
 
         if (p.tracks_inventory && p.cantidad >= p.stockReal) {
           inventoryExceeded = true;
@@ -1161,7 +1627,7 @@ const Sales = () => {
           descuentoMonto: descuentoUnitario * nuevaCantidad,
           existencia: p.tracks_inventory ? p.stockReal - nuevaCantidad : "∞",
         };
-      })
+      }),
     );
 
     if (inventoryExceeded) {
@@ -1183,7 +1649,9 @@ const Sales = () => {
         cantidad: nuevaCantidad,
         importe: nuevaCantidad * precioFinal,
         descuentoMonto: descuentoUnitario * nuevaCantidad,
-        existencia: prev.tracks_inventory ? prev.stockReal - nuevaCantidad : "∞",
+        existencia: prev.tracks_inventory
+          ? prev.stockReal - nuevaCantidad
+          : "∞",
       };
     });
   };
@@ -1191,19 +1659,33 @@ const Sales = () => {
   const decreaseSelectedProductQuantity = () => {
     if (!selectedProduct) return;
 
-    const productoActual = productos.find((p) => p.id === selectedProduct.id);
+    if (isRewardCartItem(selectedProduct)) {
+      alert(
+        "No puedes modificar la cantidad de un producto aplicado como recompensa.",
+      );
+      return;
+    }
+
+    const productoActual = productos.find((p) =>
+      isSameCartItem(p, selectedProduct),
+    );
     if (!productoActual) return;
 
     if (productoActual.cantidad === 1) {
-      const updatedProductos = productos.filter((p) => p.id !== selectedProduct.id);
+      const updatedProductos = productos.filter(
+        (p) => !isSameCartItem(p, selectedProduct),
+      );
+
       setProductos(updatedProductos);
+      productosRef.current = updatedProductos;
+      syncCurrentSaleRewardsWithCart(updatedProductos);
       setSelectedProduct(null);
       return;
     }
 
     setProductos((prev) =>
       prev.map((p) => {
-        if (p.id !== selectedProduct.id) return p;
+        if (!isSameCartItem(p, selectedProduct)) return p;
 
         const nuevaCantidad = p.cantidad - 1;
         const precioOriginal = Number(p.precioOriginal ?? p.precio ?? 0);
@@ -1217,7 +1699,7 @@ const Sales = () => {
           descuentoMonto: descuentoUnitario * nuevaCantidad,
           existencia: p.tracks_inventory ? p.stockReal - nuevaCantidad : "∞",
         };
-      })
+      }),
     );
 
     setSelectedProduct((prev) => {
@@ -1233,7 +1715,9 @@ const Sales = () => {
         cantidad: nuevaCantidad,
         importe: nuevaCantidad * precioFinal,
         descuentoMonto: descuentoUnitario * nuevaCantidad,
-        existencia: prev.tracks_inventory ? prev.stockReal - nuevaCantidad : "∞",
+        existencia: prev.tracks_inventory
+          ? prev.stockReal - nuevaCantidad
+          : "∞",
       };
     });
   };
@@ -1280,7 +1764,7 @@ const Sales = () => {
       if (!kitAvailability.isValid || stock <= 0) {
         alert(
           kitAvailability.message ||
-            "Este kit no tiene inventario suficiente en sus componentes."
+            "Este kit no tiene inventario suficiente en sus componentes.",
         );
         return;
       }
@@ -1314,7 +1798,9 @@ const Sales = () => {
         setProductos(updatedProducts);
 
         if (selectedProduct?.id === product.id) {
-          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+          const updatedSelected = updatedProducts.find(
+            (p) => p.id === product.id,
+          );
           setSelectedProduct(updatedSelected || null);
         }
 
@@ -1355,7 +1841,9 @@ const Sales = () => {
       const inventoryRow = await getBranchInventoryRow(product.id);
 
       if (!inventoryRow || inventoryRow.is_active === false) {
-        alert("Este producto no está activo en el inventario de esta sucursal.");
+        alert(
+          "Este producto no está activo en el inventario de esta sucursal.",
+        );
         return;
       }
 
@@ -1401,15 +1889,21 @@ const Sales = () => {
         setProductos(updatedProducts);
 
         if (selectedProduct?.id === product.id) {
-          const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+          const updatedSelected = updatedProducts.find(
+            (p) => p.id === product.id,
+          );
           setSelectedProduct(updatedSelected || null);
         }
 
         return;
       }
 
-      const salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
-      const costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+      const salePrice = Number(
+        inventoryRow.sale_price ?? product.sale_price ?? 0,
+      );
+      const costPrice = Number(
+        inventoryRow.cost_price ?? product.cost_price ?? 0,
+      );
       const discountData = calculateDiscountedProduct(salePrice, product);
 
       const newProduct = {
@@ -1459,7 +1953,9 @@ const Sales = () => {
       setProductos(updatedProducts);
 
       if (selectedProduct?.id === product.id) {
-        const updatedSelected = updatedProducts.find((p) => p.id === product.id);
+        const updatedSelected = updatedProducts.find(
+          (p) => p.id === product.id,
+        );
         setSelectedProduct(updatedSelected || null);
       }
 
@@ -1496,7 +1992,7 @@ const Sales = () => {
   const handleBarcodeSearch = async () => {
     if (shiftAlreadyCut) {
       alert(
-        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
       return;
     }
@@ -1513,7 +2009,7 @@ const Sales = () => {
       const { data: product, error: productError } = await supabase
         .from("products")
         .select(
-          "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory"
+          "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory",
         )
         .eq("barcode", cleanBarcode)
         .eq("status", true)
@@ -1572,7 +2068,9 @@ const Sales = () => {
       const hasBeenStocked = !!inventoryRow.has_been_stocked;
 
       if (!hasBeenStocked && currentStock <= 0) {
-        alert("Este producto aún no tiene inventario inicial registrado en esta sucursal.");
+        alert(
+          "Este producto aún no tiene inventario inicial registrado en esta sucursal.",
+        );
         setBarcode("");
         return;
       }
@@ -1595,7 +2093,7 @@ const Sales = () => {
   const handleAddProductFromVerifier = async (product) => {
     if (shiftAlreadyCut) {
       alert(
-        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
       return;
     }
@@ -1612,7 +2110,7 @@ const Sales = () => {
   };
 
   const handleProductSelect = (producto) => {
-    if (selectedProduct?.id === producto.id) {
+    if (selectedProduct && isSameCartItem(selectedProduct, producto)) {
       setSelectedProduct(null);
     } else {
       setSelectedProduct(producto);
@@ -1622,13 +2120,23 @@ const Sales = () => {
   const handleDeleteSelectedProduct = () => {
     if (!selectedProduct) return;
 
-    const updatedProductos = productos.filter((p) => p.id !== selectedProduct.id);
+    const updatedProductos = productos.filter(
+      (p) => !isSameCartItem(p, selectedProduct),
+    );
+
     setProductos(updatedProductos);
+    productosRef.current = updatedProductos;
+    syncCurrentSaleRewardsWithCart(updatedProductos);
     setSelectedProduct(null);
   };
 
   const handleApplyDiscount = (discountData) => {
     if (!selectedProduct) return;
+
+    if (isRewardCartItem(selectedProduct)) {
+      alert("No puedes aplicar descuento manual a un producto aplicado como recompensa.");
+      return;
+    }
 
     const newPrice = Number.parseFloat(discountData.newPrice);
 
@@ -1638,9 +2146,11 @@ const Sales = () => {
     }
 
     const updatedProductos = productos.map((producto) => {
-      if (producto.id !== selectedProduct.id) return producto;
+      if (!isSameCartItem(producto, selectedProduct)) return producto;
 
-      const precioOriginal = Number(producto.precioOriginal ?? producto.precio ?? 0);
+      const precioOriginal = Number(
+        producto.precioOriginal ?? producto.precio ?? 0,
+      );
       const cantidad = Number(producto.cantidad || 0);
       const precioFinal = newPrice;
       const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
@@ -1659,8 +2169,8 @@ const Sales = () => {
 
     setProductos(updatedProductos);
 
-    const updatedSelected = updatedProductos.find(
-      (producto) => producto.id === selectedProduct.id
+    const updatedSelected = updatedProductos.find((producto) =>
+      isSameCartItem(producto, selectedProduct),
     );
     setSelectedProduct(updatedSelected || null);
   };
@@ -1678,7 +2188,7 @@ const Sales = () => {
         if (!kitAvailability.isValid || currentStock <= 0) {
           alert(
             kitAvailability.message ||
-              `El kit "${item.nombre || item.codigo}" ya no tiene inventario suficiente.`
+              `El kit "${item.nombre || item.codigo}" ya no tiene inventario suficiente.`,
           );
           return false;
         }
@@ -1687,7 +2197,7 @@ const Sales = () => {
           alert(
             `La cantidad del kit "${
               item.nombre || item.codigo
-            }" excede el inventario disponible. Disponible: ${currentStock}.`
+            }" excede el inventario disponible. Disponible: ${currentStock}.`,
           );
           return false;
         }
@@ -1703,13 +2213,15 @@ const Sales = () => {
         alert(
           `El producto "${
             item.nombre || item.codigo
-          }" aún no tiene inventario inicial registrado.`
+          }" aún no tiene inventario inicial registrado.`,
         );
         return false;
       }
 
       if (currentStock <= 0) {
-        alert(`El producto "${item.nombre || item.codigo}" ya no tiene existencia.`);
+        alert(
+          `El producto "${item.nombre || item.codigo}" ya no tiene existencia.`,
+        );
         return false;
       }
 
@@ -1717,7 +2229,7 @@ const Sales = () => {
         alert(
           `La cantidad de "${
             item.nombre || item.codigo
-          }" excede el inventario disponible.`
+          }" excede el inventario disponible.`,
         );
         return false;
       }
@@ -1787,7 +2299,7 @@ const Sales = () => {
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
     },
-    [columnWidths, handleMouseMove, handleMouseUp]
+    [columnWidths, handleMouseMove, handleMouseUp],
   );
 
   useEffect(() => {
@@ -1804,11 +2316,14 @@ const Sales = () => {
       const proportions = [0.4, 0.15, 0.1, 0.15];
 
       const calculatedWidths = proportions.map((prop) =>
-        Math.max(MIN_COLUMN_WIDTH, Math.floor(availableWidth * prop))
+        Math.max(MIN_COLUMN_WIDTH, Math.floor(availableWidth * prop)),
       );
 
       const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
-      const lastColumnWidth = Math.max(MIN_COLUMN_WIDTH, availableWidth - usedWidth);
+      const lastColumnWidth = Math.max(
+        MIN_COLUMN_WIDTH,
+        availableWidth - usedWidth,
+      );
 
       setColumnWidths([...calculatedWidths, lastColumnWidth]);
       setIsInitialized(true);
@@ -1817,7 +2332,9 @@ const Sales = () => {
 
   const handleSaveEntry = async (newMovement) => {
     if (shiftAlreadyCut) {
-      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      alert(
+        "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
+      );
       return false;
     }
 
@@ -1863,7 +2380,9 @@ const Sales = () => {
 
   const handleSaveExit = async (newMovement) => {
     if (shiftAlreadyCut) {
-      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      alert(
+        "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
+      );
       return false;
     }
 
@@ -1892,8 +2411,8 @@ const Sales = () => {
       if (exitAmount > availableCash) {
         alert(
           `No puedes retirar $${exitAmount.toFixed(
-            2
-          )}. Disponible en caja: $${availableCash.toFixed(2)}`
+            2,
+          )}. Disponible en caja: $${availableCash.toFixed(2)}`,
         );
         return false;
       }
@@ -1926,11 +2445,553 @@ const Sales = () => {
   };
 
   const openClientModal = () => {
+    setPendingFreeProductRewards([]);
+    setRewardProductModalOpen(false);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+    setProductDiscountRewardModalOpen(false);
     setClientModalOpen(true);
   };
 
-  const handleAssignClient = (client) => {
+  const addRewardProductToCart = async ({ reward, product, quantity }) => {
+    if (!reward?.id || !product?.id) return false;
+
+    const redeemQuantity = getRewardRedeemQuantity(reward);
+    const rewardQuantity = Math.max(
+      Number(quantity || Number(reward.reward_quantity || 1) * redeemQuantity),
+      1,
+    );
+    const tracksInventory = product.tracks_inventory !== false;
+
+    let stock = null;
+    let salePrice = Number(product.sale_price || 0);
+    let costPrice = Number(product.cost_price || 0);
+
+    if (tracksInventory) {
+      const inventoryRow = await getBranchInventoryRow(product.id);
+
+      if (!inventoryRow || inventoryRow.is_active === false) {
+        alert(
+          `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.`,
+        );
+        return false;
+      }
+
+      stock = Number(inventoryRow.stock || 0);
+      salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+      costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+
+      const currentCartQuantity = getCartQuantityForProduct(product.id);
+      const availableToAdd = Math.max(stock - currentCartQuantity, 0);
+
+      if (rewardQuantity > availableToAdd) {
+        alert(
+          `No hay inventario suficiente para aplicar "${
+            reward.name || "RECOMPENSA"
+          }". Disponible para agregar: ${availableToAdd}.`,
+        );
+        return false;
+      }
+    }
+
+    const discountAmount = salePrice * rewardQuantity;
+    const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id);
+    const cartQuantityAfterAdd = cartQuantityBeforeAdd + rewardQuantity;
+
+    const rewardItem = {
+      cartLineId: `reward_${reward.id}_${product.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      id: product.id,
+      codigo: product.barcode,
+      nombre: product.name,
+      precioOriginal: salePrice,
+      precio: 0,
+      costo: costPrice,
+      cantidad: rewardQuantity,
+      importe: 0,
+      descuentoTipo: "reward",
+      descuentoValor: salePrice,
+      descuentoMonto: discountAmount,
+      discountPercent: 100,
+      discountConcept: reward.name || "RECOMPENSA",
+      stockReal: stock,
+      existencia:
+        tracksInventory && stock !== null
+          ? Math.max(stock - cartQuantityAfterAdd, 0)
+          : "∞",
+      is_kit: !!product.is_kit,
+      tracks_inventory: tracksInventory,
+      is_reward_item: true,
+      reward_id: reward.id,
+      reward_name: reward.name || "RECOMPENSA",
+      reward_points_required: getRewardTotalPoints(reward),
+      reward_line_points_required:
+        Number(reward.points_required || 0) *
+        (rewardQuantity / Math.max(Number(reward.reward_quantity || 1), 1)),
+      reward_redeem_quantity: redeemQuantity,
+      reward_product_quantity: rewardQuantity,
+    };
+
+    setProductos((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          item?.is_reward_item &&
+          item?.reward_id === reward.id &&
+          item?.id === product.id,
+      );
+
+      let updatedProducts;
+
+      if (existingIndex === -1) {
+        updatedProducts = [...prev, rewardItem];
+      } else {
+        updatedProducts = prev.map((item, index) => {
+          if (index !== existingIndex) return item;
+
+          const nextQuantity = Number(item.cantidad || 0) + rewardQuantity;
+          const nextDiscountAmount = salePrice * nextQuantity;
+
+          return {
+            ...item,
+            cantidad: nextQuantity,
+            importe: 0,
+            descuentoMonto: nextDiscountAmount,
+            existencia:
+              tracksInventory && stock !== null
+                ? Math.max(stock - cartQuantityAfterAdd, 0)
+                : "∞",
+            reward_points_required:
+              Number(item.reward_points_required || 0) + getRewardTotalPoints(reward),
+            reward_line_points_required:
+              Number(item.reward_line_points_required || 0) +
+              Number(reward.points_required || 0) *
+                (rewardQuantity / Math.max(Number(reward.reward_quantity || 1), 1)),
+            reward_redeem_quantity:
+              Number(item.reward_redeem_quantity || 0) + redeemQuantity,
+            reward_product_quantity:
+              Number(item.reward_product_quantity || 0) + rewardQuantity,
+          };
+        });
+      }
+
+      if (tracksInventory && stock !== null) {
+        updatedProducts = updateProductExistenceInCart(
+          updatedProducts,
+          product.id,
+          stock,
+        );
+      }
+
+      productosRef.current = updatedProducts;
+      return updatedProducts;
+    });
+
+    setSelectedProduct((prev) => {
+      if (!prev || prev?.id !== product.id) return prev;
+
+      const sameRewardLine =
+        prev?.is_reward_item && prev?.reward_id === reward.id && prev?.id === product.id;
+
+      if (!sameRewardLine) {
+        if (tracksInventory && stock !== null) {
+          return {
+            ...prev,
+            stockReal: stock,
+            existencia: Math.max(stock - cartQuantityAfterAdd, 0),
+          };
+        }
+
+        return prev;
+      }
+
+      const nextQuantity = Number(prev.cantidad || 0) + rewardQuantity;
+
+      return {
+        ...prev,
+        cantidad: nextQuantity,
+        importe: 0,
+        descuentoMonto: salePrice * nextQuantity,
+        existencia:
+          tracksInventory && stock !== null
+            ? Math.max(stock - cartQuantityAfterAdd, 0)
+            : "∞",
+        reward_points_required:
+          Number(prev.reward_points_required || 0) + getRewardTotalPoints(reward),
+        reward_line_points_required:
+          Number(prev.reward_line_points_required || 0) +
+          Number(reward.points_required || 0) *
+            (rewardQuantity / Math.max(Number(reward.reward_quantity || 1), 1)),
+        reward_redeem_quantity:
+          Number(prev.reward_redeem_quantity || 0) + redeemQuantity,
+        reward_product_quantity:
+          Number(prev.reward_product_quantity || 0) + rewardQuantity,
+      };
+    });
+
+    return true;
+  };
+
+  const handleCloseRewardProductModal = () => {
+    setRewardProductModalOpen(false);
+    setPendingFreeProductRewards([]);
+  };
+
+  const mergeAppliedRewards = (previousRewards, rewardsToAdd) => {
+    const normalizedPrevious = normalizeRewardsArray(previousRewards);
+    const normalizedToAdd = normalizeRewardsArray(rewardsToAdd);
+    const mergedRewards = [...normalizedPrevious];
+
+    normalizedToAdd.forEach((reward) => {
+      const rewardRedeemQuantity = getRewardRedeemQuantity(reward);
+      const existingIndex = mergedRewards.findIndex(
+        (item) => item?.id === reward?.id,
+      );
+
+      if (existingIndex >= 0) {
+        const existingReward = mergedRewards[existingIndex];
+
+        mergedRewards[existingIndex] = {
+          ...existingReward,
+          redeemQuantity:
+            getRewardRedeemQuantity(existingReward) + rewardRedeemQuantity,
+        };
+
+        return;
+      }
+
+      mergedRewards.push({
+        ...reward,
+        redeemQuantity: rewardRedeemQuantity,
+      });
+    });
+
+    return mergedRewards;
+  };
+
+  const validateRewardSelectionsInventory = async (rewardSelections = []) => {
+    const quantityByProduct = {};
+
+    for (const selection of rewardSelections || []) {
+      const product = selection?.product;
+      const quantity = Number(selection?.quantity || 0);
+
+      if (!product?.id || quantity <= 0 || product.tracks_inventory === false) {
+        continue;
+      }
+
+      quantityByProduct[product.id] =
+        Number(quantityByProduct[product.id] || 0) + quantity;
+    }
+
+    for (const [productId, quantityToAdd] of Object.entries(quantityByProduct)) {
+      const inventoryRow = await getBranchInventoryRow(productId);
+      const stock = Number(inventoryRow?.stock || 0);
+      const currentCartQuantity = getCartQuantityForProduct(productId);
+      const availableToAdd = Math.max(stock - currentCartQuantity, 0);
+
+      if (!inventoryRow || inventoryRow.is_active === false) {
+        alert("Uno de los productos de recompensa ya no está activo en esta sucursal.");
+        return false;
+      }
+
+      if (inventoryRow.has_been_stocked !== true && stock <= 0) {
+        alert("Uno de los productos de recompensa aún no tiene inventario inicial.");
+        return false;
+      }
+
+      if (quantityToAdd > availableToAdd) {
+        alert(
+          `No hay inventario suficiente para aplicar las recompensas. Disponible para agregar: ${availableToAdd}.`,
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleConfirmRewardProducts = async (rewardSelections = []) => {
+    try {
+      const inventoryIsValid = await validateRewardSelectionsInventory(
+        rewardSelections,
+      );
+
+      if (!inventoryIsValid) return;
+      const appliedRewards = [];
+
+      for (const selection of rewardSelections) {
+        const wasApplied = await addRewardProductToCart(selection);
+
+        if (wasApplied && selection?.reward?.id) {
+          const rewardToApply = {
+            ...selection.reward,
+            redeemQuantity: getRewardRedeemQuantity(selection.reward),
+            appliedProductQuantity: Math.max(
+              Number(selection.quantity || 1),
+              1,
+            ),
+          };
+
+          const alreadyAdded = appliedRewards.some(
+            (reward) => reward.id === rewardToApply.id,
+          );
+
+          if (!alreadyAdded) {
+            appliedRewards.push(rewardToApply);
+          }
+        }
+      }
+
+      if (appliedRewards.length === 0) {
+        alert(
+          "No se aplicó ninguna recompensa. Revisa que el producto tenga inventario disponible.",
+        );
+        return;
+      }
+
+      setCurrentSaleReward((prev) => mergeAppliedRewards(prev, appliedRewards));
+      setRewardProductModalOpen(false);
+      setPendingFreeProductRewards([]);
+
+      if (pendingProductDiscountRewards.length > 0) {
+        openNextProductDiscountReward(pendingProductDiscountRewards);
+      }
+    } catch (error) {
+      console.error("Error aplicando productos de recompensa:", error);
+      alert(error.message || "No se pudieron aplicar las recompensas.");
+    }
+  };
+
+  const openNextProductDiscountReward = (queue = pendingProductDiscountRewards) => {
+    const cleanQueue = normalizeRewardsArray(queue).filter(
+      (reward) => getRewardType(reward) === "product_discount",
+    );
+
+    if (cleanQueue.length === 0) {
+      setPendingProductDiscountRewards([]);
+      setActiveProductDiscountReward(null);
+      setProductDiscountRewardModalOpen(false);
+      return;
+    }
+
+    setPendingProductDiscountRewards(cleanQueue);
+    setActiveProductDiscountReward(cleanQueue[0]);
+    setProductDiscountRewardModalOpen(true);
+  };
+
+  const handleCloseProductDiscountRewardModal = () => {
+    setProductDiscountRewardModalOpen(false);
+    setActiveProductDiscountReward(null);
+    setPendingProductDiscountRewards([]);
+  };
+
+  const handleAssignClient = (client, rewards = []) => {
+    const normalizedRewards = normalizeRewardsArray(rewards);
+
     setCurrentSaleClient(client);
+
+    if (!client) {
+      setCurrentSaleReward([]);
+      setPendingFreeProductRewards([]);
+      setRewardProductModalOpen(false);
+      setPendingProductDiscountRewards([]);
+      setActiveProductDiscountReward(null);
+      setProductDiscountRewardModalOpen(false);
+      return;
+    }
+
+    if (normalizedRewards.length === 0) {
+      setPendingFreeProductRewards([]);
+      setRewardProductModalOpen(false);
+      setPendingProductDiscountRewards([]);
+      setActiveProductDiscountReward(null);
+      setProductDiscountRewardModalOpen(false);
+      return;
+    }
+
+    const freeProductRewards = normalizedRewards.filter(
+      (reward) => getRewardType(reward) === "free_product",
+    );
+
+    const productDiscountRewards = normalizedRewards
+      .filter((reward) => getRewardType(reward) === "product_discount")
+      .map((reward) => ({
+        ...reward,
+        reward_application_status: "pending_product_discount",
+      }));
+
+    setPendingProductDiscountRewards(productDiscountRewards);
+
+    if (freeProductRewards.length > 0) {
+      setPendingFreeProductRewards(freeProductRewards);
+      setRewardProductModalOpen(true);
+      setProductDiscountRewardModalOpen(false);
+      setActiveProductDiscountReward(null);
+      return;
+    }
+
+    setPendingFreeProductRewards([]);
+    setRewardProductModalOpen(false);
+
+    if (productDiscountRewards.length > 0) {
+      openNextProductDiscountReward(productDiscountRewards);
+      return;
+    }
+  };
+
+  const addRewardDiscountProductToCart = async ({
+    reward,
+    product,
+    quantity,
+    originalUnitPrice,
+    discountAmount,
+    finalUnitPrice,
+    discountType,
+    discountValue,
+    totalPoints,
+  }) => {
+    if (!reward?.id || !product?.id) return false;
+
+    const cleanQuantity = Math.max(Number(quantity || 1), 1);
+    const tracksInventory =
+      product.tracks_inventory !== false && product.use_inventory !== false;
+
+    let stock = null;
+    let salePrice = Number(originalUnitPrice ?? product.sale_price ?? 0);
+    let costPrice = Number(product.cost_price || 0);
+
+    if (tracksInventory) {
+      const inventoryRow = await getBranchInventoryRow(product.id);
+
+      if (!inventoryRow || inventoryRow.is_active === false) {
+        alert(
+          `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.`,
+        );
+        return false;
+      }
+
+      stock = Number(inventoryRow.stock || 0);
+      salePrice = Number(
+        originalUnitPrice ?? inventoryRow.sale_price ?? product.sale_price ?? 0,
+      );
+      costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
+
+      const currentCartQuantity = getCartQuantityForProduct(product.id);
+      const availableToAdd = Math.max(stock - currentCartQuantity, 0);
+
+      if (cleanQuantity > availableToAdd) {
+        alert(
+          `No hay inventario suficiente para aplicar "${
+            reward.name || "RECOMPENSA"
+          }". Disponible para agregar: ${availableToAdd}.`,
+        );
+        return false;
+      }
+    }
+
+    const cleanDiscountAmount = Math.max(Math.floor(Number(discountAmount || 0)), 0);
+    const cleanFinalUnitPrice = Math.max(
+      Number(finalUnitPrice ?? salePrice - cleanDiscountAmount),
+      0,
+    );
+    const discountTotal = cleanDiscountAmount * cleanQuantity;
+    const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id);
+    const cartQuantityAfterAdd = cartQuantityBeforeAdd + cleanQuantity;
+
+    const rewardDiscountItem = {
+      cartLineId: `reward_discount_${reward.id}_${product.id}_${Date.now()}_${Math.random()
+        .toString(16)
+        .slice(2)}`,
+      id: product.id,
+      codigo: product.barcode,
+      nombre: product.name,
+      precioOriginal: salePrice,
+      precio: cleanFinalUnitPrice,
+      costo: costPrice,
+      cantidad: cleanQuantity,
+      importe: cleanFinalUnitPrice * cleanQuantity,
+      descuentoTipo: "amount",
+      descuentoValor: cleanDiscountAmount,
+      descuentoMonto: discountTotal,
+      discountPercent:
+        discountType === "percent" ? Number(discountValue || 0) : 0,
+      discountConcept: reward.name || "RECOMPENSA",
+      stockReal: stock,
+      existencia:
+        tracksInventory && stock !== null
+          ? Math.max(stock - cartQuantityAfterAdd, 0)
+          : "∞",
+      is_kit: !!product.is_kit,
+      tracks_inventory: tracksInventory,
+      is_reward_discount_item: true,
+      reward_id: reward.id,
+      reward_name: reward.name || "RECOMPENSA",
+      reward_points_required: Number(totalPoints || getRewardTotalPoints(reward)),
+      reward_line_points_required: Number(totalPoints || getRewardTotalPoints(reward)),
+      reward_redeem_quantity: getRewardRedeemQuantity(reward),
+      reward_product_quantity: cleanQuantity,
+      reward_discount_type: discountType || reward.discount_type || null,
+      reward_discount_value: Number(discountValue ?? reward.discount_value ?? 0),
+      reward_discount_amount: discountTotal,
+    };
+
+    setProductos((prev) => {
+      let updatedProducts = [...prev, rewardDiscountItem];
+
+      if (tracksInventory && stock !== null) {
+        updatedProducts = updateProductExistenceInCart(
+          updatedProducts,
+          product.id,
+          stock,
+        );
+      }
+
+      productosRef.current = updatedProducts;
+      return updatedProducts;
+    });
+
+    setSelectedProduct(rewardDiscountItem);
+    return true;
+  };
+
+  const handleConfirmProductDiscountReward = async (payload) => {
+    if (!payload?.reward?.id || !payload?.product?.id) return;
+
+    try {
+      const wasApplied = await addRewardDiscountProductToCart(payload);
+
+      if (!wasApplied) return;
+
+      const appliedReward = {
+        ...payload.reward,
+        reward_application_status: "applied_product_discount",
+        appliedProductId: payload.product.id,
+        appliedProductName: payload.product.name || payload.product.barcode || "PRODUCTO",
+        appliedProductQuantity: Math.max(Number(payload.quantity || 1), 1),
+        appliedDiscountAmount:
+          Math.max(Math.floor(Number(payload.discountAmount || 0)), 0) *
+          Math.max(Number(payload.quantity || 1), 1),
+      };
+
+      setCurrentSaleReward((prev) => mergeAppliedRewards(prev, [appliedReward]));
+
+      const remainingQueue = pendingProductDiscountRewards.filter(
+        (reward) => reward.id !== payload.reward.id,
+      );
+
+      if (remainingQueue.length > 0) {
+        setPendingProductDiscountRewards(remainingQueue);
+        setActiveProductDiscountReward(remainingQueue[0]);
+        setProductDiscountRewardModalOpen(true);
+        return;
+      }
+
+      setPendingProductDiscountRewards([]);
+      setActiveProductDiscountReward(null);
+      setProductDiscountRewardModalOpen(false);
+    } catch (error) {
+      console.error("Error aplicando descuento de recompensa:", error);
+      alert(error.message || "No se pudo aplicar el descuento de recompensa.");
+    }
   };
 
   const getCustomerPointsAmountPerPoint = async () => {
@@ -2002,7 +3063,10 @@ const Sales = () => {
     }
 
     const amountPerPoint = await getCustomerPointsAmountPerPoint();
-    const earnedPoints = calculateEarnedCustomerPoints(saleTotal, amountPerPoint);
+    const earnedPoints = calculateEarnedCustomerPoints(
+      saleTotal,
+      amountPerPoint,
+    );
 
     if (earnedPoints <= 0) {
       const currentBalance = await getCustomerCurrentPointsBalance(customerId);
@@ -2051,7 +3115,7 @@ const Sales = () => {
           user_id: user?.id || null,
           branch_id: branch?.id || null,
           notes: `PUNTOS GENERADOS POR VENTA. TOTAL DE VENTA: $${Number(
-            saleTotal || 0
+            saleTotal || 0,
           ).toFixed(2)} MXN.`,
           created_at: saleDate || new Date().toISOString(),
         },
@@ -2069,6 +3133,374 @@ const Sales = () => {
     };
   };
 
+
+  const getRewardCartItems = () => {
+    return (productosRef.current || []).filter((item) => {
+      return (
+        (item?.is_reward_item || item?.is_reward_discount_item) &&
+        item?.reward_id &&
+        Number(item?.cantidad || 0) > 0
+      );
+    });
+  };
+
+  const getRewardItemTotalPoints = (item) => {
+    const linePoints = Number(item?.reward_line_points_required || 0);
+
+    if (linePoints > 0) return Math.round(linePoints);
+
+    const rewardPoints = Number(item?.reward_points_required || 0);
+
+    if (rewardPoints > 0) return Math.round(rewardPoints);
+
+    const pointsPerReward = Number(item?.points_required || 0);
+    const rewardQuantity = Math.max(Number(item?.reward_quantity || 1), 1);
+    const itemQuantity = Math.max(Number(item?.cantidad || 0), 0);
+
+    if (pointsPerReward > 0 && itemQuantity > 0) {
+      return Math.round(pointsPerReward * (itemQuantity / rewardQuantity));
+    }
+
+    return 0;
+  };
+
+  const getRewardItemPointsPerUnit = (item) => {
+    const quantity = Math.max(Number(item?.cantidad || 0), 1);
+    const totalPoints = getRewardItemTotalPoints(item);
+
+    if (totalPoints <= 0) return 1;
+
+    return Math.max(Math.round(totalPoints / quantity), 1);
+  };
+
+  const getRewardItemsSummary = (rewardItems = []) => {
+    return (rewardItems || []).reduce(
+      (summary, item) => {
+        const totalPoints = getRewardItemTotalPoints(item);
+        const quantity = Number(item?.cantidad || 0);
+        const discountAmount = Number(
+          item?.reward_discount_amount ?? item?.descuentoMonto ?? 0,
+        );
+
+        summary.totalPoints += totalPoints;
+        summary.totalQuantity += quantity;
+        summary.totalDiscountAmount += discountAmount;
+
+        return summary;
+      },
+      {
+        totalPoints: 0,
+        totalQuantity: 0,
+        totalDiscountAmount: 0,
+      },
+    );
+  };
+
+  const findSaleDetailForRewardItem = (rewardItem, saleDetails = [], usedDetailIds = new Set()) => {
+    if (!rewardItem?.id) return null;
+
+    const itemQuantity = Number(rewardItem.cantidad || 0);
+    const itemDiscount = Number(rewardItem.descuentoMonto || 0);
+
+    const candidates = (saleDetails || []).filter((detail) => {
+      if (usedDetailIds.has(detail.id)) return false;
+      if (detail.product_id !== rewardItem.id) return false;
+
+      if (rewardItem?.is_reward_discount_item) {
+        return Number(detail.quantity || 0) === itemQuantity;
+      }
+
+      const finalUnitPrice = Number(
+        detail.final_unit_price ?? detail.unit_price ?? 0,
+      );
+
+      return finalUnitPrice === 0;
+    });
+
+    if (candidates.length === 0) return null;
+
+    const exactMatch = candidates.find((detail) => {
+      return (
+        Number(detail.quantity || 0) === itemQuantity &&
+        Number(detail.discount_amount || 0) === itemDiscount
+      );
+    });
+
+    if (exactMatch) return exactMatch;
+
+    const quantityMatch = candidates.find((detail) => {
+      return Number(detail.quantity || 0) === itemQuantity;
+    });
+
+    return quantityMatch || candidates[0] || null;
+  };
+
+  const loadSaleDetailsForRewardRedemptions = async (saleId) => {
+    if (!saleId) return [];
+
+    const { data, error } = await supabase
+      .from("sale_details")
+      .select(
+        `
+        id,
+        sale_id,
+        product_id,
+        quantity,
+        unit_price,
+        total_price,
+        original_unit_price,
+        final_unit_price,
+        discount_amount
+      `,
+      )
+      .eq("sale_id", saleId);
+
+    if (error) throw error;
+
+    return data || [];
+  };
+
+  const registerSaleRewardRedemptions = async ({
+    saleId,
+    customerId,
+    saleDate,
+    rewardItems = [],
+  }) => {
+    if (!saleId || !customerId || !branch?.id || !user?.id) {
+      return {
+        registered: false,
+        rows: [],
+        totalPoints: 0,
+        totalQuantity: 0,
+        totalDiscountAmount: 0,
+      };
+    }
+
+    const validRewardItems = (rewardItems || []).filter((item) => {
+      return (
+        (item?.is_reward_item || item?.is_reward_discount_item) &&
+        item?.reward_id &&
+        Number(item?.cantidad || 0) > 0
+      );
+    });
+
+    if (validRewardItems.length === 0) {
+      return {
+        registered: false,
+        rows: [],
+        totalPoints: 0,
+        totalQuantity: 0,
+        totalDiscountAmount: 0,
+      };
+    }
+
+    const { data: existingRows, error: existingRowsError } = await supabase
+      .from("sale_reward_redemptions")
+      .select("id")
+      .eq("sale_id", saleId)
+      .limit(1);
+
+    if (existingRowsError) throw existingRowsError;
+
+    const summary = getRewardItemsSummary(validRewardItems);
+
+    if ((existingRows || []).length > 0) {
+      return {
+        registered: false,
+        rows: [],
+        ...summary,
+      };
+    }
+
+    const saleDetails = await loadSaleDetailsForRewardRedemptions(saleId);
+    const usedDetailIds = new Set();
+
+    const redemptionRows = validRewardItems.map((item) => {
+      const quantity = Number(item.cantidad || 0);
+      const totalPoints = getRewardItemTotalPoints(item);
+      const pointsPerUnit = getRewardItemPointsPerUnit(item);
+      const unitPrice = Number(item.precioOriginal ?? item.precio ?? 0);
+      const discountAmount = Number(
+        item.reward_discount_amount ?? item.descuentoMonto ?? unitPrice * quantity ?? 0,
+      );
+      const detailRow = findSaleDetailForRewardItem(item, saleDetails, usedDetailIds);
+
+      if (detailRow?.id) {
+        usedDetailIds.add(detailRow.id);
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        sale_id: saleId,
+        sale_detail_id: detailRow?.id || null,
+        customer_id: customerId,
+        reward_id: item.reward_id,
+        product_id: item.id,
+        branch_id: branch.id,
+        user_id: user.id,
+        quantity,
+        points_per_unit: pointsPerUnit,
+        total_points: Math.max(totalPoints, pointsPerUnit),
+        unit_price: unitPrice,
+        discount_amount: discountAmount,
+        reward_name: item.reward_name || item.discountConcept || "RECOMPENSA",
+        product_name: item.nombre || item.codigo || "PRODUCTO",
+        status: "applied",
+        created_at: saleDate || new Date().toISOString(),
+      };
+    });
+
+    const { error: insertError } = await supabase
+      .from("sale_reward_redemptions")
+      .insert(redemptionRows);
+
+    if (insertError) throw insertError;
+
+    const returnedRows = redemptionRows.map((row) => {
+      const sourceItem = validRewardItems.find((item) => {
+        return item.reward_id === row.reward_id && item.id === row.product_id;
+      });
+
+      return {
+        ...row,
+        reward_type: sourceItem?.is_reward_discount_item
+          ? "product_discount"
+          : "free_product",
+      };
+    });
+
+    return {
+      registered: true,
+      rows: returnedRows,
+      ...summary,
+    };
+  };
+
+  const registerCustomerRewardPointsRedemption = async ({
+    saleId,
+    customerId,
+    saleDate,
+    rewardItems = [],
+  }) => {
+    if (!saleId || !customerId || !branch?.id || !user?.id) {
+      const currentBalance = customerId
+        ? await getCustomerCurrentPointsBalance(customerId)
+        : null;
+
+      return {
+        pointsUsed: 0,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    const validRewardItems = (rewardItems || []).filter((item) => {
+      return (
+        (item?.is_reward_item || item?.is_reward_discount_item) &&
+        item?.reward_id &&
+        Number(item?.cantidad || 0) > 0
+      );
+    });
+
+    if (validRewardItems.length === 0) {
+      const currentBalance = await getCustomerCurrentPointsBalance(customerId);
+
+      return {
+        pointsUsed: 0,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    const { data: existingMovement, error: existingError } = await supabase
+      .from("customer_points")
+      .select("id")
+      .eq("customer_id", customerId)
+      .eq("related_sale_id", saleId)
+      .eq("source", "reward")
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    const pointsByReward = {};
+    const quantityByReward = {};
+    const nameByReward = {};
+
+    validRewardItems.forEach((item) => {
+      const rewardId = item.reward_id;
+
+      pointsByReward[rewardId] =
+        Number(pointsByReward[rewardId] || 0) + getRewardItemTotalPoints(item);
+
+      quantityByReward[rewardId] =
+        Number(quantityByReward[rewardId] || 0) + Number(item.cantidad || 0);
+
+      nameByReward[rewardId] = item.reward_name || item.discountConcept || "RECOMPENSA";
+    });
+
+    const totalPointsUsed = Object.values(pointsByReward).reduce((sum, value) => {
+      return sum + Number(value || 0);
+    }, 0);
+
+    if (totalPointsUsed <= 0) {
+      const currentBalance = await getCustomerCurrentPointsBalance(customerId);
+
+      return {
+        pointsUsed: 0,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    if (existingMovement?.id) {
+      const currentBalance = await getCustomerCurrentPointsBalance(customerId);
+
+      return {
+        pointsUsed: totalPointsUsed,
+        registered: false,
+        newBalance: currentBalance,
+      };
+    }
+
+    const movementRows = Object.entries(pointsByReward)
+      .filter(([, points]) => Number(points || 0) > 0)
+      .map(([rewardId, points]) => {
+        const quantity = Number(quantityByReward[rewardId] || 0);
+        const rewardName = nameByReward[rewardId] || "RECOMPENSA";
+
+        return {
+          id: crypto.randomUUID(),
+          customer_id: customerId,
+          points: Math.abs(Math.round(Number(points || 0))) * -1,
+          movement_type: "redeem",
+          source: "reward",
+          related_sale_id: saleId,
+          reward_id: rewardId,
+          user_id: user.id,
+          branch_id: branch.id,
+          notes: `CANJE DE RECOMPENSA EN VENTA. RECOMPENSA: ${rewardName}. CANTIDAD ENTREGADA: ${quantity}.`,
+          created_at: saleDate || new Date().toISOString(),
+        };
+      });
+
+    if (movementRows.length > 0) {
+      const { error: insertError } = await supabase
+        .from("customer_points")
+        .insert(movementRows);
+
+      if (insertError) throw insertError;
+    }
+
+    const newBalance = await getCustomerCurrentPointsBalance(customerId);
+
+    return {
+      pointsUsed: totalPointsUsed,
+      registered: movementRows.length > 0,
+      newBalance,
+    };
+  };
+
   const handleProcessPayment = async (paymentData) => {
     if (processingSale) return false;
 
@@ -2079,7 +3511,7 @@ const Sales = () => {
 
       if (!canSell) {
         alert(
-          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
         );
         setShowPaymentModal(false);
         return false;
@@ -2134,27 +3566,96 @@ const Sales = () => {
           p_payments: paymentsPayload,
           p_client_sale_token: saleToken,
           p_notes: paymentData?.notes?.trim() || null,
-        }
+        },
       );
 
       if (error) throw error;
+
+      const rewardItemsForSale = getRewardCartItems();
+
+      let rewardRedemptionResult = {
+        registered: false,
+        rows: [],
+        totalPoints: 0,
+        totalQuantity: 0,
+        totalDiscountAmount: 0,
+        error: null,
+      };
+
+      let rewardPointsResult = {
+        pointsUsed: 0,
+        registered: false,
+        newBalance: null,
+        error: null,
+      };
 
       let pointsResult = {
         points: 0,
         amountPerPoint: DEFAULT_POINTS_AMOUNT,
         registered: false,
         newBalance: null,
+        pointsUsed: 0,
+        rewardRedemptions: [],
         error: null,
       };
 
+      if (currentSaleClient?.id && rewardItemsForSale.length > 0) {
+        try {
+          rewardRedemptionResult = await registerSaleRewardRedemptions({
+            saleId,
+            customerId: currentSaleClient.id,
+            saleDate,
+            rewardItems: rewardItemsForSale,
+          });
+
+          rewardPointsResult = await registerCustomerRewardPointsRedemption({
+            saleId,
+            customerId: currentSaleClient.id,
+            saleDate,
+            rewardItems: rewardItemsForSale,
+          });
+        } catch (rewardError) {
+          console.error("Error registrando canje de recompensas:", rewardError);
+
+          rewardRedemptionResult = {
+            registered: false,
+            rows: [],
+            totalPoints: 0,
+            totalQuantity: 0,
+            totalDiscountAmount: 0,
+            error: rewardError,
+          };
+
+          rewardPointsResult = {
+            pointsUsed: 0,
+            registered: false,
+            newBalance: null,
+            error: rewardError,
+          };
+        }
+      }
+
       if (currentSaleClient?.id) {
         try {
-          pointsResult = await registerCustomerPointsForSale({
+          const earnedPointsResult = await registerCustomerPointsForSale({
             saleId,
             customerId: currentSaleClient.id,
             saleTotal: Number(total),
             saleDate,
           });
+
+          const currentBalance = await getCustomerCurrentPointsBalance(
+            currentSaleClient.id,
+          );
+
+          pointsResult = {
+            ...earnedPointsResult,
+            newBalance: currentBalance,
+            pointsUsed: Number(rewardPointsResult?.pointsUsed || 0),
+            rewardRedemptions: rewardRedemptionResult?.rows || [],
+            rewardError:
+              rewardRedemptionResult?.error || rewardPointsResult?.error || null,
+          };
         } catch (pointsError) {
           console.error("Error registrando puntos de cliente:", pointsError);
 
@@ -2162,8 +3663,15 @@ const Sales = () => {
             points: 0,
             amountPerPoint: DEFAULT_POINTS_AMOUNT,
             registered: false,
-            newBalance: null,
+            newBalance:
+              rewardPointsResult?.newBalance !== undefined
+                ? rewardPointsResult.newBalance
+                : null,
+            pointsUsed: Number(rewardPointsResult?.pointsUsed || 0),
+            rewardRedemptions: rewardRedemptionResult?.rows || [],
             error: pointsError,
+            rewardError:
+              rewardRedemptionResult?.error || rewardPointsResult?.error || null,
           };
         }
       }
@@ -2192,13 +3700,21 @@ const Sales = () => {
         paymentMethod: paymentData?.method || "",
         printed: !!paymentData?.shouldPrint,
         pointsEarned: Number(pointsResult?.points || 0),
+        pointsUsed: Number(pointsResult?.pointsUsed || 0),
         pointsBalance:
-          pointsResult?.newBalance !== undefined && pointsResult?.newBalance !== null
+          pointsResult?.newBalance !== undefined &&
+          pointsResult?.newBalance !== null
             ? Number(pointsResult.newBalance)
             : null,
         pointsError: pointsResult?.error || null,
+        rewardPointsError: pointsResult?.rewardError || null,
+        rewardRedemptions: pointsResult?.rewardRedemptions || [],
+        rewardRedemptionsRegistered: !!rewardRedemptionResult?.registered,
+        rewardPointsRegistered: !!rewardPointsResult?.registered,
         noPointsReason:
-          currentSaleClient?.id && Number(pointsResult?.points || 0) <= 0
+          currentSaleClient?.id &&
+          Number(pointsResult?.points || 0) <= 0 &&
+          Number(pointsResult?.pointsUsed || 0) <= 0
             ? "La venta no generó puntos porque el total no alcanzó el monto mínimo configurado."
             : "",
       };
@@ -2224,6 +3740,7 @@ const Sales = () => {
       name: ticketName,
       products: productos,
       client: currentSaleClient,
+      reward: currentSaleReward,
       subtotal,
       discountTotal,
       total,
@@ -2234,6 +3751,12 @@ const Sales = () => {
 
     setProductos([]);
     setCurrentSaleClient(null);
+    setCurrentSaleReward(null);
+    setPendingFreeProductRewards([]);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+    setRewardProductModalOpen(false);
+    setProductDiscountRewardModalOpen(false);
     setSelectedProduct(null);
     setTicketNumber((prev) => prev + 1);
     setBarcode("");
@@ -2249,6 +3772,7 @@ const Sales = () => {
         name: `Ticket ${ticketNumber}`,
         products: productos,
         client: currentSaleClient,
+        reward: currentSaleReward,
         subtotal,
         discountTotal,
         total,
@@ -2262,8 +3786,17 @@ const Sales = () => {
       setPendingTickets(updatedPendingTickets);
     }
 
-    setProductos(ticket.products);
+    const restoredProducts = Array.isArray(ticket.products) ? ticket.products : [];
+
+    setProductos(restoredProducts);
+    productosRef.current = restoredProducts;
     setCurrentSaleClient(ticket.client);
+    setCurrentSaleReward(getSyncedRewardsFromCart(restoredProducts, ticket.reward || null));
+    setPendingFreeProductRewards([]);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+    setRewardProductModalOpen(false);
+    setProductDiscountRewardModalOpen(false);
     setTicketNumber(ticket.number);
     setSelectedProduct(null);
     setBarcode("");
@@ -2293,7 +3826,9 @@ const Sales = () => {
 
   const openExitFlow = useCallback(async () => {
     if (shiftAlreadyCut) {
-      alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+      alert(
+        "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
+      );
       return;
     }
 
@@ -2324,6 +3859,8 @@ const Sales = () => {
         isExitModalOpen ||
         isExitAuthModalOpen ||
         isClientModalOpen ||
+        isRewardProductModalOpen ||
+        isProductDiscountRewardModalOpen ||
         isVerifierModalOpen ||
         isSearchModalOpen ||
         isDiscountModalOpen ||
@@ -2348,8 +3885,8 @@ const Sales = () => {
         if (!selectedProduct) {
           setSelectedProduct(productos[0]);
         } else {
-          const currentIndex = productos.findIndex(
-            (p) => p.id === selectedProduct.id
+          const currentIndex = productos.findIndex((p) =>
+            isSameCartItem(p, selectedProduct),
           );
 
           if (e.key === "ArrowDown") {
@@ -2405,7 +3942,9 @@ const Sales = () => {
         case "F7":
           e.preventDefault();
           if (shiftAlreadyCut) {
-            alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+            alert(
+              "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
+            );
           } else {
             setEntryModalOpen(true);
           }
@@ -2447,6 +3986,8 @@ const Sales = () => {
           else if (isExitModalOpen) setExitModalOpen(false);
           else if (isExitAuthModalOpen) setExitAuthModalOpen(false);
           else if (isClientModalOpen) setClientModalOpen(false);
+          else if (isRewardProductModalOpen) handleCloseRewardProductModal();
+          else if (isProductDiscountRewardModalOpen) handleCloseProductDiscountRewardModal();
           else if (isVerifierModalOpen) setVerifierModalOpen(false);
           else if (isSearchModalOpen) setSearchModalOpen(false);
           else if (isDiscountModalOpen) setDiscountModalOpen(false);
@@ -2473,6 +4014,8 @@ const Sales = () => {
     isExitModalOpen,
     isExitAuthModalOpen,
     isClientModalOpen,
+    isRewardProductModalOpen,
+    isProductDiscountRewardModalOpen,
     isVerifierModalOpen,
     isSearchModalOpen,
     isDiscountModalOpen,
@@ -2490,6 +4033,43 @@ const Sales = () => {
     openExitFlow,
   ]);
 
+  const currentSaleRewards = getSyncedRewardsFromCart(productos, currentSaleReward);
+  const pendingProductDiscountRewardItems = normalizeRewardsArray(currentSaleReward).filter(
+    isPendingProductDiscountReward,
+  );
+  const appliedRewards = currentSaleRewards.filter(
+    (reward) => !isPendingProductDiscountReward(reward),
+  );
+
+  const currentSaleRewardsTotalQuantity = currentSaleRewards.reduce(
+    (sum, reward) => sum + getRewardRedeemQuantity(reward),
+    0,
+  );
+
+  const appliedRewardsQuantity = appliedRewards.reduce(
+    (sum, reward) => sum + getRewardRedeemQuantity(reward),
+    0,
+  );
+
+  const pendingRewardsQuantity = pendingProductDiscountRewardItems.reduce(
+    (sum, reward) => sum + getRewardRedeemQuantity(reward),
+    0,
+  );
+
+  const currentSaleRewardsLabel = (() => {
+    if (currentSaleRewardsTotalQuantity === 0) return "";
+
+    if (pendingRewardsQuantity > 0 && appliedRewardsQuantity > 0) {
+      return `Canjes aplicados: ${appliedRewardsQuantity} · Pendientes: ${pendingRewardsQuantity}`;
+    }
+
+    if (pendingRewardsQuantity > 0) {
+      return `Canjes pendientes: ${pendingRewardsQuantity}`;
+    }
+
+    return `Canjes aplicados: ${appliedRewardsQuantity}`;
+  })();
+
   const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
 
   return (
@@ -2502,13 +4082,17 @@ const Sales = () => {
         <div className={styles.saleClientBadge}>
           <span>{currentSaleClient ? "Cliente asignado:" : "Cliente:"}</span>
           <strong>{currentSaleClient?.name || "PÚBLICO EN GENERAL"}</strong>
+          {currentSaleRewards.length > 0 && (
+            <small>{currentSaleRewardsLabel}</small>
+          )}
         </div>
       </div>
 
       {shiftAlreadyCut && (
         <div className={styles.shiftCutWarning}>
           <span>
-            Corte de cajero realizado. Debes cerrar turno antes de seguir vendiendo.
+            Corte de cajero realizado. Debes cerrar turno antes de seguir
+            vendiendo.
           </span>
 
           <span>PENDIENTE CERRAR TURNO</span>
@@ -2522,7 +4106,7 @@ const Sales = () => {
             <span>
               {recoveredDraftSavedAt
                 ? `Guardada automáticamente el ${new Date(
-                    recoveredDraftSavedAt
+                    recoveredDraftSavedAt,
                   ).toLocaleString("es-MX")}.`
                 : "La venta fue guardada automáticamente antes de cerrar el POS."}
             </span>
@@ -2571,7 +4155,9 @@ const Sales = () => {
           }`}
           onClick={() => {
             if (shiftAlreadyCut) {
-              alert("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
+              alert(
+                "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
+              );
               return;
             }
             setEntryModalOpen(true);
@@ -2613,7 +4199,11 @@ const Sales = () => {
           onClick={() => setVerifierModalOpen(true)}
         >
           <span className={styles.actionKey}>F9</span>
-          <img src={verifyIcon} alt="Verificador" className={styles.buttonIcon} />
+          <img
+            src={verifyIcon}
+            alt="Verificador"
+            className={styles.buttonIcon}
+          />
           <span className={styles.actionText}>Verificador</span>
         </div>
       </div>
@@ -2691,15 +4281,33 @@ const Sales = () => {
         <div className={styles.tableBody}>
           {productos.map((producto) => (
             <div
-              key={producto.id}
+              key={getCartItemKey(producto)}
               className={`${styles.tableRow} ${
-                selectedProduct?.id === producto.id ? styles.selectedRow : ""
+                producto.is_reward_item ? styles.rewardRow : ""
+              } ${
+                producto.is_reward_discount_item ? styles.rewardDiscountRow : ""
+              } ${
+                selectedProduct && isSameCartItem(selectedProduct, producto)
+                  ? styles.selectedRow
+                  : ""
               }`}
               style={{ gridTemplateColumns: gridTemplate }}
               onClick={() => handleProductSelect(producto)}
             >
-              <span className={styles.tableCell}>
-                {producto.nombre || producto.codigo}
+              <span className={`${styles.tableCell} ${styles.productCell}`}>
+                <span className={styles.productNameText}>
+                  {producto.nombre || producto.codigo}
+                </span>
+
+                {producto.is_reward_item && (
+                  <span className={styles.rewardBadge}>Recompensa</span>
+                )}
+
+                {producto.is_reward_discount_item && (
+                  <span className={styles.rewardDiscountBadge}>
+                    Descuento recompensa
+                  </span>
+                )}
               </span>
 
               <span className={styles.tableCell}>
@@ -2740,7 +4348,11 @@ const Sales = () => {
           </div>
 
           <div className={styles.squareButton} onClick={handleOpenDeleteModal}>
-            <img src={deleteIcon} alt="Eliminar" className={styles.squareIcon} />
+            <img
+              src={deleteIcon}
+              alt="Eliminar"
+              className={styles.squareIcon}
+            />
             <span className={styles.squareText}>Eliminar</span>
           </div>
 
@@ -2781,7 +4393,9 @@ const Sales = () => {
               alt="Ventas del día y Devoluciones"
               className={styles.squareIconSecondary}
             />
-            <span className={styles.squareText}>Ventas del día y Devoluciones</span>
+            <span className={styles.squareText}>
+              Ventas del día y Devoluciones
+            </span>
           </div>
         </div>
 
@@ -2793,7 +4407,9 @@ const Sales = () => {
 
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Descuento:</span>
-            <span className={styles.totalAmount}>-${discountTotal.toFixed(2)}</span>
+            <span className={styles.totalAmount}>
+              -${discountTotal.toFixed(2)}
+            </span>
           </div>
 
           <div className={styles.totalSection}>
@@ -2860,6 +4476,25 @@ const Sales = () => {
         onClose={() => setClientModalOpen(false)}
         onAssignClient={handleAssignClient}
         currentSaleClient={currentSaleClient}
+        currentSaleReward={EMPTY_REWARDS}
+      />
+
+      <RewardProductSelectionModal
+        isOpen={isRewardProductModalOpen}
+        onClose={handleCloseRewardProductModal}
+        onConfirm={handleConfirmRewardProducts}
+        rewards={pendingFreeProductRewards}
+        branchId={branch?.id || null}
+        cartProducts={productos}
+      />
+
+      <ProductDiscountRewardModal
+        isOpen={isProductDiscountRewardModalOpen}
+        onClose={handleCloseProductDiscountRewardModal}
+        onConfirm={handleConfirmProductDiscountReward}
+        reward={activeProductDiscountReward}
+        branchId={branch?.id || null}
+        cartProducts={productos}
       />
 
       <VerifierModal
@@ -2911,10 +4546,10 @@ const Sales = () => {
       />
 
       <SaleSuccessModal
-  isOpen={!!saleSuccessData}
-  saleData={saleSuccessData}
-  onClose={() => setSaleSuccessData(null)}
-/>
+        isOpen={!!saleSuccessData}
+        saleData={saleSuccessData}
+        onClose={() => setSaleSuccessData(null)}
+      />
 
       <SalesHistoryModal
         isOpen={isSalesHistoryModalOpen}
@@ -2924,4 +4559,4 @@ const Sales = () => {
   );
 };
 
-export default Sales; 
+export default Sales;

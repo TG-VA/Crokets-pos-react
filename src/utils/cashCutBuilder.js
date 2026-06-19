@@ -31,9 +31,11 @@ const formatMoney = (value) => {
   return `${sign}$${Math.abs(number).toFixed(2)}`;
 };
 
-const formatPositiveMoney = (value) => `+${formatMoney(Math.abs(Number(value || 0)))}`;
+const formatPositiveMoney = (value) =>
+  `+${formatMoney(Math.abs(Number(value || 0)))}`;
 
-const formatNegativeMoney = (value) => `-${formatMoney(Math.abs(Number(value || 0)))}`;
+const formatNegativeMoney = (value) =>
+  `-${formatMoney(Math.abs(Number(value || 0)))}`;
 
 const formatSignedMoney = (value) => {
   const number = Number(value || 0);
@@ -148,6 +150,31 @@ const getMethodShort = (methodName = "") => {
   return "OTR";
 };
 
+const getMethodGroup = (methodName = "") => {
+  const name = String(methodName || "").trim().toUpperCase();
+
+  if (!name) return "OTRO";
+  if (name.includes("EFECTIVO")) return "EFECTIVO";
+  if (name.includes("TERMINAL") || name.includes("TARJETA")) return "TERMINAL";
+  if (name.includes("TRANSFER")) return "TRANSFERENCIA";
+  if (name.includes("DÓLAR") || name.includes("DOLAR") || name.includes("USD")) {
+    return "DOLARES";
+  }
+
+  return name;
+};
+
+const getMethodDisplayName = (methodName = "") => {
+  const group = getMethodGroup(methodName);
+
+  if (group === "EFECTIVO") return "Efectivo";
+  if (group === "TERMINAL") return "Terminal";
+  if (group === "TRANSFERENCIA") return "Transfer.";
+  if (group === "DOLARES") return "Dolares";
+
+  return String(methodName || "Otro").slice(0, 15);
+};
+
 const safeUpper = (value = "") => String(value || "").toUpperCase();
 
 const getDifferenceLabel = (difference) => {
@@ -198,6 +225,11 @@ export const buildCashCutText = (data = {}) => {
 
     cancelaciones = [],
     devolucionesParciales = [],
+
+    rewardCanjesAplicados = 0,
+    rewardPuntosUsados = 0,
+    rewardCanjesRevertidos = 0,
+    rewardPuntosDevueltos = 0,
   } = data;
 
   const expected =
@@ -227,6 +259,12 @@ export const buildCashCutText = (data = {}) => {
     0
   );
 
+  const hasRewardActivity =
+    Number(rewardCanjesAplicados || 0) > 0 ||
+    Number(rewardPuntosUsados || 0) > 0 ||
+    Number(rewardCanjesRevertidos || 0) > 0 ||
+    Number(rewardPuntosDevueltos || 0) > 0;
+
   const ventasNetas =
     Number(ventasTotales || 0) -
     Number(totalCancelaciones || 0) -
@@ -236,6 +274,36 @@ export const buildCashCutText = (data = {}) => {
     (acc, item) => acc + Number(item.total || 0),
     0
   );
+
+  const refundsByMethod = {};
+
+  cancelaciones.forEach((item) => {
+    const methodName = item.refund_method_name || "OTRO";
+    const group = getMethodGroup(methodName);
+
+    if (!refundsByMethod[group]) {
+      refundsByMethod[group] = {
+        label: getMethodDisplayName(methodName),
+        total: 0,
+      };
+    }
+
+    refundsByMethod[group].total += Number(item.refund_amount || 0);
+  });
+
+  devolucionesParciales.forEach((item) => {
+    const methodName = item.refund_method_name || "OTRO";
+    const group = getMethodGroup(methodName);
+
+    if (!refundsByMethod[group]) {
+      refundsByMethod[group] = {
+        label: getMethodDisplayName(methodName),
+        total: 0,
+      };
+    }
+
+    refundsByMethod[group].total += Number(item.total_refund || 0);
+  });
 
   const generatedAt = new Date();
   const cutDateToPrint = cutCreatedAt || generatedAt;
@@ -283,8 +351,15 @@ export const buildCashCutText = (data = {}) => {
 
   lines.push(sectionTitle("RESUMEN NETO"));
   lines.push(formatTotalLine("Ventas brutas:", formatMoney(ventasTotales)));
-  lines.push(formatTotalLine("Cancelaciones:", formatNegativeMoney(totalCancelaciones)));
-  lines.push(formatTotalLine("Dev. parciales:", formatNegativeMoney(totalDevolucionesParciales)));
+  lines.push(
+    formatTotalLine("Cancelaciones:", formatNegativeMoney(totalCancelaciones))
+  );
+  lines.push(
+    formatTotalLine(
+      "Dev. parciales:",
+      formatNegativeMoney(totalDevolucionesParciales)
+    )
+  );
   lines.push(formatTotalLine("Ventas netas:", formatMoney(ventasNetas)));
   lines.push(formatTotalLine("Caja esperada:", formatMoney(expected)));
   lines.push(dash());
@@ -292,7 +367,9 @@ export const buildCashCutText = (data = {}) => {
   lines.push(sectionTitle("DINERO EN CAJA"));
   lines.push(formatTotalLine("Fondo inicial:", formatMoney(openingAmount)));
   lines.push(formatTotalLine("Entradas:", formatPositiveMoney(totalEntradas)));
-  lines.push(formatTotalLine("Vtas efectivo:", formatPositiveMoney(ventasEfectivo)));
+  lines.push(
+    formatTotalLine("Vtas efectivo:", formatPositiveMoney(ventasEfectivo))
+  );
 
   if (Number(ventasDolaresUsd || 0) > 0 || Number(ventasDolaresMxn || 0) > 0) {
     lines.push(
@@ -301,16 +378,17 @@ export const buildCashCutText = (data = {}) => {
         `+USD ${Number(ventasDolaresUsd || 0).toFixed(2)}`
       )
     );
-    lines.push(formatTotalLine("USD a MXN:", formatPositiveMoney(ventasDolaresMxn)));
+    lines.push(
+      formatTotalLine("USD a MXN:", formatPositiveMoney(ventasDolaresMxn))
+    );
   }
 
   lines.push(formatTotalLine("Salidas:", formatNegativeMoney(totalSalidas)));
-  lines.push(formatTotalLine("Canc. caja:", formatNegativeMoney(devolucionesCaja)));
   lines.push(
-    formatTotalLine(
-      "Dev. caja:",
-      formatNegativeMoney(devolucionesParcialesCaja)
-    )
+    formatTotalLine("Canc. caja:", formatNegativeMoney(devolucionesCaja))
+  );
+  lines.push(
+    formatTotalLine("Dev. caja:", formatNegativeMoney(devolucionesParcialesCaja))
   );
   lines.push(formatTotalLine("TOTAL CAJA:", formatMoney(expected)));
   lines.push(dash());
@@ -321,15 +399,16 @@ export const buildCashCutText = (data = {}) => {
     lines.push("Sin registros");
   } else {
     ventasPorMetodo.forEach((method) => {
-      const name = String(method.name || "OTRO").slice(0, 15);
+      const methodName = String(method.name || "OTRO");
+      const name = getMethodDisplayName(methodName);
       const isDollars =
-        String(method.name || "").toUpperCase().includes("DOLAR") ||
-        String(method.name || "").toUpperCase().includes("DÓLAR");
+        methodName.toUpperCase().includes("DOLAR") ||
+        methodName.toUpperCase().includes("DÓLAR");
 
       if (isDollars) {
         lines.push(
           formatTotalLine(
-            `${name}:`,
+            `${name} bruto:`,
             `USD ${Number(ventasDolaresUsd || method.total || 0).toFixed(2)}`
           )
         );
@@ -338,11 +417,37 @@ export const buildCashCutText = (data = {}) => {
           lines.push(formatTotalLine("Eq. MXN:", formatMoney(ventasDolaresMxn)));
         }
       } else {
-        lines.push(formatTotalLine(`${name}:`, formatMoney(method.total)));
+        lines.push(formatTotalLine(`${name} bruto:`, formatMoney(method.total)));
       }
     });
 
+    const refundGroups = Object.entries(refundsByMethod).filter(
+      ([, value]) => Number(value.total || 0) > 0
+    );
+
+    if (refundGroups.length > 0) {
+      lines.push(dash());
+      lines.push("Reembolsos:");
+
+      refundGroups.forEach(([, value]) => {
+        lines.push(
+          formatTotalLine(
+            `${value.label}:`,
+            formatNegativeMoney(Number(value.total || 0))
+          )
+        );
+      });
+    }
+
+    lines.push(dash());
     lines.push(formatTotalLine("TOTAL BRUTO:", formatMoney(totalMetodos)));
+    lines.push(
+      formatTotalLine(
+        "TOTAL REEMB:",
+        formatNegativeMoney(totalCancelaciones + totalDevolucionesParciales)
+      )
+    );
+    lines.push(formatTotalLine("TOTAL NETO:", formatMoney(ventasNetas)));
   }
 
   lines.push(dash());
@@ -360,7 +465,9 @@ export const buildCashCutText = (data = {}) => {
       lines.push(formatTotalLine(label, formatPositiveMoney(entry.amount)));
     });
 
-    lines.push(formatTotalLine("TOTAL ENTR:", formatPositiveMoney(totalEntradas)));
+    lines.push(
+      formatTotalLine("TOTAL ENTR:", formatPositiveMoney(totalEntradas))
+    );
   }
 
   lines.push(dash());
@@ -395,6 +502,44 @@ export const buildCashCutText = (data = {}) => {
   lines.push(formatTotalLine("IVA:", formatMoney(tax)));
   lines.push(formatTotalLine("TOTAL BRUTO:", formatMoney(ventasTotales)));
   lines.push(formatTotalLine("TOTAL NETO:", formatMoney(ventasNetas)));
+  lines.push(dash());
+
+  lines.push(sectionTitle("RECOMPENSAS"));
+
+  if (!hasRewardActivity) {
+    lines.push("Sin registros");
+  } else {
+    if (Number(rewardCanjesAplicados || 0) > 0) {
+      lines.push(
+        formatTotalLine(
+          "Canjes aplic:",
+          String(Number(rewardCanjesAplicados || 0))
+        )
+      );
+      lines.push(
+        formatTotalLine(
+          "Pts usados:",
+          `-${Number(rewardPuntosUsados || 0)} pts`
+        )
+      );
+    }
+
+    if (Number(rewardCanjesRevertidos || 0) > 0) {
+      lines.push(
+        formatTotalLine(
+          "Canjes rev:",
+          String(Number(rewardCanjesRevertidos || 0))
+        )
+      );
+      lines.push(
+        formatTotalLine(
+          "Pts devueltos:",
+          `+${Number(rewardPuntosDevueltos || 0)} pts`
+        )
+      );
+    }
+  }
+
   lines.push(dash());
 
   lines.push(sectionTitle("CANCELACIONES"));

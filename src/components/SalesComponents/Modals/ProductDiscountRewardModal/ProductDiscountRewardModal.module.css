@@ -1,0 +1,480 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1650;
+}
+
+.modal {
+  width: 900px;
+  max-width: 94vw;
+  max-height: 92vh;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  background: #1092b1;
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.header p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.closeButton {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0 4px;
+}
+
+.closeButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.closeButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #f8fafc;
+  padding: 16px 20px;
+}
+
+.rewardBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.rewardBox span {
+  display: block;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.rewardBox strong {
+  display: block;
+  color: #7c2d12;
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.rewardBox p {
+  margin: 6px 0 0;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pointsBox {
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.pointsBox strong {
+  color: #fc8913;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pointsBox span {
+  margin: 3px 0 0;
+  color: #9a3412;
+}
+
+.searchBox {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.searchBox label {
+  display: block;
+  color: #333333;
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.searchBox p {
+  margin: 8px 0 0;
+  color: #666666;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.searchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.searchRow input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 12px;
+  color: #333333;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.searchRow input:focus {
+  border-color: #1092b1;
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
+}
+
+.searchRow button {
+  border: none;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.searchRow button:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.searchRow button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.emptyMessage {
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  color: #666666;
+  border-radius: 12px;
+  padding: 22px 14px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.productList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.productOption {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #fed7aa;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.12s ease;
+}
+
+.productOption:hover:not(:disabled) {
+  background: #ffedd5;
+  border-color: #fc8913;
+  transform: translateY(-1px);
+}
+
+.productOption:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.productOptionSelected {
+  background: #e0f2fe;
+  border-color: #1092b1;
+  box-shadow: inset 0 0 0 2px rgba(16, 146, 177, 0.18);
+}
+
+.productInfo {
+  min-width: 0;
+}
+
+.productInfo strong {
+  display: block;
+  color: #333333;
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.productInfo span {
+  display: block;
+  color: #666666;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.productInfo small {
+  display: inline-flex;
+  color: #075985;
+  background: #e0f2fe;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.productAmounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.productAmounts div {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 8px 9px;
+  text-align: center;
+}
+
+.productAmounts span {
+  display: block;
+  color: #9a3412;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.productAmounts strong {
+  display: block;
+  color: #fc8913;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.discountAmount strong {
+  color: #c2410c;
+}
+
+.finalAmount strong {
+  color: #166534;
+}
+
+.selectedBox {
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.selectedBox > div:first-child span {
+  display: block;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.selectedBox > div:first-child strong {
+  display: block;
+  color: #14532d;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.selectedTotals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.selectedTotals div {
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 9px;
+  text-align: center;
+}
+
+.selectedTotals span {
+  display: block;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.selectedTotals strong {
+  display: block;
+  color: #15803d;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.cancelButton,
+.confirmButton {
+  border: none;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.12s ease;
+}
+
+.cancelButton {
+  background: #6b7280;
+  color: #ffffff;
+}
+
+.confirmButton {
+  background: #1092b1;
+  color: #ffffff;
+  min-width: 200px;
+}
+
+.cancelButton:hover:not(:disabled),
+.confirmButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: #0d7a94;
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .modal {
+    max-width: calc(100vw - 22px);
+  }
+
+  .rewardBox {
+    grid-template-columns: 1fr;
+  }
+
+  .pointsBox {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .searchRow {
+    grid-template-columns: 1fr;
+  }
+
+  .productOption {
+    grid-template-columns: 1fr;
+  }
+
+  .productAmounts,
+  .selectedTotals {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}

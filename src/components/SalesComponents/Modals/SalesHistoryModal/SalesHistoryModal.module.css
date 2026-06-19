@@ -312,6 +312,53 @@
   border-bottom: 1px solid #edf1f5;
 }
 
+.rewardSummaryActive {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.rewardSummaryCancelled {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+}
+
+.rewardSummaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f766e;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.18);
+}
+
+.rewardSummaryStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rewardSummaryValue {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f766e;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .totalRow {
   display: flex;
   justify-content: space-between;
@@ -720,6 +767,15 @@
 
 .availableReturnText {
   color: #198754;
+}
+
+.rewardRevertedText {
+  color: #0f766e;
+  display: inline-block;
+  background: #d1fae5;
+  border: 1px solid #99f6e4;
+  padding: 2px 8px;
+  border-radius: 999px;
 }
 
 .returnedItemRow {

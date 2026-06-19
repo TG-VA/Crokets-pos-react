@@ -10,14 +10,17 @@
 }
 
 .modal {
-  width: 540px;
+  width: 760px;
   max-width: 94vw;
+  max-height: 92vh;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   overflow: hidden;
   animation: modalEnter 0.22s ease-out;
   transform-origin: center;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes overlayFadeIn {
@@ -49,6 +52,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .header h2 {
@@ -72,7 +76,11 @@
 }
 
 .form {
-  padding: 18px 20px 20px;
+  flex: 1;
+  min-height: 0;
+  padding: 18px 20px 0;
+  overflow-y: auto;
+  background: #f8fafc;
 }
 
 .fieldGroup {
@@ -80,11 +88,15 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .fieldGroup label {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   color: #333333;
 }
 
@@ -123,6 +135,7 @@
   padding: 10px 12px;
   font-size: 14px;
   margin-bottom: 14px;
+  font-weight: 700;
 }
 
 .inputValid {
@@ -142,19 +155,175 @@
   margin-top: 2px;
 }
 
+.productSearchBox {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.productHelpText {
+  color: #666666;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.productResultsBox {
+  border: 1px solid #cfe8ef;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 245px;
+  overflow-y: auto;
+  background: #ffffff;
+  margin-top: 8px;
+}
+
+.productResultButton {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #edf2f7;
+  background: #ffffff;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    transform 0.12s ease;
+}
+
+.productResultButton:hover:not(:disabled) {
+  background: #eaf7fb;
+}
+
+.productResultButton:active:not(:disabled) {
+  transform: scale(0.995);
+}
+
+.productResultButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.productResultName {
+  color: #2f2f2f;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.productBarcode {
+  margin-left: 6px;
+  color: #777777;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.productPrice {
+  color: #075985;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.selectedProductsBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  background: #f0f9ff;
+}
+
+.selectedProductsTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #075985;
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.emptySelectedText {
+  margin: 0;
+  color: #666666;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selectedProductsList {
+  display: grid;
+  gap: 8px;
+  max-height: 170px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.selectedProductItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.selectedProductName {
+  color: #333333;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.removeProductButton {
+  border: none;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    transform 0.12s ease;
+}
+
+.removeProductButton:hover:not(:disabled) {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+.removeProductButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin: 18px -20px 0;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .cancelButton,
 .saveButton {
   border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
+  border-radius: 10px;
+  min-width: 120px;
+  padding: 12px 20px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   transition:
     background-color 0.16s ease,
@@ -191,4 +360,79 @@
 .saveButton:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayFadeIn 0.16s ease-out;
+}
+
+.confirmModal {
+  width: 390px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 24px 24px;
+  text-align: center;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.3);
+  animation: modalEnter 0.2s ease-out;
+}
+
+.confirmIcon {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.confirmModal h3 {
+  margin: 0 0 8px;
+  color: #222222;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.confirmModal p {
+  margin: 0 0 22px;
+  color: #555555;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.confirmButton {
+  border: none;
+  border-radius: 10px;
+  background: #1092b1;
+  color: #ffffff;
+  min-width: 130px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    transform 0.12s ease;
+}
+
+.confirmButton:hover {
+  background: #0d7a94;
+  transform: translateY(-1px);
+}
+
+.confirmButton:active {
+  transform: translateY(0);
 }

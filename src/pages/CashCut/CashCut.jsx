@@ -170,6 +170,13 @@ const CashCut = () => {
     useState(0);
   const [devolucionesParciales, setDevolucionesParciales] = useState([]);
 
+  const [rewardSummary, setRewardSummary] = useState({
+    canjesAplicados: 0,
+    puntosUsados: 0,
+    canjesRevertidos: 0,
+    puntosDevueltos: 0,
+  });
+
   const [entradasEfectivo, setEntradasEfectivo] = useState([]);
   const [salidasEfectivo, setSalidasEfectivo] = useState([]);
   const [totalEntradas, setTotalEntradas] = useState(0);
@@ -184,142 +191,142 @@ const CashCut = () => {
   }, [user]);
 
   useEffect(() => {
-  if (!user?.id || !session?.id || !session?.branch_id || isHistoricalView) {
-    return;
-  }
-
-  const refreshRealtimeData = () => {
-    if (realtimeTimerRef.current) {
-      clearTimeout(realtimeTimerRef.current);
+    if (!user?.id || !session?.id || !session?.branch_id || isHistoricalView) {
+      return;
     }
 
-    realtimeTimerRef.current = setTimeout(async () => {
-      try {
-        const activeSession = await fetchSession();
-
-        if (!activeSession?.id) {
-          resetSalesState();
-          setHasShiftCut(false);
-          setCurrentShiftCut(null);
-          return;
-        }
-
-        if (activeSession.id !== session.id) {
-          await loadCurrentSession(activeSession);
-          await fetchCutsHistory(activeSession.branch_id);
-          return;
-        }
-
-        await fetchCutsHistory(activeSession.branch_id);
-
-        await fetchSalesData({
-          sessionData: activeSession,
-          userId: user.id,
-          endAt: null,
-        });
-
-        await fetchCashMovements(activeSession.id);
-        await fetchExistingCuts(activeSession.id);
-      } catch (err) {
-        console.error("Error actualizando corte en tiempo real:", err);
+    const refreshRealtimeData = () => {
+      if (realtimeTimerRef.current) {
+        clearTimeout(realtimeTimerRef.current);
       }
-    }, 700);
-  };
 
-  const channel = supabase
-    .channel(`cashcut-realtime-${session.id}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "sales",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "sale_payments",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "sale_details",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "cash_movements",
-        filter: `session_id=eq.${session.id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "canceled_sales",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "sale_returns",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "cash_cuts",
-        filter: `branch_id=eq.${session.branch_id}`,
-      },
-      refreshRealtimeData
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "cash_register_sessions",
-        filter: `id=eq.${session.id}`,
-      },
-      refreshRealtimeData
-    )
-    .subscribe();
+      realtimeTimerRef.current = setTimeout(async () => {
+        try {
+          const activeSession = await fetchSession();
 
-  return () => {
-    if (realtimeTimerRef.current) {
-      clearTimeout(realtimeTimerRef.current);
-    }
+          if (!activeSession?.id) {
+            resetSalesState();
+            setHasShiftCut(false);
+            setCurrentShiftCut(null);
+            return;
+          }
 
-    supabase.removeChannel(channel);
-  };
+          if (activeSession.id !== session.id) {
+            await loadCurrentSession(activeSession);
+            await fetchCutsHistory(activeSession.branch_id);
+            return;
+          }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [user?.id, session?.id, session?.branch_id, isHistoricalView]);
+          await fetchCutsHistory(activeSession.branch_id);
+
+          await fetchSalesData({
+            sessionData: activeSession,
+            userId: user.id,
+            endAt: null,
+          });
+
+          await fetchCashMovements(activeSession.id);
+          await fetchExistingCuts(activeSession.id);
+        } catch (err) {
+          console.error("Error actualizando corte en tiempo real:", err);
+        }
+      }, 700);
+    };
+
+    const channel = supabase
+      .channel(`cashcut-realtime-${session.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sales",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sale_payments",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sale_details",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cash_movements",
+          filter: `session_id=eq.${session.id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "canceled_sales",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sale_returns",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cash_cuts",
+          filter: `branch_id=eq.${session.branch_id}`,
+        },
+        refreshRealtimeData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cash_register_sessions",
+          filter: `id=eq.${session.id}`,
+        },
+        refreshRealtimeData
+      )
+      .subscribe();
+
+    return () => {
+      if (realtimeTimerRef.current) {
+        clearTimeout(realtimeTimerRef.current);
+      }
+
+      supabase.removeChannel(channel);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, session?.id, session?.branch_id, isHistoricalView]);
 
   const resetSalesState = () => {
     setVentasTotales(0);
@@ -337,6 +344,13 @@ const CashCut = () => {
     setDevolucionesParcialesTotales(0);
     setDevolucionesParcialesAfectanCaja(0);
     setDevolucionesParciales([]);
+
+    setRewardSummary({
+      canjesAplicados: 0,
+      puntosUsados: 0,
+      canjesRevertidos: 0,
+      puntosDevueltos: 0,
+    });
 
     setEntradasEfectivo([]);
     setSalidasEfectivo([]);
@@ -668,12 +682,14 @@ const CashCut = () => {
       return;
     }
 
+    let saleIdsForTotals = [];
+
     let salesQuery = supabase
       .from("sales")
-      .select("id, subtotal, tax, total, created_at")
+      .select("id, subtotal, tax, total, created_at, status")
       .eq("branch_id", branchId)
       .eq("user_id", userId)
-      .eq("status", "completed")
+      .in("status", ["completed", "cancelled", "refunded"])
       .gte("created_at", turnoStart);
 
     if (endAt) {
@@ -690,6 +706,7 @@ const CashCut = () => {
 
     if (salesData && salesData.length > 0) {
       const saleIds = salesData.map((s) => s.id);
+      saleIdsForTotals = saleIds;
 
       setVentasTotales(
         salesData.reduce((acc, s) => acc + Number(s.total || 0), 0)
@@ -841,6 +858,70 @@ const CashCut = () => {
         affects_cash: row.payment_methods?.affects_cash ?? false,
       }))
     );
+
+    const rewardSaleIds = [
+      ...saleIdsForTotals,
+      ...(refundRows || []).map((row) => row.sale_id),
+      ...(partialReturnRows || []).map((row) => row.sale_id),
+    ];
+
+    await fetchRewardSummary(rewardSaleIds);
+  };
+
+  const fetchRewardSummary = async (saleIds = []) => {
+    const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
+
+    if (cleanSaleIds.length === 0) {
+      setRewardSummary({
+        canjesAplicados: 0,
+        puntosUsados: 0,
+        canjesRevertidos: 0,
+        puntosDevueltos: 0,
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("sale_reward_redemptions")
+      .select("id, sale_id, quantity, total_points, reversed_at")
+      .in("sale_id", cleanSaleIds);
+
+    if (error) {
+      console.error("Error obteniendo recompensas del corte:", error.message);
+      setRewardSummary({
+        canjesAplicados: 0,
+        puntosUsados: 0,
+        canjesRevertidos: 0,
+        puntosDevueltos: 0,
+      });
+      return;
+    }
+
+    const summary = (data || []).reduce(
+      (acc, row) => {
+        const quantity = Number(row.quantity || 1);
+        const points = Math.abs(Number(row.total_points || 0));
+        const isReverted = Boolean(row.reversed_at);
+
+        if (isReverted) {
+          acc.canjesRevertidos += quantity;
+          acc.puntosDevueltos += points;
+        } else {
+          acc.canjesAplicados += quantity;
+          acc.puntosUsados += points;
+        }
+
+        return acc;
+      },
+      {
+        canjesAplicados: 0,
+        puntosUsados: 0,
+        canjesRevertidos: 0,
+        puntosDevueltos: 0,
+      }
+    );
+
+    setRewardSummary(summary);
   };
 
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
@@ -1156,6 +1237,53 @@ const CashCut = () => {
 
   const descuentoTotal = subtotal + tax - ventasTotales;
 
+  const ventasNetas =
+    Number(ventasTotales || 0) -
+    Number(devolucionesTotales || 0) -
+    Number(devolucionesParcialesTotales || 0);
+
+  const getRefundsByMethodName = (matchesMethod) => {
+    const totalCancelacionesMetodo = cancelaciones
+      .filter((item) => matchesMethod(item.refund_method_name || ""))
+      .reduce((acc, item) => acc + Number(item.refund_amount || 0), 0);
+
+    const totalDevolucionesMetodo = devolucionesParciales
+      .filter((item) => matchesMethod(item.refund_method_name || ""))
+      .reduce((acc, item) => acc + Number(item.total_refund || 0), 0);
+
+    return totalCancelacionesMetodo + totalDevolucionesMetodo;
+  };
+
+  const devolucionesEfectivoMetodo = getRefundsByMethodName((methodName) => {
+    const name = String(methodName || "").toLowerCase();
+    return name.includes("efectivo");
+  });
+
+  const devolucionesTerminalMetodo = getRefundsByMethodName((methodName) => {
+    const name = String(methodName || "").toLowerCase();
+    return name.includes("terminal") || name.includes("tarjeta");
+  });
+
+  const devolucionesTransferenciaMetodo = getRefundsByMethodName((methodName) => {
+    const name = String(methodName || "").toLowerCase();
+    return name.includes("transferencia");
+  });
+
+  const ventasEfectivoNeto = Math.max(
+    Number(ventasEfectivo || 0) - Number(devolucionesEfectivoMetodo || 0),
+    0
+  );
+
+  const ventasTerminalNeto = Math.max(
+    Number(ventasTerminal || 0) - Number(devolucionesTerminalMetodo || 0),
+    0
+  );
+
+  const ventasTransferenciaNeto = Math.max(
+    Number(ventasTransferencia || 0) - Number(devolucionesTransferenciaMetodo || 0),
+    0
+  );
+
   const dineroCaja =
     openingAmount +
     totalEntradas +
@@ -1227,6 +1355,11 @@ const CashCut = () => {
 
         cancelaciones,
         devolucionesParciales,
+
+        rewardCanjesAplicados: rewardSummary.canjesAplicados,
+        rewardPuntosUsados: rewardSummary.puntosUsados,
+        rewardCanjesRevertidos: rewardSummary.canjesRevertidos,
+        rewardPuntosDevueltos: rewardSummary.puntosDevueltos,
       });
 
       const result = await printTicket(text);
@@ -1301,13 +1434,11 @@ const CashCut = () => {
               <div className={styles.heroLeft}>
                 <span className={styles.heroLabel}>
                   {isHistoricalView
-                    ? "CORTE HISTÓRICO"
-                    : hasShiftCut
-                    ? "TURNO CORTADO"
-                    : "VENTAS TOTALES DEL TURNO"}
+                    ? "VENTAS NETAS DEL CORTE"
+                    : "VENTAS NETAS DEL TURNO"}
                 </span>
 
-                <span className={styles.heroAmount}>{fmt(ventasTotales)}</span>
+                <span className={styles.heroAmount}>{fmt(ventasNetas)}</span>
 
                 <span className={styles.heroDate}>
                   {isHistoricalView
@@ -1345,19 +1476,30 @@ const CashCut = () => {
 
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💵 Ventas en efectivo</span>
-                  <span className={styles.heroStatValue}>{fmt(ventasEfectivo)}</span>
-                </div>
-
-                <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💳 Terminal</span>
-                  <span className={styles.heroStatValue}>{fmt(ventasTerminal)}</span>
-                </div>
-
-                <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>🏦 Transferencia</span>
+                  <span className={styles.heroStatLabel}>💵 Efectivo neto</span>
                   <span className={styles.heroStatValue}>
-                    {fmt(ventasTransferencia)}
+                    {fmt(ventasEfectivoNeto)}
+                  </span>
+                </div>
+
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>💳 Terminal neta</span>
+                  <span className={styles.heroStatValue}>
+                    {fmt(ventasTerminalNeto)}
+                  </span>
+                </div>
+
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>🏦 Transferencia neta</span>
+                  <span className={styles.heroStatValue}>
+                    {fmt(ventasTransferenciaNeto)}
+                  </span>
+                </div>
+
+                <div className={styles.heroStat}>
+                  <span className={styles.heroStatLabel}>💰 Total en caja</span>
+                  <span className={styles.heroStatValue}>
+                    {fmt(expectedDisplay)}
                   </span>
                 </div>
               </div>
@@ -1400,8 +1542,8 @@ const CashCut = () => {
                   color="#2e7d32"
                 />
                 <DataRow
-                  label="Ventas en efectivo"
-                  value={`+ ${fmt(ventasEfectivo)}`}
+                  label="Ventas en efectivo netas"
+                  value={`+ ${fmt(ventasEfectivoNeto)}`}
                   color="#2e7d32"
                 />
                 <DataRow
@@ -1484,7 +1626,19 @@ const CashCut = () => {
                       />
                     )}
 
-                    <DataRow label="Total" value={fmt(ventasTotales)} bold borderTop />
+                    <DataRow
+                      label="Total bruto"
+                      value={fmt(ventasTotales)}
+                      bold
+                      borderTop
+                    />
+
+                    <DataRow
+                      label="Total neto"
+                      value={fmt(ventasNetas)}
+                      bold
+                      color={ventasNetas < 0 ? "#c62828" : "#111827"}
+                    />
                   </>
                 )}
               </SectionCard>
@@ -1571,8 +1725,56 @@ const CashCut = () => {
                   value={fmt(tax)}
                   color="#1976d2"
                 />
-                <DataRow label="Total vendido" value={fmt(ventasTotales)} bold borderTop />
+                <DataRow
+                  label="Total bruto"
+                  value={fmt(ventasTotales)}
+                  bold
+                  borderTop
+                />
+
+                <DataRow
+                  label="Total neto"
+                  value={fmt(ventasNetas)}
+                  bold
+                  color={ventasNetas < 0 ? "#c62828" : "#111827"}
+                />
               </SectionCard>
+
+              {(rewardSummary.canjesAplicados > 0 ||
+                rewardSummary.canjesRevertidos > 0) && (
+                <SectionCard icon="🎁" title="RECOMPENSAS">
+                  {rewardSummary.canjesAplicados > 0 && (
+                    <>
+                      <DataRow
+                        label="Canjes aplicados"
+                        value={rewardSummary.canjesAplicados}
+                        color="#2e7d32"
+                      />
+                      <DataRow
+                        label="Puntos usados"
+                        value={`- ${rewardSummary.puntosUsados} pts`}
+                        color="#c62828"
+                      />
+                    </>
+                  )}
+
+                  {rewardSummary.canjesRevertidos > 0 && (
+                    <>
+                      <DataRow
+                        label="Canjes revertidos"
+                        value={rewardSummary.canjesRevertidos}
+                        color="#00695c"
+                        borderTop={rewardSummary.canjesAplicados > 0}
+                      />
+                      <DataRow
+                        label="Puntos devueltos"
+                        value={`+ ${rewardSummary.puntosDevueltos} pts`}
+                        color="#00695c"
+                      />
+                    </>
+                  )}
+                </SectionCard>
+              )}
 
               <SectionCard icon="↩️" title="CANCELACIONES">
                 {cancelaciones.length === 0 ? (
