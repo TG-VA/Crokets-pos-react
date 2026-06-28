@@ -2,6 +2,20 @@ import { supabase } from "../lib/supabaseClient";
 
 const MOVEMENTS_TABLE_CACHE_KEY = "inventoryMovementsSelectedTable_v1";
 
+export const getSystemLocalTimestamp = (value = new Date()) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 const getCandidateTables = () => {
   const envTable = import.meta.env.VITE_INVENTORY_MOVEMENTS_TABLE;
   return [
@@ -58,6 +72,7 @@ const buildInsertPayload = (movement) => {
     newStock,
     reason,
     userId,
+    createdAt,
   } = movement || {};
 
   return {
@@ -72,6 +87,7 @@ const buildInsertPayload = (movement) => {
     new_stock: Number.isFinite(Number(newStock)) ? Number(newStock) : null,
     reason: reason ? String(reason).trim() : null,
     user_id: userId || null,
+    created_at: createdAt ? String(createdAt) : null,
   };
 };
 
@@ -166,6 +182,7 @@ export const logInventoryMovement = async (movement) => {
       quantity: fullPayload.quantity,
       reason: fullPayload.reason,
       user_id: fullPayload.user_id,
+      created_at: fullPayload.created_at,
     };
 
     const { error: minimalError } = await supabase.from(table).insert(minimalPayload);

@@ -48,32 +48,39 @@ const formatReason = (value) => {
   return `${label.toUpperCase()}: ${rest.toUpperCase()}`;
 };
 
-const formatDateTime = (value) => {
+const formatDateTime = (value, { useSystemTime = false } = {}) => {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-MX", {
-    timeZone: TIME_ZONE,
+  const options = {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(d);
+  };
+  if (!useSystemTime) {
+    options.timeZone = TIME_ZONE;
+  }
+  return new Intl.DateTimeFormat("es-MX", options).format(d);
 };
 
-const getDatePartsInTimeZone = (value) => {
+const getDateParts = (value, { useSystemTime = false } = {}) => {
   if (!value) return null;
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
 
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TIME_ZONE,
+  const options = {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(d);
+  };
+  if (!useSystemTime) {
+    options.timeZone = TIME_ZONE;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(d);
 
   const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   if (!map.year || !map.month || !map.day) return null;
@@ -130,13 +137,13 @@ const getRowTypeInfo = (row) => {
 };
 
 const getTodayDateKey = () => {
-  const parts = getDatePartsInTimeZone(new Date());
+  const parts = getDateParts(new Date());
   if (!parts) return "0000-00-00";
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
 
-const getDateKeyFromValue = (value) => {
-  const parts = getDatePartsInTimeZone(value);
+const getDateKeyFromValue = (value, options) => {
+  const parts = getDateParts(value, options);
   if (!parts) return null;
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
@@ -217,12 +224,28 @@ const getDateRangeForPreset = (dateKey, preset) => {
 };
 
 const COL_WIDTHS_STORAGE_KEY = "movementsReportColWidths_v2";
-const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v1";
+const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v2";
 const MOVEMENTS_PRODUCTS_SELECT_KEY = "movementsReportProductsSelect_v1";
 const MOVEMENTS_USERS_SELECT_KEY = "movementsReportUsersSelect_v1";
 const MOVEMENTS_REDEMPTIONS_SELECT_KEY = "movementsReportRedemptionsSelect_v1";
 const MOVEMENTS_REWARDS_SELECT_KEY = "movementsReportRewardsSelect_v1";
 const REWARD_REDEMPTIONS_TABLE = "sale_reward_redemptions";
+const buildSaleProductKey = (saleId, productId) => {
+  const saleKey = (saleId ?? "").toString().trim();
+  const productKey = (productId ?? "").toString().trim();
+  if (!saleKey || !productKey) return null;
+  return `${saleKey}::${productKey}`;
+};
+
+const buildRedemptionReason = (rewardLabel, pointsValue) => {
+  const reasonParts = [];
+  if (rewardLabel) reasonParts.push(rewardLabel);
+  if (pointsValue !== null && pointsValue !== undefined && pointsValue !== "") {
+    reasonParts.push(`${pointsValue} PTS`);
+  }
+  return reasonParts.length > 0 ? `redemption: ${reasonParts.join(" - ")}` : "redemption";
+};
+
 const buildRowView = (r) => {
   const p = r?.products ?? {};
   const s = getSalesObj(r);
@@ -236,8 +259,10 @@ const buildRowView = (r) => {
     (r?.saleId ?? "").toString().trim() ||
     "";
   const ticket = formatTicket(ticketRaw);
-  const soldAtValue = r?.created_at ?? s?.created_at;
-  const soldAt = formatDateTime(soldAtValue);
+  const useSystemTime = !s?.sale_date;
+  const soldAtValue = s?.sale_date ?? r?.created_at ?? s?.created_at;
+  const soldAt = formatDateTime(soldAtValue, { useSystemTime });
+  const soldAtDateKey = getDateKeyFromValue(soldAtValue, { useSystemTime });
   const productName =
     ((r?.display_product_name ?? "").toString().trim() ||
       (p?.name ?? "").toString().trim() ||
@@ -254,6 +279,7 @@ const buildRowView = (r) => {
   return {
     soldAtValue,
     soldAt,
+    soldAtDateKey,
     productName,
     ticketRaw,
     ticket,
@@ -592,6 +618,11 @@ const PageMovementsReport = () => {
         const cachedSelect = getCached(MOVEMENTS_SALES_SELECT_KEY);
         const candidates = [
           cachedSelect,
+          "id, sale_date, ticket_number, created_at",
+          "id, sale_date, folio, created_at",
+          "id, sale_date, ticket, created_at",
+          "id, sale_date, receipt_number, created_at",
+          "id, sale_date, created_at",
           "id, ticket_number, created_at",
           "id, folio, created_at",
           "id, ticket, created_at",
@@ -659,17 +690,66 @@ const PageMovementsReport = () => {
         (Array.isArray(rewardsRes.data) ? rewardsRes.data : []).map((reward) => [reward.id, reward])
       );
       const redemptionSaleIds = new Set(rewardRows.map((r) => r?.sale_id).filter(Boolean));
+      const rewardRowsBySaleProduct = new Map();
 
-      const hydrated = baseRows.map((r) => ({
-        ...r,
-        row_key: `movement-${r?.id ?? `${r?.product_id}-${r?.created_at}`}`,
-        has_sale_redemption: redemptionSaleIds.has(r?.sale_id),
-        products: productsById.get(r?.product_id) ?? null,
-        users: usersById.get(r?.user_id) ?? null,
-        sales: salesById.get(r?.sale_id) ?? null,
-      }));
+      rewardRows.forEach((r) => {
+        const key = buildSaleProductKey(r?.sale_id, r?.product_id);
+        if (!key || rewardRowsBySaleProduct.has(key)) return;
+        rewardRowsBySaleProduct.set(key, r);
+      });
 
-      const hydratedRedemptions = rewardRows.map((r) => {
+      const hydrated = baseRows.map((r) => {
+        const saleObj = salesById.get(r?.sale_id) ?? null;
+        const matchedRewardRow = rewardRowsBySaleProduct.get(buildSaleProductKey(r?.sale_id, r?.product_id)) ?? null;
+        const matchedRewardObj = matchedRewardRow
+          ? rewardsById.get(matchedRewardRow?.reward_id) ?? null
+          : null;
+        const matchedRewardLabel =
+          (
+            matchedRewardObj?.name ??
+            matchedRewardObj?.title ??
+            matchedRewardObj?.reward_name ??
+            matchedRewardObj?.description ??
+            ""
+          )
+            .toString()
+            .trim();
+        const matchedPointsValue = matchedRewardRow
+          ? matchedRewardRow?.points_used ??
+            matchedRewardRow?.redeemed_points ??
+            matchedRewardRow?.points_redeemed ??
+            matchedRewardRow?.points ??
+            null
+          : null;
+
+        return {
+          ...r,
+          row_key: `movement-${r?.id ?? `${r?.product_id}-${r?.created_at}`}`,
+          has_sale_redemption: redemptionSaleIds.has(r?.sale_id),
+          report_sort_at: saleObj?.sale_date ?? r?.created_at ?? saleObj?.created_at ?? null,
+          reason:
+            matchedRewardRow && getRowMovementTypeKey(r) === "sale"
+              ? buildRedemptionReason(matchedRewardLabel, matchedPointsValue)
+              : r?.reason,
+          products: productsById.get(r?.product_id) ?? null,
+          users: usersById.get(r?.user_id) ?? null,
+          sales: saleObj,
+        };
+      });
+
+      const hydratedRedemptions = rewardRows
+        .filter((r) => {
+          const key = buildSaleProductKey(r?.sale_id, r?.product_id);
+          if (!key) return true;
+          return !baseRows.some(
+            (baseRow) =>
+              getRowMovementTypeKey(baseRow) === "sale" &&
+              buildSaleProductKey(baseRow?.sale_id, baseRow?.product_id) === key
+          );
+        })
+        .map((r) => {
+        const saleObj = salesById.get(r?.sale_id) ?? null;
+        const redeemedProduct = productsById.get(r?.product_id) ?? null;
         const rewardObj = rewardsById.get(r?.reward_id) ?? null;
         const rewardLabel =
           (rewardObj?.name ?? rewardObj?.title ?? rewardObj?.reward_name ?? rewardObj?.description ?? "")
@@ -679,31 +759,29 @@ const PageMovementsReport = () => {
           r?.points_used ?? r?.redeemed_points ?? r?.points_redeemed ?? r?.points ?? null;
         const rawQty = Number(r?.quantity ?? r?.qty ?? r?.pieces ?? r?.pieces_delivered ?? 1);
         const qty = Number.isFinite(rawQty) && rawQty !== 0 ? -Math.abs(rawQty) : -1;
-        const reasonParts = [];
-        if (rewardLabel) reasonParts.push(rewardLabel);
-        if (pointsValue !== null && pointsValue !== undefined && pointsValue !== "") {
-          reasonParts.push(`${pointsValue} PTS`);
-        }
 
         return {
           ...r,
           row_key: `redemption-${r?.id ?? `${r?.sale_id}-${r?.product_id}-${r?.created_at}`}`,
           has_sale_redemption: redemptionSaleIds.has(r?.sale_id),
+          report_sort_at: saleObj?.sale_date ?? r?.created_at ?? saleObj?.created_at ?? null,
           movement_type: "redemption",
           quantity: qty,
           previous_stock: null,
           new_stock: null,
-          reason: reasonParts.length > 0 ? `redemption: ${reasonParts.join(" - ")}` : "redemption",
-          products: productsById.get(r?.product_id) ?? null,
-          display_product_name: rewardLabel || null,
+          reason: buildRedemptionReason(rewardLabel, pointsValue),
+          products: redeemedProduct,
+          display_product_name: redeemedProduct?.name ? null : rewardLabel || null,
           users: usersById.get(r?.user_id) ?? null,
-          sales: salesById.get(r?.sale_id) ?? null,
+          sales: saleObj,
         };
       });
 
       setRows(
         [...hydrated, ...hydratedRedemptions].sort(
-          (a, b) => new Date(b?.created_at ?? 0).getTime() - new Date(a?.created_at ?? 0).getTime()
+          (a, b) =>
+            new Date(b?.report_sort_at ?? b?.created_at ?? 0).getTime() -
+            new Date(a?.report_sort_at ?? a?.created_at ?? 0).getTime()
         )
       );
     } catch (_e) {
@@ -797,7 +875,7 @@ const PageMovementsReport = () => {
     if (!range) return list;
     return list.filter((r) => {
       const v = buildRowView(r);
-      const currentKey = getDateKeyFromValue(v.soldAtValue);
+      const currentKey = v.soldAtDateKey;
       if (!currentKey) return false;
       return currentKey >= range.startKey && currentKey <= range.endKey;
     });

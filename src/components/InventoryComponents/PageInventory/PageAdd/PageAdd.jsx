@@ -3,7 +3,10 @@ import { useProducts } from "../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { supabase } from "../../../../lib/supabaseClient";
-import { logInventoryMovement } from "../../../../utils/inventoryMovements";
+import {
+  getSystemLocalTimestamp,
+  logInventoryMovement,
+} from "../../../../utils/inventoryMovements";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "./PageAdd.module.css";
 
@@ -178,6 +181,7 @@ const PageAdd = () => {
       if (inventoryFetchError) throw inventoryFetchError;
 
       const now = new Date().toISOString();
+      const movementCreatedAt = getSystemLocalTimestamp(new Date());
       const costPrice = Number(selectedProduct.costo || 0);
       const salePrice = Number(selectedProduct.precio || 0);
 
@@ -206,6 +210,7 @@ const PageAdd = () => {
           newStock: nextStock,
           reason: "Alta a inventario (manual)",
           userId: user?.id || null,
+          createdAt: movementCreatedAt,
         });
       } else {
         const { error: insertError } = await supabase
@@ -235,6 +240,7 @@ const PageAdd = () => {
           newStock: qty,
           reason: "Alta a inventario (manual)",
           userId: user?.id || null,
+          createdAt: movementCreatedAt,
         });
       }
 

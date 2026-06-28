@@ -1,28 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
-import UserForm from './UserForm';
 import UserList from './UserList';
 import styles from './Profiles.module.css';
+import { supabase } from '../../lib/supabaseClient';
+
+const normalizeRoleName = (rolesValue) => {
+  if (Array.isArray(rolesValue)) {
+    return rolesValue[0]?.name || null;
+  }
+  return rolesValue?.name || null;
+};
+
+const normalizeUserRow = (row) => {
+  const roleName = normalizeRoleName(row?.roles);
+  const username = (row?.username || row?.email || 'SIN USUARIO').toString().trim();
+
+  return {
+    id: row?.id || username,
+    username,
+    email: row?.email || 'SIN CORREO',
+    status: typeof row?.status === 'boolean' ? row.status : null,
+    roleName: roleName || 'SIN ROL',
+    createdAt: row?.created_at || null,
+  };
+};
 
 const Profiles = () => {
   const [users, setUsers] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Lista de permisos disponibles
-  const availablePermissions = [
-    { id: 'ventas', label: 'Ventas', description: 'Acceso al módulo de ventas y caja registradora' },
-    { id: 'productos', label: 'Productos', description: 'Gestión de productos y catálogo' },
-    { id: 'inventario', label: 'Inventario', description: 'Control de inventario y stock' },
-    { id: 'facturas', label: 'Facturas', description: 'Generación y gestión de facturas' },
-    { id: 'corte', label: 'Corte de Caja', description: 'Realizar cortes de caja y cierre de turno' },
-    { id: 'reportes', label: 'Reportes', description: 'Visualización de reportes y estadísticas' },
-    { id: 'configuracion', label: 'Configuración', description: 'Acceso completo a configuración del sistema' }
-  ];
-
-  // Cargar usuarios al montar el componente
   useEffect(() => {
     loadUsers();
   }, []);
@@ -30,111 +38,47 @@ const Profiles = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/users');
-      
-      if (response.ok) {
-        const usersData = await response.json();
-        setUsers(usersData);
-      } else {
-        console.error('Error al cargar usuarios');
-        alert('Error al cargar la lista de usuarios.');
-        setUsers([]); // Limpiar usuarios en caso de error
+      setError('');
+
+      const candidates = [
+        'id, username, email, status, created_at, roles ( name )',
+        'id, username, email, status, created_at',
+      ];
+
+      let data = null;
+      let lastError = null;
+
+      for (const selectClause of candidates) {
+        const result = await supabase
+          .from('users')
+          .select(selectClause)
+          .order('created_at', { ascending: false });
+
+        if (!result.error) {
+          data = result.data;
+          lastError = null;
+          break;
+        }
+
+        lastError = result.error;
       }
-    } catch (error) {
-      console.error('Error al conectar con el servidor:', error);
-      alert('No se pudo conectar con el servidor. Verifique que esté encendido.');
+
+      if (lastError) {
+        throw lastError;
+      }
+
+      const normalizedUsers = Array.isArray(data)
+        ? data.map(normalizeUserRow)
+        : [];
+
+      setUsers(normalizedUsers);
+    } catch (loadError) {
+      console.error('Error al cargar usuarios desde Supabase:', loadError);
       setUsers([]);
+      setError('No se pudieron cargar los usuarios desde la base de datos.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreateUser = () => {
-    setEditingUser(null);
-    setShowForm(true);
-  };
-
-  const handleEditUser = (user) => {
-    setEditingUser(user);
-    setShowForm(true);
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-      try {
-        const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          setUsers(users.filter(user => user.id !== userId));
-          alert('Usuario eliminado exitosamente');
-        } else {
-          const errorData = await response.json();
-          alert(errorData.message || 'Error al eliminar usuario');
-        }
-      } catch (error) {
-        console.error('Error al eliminar usuario:', error);
-        alert('Error de conexión. No se pudo eliminar el usuario.');
-      }
-    }
-  };
-
-  const handleFormSubmit = async (userData) => {
-    try {
-      if (editingUser) {
-        // Actualizar usuario existente
-        const response = await fetch(`http://localhost:3000/api/users/${editingUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userData)
-        });
-
-        if (response.ok) {
-          const updatedUser = await response.json();
-          setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
-          alert('Usuario actualizado exitosamente');
-          setShowForm(false);
-          setEditingUser(null);
-        } else {
-          const errorData = await response.json();
-          alert(errorData.message || 'Error al actualizar usuario');
-          return; // No cerrar el formulario si hay error
-        }
-      } else {
-        // Crear nuevo usuario
-        const response = await fetch('http://localhost:3000/api/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userData)
-        });
-
-        if (response.ok) {
-          const newUser = await response.json();
-          setUsers([newUser, ...users]); // Agregar al inicio
-          alert('Usuario creado exitosamente');
-          setShowForm(false);
-          setEditingUser(null);
-        } else {
-          const errorData = await response.json();
-          alert(errorData.message || 'Error al crear usuario');
-          return; // No cerrar el formulario si hay error
-        }
-      }
-    } catch (error) {
-      console.error('Error al guardar usuario:', error);
-      alert('Error de conexión. No se pudo guardar el usuario.');
-      return; // No cerrar el formulario si hay error
-    }
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingUser(null);
   };
 
   return (
@@ -147,23 +91,12 @@ const Profiles = () => {
         </div>
 
         <div className={styles.content}>
-          {showForm ? (
-            <UserForm
-              user={editingUser}
-              availablePermissions={availablePermissions}
-              onSubmit={handleFormSubmit}
-              onCancel={handleFormCancel}
-            />
-          ) : (
-            <UserList
-              users={users}
-              availablePermissions={availablePermissions}
-              loading={loading}
-              onCreateUser={handleCreateUser}
-              onEditUser={handleEditUser}
-              onDeleteUser={handleDeleteUser}
-            />
-          )}
+          <UserList
+            users={users}
+            loading={loading}
+            error={error}
+            onReload={loadUsers}
+          />
         </div>
       </main>
       <Footer />

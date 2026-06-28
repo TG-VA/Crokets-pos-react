@@ -3,7 +3,10 @@ import { useProducts } from "../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { supabase } from "../../../../lib/supabaseClient";
-import { logInventoryMovement } from "../../../../utils/inventoryMovements";
+import {
+  getSystemLocalTimestamp,
+  logInventoryMovement,
+} from "../../../../utils/inventoryMovements";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "./PageAdjustments.module.css";
 
@@ -204,6 +207,7 @@ const PageAdjustments = () => {
       }
 
       const now = new Date().toISOString();
+      const movementCreatedAt = getSystemLocalTimestamp(new Date());
       const costPrice = Number(selectedProduct.costo || 0);
       const salePrice = Number(selectedProduct.precio || 0);
 
@@ -233,6 +237,7 @@ const PageAdjustments = () => {
             ? `${reason} - ${adjustmentNotes.trim()}`
             : reason,
           userId: user?.id || null,
+          createdAt: movementCreatedAt,
         });
       } else {
         if (qty < 0) {
@@ -271,6 +276,7 @@ const PageAdjustments = () => {
             ? `${reason} - ${adjustmentNotes.trim()}`
             : reason,
           userId: user?.id || null,
+          createdAt: movementCreatedAt,
         });
       }
 
