@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
+import { useBranch } from "../../../../contexts/BranchContext";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { supabase } from "../../../../lib/supabaseClient";
+import { logInventoryMovement } from "../../../../utils/inventoryMovements";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "./PageAdjustments.module.css";
 
 const PageAdjustments = () => {
-  const { products, getProductByCodigo } = useProducts();
+  const { products, getProductByCodigo, refreshProducts } = useProducts();
+  const { branch } = useBranch();
+  const { user } = useAuth();
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -13,6 +19,7 @@ const PageAdjustments = () => {
   const [adjustmentNotes, setAdjustmentNotes] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [submitArmed, setSubmitArmed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const barcodeInputRef = useRef(null);
   const quantityInputRef = useRef(null);
@@ -42,7 +49,7 @@ const PageAdjustments = () => {
       e.preventDefault();
       e.stopPropagation();
       setSubmitArmed(false);
-      handleSimulatedAdjustment();
+      handleSubmitAdjustment();
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
@@ -129,7 +136,7 @@ const PageAdjustments = () => {
     }
 
     setSubmitArmed(false);
-    handleSimulatedAdjustment();
+    handleSubmitAdjustment();
   };
 
   const handleLookup = (code) => {
@@ -148,8 +155,13 @@ const PageAdjustments = () => {
     setBarcode(product.codigo ?? "");
   };
 
-  const handleSimulatedAdjustment = () => {
-    if (!selectedProduct) return;
+  const handleSubmitAdjustment = async () => {
+    if (!selectedProduct || saving) return;
+
+    if (!branch?.id) {
+      alert("No hay sucursal activa.");
+      return;
+    }
 
     const reason = (adjustmentReason ?? "").toString().trim();
     if (!reason) {
@@ -158,22 +170,134 @@ const PageAdjustments = () => {
     }
 
     const qty = parsedQuantity;
-    const desc = (selectedProduct.descripcion ?? "").toString().trim();
-    const descUpper = desc ? desc.toUpperCase() : "PRODUCTO";
-    setSuccessMessage(`AJUSTE EXITOSO DE ${qty} ${descUpper}`);
-    setSubmitArmed(false);
-    setSelectedProduct(null);
-    setBarcode("");
-    setQuantityToAdjust("");
-    setAdjustmentReason("");
-    setAdjustmentNotes("");
+    if (!Number.isFinite(qty) || qty === 0) {
+      alert("La diferencia debe ser distinta de 0.");
+      return;
+    }
 
-    window.requestAnimationFrame(() => {
-      barcodeInputRef.current?.focus();
-      if (typeof barcodeInputRef.current?.select === "function") {
-        barcodeInputRef.current.select();
+    const productId = selectedProduct.product_id || selectedProduct.id;
+    if (!productId) {
+      alert("No se detectó el producto.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const { data: inventoryRow, error: inventoryFetchError } = await supabase
+        .from("branch_inventory")
+        .select("id, stock, has_been_stocked, is_active")
+        .eq("branch_id", branch.id)
+        .eq("product_id", productId)
+        .maybeSingle();
+
+      if (inventoryFetchError) throw inventoryFetchError;
+
+      const currentDbStock = Number(inventoryRow?.stock || 0);
+      const nextStock = currentDbStock + qty;
+
+      if (nextStock < 0) {
+        alert(
+          `No puedes dejar el stock en negativo.\n\nStock actual: ${currentDbStock}\nAjuste: ${qty}\nResultado: ${nextStock}`
+        );
+        return;
       }
-    });
+
+      const now = new Date().toISOString();
+      const costPrice = Number(selectedProduct.costo || 0);
+      const salePrice = Number(selectedProduct.precio || 0);
+
+      if (inventoryRow?.id) {
+        const { error: updateError } = await supabase
+          .from("branch_inventory")
+          .update({
+            stock: nextStock,
+            is_active: true,
+            has_been_stocked: true,
+            cost_price: costPrice,
+            sale_price: salePrice,
+            updated_at: now,
+          })
+          .eq("id", inventoryRow.id);
+
+        if (updateError) throw updateError;
+
+        await logInventoryMovement({
+          branchId: branch.id,
+          productId,
+          movementType: "adjustment",
+          quantity: qty,
+          previousStock: currentDbStock,
+          newStock: nextStock,
+          reason: adjustmentNotes.trim()
+            ? `${reason} - ${adjustmentNotes.trim()}`
+            : reason,
+          userId: user?.id || null,
+        });
+      } else {
+        if (qty < 0) {
+          alert(
+            "Este producto aún no existe en el inventario de la sucursal. Primero agrégalo con una entrada positiva."
+          );
+          return;
+        }
+
+        const { error: insertError } = await supabase
+          .from("branch_inventory")
+          .insert({
+            branch_id: branch.id,
+            product_id: productId,
+            stock: qty,
+            min_stock: 0,
+            max_stock: 0,
+            is_active: true,
+            has_been_stocked: true,
+            cost_price: costPrice,
+            sale_price: salePrice,
+            created_at: now,
+            updated_at: now,
+          });
+
+        if (insertError) throw insertError;
+
+        await logInventoryMovement({
+          branchId: branch.id,
+          productId,
+          movementType: "adjustment",
+          quantity: qty,
+          previousStock: 0,
+          newStock: qty,
+          reason: adjustmentNotes.trim()
+            ? `${reason} - ${adjustmentNotes.trim()}`
+            : reason,
+          userId: user?.id || null,
+        });
+      }
+
+      await refreshProducts();
+
+      const desc = (selectedProduct.descripcion ?? "").toString().trim();
+      const descUpper = desc ? desc.toUpperCase() : "PRODUCTO";
+      setSuccessMessage(`AJUSTE EXITOSO DE ${qty} ${descUpper}`);
+      setSubmitArmed(false);
+      setSelectedProduct(null);
+      setBarcode("");
+      setQuantityToAdjust("");
+      setAdjustmentReason("");
+      setAdjustmentNotes("");
+
+      window.requestAnimationFrame(() => {
+        barcodeInputRef.current?.focus();
+        if (typeof barcodeInputRef.current?.select === "function") {
+          barcodeInputRef.current.select();
+        }
+      });
+    } catch (error) {
+      console.error("Error aplicando ajuste:", error);
+      alert(error.message || "No se pudo aplicar el ajuste.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -323,19 +447,25 @@ const PageAdjustments = () => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (saving) return;
                 if (!submitArmed) {
                   setSubmitArmed(true);
                   return;
                 }
-                handleSimulatedAdjustment();
+                handleSubmitAdjustment();
               }}
               onDoubleClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleSimulatedAdjustment();
+                if (saving) return;
+                handleSubmitAdjustment();
               }}
             >
-              {submitArmed ? "Confirmar ajuste" : "Aplicar ajuste"}
+              {saving
+                ? "Guardando..."
+                : submitArmed
+                  ? "Confirmar ajuste"
+                  : "Aplicar ajuste"}
             </button>
           </div>
         )}

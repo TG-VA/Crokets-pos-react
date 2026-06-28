@@ -16,20 +16,16 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-
   const [cashRegistered, setCashRegistered] = useState(
     localStorage.getItem('cashRegistered') === 'true'
   );
-
   const [cashAmount, setCashAmount] = useState(() => {
     const stored = localStorage.getItem('cashAmount');
     return stored ? parseFloat(stored) : 0;
   });
-
   const [isLocked, setIsLocked] = useState(
     localStorage.getItem('isLocked') === 'true'
   );
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +42,6 @@ export const AuthProvider = ({ children }) => {
 
   const buildUser = (authUser) => {
     const cachedUsername = localStorage.getItem('cachedUsername');
-
     const username =
       cachedUsername ||
       authUser?.user_metadata?.username ||
@@ -55,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
     return {
       ...authUser,
-      username,
+      username: username ? String(username).toUpperCase() : null,
     };
   };
 
@@ -154,13 +149,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     if (finalUser?.username) {
-      localStorage.setItem('cachedUsername', finalUser.username);
+      const nextUsername = String(finalUser.username).toUpperCase();
+      finalUser.username = nextUsername;
+      localStorage.setItem('cachedUsername', nextUsername);
     }
 
     setUser(finalUser);
     setIsAuthenticated(true);
     setIsLocked(false);
-
     localStorage.setItem('isLocked', 'false');
   };
 
@@ -179,10 +175,7 @@ export const AuthProvider = ({ children }) => {
           .is('ended_at', null);
 
         if (closeUserSessionError) {
-          console.error(
-            'Error cerrando user_session:',
-            closeUserSessionError.message
-          );
+          console.error('Error cerrando user_session:', closeUserSessionError.message);
         }
       }
 
@@ -204,7 +197,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user_session_token');
       localStorage.removeItem('isLocked');
       localStorage.removeItem('cachedUsername');
-      localStorage.removeItem('current_branch');
     } catch (err) {
       console.error('Error general en logout:', err);
       throw err;
@@ -214,7 +206,6 @@ export const AuthProvider = ({ children }) => {
   const openCashRegister = (amount) => {
     setCashRegistered(true);
     setCashAmount(amount);
-
     localStorage.setItem('cashRegistered', 'true');
     localStorage.setItem('cashAmount', String(amount));
   };
@@ -222,7 +213,6 @@ export const AuthProvider = ({ children }) => {
   const closeCashRegister = () => {
     setCashRegistered(false);
     setCashAmount(0);
-
     localStorage.setItem('cashRegistered', 'false');
     localStorage.setItem('cashAmount', '0');
   };
@@ -239,7 +229,6 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(userData);
-
     if (userData?.username) {
       localStorage.setItem('cachedUsername', userData.username);
     }

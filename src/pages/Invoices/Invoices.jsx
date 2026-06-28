@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -154,25 +153,9 @@ const Invoices = () => {
         </Routes>
       </div>
 
-=======
-import React from "react";
-import Navbar from "../../components/Navbar/Navbar";
-import Footer from "../../components/Footer/Footer";
-import styles from "./Invoices.module.css";
-
-const Invoices = () => {
-  return (
-    <div className={styles.container}>
-      <Navbar />
-      <main className={styles.main} />
->>>>>>> bd8a423 (InventoryPage v1)
       <Footer />
     </div>
   );
 };
 
-<<<<<<< HEAD
 export default Invoices;
-=======
-export default Invoices;
->>>>>>> bd8a423 (InventoryPage v1)

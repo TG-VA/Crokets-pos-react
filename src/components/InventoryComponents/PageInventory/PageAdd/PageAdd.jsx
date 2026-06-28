@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
+import { useBranch } from "../../../../contexts/BranchContext";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { supabase } from "../../../../lib/supabaseClient";
+import { logInventoryMovement } from "../../../../utils/inventoryMovements";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "./PageAdd.module.css";
 
 const PageAdd = () => {
-  const { products, getProductByCodigo } = useProducts();
+  const { products, getProductByCodigo, refreshProducts } = useProducts();
+  const { branch } = useBranch();
+  const { user } = useAuth();
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -14,6 +20,7 @@ const PageAdd = () => {
   const bodyRef = useRef(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [submitArmed, setSubmitArmed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -39,7 +46,7 @@ const PageAdd = () => {
       e.preventDefault();
       e.stopPropagation();
       setSubmitArmed(false);
-      handleSimulatedSubmit();
+      handleSubmit();
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
@@ -120,7 +127,7 @@ const PageAdd = () => {
     }
 
     setSubmitArmed(false);
-    handleSimulatedSubmit();
+    handleSubmit();
   };
 
   const handleLookup = () => {
@@ -138,28 +145,121 @@ const PageAdd = () => {
     setBarcode(product.codigo ?? "");
   };
 
-  const handleSimulatedSubmit = () => {
-    if (!selectedProduct) return;
+  const handleSubmit = async () => {
+    if (!selectedProduct || saving) return;
+
+    if (!branch?.id) {
+      alert("No hay sucursal activa.");
+      return;
+    }
 
     const qty = parsedQuantityToAdd;
     if (qty <= 0) {
       alert("La cantidad debe ser mayor a 0");
       return;
     }
-    const desc = (selectedProduct.descripcion ?? "").toString().trim();
-    const descUpper = desc ? desc.toUpperCase() : "PRODUCTO";
-    setSuccessMessage(`INGRESO EXITOSO DE ${qty} ${descUpper}`);
-    setSubmitArmed(false);
-    setSelectedProduct(null);
-    setBarcode("");
-    setQuantityToAdd("");
 
-    window.requestAnimationFrame(() => {
-      barcodeInputRef.current?.focus();
-      if (typeof barcodeInputRef.current?.select === "function") {
-        barcodeInputRef.current.select();
+    const productId = selectedProduct.product_id || selectedProduct.id;
+    if (!productId) {
+      alert("No se detectó el producto.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const { data: inventoryRow, error: inventoryFetchError } = await supabase
+        .from("branch_inventory")
+        .select("id, stock, has_been_stocked")
+        .eq("branch_id", branch.id)
+        .eq("product_id", productId)
+        .maybeSingle();
+
+      if (inventoryFetchError) throw inventoryFetchError;
+
+      const now = new Date().toISOString();
+      const costPrice = Number(selectedProduct.costo || 0);
+      const salePrice = Number(selectedProduct.precio || 0);
+
+      if (inventoryRow?.id) {
+        const nextStock = Number(inventoryRow.stock || 0) + qty;
+        const { error: updateError } = await supabase
+          .from("branch_inventory")
+          .update({
+            stock: nextStock,
+            is_active: true,
+            has_been_stocked: true,
+            cost_price: costPrice,
+            sale_price: salePrice,
+            updated_at: now,
+          })
+          .eq("id", inventoryRow.id);
+
+        if (updateError) throw updateError;
+
+        await logInventoryMovement({
+          branchId: branch.id,
+          productId,
+          movementType: "inventory_add",
+          quantity: qty,
+          previousStock: Number(inventoryRow.stock || 0),
+          newStock: nextStock,
+          reason: "Alta a inventario (manual)",
+          userId: user?.id || null,
+        });
+      } else {
+        const { error: insertError } = await supabase
+          .from("branch_inventory")
+          .insert({
+            branch_id: branch.id,
+            product_id: productId,
+            stock: qty,
+            min_stock: 0,
+            max_stock: 0,
+            is_active: true,
+            has_been_stocked: true,
+            cost_price: costPrice,
+            sale_price: salePrice,
+            created_at: now,
+            updated_at: now,
+          });
+
+        if (insertError) throw insertError;
+
+        await logInventoryMovement({
+          branchId: branch.id,
+          productId,
+          movementType: "inventory_add",
+          quantity: qty,
+          previousStock: 0,
+          newStock: qty,
+          reason: "Alta a inventario (manual)",
+          userId: user?.id || null,
+        });
       }
-    });
+
+      await refreshProducts();
+
+      const desc = (selectedProduct.descripcion ?? "").toString().trim();
+      const descUpper = desc ? desc.toUpperCase() : "PRODUCTO";
+      setSuccessMessage(`INGRESO EXITOSO DE ${qty} ${descUpper}`);
+      setSubmitArmed(false);
+      setSelectedProduct(null);
+      setBarcode("");
+      setQuantityToAdd("");
+
+      window.requestAnimationFrame(() => {
+        barcodeInputRef.current?.focus();
+        if (typeof barcodeInputRef.current?.select === "function") {
+          barcodeInputRef.current.select();
+        }
+      });
+    } catch (error) {
+      console.error("Error agregando inventario:", error);
+      alert(error.message || "No se pudo agregar inventario.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -296,19 +396,25 @@ const PageAdd = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (saving) return;
                   if (!submitArmed) {
                     setSubmitArmed(true);
                     return;
                   }
-                  handleSimulatedSubmit();
+                  handleSubmit();
                 }}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  handleSimulatedSubmit();
+                  if (saving) return;
+                  handleSubmit();
                 }}
               >
-                {submitArmed ? "Confirmar ingreso" : "Ingresar producto"}
+                {saving
+                  ? "Guardando..."
+                  : submitArmed
+                    ? "Confirmar ingreso"
+                    : "Ingresar producto"}
               </button>
             </div>
           </div>

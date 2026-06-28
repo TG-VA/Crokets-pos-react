@@ -23,7 +23,7 @@
   padding: 1rem 1.5rem;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   margin-top: 30px;
   width: 100%;
   box-sizing: border-box;
@@ -60,6 +60,24 @@
   gap: 4px;
 }
 
+.dateControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.datePickerWrapper {
+  display: inline-block;
+}
+
+.datePickerWrapper :global(.react-datepicker-wrapper) {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
 .label {
   font-size: 0.9rem;
   font-weight: 700;
@@ -73,6 +91,56 @@
   padding: 0 10px;
   font-size: 0.9rem;
   background: var(--white);
+}
+
+.datePickerPopper {
+  z-index: 30;
+}
+
+.datePickerCalendar {
+  font-family: inherit;
+  border: 1px solid var(--mediumGray);
+  box-shadow: var(--shadow);
+}
+
+.quickActions {
+  display: flex;
+  gap: 6px;
+}
+
+.quickButton {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 2px solid var(--mediumGray);
+  background: var(--white);
+  color: var(--darkGray);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quickButtonActive {
+  border-color: var(--croketsBlue);
+  background: rgba(16, 146, 177, 0.08);
+  color: var(--croketsBlue);
+}
+
+.exportButton {
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background: #fc8913;
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.exportButton:hover {
+  filter: brightness(0.96);
 }
 
 .select {
@@ -107,9 +175,12 @@
 
 .tableWrap {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   border: 1px solid var(--mediumGray);
   border-radius: 10px;
   overflow: auto;
+  box-sizing: border-box;
 }
 
 .table {
