@@ -1,0 +1,33 @@
+.container {
+  min-height: 80vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 10px;
+
+  --croketsBlue: #1092b1;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --white: #ffffff;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.content {
+  background-color: var(--white);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 30px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: var(--shadow);
+  color: var(--darkGray);
+  font-weight: 800;
+}

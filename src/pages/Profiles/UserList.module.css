@@ -140,7 +140,7 @@
 
 .tableHeader {
   display: grid;
-  grid-template-columns: 2fr 3fr 1.5fr 1fr;
+  grid-template-columns: 2fr 2fr 2fr 1.5fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background: #1092b1;
@@ -163,7 +163,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2fr 3fr 1.5fr 1fr;
+  grid-template-columns: 2fr 2fr 2fr 1.5fr;
   gap: 1rem;
   padding: 1.5rem;
   border-bottom: 1px solid #e0e0e0;
@@ -216,17 +216,18 @@
   opacity: 0.6;
 }
 
-/* Permisos */
-.permissionsCell {
+/* Meta */
+.metaCell {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.permissionsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
+.emailCell {
+  color: #333333;
+  font-size: 0.9rem;
+  word-break: break-word;
 }
 
 .permissionTag {
@@ -238,62 +239,40 @@
   font-weight: 500;
 }
 
-.noPermissions {
-  color: #e74c3c;
-  font-style: italic;
-  font-size: 0.8rem;
-}
-
-.morePermissions {
-  color: #333333;
-  opacity: 0.7;
-  font-size: 0.7rem;
-  font-style: italic;
-}
-
 /* Fecha */
 .dateCell {
   color: #333333;
   font-size: 0.85rem;
 }
 
-/* Acciones */
-.actionsCell {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+.statusBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
-.editButton,
-.deleteButton {
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.statusActive {
+  background: rgba(39, 174, 96, 0.16);
+  color: #1e874b;
 }
 
-.editButton {
-  background: #1092b1;
-  color: #ffffff;
+.statusInactive {
+  background: rgba(231, 76, 60, 0.14);
+  color: #c0392b;
 }
 
-.editButton:hover {
-  background: #0d7a94;
-  transform: scale(1.1);
+.statusUnknown {
+  background: rgba(51, 51, 51, 0.1);
+  color: #555555;
 }
 
-.deleteButton {
-  background: #e74c3c;
-  color: #ffffff;
-}
-
-.deleteButton:hover {
-  background: #c0392b;
-  transform: scale(1.1);
+.errorBanner {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #b43729;
+  font-weight: 600;
 }
