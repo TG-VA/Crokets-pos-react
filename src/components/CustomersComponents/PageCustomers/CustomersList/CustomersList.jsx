@@ -7,6 +7,7 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { checkUserIsAdmin } from "../../../../lib/permissionsService";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const CustomersList = () => {
   const { user } = useAuth();
@@ -19,7 +20,6 @@ const CustomersList = () => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [searchingFiscalCustomer, setSearchingFiscalCustomer] = useState(false);
   const [fiscalCustomerFound, setFiscalCustomerFound] = useState(null);
-  const [error, setError] = useState("");
 
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -27,6 +27,77 @@ const CustomersList = () => {
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const [pendingDeactivateCustomer, setPendingDeactivateCustomer] =
     useState(null);
+
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   const formatStatus = (status) => (status === false ? "INACTIVO" : "ACTIVO");
 
@@ -67,7 +138,6 @@ const CustomersList = () => {
   const loadCustomers = async () => {
     try {
       setLoadingCustomers(true);
-      setError("");
 
       const { data, error: customersError } = await supabase
         .from("customers")
@@ -83,7 +153,8 @@ const CustomersList = () => {
           updated_at
         `)
         .eq("is_points_customer", true)
-        .order("name", { ascending: true });
+        .order("status", { ascending: false, nullsFirst: false })
+        .order("name", { ascending: true, nullsFirst: false });
 
       if (customersError) throw customersError;
 
@@ -107,9 +178,15 @@ const CustomersList = () => {
       setPointsByCustomer(calculateCustomerPoints(pointsRows || []));
     } catch (err) {
       console.error("Error cargando clientes:", err);
-      setError("No se pudieron cargar los clientes.");
       setCustomers([]);
       setPointsByCustomer({});
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar clientes",
+        message: "No se pudieron cargar los clientes.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingCustomers(false);
     }
@@ -216,22 +293,37 @@ const CustomersList = () => {
   const filteredCustomers = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
-    return customers.filter((customer) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && customer.status !== false) ||
-        (statusFilter === "inactive" && customer.status === false);
+    return customers
+      .filter((customer) => {
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "active" && customer.status !== false) ||
+          (statusFilter === "inactive" && customer.status === false);
 
-      if (!matchesStatus) return false;
+        if (!matchesStatus) return false;
 
-      if (!search) return true;
+        if (!search) return true;
 
-      const values = [customer.name, customer.phone, customer.email];
+        const values = [customer.name, customer.phone, customer.email];
 
-      return values.some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
-    });
+        return values.some((value) =>
+          String(value || "").toLowerCase().includes(search)
+        );
+      })
+      .sort((a, b) => {
+        const statusA = a.status === false ? 1 : 0;
+        const statusB = b.status === false ? 1 : 0;
+
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+
+        return String(a.name || "SIN NOMBRE").localeCompare(
+          String(b.name || "SIN NOMBRE"),
+          "es",
+          { sensitivity: "base" }
+        );
+      });
   }, [customers, searchTerm, statusFilter]);
 
   const handleNewCustomer = () => {
@@ -264,15 +356,7 @@ const CustomersList = () => {
     setEditingCustomer(null);
   };
 
-  const updateCustomerStatus = async (customer, nextStatus) => {
-    const confirmed = window.confirm(
-      `¿Seguro que deseas ${
-        nextStatus ? "activar" : "desactivar"
-      } este cliente?`
-    );
-
-    if (!confirmed) return;
-
+  const executeCustomerStatusUpdate = async (customer, nextStatus) => {
     try {
       const { error: updateError } = await supabase
         .from("customers")
@@ -285,10 +369,37 @@ const CustomersList = () => {
       if (updateError) throw updateError;
 
       await loadCustomers();
+
+      showAppAlert({
+        type: "success",
+        title: nextStatus ? "Cliente activado" : "Cliente desactivado",
+        message: `El cliente "${
+          customer.name || "SIN NOMBRE"
+        }" fue ${nextStatus ? "activado" : "desactivado"} correctamente.`,
+        confirmText: "Aceptar",
+      });
     } catch (err) {
       console.error("Error actualizando cliente:", err);
-      alert("No se pudo actualizar el estado del cliente.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo actualizar",
+        message: "No se pudo actualizar el estado del cliente.",
+        confirmText: "Entendido",
+      });
     }
+  };
+
+  const updateCustomerStatus = async (customer, nextStatus) => {
+    showAppConfirm({
+      type: nextStatus ? "info" : "danger",
+      title: nextStatus ? "Activar cliente" : "Desactivar cliente",
+      message: `¿Seguro que deseas ${
+        nextStatus ? "activar" : "desactivar"
+      } al cliente "${customer.name || "SIN NOMBRE"}"?`,
+      confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
+      cancelText: "Cancelar",
+      onConfirm: () => executeCustomerStatusUpdate(customer, nextStatus),
+    });
   };
 
   const handleToggleStatus = async (customer) => {
@@ -365,7 +476,7 @@ const CustomersList = () => {
                 setFiscalCustomerFound(null);
               }}
             >
-              ✕
+              ×
             </button>
           )}
         </div>
@@ -446,8 +557,6 @@ const CustomersList = () => {
           </button>
         </div>
       )}
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.resultsInfo}>
         {loadingCustomers
@@ -579,6 +688,20 @@ const CustomersList = () => {
         }
         targetId={pendingDeactivateCustomer?.id || null}
         branchId={branch?.id || null}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
     </div>
   );

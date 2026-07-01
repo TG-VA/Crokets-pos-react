@@ -1,8 +1,9 @@
 .content {
-  padding: 24px;
+  padding: 24px 24px 120px;
   background: #ffffff;
   min-height: 100%;
   color: #333333;
+  overflow: visible;
 }
 
 .header {
@@ -115,14 +116,14 @@
   cursor: not-allowed;
 }
 
-.errorMessage {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+.infoMessage {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #bae6fd;
   padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .resultsInfo {
@@ -136,22 +137,23 @@
 .tableContainer {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  overflow: auto;
-  max-height: calc(100vh - 330px);
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-bottom: 32px;
+  background: #ffffff;
 }
 
 .customersTable {
   width: 100%;
+  min-width: 1180px;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .customersTable thead {
   background: #fc8913;
   color: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 2;
 }
 
 .customersTable th,
@@ -162,12 +164,55 @@
   vertical-align: middle;
 }
 
+.customersTable th:nth-child(1),
+.customersTable td:nth-child(1) {
+  width: 31%;
+}
+
+.customersTable th:nth-child(2),
+.customersTable td:nth-child(2) {
+  width: 13%;
+}
+
+.customersTable th:nth-child(3),
+.customersTable td:nth-child(3) {
+  width: 20%;
+}
+
+.customersTable th:nth-child(4),
+.customersTable td:nth-child(4) {
+  width: 8%;
+  text-align: center;
+}
+
+.customersTable th:nth-child(5),
+.customersTable td:nth-child(5) {
+  width: 11%;
+  text-align: center;
+}
+
+.customersTable th:nth-child(6),
+.customersTable td:nth-child(6) {
+  width: 9%;
+  text-align: center;
+}
+
+.customersTable th:nth-child(7),
+.customersTable td:nth-child(7) {
+  width: 12%;
+  text-align: center;
+}
+
 .customersTable tbody tr:nth-child(even) {
   background: #f9f9f9;
 }
 
 .customersTable tbody tr:hover {
   background: #e3f2fd;
+}
+
+.customersTable tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .textCenter {
@@ -180,6 +225,7 @@
   font-weight: 800;
   color: #333333;
   text-transform: uppercase;
+  word-break: break-word;
 }
 
 .pointsBadge {
@@ -195,9 +241,40 @@
   font-weight: 800;
 }
 
+.typeBadges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pointsTypeBadge,
+.fiscalTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pointsTypeBadge {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.fiscalTypeBadge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .statusBadge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 0.76rem;
@@ -220,6 +297,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  min-width: 110px;
 }
 
 .actionButton {
@@ -254,16 +332,6 @@
 .actionButton:hover {
   transform: translateY(-1px);
   opacity: 0.92;
-}
-
-.infoMessage {
-  background: #e0f2fe;
-  color: #075985;
-  border: 1px solid #bae6fd;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  font-weight: 700;
 }
 
 .fiscalMatchCard {
@@ -341,34 +409,6 @@
   background: #e07a0d;
   transform: translateY(-1px);
 }
-.typeBadges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.pointsTypeBadge,
-.fiscalTypeBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 0.74rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.pointsTypeBadge {
-  background: #e0f2fe;
-  color: #075985;
-}
-
-.fiscalTypeBadge {
-  background: #fef3c7;
-  color: #92400e;
-}
 
 @media (max-width: 1100px) {
   .fiscalMatchCard {
@@ -386,6 +426,16 @@
 }
 
 @media (max-width: 650px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .statusFilter,
+  .refreshButton {
+    width: 100%;
+  }
+
   .fiscalDataGrid {
     grid-template-columns: 1fr;
   }

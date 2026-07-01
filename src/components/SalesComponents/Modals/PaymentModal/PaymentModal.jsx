@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const PaymentModal = ({
   isOpen,
@@ -22,6 +23,13 @@ const PaymentModal = ({
   const [isNotesModalOpen, setNotesModalOpen] = useState(false);
   const [saleNotes, setSaleNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+  });
 
   const effectiveProcessing = processing || processingSale;
   const safeTotal = Number(total || 0);
@@ -31,6 +39,46 @@ const PaymentModal = ({
     if (!value || String(value).trim() === "") return 0;
     const num = parseFloat(value);
     return Number.isNaN(num) ? 0 : num;
+  };
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+    });
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    showAppModal({
+      type: "warning",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppDanger = (message, title = "Error") => {
+    showAppModal({
+      type: "danger",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
   };
 
   const numericExchangeRate = toNumber(exchangeRate);
@@ -115,6 +163,7 @@ const PaymentModal = ({
     setSelectedPaymentMethod("Terminal");
     setNotesModalOpen(false);
     setProcessing(false);
+    closeAppModal();
   };
 
   const closePaymentModal = () => {
@@ -149,19 +198,19 @@ const PaymentModal = ({
       (selectedPaymentMethod === "Dolares" || selectedPaymentMethod === "Mixto") &&
       numericExchangeRate <= 0
     ) {
-      alert("Ingresa un tipo de cambio válido.");
+      showAppWarning("Ingresa un tipo de cambio válido.");
       return false;
     }
 
     switch (selectedPaymentMethod) {
       case "Efectivo":
         if (toNumber(paidAmount) <= 0) {
-          alert("Ingrese el monto pagado en efectivo.");
+          showAppWarning("Ingrese el monto pagado en efectivo.");
           return false;
         }
 
         if (paidTotalMxn < safeTotal) {
-          alert("El monto en efectivo no cubre el total de la venta.");
+          showAppWarning("El monto en efectivo no cubre el total de la venta.");
           return false;
         }
 
@@ -169,12 +218,12 @@ const PaymentModal = ({
 
       case "Dolares":
         if (toNumber(dollarAmount) <= 0) {
-          alert("Ingrese el monto pagado en dólares.");
+          showAppWarning("Ingrese el monto pagado en dólares.");
           return false;
         }
 
         if (paidTotalMxn < safeTotal) {
-          alert("El monto en dólares no cubre el total de la venta.");
+          showAppWarning("El monto en dólares no cubre el total de la venta.");
           return false;
         }
 
@@ -186,12 +235,12 @@ const PaymentModal = ({
         const dolares = toNumber(mixedPayments.dolares);
 
         if (efectivo <= 0 && tarjeta <= 0 && dolares <= 0) {
-          alert("Ingrese al menos un monto en el pago mixto.");
+          showAppWarning("Ingrese al menos un monto en el pago mixto.");
           return false;
         }
 
         if (paidTotalMxn < safeTotal) {
-          alert("La suma del pago mixto no cubre el total de la venta.");
+          showAppWarning("La suma del pago mixto no cubre el total de la venta.");
           return false;
         }
 
@@ -200,7 +249,7 @@ const PaymentModal = ({
 
       case "Transferencia":
         if (!trackingCode.trim()) {
-          alert("Ingrese la referencia o clave de rastreo.");
+          showAppWarning("Ingrese la referencia o clave de rastreo.");
           return false;
         }
 
@@ -210,7 +259,7 @@ const PaymentModal = ({
         return true;
 
       default:
-        alert("Seleccione un método de pago válido.");
+        showAppWarning("Seleccione un método de pago válido.");
         return false;
     }
   };
@@ -321,7 +370,7 @@ const PaymentModal = ({
       }
     } catch (error) {
       console.error("Error procesando pago:", error);
-      alert("Ocurrió un error al procesar el pago.");
+      showAppDanger("Ocurrió un error al procesar el pago.", "No se pudo procesar el pago");
     } finally {
       setProcessing(false);
     }
@@ -329,7 +378,7 @@ const PaymentModal = ({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!isOpen) return;
+      if (!isOpen || appModal.isOpen) return;
 
       if (e.key === "Escape") {
         if (!isNotesModalOpen && !effectiveProcessing) {
@@ -372,6 +421,7 @@ const PaymentModal = ({
     safeTotal,
     change,
     isZeroTotalSale,
+    appModal.isOpen,
   ]);
 
   useEffect(() => {
@@ -755,6 +805,16 @@ const PaymentModal = ({
         onClose={closeNotesModal}
         onSave={handleSaveNotes}
         initialNotes={saleNotes}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
       />
     </div>
   );

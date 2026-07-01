@@ -47,62 +47,62 @@
 .pointsRuleCard {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  border-left: 5px solid #fc8913;
+  background: #fffaf5;
+  border: 1px solid #f5dcc2;
+  border-left: 4px solid #f2b275;
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   margin-bottom: 18px;
 }
 
 .pointsRuleInfo h2 {
   margin: 0 0 6px;
-  color: #9a3412;
-  font-size: 1.15rem;
-  font-weight: 900;
+  color: #8b4a1f;
+  font-size: 1.08rem;
+  font-weight: 800;
 }
 
 .pointsRuleInfo p {
   margin: 0 0 10px;
-  color: #7c2d12;
-  font-size: 0.92rem;
-  font-weight: 700;
-  line-height: 1.4;
+  color: #7a5a43;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .pointsRuleExample {
   display: inline-flex;
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #fed7aa;
+  background: #fffdf9;
+  border: 1px solid #f2dfcb;
   border-radius: 999px;
-  padding: 7px 12px;
-  color: #7c2d12;
-  font-size: 0.85rem;
-  font-weight: 800;
+  padding: 6px 12px;
+  color: #8a5a35;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .pointsRuleExample strong {
   margin: 0 4px;
   color: #1092b1;
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 0.94rem;
+  font-weight: 800;
 }
 
 .pointsRuleForm {
-  background: #ffffff;
-  border: 1px solid #fed7aa;
+  background: #fffefe;
+  border: 1px solid #f1e3d4;
   border-radius: 12px;
   padding: 12px;
 }
 
 .pointsRuleForm label {
   display: block;
-  color: #9a3412;
-  font-size: 0.82rem;
-  font-weight: 900;
+  color: #8b4a1f;
+  font-size: 0.8rem;
+  font-weight: 800;
   margin-bottom: 7px;
 }
 
@@ -116,27 +116,28 @@
 
 .pointsRuleInputRow span,
 .pointsRuleInputRow strong {
-  color: #333333;
-  font-size: 0.9rem;
-  font-weight: 900;
+  color: #444444;
+  font-size: 0.88rem;
+  font-weight: 800;
   text-align: center;
 }
 
 .pointsRuleInputRow input {
   width: 100%;
   height: 40px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #d8dee5;
   border-radius: 9px;
   padding: 0 10px;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 0.98rem;
+  font-weight: 700;
   color: #333333;
   outline: none;
+  background: #ffffff;
 }
 
 .pointsRuleInputRow input:focus {
-  border-color: #fc8913;
-  box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.14);
+  border-color: #f2b275;
+  box-shadow: 0 0 0 3px rgba(242, 178, 117, 0.12);
 }
 
 .savePointsRuleButton {
@@ -146,7 +147,7 @@
   border-radius: 9px;
   background: #1092b1;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
   transition: 0.16s ease;
 }
@@ -157,28 +158,8 @@
 }
 
 .savePointsRuleButton:disabled {
-  opacity: 0.6;
+  opacity: 0.58;
   cursor: not-allowed;
-}
-
-.successMessage {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  font-weight: 800;
-}
-
-.errorMessage {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  font-weight: 600;
 }
 
 .filters {
@@ -491,8 +472,10 @@
   }
 }
 
-.confirmModal,
 .detailsModal {
+  width: 620px;
+  max-width: 94vw;
+  overflow: hidden;
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 24px 54px rgba(15, 23, 42, 0.3);
@@ -509,129 +492,6 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-}
-
-.confirmModal {
-  width: 430px;
-  max-width: 92vw;
-  padding: 26px 24px 24px;
-  text-align: center;
-}
-
-.confirmIcon {
-  width: 62px;
-  height: 62px;
-  margin: 0 auto 14px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-  font-weight: 900;
-}
-
-.confirmIconDanger {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.confirmIconActive {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.confirmModal h3 {
-  margin: 0 0 8px;
-  color: #222222;
-  font-size: 21px;
-  font-weight: 900;
-}
-
-.confirmModal p {
-  margin: 0;
-  color: #555555;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.confirmRewardName {
-  margin: 16px 0 18px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  color: #333333;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.confirmActions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.confirmCancelButton,
-.confirmActivateButton,
-.confirmDeactivateButton {
-  border: none;
-  border-radius: 10px;
-  min-width: 122px;
-  padding: 11px 18px;
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
-  transition:
-    background-color 0.16s ease,
-    transform 0.12s ease,
-    opacity 0.16s ease;
-}
-
-.confirmCancelButton {
-  background: #e5e7eb;
-  color: #333333;
-}
-
-.confirmActivateButton {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-.confirmDeactivateButton {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-.confirmCancelButton:hover:not(:disabled),
-.confirmActivateButton:hover:not(:disabled),
-.confirmDeactivateButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.confirmCancelButton:hover:not(:disabled) {
-  background: #d1d5db;
-}
-
-.confirmActivateButton:hover:not(:disabled) {
-  background: #15803d;
-}
-
-.confirmDeactivateButton:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-.confirmCancelButton:disabled,
-.confirmActivateButton:disabled,
-.confirmDeactivateButton:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.detailsModal {
-  width: 620px;
-  max-width: 94vw;
-  overflow: hidden;
 }
 
 .detailsHeader {
@@ -750,15 +610,5 @@
 @media (max-width: 720px) {
   .detailsGrid {
     grid-template-columns: 1fr;
-  }
-
-  .confirmActions {
-    flex-direction: column;
-  }
-
-  .confirmCancelButton,
-  .confirmActivateButton,
-  .confirmDeactivateButton {
-    width: 100%;
   }
 }

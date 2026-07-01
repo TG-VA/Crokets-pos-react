@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import styles from "./SearchModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
+import AppModal from "../../../AppModal/AppModal";
 
 const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const { branch } = useBranch();
@@ -18,7 +19,15 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
   const [loading, setLoading] = useState(false);
   const [loadingStocks, setLoadingStocks] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+  });
 
   const resultsListRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -37,7 +46,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     setKitValidation({ isValid: true, message: "", items: [] });
     setLoading(false);
     setLoadingStocks(false);
+    setAddingProduct(false);
     setError("");
+    closeAppModal();
 
     searchRequestIdRef.current += 1;
     stockRequestIdRef.current += 1;
@@ -80,6 +91,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       if (e.key === "Enter") {
         if (searchResults.length === 0) return;
         e.preventDefault();
+        e.stopPropagation();
 
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleSelectProduct(searchResults[selectedIndex]);
@@ -131,6 +143,24 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     }
   }, [selectedIndex, searchResults]);
 
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    setAppModal({
+      isOpen: true,
+      type: "warning",
+      title,
+      message: String(message || ""),
+      confirmText: "Entendido",
+    });
+  };
+
   const handleClose = () => {
     searchRequestIdRef.current += 1;
     stockRequestIdRef.current += 1;
@@ -143,7 +173,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     setKitValidation({ isValid: true, message: "", items: [] });
     setLoading(false);
     setLoadingStocks(false);
+    setAddingProduct(false);
     setError("");
+    closeAppModal();
     onClose();
   };
 
@@ -749,48 +781,61 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   };
 
   const handleSelectProduct = async (product) => {
-    if (!product) return;
+    if (!product || addingProduct) return;
 
     if (product.is_kit && !kitValidation.isValid) {
-      alert(
+      showAppWarning(
         kitValidation.message ||
-          "Este kit no tiene suficiente inventario en sus productos."
+          "Este kit no tiene suficiente inventario en sus productos.",
       );
       return;
     }
 
     if (!product.is_kit && product.tracks_inventory) {
       if (!product.is_active_in_branch) {
-        alert("Este producto está inactivo en la sucursal actual.");
+        showAppWarning("Este producto está inactivo en la sucursal actual.");
         return;
       }
 
       if (!product.has_been_stocked) {
-        alert("Este producto aún no tiene inventario inicial registrado.");
+        showAppWarning("Este producto aún no tiene inventario inicial registrado.");
         return;
       }
 
       if (Number(product.stock || 0) <= 0) {
-        alert(
-          "Este producto no tiene existencia disponible en la sucursal actual."
+        showAppWarning(
+          "Este producto no tiene existencia disponible en la sucursal actual.",
         );
         return;
       }
     }
 
     if (onAddToSale) {
-      await onAddToSale({
-        id: product.id,
-        barcode: product.barcode,
-        name: product.name,
-        sale_price: product.branch_sale_price,
-        cost_price: product.branch_cost_price,
-        is_kit: !!product.is_kit,
-        tracks_inventory: !!product.tracks_inventory,
-        discount_enabled: !!product.discount_enabled,
-        discount_percent: Number(product.discount_percent || 0),
-        discount_concept: product.discount_concept || "",
-      });
+      try {
+        setAddingProduct(true);
+
+        await onAddToSale({
+          id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          sale_price: product.branch_sale_price,
+          cost_price: product.branch_cost_price,
+          is_kit: !!product.is_kit,
+          tracks_inventory: !!product.tracks_inventory,
+          discount_enabled: !!product.discount_enabled,
+          discount_percent: Number(product.discount_percent || 0),
+          discount_concept: product.discount_concept || "",
+        });
+
+        handleClose();
+      } catch (err) {
+        console.error("Error agregando producto a la venta:", err);
+        showAppWarning(err?.message || "No se pudo agregar el producto a la venta.");
+      } finally {
+        setAddingProduct(false);
+      }
+
+      return;
     }
 
     handleClose();
@@ -1183,14 +1228,17 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           <div className={styles.actionButtons}>
             <button
               className={`${styles.actionButton} ${styles.addButton}`}
-              onClick={() => {
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
                 if (selectedProduct) {
                   handleSelectProduct(selectedProduct);
                 }
               }}
-              disabled={!canAddSelectedProduct(selectedProduct)}
+              disabled={addingProduct || !canAddSelectedProduct(selectedProduct)}
             >
-              Agregar a la venta
+              {addingProduct ? "Agregando..." : "Agregar a la venta"}
             </button>
 
             <button
@@ -1206,6 +1254,16 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           </div>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

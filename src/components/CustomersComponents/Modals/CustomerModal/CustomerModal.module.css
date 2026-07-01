@@ -12,12 +12,15 @@
 .modal {
   width: 620px;
   max-width: 94vw;
+  max-height: 92vh;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   overflow: hidden;
   animation: modalEnter 0.22s ease-out;
   transform-origin: center;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes overlayFadeIn {
@@ -49,6 +52,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .header h2 {
@@ -72,7 +76,10 @@
 }
 
 .form {
+  flex: 1;
+  min-height: 0;
   padding: 18px 20px 20px;
+  overflow-y: auto;
 }
 
 .twoColumns {
@@ -117,20 +124,28 @@
   cursor: not-allowed;
 }
 
-.error {
-  background: #ffe8e8;
+.inputValid {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16) !important;
+}
+
+.inputInvalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.16) !important;
+}
+
+.fieldError {
   color: #b00020;
-  border: 1px solid #ffb8b8;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding-top: 4px;
 }
 
 .cancelButton,
@@ -178,25 +193,17 @@
   cursor: not-allowed;
 }
 
-.inputValid {
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16) !important;
-}
-
-.inputInvalid {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.16) !important;
-}
-
-.fieldError {
-  color: #b00020;
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 2px;
-}
-
 @media (max-width: 600px) {
   .twoColumns {
     grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .saveButton {
+    width: 100%;
   }
 }

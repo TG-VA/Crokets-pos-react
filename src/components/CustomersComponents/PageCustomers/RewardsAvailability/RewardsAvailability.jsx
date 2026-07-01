@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "./RewardsRedeem.module.css";
+import styles from "./RewardsAvailability.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
-const RewardsRedeem = () => {
+const RewardsAvailability = () => {
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerResults, setCustomerResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -14,9 +15,65 @@ const RewardsRedeem = () => {
   const [loadingRewards, setLoadingRewards] = useState(false);
   const [loadingPoints, setLoadingPoints] = useState(false);
 
-  const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const hasSelectedCustomer = !!selectedCustomer?.id;
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const getCustomerSortName = (customer) => {
+    return String(
+      customer.name || customer.phone || customer.email || "SIN NOMBRE"
+    ).trim();
+  };
+
+  const sortCustomersByName = (customersList = []) => {
+    return [...customersList].sort((a, b) => {
+      return getCustomerSortName(a).localeCompare(getCustomerSortName(b), "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
+  };
 
   const rewardsStats = useMemo(() => {
     if (!hasSelectedCustomer) {
@@ -51,7 +108,6 @@ const RewardsRedeem = () => {
   const loadRewards = async () => {
     try {
       setLoadingRewards(true);
-      setError("");
 
       const { data, error: rewardsError } = await supabase
         .from("rewards")
@@ -67,15 +123,21 @@ const RewardsRedeem = () => {
         `)
         .eq("is_active", true)
         .order("points_required", { ascending: true })
-        .order("name", { ascending: true });
+        .order("name", { ascending: true, nullsFirst: false });
 
       if (rewardsError) throw rewardsError;
 
       setRewards(data || []);
     } catch (err) {
       console.error("Error cargando recompensas:", err);
-      setError("No se pudieron cargar las recompensas activas.");
       setRewards([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar recompensas",
+        message: "No se pudieron cargar las recompensas activas.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingRewards(false);
     }
@@ -89,7 +151,6 @@ const RewardsRedeem = () => {
 
     try {
       setLoadingPoints(true);
-      setError("");
 
       const { data, error: pointsError } = await supabase
         .from("customer_points")
@@ -105,8 +166,14 @@ const RewardsRedeem = () => {
       setCustomerPoints(totalPoints);
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
-      setError("No se pudieron cargar los puntos del cliente.");
       setCustomerPoints(0);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar puntos",
+        message: "No se pudieron cargar los puntos del cliente.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingPoints(false);
     }
@@ -115,19 +182,13 @@ const RewardsRedeem = () => {
   const searchCustomers = async (searchValue = customerSearch) => {
     const cleanSearch = String(searchValue || "").trim().toLowerCase();
 
-    if (!cleanSearch) {
-      setCustomerResults([]);
-      return;
-    }
-
-    if (cleanSearch.length < 2) {
+    if (!cleanSearch || cleanSearch.length < 2) {
       setCustomerResults([]);
       return;
     }
 
     try {
       setLoadingCustomers(true);
-      setError("");
 
       const like = `%${cleanSearch}%`;
 
@@ -144,28 +205,57 @@ const RewardsRedeem = () => {
           rfc,
           razon_social
         `)
-        .or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`)
         .eq("status", true)
         .eq("is_points_customer", true)
-        .order("name", { ascending: true })
+        .or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`)
+        .order("name", { ascending: true, nullsFirst: false })
         .limit(20);
 
       if (customersError) throw customersError;
 
-      setCustomerResults(data || []);
+      setCustomerResults(sortCustomersByName(data || []));
     } catch (err) {
       console.error("Error buscando clientes:", err);
-      setError("No se pudieron buscar clientes.");
       setCustomerResults([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron buscar clientes",
+        message: "Ocurrió un error al buscar clientes.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingCustomers(false);
     }
   };
 
   const handleSelectCustomer = async (customer) => {
+    if (customer.status === false) {
+      showAppAlert({
+        type: "warning",
+        title: "Cliente inactivo",
+        message:
+          "No se pueden consultar recompensas para clientes inactivos. Activa el cliente antes de continuar.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (customer.is_points_customer !== true) {
+      showAppAlert({
+        type: "warning",
+        title: "Cliente no válido",
+        message:
+          "Este cliente no está registrado como cliente de puntos. Activa el programa de puntos antes de consultar recompensas.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
     setSelectedCustomer(customer);
-    setError("");
-    setCustomerSearch(customer.name || customer.phone || "");
+    setCustomerSearch("");
+    setCustomerResults([]);
+
     await loadCustomerPoints(customer.id);
   };
 
@@ -174,7 +264,30 @@ const RewardsRedeem = () => {
     setCustomerPoints(0);
     setCustomerResults([]);
     setCustomerSearch("");
-    setError("");
+  };
+
+  const handleManualSearch = () => {
+    if (!customerSearch.trim()) {
+      showAppAlert({
+        type: "warning",
+        title: "Búsqueda requerida",
+        message: "Ingresa nombre, teléfono o correo para buscar cliente.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (customerSearch.trim().length < 2) {
+      showAppAlert({
+        type: "warning",
+        title: "Búsqueda muy corta",
+        message: "Ingresa al menos 2 caracteres para buscar cliente.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    searchCustomers(customerSearch);
   };
 
   const getRewardTypeLabel = (reward) => {
@@ -229,26 +342,13 @@ const RewardsRedeem = () => {
   useEffect(() => {
     const searchValue = customerSearch.trim();
 
-    if (!searchValue) {
-      setCustomerResults([]);
-      setLoadingCustomers(false);
-      return;
-    }
-
-    if (searchValue.length < 2) {
+    if (!searchValue || searchValue.length < 2) {
       setCustomerResults([]);
       setLoadingCustomers(false);
       return;
     }
 
     const searchTimeout = setTimeout(() => {
-      if (
-        selectedCustomer &&
-        searchValue === (selectedCustomer.name || selectedCustomer.phone || "")
-      ) {
-        return;
-      }
-
       setSelectedCustomer(null);
       setCustomerPoints(0);
       searchCustomers(searchValue);
@@ -315,13 +415,14 @@ const RewardsRedeem = () => {
         </div>
       </div>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
-
       <div className={styles.mainGrid}>
         <section className={styles.card}>
           <div className={styles.cardHeader}>
             <h2>Buscar cliente</h2>
-            <p>Busca por nombre, teléfono o correo.</p>
+            <p>
+              Busca por nombre, teléfono o correo. Solo se muestran clientes
+              activos.
+            </p>
           </div>
 
           <div className={styles.searchRow}>
@@ -329,19 +430,17 @@ const RewardsRedeem = () => {
               <input
                 type="text"
                 className={styles.searchInput}
-                placeholder="Buscar cliente..."
+                placeholder="Buscar cliente activo..."
                 value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
+                onChange={(e) => {
+                  setCustomerSearch(e.target.value);
+                  setSelectedCustomer(null);
+                  setCustomerPoints(0);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-
-                    if (!customerSearch.trim()) {
-                      setError("Ingresa nombre o teléfono para buscar cliente.");
-                      return;
-                    }
-
-                    searchCustomers(customerSearch);
+                    handleManualSearch();
                   }
                 }}
               />
@@ -352,7 +451,7 @@ const RewardsRedeem = () => {
                   className={styles.clearSearchButton}
                   onClick={handleClearCustomer}
                 >
-                  X
+                  ×
                 </button>
               )}
             </div>
@@ -360,52 +459,47 @@ const RewardsRedeem = () => {
             <button
               type="button"
               className={styles.searchButton}
-              onClick={() => {
-                if (!customerSearch.trim()) {
-                  setError("Ingresa nombre o teléfono para buscar cliente.");
-                  return;
-                }
-
-                searchCustomers(customerSearch);
-              }}
+              onClick={handleManualSearch}
               disabled={loadingCustomers}
             >
               {loadingCustomers ? "Buscando..." : "Buscar"}
             </button>
           </div>
 
-          <div className={styles.customerResults}>
-            {loadingCustomers ? (
-              <div className={styles.emptyState}>Buscando clientes...</div>
-            ) : customerResults.length === 0 ? (
-              <div className={styles.emptyState}>
-                No hay clientes para mostrar.
-              </div>
-            ) : (
-              customerResults.map((customer) => (
-                <button
-                  key={customer.id}
-                  type="button"
-                  className={`${styles.customerCard} ${
-                    selectedCustomer?.id === customer.id
-                      ? styles.customerCardSelected
-                      : ""
-                  }`}
-                  onClick={() => handleSelectCustomer(customer)}
-                >
-                  <div>
-                    <strong>{customer.name || "SIN NOMBRE"}</strong>
-                    <span>Tel: {customer.phone || "SIN TELÉFONO"}</span>
-                    <span>{customer.email || "SIN CORREO"}</span>
-                  </div>
+          {(loadingCustomers || customerSearch.trim().length >= 2) && (
+            <div className={styles.customerResults}>
+              {loadingCustomers ? (
+                <div className={styles.emptyState}>Buscando clientes...</div>
+              ) : customerResults.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No hay clientes activos para mostrar.
+                </div>
+              ) : (
+                customerResults.map((customer) => (
+                  <button
+                    key={customer.id}
+                    type="button"
+                    className={`${styles.customerCard} ${
+                      selectedCustomer?.id === customer.id
+                        ? styles.customerCardSelected
+                        : ""
+                    }`}
+                    onClick={() => handleSelectCustomer(customer)}
+                  >
+                    <div>
+                      <strong>{customer.name || "SIN NOMBRE"}</strong>
+                      <span>Tel: {customer.phone || "SIN TELÉFONO"}</span>
+                      <span>{customer.email || "SIN CORREO"}</span>
+                    </div>
 
-                  {customer.is_billing_customer && (
-                    <small className={styles.fiscalBadge}>FISCAL</small>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
+                    {customer.is_billing_customer && (
+                      <small className={styles.fiscalBadge}>FISCAL</small>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </section>
 
         <section className={styles.card}>
@@ -546,8 +640,22 @@ const RewardsRedeem = () => {
           )}
         </div>
       </section>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };
 
-export default RewardsRedeem;
+export default RewardsAvailability;

@@ -2,17 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardsSettings.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import RewardModal from "../../../../components/CustomersComponents/Modals/RewardModal/RewardModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
 const EXAMPLE_SALE_AMOUNT = 420;
-
-const emptyStatusConfirmModal = {
-  isOpen: false,
-  reward: null,
-  nextStatus: null,
-  loading: false,
-};
 
 const emptyRewardDetailsModal = {
   isOpen: false,
@@ -24,27 +18,93 @@ const RewardsSettings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingRewards, setLoadingRewards] = useState(false);
-  const [error, setError] = useState("");
 
   const [pointsAmountPerPoint, setPointsAmountPerPoint] = useState("");
   const [originalPointsAmountPerPoint, setOriginalPointsAmountPerPoint] =
     useState("");
   const [loadingPointsRule, setLoadingPointsRule] = useState(false);
   const [savingPointsRule, setSavingPointsRule] = useState(false);
-  const [pointsRuleMessage, setPointsRuleMessage] = useState("");
-  const [pointsRuleError, setPointsRuleError] = useState("");
 
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState(null);
 
-  const [statusConfirmModal, setStatusConfirmModal] = useState(
-    emptyStatusConfirmModal
-  );
   const [rewardDetailsModal, setRewardDetailsModal] = useState(
     emptyRewardDetailsModal
   );
 
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
   const numericPointsAmountPerPoint = Number(pointsAmountPerPoint || 0);
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const setAppModalLoading = (loading) => {
+    setAppModal((prev) => ({
+      ...prev,
+      loading,
+    }));
+  };
 
   const examplePoints = useMemo(() => {
     if (!numericPointsAmountPerPoint || numericPointsAmountPerPoint <= 0) {
@@ -127,10 +187,28 @@ const RewardsSettings = () => {
     }`;
   };
 
+  const sortRewards = (rewardsList = []) => {
+    return [...rewardsList].sort((a, b) => {
+      const statusA = a.is_active === false ? 1 : 0;
+      const statusB = b.is_active === false ? 1 : 0;
+
+      if (statusA !== statusB) return statusA - statusB;
+
+      const pointsA = Number(a.points_required || 0);
+      const pointsB = Number(b.points_required || 0);
+
+      if (pointsA !== pointsB) return pointsA - pointsB;
+
+      return String(a.name || "").localeCompare(String(b.name || ""), "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
+  };
+
   const loadRewards = async () => {
     try {
       setLoadingRewards(true);
-      setError("");
 
       const { data, error: rewardsError } = await supabase
         .from("rewards")
@@ -151,16 +229,23 @@ const RewardsSettings = () => {
             product_id
           )
         `)
+        .order("is_active", { ascending: false, nullsFirst: false })
         .order("points_required", { ascending: true })
-        .order("name", { ascending: true });
+        .order("name", { ascending: true, nullsFirst: false });
 
       if (rewardsError) throw rewardsError;
 
-      setRewards(data || []);
+      setRewards(sortRewards(data || []));
     } catch (err) {
       console.error("Error cargando recompensas:", err);
-      setError("No se pudieron cargar las recompensas.");
       setRewards([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar recompensas",
+        message: "No se pudieron cargar las recompensas.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingRewards(false);
     }
@@ -169,8 +254,6 @@ const RewardsSettings = () => {
   const loadPointsRule = async () => {
     try {
       setLoadingPointsRule(true);
-      setPointsRuleError("");
-      setPointsRuleMessage("");
 
       const { data, error: settingsError } = await supabase
         .from("system_settings")
@@ -224,13 +307,18 @@ const RewardsSettings = () => {
       setOriginalPointsAmountPerPoint(settingValue);
     } catch (err) {
       console.error("Error cargando regla de puntos:", err);
-      setPointsRuleError(
-        "No se pudo cargar la regla de acumulación de puntos."
-      );
 
       const defaultValue = String(DEFAULT_POINTS_AMOUNT);
       setPointsAmountPerPoint(defaultValue);
       setOriginalPointsAmountPerPoint(defaultValue);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo cargar la regla",
+        message:
+          "No se pudo cargar la regla de acumulación de puntos. Se usará el valor predeterminado temporalmente.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingPointsRule(false);
     }
@@ -248,20 +336,21 @@ const RewardsSettings = () => {
         : parts[0];
 
     setPointsAmountPerPoint(normalizedValue);
-    setPointsRuleError("");
-    setPointsRuleMessage("");
   };
 
   const handleSavePointsRule = async () => {
     try {
       setSavingPointsRule(true);
-      setPointsRuleError("");
-      setPointsRuleMessage("");
 
       const amount = Number(pointsAmountPerPoint || 0);
 
       if (!amount || amount <= 0) {
-        setPointsRuleError("El monto para generar 1 punto debe ser mayor a 0.");
+        showAppAlert({
+          type: "warning",
+          title: "Monto inválido",
+          message: "El monto para generar 1 punto debe ser mayor a 0.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
@@ -313,13 +402,162 @@ const RewardsSettings = () => {
 
       setPointsAmountPerPoint(normalizedAmount);
       setOriginalPointsAmountPerPoint(normalizedAmount);
-      setPointsRuleMessage("Regla de acumulación guardada correctamente.");
+
+      showAppAlert({
+        type: "success",
+        title: "Regla guardada",
+        message: "La regla de acumulación de puntos se guardó correctamente.",
+        confirmText: "Aceptar",
+      });
     } catch (err) {
       console.error("Error guardando regla de puntos:", err);
-      setPointsRuleError("No se pudo guardar la regla de acumulación.");
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo guardar",
+        message: "No se pudo guardar la regla de acumulación.",
+        confirmText: "Entendido",
+      });
     } finally {
       setSavingPointsRule(false);
     }
+  };
+
+  const filteredRewards = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    const filtered = rewards.filter((reward) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && reward.is_active !== false) ||
+        (statusFilter === "inactive" && reward.is_active === false);
+
+      if (!matchesStatus) return false;
+
+      if (!search) return true;
+
+      const values = [
+        reward.name,
+        reward.description,
+        reward.points_required,
+        normalizeRewardType(reward.reward_type),
+        getRewardTypeLabel(reward.reward_type),
+        getRewardBenefitLabel(reward),
+        getLinkedProductsLabel(reward),
+      ];
+
+      return values.some((value) =>
+        String(value || "").toLowerCase().includes(search)
+      );
+    });
+
+    return sortRewards(filtered);
+  }, [rewards, searchTerm, statusFilter]);
+
+  const handleNewReward = () => {
+    setEditingReward(null);
+    setIsRewardModalOpen(true);
+  };
+
+  const handleEditReward = (reward) => {
+    setEditingReward({
+      ...reward,
+      reward_type: normalizeRewardType(reward.reward_type),
+    });
+    setIsRewardModalOpen(true);
+  };
+
+  const handleCloseRewardModal = () => {
+    setIsRewardModalOpen(false);
+    setEditingReward(null);
+  };
+
+  const handleOpenStatusConfirmModal = (reward) => {
+    const nextStatus = reward.is_active === false;
+    const actionLabel = nextStatus ? "activar" : "desactivar";
+    const title = nextStatus ? "Activar recompensa" : "Desactivar recompensa";
+    const confirmText = nextStatus ? "Activar" : "Desactivar";
+
+    showAppConfirm({
+      type: nextStatus ? "info" : "warning",
+      title,
+      message: `¿Seguro que deseas ${actionLabel} la recompensa "${
+        reward.name || "SIN NOMBRE"
+      }"? ${
+        nextStatus
+          ? "Volverá a estar disponible para canjearse en ventas."
+          : "Ya no estará disponible para canjearse en ventas."
+      }`,
+      confirmText,
+      cancelText: "Cancelar",
+      onConfirm: () => handleConfirmToggleStatus(reward, nextStatus),
+    });
+  };
+
+  const handleConfirmToggleStatus = async (reward, nextStatus) => {
+    if (!reward?.id) return;
+
+    try {
+      setAppModalLoading(true);
+
+      const { error: updateError } = await supabase
+        .from("rewards")
+        .update({
+          is_active: nextStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", reward.id);
+
+      if (updateError) throw updateError;
+
+      await loadRewards();
+
+      setAppModal({
+        isOpen: true,
+        type: "success",
+        title: nextStatus ? "Recompensa activada" : "Recompensa desactivada",
+        message: `La recompensa "${
+          reward.name || "SIN NOMBRE"
+        }" se ${nextStatus ? "activó" : "desactivó"} correctamente.`,
+        confirmText: "Aceptar",
+        cancelText: "Cancelar",
+        showCancel: false,
+        loading: false,
+        onConfirm: closeAppModal,
+        onCancel: closeAppModal,
+      });
+    } catch (err) {
+      console.error("Error actualizando recompensa:", err);
+
+      setAppModal({
+        isOpen: true,
+        type: "danger",
+        title: "No se pudo actualizar",
+        message: "No se pudo actualizar el estado de la recompensa.",
+        confirmText: "Entendido",
+        cancelText: "Cancelar",
+        showCancel: false,
+        loading: false,
+        onConfirm: closeAppModal,
+        onCancel: closeAppModal,
+      });
+    }
+  };
+
+  const handleOpenRewardDetailsModal = (reward) => {
+    setRewardDetailsModal({
+      isOpen: true,
+      reward,
+    });
+  };
+
+  const handleCloseRewardDetailsModal = () => {
+    setRewardDetailsModal(emptyRewardDetailsModal);
+  };
+
+  const handleRefresh = () => {
+    loadRewards();
+    loadPointsRule();
   };
 
   useEffect(() => {
@@ -381,141 +619,11 @@ const RewardsSettings = () => {
     };
   }, []);
 
-  const filteredRewards = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-
-    return rewards.filter((reward) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && reward.is_active !== false) ||
-        (statusFilter === "inactive" && reward.is_active === false);
-
-      if (!matchesStatus) return false;
-
-      if (!search) return true;
-
-      const values = [
-        reward.name,
-        reward.description,
-        reward.points_required,
-        normalizeRewardType(reward.reward_type),
-        getRewardTypeLabel(reward.reward_type),
-        getRewardBenefitLabel(reward),
-        getLinkedProductsLabel(reward),
-      ];
-
-      return values.some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
-    });
-  }, [rewards, searchTerm, statusFilter]);
-
-  const handleNewReward = () => {
-    setEditingReward(null);
-    setIsRewardModalOpen(true);
-  };
-
-  const handleEditReward = (reward) => {
-    setEditingReward({
-      ...reward,
-      reward_type: normalizeRewardType(reward.reward_type),
-    });
-    setIsRewardModalOpen(true);
-  };
-
-  const handleCloseRewardModal = () => {
-    setIsRewardModalOpen(false);
-    setEditingReward(null);
-  };
-
-  const handleOpenStatusConfirmModal = (reward) => {
-    const nextStatus = reward.is_active === false;
-
-    setStatusConfirmModal({
-      isOpen: true,
-      reward,
-      nextStatus,
-      loading: false,
-    });
-  };
-
-  const handleCloseStatusConfirmModal = () => {
-    if (statusConfirmModal.loading) return;
-    setStatusConfirmModal(emptyStatusConfirmModal);
-  };
-
-  const handleConfirmToggleStatus = async () => {
-    const reward = statusConfirmModal.reward;
-    const nextStatus = statusConfirmModal.nextStatus;
-
-    if (!reward?.id || statusConfirmModal.loading) return;
-
-    try {
-      setStatusConfirmModal((prev) => ({
-        ...prev,
-        loading: true,
-      }));
-
-      const { error: updateError } = await supabase
-        .from("rewards")
-        .update({
-          is_active: nextStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", reward.id);
-
-      if (updateError) throw updateError;
-
-      await loadRewards();
-      setStatusConfirmModal(emptyStatusConfirmModal);
-    } catch (err) {
-      console.error("Error actualizando recompensa:", err);
-      setError("No se pudo actualizar el estado de la recompensa.");
-
-      setStatusConfirmModal((prev) => ({
-        ...prev,
-        loading: false,
-      }));
-    }
-  };
-
-  const handleOpenRewardDetailsModal = (reward) => {
-    setRewardDetailsModal({
-      isOpen: true,
-      reward,
-    });
-  };
-
-  const handleCloseRewardDetailsModal = () => {
-    setRewardDetailsModal(emptyRewardDetailsModal);
-  };
-
   useEffect(() => {
-    const hasStatusModalOpen = statusConfirmModal.isOpen;
-    const hasDetailsModalOpen = rewardDetailsModal.isOpen;
-
-    if (!hasStatusModalOpen && !hasDetailsModalOpen) return;
+    if (!rewardDetailsModal.isOpen) return;
 
     const handleModalKeyDown = (event) => {
-      if (event.key !== "Enter" && event.key !== "Escape") return;
-
-      if (hasStatusModalOpen) {
-        if (statusConfirmModal.loading) return;
-
-        event.preventDefault();
-
-        if (event.key === "Enter") {
-          handleConfirmToggleStatus();
-          return;
-        }
-
-        if (event.key === "Escape") {
-          handleCloseStatusConfirmModal();
-          return;
-        }
-      }
-
-      if (hasDetailsModalOpen) {
+      if (event.key === "Escape") {
         event.preventDefault();
         handleCloseRewardDetailsModal();
       }
@@ -526,13 +634,7 @@ const RewardsSettings = () => {
     return () => {
       window.removeEventListener("keydown", handleModalKeyDown);
     };
-  }, [
-    statusConfirmModal.isOpen,
-    statusConfirmModal.loading,
-    statusConfirmModal.reward,
-    statusConfirmModal.nextStatus,
-    rewardDetailsModal.isOpen,
-  ]);
+  }, [rewardDetailsModal.isOpen]);
 
   return (
     <div className={styles.content}>
@@ -601,14 +703,6 @@ const RewardsSettings = () => {
         </div>
       </div>
 
-      {pointsRuleMessage && (
-        <div className={styles.successMessage}>{pointsRuleMessage}</div>
-      )}
-
-      {pointsRuleError && (
-        <div className={styles.errorMessage}>{pointsRuleError}</div>
-      )}
-
       <div className={styles.filters}>
         <div className={styles.searchContainer}>
           <input
@@ -643,10 +737,7 @@ const RewardsSettings = () => {
         <button
           type="button"
           className={styles.refreshButton}
-          onClick={() => {
-            loadRewards();
-            loadPointsRule();
-          }}
+          onClick={handleRefresh}
           disabled={loadingRewards || loadingPointsRule}
         >
           {loadingRewards || loadingPointsRule
@@ -654,8 +745,6 @@ const RewardsSettings = () => {
             : "Actualizar"}
         </button>
       </div>
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.resultsInfo}>
         {loadingRewards
@@ -789,73 +878,21 @@ const RewardsSettings = () => {
         rewardToEdit={editingReward}
       />
 
-      {statusConfirmModal.isOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <div
-              className={`${styles.confirmIcon} ${
-                statusConfirmModal.nextStatus
-                  ? styles.confirmIconActive
-                  : styles.confirmIconDanger
-              }`}
-            >
-              {statusConfirmModal.nextStatus ? "✓" : "!"}
-            </div>
-
-            <h3>
-              {statusConfirmModal.nextStatus
-                ? "Activar recompensa"
-                : "Desactivar recompensa"}
-            </h3>
-
-            <p>
-              {statusConfirmModal.nextStatus
-                ? "¿Seguro que deseas activar esta recompensa? Volverá a estar disponible para canjearse en ventas."
-                : "¿Seguro que deseas desactivar esta recompensa? Ya no estará disponible para canjearse en ventas."}
-            </p>
-
-            <div className={styles.confirmRewardName}>
-              {statusConfirmModal.reward?.name || "SIN NOMBRE"}
-            </div>
-
-            <div className={styles.confirmActions}>
-              <button
-                type="button"
-                className={styles.confirmCancelButton}
-                onClick={handleCloseStatusConfirmModal}
-                disabled={statusConfirmModal.loading}
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="button"
-                className={
-                  statusConfirmModal.nextStatus
-                    ? styles.confirmActivateButton
-                    : styles.confirmDeactivateButton
-                }
-                onClick={handleConfirmToggleStatus}
-                disabled={statusConfirmModal.loading}
-                autoFocus
-              >
-                {statusConfirmModal.loading
-                  ? "Guardando..."
-                  : statusConfirmModal.nextStatus
-                  ? "Activar"
-                  : "Desactivar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {rewardDetailsModal.isOpen && rewardDetailsModal.reward && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.detailsModal}>
+        <div
+          className={styles.modalOverlay}
+          onClick={handleCloseRewardDetailsModal}
+        >
+          <div
+            className={styles.detailsModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reward-details-title"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className={styles.detailsHeader}>
               <div>
-                <h3>Detalle de recompensa</h3>
+                <h3 id="reward-details-title">Detalle de recompensa</h3>
                 <p>{rewardDetailsModal.reward.name || "SIN NOMBRE"}</p>
               </div>
 
@@ -863,6 +900,7 @@ const RewardsSettings = () => {
                 type="button"
                 className={styles.detailsCloseButton}
                 onClick={handleCloseRewardDetailsModal}
+                aria-label="Cerrar modal"
               >
                 ×
               </button>
@@ -925,6 +963,20 @@ const RewardsSettings = () => {
           </div>
         </div>
       )}
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

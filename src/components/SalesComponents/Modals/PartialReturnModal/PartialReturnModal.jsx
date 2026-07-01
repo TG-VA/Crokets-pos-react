@@ -3,6 +3,7 @@ import styles from "./PartialReturnModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
+import AppModal from "../../../AppModal/AppModal";
 
 const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
@@ -50,6 +51,101 @@ const PartialReturnModal = ({
   const [returnReason, setReturnReason] = useState("");
   const [refundMethodId, setRefundMethodId] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      showCancel: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    showAppAlert({
+      type: "warning",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppSuccess = (message, title = "Operación realizada") => {
+    showAppAlert({
+      type: "success",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppDanger = (message, title = "Error") => {
+    showAppAlert({
+      type: "danger",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+      cancelText,
+      showCancel: true,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   useEffect(() => {
     if (!isOpen || !selectedTicket) {
@@ -58,6 +154,7 @@ const PartialReturnModal = ({
       setReturnReason("");
       setRefundMethodId("");
       setProcessing(false);
+      closeAppModal();
       return;
     }
 
@@ -412,32 +509,9 @@ const PartialReturnModal = ({
     };
   };
 
-  const handleSave = async () => {
+  const executePartialReturn = async () => {
     try {
-      if (!selectedTicket?.id) {
-        alert("No se detectó la venta.");
-        return;
-      }
-
-      if (!user?.id) {
-        alert("No se detectó el usuario.");
-        return;
-      }
-
-      if (!branch?.id) {
-        alert("No se detectó la sucursal.");
-        return;
-      }
-
-      if (!returnReason.trim()) {
-        alert("Debes ingresar el motivo de devolución.");
-        return;
-      }
-
-      if (!refundMethodId) {
-        alert("Debes seleccionar el método de devolución.");
-        return;
-      }
+      setProcessing(true);
 
       const selectedItems = itemsWithLimits
         .map((item) => ({
@@ -448,35 +522,6 @@ const PartialReturnModal = ({
           description: item.description,
         }))
         .filter((item) => item.quantity > 0);
-
-      if (selectedItems.some((item) => item.isRewardItem)) {
-        alert(
-          "No se puede devolver parcialmente un producto de recompensa. Para revertir un canje, cancela la venta completa."
-        );
-        return;
-      }
-
-      if (selectedItems.length === 0) {
-        alert("Selecciona al menos un producto para devolución.");
-        return;
-      }
-
-      if (summary.totalUnitsAfterReturn < 1) {
-        alert(
-          "Debe quedar al menos 1 unidad en la venta. Si deseas devolver todo, corresponde cancelar la venta."
-        );
-        return;
-      }
-
-      const confirmed = window.confirm(
-        `¿Confirmas la devolución parcial por ${formatCurrency(
-          summary.totalRefund
-        )}?`
-      );
-
-      if (!confirmed) return;
-
-      setProcessing(true);
 
       const { error } = await supabase.rpc("create_partial_return_transaction", {
         p_sale_id: selectedTicket.id,
@@ -505,27 +550,125 @@ const PartialReturnModal = ({
         );
       }
 
-      if (pointsReverseResult.registered) {
-        alert(
-          `Devolución parcial registrada correctamente.\n\nSe descontaron ${
-            pointsReverseResult.points
-          } punto${pointsReverseResult.points !== 1 ? "s" : ""} del cliente.`
-        );
-      } else {
-        alert("Devolución parcial registrada correctamente.");
-      }
+      const successMessage = pointsReverseResult.registered
+        ? `Devolución parcial registrada correctamente.\n\nFolio: ${
+            selectedTicket?.folio || "—"
+          }\nTotal devuelto: ${formatCurrency(summary.totalRefund)}\nMétodo de devolución: ${
+            summary.refundMethodName || "SIN SELECCIONAR"
+          }\nPuntos descontados: -${pointsReverseResult.points}`
+        : `Devolución parcial registrada correctamente.\n\nFolio: ${
+            selectedTicket?.folio || "—"
+          }\nTotal devuelto: ${formatCurrency(summary.totalRefund)}\nMétodo de devolución: ${
+            summary.refundMethodName || "SIN SELECCIONAR"
+          }`;
 
       if (typeof onReturnCreated === "function") {
         await onReturnCreated();
       }
 
-      onClose();
+      setAppModal({
+        isOpen: true,
+        type: "success",
+        title: "Devolución parcial registrada",
+        message: successMessage,
+        confirmText: "Entendido",
+        cancelText: "Cancelar",
+        showCancel: false,
+        onConfirm: () => {
+          closeAppModal();
+          onClose();
+        },
+        onCancel: () => {
+          closeAppModal();
+          onClose();
+        },
+      });
     } catch (error) {
       console.error("Error registrando devolución parcial:", error);
-      alert(error.message || "No se pudo registrar la devolución parcial.");
+      showAppDanger(
+        error.message || "No se pudo registrar la devolución parcial.",
+        "No se pudo registrar la devolución",
+      );
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (!selectedTicket?.id) {
+      showAppWarning("No se detectó la venta.");
+      return;
+    }
+
+    if (!user?.id) {
+      showAppWarning("No se detectó el usuario.");
+      return;
+    }
+
+    if (!branch?.id) {
+      showAppWarning("No se detectó la sucursal.");
+      return;
+    }
+
+    if (!returnReason.trim()) {
+      showAppWarning("Debes ingresar el motivo de devolución.", "Motivo requerido");
+      return;
+    }
+
+    if (!refundMethodId) {
+      showAppWarning(
+        "Debes seleccionar el método de devolución.",
+        "Método requerido",
+      );
+      return;
+    }
+
+    const selectedItems = itemsWithLimits
+      .map((item) => ({
+        sale_detail_id: item.saleDetailId,
+        quantity: Number(quantities[item.saleDetailId] || 0),
+        isKit: item.isKit,
+        isRewardItem: item.isRewardItem,
+        description: item.description,
+      }))
+      .filter((item) => item.quantity > 0);
+
+    if (selectedItems.some((item) => item.isRewardItem)) {
+      showAppWarning(
+        "No se puede devolver parcialmente un producto de recompensa. Para revertir un canje, cancela la venta completa.",
+        "Producto no devolvible",
+      );
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      showAppWarning(
+        "Selecciona al menos un producto para devolución.",
+        "Producto requerido",
+      );
+      return;
+    }
+
+    if (summary.totalUnitsAfterReturn < 1) {
+      showAppWarning(
+        "Debe quedar al menos 1 unidad en la venta. Si deseas devolver todo, corresponde cancelar la venta.",
+        "Devolución bloqueada",
+      );
+      return;
+    }
+
+    showAppConfirm({
+      type: "warning",
+      title: "Confirmar devolución parcial",
+      message: `¿Confirmas la devolución parcial por ${formatCurrency(
+        summary.totalRefund
+      )}?\n\nFolio: ${selectedTicket?.folio || "—"}\nCliente: ${
+        selectedTicket?.client || "PÚBLICO EN GENERAL"
+      }\nMétodo de devolución: ${summary.refundMethodName || "SIN SELECCIONAR"}`,
+      confirmText: "Sí, registrar devolución",
+      cancelText: "No, regresar",
+      onConfirm: executePartialReturn,
+    });
   };
 
   return (
@@ -826,6 +969,19 @@ const PartialReturnModal = ({
           </div>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

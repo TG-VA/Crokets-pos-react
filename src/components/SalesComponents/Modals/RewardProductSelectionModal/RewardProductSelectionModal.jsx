@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardProductSelectionModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const INITIAL_VISIBLE_PRODUCTS = 3;
 
@@ -20,6 +21,46 @@ const RewardProductSelectionModal = ({
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+  });
+
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+    });
+  };
+
+
+  const showAppDanger = (message, title = "Error") => {
+    showAppModal({
+      type: "danger",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
 
   const freeProductRewards = useMemo(() => {
     return (Array.isArray(rewards) ? rewards : [])
@@ -285,6 +326,10 @@ const RewardProductSelectionModal = ({
       setRewardProducts([]);
       setInventoryByProduct({});
       setError("No se pudieron cargar los productos de las recompensas.");
+      showAppDanger(
+        "No se pudieron cargar los productos de las recompensas.",
+        "Error cargando recompensas",
+      );
     } finally {
       setLoadingProducts(false);
     }
@@ -298,61 +343,30 @@ const RewardProductSelectionModal = ({
     setExpandedRewards({});
     setSaving(false);
     setError("");
+    closeAppModal();
     loadRewardProducts();
   }, [isOpen, freeProductRewards, branchId]);
 
-  useEffect(() => {
-    if (!isOpen || loadingProducts) return;
-
-    setSelectedProductsByReward((prev) => {
-      const next = { ...prev };
-
-      for (const reward of freeProductRewards) {
-        if (next[reward.id]) continue;
-
-        const requiredQty = getRewardQuantity(reward);
-        const options = getRewardProductOptions(reward.id).filter((row) => {
-          const status = getInventoryStatus(row.product);
-          return (
-            status.available &&
-            (status.stock === null || status.stock >= requiredQty)
-          );
-        });
-
-        if (options.length === 1) {
-          next[reward.id] = {
-            [options[0].product.id]: requiredQty,
-          };
-        }
-      }
-
-      return next;
-    });
-  }, [
-    isOpen,
-    loadingProducts,
-    rewardProducts,
-    inventoryByProduct,
-    freeProductRewards,
-    cartProducts,
-  ]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event) => {
+      if (appModal.isOpen) return;
+
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
         if (!saving) onClose();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, saving, onClose]);
+  }, [isOpen, saving, onClose, appModal.isOpen]);
 
   const totalRequiredProducts = useMemo(() => {
     return freeProductRewards.reduce((sum, reward) => {
@@ -485,7 +499,10 @@ const RewardProductSelectionModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={saving ? undefined : onClose}>
+    <div
+      className={styles.overlay}
+      onClick={saving || appModal.isOpen ? undefined : onClose}
+    >
       <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
         <div className={styles.header}>
           <div>
@@ -497,7 +514,7 @@ const RewardProductSelectionModal = ({
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            disabled={saving}
+            disabled={saving || appModal.isOpen}
           >
             ×
           </button>
@@ -756,7 +773,7 @@ const RewardProductSelectionModal = ({
             type="button"
             className={styles.cancelButton}
             onClick={onClose}
-            disabled={saving}
+            disabled={saving || appModal.isOpen}
           >
             Cancelar
           </button>
@@ -765,12 +782,22 @@ const RewardProductSelectionModal = ({
             type="button"
             className={styles.confirmButton}
             onClick={handleConfirm}
-            disabled={!canConfirm}
+            disabled={!canConfirm || appModal.isOpen}
           >
             {saving ? "Aplicando..." : "Aplicar recompensas"}
           </button>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

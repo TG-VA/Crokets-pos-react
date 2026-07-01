@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 250;
@@ -29,12 +30,6 @@ const DISCOUNT_TYPES = {
   fixed: "Monto fijo",
 };
 
-const emptyConfirmationModal = {
-  isOpen: false,
-  title: "",
-  message: "",
-};
-
 const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
   const [formData, setFormData] = useState(emptyForm);
   const [products, setProducts] = useState([]);
@@ -43,12 +38,21 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
 
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
-  const [confirmationModal, setConfirmationModal] = useState(
-    emptyConfirmationModal,
-  );
+
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const isEditing = useMemo(() => !!rewardToEdit?.id, [rewardToEdit]);
 
@@ -60,122 +64,41 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
     return formData.reward_type === "product_discount";
   }, [formData.reward_type]);
 
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+    onConfirm = closeAppModal,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm,
+      onCancel: closeAppModal,
+    });
+  };
+
   const normalizeRewardType = (type) => {
     if (type === "product_discount") return "product_discount";
     return "free_product";
   };
-
-  const loadProducts = async () => {
-    try {
-      setLoadingProducts(true);
-      setError("");
-
-      const { data, error: productsError } = await supabase
-        .from("products")
-        .select(
-          `
-          id,
-          barcode,
-          name,
-          sale_price
-        `,
-        )
-        .order("name", { ascending: true });
-
-      if (productsError) throw productsError;
-
-      setProducts(data || []);
-    } catch (err) {
-      console.error("Error cargando productos:", err);
-      setProducts([]);
-      setError(
-        err?.message || "No se pudieron cargar los productos del inventario.",
-      );
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  const loadRewardProducts = async (rewardId) => {
-    if (!rewardId) {
-      setSelectedProductIds([]);
-      return;
-    }
-
-    try {
-      const { data, error: rewardProductsError } = await supabase
-        .from("reward_products")
-        .select("product_id")
-        .eq("reward_id", rewardId);
-
-      if (rewardProductsError) throw rewardProductsError;
-
-      setSelectedProductIds((data || []).map((item) => item.product_id));
-    } catch (err) {
-      console.error("Error cargando productos de recompensa:", err);
-      setSelectedProductIds([]);
-      setError(
-        err?.message || "No se pudieron cargar los productos vinculados.",
-      );
-    }
-  };
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const initializeModal = async () => {
-      setError("");
-      setFieldErrors({});
-      setTouchedFields({});
-      setSaving(false);
-      setProductSearchTerm("");
-      setProducts([]);
-      setConfirmationModal(emptyConfirmationModal);
-
-      const normalizedRewardType = rewardToEdit
-        ? normalizeRewardType(rewardToEdit.reward_type)
-        : "free_product";
-
-      if (rewardToEdit) {
-        setFormData({
-          name: String(rewardToEdit.name || "").slice(0, NAME_MAX_LENGTH),
-          description: String(rewardToEdit.description || "").slice(
-            0,
-            DESCRIPTION_MAX_LENGTH,
-          ),
-          points_required: String(rewardToEdit.points_required || ""),
-          is_active: rewardToEdit.is_active !== false,
-          reward_type: normalizedRewardType,
-          reward_quantity: String(rewardToEdit.reward_quantity || 1),
-          discount_type:
-            normalizedRewardType === "product_discount"
-              ? rewardToEdit.discount_type || "percent"
-              : "",
-          discount_value:
-            normalizedRewardType === "product_discount" &&
-            rewardToEdit.discount_value !== null &&
-            rewardToEdit.discount_value !== undefined
-              ? String(rewardToEdit.discount_value)
-              : "",
-        });
-      } else {
-        setFormData(emptyForm);
-        setSelectedProductIds([]);
-      }
-
-      if (normalizedRewardType === "free_product") {
-        await loadProducts();
-
-        if (rewardToEdit?.id) {
-          await loadRewardProducts(rewardToEdit.id);
-        }
-      } else {
-        setSelectedProductIds([]);
-      }
-    };
-
-    initializeModal();
-  }, [isOpen, rewardToEdit]);
 
   const normalizeUpperText = (value, maxLength = null) => {
     const normalizedValue = String(value || "")
@@ -285,6 +208,73 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
     return errors;
   };
 
+  const loadProducts = async () => {
+    try {
+      setLoadingProducts(true);
+
+      const { data, error: productsError } = await supabase
+        .from("products")
+        .select(`
+          id,
+          barcode,
+          name,
+          sale_price
+        `)
+        .order("name", { ascending: true });
+
+      if (productsError) throw productsError;
+
+      setProducts(data || []);
+    } catch (err) {
+      console.error("Error cargando productos:", err);
+      setProducts([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar productos",
+        message:
+          err?.message || "No se pudieron cargar los productos del inventario.",
+        confirmText: "Entendido",
+      });
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const loadRewardProducts = async (rewardId) => {
+    if (!rewardId) {
+      setSelectedProductIds([]);
+      return;
+    }
+
+    try {
+      const { data, error: rewardProductsError } = await supabase
+        .from("reward_products")
+        .select("product_id")
+        .eq("reward_id", rewardId);
+
+      if (rewardProductsError) throw rewardProductsError;
+
+      setSelectedProductIds((data || []).map((item) => item.product_id));
+    } catch (err) {
+      console.error("Error cargando productos de recompensa:", err);
+      setSelectedProductIds([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar productos",
+        message:
+          err?.message || "No se pudieron cargar los productos vinculados.",
+        confirmText: "Entendido",
+      });
+    }
+  };
+
+  const handleRequestClose = () => {
+    if (saving || appModal.isOpen) return;
+    onClose();
+  };
+
   const handleChange = (field, value) => {
     let finalValue = value;
 
@@ -315,10 +305,6 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
 
     setFormData(nextFormData);
     setFieldErrors(validateValues(nextFormData));
-
-    if (error) {
-      setError("");
-    }
   };
 
   const handleRewardTypeChange = async (value) => {
@@ -346,7 +332,6 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
 
     setFormData(nextFormData);
     setFieldErrors(validateValues(nextFormData));
-    setError("");
   };
 
   const handleBlur = (field) => {
@@ -401,16 +386,10 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
 
     setSelectedProductIds(nextSelectedProducts);
     setFieldErrors(validateValues(formData, nextSelectedProducts));
-
-    if (error) {
-      setError("");
-    }
   };
 
   const selectedProducts = useMemo(() => {
-    return products.filter((product) =>
-      selectedProductIds.includes(product.id),
-    );
+    return products.filter((product) => selectedProductIds.includes(product.id));
   }, [products, selectedProductIds]);
 
   const filteredProducts = useMemo(() => {
@@ -426,9 +405,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
       const values = [product.name, product.barcode, product.sale_price];
 
       return values.some((value) =>
-        String(value || "")
-          .toLowerCase()
-          .includes(search),
+        String(value || "").toLowerCase().includes(search)
       );
     });
   }, [products, productSearchTerm, selectedProductIds]);
@@ -465,11 +442,11 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
     }
 
     const productIdsToInsert = selectedProductIds.filter(
-      (productId) => !currentProductIds.includes(productId),
+      (productId) => !currentProductIds.includes(productId)
     );
 
     const productIdsToDelete = currentProductIds.filter(
-      (productId) => !selectedProductIds.includes(productId),
+      (productId) => !selectedProductIds.includes(productId)
     );
 
     if (productIdsToInsert.length > 0) {
@@ -505,7 +482,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
       name: normalizeUpperText(formData.name, NAME_MAX_LENGTH).trim(),
       description: normalizeUpperText(
         formData.description,
-        DESCRIPTION_MAX_LENGTH,
+        DESCRIPTION_MAX_LENGTH
       ).trim(),
       points_required: Number(formData.points_required || 0),
       is_active: formData.is_active,
@@ -532,20 +509,29 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
     });
 
     if (Object.keys(errors).length > 0) {
-      setError("Corrige los campos marcados antes de guardar.");
+      showAppAlert({
+        type: "warning",
+        title: "Campos incompletos",
+        message: "Corrige los campos marcados antes de guardar.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     try {
       setSaving(true);
-      setError("");
 
       const duplicateReward = await checkDuplicateRewardName(
-        normalizedData.name,
+        normalizedData.name
       );
 
       if (duplicateReward) {
-        setError("Ya existe una recompensa con ese nombre.");
+        showAppAlert({
+          type: "warning",
+          title: "Recompensa duplicada",
+          message: "Ya existe una recompensa con ese nombre.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
@@ -601,79 +587,143 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
       } catch (refreshError) {
         console.error(
           "Error actualizando listado de recompensas:",
-          refreshError,
+          refreshError
         );
       }
 
-      setConfirmationModal({
-        isOpen: true,
+      showAppAlert({
+        type: "success",
         title: isEditing
-          ? "Recompensa editada correctamente"
-          : "Recompensa creada correctamente",
+          ? "Recompensa editada"
+          : "Recompensa creada",
         message: isEditing
           ? "Los cambios de la recompensa fueron guardados correctamente."
           : "La nueva recompensa fue registrada correctamente.",
+        confirmText: "Aceptar",
+        onConfirm: () => {
+          closeAppModal();
+          onClose();
+        },
       });
     } catch (err) {
       console.error("Error guardando recompensa:", err);
 
       const errorMessage = String(err?.message || "");
 
-      if (errorMessage.includes("duplicate key")) {
-        setError("Ya existe una recompensa con información duplicada.");
-      } else {
-        setError(err?.message || "No se pudo guardar la recompensa.");
-      }
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo guardar",
+        message: errorMessage.includes("duplicate key")
+          ? "Ya existe una recompensa con información duplicada."
+          : err?.message || "No se pudo guardar la recompensa.",
+        confirmText: "Entendido",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCloseConfirmationModal = () => {
-    setConfirmationModal(emptyConfirmationModal);
-    onClose();
-  };
-
   useEffect(() => {
-    if (!confirmationModal.isOpen) return;
+    if (!isOpen) return;
 
-    const handleEnterKey = (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        handleCloseConfirmationModal();
+    const initializeModal = async () => {
+      setFieldErrors({});
+      setTouchedFields({});
+      setSaving(false);
+      setProductSearchTerm("");
+      setProducts([]);
+      closeAppModal();
+
+      const normalizedRewardType = rewardToEdit
+        ? normalizeRewardType(rewardToEdit.reward_type)
+        : "free_product";
+
+      if (rewardToEdit) {
+        setFormData({
+          name: String(rewardToEdit.name || "").slice(0, NAME_MAX_LENGTH),
+          description: String(rewardToEdit.description || "").slice(
+            0,
+            DESCRIPTION_MAX_LENGTH
+          ),
+          points_required: String(rewardToEdit.points_required || ""),
+          is_active: rewardToEdit.is_active !== false,
+          reward_type: normalizedRewardType,
+          reward_quantity: String(rewardToEdit.reward_quantity || 1),
+          discount_type:
+            normalizedRewardType === "product_discount"
+              ? rewardToEdit.discount_type || "percent"
+              : "",
+          discount_value:
+            normalizedRewardType === "product_discount" &&
+            rewardToEdit.discount_value !== null &&
+            rewardToEdit.discount_value !== undefined
+              ? String(rewardToEdit.discount_value)
+              : "",
+        });
+      } else {
+        setFormData(emptyForm);
+        setSelectedProductIds([]);
+      }
+
+      if (normalizedRewardType === "free_product") {
+        await loadProducts();
+
+        if (rewardToEdit?.id) {
+          await loadRewardProducts(rewardToEdit.id);
+        }
+      } else {
+        setSelectedProductIds([]);
       }
     };
 
-    window.addEventListener("keydown", handleEnterKey);
+    initializeModal();
+  }, [isOpen, rewardToEdit]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && !saving && !appModal.isOpen) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscapeKey);
 
     return () => {
-      window.removeEventListener("keydown", handleEnterKey);
+      window.removeEventListener("keydown", handleEscapeKey);
     };
-  }, [confirmationModal.isOpen]);
-
-  if (!isOpen) return null;
+  }, [isOpen, saving, appModal.isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={handleRequestClose}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reward-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className={styles.header}>
-          <h2>{isEditing ? "Editar recompensa" : "Nueva recompensa"}</h2>
+          <h2 id="reward-modal-title">
+            {isEditing ? "Editar recompensa" : "Nueva recompensa"}
+          </h2>
 
           <button
             type="button"
             className={styles.closeButton}
-            onClick={onClose}
+            onClick={handleRequestClose}
             disabled={saving}
+            aria-label="Cerrar modal"
           >
             ×
           </button>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {error && <div className={styles.error}>{error}</div>}
-
           <div className={styles.fieldGroup}>
             <label>Nombre de la recompensa *</label>
             <input
@@ -802,7 +852,9 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
                   onBlur={() => handleBlur("discount_value")}
                   disabled={saving}
                   placeholder={
-                    formData.discount_type === "percent" ? "50" : "100"
+                    formData.discount_type === "percent"
+                    ? "Porcentaje de descuento "
+                    : "Monto de descuento MXN "
                   }
                   className={getFieldClassName("discount_value")}
                 />
@@ -944,14 +996,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
               rows={4}
             />
 
-            <span
-              style={{
-                color: "#666666",
-                fontSize: "12px",
-                fontWeight: 700,
-                textAlign: "right",
-              }}
-            >
+            <span className={styles.descriptionCounter}>
               {String(formData.description || "").length}/
               {DESCRIPTION_MAX_LENGTH}
             </span>
@@ -981,7 +1026,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={onClose}
+              onClick={handleRequestClose}
               disabled={saving}
             >
               Cancelar
@@ -1001,25 +1046,19 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
         </form>
       </div>
 
-      {confirmationModal.isOpen && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmModal}>
-            <div className={styles.confirmIcon}>✓</div>
-
-            <h3>{confirmationModal.title}</h3>
-
-            <p>{confirmationModal.message}</p>
-
-            <button
-              type="button"
-              className={styles.confirmButton}
-              onClick={handleCloseConfirmationModal}
-            >
-              Aceptar
-            </button>
-          </div>
-        </div>
-      )}
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./InvoiceSettings.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const emptyForm = {
   provider: "facturama",
@@ -23,6 +24,18 @@ const emptyForm = {
 
 const RFC_REGEX = /^([A-ZÑ&]{3,4})\d{6}([A-Z0-9]{3})$/;
 
+
+const INITIAL_MODAL_STATE = {
+  isOpen: false,
+  type: "info",
+  title: "",
+  message: "",
+  confirmText: "Aceptar",
+  cancelText: "Cancelar",
+  showCancel: false,
+  onConfirmAction: null,
+};
+
 const InvoiceSettings = () => {
   const [form, setForm] = useState(emptyForm);
   const [settingId, setSettingId] = useState(null);
@@ -33,6 +46,7 @@ const InvoiceSettings = () => {
   const [syncingTimbres, setSyncingTimbres] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [appModal, setAppModal] = useState(INITIAL_MODAL_STATE);
 
   const [postalInfo, setPostalInfo] = useState(null);
   const [postalLoading, setPostalLoading] = useState(false);
@@ -122,6 +136,41 @@ const InvoiceSettings = () => {
     return styles.statusPending;
   };
 
+
+  const closeAppModal = () => {
+    setAppModal(INITIAL_MODAL_STATE);
+  };
+
+  const showConfirmModal = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirmAction = null,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      onConfirmAction,
+    });
+  };
+
+  const handleAppModalConfirm = async () => {
+    const action = appModal.onConfirmAction;
+
+    closeAppModal();
+
+    if (action) {
+      await action();
+    }
+  };
+
 const lookupPostalCode = async (postalCode) => {
   const cp = String(postalCode || "").replace(/\D/g, "").slice(0, 5);
 
@@ -158,20 +207,7 @@ const lookupPostalCode = async (postalCode) => {
   }
 };
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    if (name === "environment" && value === "production") {
-      const confirmed = window.confirm(
-        "Estás cambiando a PRODUCCIÓN. Las facturas emitidas tendrán validez fiscal. ¿Deseas continuar?"
-      );
-
-      if (!confirmed) return;
-    }
-
-    const normalizedValue =
-      type === "checkbox" ? checked : normalizeForm(name, value);
-
+  const applyFieldChange = (name, normalizedValue) => {
     setForm((prev) => ({
       ...prev,
       [name]: normalizedValue,
@@ -188,6 +224,32 @@ const lookupPostalCode = async (postalCode) => {
 
     setError("");
     setSuccessMessage("");
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    const normalizedValue =
+      type === "checkbox" ? checked : normalizeForm(name, value);
+
+    if (
+      name === "environment" &&
+      normalizedValue === "production" &&
+      form.environment !== "production"
+    ) {
+      showConfirmModal({
+        type: "danger",
+        title: "Cambiar a producción",
+        message:
+          "Estás cambiando a PRODUCCIÓN. Las facturas emitidas tendrán validez fiscal. ¿Deseas continuar?",
+        confirmText: "Sí, cambiar a producción",
+        cancelText: "Cancelar",
+        onConfirmAction: () => applyFieldChange(name, normalizedValue),
+      });
+      return;
+    }
+
+    applyFieldChange(name, normalizedValue);
   };
 
   const loadTaxRegimes = async () => {
@@ -284,24 +346,7 @@ const lookupPostalCode = async (postalCode) => {
     return "";
   };
 
-  const handleSave = async () => {
-    const validationError = validateForm();
-
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `¿Deseas guardar la configuración CFDI?\n\nRFC: ${
-        form.issuer_rfc
-      }\nRazón social: ${normalizedIssuerName}\nCP: ${
-        form.issuer_postal_code
-      } - ${postalInfo?.municipality}, ${postalInfo?.state}`
-    );
-
-    if (!confirmed) return;
-
+  const executeSaveSettings = async () => {
     try {
       setSaving(true);
       setError("");
@@ -358,6 +403,28 @@ const lookupPostalCode = async (postalCode) => {
     }
   };
 
+  const handleSave = async () => {
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    showConfirmModal({
+      type: "warning",
+      title: "Guardar configuración CFDI",
+      message: `¿Deseas guardar la configuración CFDI?\n\nRFC: ${
+        form.issuer_rfc
+      }\nRazón social: ${normalizedIssuerName}\nCP: ${
+        form.issuer_postal_code
+      } - ${postalInfo?.municipality}, ${postalInfo?.state}`,
+      confirmText: "Sí, guardar",
+      cancelText: "Cancelar",
+      onConfirmAction: executeSaveSettings,
+    });
+  };
+
   const handleTestConnection = async () => {
     setTestingConnection(true);
     setError("");
@@ -401,7 +468,8 @@ const lookupPostalCode = async (postalCode) => {
   };
 
   return (
-    <div className={styles.content}>
+    <>
+      <div className={styles.content}>
       <div className={styles.header}>
         <div>
           <h1>CONFIGURACIÓN CFDI</h1>
@@ -734,7 +802,22 @@ const lookupPostalCode = async (postalCode) => {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={saving}
+        onConfirm={handleAppModalConfirm}
+        onCancel={closeAppModal}
+        onClose={closeAppModal}
+      />
+    </>
   );
 };
 

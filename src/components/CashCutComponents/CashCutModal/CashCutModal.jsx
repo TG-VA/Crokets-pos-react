@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./CashCutModal.module.css";
+import AppModal from "../../AppModal/AppModal";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
@@ -10,26 +11,49 @@ const fmt = (n) =>
 const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
   const [counted, setCounted] = useState("");
   const [notes, setNotes] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+  });
 
-  useEffect(() => {
-    if (isOpen) {
-      setCounted("");
-      setNotes("");
-    }
-  }, [isOpen]);
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
 
-  if (!isOpen) return null;
-
-  const expected = Number(expectedAmount) || 0;
-  const countedNumber = Number(counted) || 0;
-  const hasCounted = counted !== "";
-  const diff = countedNumber - expected;
+  const showAppAlert = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+    });
+  };
 
   const handleConfirm = () => {
     if (counted === "") {
-      alert("Debes capturar el monto contado en caja.");
+      showAppAlert({
+        type: "warning",
+        title: "Monto contado requerido",
+        message: "Debes capturar el monto contado en caja.",
+        confirmText: "Entendido",
+      });
       return;
     }
+
+    const expected = Number(expectedAmount) || 0;
+    const countedNumber = Number(counted) || 0;
 
     onConfirm({
       counted: countedNumber,
@@ -38,7 +62,67 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
     });
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setCounted("");
+    setNotes("");
+    closeAppModal();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+
+        if (appModal.isOpen) {
+          closeAppModal();
+          return;
+        }
+
+        onClose();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+
+        if (tag === "textarea") return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+
+        if (appModal.isOpen) {
+          closeAppModal();
+          return;
+        }
+
+        handleConfirm();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [isOpen, appModal.isOpen, counted, notes, expectedAmount, onClose]);
+
+  if (!isOpen) return null;
+
+  const expected = Number(expectedAmount) || 0;
+  const countedNumber = Number(counted) || 0;
+  const hasCounted = counted !== "";
+  const diff = countedNumber - expected;
+
   const handleOverlayClick = (e) => {
+    if (appModal.isOpen) return;
+
     if (e.target === e.currentTarget) {
       onClose();
     }
@@ -46,7 +130,7 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
 
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div className={styles.modal}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.modalTitle}>🧾 Corte de Cajero</h2>
 
         <p className={styles.modalSubtitle}>
@@ -67,6 +151,7 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
             value={counted}
             onChange={(e) => setCounted(e.target.value)}
             className={styles.modalInput}
+            disabled={appModal.isOpen}
           />
         </div>
 
@@ -88,11 +173,17 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
             onChange={(e) => setNotes(e.target.value)}
             className={styles.modalTextarea}
             rows={3}
+            disabled={appModal.isOpen}
           />
         </div>
 
         <div className={styles.modalActions}>
-          <button type="button" className={styles.btnCancel} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.btnCancel}
+            onClick={onClose}
+            disabled={appModal.isOpen}
+          >
             Cancelar
           </button>
 
@@ -100,11 +191,22 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
             type="button"
             className={styles.btnConfirm}
             onClick={handleConfirm}
+            disabled={appModal.isOpen}
           >
-            Confirmar Corte
+            Enter - Confirmar Corte
           </button>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

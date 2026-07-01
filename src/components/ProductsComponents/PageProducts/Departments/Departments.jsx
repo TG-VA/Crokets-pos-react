@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
+import AppModal from "../../../AppModal/AppModal";
 import styles from "./Departments.module.css";
+
+const INITIAL_MODAL_STATE = {
+  isOpen: false,
+  type: "info",
+  title: "",
+  message: "",
+  confirmText: "Aceptar",
+  cancelText: "Cancelar",
+  showCancel: false,
+  onConfirmAction: null,
+};
 
 const Departments = () => {
   const { departments, addDepartment, updateDepartment } = useProducts();
@@ -13,10 +25,31 @@ const Departments = () => {
     status: true,
   });
 
+  const [appModal, setAppModal] = useState(INITIAL_MODAL_STATE);
+
   const selectedDept = useMemo(
     () => departments.find((d) => d.id === selectedId) || null,
     [departments, selectedId]
   );
+
+  const sortedDepartments = useMemo(() => {
+    return [...(departments || [])].sort((a, b) => {
+      const aIsActive = a.status !== false;
+      const bIsActive = b.status !== false;
+
+      if (aIsActive !== bIsActive) {
+        return aIsActive ? -1 : 1;
+      }
+
+      const nameA = String(a.name || "");
+      const nameB = String(b.name || "");
+
+      return nameA.localeCompare(nameB, "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
+  }, [departments]);
 
   useEffect(() => {
     if (selectedId === "new") {
@@ -36,6 +69,58 @@ const Departments = () => {
       setSelectedId("new");
     }
   }, [selectedId, selectedDept]);
+
+  const closeAppModal = () => {
+    setAppModal(INITIAL_MODAL_STATE);
+  };
+
+  const showAlertModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      onConfirmAction: null,
+    });
+  };
+
+  const showConfirmModal = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirmAction = null,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      onConfirmAction,
+    });
+  };
+
+  const handleAppModalConfirm = async () => {
+    const action = appModal.onConfirmAction;
+
+    closeAppModal();
+
+    if (action) {
+      await action();
+    }
+  };
 
   const handleCreate = () => {
     setSelectedId("new");
@@ -61,12 +146,22 @@ const Departments = () => {
     const cleanName = formData.name.trim();
 
     if (!cleanName) {
-      alert("El nombre del departamento es obligatorio.");
+      showAlertModal({
+        type: "warning",
+        title: "Nombre requerido",
+        message: "El nombre del departamento es obligatorio.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (validateDuplicateName()) {
-      alert("Ya existe un departamento con ese nombre.");
+      showAlertModal({
+        type: "warning",
+        title: "Nombre duplicado",
+        message: "Ya existe un departamento con ese nombre.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -77,11 +172,22 @@ const Departments = () => {
         const success = await addDepartment(cleanName);
 
         if (!success) {
-          alert("No se pudo crear el departamento.");
+          showAlertModal({
+            type: "danger",
+            title: "No se pudo crear",
+            message: "No se pudo crear el departamento.",
+            confirmText: "Entendido",
+          });
           return;
         }
 
-        alert("Departamento creado correctamente.");
+        showAlertModal({
+          type: "success",
+          title: "Departamento creado",
+          message: "Departamento creado correctamente.",
+          confirmText: "Aceptar",
+        });
+
         setFormData({
           name: "",
           status: true,
@@ -96,26 +202,28 @@ const Departments = () => {
       });
 
       if (!success) {
-        alert("No se pudo actualizar el departamento.");
+        showAlertModal({
+          type: "danger",
+          title: "No se pudo actualizar",
+          message: "No se pudo actualizar el departamento.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
-      alert("Departamento actualizado correctamente.");
+      showAlertModal({
+        type: "success",
+        title: "Departamento actualizado",
+        message: "Departamento actualizado correctamente.",
+        confirmText: "Aceptar",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleToggleStatus = async () => {
+  const executeToggleStatus = async (nextStatus) => {
     if (!selectedDept) return;
-
-    const nextStatus = !selectedDept.status;
-
-    const confirmMessage = nextStatus
-      ? `¿Deseas activar el departamento "${selectedDept.name}"?`
-      : `¿Deseas desactivar el departamento "${selectedDept.name}"?`;
-
-    if (!window.confirm(confirmMessage)) return;
 
     try {
       setSaving(true);
@@ -126,7 +234,12 @@ const Departments = () => {
       });
 
       if (!success) {
-        alert("No se pudo cambiar el estatus del departamento.");
+        showAlertModal({
+          type: "danger",
+          title: "No se pudo cambiar el estatus",
+          message: "No se pudo cambiar el estatus del departamento.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
@@ -135,167 +248,198 @@ const Departments = () => {
         status: nextStatus,
       }));
 
-      alert(
-        nextStatus
+      showAlertModal({
+        type: "success",
+        title: nextStatus
+          ? "Departamento activado"
+          : "Departamento desactivado",
+        message: nextStatus
           ? "Departamento activado correctamente."
-          : "Departamento desactivado correctamente."
-      );
+          : "Departamento desactivado correctamente.",
+        confirmText: "Aceptar",
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleToggleStatus = () => {
+    if (!selectedDept) return;
+
+    const currentStatus = selectedDept.status !== false;
+    const nextStatus = !currentStatus;
+
+    showConfirmModal({
+      type: nextStatus ? "info" : "danger",
+      title: nextStatus
+        ? "Activar departamento"
+        : "Desactivar departamento",
+      message: nextStatus
+        ? `¿Deseas activar el departamento "${selectedDept.name}"?`
+        : `¿Deseas desactivar el departamento "${selectedDept.name}"?`,
+      confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
+      cancelText: "Cancelar",
+      onConfirmAction: () => executeToggleStatus(nextStatus),
+    });
+  };
+
   return (
-    <div className={styles.container}>
-      <div className={styles.sidebar}>
-        <button
-          type="button"
-          className={`${styles.sidebarHeader} ${
-            selectedId === "new" ? styles.activeItem : ""
-          }`}
-          onClick={handleCreate}
-        >
-          + Crear nuevo departamento
-        </button>
+    <>
+      <div className={styles.container}>
+        <div className={styles.sidebar}>
+          <button
+            type="button"
+            className={`${styles.sidebarHeader} ${
+              selectedId === "new" ? styles.activeItem : ""
+            }`}
+            onClick={handleCreate}
+          >
+            + Crear nuevo departamento
+          </button>
 
-        <ul className={styles.departmentList}>
-          {departments.map((dept) => {
-            const isInactive = dept.status === false;
+          <ul className={styles.departmentList}>
+            {sortedDepartments.map((dept) => {
+              const isInactive = dept.status === false;
 
-            return (
-              <li
-                key={dept.id}
-                className={`${styles.departmentItem} ${
-                  selectedId === dept.id ? styles.activeItem : ""
-                } ${isInactive ? styles.inactiveItem : ""}`}
-                onClick={() => handleSelect(dept.id)}
-              >
-                <div className={styles.departmentName}>
-                  {dept.name}
-                </div>
-
-                <span
-                  className={`${styles.statusBadge} ${
-                    isInactive
-                      ? styles.statusInactive
-                      : styles.statusActive
-                  }`}
+              return (
+                <li
+                  key={dept.id}
+                  className={`${styles.departmentItem} ${
+                    selectedId === dept.id ? styles.activeItem : ""
+                  } ${isInactive ? styles.inactiveItem : ""}`}
+                  onClick={() => handleSelect(dept.id)}
                 >
-                  {isInactive ? "Inactivo" : "Activo"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  <div className={styles.departmentName}>{dept.name}</div>
 
-      <div className={styles.content}>
-        <div className={styles.contentHeader}>
-          <div>
-            <h2 className={styles.formTitle}>
-              {selectedId === "new"
-                ? "Nuevo departamento"
-                : "Detalles del departamento"}
-            </h2>
-
-            <p className={styles.subtitle}>
-              {selectedId === "new"
-                ? "Crea departamentos para clasificar los productos del catálogo."
-                : "Edita el nombre o cambia el estatus del departamento."}
-            </p>
-          </div>
-
-          {selectedId !== "new" && selectedDept && (
-            <span
-              className={`${styles.headerBadge} ${
-                selectedDept.status === false
-                  ? styles.statusInactive
-                  : styles.statusActive
-              }`}
-            >
-              {selectedDept.status === false
-                ? "Inactivo"
-                : "Activo"}
-            </span>
-          )}
+                  <span
+                    className={`${styles.statusBadge} ${
+                      isInactive ? styles.statusInactive : styles.statusActive
+                    }`}
+                  >
+                    {isInactive ? "Inactivo" : "Activo"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
 
-        <form onSubmit={handleSave} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Nombre *
-            </label>
+        <div className={styles.content}>
+          <div className={styles.contentHeader}>
+            <div>
+              <h2 className={styles.formTitle}>
+                {selectedId === "new"
+                  ? "Nuevo departamento"
+                  : "Detalles del departamento"}
+              </h2>
 
-            <input
-              className={styles.input}
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  name: e.target.value.toUpperCase(),
-                })
-              }
-              placeholder="Nombre del departamento"
-              disabled={saving}
-              autoFocus
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Estatus
-            </label>
-
-            <select
-              className={styles.input}
-              value={formData.status ? "active" : "inactive"}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  status: e.target.value === "active",
-                })
-              }
-              disabled={saving}
-            >
-              <option value="active">Activo</option>
-              <option value="inactive">Inactivo</option>
-            </select>
-          </div>
-
-          <div className={styles.actions}>
-            <button
-              type="submit"
-              className={`${styles.button} ${styles.primaryButton}`}
-              disabled={saving}
-            >
-              {saving
-                ? "Guardando..."
-                : selectedId === "new"
-                ? "Guardar"
-                : "Actualizar información"}
-            </button>
+              <p className={styles.subtitle}>
+                {selectedId === "new"
+                  ? "Crea departamentos para clasificar los productos del catálogo."
+                  : "Edita el nombre o cambia el estatus del departamento."}
+              </p>
+            </div>
 
             {selectedId !== "new" && selectedDept && (
-              <button
-                type="button"
-                className={`${styles.button} ${
+              <span
+                className={`${styles.headerBadge} ${
                   selectedDept.status === false
-                    ? styles.successButton
-                    : styles.dangerButton
+                    ? styles.statusInactive
+                    : styles.statusActive
                 }`}
-                onClick={handleToggleStatus}
-                disabled={saving}
               >
-                {selectedDept.status === false
-                  ? "Activar departamento"
-                  : "Desactivar departamento"}
-              </button>
+                {selectedDept.status === false ? "Inactivo" : "Activo"}
+              </span>
             )}
           </div>
-        </form>
+
+          <form onSubmit={handleSave} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Nombre *</label>
+
+              <input
+                className={styles.input}
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    name: e.target.value.toUpperCase(),
+                  })
+                }
+                placeholder="Nombre del departamento"
+                disabled={saving}
+                autoFocus
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Estatus</label>
+
+              <select
+                className={styles.input}
+                value={formData.status ? "active" : "inactive"}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    status: e.target.value === "active",
+                  })
+                }
+                disabled={saving}
+              >
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </div>
+
+            <div className={styles.actions}>
+              <button
+                type="submit"
+                className={`${styles.button} ${styles.primaryButton}`}
+                disabled={saving}
+              >
+                {saving
+                  ? "Guardando..."
+                  : selectedId === "new"
+                  ? "Guardar"
+                  : "Actualizar información"}
+              </button>
+
+              {selectedId !== "new" && selectedDept && (
+                <button
+                  type="button"
+                  className={`${styles.button} ${
+                    selectedDept.status === false
+                      ? styles.successButton
+                      : styles.dangerButton
+                  }`}
+                  onClick={handleToggleStatus}
+                  disabled={saving}
+                >
+                  {selectedDept.status === false
+                    ? "Activar departamento"
+                    : "Desactivar departamento"}
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={saving}
+        onConfirm={handleAppModalConfirm}
+        onCancel={closeAppModal}
+        onClose={closeAppModal}
+      />
+    </>
   );
 };
 

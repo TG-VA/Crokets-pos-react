@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ClientModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const ClientModal = ({
   isOpen,
@@ -19,9 +20,57 @@ const ClientModal = ({
 
   const [loadingClients, setLoadingClients] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+  });
 
   const hasInitializedOpenRef = useRef(false);
   const lastInitializedClientIdRef = useRef(null);
+
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+    });
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    showAppModal({
+      type: "warning",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppDanger = (message, title = "Error") => {
+    showAppModal({
+      type: "danger",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
 
   const normalizeSearch = (value) => {
     return String(value || "").trim();
@@ -177,6 +226,10 @@ const ClientModal = ({
       console.error("Error cargando recompensas:", err);
       setRewards([]);
       setError("No se pudieron cargar las recompensas disponibles.");
+      showAppDanger(
+        "No se pudieron cargar las recompensas disponibles.",
+        "Error cargando recompensas",
+      );
     } finally {
       setLoadingRewards(false);
     }
@@ -241,6 +294,7 @@ const ClientModal = ({
       console.error("Error buscando clientes:", err);
       setError("No se pudieron cargar los clientes.");
       setClients(currentSaleClient ? [currentSaleClient] : []);
+      showAppDanger("No se pudieron cargar los clientes.", "Error buscando clientes");
     } finally {
       setLoadingClients(false);
     }
@@ -305,6 +359,12 @@ const ClientModal = ({
     const requiredPoints = Number(reward.points_required || 0);
 
     if (requiredPoints > remainingPoints) {
+      showAppWarning(
+        `El cliente no tiene puntos suficientes para esta recompensa.\n\nPuntos restantes: ${formatPoints(
+          remainingPoints,
+        )}\nPuntos requeridos: ${formatPoints(requiredPoints)}`,
+        "Puntos insuficientes",
+      );
       return;
     }
 
@@ -363,7 +423,10 @@ const ClientModal = ({
   };
 
   const handleAssign = () => {
-    if (!selectedClient) return;
+    if (!selectedClient) {
+      showAppWarning("Selecciona un cliente para asignarlo a la venta.");
+      return;
+    }
 
     if (onAssignClient) {
       onAssignClient(selectedClient, selectedRewards);
@@ -390,6 +453,7 @@ const ClientModal = ({
     setSelectedRewards([]);
     setLoadingClients(false);
     setError("");
+    closeAppModal();
     onClose();
   };
 
@@ -441,23 +505,27 @@ const ClientModal = ({
     if (!isOpen) return;
 
     const handleKeyDown = (event) => {
+      if (appModal.isOpen) return;
+
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
         closeModal();
       }
 
       if (event.key === "Enter" && selectedClient) {
         event.preventDefault();
+        event.stopPropagation();
         handleAssign();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, selectedClient, selectedRewards]);
+  }, [isOpen, selectedClient, selectedRewards, appModal.isOpen]);
 
   const selectedClientLabel = useMemo(() => {
     if (!selectedClient) return "";
@@ -526,6 +594,7 @@ const ClientModal = ({
                     setSelectedRewards([]);
                     setLoadingClients(false);
                     setError("");
+                    closeAppModal();
                   }}
                 >
                   ×
@@ -535,7 +604,16 @@ const ClientModal = ({
               <button
                 type="button"
                 className={styles.searchButton}
-                onClick={() => searchClients(searchTerm)}
+                onClick={() => {
+                  if (normalizeSearch(searchTerm).length < 2) {
+                    showAppWarning(
+                      "Escribe mínimo 2 caracteres para buscar un cliente.",
+                    );
+                    return;
+                  }
+
+                  searchClients(searchTerm);
+                }}
                 disabled={loadingClients}
               >
                 {loadingClients ? "Buscando..." : "Buscar"}
@@ -825,6 +903,16 @@ const ClientModal = ({
           </div>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

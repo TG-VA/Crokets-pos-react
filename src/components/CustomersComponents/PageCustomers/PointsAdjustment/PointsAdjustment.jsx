@@ -3,6 +3,7 @@ import styles from "./PointsAdjustment.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
 import PointsAdjustmentConfirmModal from "../../Modals/PointsAdjustmentConfirmModal/PointsAdjustmentConfirmModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const ADMIN_AUTH_STORAGE_KEY = "customers_points_adjustment_admin_authorized";
 
@@ -68,12 +69,52 @@ const PointsAdjustment = () => {
   const [notes, setNotes] = useState("");
 
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
   const numericPoints = Number(pointsAmount || 0);
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
 
   const selectedReason = useMemo(() => {
     return ADJUSTMENT_REASON_OPTIONS.find(
@@ -118,6 +159,7 @@ const PointsAdjustment = () => {
   const canSubmit =
     adminAccessStatus === "allowed" &&
     !!selectedCustomer?.id &&
+    selectedCustomer.status !== false &&
     numericPoints > 0 &&
     !!adjustmentReason &&
     normalizedFinalNotes.length >= 5 &&
@@ -127,6 +169,21 @@ const PointsAdjustment = () => {
 
   const normalizeSearch = (value) => {
     return String(value || "").trim();
+  };
+
+  const getCustomerSortName = (customer) => {
+    return String(
+      customer.name || customer.phone || customer.email || "SIN NOMBRE"
+    ).trim();
+  };
+
+  const sortCustomersByName = (customersList = []) => {
+    return [...customersList].sort((a, b) => {
+      return getCustomerSortName(a).localeCompare(getCustomerSortName(b), "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
   };
 
   const getRoleName = (profile) => {
@@ -202,8 +259,6 @@ const PointsAdjustment = () => {
   const handlePointsChange = (value) => {
     const onlyNumbers = String(value || "").replace(/\D/g, "").slice(0, 6);
     setPointsAmount(onlyNumbers);
-    setError("");
-    setSuccessMessage("");
   };
 
   const searchCustomers = async (term = searchTerm) => {
@@ -211,42 +266,38 @@ const PointsAdjustment = () => {
 
     try {
       setSearchingCustomers(true);
-      setError("");
-      setSuccessMessage("");
 
       if (cleanSearch.length < 2) {
-        setCustomers(selectedCustomer ? [selectedCustomer] : []);
+        setCustomers([]);
         return;
       }
 
       const { data, error: customersError } = await supabase
         .from("customers")
-        .select("id, name, phone, email, status")
+        .select("id, name, phone, email, status, is_points_customer")
+        .eq("status", true)
+        .eq("is_points_customer", true)
         .or(
           `name.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%,email.ilike.%${cleanSearch}%`
         )
-        .order("name", { ascending: true })
+        .order("name", { ascending: true, nullsFirst: false })
         .limit(10);
 
       if (customersError) throw customersError;
 
-      const results = data || [];
-
-      if (selectedCustomer?.id) {
-        const selectedIsInResults = results.some(
-          (customer) => customer.id === selectedCustomer.id
-        );
-
-        setCustomers(
-          selectedIsInResults ? results : [selectedCustomer, ...results]
-        );
-      } else {
-        setCustomers(results);
-      }
+      const results = sortCustomersByName(data || []);
+      setCustomers(results);
     } catch (err) {
       console.error("Error buscando clientes:", err);
-      setError("No se pudieron buscar los clientes.");
-      setCustomers(selectedCustomer ? [selectedCustomer] : []);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron buscar clientes",
+        message: "Ocurrió un error al buscar los clientes.",
+        confirmText: "Entendido",
+      });
+
+      setCustomers([]);
     } finally {
       setSearchingCustomers(false);
     }
@@ -260,7 +311,6 @@ const PointsAdjustment = () => {
 
     try {
       setLoadingPoints(true);
-      setError("");
 
       const { data, error: pointsError } = await supabase
         .from("customer_points")
@@ -276,7 +326,14 @@ const PointsAdjustment = () => {
       setCurrentPoints(totalPoints);
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
-      setError("No se pudieron cargar los puntos del cliente.");
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar los puntos",
+        message: "No se pudieron cargar los puntos actuales del cliente.",
+        confirmText: "Entendido",
+      });
+
       setCurrentPoints(0);
     } finally {
       setLoadingPoints(false);
@@ -323,15 +380,24 @@ const PointsAdjustment = () => {
   }, [selectedCustomer?.id, adminAccessStatus]);
 
   const handleSelectCustomer = async (customer) => {
+    if (customer.status === false) {
+      showAppAlert({
+        type: "warning",
+        title: "Cliente inactivo",
+        message:
+          "No se pueden realizar ajustes de puntos a clientes inactivos. Activa el cliente antes de continuar.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
     setSelectedCustomer(customer);
-    setSearchTerm(customer.name || "");
-    setCustomers([customer]);
+    setSearchTerm("");
+    setCustomers([]);
     setPointsAmount("");
     setAdjustmentReason("");
     setNotes("");
     setAdjustmentType("add");
-    setError("");
-    setSuccessMessage("");
 
     await loadCustomerPoints(customer.id);
   };
@@ -345,57 +411,95 @@ const PointsAdjustment = () => {
     setAdjustmentReason("");
     setNotes("");
     setAdjustmentType("add");
-    setError("");
-    setSuccessMessage("");
   };
 
   const handleReasonChange = (value) => {
     setAdjustmentReason(value);
     setNotes("");
-    setError("");
-    setSuccessMessage("");
   };
 
   const handleOpenConfirmModal = (event) => {
     event.preventDefault();
 
-    setError("");
-    setSuccessMessage("");
-
     if (adminAccessStatus !== "allowed") {
-      setError("Solo un administrador puede realizar ajustes manuales.");
+      showAppAlert({
+        type: "warning",
+        title: "Acceso restringido",
+        message: "Solo un administrador puede realizar ajustes manuales.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (!selectedCustomer?.id) {
-      setError("Selecciona un cliente antes de continuar.");
+      showAppAlert({
+        type: "warning",
+        title: "Selecciona un cliente",
+        message: "Selecciona un cliente antes de continuar.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (selectedCustomer.status === false) {
+      showAppAlert({
+        type: "warning",
+        title: "Cliente inactivo",
+        message:
+          "No se pueden realizar ajustes de puntos a clientes inactivos. Activa el cliente antes de continuar.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (numericPoints <= 0) {
-      setError("Ingresa una cantidad de puntos mayor a 0.");
+      showAppAlert({
+        type: "warning",
+        title: "Puntos inválidos",
+        message: "Ingresa una cantidad de puntos mayor a 0.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (adjustmentType === "subtract" && newBalance < 0) {
-      setError("No puedes descontar más puntos de los que tiene el cliente.");
+      showAppAlert({
+        type: "warning",
+        title: "Saldo insuficiente",
+        message: "No puedes descontar más puntos de los que tiene el cliente.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (!adjustmentReason) {
-      setError("Selecciona el motivo del ajuste.");
+      showAppAlert({
+        type: "warning",
+        title: "Motivo requerido",
+        message: "Selecciona el motivo del ajuste.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (normalizedFinalNotes.length < 5) {
-      setError("Ingresa un motivo del ajuste de al menos 5 caracteres.");
+      showAppAlert({
+        type: "warning",
+        title: "Motivo incompleto",
+        message: "Ingresa un motivo del ajuste de al menos 5 caracteres.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     if (isGenericNote) {
-      setError(
-        "El motivo es demasiado genérico. Escribe un motivo más específico para auditoría."
-      );
+      showAppAlert({
+        type: "warning",
+        title: "Motivo demasiado genérico",
+        message:
+          "El motivo es demasiado genérico. Escribe un motivo más específico para auditoría.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -405,13 +509,43 @@ const PointsAdjustment = () => {
   const handleConfirmAdjustment = async () => {
     try {
       if (adminAccessStatus !== "allowed") {
-        setError("Solo un administrador puede realizar ajustes manuales.");
+        setIsConfirmModalOpen(false);
+
+        showAppAlert({
+          type: "warning",
+          title: "Acceso restringido",
+          message: "Solo un administrador puede realizar ajustes manuales.",
+          confirmText: "Entendido",
+        });
+        return;
+      }
+
+      if (!selectedCustomer?.id) {
+        setIsConfirmModalOpen(false);
+
+        showAppAlert({
+          type: "warning",
+          title: "Selecciona un cliente",
+          message: "Selecciona un cliente antes de guardar el ajuste.",
+          confirmText: "Entendido",
+        });
+        return;
+      }
+
+      if (selectedCustomer.status === false) {
+        setIsConfirmModalOpen(false);
+
+        showAppAlert({
+          type: "warning",
+          title: "Cliente inactivo",
+          message:
+            "No se pueden guardar ajustes de puntos para clientes inactivos.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
       setSaving(true);
-      setError("");
-      setSuccessMessage("");
 
       const {
         data: { user: authUser },
@@ -442,23 +576,34 @@ const PointsAdjustment = () => {
 
       await loadCustomerPoints(selectedCustomer.id);
 
+      const message = `Ajuste realizado correctamente. ${
+        selectedCustomer.name || "EL CLIENTE"
+      } ${signedPoints > 0 ? "recibió" : "usó"} ${Math.abs(
+        signedPoints
+      )} punto${Math.abs(signedPoints) !== 1 ? "s" : ""}.`;
+
       setPointsAmount("");
       setAdjustmentReason("");
       setNotes("");
       setAdjustmentType("add");
       setIsConfirmModalOpen(false);
-      setCustomers([selectedCustomer]);
+      setCustomers([]);
 
-      setSuccessMessage(
-        `Ajuste realizado correctamente. ${
-          selectedCustomer.name || "EL CLIENTE"
-        } ${signedPoints > 0 ? "recibió" : "usó"} ${Math.abs(
-          signedPoints
-        )} punto${Math.abs(signedPoints) !== 1 ? "s" : ""}.`
-      );
+      showAppAlert({
+        type: "success",
+        title: "Ajuste registrado",
+        message,
+        confirmText: "Aceptar",
+      });
     } catch (err) {
       console.error("Error guardando ajuste de puntos:", err);
-      setError(err?.message || "No se pudo registrar el ajuste de puntos.");
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo registrar",
+        message: err?.message || "No se pudo registrar el ajuste de puntos.",
+        confirmText: "Entendido",
+      });
     } finally {
       setSaving(false);
     }
@@ -534,16 +679,13 @@ const PointsAdjustment = () => {
         </div>
       </div>
 
-      {successMessage && (
-        <div className={styles.successMessage}>{successMessage}</div>
-      )}
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
-
       <div className={styles.mainGrid}>
         <section className={styles.card}>
           <h2>Buscar cliente</h2>
-          <p>Busca por nombre, teléfono o correo.</p>
+          <p>
+            Busca por nombre, teléfono o correo. Solo se muestran clientes
+            activos.
+          </p>
 
           <div className={styles.searchRow}>
             <div className={styles.searchContainer}>
@@ -558,10 +700,8 @@ const PointsAdjustment = () => {
                   setAdjustmentReason("");
                   setNotes("");
                   setAdjustmentType("add");
-                  setSuccessMessage("");
-                  setError("");
                 }}
-                placeholder="Buscar cliente..."
+                placeholder="Buscar cliente activo..."
                 className={styles.searchInput}
               />
 
@@ -586,32 +726,34 @@ const PointsAdjustment = () => {
             </button>
           </div>
 
-          <div className={styles.resultsBox}>
-            {searchingCustomers ? (
-              <div className={styles.emptyState}>Buscando clientes...</div>
-            ) : customers.length === 0 ? (
-              <div className={styles.emptyState}>
-                No hay clientes para mostrar.
-              </div>
-            ) : (
-              customers.map((customer) => (
-                <button
-                  key={customer.id}
-                  type="button"
-                  className={`${styles.customerResult} ${
-                    selectedCustomer?.id === customer.id
-                      ? styles.customerSelected
-                      : ""
-                  }`}
-                  onClick={() => handleSelectCustomer(customer)}
-                >
-                  <strong>{customer.name || "SIN NOMBRE"}</strong>
-                  <span>Tel: {customer.phone || "SIN TELÉFONO"}</span>
-                  <span>{customer.email || "SIN CORREO"}</span>
-                </button>
-              ))
-            )}
-          </div>
+          {(searchingCustomers || searchTerm.trim().length >= 2) && (
+            <div className={styles.resultsBox}>
+              {searchingCustomers ? (
+                <div className={styles.emptyState}>Buscando clientes...</div>
+              ) : customers.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No hay clientes activos para mostrar.
+                </div>
+              ) : (
+                customers.map((customer) => (
+                  <button
+                    key={customer.id}
+                    type="button"
+                    className={`${styles.customerResult} ${
+                      selectedCustomer?.id === customer.id
+                        ? styles.customerSelected
+                        : ""
+                    }`}
+                    onClick={() => handleSelectCustomer(customer)}
+                  >
+                    <strong>{customer.name || "SIN NOMBRE"}</strong>
+                    <span>Tel: {customer.phone || "SIN TELÉFONO"}</span>
+                    <span>{customer.email || "SIN CORREO"}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </section>
 
         <section className={styles.card}>
@@ -620,7 +762,7 @@ const PointsAdjustment = () => {
 
           {!selectedCustomer ? (
             <div className={styles.selectedEmpty}>
-              Selecciona un cliente para realizar un ajuste.
+              Selecciona un cliente activo para realizar un ajuste.
             </div>
           ) : (
             <div className={styles.selectedCustomer}>
@@ -657,8 +799,6 @@ const PointsAdjustment = () => {
               value={adjustmentType}
               onChange={(e) => {
                 setAdjustmentType(e.target.value);
-                setError("");
-                setSuccessMessage("");
               }}
               disabled={saving}
             >
@@ -714,8 +854,6 @@ const PointsAdjustment = () => {
               value={notes}
               onChange={(e) => {
                 setNotes(e.target.value.toUpperCase());
-                setError("");
-                setSuccessMessage("");
               }}
               placeholder="Ej. ACLARACIÓN AUTORIZADA POR DIFERENCIA EN PUNTOS DEL CLIENTE"
               rows={4}
@@ -735,19 +873,6 @@ const PointsAdjustment = () => {
           </div>
         )}
 
-        {isGenericNote && (
-          <div className={styles.warningMessage}>
-            El motivo es demasiado genérico. Escribe un motivo más específico
-            para auditoría.
-          </div>
-        )}
-
-        {adjustmentType === "subtract" && selectedCustomer && newBalance < 0 && (
-          <div className={styles.warningMessage}>
-            No puedes dejar al cliente con saldo negativo.
-          </div>
-        )}
-
         <div className={styles.actions}>
           <button
             type="button"
@@ -757,8 +882,6 @@ const PointsAdjustment = () => {
               setAdjustmentReason("");
               setNotes("");
               setAdjustmentType("add");
-              setError("");
-              setSuccessMessage("");
             }}
             disabled={saving}
           >
@@ -788,6 +911,20 @@ const PointsAdjustment = () => {
         newBalance={newBalance}
         notes={normalizedFinalNotes}
         branch={branch}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
     </div>
   );
