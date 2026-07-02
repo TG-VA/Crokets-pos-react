@@ -752,18 +752,97 @@ const getEarnedPoints = (sale = {}) => {
   );
 };
 
+const getPartialReturnPointsFromMovements = (sale = {}) => {
+  const saleId = String(sale.id || sale.sale_id || "").trim();
+
+  const possibleLists = [
+    sale.customer_points_movements,
+    sale.customerPointsMovements,
+    sale.points_movements,
+    sale.pointsMovements,
+    sale.customer_points,
+    sale.customerPoints,
+  ];
+
+  const movements = possibleLists.find((list) => Array.isArray(list)) || [];
+
+  return movements.reduce((acc, movement) => {
+    const source = String(movement.source || "").toLowerCase();
+    const points = Number(movement.points || 0);
+    const relatedSaleId = String(
+      movement.related_sale_id || movement.relatedSaleId || ""
+    ).trim();
+
+    const belongsToSale = !saleId || !relatedSaleId || relatedSaleId === saleId;
+    const isPartialReturn = source === "partial_return";
+
+    if (belongsToSale && isPartialReturn && points < 0) {
+      return acc + Math.abs(points);
+    }
+
+    return acc;
+  }, 0);
+};
+
+const getPartialReturnPointsFromReturns = (sale = {}) => {
+  const partialReturns = sale.returns || sale.partial_returns || [];
+
+  if (!Array.isArray(partialReturns)) return 0;
+
+  return partialReturns.reduce((acc, ret) => {
+    const points = Math.abs(
+      toNumber(
+        ret.points_returned ??
+          ret.pointsReturned ??
+          ret.points_deducted ??
+          ret.pointsDeducted ??
+          ret.returned_points ??
+          ret.returnedPoints ??
+          ret.partial_return_points ??
+          ret.partialReturnPoints ??
+          ret.customer_points_returned ??
+          ret.customerPointsReturned ??
+          0
+      )
+    );
+
+    return acc + points;
+  }, 0);
+};
+
 const getReturnedPoints = (sale = {}) => {
-  return Math.abs(
+  const directValue = Math.abs(
     Number(
       sale.points_returned ??
         sale.customer_points_returned ??
         sale.partial_return_points ??
+        sale.partialReturnPoints ??
         sale.pointsReturned ??
         sale.returned_points ??
         sale.returnedPoints ??
+        sale.partial_return_points_returned ??
+        sale.partialReturnPointsReturned ??
+        sale.partial_return_points_deducted ??
+        sale.partialReturnPointsDeducted ??
+        sale.points_deducted_by_partial_return ??
+        sale.pointsDeductedByPartialReturn ??
+        sale.partial_return_points_discounted ??
+        sale.partialReturnPointsDiscounted ??
         0
     )
   );
+
+  if (directValue > 0) return directValue;
+
+  const movementPoints = getPartialReturnPointsFromMovements(sale);
+
+  if (movementPoints > 0) return movementPoints;
+
+  const returnPoints = getPartialReturnPointsFromReturns(sale);
+
+  if (returnPoints > 0) return returnPoints;
+
+  return 0;
 };
 
 const getCustomerPointsBalance = (sale = {}) => {
@@ -1197,7 +1276,9 @@ export const buildTicketText = ({
     lines.push(separator());
 
     rewardRedemptions.forEach((reward, index) => {
-      lines.push(isCancelled ? `Canje revertido #${index + 1}` : `Canje #${index + 1}`);
+      lines.push(
+        isCancelled ? `Canje revertido #${index + 1}` : `Canje #${index + 1}`
+      );
 
       wrapText(reward.rewardName || "RECOMPENSA", TICKET_WIDTH).forEach(
         (line) => {
@@ -1224,7 +1305,10 @@ export const buildTicketText = ({
           reward.discountAmount < reward.unitPrice
         ) {
           lines.push(
-            formatTotalLine("Desc. revertido:", `+${money(reward.discountAmount)}`)
+            formatTotalLine(
+              "Desc. revertido:",
+              `+${money(reward.discountAmount)}`
+            )
           );
         }
       } else {
@@ -1299,6 +1383,11 @@ export const buildTicketText = ({
     lines.push(
       formatTotalLine("Neto actual:", money(sale.net_total ?? sale.total))
     );
+
+    if (returnedPoints > 0) {
+      lines.push(formatTotalLine("Puntos devolución:", `-${returnedPoints}`));
+    }
+
     lines.push(separator());
 
     partialReturns.forEach((ret, index) => {
@@ -1314,6 +1403,26 @@ export const buildTicketText = ({
       lines.push(
         formatTotalLine("Monto devuelto:", money(ret.total_refund || 0))
       );
+
+      const returnPoints = Math.abs(
+        toNumber(
+          ret.points_returned ??
+            ret.pointsReturned ??
+            ret.points_deducted ??
+            ret.pointsDeducted ??
+            ret.returned_points ??
+            ret.returnedPoints ??
+            ret.partial_return_points ??
+            ret.partialReturnPoints ??
+            ret.customer_points_returned ??
+            ret.customerPointsReturned ??
+            0
+        )
+      );
+
+      if (returnPoints > 0) {
+        lines.push(formatTotalLine("Puntos desc.:", `-${returnPoints}`));
+      }
 
       lines.push("Motivo:");
       wrapText(ret.return_reason || "SIN MOTIVO REGISTRADO", TICKET_WIDTH).forEach(

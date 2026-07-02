@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ProductsPromotions.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const ProductsPromotions = () => {
   const [form, setForm] = useState({
@@ -15,8 +16,74 @@ const ProductsPromotions = () => {
   const [saving, setSaving] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [editingKit, setEditingKit] = useState(null);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const barcodeInputRef = useRef(null);
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   const selectedProductsTotal = useMemo(() => {
     return selectedProducts.reduce((sum, product) => {
@@ -72,15 +139,16 @@ const ProductsPromotions = () => {
       return;
     }
 
-    const confirmClear = window.confirm(
-      editingKit
+    showAppConfirm({
+      type: "warning",
+      title: editingKit ? "Cancelar edición" : "Limpiar formulario",
+      message: editingKit
         ? "¿Deseas cancelar la edición y limpiar el formulario?"
-        : "¿Deseas limpiar el formulario del kit?"
-    );
-
-    if (!confirmClear) return;
-
-    resetForm();
+        : "¿Deseas limpiar el formulario del kit?",
+      confirmText: editingKit ? "Sí, cancelar edición" : "Sí, limpiar",
+      cancelText: "No, regresar",
+      onConfirm: resetForm,
+    });
   };
 
 const loadKits = async () => {
@@ -146,14 +214,24 @@ const loadKits = async () => {
     if (!product?.id) return;
 
     if (product.is_kit) {
-      alert("No puedes agregar un kit dentro de otro kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Kit no permitido",
+        message: "No puedes agregar un kit dentro de otro kit.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     const alreadyExists = selectedProducts.some((p) => p.id === product.id);
 
     if (alreadyExists) {
-      alert("Este producto ya está agregado al kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Producto repetido",
+        message: "Este producto ya está agregado al kit.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -190,7 +268,12 @@ const loadKits = async () => {
 
   const removeSelectedProduct = () => {
     if (!selectedProductId) {
-      alert("Selecciona un producto del kit para removerlo.");
+      showAppAlert({
+        type: "warning",
+        title: "Producto requerido",
+        message: "Selecciona un producto del kit para removerlo.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -207,22 +290,42 @@ const loadKits = async () => {
     const price = Number(form.price);
 
     if (!barcode) {
-      alert("Captura el código de barras del kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Código requerido",
+        message: "Captura el código de barras del kit.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
     if (!description) {
-      alert("Captura la descripción del kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Descripción requerida",
+        message: "Captura la descripción del kit.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
     if (!Number.isFinite(price) || price <= 0) {
-      alert("Captura un precio válido para el kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Precio requerido",
+        message: "Captura un precio válido para el kit.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
     if (selectedProducts.length === 0) {
-      alert("Agrega al menos un producto al kit.");
+      showAppAlert({
+        type: "warning",
+        title: "Productos requeridos",
+        message: "Agrega al menos un producto al kit.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
@@ -233,7 +336,12 @@ const loadKits = async () => {
     );
 
     if (invalidQuantity) {
-      alert("Todos los productos del kit deben tener una cantidad mayor a 0.");
+      showAppAlert({
+        type: "warning",
+        title: "Cantidad inválida",
+        message: "Todos los productos del kit deben tener una cantidad mayor a 0.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
@@ -254,7 +362,12 @@ const loadKits = async () => {
     if (barcodeError) throw barcodeError;
 
     if (duplicatedBarcode && duplicatedBarcode.id !== currentProductId) {
-      alert("Ya existe un producto o kit con ese código de barras.");
+      showAppAlert({
+        type: "warning",
+        title: "Código duplicado",
+        message: "Ya existe un producto o kit con ese código de barras.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
@@ -268,9 +381,13 @@ const loadKits = async () => {
     if (nameError) throw nameError;
 
     if (duplicatedName && duplicatedName.id !== currentProductId) {
-      alert(
-        "Ya existe un kit con ese nombre. Aunque esté eliminado del POS, no se puede repetir."
-      );
+      showAppAlert({
+        type: "warning",
+        title: "Kit duplicado",
+        message:
+          "Ya existe un kit con ese nombre. Aunque esté eliminado del POS, no se puede repetir.",
+        confirmText: "Entendido",
+      });
       return false;
     }
 
@@ -288,7 +405,7 @@ const loadKits = async () => {
       cleanDescription,
     });
 
-    if (!isValidDuplicate) return;
+    if (!isValidDuplicate) return false;
 
     const { data: kitProduct, error: productError } = await supabase
       .from("products")
@@ -342,13 +459,25 @@ const loadKits = async () => {
 
     if (itemsError) throw itemsError;
 
-    alert("Kit guardado correctamente.");
+    showAppAlert({
+      type: "success",
+      title: "Kit guardado",
+      message: "Kit guardado correctamente.",
+      confirmText: "Entendido",
+    });
+
+    return true;
   };
 
   const handleUpdateKit = async () => {
     if (!editingKit?.id || !editingKit?.kit_product_id) {
-      alert("No se detectó el kit que se está editando.");
-      return;
+      showAppAlert({
+        type: "warning",
+        title: "Kit no detectado",
+        message: "No se detectó el kit que se está editando.",
+        confirmText: "Entendido",
+      });
+      return false;
     }
 
     const cleanBarcode = form.barcode.trim();
@@ -362,7 +491,7 @@ const loadKits = async () => {
       currentProductId: editingKit.kit_product_id,
     });
 
-    if (!isValidDuplicate) return;
+    if (!isValidDuplicate) return false;
 
     const { error: productError } = await supabase
       .from("products")
@@ -405,7 +534,14 @@ const loadKits = async () => {
 
     if (itemsError) throw itemsError;
 
-    alert("Kit actualizado correctamente.");
+    showAppAlert({
+      type: "success",
+      title: "Kit actualizado",
+      message: "Kit actualizado correctamente.",
+      confirmText: "Entendido",
+    });
+
+    return true;
   };
 
   const handleSaveKit = async () => {
@@ -414,17 +550,24 @@ const loadKits = async () => {
     try {
       setSaving(true);
 
-      if (editingKit) {
-        await handleUpdateKit();
-      } else {
-        await handleCreateKit();
+      const saved = editingKit
+        ? await handleUpdateKit()
+        : await handleCreateKit();
+
+      if (!saved) {
+        return;
       }
 
       resetForm();
       await loadKits();
     } catch (error) {
       console.error("Error guardando kit:", error);
-      alert(error.message || "Error al guardar el kit.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo guardar el kit",
+        message: error.message || "Error al guardar el kit.",
+        confirmText: "Entendido",
+      });
     } finally {
       setSaving(false);
     }
@@ -483,21 +626,16 @@ const loadKits = async () => {
       }, 0);
     } catch (error) {
       console.error("Error cargando kit para editar:", error);
-      alert(error.message || "No se pudo cargar el kit para editar.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo cargar el kit",
+        message: error.message || "No se pudo cargar el kit para editar.",
+        confirmText: "Entendido",
+      });
     }
   };
 
-  const handleToggleKitStatus = async (kit) => {
-    if (!kit?.id) return;
-
-    const nextStatus = !kit.is_active;
-
-    const confirmMessage = nextStatus
-      ? "¿Deseas activar este kit?"
-      : "¿Deseas desactivar este kit?";
-
-    if (!window.confirm(confirmMessage)) return;
-
+  const executeToggleKitStatus = async (kit, nextStatus) => {
     try {
       const now = new Date().toISOString();
 
@@ -519,24 +657,41 @@ const loadKits = async () => {
         );
       }
 
-      alert(nextStatus ? "Kit activado." : "Kit desactivado.");
+      showAppAlert({
+        type: "success",
+        title: nextStatus ? "Kit activado" : "Kit desactivado",
+        message: nextStatus ? "Kit activado." : "Kit desactivado.",
+        confirmText: "Entendido",
+      });
     } catch (error) {
       console.error("Error actualizando kit:", error);
-      alert(error.message || "No se pudo actualizar el kit.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo actualizar el kit",
+        message: error.message || "No se pudo actualizar el kit.",
+        confirmText: "Entendido",
+      });
     }
   };
 
-  const handleSoftDeleteKit = async (kit) => {
-    if (!kit?.id || !kit?.kit_product_id) return;
+  const handleToggleKitStatus = async (kit) => {
+    if (!kit?.id) return;
 
-    const confirmDelete = window.confirm(
-      `¿Deseas eliminar del POS el kit "${
-        kit.products?.name || "KIT"
-      }"?\n\nEl registro se conservará en la base de datos.`
-    );
+    const nextStatus = !kit.is_active;
 
-    if (!confirmDelete) return;
+    showAppConfirm({
+      type: "warning",
+      title: nextStatus ? "Activar kit" : "Desactivar kit",
+      message: nextStatus
+        ? "¿Deseas activar este kit?"
+        : "¿Deseas desactivar este kit?",
+      confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
+      cancelText: "No, regresar",
+      onConfirm: () => executeToggleKitStatus(kit, nextStatus),
+    });
+  };
 
+  const executeSoftDeleteKit = async (kit) => {
     try {
       const now = new Date().toISOString();
 
@@ -564,12 +719,38 @@ const loadKits = async () => {
         resetForm();
       }
 
-      alert("Kit eliminado del POS correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Kit eliminado",
+        message: "Kit eliminado del POS correctamente.",
+        confirmText: "Entendido",
+      });
+
       await loadKits();
     } catch (error) {
       console.error("Error eliminando kit del POS:", error);
-      alert(error.message || "No se pudo eliminar el kit del POS.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo eliminar el kit",
+        message: error.message || "No se pudo eliminar el kit del POS.",
+        confirmText: "Entendido",
+      });
     }
+  };
+
+  const handleSoftDeleteKit = async (kit) => {
+    if (!kit?.id || !kit?.kit_product_id) return;
+
+    showAppConfirm({
+      type: "danger",
+      title: "Eliminar kit",
+      message: `¿Deseas eliminar del POS el kit "${
+        kit.products?.name || "KIT"
+      }"?\n\nEl registro se conservará en la base de datos.`,
+      confirmText: "Sí, eliminar",
+      cancelText: "No, regresar",
+      onConfirm: () => executeSoftDeleteKit(kit),
+    });
   };
 
   return (
@@ -814,12 +995,26 @@ const loadKits = async () => {
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         onSelectProduct={addProductToKit}
+        showAppAlert={showAppAlert}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
     </div>
   );
 };
 
-const KitProductSearchModal = ({ isOpen, onClose, onSelectProduct }) => {
+const KitProductSearchModal = ({ isOpen, onClose, onSelectProduct, showAppAlert }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -953,7 +1148,12 @@ const KitProductSearchModal = ({ isOpen, onClose, onSelectProduct }) => {
       console.error("Error buscando productos:", error);
       setResults([]);
       setSelectedIndex(-1);
-      alert("No se pudieron buscar productos.");
+      showAppAlert?.({
+        type: "danger",
+        title: "No se pudieron buscar productos",
+        message: "No se pudieron buscar productos.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./PointsAdjustmentConfirmModal.module.css";
 
 const PointsAdjustmentConfirmModal = ({
@@ -15,16 +15,38 @@ const PointsAdjustmentConfirmModal = ({
   notes,
   branch,
 }) => {
-  if (!isOpen) return null;
-
   const isAdd = adjustmentType === "add";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && !saving) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isOpen, saving, onClose]);
+
+  if (!isOpen) return null;
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="points-adjustment-confirm-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className={styles.header}>
           <div>
-            <h2>Confirmar ajuste</h2>
+            <h2 id="points-adjustment-confirm-title">Confirmar ajuste</h2>
             <p>Revisa la información antes de guardar el movimiento.</p>
           </div>
 
@@ -33,6 +55,7 @@ const PointsAdjustmentConfirmModal = ({
             className={styles.closeButton}
             onClick={onClose}
             disabled={saving}
+            aria-label="Cerrar modal"
           >
             ×
           </button>

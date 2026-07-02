@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./FiscalCustomerModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const emptyForm = {
   customerId: "",
@@ -13,6 +14,18 @@ const emptyForm = {
   cfdi_use: "",
   address: "",
 };
+
+const INITIAL_MODAL_STATE = {
+  isOpen: false,
+  type: "info",
+  title: "",
+  message: "",
+  confirmText: "Aceptar",
+  cancelText: "Cancelar",
+  showCancel: false,
+  onConfirmAction: null,
+};
+
 
 const FiscalCustomerModal = ({
   isOpen,
@@ -34,8 +47,43 @@ const FiscalCustomerModal = ({
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState(INITIAL_MODAL_STATE);
 
   const isEditMode = !!customerToEdit?.id;
+
+  const closeAppModal = () => {
+    setAppModal(INITIAL_MODAL_STATE);
+  };
+
+  const showConfirmModal = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirmAction = null,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      onConfirmAction,
+    });
+  };
+
+  const handleAppModalConfirm = async () => {
+    const action = appModal.onConfirmAction;
+
+    closeAppModal();
+
+    if (action) {
+      await action();
+    }
+  };
 
   const onlyNumbers = (value) => String(value || "").replace(/\D/g, "");
 
@@ -211,6 +259,33 @@ const FiscalCustomerModal = ({
     setError("");
   }, [isOpen, customerToEdit]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (e) => {
+      if (e.key !== "Escape") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (appModal.isOpen) {
+        closeAppModal();
+        return;
+      }
+
+      if (!saving) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscKey, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscKey, true);
+    };
+  }, [isOpen, appModal.isOpen, saving, onClose]);
+
+
   const loadCatalogs = async () => {
     try {
       const [cfdiRes, regimesRes] = await Promise.all([
@@ -374,35 +449,13 @@ const FiscalCustomerModal = ({
     return "";
   };
 
-  const handleSave = async () => {
-    const validationError = validateForm();
-
-    if (validationError) {
-      setError(validationError);
-      setTouched({
-        phone: true,
-        fiscal_email: true,
-        rfc: true,
-        razon_social: true,
-        postal_code: true,
-        tax_regime: true,
-        cfdi_use: true,
-      });
-      return;
-    }
-
-    const razonSocial = normalizeUpperText(form.razon_social).trim();
-    const fiscalEmail = normalizeEmail(form.fiscal_email);
-    const phone = onlyNumbers(form.phone);
-    const postalCode = onlyNumbers(form.postal_code);
-    const rfc = normalizeRFC(form.rfc);
-
-    const confirmed = window.confirm(
-      `¿Deseas guardar estos datos fiscales?\n\nRFC: ${rfc}\nRazón social: ${razonSocial}\nCP: ${postalCode} - ${postalInfo?.municipality}, ${postalInfo?.state}`
-    );
-
-    if (!confirmed) return;
-
+  const executeSaveFiscalCustomer = async ({
+    razonSocial,
+    fiscalEmail,
+    phone,
+    postalCode,
+    rfc,
+  }) => {
     const payload = {
       name: null,
       phone,
@@ -454,6 +507,46 @@ const FiscalCustomerModal = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSave = async () => {
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      setTouched({
+        phone: true,
+        fiscal_email: true,
+        rfc: true,
+        razon_social: true,
+        postal_code: true,
+        tax_regime: true,
+        cfdi_use: true,
+      });
+      return;
+    }
+
+    const razonSocial = normalizeUpperText(form.razon_social).trim();
+    const fiscalEmail = normalizeEmail(form.fiscal_email);
+    const phone = onlyNumbers(form.phone);
+    const postalCode = onlyNumbers(form.postal_code);
+    const rfc = normalizeRFC(form.rfc);
+
+    showConfirmModal({
+      type: "warning",
+      title: "Guardar datos fiscales",
+      message: `¿Deseas guardar estos datos fiscales?\n\nRFC: ${rfc}\nRazón social: ${razonSocial}\nCP: ${postalCode} - ${postalInfo?.municipality}, ${postalInfo?.state}`,
+      confirmText: "Sí, guardar",
+      cancelText: "Cancelar",
+      onConfirmAction: () =>
+        executeSaveFiscalCustomer({
+          razonSocial,
+          fiscalEmail,
+          phone,
+          postalCode,
+          rfc,
+        }),
+    });
   };
 
   if (!isOpen) return null;
@@ -769,6 +862,20 @@ const FiscalCustomerModal = ({
           </div>
         )}
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={saving}
+        onConfirm={handleAppModalConfirm}
+        onCancel={closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

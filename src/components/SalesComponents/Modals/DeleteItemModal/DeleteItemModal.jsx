@@ -2,30 +2,34 @@ import React, { useEffect } from "react";
 import styles from "./DeleteItem.module.css";
 
 const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) => {
-  if (!isOpen) return null;
-
   const handleConfirm = () => {
     onConfirmDelete();
     onClose();
   };
 
-  // Manejar tecla Enter
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+
       if (e.key === "Enter") {
         e.preventDefault();
         handleConfirm();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [isOpen]);
+
+  if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -33,12 +37,12 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
         <div className={styles.modalHeader}>
           <h2>Eliminar Artículo</h2>
         </div>
-        
+
         <div className={styles.modalBody}>
           <p className={styles.confirmText}>
             ¿Estás seguro de que deseas eliminar este producto?
           </p>
-          
+
           {selectedProduct && (
             <div className={styles.productInfo}>
               <p><strong>Producto:</strong> {selectedProduct.codigo}</p>
@@ -50,17 +54,11 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
         </div>
 
         <div className={styles.modalFooter}>
-          <button 
-            className={styles.cancelButton} 
-            onClick={onClose}
-          >
+          <button className={styles.cancelButton} onClick={onClose}>
             Esc - Cancelar
           </button>
-          <button 
-            className={styles.confirmButton} 
-            onClick={handleConfirm}
-          >
-            Enter - Eliminar 
+          <button className={styles.confirmButton} onClick={handleConfirm}>
+            Enter - Eliminar
           </button>
         </div>
       </div>

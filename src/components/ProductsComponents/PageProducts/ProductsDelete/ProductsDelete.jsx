@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
+import AppModal from "../../../AppModal/AppModal";
 import styles from "./ProductsDelete.module.css";
 
 const CONFIRM_TEXT = "ELIMINAR";
@@ -13,11 +14,83 @@ const ProductsDelete = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const inputRef = useRef(null);
 
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
+
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (appModal.isOpen) return;
+
       if (e.key === "F10") {
         e.preventDefault();
         setSearchModalOpen(true);
@@ -27,7 +100,7 @@ const ProductsDelete = () => {
     document.addEventListener("keydown", onKeyDown);
 
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [appModal.isOpen]);
 
   const focusBarcodeInput = () => {
     setTimeout(() => {
@@ -39,14 +112,24 @@ const ProductsDelete = () => {
     const cleanBarcode = barcode.trim();
 
     if (!cleanBarcode) {
-      alert("Captura un código de barras.");
+      showAppAlert({
+        type: "warning",
+        title: "Código requerido",
+        message: "Captura un código de barras.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     const found = getProductByCodigo(cleanBarcode);
 
     if (!found) {
-      alert("Producto no encontrado.");
+      showAppAlert({
+        type: "warning",
+        title: "Producto no encontrado",
+        message: "Producto no encontrado.",
+        confirmText: "Entendido",
+      });
       setSelectedProduct(null);
       setConfirmText("");
       focusBarcodeInput();
@@ -64,19 +147,8 @@ const ProductsDelete = () => {
     focusBarcodeInput();
   };
 
-  const handleDelete = async () => {
+  const executeDelete = async () => {
     if (!selectedProduct || deleting) return;
-
-    if (confirmText.trim().toUpperCase() !== CONFIRM_TEXT) {
-      alert(`Para confirmar escribe ${CONFIRM_TEXT}.`);
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `¿Seguro que deseas eliminar del sistema el producto "${selectedProduct.descripcion}"?\n\nEste producto ya no estará disponible para venta.`
-    );
-
-    if (!confirmed) return;
 
     try {
       setDeleting(true);
@@ -84,15 +156,51 @@ const ProductsDelete = () => {
       const result = await deleteProductByCodigo(selectedProduct.codigo);
 
       if (!result?.success) {
-        alert(result?.error || "No se pudo eliminar el producto.");
+        showAppAlert({
+          type: "danger",
+          title: "No se pudo eliminar el producto",
+          message: result?.error || "No se pudo eliminar el producto.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
-      alert("Producto eliminado correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Producto eliminado",
+        message: "Producto eliminado correctamente.",
+        confirmText: "Entendido",
+      });
+
       handleCancel();
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedProduct || deleting) return;
+
+    if (confirmText.trim().toUpperCase() !== CONFIRM_TEXT) {
+      showAppAlert({
+        type: "warning",
+        title: "Confirmación requerida",
+        message: `Para confirmar escribe ${CONFIRM_TEXT}.`,
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    showAppConfirm({
+      type: "danger",
+      title: "Eliminar producto",
+      message: `¿Seguro que deseas eliminar del sistema el producto "${
+        selectedProduct.descripcion || "Sin descripción"
+      }"?\n\nEste producto ya no estará disponible para venta.`,
+      confirmText: "Sí, eliminar",
+      cancelText: "No, regresar",
+      onConfirm: executeDelete,
+    });
   };
 
   const canDelete =
@@ -121,6 +229,8 @@ const ProductsDelete = () => {
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onKeyDown={(e) => {
+                  if (appModal.isOpen) return;
+
                   if (e.key === "Enter") {
                     e.preventDefault();
                     handleLookup();
@@ -128,6 +238,7 @@ const ProductsDelete = () => {
                 }}
                 autoFocus
                 placeholder="Escanea el código o presiona F10 para buscar"
+                disabled={appModal.isOpen}
               />
             </div>
           </div>
@@ -228,7 +339,7 @@ const ProductsDelete = () => {
                         setConfirmText(e.target.value.toUpperCase())
                       }
                       placeholder={CONFIRM_TEXT}
-                      disabled={deleting}
+                      disabled={deleting || appModal.isOpen}
                     />
                   </div>
                 </section>
@@ -240,7 +351,7 @@ const ProductsDelete = () => {
                 className={styles.cancelButton}
                 type="button"
                 onClick={handleCancel}
-                disabled={deleting}
+                disabled={deleting || appModal.isOpen}
               >
                 Cancelar / Buscar otro
               </button>
@@ -249,7 +360,7 @@ const ProductsDelete = () => {
                 className={styles.deleteButton}
                 type="button"
                 onClick={handleDelete}
-                disabled={!canDelete || deleting}
+                disabled={!canDelete || deleting || appModal.isOpen}
               >
                 {deleting ? "Eliminando..." : "Eliminar producto"}
               </button>
@@ -267,6 +378,20 @@ const ProductsDelete = () => {
             setConfirmText("");
             setSearchModalOpen(false);
           }}
+        />
+
+        <AppModal
+          isOpen={appModal.isOpen}
+          type={appModal.type}
+          title={appModal.title}
+          message={appModal.message}
+          confirmText={appModal.confirmText}
+          cancelText={appModal.cancelText}
+          showCancel={appModal.showCancel}
+          loading={appModal.loading}
+          onConfirm={appModal.onConfirm || closeAppModal}
+          onCancel={appModal.onCancel || closeAppModal}
+          onClose={closeAppModal}
         />
       </div>
     </div>

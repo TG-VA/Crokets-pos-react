@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./CustomerModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const emptyForm = {
   name: "",
@@ -13,34 +14,23 @@ const emptyForm = {
 const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
   const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
 
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
   const isEditing = useMemo(() => !!customerToEdit?.id, [customerToEdit]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (customerToEdit) {
-      const currentPhone = normalizePhone(customerToEdit.phone || "");
-
-      setFormData({
-        name: customerToEdit.name || "",
-        phone: currentPhone,
-        phoneConfirm: currentPhone,
-        email: customerToEdit.email || "",
-        status: customerToEdit.status !== false,
-      });
-    } else {
-      setFormData(emptyForm);
-    }
-
-    setError("");
-    setFieldErrors({});
-    setTouchedFields({});
-    setSaving(false);
-  }, [isOpen, customerToEdit]);
 
   const normalizeName = (value) => {
     return String(value || "")
@@ -56,6 +46,66 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
 
   const normalizeEmail = (value) => {
     return String(value || "").trim().toLowerCase();
+  };
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+    onConfirm = closeAppModal,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const setAppModalLoading = (loading) => {
+    setAppModal((prev) => ({
+      ...prev,
+      loading,
+    }));
   };
 
   const validateValues = (values) => {
@@ -93,6 +143,11 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     return errors;
   };
 
+  const handleRequestClose = () => {
+    if (saving || appModal.isOpen) return;
+    onClose();
+  };
+
   const handleChange = (field, value) => {
     let finalValue = value;
 
@@ -115,10 +170,6 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
 
     setFormData(nextFormData);
     setFieldErrors(validateValues(nextFormData));
-
-    if (error) {
-      setError("");
-    }
   };
 
   const handleBlur = (field) => {
@@ -187,83 +238,10 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     Object.keys(currentErrors).length === 0 &&
     !saving;
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    const normalizedData = {
-      name: normalizeName(formData.name).trim(),
-      phone: normalizePhone(formData.phone).trim(),
-      phoneConfirm: normalizePhone(formData.phoneConfirm).trim(),
-      email: normalizeEmail(formData.email),
-      status: formData.status,
-    };
-
-    const errors = validateValues(normalizedData);
-
-    setFieldErrors(errors);
-    setTouchedFields({
-      name: true,
-      phone: true,
-      phoneConfirm: true,
-      email: true,
-    });
-
-    if (Object.keys(errors).length > 0) {
-      setError("Corrige los campos marcados antes de guardar.");
-      return;
-    }
-
+  const saveCustomer = async (normalizedData, existingCustomer = null) => {
     try {
       setSaving(true);
-      setError("");
-
-      const originalPhone = normalizePhone(customerToEdit?.phone || "");
-      const phoneWasChanged = isEditing && originalPhone !== normalizedData.phone;
-
-      const existingCustomer = await findCustomerByPhone(normalizedData.phone);
-
-      if (isEditing && existingCustomer?.id) {
-        setError(
-          `Ya existe otro cliente registrado con ese teléfono: ${
-            existingCustomer.name ||
-            existingCustomer.razon_social ||
-            "SIN NOMBRE"
-          }.`
-        );
-        setSaving(false);
-        return;
-      }
-
-      if (!isEditing && existingCustomer?.is_points_customer === true) {
-        setError(
-          `Ya existe un cliente de puntos registrado con ese teléfono: ${
-            existingCustomer.name || "SIN NOMBRE"
-          }.`
-        );
-        setSaving(false);
-        return;
-      }
-
-      if (phoneWasChanged) {
-        const hasFiscalData = customerToEdit?.is_billing_customer === true;
-
-        const fiscalWarning = hasFiscalData
-          ? "\n\nEste cliente también tiene datos fiscales. Al cambiar el teléfono, también se actualizará el teléfono asociado a su información fiscal."
-          : "";
-
-        const confirmedPhoneChange = window.confirm(
-          `Cambiaste el teléfono del cliente.\n\nTeléfono anterior: ${
-            originalPhone || "SIN TELÉFONO"
-          }\nTeléfono nuevo: ${
-            normalizedData.phone
-          }\n\nEl teléfono se usa para vincular clientes de puntos con datos fiscales.${fiscalWarning}\n\n¿Deseas continuar?`
-        );
-
-        if (!confirmedPhoneChange) {
-          setSaving(false);
-          return;
-        }
-      }
+      setAppModalLoading(true);
 
       const payload = {
         name: normalizedData.name,
@@ -301,38 +279,232 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
         if (insertError) throw insertError;
       }
 
-      await onSaved?.();
-      onClose();
+      try {
+        await onSaved?.();
+      } catch (refreshError) {
+        console.error("Error actualizando listado de clientes:", refreshError);
+      }
+
+      setAppModal({
+        isOpen: true,
+        type: "success",
+        title: isEditing ? "Cliente actualizado" : "Cliente creado",
+        message: isEditing
+          ? "Los datos del cliente fueron actualizados correctamente."
+          : "El cliente fue registrado correctamente.",
+        confirmText: "Aceptar",
+        cancelText: "Cancelar",
+        showCancel: false,
+        loading: false,
+        onConfirm: () => {
+          closeAppModal();
+          onClose();
+        },
+        onCancel: closeAppModal,
+      });
     } catch (err) {
       console.error("Error guardando cliente:", err);
 
       const errorMessage = String(err?.message || "");
 
+      let message = err?.message || "No se pudo guardar el cliente.";
+
       if (errorMessage.includes("customers_email_key")) {
-        setError("Ya existe un cliente registrado con ese correo.");
+        message = "Ya existe un cliente registrado con ese correo.";
       } else if (errorMessage.includes("duplicate key")) {
-        setError("Ya existe un cliente con información duplicada.");
-      } else {
-        setError(err?.message || "No se pudo guardar el cliente.");
+        message = "Ya existe un cliente con información duplicada.";
       }
+
+      setAppModal({
+        isOpen: true,
+        type: "danger",
+        title: "No se pudo guardar",
+        message,
+        confirmText: "Entendido",
+        cancelText: "Cancelar",
+        showCancel: false,
+        loading: false,
+        onConfirm: closeAppModal,
+        onCancel: closeAppModal,
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const normalizedData = {
+      name: normalizeName(formData.name).trim(),
+      phone: normalizePhone(formData.phone).trim(),
+      phoneConfirm: normalizePhone(formData.phoneConfirm).trim(),
+      email: normalizeEmail(formData.email),
+      status: formData.status,
+    };
+
+    const errors = validateValues(normalizedData);
+
+    setFieldErrors(errors);
+    setTouchedFields({
+      name: true,
+      phone: true,
+      phoneConfirm: true,
+      email: true,
+    });
+
+    if (Object.keys(errors).length > 0) {
+      showAppAlert({
+        type: "warning",
+        title: "Campos incompletos",
+        message: "Corrige los campos marcados antes de guardar.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const originalPhone = normalizePhone(customerToEdit?.phone || "");
+      const phoneWasChanged = isEditing && originalPhone !== normalizedData.phone;
+
+      const existingCustomer = await findCustomerByPhone(normalizedData.phone);
+
+      if (isEditing && existingCustomer?.id) {
+        showAppAlert({
+          type: "warning",
+          title: "Teléfono duplicado",
+          message: `Ya existe otro cliente registrado con ese teléfono: ${
+            existingCustomer.name ||
+            existingCustomer.razon_social ||
+            "SIN NOMBRE"
+          }.`,
+          confirmText: "Entendido",
+        });
+        return;
+      }
+
+      if (!isEditing && existingCustomer?.is_points_customer === true) {
+        showAppAlert({
+          type: "warning",
+          title: "Cliente duplicado",
+          message: `Ya existe un cliente de puntos registrado con ese teléfono: ${
+            existingCustomer.name || "SIN NOMBRE"
+          }.`,
+          confirmText: "Entendido",
+        });
+        return;
+      }
+
+      if (phoneWasChanged) {
+        const hasFiscalData = customerToEdit?.is_billing_customer === true;
+
+        const fiscalWarning = hasFiscalData
+          ? " Este cliente también tiene datos fiscales, por lo que el teléfono fiscal asociado también se actualizará."
+          : "";
+
+        setSaving(false);
+
+        showAppConfirm({
+          type: "warning",
+          title: "Confirmar cambio de teléfono",
+          message: `El teléfono cambiará de ${
+            originalPhone || "SIN TELÉFONO"
+          } a ${
+            normalizedData.phone
+          }. Este dato se usa para vincular clientes de puntos con datos fiscales.${fiscalWarning} ¿Deseas continuar?`,
+          confirmText: "Continuar",
+          cancelText: "Cancelar",
+          onConfirm: () => {
+            closeAppModal();
+            saveCustomer(normalizedData, existingCustomer);
+          },
+        });
+
+        return;
+      }
+
+      setSaving(false);
+      await saveCustomer(normalizedData, existingCustomer);
+    } catch (err) {
+      console.error("Error validando cliente:", err);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo validar",
+        message:
+          err?.message ||
+          "No se pudo validar si ya existe un cliente con ese teléfono.",
+        confirmText: "Entendido",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (customerToEdit) {
+      const currentPhone = normalizePhone(customerToEdit.phone || "");
+
+      setFormData({
+        name: customerToEdit.name || "",
+        phone: currentPhone,
+        phoneConfirm: currentPhone,
+        email: customerToEdit.email || "",
+        status: customerToEdit.status !== false,
+      });
+    } else {
+      setFormData(emptyForm);
+    }
+
+    setFieldErrors({});
+    setTouchedFields({});
+    setSaving(false);
+    closeAppModal();
+  }, [isOpen, customerToEdit]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && !saving && !appModal.isOpen) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isOpen, saving, appModal.isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={handleRequestClose}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="customer-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className={styles.header}>
-          <h2>{isEditing ? "Editar cliente" : "Nuevo cliente"}</h2>
+          <h2 id="customer-modal-title">
+            {isEditing ? "Editar cliente" : "Nuevo cliente"}
+          </h2>
 
           <button
             type="button"
             className={styles.closeButton}
-            onClick={onClose}
+            onClick={handleRequestClose}
             disabled={saving}
+            aria-label="Cerrar modal"
           >
             ×
           </button>
@@ -350,6 +522,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
               autoFocus
               className={getFieldClassName("name")}
             />
+
             {touchedFields.name && fieldErrors.name && (
               <span className={styles.fieldError}>{fieldErrors.name}</span>
             )}
@@ -368,6 +541,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
                 maxLength={10}
                 className={getFieldClassName("phone")}
               />
+
               {touchedFields.phone && fieldErrors.phone && (
                 <span className={styles.fieldError}>{fieldErrors.phone}</span>
               )}
@@ -385,6 +559,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
                 maxLength={10}
                 className={getFieldClassName("phoneConfirm")}
               />
+
               {touchedFields.phoneConfirm && fieldErrors.phoneConfirm && (
                 <span className={styles.fieldError}>
                   {fieldErrors.phoneConfirm}
@@ -404,6 +579,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
                 disabled={saving}
                 className={getFieldClassName("email")}
               />
+
               {touchedFields.email && fieldErrors.email && (
                 <span className={styles.fieldError}>{fieldErrors.email}</span>
               )}
@@ -424,13 +600,11 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
             </div>
           </div>
 
-          {error && <div className={styles.error}>{error}</div>}
-
           <div className={styles.actions}>
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={onClose}
+              onClick={handleRequestClose}
               disabled={saving}
             >
               Cancelar
@@ -451,6 +625,20 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
           </div>
         </form>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

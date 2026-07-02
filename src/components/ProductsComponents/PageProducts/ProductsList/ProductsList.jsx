@@ -32,19 +32,44 @@ const ProductsList = () => {
     return Array.from(uniqueDepartments).sort();
   }, [products]);
 
-  const filteredProducts = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-    return products.filter((product) => {
+  const productUsesInventory = (product) => {
+  return product.use_inventory === true || product.tracks_inventory === true;
+};
+
+const filteredProducts = useMemo(() => {
+  const search = searchTerm.trim().toLowerCase();
+
+  return [...(products || [])]
+    .filter((product) => {
       const matchesSearch =
         !search ||
         (product.descripcion || "").toLowerCase().includes(search) ||
         (product.codigo || "").toLowerCase().includes(search);
+
       const matchesDepartment =
         !selectedDepartment ||
-        normalizeDept(product.departamento) === selectedDepartment.toLowerCase();
+        normalizeDept(product.departamento) ===
+          selectedDepartment.toLowerCase();
+
       return matchesSearch && matchesDepartment;
+    })
+    .sort((a, b) => {
+      const aUsesInventory = productUsesInventory(a);
+      const bUsesInventory = productUsesInventory(b);
+
+      if (aUsesInventory !== bUsesInventory) {
+        return aUsesInventory ? -1 : 1;
+      }
+
+      const descriptionA = String(a.descripcion || "");
+      const descriptionB = String(b.descripcion || "");
+
+      return descriptionA.localeCompare(descriptionB, "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
     });
-  }, [products, searchTerm, selectedDepartment]);
+}, [products, searchTerm, selectedDepartment]);
 
   useEffect(() => {
     setSelectedRowIndex(0);

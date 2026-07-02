@@ -7,6 +7,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarCashCut from "../../components/CashCutComponents/NavbarCashCut/NavbarCashCut";
 import CorteModal from "../../components/CashCutComponents/CashCutModal/CashCutModal";
+import AppModal from "../../components/AppModal/AppModal";
 
 import { buildCashCutText } from "../../utils/cashCutBuilder";
 import { printTicket } from "../../utils/ticketPrinter";
@@ -33,6 +34,21 @@ const fmtShortDate = (d) =>
     month: "2-digit",
     day: "2-digit",
   });
+
+const getCancunDateValue = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Cancun",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(date));
+
+  const year = parts.find((part) => part.type === "year")?.value || "";
+  const month = parts.find((part) => part.type === "month")?.value || "";
+  const day = parts.find((part) => part.type === "day")?.value || "";
+
+  return `${year}-${month}-${day}`;
+};
 
 const fmtTime = (d) =>
   new Date(d).toLocaleTimeString("es-MX", {
@@ -182,6 +198,77 @@ const CashCut = () => {
   const [totalEntradas, setTotalEntradas] = useState(0);
   const [totalSalidas, setTotalSalidas] = useState(0);
   const realtimeTimerRef = useRef(null);
+
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Aceptar",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Aceptar",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   const isHistoricalView = selectedCutId !== "current";
 
@@ -368,6 +455,7 @@ const CashCut = () => {
     setCurrentShiftCut(null);
     setSelectedCutId("current");
     setHistoricalCut(null);
+    closeAppModal();
     resetSalesState();
   };
 
@@ -1116,7 +1204,7 @@ const CashCut = () => {
           counted_amount: Number(counted || 0),
           difference: diferencia,
           notes: notes || null,
-          cut_date: new Date().toISOString().split("T")[0],
+          cut_date: getCancunDateValue(),
         })
         .select()
         .single();
@@ -1154,7 +1242,12 @@ const CashCut = () => {
       localStorage.setItem("shift_cut_done", "true");
       window.dispatchEvent(new Event("shift-cut-status-changed"));
 
-      alert(`Corte realizado exitosamente.\nDiferencia: ${fmt(diferencia)}`);
+      showAppAlert({
+        type: "success",
+        title: "Corte realizado correctamente",
+        message: `Corte realizado exitosamente.\nDiferencia: ${fmt(diferencia)}`,
+        confirmText: "Entendido",
+      });
 
       const activeSession = await fetchSession();
       if (activeSession) {
@@ -1164,24 +1257,16 @@ const CashCut = () => {
     } catch (err) {
       console.error("Error guardando corte:", err);
       setErrorMsg(err?.message || "Ocurrió un error al guardar el corte.");
-      alert("Ocurrió un error al guardar el corte.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo guardar el corte",
+        message: err?.message || "Ocurrió un error al guardar el corte.",
+        confirmText: "Entendido",
+      });
     }
   };
 
-  const handleCerrarTurno = async () => {
-    setErrorMsg("");
-
-    if (closingShift) return;
-
-    if (!session?.id || isHistoricalView) {
-      setErrorMsg("No hay turno activo para cerrar.");
-      return;
-    }
-
-    if (!window.confirm("¿Estás seguro de que deseas cerrar el turno actual?")) {
-      return;
-    }
-
+  const executeCerrarTurno = async () => {
     try {
       setClosingShift(true);
 
@@ -1209,10 +1294,35 @@ const CashCut = () => {
     } catch (err) {
       console.error("Error cerrando turno:", err);
       setErrorMsg(err?.message || "Ocurrió un error al cerrar el turno.");
-      alert("Ocurrió un error al cerrar el turno.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo cerrar el turno",
+        message: err?.message || "Ocurrió un error al cerrar el turno.",
+        confirmText: "Entendido",
+      });
     } finally {
       setClosingShift(false);
     }
+  };
+
+  const handleCerrarTurno = async () => {
+    setErrorMsg("");
+
+    if (closingShift) return;
+
+    if (!session?.id || isHistoricalView) {
+      setErrorMsg("No hay turno activo para cerrar.");
+      return;
+    }
+
+    showAppConfirm({
+      type: "warning",
+      title: "Cerrar turno",
+      message: "¿Estás seguro de que deseas cerrar el turno actual?",
+      confirmText: "Sí, cerrar turno",
+      cancelText: "No, regresar",
+      onConfirm: executeCerrarTurno,
+    });
   };
 
   const openingAmount = Number(session?.opening_amount || 0);
@@ -1365,13 +1475,24 @@ const CashCut = () => {
       const result = await printTicket(text);
 
       if (!result?.success) {
-        throw new Error(result?.message || "No se pudo generar el corte.");
+        throw new Error(result?.message || "No se pudo imprimir el corte.");
       }
 
-      alert("Corte generado correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Corte impreso",
+        message: "Corte impreso correctamente.",
+        confirmText: "Entendido",
+      });
     } catch (error) {
       console.error("Error imprimiendo corte:", error);
-      alert(error.message || "No se pudo generar el corte.");
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo imprimir el corte",
+        message: error.message || "No se pudo imprimir el corte.",
+        confirmText: "Entendido",
+      });
     }
   };
 
@@ -1827,6 +1948,20 @@ const CashCut = () => {
         onClose={() => setIsCutModalOpen(false)}
         onConfirm={handleConfirmCorte}
         expectedAmount={dineroCaja}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
 
       <Footer />

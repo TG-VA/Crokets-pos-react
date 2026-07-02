@@ -41,10 +41,10 @@ const NavbarCustomers = () => {
       requiresAdmin: false,
     },
     {
-      id: "canje",
+      id: "recompensas-disponibles",
       label: "Consulta de recompensas",
       icon: RewardsIcon,
-      path: "/customers/canje",
+      path: "/customers/recompensas-disponibles",
       requiresAdmin: false,
     },
     {

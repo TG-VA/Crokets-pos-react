@@ -1,0 +1,291 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+  animation: overlayFadeIn 0.18s ease-out;
+}
+
+.modal {
+  width: min(470px, 100%);
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.32),
+    0 4px 14px rgba(15, 23, 42, 0.12);
+  animation: modalEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.modal::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 7px;
+  background: #1092b1;
+}
+
+.body {
+  display: flex;
+  gap: 18px;
+  padding: 31px 32px 28px;
+  align-items: flex-start;
+}
+
+.iconWrapper {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.iconWrapper::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.icon {
+  position: relative;
+  z-index: 1;
+  font-size: 31px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding-top: 5px;
+}
+
+.title {
+  margin: 0 0 11px;
+  color: #111827;
+  font-size: 1.34rem;
+  font-weight: 950;
+  letter-spacing: 0.01em;
+  line-height: 1.12;
+}
+
+.message {
+  margin: 0;
+  color: #374151;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.48;
+  white-space: pre-line;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 17px 24px 19px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.cancelButton,
+.confirmButton {
+  border: none;
+  border-radius: 11px;
+  padding: 11px 22px;
+  min-width: 116px;
+  font-size: 0.94rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.cancelButton {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.confirmButton {
+  background: #fc8913;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: #ea7600;
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.confirmButton:focus-visible,
+.cancelButton:focus-visible {
+  outline: 3px solid rgba(252, 137, 19, 0.24);
+  outline-offset: 2px;
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.info::before {
+  background: #1092b1;
+}
+
+.info .iconWrapper {
+  background: #e0f2fe;
+  color: #075985;
+  box-shadow:
+    0 0 0 1px #bae6fd inset,
+    0 0 0 8px rgba(16, 146, 177, 0.08);
+}
+
+.info .confirmButton {
+  background: #1092b1;
+  box-shadow: none;
+}
+
+.info .confirmButton:hover:not(:disabled) {
+  background: #0d7a94;
+  box-shadow: none;
+}
+
+.success::before {
+  background: #16a34a;
+}
+
+.success {
+  border-color: rgba(187, 247, 208, 0.95);
+}
+
+.success .body {
+  background:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(34, 197, 94, 0.13) 0,
+      rgba(34, 197, 94, 0) 34%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #f7fef9 100%);
+}
+
+.success .iconWrapper {
+  background: #dcfce7;
+  color: #15803d;
+  box-shadow:
+    0 0 0 1px #86efac inset,
+    0 0 0 9px rgba(34, 197, 94, 0.12);
+}
+
+.success .title {
+  color: #14532d;
+}
+
+.success .message strong,
+.success .message b {
+  color: #15803d;
+}
+
+.success .actions {
+  background: #ecfdf3;
+  border-top-color: #bbf7d0;
+}
+
+.success .confirmButton {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.success .confirmButton:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.warning::before {
+  background: #fc8913;
+}
+
+.warning .iconWrapper {
+  background: #fff7ed;
+  color: #ea7600;
+  box-shadow:
+    0 0 0 1px #fed7aa inset,
+    0 0 0 8px rgba(252, 137, 19, 0.08);
+}
+
+.warning .confirmButton {
+  background: #fc8913;
+  box-shadow: none;
+}
+
+.warning .confirmButton:hover:not(:disabled) {
+  background: #ea7600;
+  box-shadow: none;
+}
+
+.danger::before {
+  background: #dc2626;
+}
+
+.danger .iconWrapper {
+  background: #fee2e2;
+  color: #dc2626;
+  box-shadow:
+    0 0 0 1px #fecaca inset,
+    0 0 0 8px rgba(220, 38, 38, 0.08);
+}
+
+.danger .confirmButton {
+  background: #dc2626;
+  box-shadow: none;
+}
+
+.danger .confirmButton:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: none;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

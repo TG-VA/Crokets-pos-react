@@ -37,6 +37,7 @@ import SaleSuccessModal from "../../components/SalesComponents/Modals/SaleSucces
 import RewardProductSelectionModal from "../../components/SalesComponents/Modals/RewardProductSelectionModal/RewardProductSelectionModal";
 import ProductDiscountRewardModal from "../../components/SalesComponents/Modals/ProductDiscountRewardModal/ProductDiscountRewardModal";
 import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
+import AppModal from "../../components/AppModal/AppModal";
 
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
@@ -97,6 +98,70 @@ const Sales = () => {
   const [currentSaleReward, setCurrentSaleReward] = useState(null);
   const [processingSale, setProcessingSale] = useState(false);
   const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
+
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      showCancel: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+    cancelText = "Cancelar",
+    showCancel = false,
+    onConfirm = null,
+    onCancel = null,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+      cancelText,
+      showCancel,
+      onConfirm,
+      onCancel,
+    });
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    showAppModal({
+      type: "warning",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppSuccess = (message, title = "Operación realizada") => {
+    showAppModal({
+      type: "success",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
 
   const [productos, setProductos] = useState([]);
   const [stockWarningMsg, setStockWarningMsg] = useState("");
@@ -184,17 +249,31 @@ const Sales = () => {
         String(draft.saleNotes || "").trim().length > 0 ||
         String(draft.barcode || "").trim().length > 0;
 
-      const alreadyAcknowledged =
-        salesDraftSessionKey &&
-        sessionStorage.getItem(salesDraftSessionKey) === "true";
-
-      if (hasRecoverableSale && !alreadyAcknowledged) {
+      if (hasRecoverableSale) {
         setRecoveredDraft(true);
         setRecoveredDraftSavedAt(draft.savedAt || null);
 
-        if (salesDraftSessionKey) {
-          sessionStorage.setItem(salesDraftSessionKey, "true");
-        }
+        setAppModal({
+          isOpen: true,
+          type: "warning",
+          title: "Venta pendiente encontrada",
+          message: draft.savedAt
+            ? `Hay una venta pendiente guardada automáticamente el ${new Date(
+                draft.savedAt,
+              ).toLocaleString("es-MX").replace(/:\d{2}(?=\s*[ap]\.?\s*m\.?)|(?<=\s[ap])\./gi, "").replace(/\s+/g, " ")}\n\n¿Quieres recuperarla o descartarla?`
+            : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?",
+          confirmText: "Recuperar venta",
+          cancelText: "Descartar",
+          showCancel: true,
+          onConfirm: () => {
+            closeAppModal();
+            dismissRecoveredDraft();
+          },
+          onCancel: () => {
+            closeAppModal();
+            discardRecoveredDraft();
+          },
+        });
       }
 
       setDraftReady(true);
@@ -420,6 +499,64 @@ const Sales = () => {
 
   const syncCurrentSaleRewardsWithCart = (cartItems) => {
     setCurrentSaleReward((prev) => getSyncedRewardsFromCart(cartItems, prev));
+  };
+
+  const removeRewardItemsFromCart = () => {
+    const currentProducts = productosRef.current || [];
+    const removedRewardProducts = currentProducts.filter((product) =>
+      isRewardCartItem(product),
+    );
+
+    if (removedRewardProducts.length === 0) {
+      return;
+    }
+
+    const affectedProductIds = [
+      ...new Set(
+        removedRewardProducts
+          .map((product) => product?.id)
+          .filter(Boolean),
+      ),
+    ];
+
+    let updatedProducts = currentProducts.filter(
+      (product) => !isRewardCartItem(product),
+    );
+
+    affectedProductIds.forEach((productId) => {
+      const stockSource = currentProducts.find(
+        (product) =>
+          product?.id === productId &&
+          product?.tracks_inventory &&
+          product?.stockReal !== null &&
+          product?.stockReal !== undefined,
+      );
+
+      if (stockSource) {
+        updatedProducts = updateProductExistenceInCart(
+          updatedProducts,
+          productId,
+          Number(stockSource.stockReal || 0),
+        );
+      }
+    });
+
+    setProductos(updatedProducts);
+    productosRef.current = updatedProducts;
+
+    setSelectedProduct((prev) => {
+      if (!prev) return null;
+
+      if (isRewardCartItem(prev)) {
+        return null;
+      }
+
+      const stillExists = updatedProducts.find((product) =>
+        isSameCartItem(product, prev),
+      );
+
+      return stillExists || null;
+    });
   };
 
   const normalizeRewardsArray = (value) => {
@@ -1034,7 +1171,7 @@ const Sales = () => {
 
   const openPaymentFlow = async () => {
     if (productos.length === 0) {
-      alert("No hay productos en la venta.");
+      showAppWarning("No hay productos en la venta.");
       return;
     }
 
@@ -1043,14 +1180,14 @@ const Sales = () => {
     const canSell = await validateShiftNotCut();
 
     if (!canSell) {
-      alert(
+      showAppWarning(
         "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
       return;
     }
 
     if (pendingProductDiscountRewards.length > 0 || activeProductDiscountReward) {
-      alert("Termina de aplicar la recompensa de descuento antes de cobrar.");
+      showAppWarning("Termina de aplicar la recompensa de descuento antes de cobrar.");
       return;
     }
 
@@ -1598,7 +1735,7 @@ const Sales = () => {
     if (!selectedProduct) return;
 
     if (isRewardCartItem(selectedProduct)) {
-      alert(
+      showAppWarning(
         "No puedes modificar la cantidad de un producto aplicado como recompensa.",
       );
       return;
@@ -1631,7 +1768,7 @@ const Sales = () => {
     );
 
     if (inventoryExceeded) {
-      alert("No hay suficiente inventario.");
+      showAppWarning("No hay suficiente inventario.");
       return;
     }
 
@@ -1660,7 +1797,7 @@ const Sales = () => {
     if (!selectedProduct) return;
 
     if (isRewardCartItem(selectedProduct)) {
-      alert(
+      showAppWarning(
         "No puedes modificar la cantidad de un producto aplicado como recompensa.",
       );
       return;
@@ -1757,27 +1894,31 @@ const Sales = () => {
   const addProductToCart = async (product) => {
     if (!product?.id) return;
 
+    const currentCartProducts = productosRef.current || [];
+
     if (product.is_kit) {
       const kitAvailability = await getKitAvailableStock(product.id);
       const stock = Number(kitAvailability.availableStock || 0);
 
       if (!kitAvailability.isValid || stock <= 0) {
-        alert(
+        showAppWarning(
           kitAvailability.message ||
             "Este kit no tiene inventario suficiente en sus componentes.",
         );
         return;
       }
 
-      const existingProduct = productos.find((p) => p.id === product.id);
+      const existingProduct = currentCartProducts.find(
+        (p) => p.id === product.id && !isRewardCartItem(p),
+      );
 
       if (existingProduct) {
         if (existingProduct.cantidad + 1 > stock) {
-          alert("No hay suficiente inventario para vender otro kit.");
+          showAppWarning("No hay suficiente inventario para vender otro kit.");
           return;
         }
 
-        const updatedProducts = productos.map((p) => {
+        const updatedProducts = currentCartProducts.map((p) => {
           if (p.id !== product.id) return p;
 
           const nuevaCantidad = p.cantidad + 1;
@@ -1796,6 +1937,7 @@ const Sales = () => {
         });
 
         setProductos(updatedProducts);
+        productosRef.current = updatedProducts;
 
         if (selectedProduct?.id === product.id) {
           const updatedSelected = updatedProducts.find(
@@ -1831,7 +1973,12 @@ const Sales = () => {
         tracks_inventory: true,
       };
 
-      setProductos((prev) => [...prev, newProduct]);
+      setProductos((prev) => {
+        const currentProducts = productosRef.current || prev;
+        const nextProducts = [...currentProducts, newProduct];
+        productosRef.current = nextProducts;
+        return nextProducts;
+      });
       return;
     }
 
@@ -1841,7 +1988,7 @@ const Sales = () => {
       const inventoryRow = await getBranchInventoryRow(product.id);
 
       if (!inventoryRow || inventoryRow.is_active === false) {
-        alert(
+        showAppWarning(
           "Este producto no está activo en el inventario de esta sucursal.",
         );
         return;
@@ -1851,24 +1998,26 @@ const Sales = () => {
       const hasBeenStocked = !!inventoryRow.has_been_stocked;
 
       if (!hasBeenStocked && stock <= 0) {
-        alert("Este producto aún no tiene inventario inicial registrado.");
+        showAppWarning("Este producto aún no tiene inventario inicial registrado.");
         return;
       }
 
       if (stock <= 0) {
-        alert("No hay existencia disponible.");
+        showAppWarning("No hay existencia disponible.");
         return;
       }
 
-      const existingProduct = productos.find((p) => p.id === product.id);
+      const existingProduct = currentCartProducts.find(
+        (p) => p.id === product.id && !isRewardCartItem(p),
+      );
 
       if (existingProduct) {
         if (existingProduct.cantidad + 1 > stock) {
-          alert("No hay suficiente inventario.");
+          showAppWarning("No hay suficiente inventario.");
           return;
         }
 
-        const updatedProducts = productos.map((p) => {
+        const updatedProducts = currentCartProducts.map((p) => {
           if (p.id !== product.id) return p;
 
           const nuevaCantidad = p.cantidad + 1;
@@ -1887,6 +2036,7 @@ const Sales = () => {
         });
 
         setProductos(updatedProducts);
+        productosRef.current = updatedProducts;
 
         if (selectedProduct?.id === product.id) {
           const updatedSelected = updatedProducts.find(
@@ -1926,14 +2076,21 @@ const Sales = () => {
         tracks_inventory: true,
       };
 
-      setProductos((prev) => [...prev, newProduct]);
+      setProductos((prev) => {
+        const currentProducts = productosRef.current || prev;
+        const nextProducts = [...currentProducts, newProduct];
+        productosRef.current = nextProducts;
+        return nextProducts;
+      });
       return;
     }
 
-    const existingProduct = productos.find((p) => p.id === product.id);
+    const existingProduct = currentCartProducts.find(
+        (p) => p.id === product.id && !isRewardCartItem(p),
+      );
 
     if (existingProduct) {
-      const updatedProducts = productos.map((p) => {
+      const updatedProducts = currentCartProducts.map((p) => {
         if (p.id !== product.id) return p;
 
         const nuevaCantidad = p.cantidad + 1;
@@ -1986,19 +2143,24 @@ const Sales = () => {
       tracks_inventory: false,
     };
 
-    setProductos((prev) => [...prev, newProduct]);
+    setProductos((prev) => {
+      const currentProducts = productosRef.current || prev;
+      const nextProducts = [...currentProducts, newProduct];
+      productosRef.current = nextProducts;
+      return nextProducts;
+    });
   };
 
   const handleBarcodeSearch = async () => {
     if (shiftAlreadyCut) {
-      alert(
+      showAppWarning(
         "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
       return;
     }
 
     if (!branch?.id) {
-      alert("La sucursal aún no está cargada.");
+      showAppWarning("La sucursal aún no está cargada.");
       return;
     }
 
@@ -2018,7 +2180,7 @@ const Sales = () => {
       if (productError) throw productError;
 
       if (!product) {
-        alert("Producto no encontrado.");
+        showAppWarning("Producto no encontrado.");
         setBarcode("");
         return;
       }
@@ -2032,7 +2194,7 @@ const Sales = () => {
 
       if (!product.tracks_inventory) {
         if (!product.is_global) {
-          alert("Este producto no está disponible para esta sucursal.");
+          showAppWarning("Este producto no está disponible para esta sucursal.");
           setBarcode("");
           return;
         }
@@ -2053,13 +2215,13 @@ const Sales = () => {
       if (inventoryError) throw inventoryError;
 
       if (!inventoryRow) {
-        alert("Este producto no existe en el inventario de esta sucursal.");
+        showAppWarning("Este producto no existe en el inventario de esta sucursal.");
         setBarcode("");
         return;
       }
 
       if (inventoryRow.is_active === false) {
-        alert("Este producto está inactivo en esta sucursal.");
+        showAppWarning("Este producto está inactivo en esta sucursal.");
         setBarcode("");
         return;
       }
@@ -2068,7 +2230,7 @@ const Sales = () => {
       const hasBeenStocked = !!inventoryRow.has_been_stocked;
 
       if (!hasBeenStocked && currentStock <= 0) {
-        alert(
+        showAppWarning(
           "Este producto aún no tiene inventario inicial registrado en esta sucursal.",
         );
         setBarcode("");
@@ -2076,7 +2238,7 @@ const Sales = () => {
       }
 
       if (currentStock <= 0) {
-        alert("No hay existencia disponible en esta sucursal.");
+        showAppWarning("No hay existencia disponible en esta sucursal.");
         setBarcode("");
         return;
       }
@@ -2086,13 +2248,13 @@ const Sales = () => {
       setBarcode("");
     } catch (err) {
       console.error("Error buscando producto:", err);
-      alert(err.message || "Error buscando producto.");
+      showAppWarning(err.message || "Error buscando producto.");
     }
   };
 
   const handleAddProductFromVerifier = async (product) => {
     if (shiftAlreadyCut) {
-      alert(
+      showAppWarning(
         "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
       );
       return;
@@ -2105,7 +2267,7 @@ const Sales = () => {
       console.log("Producto agregado desde verificador:", product);
     } catch (err) {
       console.error("Error agregando producto desde verificador:", err);
-      alert("No se pudo agregar el producto.");
+      showAppWarning("No se pudo agregar el producto.");
     }
   };
 
@@ -2134,14 +2296,14 @@ const Sales = () => {
     if (!selectedProduct) return;
 
     if (isRewardCartItem(selectedProduct)) {
-      alert("No puedes aplicar descuento manual a un producto aplicado como recompensa.");
+      showAppWarning("No puedes aplicar descuento manual a un producto aplicado como recompensa.");
       return;
     }
 
     const newPrice = Number.parseFloat(discountData.newPrice);
 
     if (Number.isNaN(newPrice) || newPrice < 0) {
-      alert("Precio de descuento inválido.");
+      showAppWarning("Precio de descuento inválido.");
       return;
     }
 
@@ -2175,6 +2337,30 @@ const Sales = () => {
     setSelectedProduct(updatedSelected || null);
   };
 
+
+  const handleOpenDiscountModal = () => {
+    if (!selectedProduct) {
+      showAppWarning("Por favor, selecciona un producto primero");
+      return;
+    }
+
+    if (selectedProduct.is_reward_item) {
+      showAppWarning(
+        "No puedes aplicar descuento manual a un producto aplicado como recompensa.",
+      );
+      return;
+    }
+
+    if (selectedProduct.is_reward_discount_item) {
+      showAppWarning(
+        "Este producto ya tiene un descuento aplicado por recompensa. No se puede aplicar otro descuento manual.",
+      );
+      return;
+    }
+
+    setDiscountModalOpen(true);
+  };
+
   const validateCartStockBeforeSale = async () => {
     await refreshCartInventoryFromRealtime();
 
@@ -2186,7 +2372,7 @@ const Sales = () => {
         const currentStock = Number(kitAvailability.availableStock || 0);
 
         if (!kitAvailability.isValid || currentStock <= 0) {
-          alert(
+          showAppWarning(
             kitAvailability.message ||
               `El kit "${item.nombre || item.codigo}" ya no tiene inventario suficiente.`,
           );
@@ -2194,7 +2380,7 @@ const Sales = () => {
         }
 
         if (item.cantidad > currentStock) {
-          alert(
+          showAppWarning(
             `La cantidad del kit "${
               item.nombre || item.codigo
             }" excede el inventario disponible. Disponible: ${currentStock}.`,
@@ -2210,7 +2396,7 @@ const Sales = () => {
       const hasBeenStocked = !!inventoryRow?.has_been_stocked;
 
       if (!hasBeenStocked && currentStock <= 0) {
-        alert(
+        showAppWarning(
           `El producto "${
             item.nombre || item.codigo
           }" aún no tiene inventario inicial registrado.`,
@@ -2219,14 +2405,14 @@ const Sales = () => {
       }
 
       if (currentStock <= 0) {
-        alert(
+        showAppWarning(
           `El producto "${item.nombre || item.codigo}" ya no tiene existencia.`,
         );
         return false;
       }
 
       if (item.cantidad > currentStock) {
-        alert(
+        showAppWarning(
           `La cantidad de "${
             item.nombre || item.codigo
           }" excede el inventario disponible.`,
@@ -2332,7 +2518,7 @@ const Sales = () => {
 
   const handleSaveEntry = async (newMovement) => {
     if (shiftAlreadyCut) {
-      alert(
+      showAppWarning(
         "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
       );
       return false;
@@ -2340,12 +2526,12 @@ const Sales = () => {
 
     try {
       if (!user?.id) {
-        alert("No se detectó el usuario.");
+        showAppWarning("No se detectó el usuario.");
         return false;
       }
 
       if (!branch?.id) {
-        alert("No se detectó la sucursal.");
+        showAppWarning("No se detectó la sucursal.");
         return false;
       }
 
@@ -2369,18 +2555,18 @@ const Sales = () => {
       if (error) throw error;
 
       setCashMovements((prev) => [...prev, data]);
-      alert("Entrada de efectivo registrada correctamente.");
+      showAppSuccess("Entrada de efectivo registrada correctamente.", "Entrada registrada");
       return true;
     } catch (error) {
       console.error("Error al guardar entrada de efectivo:", error);
-      alert(error.message || "No se pudo guardar la entrada de efectivo.");
+      showAppWarning(error.message || "No se pudo guardar la entrada de efectivo.");
       return false;
     }
   };
 
   const handleSaveExit = async (newMovement) => {
     if (shiftAlreadyCut) {
-      alert(
+      showAppWarning(
         "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
       );
       return false;
@@ -2388,19 +2574,19 @@ const Sales = () => {
 
     try {
       if (!user?.id) {
-        alert("No se detectó el usuario.");
+        showAppWarning("No se detectó el usuario.");
         return false;
       }
 
       if (!branch?.id) {
-        alert("No se detectó la sucursal.");
+        showAppWarning("No se detectó la sucursal.");
         return false;
       }
 
       const openSession = await getOpenCashSession();
 
       if (!openSession) {
-        alert("No hay sesión de caja abierta.");
+        showAppWarning("No hay sesión de caja abierta.");
         return false;
       }
 
@@ -2409,7 +2595,7 @@ const Sales = () => {
       const exitAmount = Number(newMovement.amount);
 
       if (exitAmount > availableCash) {
-        alert(
+        showAppWarning(
           `No puedes retirar $${exitAmount.toFixed(
             2,
           )}. Disponible en caja: $${availableCash.toFixed(2)}`,
@@ -2435,11 +2621,16 @@ const Sales = () => {
       if (error) throw error;
 
       setCashMovements((prev) => [...prev, data]);
-      alert("Salida de efectivo registrada correctamente.");
+      showAppModal({
+        type: "danger",
+        title: "Salida registrada",
+        message: "Salida de efectivo registrada correctamente.",
+        confirmText: "Entendido",
+      });
       return true;
     } catch (error) {
       console.error("Error al guardar salida de efectivo:", error);
-      alert(error.message || "No se pudo guardar la salida de efectivo.");
+      showAppWarning(error.message || "No se pudo guardar la salida de efectivo.");
       return false;
     }
   };
@@ -2471,7 +2662,7 @@ const Sales = () => {
       const inventoryRow = await getBranchInventoryRow(product.id);
 
       if (!inventoryRow || inventoryRow.is_active === false) {
-        alert(
+        showAppWarning(
           `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.`,
         );
         return false;
@@ -2485,7 +2676,7 @@ const Sales = () => {
       const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
       if (rewardQuantity > availableToAdd) {
-        alert(
+        showAppWarning(
           `No hay inventario suficiente para aplicar "${
             reward.name || "RECOMPENSA"
           }". Disponible para agregar: ${availableToAdd}.`,
@@ -2689,17 +2880,17 @@ const Sales = () => {
       const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
       if (!inventoryRow || inventoryRow.is_active === false) {
-        alert("Uno de los productos de recompensa ya no está activo en esta sucursal.");
+        showAppWarning("Uno de los productos de recompensa ya no está activo en esta sucursal.");
         return false;
       }
 
       if (inventoryRow.has_been_stocked !== true && stock <= 0) {
-        alert("Uno de los productos de recompensa aún no tiene inventario inicial.");
+        showAppWarning("Uno de los productos de recompensa aún no tiene inventario inicial.");
         return false;
       }
 
       if (quantityToAdd > availableToAdd) {
-        alert(
+        showAppWarning(
           `No hay inventario suficiente para aplicar las recompensas. Disponible para agregar: ${availableToAdd}.`,
         );
         return false;
@@ -2742,7 +2933,7 @@ const Sales = () => {
       }
 
       if (appliedRewards.length === 0) {
-        alert(
+        showAppWarning(
           "No se aplicó ninguna recompensa. Revisa que el producto tenga inventario disponible.",
         );
         return;
@@ -2757,7 +2948,7 @@ const Sales = () => {
       }
     } catch (error) {
       console.error("Error aplicando productos de recompensa:", error);
-      alert(error.message || "No se pudieron aplicar las recompensas.");
+      showAppWarning(error.message || "No se pudieron aplicar las recompensas.");
     }
   };
 
@@ -2787,9 +2978,9 @@ const Sales = () => {
   const handleAssignClient = (client, rewards = []) => {
     const normalizedRewards = normalizeRewardsArray(rewards);
 
-    setCurrentSaleClient(client);
-
     if (!client) {
+      removeRewardItemsFromCart();
+      setCurrentSaleClient(null);
       setCurrentSaleReward([]);
       setPendingFreeProductRewards([]);
       setRewardProductModalOpen(false);
@@ -2799,7 +2990,10 @@ const Sales = () => {
       return;
     }
 
+    setCurrentSaleClient(client);
+
     if (normalizedRewards.length === 0) {
+      setCurrentSaleReward([]);
       setPendingFreeProductRewards([]);
       setRewardProductModalOpen(false);
       setPendingProductDiscountRewards([]);
@@ -2863,7 +3057,7 @@ const Sales = () => {
       const inventoryRow = await getBranchInventoryRow(product.id);
 
       if (!inventoryRow || inventoryRow.is_active === false) {
-        alert(
+        showAppWarning(
           `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.`,
         );
         return false;
@@ -2879,7 +3073,7 @@ const Sales = () => {
       const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
       if (cleanQuantity > availableToAdd) {
-        alert(
+        showAppWarning(
           `No hay inventario suficiente para aplicar "${
             reward.name || "RECOMPENSA"
           }". Disponible para agregar: ${availableToAdd}.`,
@@ -2927,7 +3121,8 @@ const Sales = () => {
       reward_name: reward.name || "RECOMPENSA",
       reward_points_required: Number(totalPoints || getRewardTotalPoints(reward)),
       reward_line_points_required: Number(totalPoints || getRewardTotalPoints(reward)),
-      reward_redeem_quantity: getRewardRedeemQuantity(reward),
+      reward_redeem_quantity:
+        cleanQuantity / Math.max(Number(reward.reward_quantity || 1), 1),
       reward_product_quantity: cleanQuantity,
       reward_discount_type: discountType || reward.discount_type || null,
       reward_discount_value: Number(discountValue ?? reward.discount_value ?? 0),
@@ -2954,22 +3149,63 @@ const Sales = () => {
   };
 
   const handleConfirmProductDiscountReward = async (payload) => {
-    if (!payload?.reward?.id || !payload?.product?.id) return;
+    if (!payload?.reward?.id) return;
+
+    const selections = Array.isArray(payload?.selections)
+      ? payload.selections
+      : payload?.product?.id
+        ? [payload]
+        : [];
+
+    if (selections.length === 0) return;
 
     try {
-      const wasApplied = await addRewardDiscountProductToCart(payload);
+      const appliedSelections = [];
 
-      if (!wasApplied) return;
+      for (const selection of selections) {
+        const selectionPayload = {
+          ...selection,
+          reward: selection.reward || payload.reward,
+        };
+
+        const wasApplied = await addRewardDiscountProductToCart(selectionPayload);
+
+        if (wasApplied) {
+          appliedSelections.push(selectionPayload);
+        }
+      }
+
+      if (appliedSelections.length === 0) return;
+
+      const appliedProductQuantity = appliedSelections.reduce((sum, selection) => {
+        return sum + Math.max(Number(selection.quantity || 1), 1);
+      }, 0);
+
+      const appliedDiscountAmount = appliedSelections.reduce((sum, selection) => {
+        return (
+          sum +
+          Math.max(Math.floor(Number(selection.discountAmount || 0)), 0) *
+            Math.max(Number(selection.quantity || 1), 1)
+        );
+      }, 0);
+
+      const appliedProductNames = appliedSelections
+        .map(
+          (selection) =>
+            selection.product?.name ||
+            selection.product?.barcode ||
+            "PRODUCTO",
+        )
+        .join(", ");
 
       const appliedReward = {
         ...payload.reward,
+        redeemQuantity: getRewardRedeemQuantity(payload.reward),
         reward_application_status: "applied_product_discount",
-        appliedProductId: payload.product.id,
-        appliedProductName: payload.product.name || payload.product.barcode || "PRODUCTO",
-        appliedProductQuantity: Math.max(Number(payload.quantity || 1), 1),
-        appliedDiscountAmount:
-          Math.max(Math.floor(Number(payload.discountAmount || 0)), 0) *
-          Math.max(Number(payload.quantity || 1), 1),
+        appliedProductId: appliedSelections[0]?.product?.id || null,
+        appliedProductName: appliedProductNames,
+        appliedProductQuantity,
+        appliedDiscountAmount,
       };
 
       setCurrentSaleReward((prev) => mergeAppliedRewards(prev, [appliedReward]));
@@ -2990,7 +3226,7 @@ const Sales = () => {
       setProductDiscountRewardModalOpen(false);
     } catch (error) {
       console.error("Error aplicando descuento de recompensa:", error);
-      alert(error.message || "No se pudo aplicar el descuento de recompensa.");
+      showAppWarning(error.message || "No se pudo aplicar el descuento de recompensa.");
     }
   };
 
@@ -3510,7 +3746,7 @@ const Sales = () => {
       const canSell = await validateShiftNotCut();
 
       if (!canSell) {
-        alert(
+        showAppWarning(
           "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
         );
         setShowPaymentModal(false);
@@ -3518,28 +3754,28 @@ const Sales = () => {
       }
 
       if (!user?.id) {
-        alert("No se detectó el usuario.");
+        showAppWarning("No se detectó el usuario.");
         return false;
       }
 
       if (!branch?.id) {
-        alert("No se detectó la sucursal.");
+        showAppWarning("No se detectó la sucursal.");
         return false;
       }
 
       if (productos.length === 0) {
-        alert("No hay productos en la venta.");
+        showAppWarning("No hay productos en la venta.");
         return false;
       }
 
       if (!saleToken) {
-        alert("No se generó el token de venta.");
+        showAppWarning("No se generó el token de venta.");
         return false;
       }
 
       const invalidProduct = productos.find((p) => !isValidUuid(p.id));
       if (invalidProduct) {
-        alert("Hay productos sin UUID real. No se puede guardar la venta.");
+        showAppWarning("Hay productos sin UUID real. No se puede guardar la venta.");
         return false;
       }
 
@@ -3727,7 +3963,7 @@ const Sales = () => {
       return true;
     } catch (error) {
       console.error("Error al registrar venta:", error);
-      alert(error.message || "Error al registrar la venta.");
+      showAppWarning(error.message || "Error al registrar la venta.");
       return false;
     } finally {
       setProcessingSale(false);
@@ -3810,7 +4046,7 @@ const Sales = () => {
 
   const handleOpenChangeModal = () => {
     if (pendingTickets.length === 0) {
-      alert("No hay tickets pendientes");
+      showAppWarning("No hay tickets pendientes");
     } else {
       setChangeModalOpen(true);
     }
@@ -3818,7 +4054,7 @@ const Sales = () => {
 
   const handleOpenDeleteModal = () => {
     if (pendingTickets.length === 0) {
-      alert("No hay tickets pendientes por eliminar");
+      showAppWarning("No hay tickets pendientes por eliminar");
     } else {
       setDeleteModalOpen(true);
     }
@@ -3826,7 +4062,7 @@ const Sales = () => {
 
   const openExitFlow = useCallback(async () => {
     if (shiftAlreadyCut) {
-      alert(
+      showAppWarning(
         "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
       );
       return;
@@ -3904,11 +4140,7 @@ const Sales = () => {
 
       if (e.ctrlKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
-
-        if (selectedProduct) {
-          setDiscountModalOpen(true);
-        }
-
+        handleOpenDiscountModal();
         return;
       }
 
@@ -3942,7 +4174,7 @@ const Sales = () => {
         case "F7":
           e.preventDefault();
           if (shiftAlreadyCut) {
-            alert(
+            showAppWarning(
               "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
             );
           } else {
@@ -3970,7 +4202,7 @@ const Sales = () => {
             if (selectedProduct) {
               setDeleteItemModalOpen(true);
             } else {
-              alert("Por favor, selecciona un producto primero");
+              showAppWarning("Por favor, selecciona un producto primero");
             }
           }
           break;
@@ -4099,39 +4331,6 @@ const Sales = () => {
         </div>
       )}
 
-      {!shiftAlreadyCut && recoveredDraft && productos.length > 0 && (
-        <div className={styles.recoveredDraftWarning}>
-          <div className={styles.recoveredDraftText}>
-            <strong>Se recuperó una venta pendiente.</strong>
-            <span>
-              {recoveredDraftSavedAt
-                ? `Guardada automáticamente el ${new Date(
-                    recoveredDraftSavedAt,
-                  ).toLocaleString("es-MX")}.`
-                : "La venta fue guardada automáticamente antes de cerrar el POS."}
-            </span>
-          </div>
-
-          <div className={styles.recoveredDraftActions}>
-            <button
-              type="button"
-              className={styles.recoveredDraftContinue}
-              onClick={dismissRecoveredDraft}
-            >
-              Continuar
-            </button>
-
-            <button
-              type="button"
-              className={styles.recoveredDraftDiscard}
-              onClick={discardRecoveredDraft}
-            >
-              Descartar
-            </button>
-          </div>
-        </div>
-      )}
-
       {!shiftAlreadyCut && stockWarningMsg && (
         <div className={styles.shiftCutWarning}>
           <span>{stockWarningMsg}</span>
@@ -4155,7 +4354,7 @@ const Sales = () => {
           }`}
           onClick={() => {
             if (shiftAlreadyCut) {
-              alert(
+              showAppWarning(
                 "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
               );
               return;
@@ -4185,7 +4384,7 @@ const Sales = () => {
             if (selectedProduct) {
               setDeleteItemModalOpen(true);
             } else {
-              alert("Por favor, selecciona un producto primero");
+              showAppWarning("Por favor, selecciona un producto primero");
             }
           }}
         >
@@ -4358,13 +4557,7 @@ const Sales = () => {
 
           <div
             className={styles.squareButton}
-            onClick={() => {
-              if (selectedProduct) {
-                setDiscountModalOpen(true);
-              } else {
-                alert("Por favor, selecciona un producto primero");
-              }
-            }}
+            onClick={handleOpenDiscountModal}
             data-tooltip="Ctrl + D"
           >
             <img
@@ -4554,6 +4747,19 @@ const Sales = () => {
       <SalesHistoryModal
         isOpen={isSalesHistoryModalOpen}
         onClose={() => setSalesHistoryModalOpen(false)}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        onClose={closeAppModal}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
       />
     </div>
   );

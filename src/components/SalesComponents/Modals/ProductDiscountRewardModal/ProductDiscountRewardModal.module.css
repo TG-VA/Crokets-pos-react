@@ -231,7 +231,7 @@
   border-radius: 12px;
   padding: 11px 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 390px;
   gap: 12px;
   align-items: center;
   text-align: left;
@@ -243,15 +243,10 @@
     transform 0.12s ease;
 }
 
-.productOption:hover:not(:disabled) {
+.productOption:hover {
   background: #ffedd5;
   border-color: #fc8913;
   transform: translateY(-1px);
-}
-
-.productOption:disabled {
-  opacity: 0.58;
-  cursor: not-allowed;
 }
 
 .productOptionSelected {
@@ -295,16 +290,21 @@
 
 .productAmounts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr 1fr 104px;
   gap: 8px;
+  align-items: center;
 }
 
-.productAmounts div {
+.productAmounts > div:not(.quantityControls) {
   background: #fff7ed;
   border: 1px solid #fed7aa;
   border-radius: 12px;
   padding: 8px 9px;
   text-align: center;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .productAmounts span {
@@ -330,6 +330,50 @@
 
 .finalAmount strong {
   color: #166534;
+}
+
+.quantityControls {
+  display: grid;
+  grid-template-columns: 30px 34px 30px;
+  gap: 5px;
+  align-items: center;
+  justify-content: end;
+}
+
+.quantityControls button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: #1092b1;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quantityControls button:hover:not(:disabled) {
+  background: #0d7a94;
+}
+
+.quantityControls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quantityControls strong {
+  height: 30px;
+  min-width: 34px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #075985;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 950;
 }
 
 .selectedBox {
@@ -358,7 +402,7 @@
 
 .selectedTotals {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
@@ -467,6 +511,21 @@
   .productAmounts,
   .selectedTotals {
     grid-template-columns: 1fr;
+  }
+
+  .quantityControls {
+    justify-content: stretch;
+    grid-template-columns: 42px 1fr 42px;
+  }
+
+  .quantityControls button {
+    width: 42px;
+    height: 36px;
+  }
+
+  .quantityControls strong {
+    width: 100%;
+    height: 36px;
   }
 
   .actions {

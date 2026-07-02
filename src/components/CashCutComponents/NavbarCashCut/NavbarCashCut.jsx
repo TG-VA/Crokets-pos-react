@@ -2,10 +2,20 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import styles from "./NavbarCashCut.module.css";
 
 const toDateInputValue = (date = new Date()) => {
+  if (!date) return "";
+
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+
   const d = new Date(date);
+
+  if (Number.isNaN(d.getTime())) return "";
+
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
+
   return `${yyyy}-${mm}-${dd}`;
 };
 
@@ -24,10 +34,13 @@ const formatDateLabel = (dateValue) => {
 };
 
 const getCutDateValue = (cut) => {
-  const rawDate = cut?.created_at || cut?.cut_date;
-  if (!rawDate) return "";
+  if (!cut) return "";
 
-  return toDateInputValue(rawDate);
+  if (cut.cut_date) {
+    return toDateInputValue(cut.cut_date);
+  }
+
+  return toDateInputValue(cut.created_at);
 };
 
 const NavbarCashCut = ({
@@ -59,16 +72,16 @@ const NavbarCashCut = ({
   }, [cutsHistory, selectedDate]);
 
   useEffect(() => {
-    if (selectedCut?.created_at || selectedCut?.cut_date) {
+    if (selectedCut?.cut_date || selectedCut?.created_at) {
       setSelectedDate(getCutDateValue(selectedCut));
     }
   }, [selectedCut]);
 
   useEffect(() => {
-  if (selectedCutId === "current") {
-    setSelectedDate(today);
-  }
-}, [selectedCutId, today]);
+    if (selectedCutId === "current") {
+      setSelectedDate(today);
+    }
+  }, [selectedCutId, today]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -86,11 +99,11 @@ const NavbarCashCut = ({
     };
   }, []);
 
-const handleSelectCurrent = () => {
-  setSelectedDate(today);
-  onChangeCut?.("current");
-  setIsPickerOpen(false);
-};
+  const handleSelectCurrent = () => {
+    setSelectedDate(today);
+    onChangeCut?.("current");
+    setIsPickerOpen(false);
+  };
 
   const handleSelectCut = (cutId) => {
     onChangeCut?.(cutId);
@@ -154,9 +167,7 @@ const handleSelectCurrent = () => {
               </button>
 
               <div className={styles.calendarBox}>
-                <label className={styles.calendarLabel}>
-                  Fecha del corte
-                </label>
+                <label className={styles.calendarLabel}>Fecha del corte</label>
 
                 <input
                   type="date"
@@ -166,9 +177,7 @@ const handleSelectCurrent = () => {
                 />
               </div>
 
-              <div className={styles.cutListHeader}>
-                Cortes del día
-              </div>
+              <div className={styles.cutListHeader}>Cortes del día</div>
 
               <div className={styles.cutList}>
                 {filteredCuts.length === 0 ? (
@@ -185,9 +194,7 @@ const handleSelectCurrent = () => {
                       }`}
                       onClick={() => handleSelectCut(cut.id)}
                     >
-                      <span className={styles.optionTitle}>
-                        {cut.label}
-                      </span>
+                      <span className={styles.optionTitle}>{cut.label}</span>
 
                       <span className={styles.optionMeta}>
                         Monto contado:{" "}
@@ -204,9 +211,7 @@ const handleSelectCurrent = () => {
           )}
         </div>
 
-        {isHistoricalView && (
-          <span className={styles.historyBadge}>Histórico</span>
-        )}
+        {isHistoricalView && <span className={styles.historyBadge}>Histórico</span>}
       </div>
 
       <div className={styles.right}>

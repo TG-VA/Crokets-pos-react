@@ -6,6 +6,7 @@ import { useBranch } from "../../../../contexts/BranchContext";
 import { checkUserIsAdmin } from "../../../../lib/permissionsService";
 import FiscalCustomerModal from "../../Modals/FiscalCustomerModal/FiscalCustomerModal";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const InvoiceCustomers = () => {
   const { user } = useAuth();
@@ -19,7 +20,6 @@ const InvoiceCustomers = () => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [searchingPointsCustomer, setSearchingPointsCustomer] = useState(false);
   const [pointsCustomerFound, setPointsCustomerFound] = useState(null);
-  const [error, setError] = useState("");
 
   const [isFiscalModalOpen, setIsFiscalModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -28,10 +28,115 @@ const InvoiceCustomers = () => {
   const [pendingDeactivateCustomer, setPendingDeactivateCustomer] =
     useState(null);
 
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
+
   const formatStatus = (status) => (status === false ? "INACTIVO" : "ACTIVO");
 
   const normalizePhone = (value) => {
     return String(value || "").replace(/\D/g, "").slice(0, 10);
+  };
+
+  const getCustomerSortName = (customer) => {
+    return String(
+      customer.razon_social ||
+        customer.name ||
+        customer.rfc ||
+        "SIN RAZÓN SOCIAL"
+    ).trim();
+  };
+
+  const getCustomerDisplayName = (customer) => {
+    return (
+      customer?.razon_social ||
+      customer?.name ||
+      customer?.rfc ||
+      "SIN RAZÓN SOCIAL"
+    );
+  };
+
+  const sortCustomersByStatusAndName = (customersList = []) => {
+    return [...customersList].sort((a, b) => {
+      const statusA = a.status === false ? 1 : 0;
+      const statusB = b.status === false ? 1 : 0;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      return getCustomerSortName(a).localeCompare(getCustomerSortName(b), "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
   };
 
   const loadCatalogs = async () => {
@@ -57,13 +162,20 @@ const InvoiceCustomers = () => {
       setTaxRegimes(regimesRes.data || []);
     } catch (err) {
       console.error("Error cargando catálogos fiscales:", err);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar catálogos",
+        message:
+          "No se pudieron cargar los catálogos fiscales de régimen fiscal y uso CFDI.",
+        confirmText: "Entendido",
+      });
     }
   };
 
   const loadCustomers = async () => {
     try {
       setLoadingCustomers(true);
-      setError("");
 
       const { data, error: customersError } = await supabase
         .from("customers")
@@ -86,15 +198,22 @@ const InvoiceCustomers = () => {
           updated_at
         `)
         .eq("is_billing_customer", true)
-        .order("razon_social", { ascending: true });
+        .order("status", { ascending: false, nullsFirst: false })
+        .order("razon_social", { ascending: true, nullsFirst: false });
 
       if (customersError) throw customersError;
 
-      setCustomers(data || []);
+      setCustomers(sortCustomersByStatusAndName(data || []));
     } catch (err) {
       console.error("Error cargando clientes fiscales:", err);
-      setError("No se pudieron cargar los clientes fiscales.");
       setCustomers([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar clientes fiscales",
+        message: "No se pudieron cargar los clientes fiscales.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingCustomers(false);
     }
@@ -145,6 +264,14 @@ const InvoiceCustomers = () => {
     } catch (err) {
       console.error("Error buscando cliente de puntos por teléfono:", err);
       setPointsCustomerFound(null);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo buscar coincidencia",
+        message:
+          "No se pudo buscar si existe un cliente de puntos con ese teléfono.",
+        confirmText: "Entendido",
+      });
     } finally {
       setSearchingPointsCustomer(false);
     }
@@ -229,7 +356,7 @@ const InvoiceCustomers = () => {
   const filteredCustomers = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
-    return customers.filter((customer) => {
+    const filtered = customers.filter((customer) => {
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && customer.status !== false) ||
@@ -242,6 +369,7 @@ const InvoiceCustomers = () => {
       const values = [
         customer.rfc,
         customer.razon_social,
+        customer.name,
         customer.phone,
         customer.fiscal_email,
         customer.email,
@@ -254,6 +382,8 @@ const InvoiceCustomers = () => {
         String(value || "").toLowerCase().includes(search)
       );
     });
+
+    return sortCustomersByStatusAndName(filtered);
   }, [customers, searchTerm, statusFilter]);
 
   const handleNewCustomer = () => {
@@ -267,22 +397,20 @@ const InvoiceCustomers = () => {
   };
 
   const handleAddPointsCustomerAsFiscalCustomer = () => {
-  if (!pointsCustomerFound?.id) return;
+    if (!pointsCustomerFound?.id) return;
 
-  const customerForFiscalModal = {
-    ...pointsCustomerFound,
-    razon_social: pointsCustomerFound.razon_social || "",
+    const customerForFiscalModal = {
+      ...pointsCustomerFound,
+      razon_social: pointsCustomerFound.razon_social || "",
+      phone: pointsCustomerFound.phone || "",
+      fiscal_email:
+        pointsCustomerFound.fiscal_email || pointsCustomerFound.email || "",
+      status: pointsCustomerFound.status !== false,
+    };
 
-    phone: pointsCustomerFound.phone || "",
-    fiscal_email:
-      pointsCustomerFound.fiscal_email || pointsCustomerFound.email || "",
-
-    status: pointsCustomerFound.status !== false,
+    setEditingCustomer(customerForFiscalModal);
+    setIsFiscalModalOpen(true);
   };
-
-  setEditingCustomer(customerForFiscalModal);
-  setIsFiscalModalOpen(true);
-};
 
   const handleCloseFiscalModal = () => {
     setIsFiscalModalOpen(false);
@@ -296,14 +424,6 @@ const InvoiceCustomers = () => {
   };
 
   const updateCustomerStatus = async (customer, nextStatus) => {
-    const confirmed = window.confirm(
-      `¿Seguro que deseas ${
-        nextStatus ? "activar" : "desactivar"
-      } este cliente fiscal?`
-    );
-
-    if (!confirmed) return;
-
     try {
       const { error: updateError } = await supabase
         .from("customers")
@@ -316,24 +436,56 @@ const InvoiceCustomers = () => {
       if (updateError) throw updateError;
 
       await loadCustomers();
+
+      showAppAlert({
+        type: "success",
+        title: nextStatus
+          ? "Cliente fiscal activado"
+          : "Cliente fiscal desactivado",
+        message: `El cliente fiscal "${getCustomerDisplayName(
+          customer
+        )}" fue ${nextStatus ? "activado" : "desactivado"} correctamente.`,
+        confirmText: "Aceptar",
+      });
     } catch (err) {
       console.error("Error actualizando cliente fiscal:", err);
-      alert("No se pudo actualizar el estado del cliente fiscal.");
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo actualizar",
+        message: "No se pudo actualizar el estado del cliente fiscal.",
+        confirmText: "Entendido",
+      });
     }
+  };
+
+  const confirmCustomerStatusUpdate = (customer, nextStatus) => {
+    showAppConfirm({
+      type: nextStatus ? "info" : "danger",
+      title: nextStatus
+        ? "Activar cliente fiscal"
+        : "Desactivar cliente fiscal",
+      message: `¿Seguro que deseas ${
+        nextStatus ? "activar" : "desactivar"
+      } al cliente fiscal "${getCustomerDisplayName(customer)}"?`,
+      confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
+      cancelText: "Cancelar",
+      onConfirm: () => updateCustomerStatus(customer, nextStatus),
+    });
   };
 
   const handleToggleStatus = async (customer) => {
     const nextStatus = customer.status === false;
 
     if (nextStatus) {
-      await updateCustomerStatus(customer, true);
+      confirmCustomerStatusUpdate(customer, true);
       return;
     }
 
     const isAdmin = await checkUserIsAdmin(user?.id);
 
     if (isAdmin) {
-      await updateCustomerStatus(customer, false);
+      confirmCustomerStatusUpdate(customer, false);
       return;
     }
 
@@ -352,7 +504,7 @@ const InvoiceCustomers = () => {
     setAdminAuthOpen(false);
     setPendingDeactivateCustomer(null);
 
-    await updateCustomerStatus(customerToDeactivate, false);
+    confirmCustomerStatusUpdate(customerToDeactivate, false);
   };
 
   const handleCloseAdminAuth = () => {
@@ -399,7 +551,7 @@ const InvoiceCustomers = () => {
                 setPointsCustomerFound(null);
               }}
             >
-              ✕
+              ×
             </button>
           )}
         </div>
@@ -474,8 +626,6 @@ const InvoiceCustomers = () => {
           </button>
         </div>
       )}
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.resultsInfo}>
         {loadingCustomers
@@ -611,15 +761,27 @@ const InvoiceCustomers = () => {
         title="Acceso restringido"
         message={
           pendingDeactivateCustomer
-            ? `Para desactivar al cliente fiscal "${
-                pendingDeactivateCustomer.razon_social ||
-                pendingDeactivateCustomer.rfc ||
-                "seleccionado"
-              }", se requiere autorización de un administrador.`
+            ? `Para desactivar al cliente fiscal "${getCustomerDisplayName(
+                pendingDeactivateCustomer
+              )}", se requiere autorización de un administrador.`
             : "Para desactivar este cliente fiscal, se requiere autorización de un administrador."
         }
         targetId={pendingDeactivateCustomer?.id || null}
         branchId={branch?.id || null}
+      />
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
     </div>
   );

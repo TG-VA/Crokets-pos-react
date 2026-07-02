@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../contexts/ProductsContext";
 import { supabase } from "../../../../lib/supabaseClient";
 import styles from "./ProductsNew.module.css";
+import AppModal from "../../../AppModal/AppModal";
 
 const ProductsNew = () => {
   const bodyRef = useRef(null);
@@ -41,6 +42,36 @@ const ProductsNew = () => {
   const [saving, setSaving] = useState(false);
   const [satClaves, setSatClaves] = useState([]);
   const [loadingSatClaves, setLoadingSatClaves] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+    });
+  };
+
 
   const createInitialForm = () => ({
     codigo: "",
@@ -382,19 +413,32 @@ const ProductsNew = () => {
 
       if (!result?.success) {
         if (result?.partial) {
-          alert(
-            `El producto sí se creó en el catálogo, pero no se pudo crear su inventario en la sucursal.\n\nDetalle: ${getFriendlySaveError(
+          showAppAlert({
+            type: "warning",
+            title: "Producto creado parcialmente",
+            message: `El producto sí se creó en el catálogo, pero no se pudo crear su inventario en la sucursal.\n\nDetalle: ${getFriendlySaveError(
               result.error
-            )}`
-          );
+            )}`,
+            confirmText: "Entendido",
+          });
           return;
         }
 
-        alert(getFriendlySaveError(result?.error));
+        showAppAlert({
+          type: "danger",
+          title: "No se pudo guardar el producto",
+          message: getFriendlySaveError(result?.error),
+          confirmText: "Entendido",
+        });
         return;
       }
 
-      alert("Producto agregado correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Producto agregado",
+        message: "Producto agregado correctamente.",
+        confirmText: "Entendido",
+      });
       resetForm();
 
       setTimeout(() => {
@@ -410,7 +454,7 @@ const ProductsNew = () => {
   };
 
   useEffect(() => {
-    if (!submitArmed) return;
+    if (!submitArmed || appModal.isOpen) return;
 
     const onKeyDown = (e) => {
       if (e.key !== "Enter") return;
@@ -425,9 +469,10 @@ const ProductsNew = () => {
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [submitArmed, isFormValid, errors, form]);
+  }, [submitArmed, isFormValid, errors, form, appModal.isOpen]);
 
   const handleContentKeyDown = (e) => {
+    if (appModal.isOpen) return;
     if (e.key !== "Enter") return;
 
     e.preventDefault();
@@ -889,12 +934,22 @@ const ProductsNew = () => {
             className={styles.saveButton}
             type="button"
             onClick={handleSubmit}
-            disabled={!isFormValid || saving}
+            disabled={!isFormValid || saving || appModal.isOpen}
           >
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

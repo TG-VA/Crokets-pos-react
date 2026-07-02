@@ -3,6 +3,7 @@ import { useProducts } from "../../../../contexts/ProductsContext";
 import { supabase } from "../../../../lib/supabaseClient";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import styles from "./ProductsModify.module.css";
+import AppModal from "../../../AppModal/AppModal";
 
 const ProductsModify = () => {
   const {
@@ -24,6 +25,35 @@ const ProductsModify = () => {
   const [loadingDiscount, setLoadingDiscount] = useState(false);
   const [satClaves, setSatClaves] = useState([]);
   const [loadingSatClaves, setLoadingSatClaves] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+    });
+  };
 
   const createInitialForm = () => ({
     codigo: "",
@@ -301,14 +331,24 @@ const ProductsModify = () => {
     const cleanBarcode = barcode.trim();
 
     if (!cleanBarcode) {
-      alert("Captura un código de barras.");
+      showAppAlert({
+        type: "warning",
+        title: "Código requerido",
+        message: "Captura un código de barras.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
     const found = getProductByCodigo(cleanBarcode);
 
     if (!found) {
-      alert("Producto no encontrado.");
+      showAppAlert({
+        type: "warning",
+        title: "Producto no encontrado",
+        message: "Producto no encontrado.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -574,7 +614,12 @@ const ProductsModify = () => {
       );
 
       if (!productResult?.success) {
-        alert(productResult?.error || "No se pudo actualizar el producto.");
+        showAppAlert({
+          type: "danger",
+          title: "No se pudo actualizar el producto",
+          message: productResult?.error || "No se pudo actualizar el producto.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
@@ -585,14 +630,23 @@ const ProductsModify = () => {
       });
 
       if (!discountResult?.success) {
-        alert(
-          discountResult?.error ||
-            "El producto se modificó, pero no se pudo guardar el descuento."
-        );
+        showAppAlert({
+          type: "warning",
+          title: "Producto modificado parcialmente",
+          message:
+            discountResult?.error ||
+            "El producto se modificó, pero no se pudo guardar el descuento.",
+          confirmText: "Entendido",
+        });
         return;
       }
 
-      alert("Producto modificado correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Producto modificado",
+        message: "Producto modificado correctamente.",
+        confirmText: "Entendido",
+      });
       resetForm();
     } finally {
       setSaving(false);
@@ -600,7 +654,7 @@ const ProductsModify = () => {
   };
 
   useEffect(() => {
-    if (!submitArmed) return;
+    if (!submitArmed || appModal.isOpen) return;
 
     const onKeyDown = (e) => {
       if (e.key !== "Enter") return;
@@ -615,10 +669,12 @@ const ProductsModify = () => {
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [submitArmed, isFormValid, errors, form]);
+  }, [submitArmed, isFormValid, errors, form, appModal.isOpen]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (appModal.isOpen) return;
+
       if (e.key === "F10") {
         e.preventDefault();
         setSearchModalOpen(true);
@@ -628,9 +684,10 @@ const ProductsModify = () => {
     document.addEventListener("keydown", onKeyDown);
 
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [appModal.isOpen]);
 
   const handleContentKeyDown = (e) => {
+    if (appModal.isOpen) return;
     if (e.key !== "Enter") return;
     if (!selectedProduct) return;
     if (!bodyRef.current || !bodyRef.current.contains(e.target)) return;
@@ -1228,7 +1285,7 @@ const ProductsModify = () => {
                 className={styles.cancelButton}
                 type="button"
                 onClick={resetForm}
-                disabled={saving}
+                disabled={saving || appModal.isOpen}
               >
                 Cancelar
               </button>
@@ -1237,7 +1294,7 @@ const ProductsModify = () => {
                 className={styles.saveButton}
                 type="button"
                 onClick={handleSave}
-                disabled={!isFormValid || saving || loadingDiscount}
+                disabled={!isFormValid || saving || loadingDiscount || appModal.isOpen}
               >
                 {saving ? "Guardando..." : "Guardar"}
               </button>
@@ -1255,6 +1312,16 @@ const ProductsModify = () => {
           }}
         />
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

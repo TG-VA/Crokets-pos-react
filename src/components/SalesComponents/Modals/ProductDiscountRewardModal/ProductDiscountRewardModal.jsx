@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ProductDiscountRewardModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
+import AppModal from "../../../AppModal/AppModal";
 
 const MIN_SEARCH_LENGTH = 2;
 
@@ -86,10 +87,17 @@ const ProductDiscountRewardModal = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState([]);
   const [inventoryByProduct, setInventoryByProduct] = useState({});
-  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedProductsById, setSelectedProductsById] = useState({});
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "warning",
+    title: "Aviso",
+    message: "",
+    confirmText: "Entendido",
+  });
 
   const rewardQuantity = Math.max(toNumber(reward?.reward_quantity || 1), 1);
   const rewardRedeemQuantity = Math.max(
@@ -97,6 +105,46 @@ const ProductDiscountRewardModal = ({
     1
   );
   const totalUnitsToApply = rewardQuantity * rewardRedeemQuantity;
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const showAppModal = ({
+    type = "warning",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message: String(message || ""),
+      confirmText,
+    });
+  };
+
+  const showAppWarning = (message, title = "Aviso") => {
+    showAppModal({
+      type: "warning",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
+
+  const showAppDanger = (message, title = "Error") => {
+    showAppModal({
+      type: "danger",
+      title,
+      message,
+      confirmText: "Entendido",
+    });
+  };
 
   const getCartQuantityForProduct = (productId) => {
     if (!productId) return 0;
@@ -275,9 +323,11 @@ const ProductDiscountRewardModal = ({
       console.error("Error cargando productos para descuento:", err);
       setProducts([]);
       setInventoryByProduct({});
-      setError(
-        err?.message || "No se pudieron cargar los productos de la sucursal."
-      );
+      const errorMessage =
+        err?.message || "No se pudieron cargar los productos de la sucursal.";
+
+      setError(errorMessage);
+      showAppDanger(errorMessage, "Error cargando productos");
     } finally {
       setLoadingProducts(false);
     }
@@ -287,9 +337,10 @@ const ProductDiscountRewardModal = ({
     if (!isOpen) return;
 
     setSearchTerm("");
-    setSelectedProductId(null);
+    setSelectedProductsById({});
     setSaving(false);
     setError("");
+    closeAppModal();
     loadProducts();
 
     setTimeout(() => {
@@ -297,12 +348,37 @@ const ProductDiscountRewardModal = ({
     }, 80);
   }, [isOpen, branchId, reward?.id]);
 
+  const selectedProductsCount = useMemo(() => {
+    return Object.values(selectedProductsById).reduce((sum, quantity) => {
+      return sum + toNumber(quantity);
+    }, 0);
+  }, [selectedProductsById]);
+
+  const selectedProducts = useMemo(() => {
+    return Object.entries(selectedProductsById)
+      .map(([productId, quantity]) => {
+        const product = products.find((item) => item.id === productId);
+
+        if (!product || toNumber(quantity) <= 0) return null;
+
+        return {
+          product,
+          quantity: toNumber(quantity),
+          discount: calculateRewardDiscount(product, reward, inventoryByProduct),
+        };
+      })
+      .filter(Boolean);
+  }, [products, selectedProductsById, reward, inventoryByProduct]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event) => {
+      if (appModal.isOpen) return;
+
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
 
         if (!saving) {
           onClose?.();
@@ -311,19 +387,28 @@ const ProductDiscountRewardModal = ({
 
       if (event.key === "Enter") {
         event.preventDefault();
+        event.stopPropagation();
 
-        if (selectedProductId && !saving) {
+        if (selectedProductsCount === totalUnitsToApply && !saving) {
           handleConfirm();
         }
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, saving, selectedProductId, products, inventoryByProduct]);
+  }, [
+    isOpen,
+    saving,
+    selectedProductsCount,
+    totalUnitsToApply,
+    products,
+    inventoryByProduct,
+    appModal.isOpen,
+  ]);
 
   const filteredProducts = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -354,33 +439,14 @@ const ProductDiscountRewardModal = ({
     });
   }, [products, inventoryByProduct, searchTerm, cartProducts, reward]);
 
-  const selectedProduct = useMemo(() => {
-    return products.find((product) => product.id === selectedProductId) || null;
-  }, [products, selectedProductId]);
-
-  const selectedProductDiscount = useMemo(() => {
-    if (!selectedProduct || !reward) {
-      return {
-        price: 0,
-        discountAmount: 0,
-        finalPrice: 0,
-      };
-    }
-
-    return calculateRewardDiscount(
-      selectedProduct,
-      reward,
-      inventoryByProduct
-    );
-  }, [selectedProduct, reward, inventoryByProduct]);
-
   const canConfirm =
-    Boolean(selectedProduct) &&
-    selectedProductDiscount.discountAmount > 0 &&
+    selectedProductsCount === totalUnitsToApply &&
+    selectedProducts.length > 0 &&
+    selectedProducts.every((item) => item.discount.discountAmount > 0) &&
     !saving &&
     !loadingProducts;
 
-  const handleSelectProduct = (product) => {
+  const handleAddProduct = (product) => {
     if (!product?.id || saving) return;
 
     const status = getInventoryStatus(product);
@@ -394,56 +460,112 @@ const ProductDiscountRewardModal = ({
     );
 
     if (discount.discountAmount <= 0) {
-      setError("La recompensa no genera un descuento válido para este producto.");
+      const errorMessage =
+        "La recompensa no genera un descuento válido para este producto.";
+
+      setError(errorMessage);
+      showAppWarning(errorMessage, "Descuento no aplicable");
       return;
     }
 
-    setSelectedProductId(product.id);
+    if (selectedProductsCount >= totalUnitsToApply) return;
+
+    const currentProductQty = toNumber(selectedProductsById[product.id]);
+
+    if (status.stock !== null && currentProductQty >= status.stock) return;
+
+    setSelectedProductsById((prev) => ({
+      ...prev,
+      [product.id]: toNumber(prev[product.id]) + 1,
+    }));
+
+    setError("");
+  };
+
+  const handleSubtractProduct = (product) => {
+    if (!product?.id || saving) return;
+
+    setSelectedProductsById((prev) => {
+      const currentQty = toNumber(prev[product.id]);
+
+      if (currentQty <= 0) return prev;
+
+      const next = {
+        ...prev,
+        [product.id]: currentQty - 1,
+      };
+
+      if (next[product.id] <= 0) {
+        delete next[product.id];
+      }
+
+      return next;
+    });
+
     setError("");
   };
 
   const handleConfirm = async () => {
-    if (!selectedProduct || !canConfirm) return;
+    if (!canConfirm) return;
 
-    const status = getInventoryStatus(selectedProduct);
+    const selections = [];
 
-    if (!status.available) {
-      setError("El producto seleccionado ya no está disponible.");
-      return;
+    for (const selectedItem of selectedProducts) {
+      const product = selectedItem.product;
+      const quantity = toNumber(selectedItem.quantity);
+      const status = getInventoryStatus(product);
+
+      if (!status.available) {
+        const errorMessage = "Uno de los productos seleccionados ya no está disponible.";
+
+        setError(errorMessage);
+        showAppWarning(errorMessage, "Producto no disponible");
+        return;
+      }
+
+      const discount = calculateRewardDiscount(
+        product,
+        reward,
+        inventoryByProduct
+      );
+
+      if (discount.discountAmount <= 0) {
+        const errorMessage = "La recompensa no genera un descuento válido.";
+
+        setError(errorMessage);
+        showAppWarning(errorMessage, "Descuento no aplicable");
+        return;
+      }
+
+      const inventoryRow = inventoryByProduct[product.id];
+
+      selections.push({
+        reward,
+        product: {
+          ...product,
+          sale_price: discount.price,
+          cost_price:
+            inventoryRow?.cost_price !== null && inventoryRow?.cost_price !== undefined
+              ? toNumber(inventoryRow.cost_price)
+              : toNumber(product.cost_price),
+          tracks_inventory: productUsesInventory(product),
+        },
+        quantity,
+        originalUnitPrice: discount.price,
+        discountAmount: discount.discountAmount,
+        finalUnitPrice: discount.finalPrice,
+        discountType: reward?.discount_type || null,
+        discountValue: toNumber(reward?.discount_value),
+        totalPoints:
+          toNumber(reward?.points_required) *
+          Math.max(quantity / Math.max(rewardQuantity, 1), 1),
+      });
     }
-
-    const discount = calculateRewardDiscount(
-      selectedProduct,
-      reward,
-      inventoryByProduct
-    );
-
-    if (discount.discountAmount <= 0) {
-      setError("La recompensa no genera un descuento válido.");
-      return;
-    }
-
-    const inventoryRow = inventoryByProduct[selectedProduct.id];
-
-    const productForCart = {
-      ...selectedProduct,
-      sale_price: discount.price,
-      cost_price:
-        inventoryRow?.cost_price !== null && inventoryRow?.cost_price !== undefined
-          ? toNumber(inventoryRow.cost_price)
-          : toNumber(selectedProduct.cost_price),
-      tracks_inventory: productUsesInventory(selectedProduct),
-    };
 
     const payload = {
       reward,
-      product: productForCart,
+      selections,
       quantity: totalUnitsToApply,
-      originalUnitPrice: discount.price,
-      discountAmount: discount.discountAmount,
-      finalUnitPrice: discount.finalPrice,
-      discountType: reward?.discount_type || null,
-      discountValue: toNumber(reward?.discount_value),
       totalPoints:
         toNumber(reward?.points_required) * Math.max(rewardRedeemQuantity, 1),
     };
@@ -459,19 +581,22 @@ const ProductDiscountRewardModal = ({
   if (!isOpen || !reward) return null;
 
   return (
-    <div className={styles.overlay} onClick={saving ? undefined : onClose}>
+    <div
+      className={styles.overlay}
+      onClick={saving || appModal.isOpen ? undefined : onClose}
+    >
       <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
         <div className={styles.header}>
           <div>
             <h2>Aplicar descuento</h2>
-            <p>Busca el producto al que se le aplicará la recompensa.</p>
+            <p>Selecciona los productos a los que se les aplicará la recompensa.</p>
           </div>
 
           <button
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            disabled={saving}
+            disabled={saving || appModal.isOpen}
           >
             ×
           </button>
@@ -484,7 +609,8 @@ const ProductDiscountRewardModal = ({
               <strong>{reward.name || "RECOMPENSA"}</strong>
               <p>
                 {getRewardDiscountLabel(reward)} en {totalUnitsToApply} producto
-                {totalUnitsToApply !== 1 ? "s" : ""}.
+                {totalUnitsToApply !== 1 ? "s" : ""}. Seleccionados:{" "}
+                {selectedProductsCount} de {totalUnitsToApply}.
               </p>
             </div>
 
@@ -506,10 +632,9 @@ const ProductDiscountRewardModal = ({
                 value={searchTerm}
                 onChange={(event) => {
                   setSearchTerm(event.target.value);
-                  setSelectedProductId(null);
                   setError("");
                 }}
-                disabled={saving}
+                disabled={saving || appModal.isOpen}
                 placeholder="Buscar por nombre, código o precio..."
               />
 
@@ -518,11 +643,10 @@ const ProductDiscountRewardModal = ({
                   type="button"
                   onClick={() => {
                     setSearchTerm("");
-                    setSelectedProductId(null);
                     setError("");
                     searchInputRef.current?.focus();
                   }}
-                  disabled={saving}
+                  disabled={saving || appModal.isOpen}
                 >
                   Limpiar
                 </button>
@@ -559,17 +683,28 @@ const ProductDiscountRewardModal = ({
                     reward,
                     inventoryByProduct
                   );
-                  const isSelected = selectedProductId === product.id;
+                  const selectedQty = toNumber(selectedProductsById[product.id]);
+                  const isSelected = selectedQty > 0;
+                  const rewardIsComplete = selectedProductsCount >= totalUnitsToApply;
+                  const stockLimitReached =
+                    status.stock !== null && selectedQty >= status.stock;
+                  const canAdd =
+                    status.available &&
+                    !saving &&
+                    !rewardIsComplete &&
+                    !stockLimitReached;
 
                   return (
-                    <button
+                    <div
                       key={product.id}
-                      type="button"
                       className={`${styles.productOption} ${
                         isSelected ? styles.productOptionSelected : ""
                       }`}
-                      onClick={() => handleSelectProduct(product)}
-                      disabled={saving || !status.available}
+                      onClick={() => {
+                        if (canAdd) {
+                          handleAddProduct(product);
+                        }
+                      }}
                     >
                       <div className={styles.productInfo}>
                         <strong>{product.name || "SIN NOMBRE"}</strong>
@@ -594,38 +729,60 @@ const ProductDiscountRewardModal = ({
                           <span>Final</span>
                           <strong>{formatCurrency(discount.finalPrice)}</strong>
                         </div>
+
+                        <div className={styles.quantityControls}>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleSubtractProduct(product);
+                            }}
+                            disabled={!isSelected || saving || appModal.isOpen}
+                          >
+                            -
+                          </button>
+
+                          <strong>{selectedQty}</strong>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleAddProduct(product);
+                            }}
+                            disabled={!canAdd || appModal.isOpen}
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
             )
           )}
 
-          {selectedProduct && (
+          {selectedProducts.length > 0 && (
             <section className={styles.selectedBox}>
               <div>
-                <span>Producto seleccionado</span>
-                <strong>{selectedProduct.name || "SIN NOMBRE"}</strong>
+                <span>Productos seleccionados</span>
+                <strong>
+                  {selectedProductsCount} de {totalUnitsToApply}
+                </strong>
               </div>
 
               <div className={styles.selectedTotals}>
-                <div>
-                  <span>Precio original</span>
-                  <strong>{formatCurrency(selectedProductDiscount.price)}</strong>
-                </div>
-
-                <div>
-                  <span>Descuento cerrado</span>
-                  <strong>
-                    -{formatCurrency(selectedProductDiscount.discountAmount)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Precio final</span>
-                  <strong>{formatCurrency(selectedProductDiscount.finalPrice)}</strong>
-                </div>
+                {selectedProducts.map(({ product, quantity, discount }) => (
+                  <div key={product.id}>
+                    <span>
+                      {product.name || "SIN NOMBRE"} x{quantity}
+                    </span>
+                    <strong>
+                      {formatCurrency(discount.finalPrice)}
+                    </strong>
+                  </div>
+                ))}
               </div>
             </section>
           )}
@@ -645,12 +802,22 @@ const ProductDiscountRewardModal = ({
             type="button"
             className={styles.confirmButton}
             onClick={handleConfirm}
-            disabled={!canConfirm}
+            disabled={!canConfirm || appModal.isOpen}
           >
-            {saving ? "Aplicando..." : "Agregar con descuento"}
+            {saving ? "Aplicando..." : "Agregar descuentos"}
           </button>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onClose={closeAppModal}
+        onConfirm={closeAppModal}
+      />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import styles from "./InvoiceSaleModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
+import AppModal from "../../../AppModal/AppModal";
 
 const DEFAULT_CLAVE_PROD_SERV = "01010101";
 const DEFAULT_PAYMENT_METHOD = "PUE";
@@ -28,6 +29,77 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+    onConfirm = null,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: onConfirm || closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   const getDisplayFolio = (saleData) => {
     if (!saleData?.id) return "—";
@@ -312,24 +384,7 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
     }));
   };
 
-  const handleSaveInvoice = async () => {
-    const validationError = validateBeforeSave();
-
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `¿Deseas generar la factura interna de la venta ${getDisplayFolio(
-        sale
-      )}?\n\nRFC: ${selectedCustomer.rfc}\nRazón social: ${
-        selectedCustomer.razon_social
-      }\nUso CFDI: ${selectedCfdiUse}\nTotal: ${formatCurrency(sale.total)}`
-    );
-
-    if (!confirmed) return;
-
+  const executeSaveInvoice = async () => {
     try {
       setSaving(true);
       setError("");
@@ -392,8 +447,16 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
 
       if (onSaved) await onSaved();
 
-      alert("Factura interna generada correctamente.");
-      onClose();
+      showAppAlert({
+        type: "success",
+        title: "Factura generada",
+        message: "Factura interna generada correctamente.",
+        confirmText: "Aceptar",
+        onConfirm: () => {
+          closeAppModal();
+          onClose();
+        },
+      });
     } catch (err) {
       console.error("Error generando factura interna:", err);
       setError("No se pudo generar la factura interna.");
@@ -402,8 +465,56 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
     }
   };
 
+  const handleSaveInvoice = async () => {
+    const validationError = validateBeforeSave();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    showAppConfirm({
+      type: "warning",
+      title: "Generar factura interna",
+      message: `¿Deseas generar la factura interna de la venta ${getDisplayFolio(
+        sale
+      )}?\n\nRFC: ${selectedCustomer.rfc}\nRazón social: ${
+        selectedCustomer.razon_social
+      }\nUso CFDI: ${selectedCfdiUse}\nTotal: ${formatCurrency(sale.total)}`,
+      confirmText: "Sí, generar",
+      cancelText: "Cancelar",
+      onConfirm: executeSaveInvoice,
+    });
+  };
+
   const selectedCfdiDescription =
     cfdiUses.find((item) => item.id === selectedCfdiUse)?.description || "";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (e) => {
+      if (e.key !== "Escape") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (appModal.isOpen) {
+        closeAppModal();
+        return;
+      }
+
+      if (!saving) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscKey, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscKey, true);
+    };
+  }, [isOpen, appModal.isOpen, saving, onClose]);
 
   if (!isOpen || !sale) return null;
 
@@ -677,6 +788,20 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
           </button>
         </div>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

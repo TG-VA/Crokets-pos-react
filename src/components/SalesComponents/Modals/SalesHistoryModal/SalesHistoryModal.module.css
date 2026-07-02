@@ -359,6 +359,81 @@
   white-space: nowrap;
 }
 
+.pointsSummaryActive {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.pointsSummaryCancelled {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.pointsSummaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #075985;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(7, 89, 133, 0.18);
+}
+
+.pointsSummaryCancelled .pointsSummaryHeader {
+  color: #9a3412;
+  border-bottom-color: rgba(154, 52, 18, 0.18);
+}
+
+.pointsSummaryStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dbeafe;
+  color: #075985;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pointsSummaryCancelled .pointsSummaryStatus {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.pointsSummaryValue {
+  font-size: 16px;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pointsPositive {
+  color: #15803d;
+}
+
+.pointsNegative {
+  color: #dc2626;
+}
+
+.pointsNeutral {
+  color: #111827;
+}
+
+.pointsSummaryNetRow {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.55);
+}
+
 .totalRow {
   display: flex;
   justify-content: space-between;

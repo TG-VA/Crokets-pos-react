@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./PointsHistory.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
+import AppModal from "../../../AppModal/AppModal";
 
 const PointsHistory = () => {
   const { branch } = useBranch();
@@ -14,7 +15,49 @@ const PointsHistory = () => {
   const [branchFilter, setBranchFilter] = useState("all");
 
   const [loadingMovements, setLoadingMovements] = useState(false);
-  const [error, setError] = useState("");
+
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
 
   const loadBranches = async () => {
     try {
@@ -29,13 +72,20 @@ const PointsHistory = () => {
     } catch (err) {
       console.error("Error cargando sucursales:", err);
       setBranches([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudieron cargar sucursales",
+        message:
+          "No se pudieron cargar las sucursales para el filtro del historial.",
+        confirmText: "Entendido",
+      });
     }
   };
 
   const loadMovements = async () => {
     try {
       setLoadingMovements(true);
-      setError("");
 
       const { data, error: movementsError } = await supabase
         .from("customer_points")
@@ -68,8 +118,14 @@ const PointsHistory = () => {
       setMovements(data || []);
     } catch (err) {
       console.error("Error cargando historial de puntos:", err);
-      setError("No se pudo cargar el historial de puntos.");
       setMovements([]);
+
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo cargar",
+        message: "No se pudo cargar el historial de puntos.",
+        confirmText: "Entendido",
+      });
     } finally {
       setLoadingMovements(false);
     }
@@ -562,8 +618,6 @@ const PointsHistory = () => {
         </div>
       </div>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
-
       <div className={styles.resultsInfo}>
         {loadingMovements
           ? "Cargando historial de puntos..."
@@ -679,6 +733,20 @@ const PointsHistory = () => {
           </tbody>
         </table>
       </div>
+
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
+      />
     </div>
   );
 };

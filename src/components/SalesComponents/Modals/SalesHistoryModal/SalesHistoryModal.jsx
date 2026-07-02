@@ -6,6 +6,7 @@ import { useBranch } from "../../../../contexts/BranchContext";
 import { buildTicketText } from "../../../../utils/ticketBuilder";
 import { printTicket } from "../../../../utils/ticketPrinter";
 import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
+import AppModal from "../../../AppModal/AppModal";
 
 const TIME_ZONE = "America/Cancun";
 
@@ -38,8 +39,78 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
   const [returnHistory, setReturnHistory] = useState([]);
   const [totalReturned, setTotalReturned] = useState(0);
   const [isPartialReturnOpen, setIsPartialReturnOpen] = useState(false);
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Aceptar",
+    cancelText: "Cancelar",
+    showCancel: false,
+    loading: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const CANCUN_OFFSET = "-05:00";
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Aceptar",
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText: "Cancelar",
+      showCancel: false,
+      loading: false,
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+    });
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+  }) => {
+    setAppModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancel: true,
+      loading: false,
+      onConfirm: async () => {
+        closeAppModal();
+
+        if (onConfirm) {
+          await onConfirm();
+        }
+      },
+      onCancel: closeAppModal,
+    });
+  };
 
   const dayRange = useMemo(() => {
     const start = new Date(`${dateFilter}T00:00:00${CANCUN_OFFSET}`);
@@ -590,6 +661,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       tax: Number(saleRow.tax || 0),
       discountTotal: Number(saleRow.discount_total || 0),
       cashier: userMap[saleRow.user_id] || "SIN CAJERO",
+      customerId: saleRow.customer_id || null,
       client: customerInfo.name || "PÚBLICO EN GENERAL",
       customerPhone: customerInfo.phone || "",
       pointsEarned: Number(pointsBySale[saleRow.id] || 0),
@@ -791,7 +863,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
       if (methodsRes.error) throw methodsRes.error;
 
-      const { pointsBySale, balanceByCustomer } = await buildCustomerPointsMaps({
+      const {
+        pointsBySale,
+        returnedPointsBySale,
+        rewardPointsBySale,
+        balanceByCustomer,
+      } = await buildCustomerPointsMaps({
         saleIds,
         customerIds,
       });
@@ -880,9 +957,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
           tax: Number(sale.tax || 0),
           discountTotal: Number(sale.discount_total || 0),
           cashier: userMap[sale.user_id] || "SIN CAJERO",
+          customerId: sale.customer_id || null,
           client: customerInfo.name || "PÚBLICO EN GENERAL",
           customerPhone: customerInfo.phone || "",
           pointsEarned: Number(pointsBySale[sale.id] || 0),
+          pointsReturned: Number(returnedPointsBySale[sale.id] || 0),
+          rewardPointsUsed: Number(rewardPointsBySale[sale.id] || 0),
           pointsBalance: sale.customer_id
             ? Number(balanceByCustomer[sale.customer_id] || 0)
             : null,
@@ -1390,54 +1470,55 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
     await loadReturnData(ticket.id);
   };
 
-  const handleCancelSale = async () => {
-    if (!selectedTicket?.id) {
-      alert("Selecciona una venta primero.");
-      return;
-    }
 
-    if (selectedTicket.status?.toLowerCase() !== "completed") {
-      alert("Solo se pueden cancelar ventas en estado COMPLETADA.");
-      return;
-    }
-
-    if (Number(selectedTicket.totalReturned || 0) > 0) {
-      alert(
-        "Esta venta ya tiene devoluciones parciales registradas y ya no puede cancelarse."
-      );
-      return;
-    }
-
-    if (!cancelReason.trim()) {
-      alert("Ingresa el motivo de cancelación.");
-      return;
-    }
-
-    if (!refundMethodId) {
-      alert("Selecciona el método con el que se canceló/reembolsó.");
-      return;
-    }
-
-    if (!user?.id) {
-      alert("No se detectó el usuario.");
-      return;
-    }
-
-    if (!branch?.id) {
-      alert("No se detectó la sucursal.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `¿Seguro que deseas cancelar la venta ${selectedTicket.folio}?`
+  const buildCancelSuccessMessage = ({ ticket, rebuiltTicket }) => {
+    const baseTicket = rebuiltTicket || ticket || {};
+    const pointsEarned = Number(ticket?.pointsEarned || baseTicket?.pointsEarned || 0);
+    const rewardPointsUsed = Number(
+      ticket?.rewardPointsUsed || baseTicket?.rewardPointsUsed || 0
     );
+    const rewardsCount = Number(ticket?.rewardsCount || baseTicket?.rewardsCount || 0);
+    const refundMethodName =
+      getPaymentMethodNameById(refundMethodId) ||
+      baseTicket?.refundMethodName ||
+      ticket?.refundMethodName ||
+      "SIN MÉTODO";
 
-    if (!confirmed) return;
+    const pointsLines = [];
+
+    if (pointsEarned > 0) {
+      pointsLines.push(`Puntos ganados descontados: -${pointsEarned}`);
+    }
+
+    if (rewardPointsUsed > 0) {
+      pointsLines.push(`Puntos de recompensa devueltos: +${rewardPointsUsed}`);
+    }
+
+    if (pointsLines.length === 0) {
+      pointsLines.push("Puntos revertidos: 0");
+    }
+
+    return [
+      `Folio: ${baseTicket?.folio || ticket?.folio || "SIN FOLIO"}`,
+      `Cliente: ${baseTicket?.client || ticket?.client || "PÚBLICO EN GENERAL"}`,
+      `Total cancelado: ${formatCurrency(baseTicket?.total || ticket?.total || 0)}`,
+      `Método de reembolso: ${refundMethodName}`,
+      "",
+      ...pointsLines,
+      `Recompensas revertidas: ${rewardsCount}`,
+      "",
+      "Inventario, puntos y recompensas actualizados correctamente.",
+    ].join("\n");
+  };
+
+  const executeCancelSale = async () => {
+    const ticketBeforeCancel = { ...selectedTicket };
 
     try {
       setCancelProcessing(true);
 
-      const currentTicketId = selectedTicket.id;
+      const currentTicketId = ticketBeforeCancel.id;
+      let rebuiltTicket = null;
 
       const { data, error } = await supabase.rpc("cancel_sale_transaction", {
         p_sale_id: currentTicketId,
@@ -1474,7 +1555,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
         setCancelReason("");
         setRefundMethodId("");
       } else {
-        const rebuiltTicket = await buildTicketFromSaleRow(refreshedSale);
+        rebuiltTicket = await buildTicketFromSaleRow(refreshedSale);
         setSelectedTicket(rebuiltTicket);
         await loadCancellationData(currentTicketId);
         await loadTicketDetail(rebuiltTicket);
@@ -1484,12 +1565,109 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       if (onSaleCancelled) {
         onSaleCancelled(data);
       }
+
+      showAppAlert({
+        type: "success",
+        title: "Venta cancelada correctamente",
+        message: buildCancelSuccessMessage({
+          ticket: ticketBeforeCancel,
+          rebuiltTicket,
+        }),
+        confirmText: "Entendido",
+      });
     } catch (error) {
       console.error("Error cancelando venta:", error);
-      alert(error.message || "No se pudo cancelar la venta.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo cancelar la venta",
+        message: error.message || "Ocurrió un error al cancelar la venta.",
+        confirmText: "Entendido",
+      });
     } finally {
       setCancelProcessing(false);
     }
+  };
+
+  const handleCancelSale = async () => {
+    if (!selectedTicket?.id) {
+      showAppAlert({
+        type: "warning",
+        title: "Selecciona una venta",
+        message: "Selecciona una venta primero.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (selectedTicket.status?.toLowerCase() !== "completed") {
+      showAppAlert({
+        type: "warning",
+        title: "Venta no cancelable",
+        message: "Solo se pueden cancelar ventas en estado COMPLETADA.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (Number(selectedTicket.totalReturned || 0) > 0) {
+      showAppAlert({
+        type: "warning",
+        title: "Cancelación bloqueada",
+        message:
+          "Esta venta ya tiene devoluciones parciales registradas y ya no puede cancelarse.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (!cancelReason.trim()) {
+      showAppAlert({
+        type: "warning",
+        title: "Motivo requerido",
+        message: "Ingresa el motivo de cancelación.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (!refundMethodId) {
+      showAppAlert({
+        type: "warning",
+        title: "Método requerido",
+        message: "Selecciona el método con el que se canceló/reembolsó.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      showAppAlert({
+        type: "danger",
+        title: "Usuario no detectado",
+        message: "No se detectó el usuario.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    if (!branch?.id) {
+      showAppAlert({
+        type: "danger",
+        title: "Sucursal no detectada",
+        message: "No se detectó la sucursal.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
+    showAppConfirm({
+      type: "danger",
+      title: "Confirmar cancelación",
+      message: `¿Seguro que deseas cancelar la venta ${selectedTicket.folio}?\n\nEsta acción revertirá inventario, puntos y recompensas aplicadas cuando corresponda.`,
+      confirmText: "Sí, cancelar venta",
+      cancelText: "No, regresar",
+      onConfirm: executeCancelSale,
+    });
   };
 
   const handlePartialReturnCreated = async () => {
@@ -1529,13 +1707,23 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       await loadReturnData(rebuiltTicket.id);
     } catch (error) {
       console.error("Error refrescando devolución parcial:", error);
-      alert("La devolución se guardó, pero no se pudo refrescar el historial.");
+      showAppAlert({
+        type: "warning",
+        title: "Historial no actualizado",
+        message: "La devolución se guardó, pero no se pudo refrescar el historial.",
+        confirmText: "Entendido",
+      });
     }
   };
 
   const handlePrintCopy = async () => {
     if (!selectedTicket?.id) {
-      alert("Selecciona una venta primero.");
+      showAppAlert({
+        type: "warning",
+        title: "Selecciona una venta",
+        message: "Selecciona una venta primero.",
+        confirmText: "Entendido",
+      });
       return;
     }
 
@@ -1544,6 +1732,11 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
 
       const detailData =
         (await loadTicketDetail(selectedTicket, { updateState: false })) || {};
+
+      const pointsMapsForPrint = await buildCustomerPointsMaps({
+        saleIds: [selectedTicket.id],
+        customerIds: selectedTicket.customerId ? [selectedTicket.customerId] : [],
+      });
 
       const ticketForPrint = {
         ...selectedTicket,
@@ -1555,12 +1748,36 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
         hasRewardRedemptions: Boolean(
           detailData.hasRewardRedemptions || selectedTicket.hasRewardRedemptions
         ),
+        pointsEarned: Number(
+          selectedTicket.pointsEarned ||
+            pointsMapsForPrint.pointsBySale?.[selectedTicket.id] ||
+            0
+        ),
+        pointsReturned: Number(
+          selectedTicket.pointsReturned ||
+            pointsMapsForPrint.returnedPointsBySale?.[selectedTicket.id] ||
+            0
+        ),
         rewardPointsUsed: Number(
-          detailData.rewardPointsUsed || selectedTicket.rewardPointsUsed || 0
+          detailData.rewardPointsUsed ||
+            selectedTicket.rewardPointsUsed ||
+            pointsMapsForPrint.rewardPointsBySale?.[selectedTicket.id] ||
+            0
         ),
         rewardsCount: Number(
           detailData.rewardsCount || selectedTicket.rewardsCount || 0
         ),
+        pointsBalance:
+          selectedTicket.pointsBalance === null ||
+          selectedTicket.pointsBalance === undefined
+            ? selectedTicket.customerId
+              ? Number(
+                  pointsMapsForPrint.balanceByCustomer?.[
+                    selectedTicket.customerId
+                  ] || 0
+                )
+              : null
+            : selectedTicket.pointsBalance,
       };
 
       const refundMethodName =
@@ -1709,10 +1926,20 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
         throw new Error(result?.message || "No se pudo imprimir la copia.");
       }
 
-      alert("Copia del ticket generada correctamente.");
+      showAppAlert({
+        type: "success",
+        title: "Copia generada",
+        message: "Copia del ticket generada correctamente.",
+        confirmText: "Entendido",
+      });
     } catch (error) {
       console.error("Error imprimiendo copia:", error);
-      alert(error.message || "No se pudo imprimir la copia del ticket.");
+      showAppAlert({
+        type: "danger",
+        title: "No se pudo imprimir",
+        message: error.message || "No se pudo imprimir la copia del ticket.",
+        confirmText: "Entendido",
+      });
     } finally {
       setPrintProcessing(false);
     }
@@ -1730,6 +1957,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       setReturnHistory([]);
       setTotalReturned(0);
       setIsPartialReturnOpen(false);
+      closeAppModal();
       return;
     }
 
@@ -1811,6 +2039,29 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       rewardRedemptionsForSummary.length > 0 ||
       rewardSummaryCount > 0 ||
       rewardSummaryPoints > 0
+  );
+
+  const customerHasName = Boolean(
+    selectedTicket?.client && selectedTicket.client !== "PÚBLICO EN GENERAL"
+  );
+  const pointsEarnedSummary = Number(selectedTicket?.pointsEarned || 0);
+  const pointsReturnedSummary = Number(selectedTicket?.pointsReturned || 0);
+  const rewardPointsSummary = Number(rewardSummaryPoints || 0);
+  const customerPointsBalance =
+    selectedTicket?.pointsBalance === null ||
+    selectedTicket?.pointsBalance === undefined
+      ? null
+      : Number(selectedTicket.pointsBalance || 0);
+  const pointsNetSummary = Math.max(
+    pointsEarnedSummary - pointsReturnedSummary,
+    0
+  );
+  const shouldShowPointsSummary = Boolean(
+    customerHasName &&
+      (pointsEarnedSummary > 0 ||
+        pointsReturnedSummary > 0 ||
+        rewardPointsSummary > 0 ||
+        customerPointsBalance !== null)
   );
 
   return (
@@ -2073,7 +2324,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                                       </span>
                                     ) : isBlockedByRule ? (
                                       <span className={styles.fullyReturnedText}>
-                                        DEVOLUCÓN BLOQUEADA
+                                        DEVOLUCIÓN BLOQUEADA
                                       </span>
                                     ) : (
                                       <span className={styles.availableReturnText}>
@@ -2210,6 +2461,117 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                               {formatCurrency(paymentSummary.changeAmount)}
                             </span>
                           </div>
+                        </div>
+                      )}
+
+                      {shouldShowPointsSummary && (
+                        <div
+                          className={`${styles.summarySection} ${
+                            isCancelled
+                              ? styles.pointsSummaryCancelled
+                              : styles.pointsSummaryActive
+                          }`}
+                        >
+                          <div className={styles.pointsSummaryHeader}>
+                            <span>Puntos del cliente</span>
+                            <span className={styles.pointsSummaryStatus}>
+                              {isCancelled
+                                ? "REVERSA"
+                                : ticketHasReturns
+                                ? "DEVOLUCIÓN"
+                                : "ACTIVOS"}
+                            </span>
+                          </div>
+
+                          {pointsEarnedSummary > 0 && (
+                            <div className={styles.totalRow}>
+                              <span className={styles.totalLabel}>
+                                {isCancelled
+                                  ? "Puntos descontados:"
+                                  : "Puntos ganados:"}
+                              </span>
+                              <span
+                                className={`${styles.pointsSummaryValue} ${
+                                  isCancelled
+                                    ? styles.pointsNegative
+                                    : styles.pointsPositive
+                                }`}
+                              >
+                                {isCancelled
+                                  ? `-${pointsEarnedSummary}`
+                                  : `+${pointsEarnedSummary}`}
+                              </span>
+                            </div>
+                          )}
+
+                          {pointsReturnedSummary > 0 && !isCancelled && (
+                            <div className={styles.totalRow}>
+                              <span className={styles.totalLabel}>
+                                Puntos devolución:
+                              </span>
+                              <span
+                                className={`${styles.pointsSummaryValue} ${styles.pointsNegative}`}
+                              >
+                                -{pointsReturnedSummary}
+                              </span>
+                            </div>
+                          )}
+
+                          {rewardPointsSummary > 0 && (
+                            <div className={styles.totalRow}>
+                              <span className={styles.totalLabel}>
+                                {isCancelled
+                                  ? "Puntos devueltos:"
+                                  : "Puntos canjeados:"}
+                              </span>
+                              <span
+                                className={`${styles.pointsSummaryValue} ${
+                                  isCancelled
+                                    ? styles.pointsPositive
+                                    : styles.pointsNegative
+                                }`}
+                              >
+                                {isCancelled
+                                  ? `+${rewardPointsSummary}`
+                                  : `-${rewardPointsSummary}`}
+                              </span>
+                            </div>
+                          )}
+
+                          {ticketHasReturns && !isCancelled && (
+                            <div
+                              className={`${styles.totalRow} ${styles.pointsSummaryNetRow}`}
+                            >
+                              <span className={styles.totalLabelBold}>
+                                Puntos netos:
+                              </span>
+                              <span
+                                className={`${styles.pointsSummaryValue} ${
+                                  pointsNetSummary > 0
+                                    ? styles.pointsPositive
+                                    : styles.pointsNeutral
+                                }`}
+                              >
+                                +{pointsNetSummary}
+                              </span>
+                            </div>
+                          )}
+
+                          {customerPointsBalance !== null &&
+                            !Number.isNaN(customerPointsBalance) && (
+                              <div
+                                className={`${styles.totalRow} ${styles.pointsSummaryNetRow}`}
+                              >
+                                <span className={styles.totalLabelBold}>
+                                  Saldo puntos:
+                                </span>
+                                <span
+                                  className={`${styles.pointsSummaryValue} ${styles.pointsNeutral}`}
+                                >
+                                  {customerPointsBalance} pts
+                                </span>
+                              </div>
+                            )}
                         </div>
                       )}
 
@@ -2509,6 +2871,20 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
             </div>
           </div>
         )}
+
+        <AppModal
+          isOpen={appModal.isOpen}
+          type={appModal.type}
+          title={appModal.title}
+          message={appModal.message}
+          confirmText={appModal.confirmText}
+          cancelText={appModal.cancelText}
+          showCancel={appModal.showCancel}
+          loading={appModal.loading}
+          onConfirm={appModal.onConfirm}
+          onCancel={appModal.onCancel}
+          onClose={closeAppModal}
+        />
 
         <PartialReturnModal
           isOpen={isPartialReturnOpen}
