@@ -18,16 +18,25 @@
   border: 1px solid #ccc;
   border-radius: 5px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
   font-size: 0.8rem;
   text-align: center;
   flex: 1 1 auto;
 }
 
-.modalActionBtn:hover {
+.modalActionBtn:hover:not(:disabled) {
   background-color: #fc8913;
   color: white;
   transform: translateY(-1px);
+}
+
+.modalActionBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .modalActionBtn .actionKey {
@@ -37,15 +46,22 @@
 
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+}
+
+.paymentModal {
+  background: white;
+  border-radius: 8px;
+  width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .modalHeader {
@@ -63,10 +79,30 @@
   font-size: 1.2rem;
 }
 
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.closeButton:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.closeButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .totalDisplay {
   text-align: center;
   font-size: 5rem;
-  font-weight: bold;
+  font-weight: 900;
   color: #0078d7;
   padding: 20px;
   margin: 20px 0;
@@ -84,45 +120,75 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+
+  min-height: 105px;
   padding: 15px;
+
   border: 2px solid #e0e0e0;
   border-radius: 8px;
+
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
   background: white;
 }
 
-.paymentMethod:hover {
+.paymentMethod:hover:not(:disabled) {
   border-color: #fc8913;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(252, 137, 19, 0.18);
+}
+
+.paymentMethod:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .paymentMethodSelected {
-  border-color: #0078d7 !important;
-  background-color: #e3f2fd;
-  box-shadow: 0 0 10px rgba(0, 120, 215, 0.3);
+  border-color: #fc8913 !important;
+  background-color: #fff7ed;
+  box-shadow: 0 0 10px rgba(252, 137, 19, 0.28);
 }
 
 .methodIcon {
-  font-size: 2rem;
-  margin-bottom: 8px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 10px;
+  filter: invert(61%) sepia(94%) saturate(1752%) hue-rotate(350deg)
+    brightness(101%) contrast(98%);
+  transition:
+    filter 0.25s ease,
+    transform 0.25s ease;
+}
+
+.paymentMethod:hover:not(:disabled) .methodIcon {
+  transform: scale(1.05);
+  filter: invert(55%) sepia(99%) saturate(1863%) hue-rotate(353deg)
+    brightness(99%) contrast(98%);
+}
+
+.paymentMethodSelected .methodIcon {
+  filter: invert(55%) sepia(99%) saturate(1863%) hue-rotate(353deg)
+    brightness(99%) contrast(98%);
 }
 
 .methodName {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 700;
   text-align: center;
+  color: #111111;
 }
 
-.paymentModal {
-  background: white;
-  border-radius: 8px;
-  width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  position: relative;
+.paymentMethodSelected .methodName {
+  color: #9a3412;
+  font-weight: 800;
 }
 
 .paymentInfo {
@@ -134,6 +200,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -166,9 +233,15 @@
   text-align: right;
 }
 
+.paymentInput:focus {
+  outline: none;
+  border-color: #fc8913;
+  box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.18);
+}
+
 .changeAmount {
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 900;
   color: #fc8913;
 }
 
@@ -184,7 +257,13 @@
 
 .equivalentAmount {
   font-size: 1.2rem;
-  font-weight: bold;
+  font-weight: 900;
+  color: #0078d7;
+}
+
+.totalAmount {
+  font-size: 1.2rem;
+  font-weight: 900;
   color: #0078d7;
 }
 
@@ -208,7 +287,7 @@
 
 .totalMixedAmount {
   font-size: 1.5rem;
-  font-weight: bold;
+  font-weight: 900;
   color: #0078d7;
 }
 
@@ -231,21 +310,6 @@
 
 .trackingInput:focus {
   outline: none;
-  border-color: #0078d7;
-  box-shadow: 0 0 0 2px rgba(0, 120, 215, 0.2);
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 3px;
-  transition: background-color 0.3s;
-}
-
-.closeButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  border-color: #fc8913;
+  box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.18);
 }

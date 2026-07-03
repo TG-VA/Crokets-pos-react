@@ -3,6 +3,12 @@ import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 import AppModal from "../../../AppModal/AppModal";
 
+import CashIcon from "../../../../assets/icons/money-bill-wave-solid-full.svg";
+import DollarsIcon from "../../../../assets/icons/dollar-sign-solid-full.svg";
+import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
+import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
+import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
+
 const PaymentModal = ({
   isOpen,
   onClose,
@@ -10,7 +16,8 @@ const PaymentModal = ({
   onProcessPayment,
   processingSale,
 }) => {
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("Terminal");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState("Efectivo");
   const [paidAmount, setPaidAmount] = useState("");
   const [dollarAmount, setDollarAmount] = useState("");
   const [exchangeRate, setExchangeRate] = useState("18.50");
@@ -99,12 +106,14 @@ const PaymentModal = ({
       case "Dolares":
         return Math.max(
           0,
-          numericDollarAmount * numericExchangeRate - safeTotal,
+          numericDollarAmount * numericExchangeRate - safeTotal
         );
 
       case "Mixto": {
         const totalMixed =
-          numericEfectivo + numericTarjeta + numericDolares * numericExchangeRate;
+          numericEfectivo +
+          numericTarjeta +
+          numericDolares * numericExchangeRate;
         return Math.max(0, totalMixed - safeTotal);
       }
 
@@ -131,7 +140,9 @@ const PaymentModal = ({
 
       case "Mixto":
         return (
-          numericEfectivo + numericTarjeta + numericDolares * numericExchangeRate
+          numericEfectivo +
+          numericTarjeta +
+          numericDolares * numericExchangeRate
         );
 
       case "Terminal":
@@ -146,11 +157,31 @@ const PaymentModal = ({
   const change = calculateChange();
 
   const paymentMethods = [
-    { id: "Efectivo", name: "Efectivo", icon: "💰" },
-    { id: "Dolares", name: "Dólares", icon: "💵" },
-    { id: "Mixto", name: "Mixto", icon: "🪙" },
-    { id: "Terminal", name: "Terminal", icon: "🖥️" },
-    { id: "Transferencia", name: "Transferencia", icon: "🏦" },
+    {
+      id: "Efectivo",
+      name: "Efectivo",
+      icon: CashIcon,
+    },
+    {
+      id: "Dolares",
+      name: "Dólares",
+      icon: DollarsIcon,
+    },
+    {
+      id: "Mixto",
+      name: "Mixto",
+      icon: MixedIcon,
+    },
+    {
+      id: "Terminal",
+      name: "Terminal",
+      icon: TerminalIcon,
+    },
+    {
+      id: "Transferencia",
+      name: "Transferencia",
+      icon: TransferIcon,
+    },
   ];
 
   const resetModalState = () => {
@@ -160,7 +191,7 @@ const PaymentModal = ({
     setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
     setTrackingCode("");
     setSaleNotes("");
-    setSelectedPaymentMethod("Terminal");
+    setSelectedPaymentMethod("Efectivo");
     setNotesModalOpen(false);
     setProcessing(false);
     closeAppModal();
@@ -195,7 +226,8 @@ const PaymentModal = ({
     const paidTotalMxn = getPaidTotalInMxn();
 
     if (
-      (selectedPaymentMethod === "Dolares" || selectedPaymentMethod === "Mixto") &&
+      (selectedPaymentMethod === "Dolares" ||
+        selectedPaymentMethod === "Mixto") &&
       numericExchangeRate <= 0
     ) {
       showAppWarning("Ingresa un tipo de cambio válido.");
@@ -240,7 +272,9 @@ const PaymentModal = ({
         }
 
         if (paidTotalMxn < safeTotal) {
-          showAppWarning("La suma del pago mixto no cubre el total de la venta.");
+          showAppWarning(
+            "La suma del pago mixto no cubre el total de la venta."
+          );
           return false;
         }
 
@@ -370,7 +404,10 @@ const PaymentModal = ({
       }
     } catch (error) {
       console.error("Error procesando pago:", error);
-      showAppDanger("Ocurrió un error al procesar el pago.", "No se pudo procesar el pago");
+      showAppDanger(
+        "Ocurrió un error al procesar el pago.",
+        "No se pudo procesar el pago"
+      );
     } finally {
       setProcessing(false);
     }
@@ -439,6 +476,8 @@ const PaymentModal = ({
       setDollarAmount("");
       setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
       setTrackingCode("");
+    } else {
+      setSelectedPaymentMethod("Efectivo");
     }
   }, [isOpen, isZeroTotalSale]);
 
@@ -515,7 +554,10 @@ const PaymentModal = ({
                   value={paidAmount}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                    if (
+                      /^\d*\.?\d*$/.test(val) &&
+                      val.split(".").length - 1 <= 1
+                    ) {
                       setPaidAmount(val === "." ? "0." : val);
                     }
                   }}
@@ -548,7 +590,10 @@ const PaymentModal = ({
                   value={dollarAmount}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                    if (
+                      /^\d*\.?\d*$/.test(val) &&
+                      val.split(".").length - 1 <= 1
+                    ) {
                       setDollarAmount(val === "." ? "0." : val);
                     }
                   }}
@@ -591,7 +636,10 @@ const PaymentModal = ({
                     value={mixedPayments.efectivo}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
                         setMixedPayments((prev) => ({
                           ...prev,
                           efectivo: val === "." ? "0." : val,
@@ -615,7 +663,10 @@ const PaymentModal = ({
                     value={mixedPayments.tarjeta}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
                         setMixedPayments((prev) => ({
                           ...prev,
                           tarjeta: val === "." ? "0." : val,
@@ -638,7 +689,10 @@ const PaymentModal = ({
                     value={mixedPayments.dolares}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1) {
+                      if (
+                        /^\d*\.?\d*$/.test(val) &&
+                        val.split(".").length - 1 <= 1
+                      ) {
                         setMixedPayments((prev) => ({
                           ...prev,
                           dolares: val === "." ? "0." : val,
@@ -721,9 +775,11 @@ const PaymentModal = ({
           <h2>{isZeroTotalSale ? "FINALIZAR CANJE" : "COBRAR"}</h2>
 
           <button
+            type="button"
             className={styles.closeButton}
             onClick={closePaymentModal}
             disabled={effectiveProcessing}
+            aria-label="Cerrar modal"
           >
             ✕
           </button>
@@ -734,8 +790,9 @@ const PaymentModal = ({
         {!isZeroTotalSale && (
           <div className={styles.paymentMethods}>
             {paymentMethods.map((method) => (
-              <div
+              <button
                 key={method.id}
+                type="button"
                 className={`${styles.paymentMethod} ${
                   selectedPaymentMethod === method.id
                     ? styles.paymentMethodSelected
@@ -747,10 +804,17 @@ const PaymentModal = ({
                     setSelectedPaymentMethod(method.id);
                   }
                 }}
+                disabled={effectiveProcessing}
               >
-                <div className={styles.methodIcon}>{method.icon}</div>
+                <img
+                  src={method.icon}
+                  alt=""
+                  className={styles.methodIcon}
+                  aria-hidden="true"
+                />
+
                 <div className={styles.methodName}>{method.name}</div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -759,6 +823,7 @@ const PaymentModal = ({
 
         <div className={styles.modalActions}>
           <button
+            type="button"
             className={styles.modalActionBtn}
             onClick={() => processPayment(true)}
             disabled={effectiveProcessing}
@@ -771,6 +836,7 @@ const PaymentModal = ({
           </button>
 
           <button
+            type="button"
             className={styles.modalActionBtn}
             onClick={() => processPayment(false)}
             disabled={effectiveProcessing}
@@ -783,6 +849,7 @@ const PaymentModal = ({
           </button>
 
           <button
+            type="button"
             className={styles.modalActionBtn}
             onClick={closePaymentModal}
             disabled={effectiveProcessing}
@@ -791,6 +858,7 @@ const PaymentModal = ({
           </button>
 
           <button
+            type="button"
             className={styles.modalActionBtn}
             onClick={openNotesModal}
             disabled={effectiveProcessing}
