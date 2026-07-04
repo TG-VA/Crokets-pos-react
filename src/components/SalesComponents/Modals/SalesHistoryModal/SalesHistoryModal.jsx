@@ -8,6 +8,18 @@ import { printTicket } from "../../../../utils/ticketPrinter";
 import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
 import AppModal from "../../../AppModal/AppModal";
 
+import SearchIcon from "../../../../assets/icons/searchIcon.svg";
+import CalendarIcon from "../../../../assets/icons/calendar-days-solid-full.svg";
+import ClockIcon from "../../../../assets/icons/clock-solid-full.svg";
+import ReceiptIcon from "../../../../assets/icons/receipt-solid-full.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
+import ChangeIcon from "../../../../assets/icons/changeIcon.svg";
+import InvoiceIcon from "../../../../assets/icons/file-invoice-dollar-solid-full.svg";
+import NotesIcon from "../../../../assets/icons/pen-solid-full.svg";
+import UserIcon from "../../../../assets/icons/user-solid.svg";
+import BoxesIcon from "../../../../assets/icons/boxes-stacked-solid-full.svg";
+
 const TIME_ZONE = "America/Cancun";
 
 const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
@@ -2069,8 +2081,13 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
       <div className={styles.modal}>
         <div className={styles.header}>
           <h2 className={styles.headerTitle}>HISTORIAL DE VENTAS</h2>
-          <button className={styles.closeButton} onClick={onClose}>
-            ✕
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Cerrar historial de ventas"
+          >
+            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
           </button>
         </div>
 
@@ -2078,17 +2095,34 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
           <div className={styles.leftPanel}>
             <div className={styles.filtersContainer}>
               <div className={styles.filterGroup}>
-                <input
-                  type="text"
-                  placeholder="🔍 Ingresa el folio del ticket"
-                  value={searchFolio}
-                  onChange={(e) => setSearchFolio(e.target.value)}
-                  className={styles.searchInput}
-                />
+                <div className={styles.inputIconContainer}>
+                  <img
+                    src={SearchIcon}
+                    alt=""
+                    className={styles.inputIcon}
+                    aria-hidden="true"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Ingresa el folio del ticket"
+                    value={searchFolio}
+                    onChange={(e) => setSearchFolio(e.target.value)}
+                    className={`${styles.searchInput} ${styles.inputWithIcon}`}
+                  />
+                </div>
               </div>
 
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Ventas del día:</label>
+                <label className={styles.filterLabelWithIcon}>
+                  <img
+                    src={CalendarIcon}
+                    alt=""
+                    className={styles.labelIcon}
+                    aria-hidden="true"
+                  />
+                  Ventas del día:
+                </label>
                 <input
                   type="date"
                   value={dateFilter}
@@ -2098,7 +2132,15 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
               </div>
 
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Cajero:</label>
+                <label className={styles.filterLabelWithIcon}>
+                  <img
+                    src={UserIcon}
+                    alt=""
+                    className={styles.labelIcon}
+                    aria-hidden="true"
+                  />
+                  Cajero:
+                </label>
                 <select
                   value={cashierFilter}
                   onChange={(e) => setCashierFilter(e.target.value)}
@@ -2119,9 +2161,24 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                 <thead>
                   <tr>
                     <th className={styles.notesIndicatorHeader}></th>
-                    <th>Folio</th>
-                    <th>Artículos</th>
-                    <th>Hora</th>
+                    <th>
+                      <span className={styles.tableHeaderContent}>
+                        <img src={ReceiptIcon} alt="" aria-hidden="true" />
+                        Folio
+                      </span>
+                    </th>
+                    <th>
+                      <span className={styles.tableHeaderContentCenter}>
+                        <img src={BoxesIcon} alt="" aria-hidden="true" />
+                        Artículos
+                      </span>
+                    </th>
+                    <th>
+                      <span className={styles.tableHeaderContentCenter}>
+                        <img src={ClockIcon} alt="" aria-hidden="true" />
+                        Hora
+                      </span>
+                    </th>
                     <th>Total</th>
                   </tr>
                 </thead>
@@ -2181,9 +2238,29 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                               .join(" • ")}
                           >
                             <span className={styles.ticketIndicators}>
-                              {ticketDerivedStatus === "cancelled" ? "✖" : ""}
-                              {ticketDerivedStatus === "partial_return" ? "↩" : ""}
-                              {ticket.notes?.trim() ? "📝" : ""}
+                              {ticketDerivedStatus === "cancelled" && (
+                                <img
+                                  src={XmarkIcon}
+                                  alt="Venta cancelada"
+                                  className={styles.ticketIndicatorIcon}
+                                />
+                              )}
+
+                              {ticketDerivedStatus === "partial_return" && (
+                                <img
+                                  src={ChangeIcon}
+                                  alt="Venta con devolución parcial"
+                                  className={styles.ticketIndicatorIcon}
+                                />
+                              )}
+
+                              {ticket.notes?.trim() && (
+                                <img
+                                  src={NotesIcon}
+                                  alt="Venta con notas"
+                                  className={styles.ticketIndicatorIcon}
+                                />
+                              )}
                             </span>
                           </td>
 
@@ -2772,6 +2849,7 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                 <div className={styles.actionButtons}>
                   <div className={styles.leftActions}>
                     <button
+                      type="button"
                       className={`${styles.actionBtn} ${styles.btnCancel}`}
                       onClick={handleCancelSale}
                       disabled={cancelProcessing || !isCompleted || ticketHasReturns}
@@ -2781,10 +2859,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                           : ""
                       }
                     >
-                      🗑️ Cancelar Venta
+                      <img src={DeleteIcon} alt="" className={styles.actionIcon} aria-hidden="true" />
+                      Cancelar Venta
                     </button>
 
                     <button
+                      type="button"
                       className={`${styles.actionBtn} ${styles.btnReturn}`}
                       onClick={() => setIsPartialReturnOpen(true)}
                       disabled={!canOpenPartialReturn}
@@ -2798,45 +2878,70 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
                           : ""
                       }
                     >
-                      ↩️ Devolución parcial
+                      <img src={ChangeIcon} alt="" className={styles.actionIcon} aria-hidden="true" />
+                      Devolución parcial
                     </button>
 
                     <button
+                      type="button"
                       className={`${styles.actionBtn} ${styles.btnInvoice}`}
                       disabled={!isCompleted}
                     >
-                      📄 Facturar
+                      <img src={InvoiceIcon} alt="" className={styles.actionIcon} aria-hidden="true" />
+                      Facturar
                     </button>
 
                     <button
+                      type="button"
                       className={`${styles.actionBtn} ${styles.btnPrint}`}
                       onClick={handlePrintCopy}
                       disabled={printProcessing || loadingDetail || !selectedTicket}
                       title="Reimprime el ticket de esta venta"
                     >
-                      {printProcessing ? "Imprimiendo..." : "🖨️ Imprimir copia"}
+                      {printProcessing ? (
+                        "Imprimiendo..."
+                      ) : (
+                        <>
+                          <img
+                            src={ReceiptIcon}
+                            alt=""
+                            className={styles.actionIcon}
+                            aria-hidden="true"
+                          />
+                          Imprimir copia
+                        </>
+                      )}
                     </button>
 
                     <button
+                      type="button"
                       className={`${styles.actionBtn} ${styles.btnNotes}`}
                       onClick={() => setIsNotesModalOpen(true)}
                       disabled={!selectedTicket?.notes?.trim()}
                     >
-                      📝 Ver Notas
+                      <img src={NotesIcon} alt="" className={styles.actionIcon} aria-hidden="true" />
+                      Ver Notas
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <div className={styles.emptyState}>
-                Selecciona un ticket para ver los detalles
+                <img
+                  src={ReceiptIcon}
+                  alt=""
+                  className={styles.emptyStateIcon}
+                  aria-hidden="true"
+                />
+                <span>Selecciona un ticket para ver los detalles</span>
               </div>
             )}
           </div>
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.closeFooterBtn} onClick={onClose}>
+          <button type="button" className={styles.closeFooterBtn} onClick={onClose}>
+            <img src={XmarkIcon} alt="" className={styles.footerButtonIcon} aria-hidden="true" />
             ESC - Cerrar
           </button>
         </div>
@@ -2847,10 +2952,12 @@ const SalesHistoryModal = ({ isOpen, onClose, onSaleCancelled }) => {
               <div className={styles.notesHeader}>
                 <h3>Notas del ticket {selectedTicket.folio}</h3>
                 <button
+                  type="button"
                   className={styles.notesClose}
                   onClick={() => setIsNotesModalOpen(false)}
+                  aria-label="Cerrar notas"
                 >
-                  ✕
+                  <img src={XmarkIcon} alt="" className={styles.notesCloseIcon} aria-hidden="true" />
                 </button>
               </div>
 
