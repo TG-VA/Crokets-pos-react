@@ -132,7 +132,17 @@ const DeleteTicketModal = ({
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div className={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Eliminar ticket pendiente</h2>
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={DeleteIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Eliminar ticket pendiente
+            </span>
+          </h2>
 
           <button
             type="button"
@@ -293,7 +303,7 @@ const DeleteTicketModal = ({
             </div>
 
             <div className={styles.actionHints}>
-              <span>↑↓ Navegar • Enter/Delete - Eliminar</span>
+              <span>↑↓ Navegar • Enter o Delete para eliminar</span>
             </div>
           </div>
         )}

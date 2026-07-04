@@ -1,26 +1,46 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./PendingTicketModal.module.css";
 
-const PendingTicketModal = ({ isOpen, onClose, onAccept, currentTicketNumber}) => {
+import PendingIcon from "../../../../assets/icons/pendingIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
+const PendingTicketModal = ({
+  isOpen,
+  onClose,
+  onAccept,
+  currentTicketNumber,
+}) => {
   const [ticketName, setTicketName] = useState("");
 
   useEffect(() => {
     if (isOpen) {
-      // Establecer el nombre por defecto cuando se abre el modal
       setTicketName(`Ticket ${currentTicketNumber}`);
     }
   }, [isOpen, currentTicketNumber]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (event) => {
       if (!isOpen) return;
 
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         handleClose();
-      } else if (e.key === "Enter") {
-        e.preventDefault();
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
         handleAccept();
       }
     };
@@ -40,27 +60,44 @@ const PendingTicketModal = ({ isOpen, onClose, onAccept, currentTicketNumber}) =
   };
 
   const handleAccept = () => {
-    if (ticketName.trim()) {
-      onAccept(ticketName.trim());
-      handleClose();
-    }
+    const cleanName = ticketName.trim();
+
+    if (!cleanName) return;
+
+    onAccept(cleanName);
+    handleClose();
   };
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
-      <div
-        className={styles.pendingModal}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className={styles.pendingModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Ticket Pendiente</h2>
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={PendingIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Ticket pendiente
+            </span>
+          </h2>
+
           <button
+            type="button"
             className={styles.closeButton}
             onClick={handleClose}
+            aria-label="Cerrar modal"
           >
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -71,6 +108,7 @@ const PendingTicketModal = ({ isOpen, onClose, onAccept, currentTicketNumber}) =
 
           <div className={styles.inputSection}>
             <label htmlFor="ticketName">Nombre:</label>
+
             <input
               id="ticketName"
               type="text"
@@ -85,12 +123,16 @@ const PendingTicketModal = ({ isOpen, onClose, onAccept, currentTicketNumber}) =
 
         <div className={styles.modalActions}>
           <button
+            type="button"
             className={`${styles.actionButton} ${styles.acceptButton}`}
             onClick={handleAccept}
+            disabled={!ticketName.trim()}
           >
             Aceptar
           </button>
+
           <button
+            type="button"
             className={`${styles.actionButton} ${styles.cancelButton}`}
             onClick={handleClose}
           >

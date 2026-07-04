@@ -137,6 +137,17 @@ const Navbar = () => {
     });
   };
 
+  const clearSalesDraftSessionAcknowledgements = () => {
+    Object.keys(sessionStorage).forEach((key) => {
+      const isSalesDraftAck =
+        key.startsWith("sales_draft_") && key.endsWith("_session_ack");
+
+      if (isSalesDraftAck) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
   const isTypingTarget = (target) => {
     if (!target) return false;
 
@@ -152,17 +163,18 @@ const Navbar = () => {
 
   const handleLockScreen = () => {
     showAppConfirm({
-  type: "warning",
-  title: "Volver al inicio",
-  message:
-    "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
-  confirmText: "Sí, volver",
-  cancelText: "Cancelar",
-  onConfirm: () => {
-    lockScreen();
-    navigate("/login", { replace: true });
-  },
-});
+      type: "warning",
+      title: "Volver al inicio",
+      message:
+        "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
+      confirmText: "Sí, volver",
+      cancelText: "Cancelar",
+      onConfirm: () => {
+        clearSalesDraftSessionAcknowledgements();
+        lockScreen();
+        navigate("/login", { replace: true });
+      },
+    });
   };
 
   const isItemActive = (item) => {

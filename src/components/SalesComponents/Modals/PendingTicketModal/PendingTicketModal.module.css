@@ -1,10 +1,7 @@
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.52);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -16,6 +13,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -26,18 +24,20 @@
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
   position: relative;
-  animation: slideDown 0.3s ease-in-out;
+  overflow: hidden;
+  animation: slideDown 0.25s ease-in-out;
 }
 
 @keyframes slideDown {
   from {
-    transform: translateY(-50px);
+    transform: translateY(-40px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -45,7 +45,7 @@
 }
 
 .modalHeader {
-  background-color: #1792b1;
+  background-color: #1092b1;
   color: #ffffff;
   padding: 1.5rem;
   border-radius: 8px 8px 0 0;
@@ -57,27 +57,51 @@
 .modalHeader h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 800;
+}
+
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleIcon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: brightness(0) invert(1);
 }
 
 .closeButton {
-  background: none;
+  width: 38px;
+  height: 38px;
+  background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 1.8rem;
   cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
+  padding: 7px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.18s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .closeButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.18);
+  transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .modalBody {
@@ -91,7 +115,7 @@
   font-size: 1.1rem;
   color: #333333;
   margin: 0;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -103,23 +127,25 @@
 
 .inputSection label {
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 700;
   color: #555555;
 }
 
 .nameInput {
   padding: 12px;
   border: 2px solid #dddddd;
-  border-radius: 5px;
+  border-radius: 7px;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   font-family: inherit;
 }
 
 .nameInput:focus {
   outline: none;
-  border-color: #1792b1;
-  box-shadow: 0 0 0 3px rgba(23, 146, 177, 0.1);
+  border-color: #1092b1;
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.14);
 }
 
 .modalActions {
@@ -128,39 +154,49 @@
   gap: 1rem;
   justify-content: space-between;
   border-top: 1px solid #eeeeee;
+  background: #f8f9fa;
 }
 
 .actionButton {
   padding: 12px 30px;
   border: none;
-  border-radius: 5px;
+  border-radius: 7px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
   min-width: 120px;
 }
 
 .acceptButton {
-  background-color: #1792b1;
+  background-color: #1092b1;
   color: #ffffff;
 }
 
-.acceptButton:hover {
-  background-color: #136a82;
+.acceptButton:hover:not(:disabled) {
+  background-color: #0d7a94;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(23, 146, 177, 0.3);
+  box-shadow: 0 4px 8px rgba(16, 146, 177, 0.28);
+}
+
+.acceptButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .cancelButton {
   background-color: #6c757d;
-  color: white;
+  color: #ffffff;
 }
 
 .cancelButton:hover {
-  background-color: #d0d0d0;
+  background-color: #5a6268;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
 }
 
 .actionButton:active {
@@ -175,6 +211,20 @@
 }
 
 .currentTicketInfo strong {
-  color: #1792b1;
-  font-weight: 600;
+  color: #1092b1;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .pendingModal {
+    max-width: 95%;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+  }
 }
