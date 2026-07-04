@@ -8,6 +8,7 @@ import DollarsIcon from "../../../../assets/icons/dollar-sign-solid-full.svg";
 import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
 import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const PaymentModal = ({
   isOpen,
@@ -781,7 +782,12 @@ const PaymentModal = ({
             disabled={effectiveProcessing}
             aria-label="Cerrar modal"
           >
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 

@@ -5,6 +5,9 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import AppModal from "../../../AppModal/AppModal";
 
+import ChangeIcon from "../../../../assets/icons/changeIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
 const formatCurrency = (value) => `$${Number(value || 0).toFixed(2)}`;
 
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
@@ -63,7 +66,6 @@ const PartialReturnModal = ({
     onCancel: null,
   });
 
-
   const closeAppModal = () => {
     setAppModal((prev) => ({
       ...prev,
@@ -96,15 +98,6 @@ const PartialReturnModal = ({
   const showAppWarning = (message, title = "Aviso") => {
     showAppAlert({
       type: "warning",
-      title,
-      message,
-      confirmText: "Entendido",
-    });
-  };
-
-  const showAppSuccess = (message, title = "Operación realizada") => {
-    showAppAlert({
-      type: "success",
       title,
       message,
       confirmText: "Entendido",
@@ -271,6 +264,40 @@ const PartialReturnModal = ({
     refundMethodId,
   ]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (event) => {
+      if (event.key !== "Escape") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.nativeEvent?.stopImmediatePropagation) {
+        event.nativeEvent.stopImmediatePropagation();
+      }
+
+      if (event.stopImmediatePropagation) {
+        event.stopImmediatePropagation();
+      }
+
+      if (appModal.isOpen) {
+        closeAppModal();
+        return;
+      }
+
+      if (!processing) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey, true);
+    };
+  }, [isOpen, appModal.isOpen, processing, onClose]);
+
   if (!isOpen) return null;
 
   const setQty = (saleDetailId, nextValue, max) => {
@@ -411,17 +438,6 @@ const PartialReturnModal = ({
       fallbackReturnedTotal
     );
 
-    /*
-      Corrección importante:
-      Antes se calculaba así:
-      floor(totalReturnedForPoints / amountPerPoint)
-
-      Eso fallaba cuando la devolución era menor a la regla de puntos,
-      pero dejaba la venta neta por debajo del mínimo para conservar puntos.
-
-      Ahora se calcula por neto actual:
-      puntos originales ganados - puntos que debe conservar con el neto restante.
-    */
     const originalSaleTotal = Number(selectedTicket.total || 0);
     const netTotalAfterReturns = Math.max(
       originalSaleTotal - totalReturnedForPoints,
@@ -587,7 +603,7 @@ const PartialReturnModal = ({
       console.error("Error registrando devolución parcial:", error);
       showAppDanger(
         error.message || "No se pudo registrar la devolución parcial.",
-        "No se pudo registrar la devolución",
+        "No se pudo registrar la devolución"
       );
     } finally {
       setProcessing(false);
@@ -618,7 +634,7 @@ const PartialReturnModal = ({
     if (!refundMethodId) {
       showAppWarning(
         "Debes seleccionar el método de devolución.",
-        "Método requerido",
+        "Método requerido"
       );
       return;
     }
@@ -636,7 +652,7 @@ const PartialReturnModal = ({
     if (selectedItems.some((item) => item.isRewardItem)) {
       showAppWarning(
         "No se puede devolver parcialmente un producto de recompensa. Para revertir un canje, cancela la venta completa.",
-        "Producto no devolvible",
+        "Producto no devolvible"
       );
       return;
     }
@@ -644,7 +660,7 @@ const PartialReturnModal = ({
     if (selectedItems.length === 0) {
       showAppWarning(
         "Selecciona al menos un producto para devolución.",
-        "Producto requerido",
+        "Producto requerido"
       );
       return;
     }
@@ -652,7 +668,7 @@ const PartialReturnModal = ({
     if (summary.totalUnitsAfterReturn < 1) {
       showAppWarning(
         "Debe quedar al menos 1 unidad en la venta. Si deseas devolver todo, corresponde cancelar la venta.",
-        "Devolución bloqueada",
+        "Devolución bloqueada"
       );
       return;
     }
@@ -672,18 +688,48 @@ const PartialReturnModal = ({
   };
 
   return (
-    <div className={styles.overlay}>
+    <div
+      className={styles.overlay}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
+    >
       <div className={styles.modal}>
         <div className={styles.header}>
           <div>
-            <h2 className={styles.title}>↩ DEVOLUCIÓN PARCIAL</h2>
+            <h2 className={styles.title}>
+              <span className={styles.titleContent}>
+                <img
+                  src={ChangeIcon}
+                  alt=""
+                  className={styles.titleIcon}
+                  aria-hidden="true"
+                />
+                DEVOLUCIÓN PARCIAL
+              </span>
+            </h2>
+
             <div className={styles.headerMeta}>
               Folio: <strong>{selectedTicket?.folio || "—"}</strong>
             </div>
           </div>
 
-          <button className={styles.closeButton} onClick={onClose}>
-            ✕
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            disabled={processing}
+            aria-label="Cerrar modal"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -781,14 +827,17 @@ const PartialReturnModal = ({
                           <span>Vendida</span>
                           <strong>{item.soldQty}</strong>
                         </div>
+
                         <div>
                           <span>Ya devuelta</span>
                           <strong>{item.returnedQty}</strong>
                         </div>
+
                         <div>
                           <span>Aún en venta</span>
                           <strong>{item.availableQty}</strong>
                         </div>
+
                         <div>
                           <span>Máximo ahora</span>
                           <strong>{item.maxReturnAllowed}</strong>
@@ -952,6 +1001,7 @@ const PartialReturnModal = ({
 
           <div className={styles.footerActions}>
             <button
+              type="button"
               className={`${styles.actionButton} ${styles.secondaryButton}`}
               onClick={onClose}
               disabled={processing}
@@ -960,6 +1010,7 @@ const PartialReturnModal = ({
             </button>
 
             <button
+              type="button"
               className={`${styles.actionButton} ${styles.primaryButton}`}
               onClick={handleSave}
               disabled={processing}
