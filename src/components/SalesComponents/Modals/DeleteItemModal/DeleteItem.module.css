@@ -1,14 +1,22 @@
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  animation: overlayFadeIn 0.18s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
@@ -16,18 +24,20 @@
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  animation: slideDown 0.3s ease;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  animation: modalEnter 0.22s ease-out;
 }
 
-@keyframes slideDown {
+@keyframes modalEnter {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-18px) scale(0.98);
   }
+
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -35,32 +45,117 @@
   background: #dc3545;
   color: white;
   padding: 20px;
-  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .modalHeader h2 {
   margin: 0;
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 800;
+}
+
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.titleIcon {
+  width: 25px;
+  height: 25px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+.closeButton {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 7px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .modalBody {
   padding: 30px;
+  text-align: center;
+}
+
+.warningIconBox {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: #fff4d6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: warningPulse 1.5s ease-in-out infinite;
+}
+
+.warningIcon {
+  width: 56px;
+  height: 56px;
+  display: block;
+  filter: invert(18%) sepia(81%) saturate(2891%) hue-rotate(351deg)
+    brightness(91%) contrast(94%);
+}
+
+@keyframes warningPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.confirmTitle {
+  margin: 0 0 12px;
+  color: #dc3545;
+  font-size: 1.55rem;
+  font-weight: 900;
 }
 
 .confirmText {
   font-size: 18px;
-  color: #333;
-  margin-bottom: 20px;
+  color: #333333;
+  margin: 0 0 20px;
   text-align: center;
 }
 
 .productInfo {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 15px;
   margin-top: 15px;
+  text-align: left;
 }
 
 .productInfo p {
@@ -80,17 +175,22 @@
   gap: 12px;
   padding: 20px;
   border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
 }
 
 .cancelButton,
 .confirmButton {
+  flex: 1;
   padding: 12px 24px;
   font-size: 16px;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-weight: 800;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .cancelButton {
@@ -101,7 +201,7 @@
 .cancelButton:hover {
   background: #5a6268;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
 }
 
 .confirmButton {
@@ -112,10 +212,21 @@
 .confirmButton:hover {
   background: #c82333;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 .cancelButton:active,
 .confirmButton:active {
   transform: translateY(0);
+}
+
+@media (max-width: 520px) {
+  .modalFooter {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
 }

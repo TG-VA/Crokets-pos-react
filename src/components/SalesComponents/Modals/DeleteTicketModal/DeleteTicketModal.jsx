@@ -41,16 +41,23 @@ const DeleteTicketModal = ({
   }, [selectedIndex, showConfirmation]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (event) => {
       if (!isOpen) return;
 
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
 
         if (showConfirmation) {
-          setShowConfirmation(false);
-          setTicketToDelete(null);
+          handleCancelDelete();
         } else {
           handleClose();
         }
@@ -58,24 +65,52 @@ const DeleteTicketModal = ({
         return;
       }
 
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
+        if (showConfirmation) {
+          handleConfirmDelete();
+          return;
+        }
+
+        if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
+          handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
+        }
+
+        return;
+      }
+
       if (showConfirmation) return;
 
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+
         setSelectedIndex((prev) =>
           prev < pendingTickets.length - 1 ? prev + 1 : prev
         );
+
         return;
       }
 
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+
         return;
       }
 
-      if (e.key === "Delete" || e.key === "Enter") {
-        e.preventDefault();
+      if (event.key === "Delete") {
+        event.preventDefault();
 
         if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
           handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
@@ -90,7 +125,7 @@ const DeleteTicketModal = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, pendingTickets, selectedIndex, showConfirmation]);
+  }, [isOpen, pendingTickets, selectedIndex, showConfirmation, ticketToDelete]);
 
   const handleClose = () => {
     setSelectedIndex(-1);

@@ -42,6 +42,7 @@
   const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
   const DEFAULT_POINTS_AMOUNT = 50;
   const EMPTY_REWARDS = [];
+  const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
   const Sales = () => {
     const { user } = useAuth();
@@ -180,6 +181,10 @@
       ? `${salesDraftKey}_session_ack`
       : null;
 
+    const salesDraftSessionAliveKey = salesDraftKey
+      ? `${salesDraftKey}_session_alive`
+      : null;
+
     const subtotal = productos.reduce(
       (sum, producto) =>
         sum +
@@ -214,6 +219,10 @@
         const rawDraft = localStorage.getItem(salesDraftKey);
 
         if (!rawDraft) {
+          if (salesDraftSessionAliveKey) {
+            sessionStorage.setItem(salesDraftSessionAliveKey, "true");
+          }
+
           setDraftReady(true);
           return;
         }
@@ -221,6 +230,10 @@
         const draft = JSON.parse(rawDraft);
 
         if (!draft || draft.version !== 1) {
+          if (salesDraftSessionAliveKey) {
+            sessionStorage.setItem(salesDraftSessionAliveKey, "true");
+          }
+
           setDraftReady(true);
           return;
         }
@@ -249,51 +262,75 @@
           String(draft.saleNotes || "").trim().length > 0 ||
           String(draft.barcode || "").trim().length > 0;
 
-        if (hasRecoverableSale) {
-          const alreadyAcknowledgedThisSession =
-            salesDraftSessionKey &&
-            sessionStorage.getItem(salesDraftSessionKey) === "true";
+        const restorePromptRequested =
+          sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
 
-          setRecoveredDraft(!alreadyAcknowledgedThisSession);
+        const salesSessionAlreadyAlive =
+          salesDraftSessionAliveKey &&
+          sessionStorage.getItem(salesDraftSessionAliveKey) === "true";
+
+        const alreadyAcknowledgedThisSession =
+          salesDraftSessionKey &&
+          sessionStorage.getItem(salesDraftSessionKey) === "true";
+
+        const shouldShowRecoveryModal =
+          hasRecoverableSale &&
+          (restorePromptRequested ||
+            (!salesSessionAlreadyAlive && !alreadyAcknowledgedThisSession));
+
+        if (salesDraftSessionAliveKey) {
+          sessionStorage.setItem(salesDraftSessionAliveKey, "true");
+        }
+
+        if (shouldShowRecoveryModal) {
+          setRecoveredDraft(true);
           setRecoveredDraftSavedAt(draft.savedAt || null);
 
-          if (!alreadyAcknowledgedThisSession) {
-            setAppModal({
-              isOpen: true,
-              type: "warning",
-              title: "Venta pendiente encontrada",
-              message: draft.savedAt
-                ? `Hay una venta pendiente guardada automáticamente el ${new Date(
-                    draft.savedAt,
-                  )
-                    .toLocaleString("es-MX")
-                    .replace(/:\d{2}(?=\s*[ap]\.?\s*m\.?)|(?<=\s[ap])\./gi, "")
-                    .replace(/\s+/g, " ")}\n\n¿Quieres recuperarla o descartarla?`
-                : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?",
-              confirmText: "Recuperar venta",
-              cancelText: "Descartar",
-              showCancel: true,
-              onConfirm: () => {
-                closeAppModal();
-                dismissRecoveredDraft();
-              },
-              onCancel: () => {
-                closeAppModal();
-                discardRecoveredDraft();
-              },
-            });
-          }
+          setAppModal({
+            isOpen: true,
+            type: "warning",
+            title: "Venta pendiente encontrada",
+            message: draft.savedAt
+              ? `Hay una venta pendiente guardada automáticamente el ${new Date(
+                  draft.savedAt,
+                )
+                  .toLocaleString("es-MX")
+                  .replace(/:\d{2}(?=\s*[ap]\.?\s*m\.?)|(?<=\s[ap])\./gi, "")
+                  .replace(/\s+/g, " ")}
+
+¿Quieres recuperarla o descartarla?`
+              : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?",
+            confirmText: "Recuperar venta",
+            cancelText: "Descartar",
+            showCancel: true,
+            onConfirm: () => {
+              closeAppModal();
+              dismissRecoveredDraft();
+            },
+            onCancel: () => {
+              closeAppModal();
+              discardRecoveredDraft();
+            },
+          });
+        } else {
+          setRecoveredDraft(false);
+          setRecoveredDraftSavedAt(null);
         }
 
         setDraftReady(true);
       } catch (error) {
         console.error("Error restaurando venta en curso:", error);
         localStorage.removeItem(salesDraftKey);
+
+        if (salesDraftSessionAliveKey) {
+          sessionStorage.setItem(salesDraftSessionAliveKey, "true");
+        }
+
         setRecoveredDraft(false);
         setRecoveredDraftSavedAt(null);
         setDraftReady(true);
       }
-    }, [salesDraftKey, salesDraftSessionKey]);
+    }, [salesDraftKey, salesDraftSessionKey, salesDraftSessionAliveKey]);
 
     useEffect(() => {
       if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey)
@@ -370,12 +407,24 @@
       if (salesDraftSessionKey) {
         sessionStorage.removeItem(salesDraftSessionKey);
       }
+
+      if (salesDraftSessionAliveKey) {
+        sessionStorage.removeItem(salesDraftSessionAliveKey);
+      }
+
+      sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
     };
 
     const dismissRecoveredDraft = () => {
       if (salesDraftSessionKey) {
         sessionStorage.setItem(salesDraftSessionKey, "true");
       }
+
+      if (salesDraftSessionAliveKey) {
+        sessionStorage.setItem(salesDraftSessionAliveKey, "true");
+      }
+
+      sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
 
       setRecoveredDraft(false);
     };
@@ -4326,6 +4375,46 @@
       return `Canjes aplicados: ${appliedRewardsQuantity}`;
     })();
 
+    const getProductDiscountPercent = (producto) => {
+      if (!producto) return 0;
+
+      const directPercent = Number(producto.discountPercent || 0);
+      if (directPercent > 0) return directPercent;
+
+      const discountValue = Number(producto.descuentoValor || 0);
+      if (producto.descuentoTipo === "percent" && discountValue > 0) {
+        return discountValue;
+      }
+
+      const originalPrice = Number(producto.precioOriginal ?? producto.precio ?? 0);
+      const finalPrice = Number(producto.precio ?? 0);
+
+      if (originalPrice <= 0 || finalPrice >= originalPrice) return 0;
+
+      return ((originalPrice - finalPrice) / originalPrice) * 100;
+    };
+
+    const getProductHasDiscount = (producto) => {
+      if (!producto) return false;
+
+      return (
+        Number(producto.descuentoMonto || 0) > 0 ||
+        getProductDiscountPercent(producto) > 0
+      );
+    };
+
+    const getProductDiscountConcept = (producto) => {
+      const concept = String(producto?.discountConcept || "").trim();
+
+      if (concept) return concept;
+
+      if (producto?.is_reward_discount_item) {
+        return "DESCUENTO POR RECOMPENSA";
+      }
+
+      return "";
+    };
+
     const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
 
     return (
@@ -4510,6 +4599,10 @@
                 } ${
                   producto.is_reward_discount_item ? styles.rewardDiscountRow : ""
                 } ${
+                  getProductHasDiscount(producto) && !producto.is_reward_item
+                    ? styles.discountAppliedRow
+                    : ""
+                } ${
                   selectedProduct && isSameCartItem(selectedProduct, producto)
                     ? styles.selectedRow
                     : ""
@@ -4524,6 +4617,18 @@
 
                   {producto.is_reward_item && (
                     <span className={styles.rewardBadge}>Recompensa</span>
+                  )}
+
+                  {getProductHasDiscount(producto) && !producto.is_reward_item && (
+                    <span className={styles.productDiscountBadge}>
+                      DESC. {getProductDiscountPercent(producto).toFixed(2)}%
+                    </span>
+                  )}
+
+                  {getProductDiscountConcept(producto) && (
+                    <span className={styles.productDiscountConcept}>
+                      {getProductDiscountConcept(producto)}
+                    </span>
                   )}
 
                   {producto.is_reward_discount_item && (
@@ -4610,8 +4715,14 @@
                 alt="Ventas del día y Devoluciones"
                 className={styles.squareIconSecondary}
               />
-              <span className={styles.squareText}>
-                Ventas del día y Devoluciones
+
+              <span className={styles.salesHistoryButtonText}>
+                <span className={styles.salesHistoryButtonLine}>
+                  Ventas del día y
+                </span>
+                <span className={styles.salesHistoryButtonLine}>
+                  Devoluciones
+                </span>
               </span>
             </div>
           </div>
@@ -4724,6 +4835,7 @@
           isOpen={isSearchModalOpen}
           onClose={() => setSearchModalOpen(false)}
           onAddToSale={handleAddProductFromVerifier}
+          productosEnVenta={productos}
         />
 
         <DiscountModal
@@ -4788,5 +4900,5 @@
       </div>
     );
   };
-
+  
   export default Sales;

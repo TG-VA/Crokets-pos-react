@@ -36,24 +36,51 @@
 .modalHeader h2 {
   margin: 0;
   font-size: 1.7rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.2px;
 }
 
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.titleIcon {
+  width: 27px;
+  height: 27px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .closeButton {
-  background: none;
+  width: 42px;
+  height: 42px;
+  background: transparent;
   border: none;
   color: white;
-  font-size: 1.9rem;
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .closeButton:hover {
   background: rgba(255, 255, 255, 0.14);
   transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 25px;
+  height: 25px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .searchModalBody {
@@ -78,18 +105,33 @@
 }
 
 .inputContainer {
+  position: relative;
   margin-bottom: 8px;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 19px;
+  height: 19px;
+  transform: translateY(-50%);
+  filter: invert(42%) sepia(18%) saturate(571%) hue-rotate(164deg)
+    brightness(91%) contrast(88%);
+  pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 44px;
   border: 2px solid #bcc8d1;
   border-radius: 8px;
   font-size: 1rem;
   color: #243746;
   background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .searchInput:focus {
@@ -170,7 +212,11 @@
   margin-bottom: 10px;
   padding: 14px 16px;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .resultItem:last-child {
@@ -186,6 +232,16 @@
   border-color: #1092b1 !important;
   background: rgba(16, 146, 177, 0.06) !important;
   box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.1) !important;
+}
+
+.unavailableResult {
+  background: #fff7f7;
+  border-color: #f3c2c2;
+}
+
+.unavailableResult:hover {
+  border-color: #e74c3c;
+  box-shadow: 0 3px 10px rgba(231, 76, 60, 0.12);
 }
 
 .productTopRow {
@@ -239,6 +295,16 @@
 
 .productStock {
   font-weight: 700;
+}
+
+.reservedStock {
+  color: #b45309;
+  background: #fff3e0;
+  border: 1px solid #ffd7a8;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .inStock {
@@ -431,6 +497,16 @@
   flex-shrink: 0;
 }
 
+.errorNotice {
+  background-color: #fdecea;
+  border: 1px solid #f5c2c7;
+  color: #b42318;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
 .modalActions {
   display: flex;
   flex-direction: column;
@@ -522,16 +598,6 @@
 .branchStockList::-webkit-scrollbar-thumb:hover,
 .detailCard::-webkit-scrollbar-thumb:hover {
   background: #95a5a6;
-}
-
-.errorNotice {
-  background-color: #fdecea;
-  border: 1px solid #f5c2c7;
-  color: #b42318;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 10px;
-  font-weight: 700;
 }
 
 @keyframes modalSlideIn {

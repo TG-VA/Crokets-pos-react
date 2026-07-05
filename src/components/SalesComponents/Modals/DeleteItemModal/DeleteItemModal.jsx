@@ -1,7 +1,16 @@
 import React, { useEffect } from "react";
 import styles from "./DeleteItem.module.css";
 
-const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) => {
+import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
+import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
+const DeleteItemModal = ({
+  isOpen,
+  onClose,
+  onConfirmDelete,
+  selectedProduct,
+}) => {
   const handleConfirm = () => {
     onConfirmDelete();
     onClose();
@@ -10,14 +19,35 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         onClose();
+        return;
       }
 
-      if (e.key === "Enter") {
-        e.preventDefault();
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         handleConfirm();
       }
     };
@@ -27,7 +57,7 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen]);
+  }, [isOpen, selectedProduct]);
 
   if (!isOpen) return null;
 
@@ -35,30 +65,97 @@ const DeleteItemModal = ({ isOpen, onClose, onConfirmDelete, selectedProduct }) 
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Eliminar Artículo</h2>
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={DeleteIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Eliminar artículo
+            </span>
+          </h2>
+
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Cerrar modal"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
+          </button>
         </div>
 
         <div className={styles.modalBody}>
+          <div className={styles.warningIconBox}>
+            <img
+              src={WarningIcon}
+              alt=""
+              className={styles.warningIcon}
+              aria-hidden="true"
+            />
+          </div>
+
+          <h3 className={styles.confirmTitle}>¿Estás seguro?</h3>
+
           <p className={styles.confirmText}>
-            ¿Estás seguro de que deseas eliminar este producto?
+            ¿Deseas eliminar este producto de la venta?
           </p>
 
           {selectedProduct && (
             <div className={styles.productInfo}>
-              <p><strong>Producto:</strong> {selectedProduct.codigo}</p>
-              <p><strong>Precio:</strong> ${selectedProduct.precio.toFixed(2)}</p>
-              <p><strong>Cantidad:</strong> {selectedProduct.cantidad}</p>
-              <p><strong>Importe:</strong> ${selectedProduct.importe.toFixed(2)}</p>
+              <p>
+                <strong>Producto:</strong>{" "}
+                {selectedProduct.nombre ||
+                  selectedProduct.name ||
+                  selectedProduct.codigo ||
+                  "Producto"}
+              </p>
+
+              <p>
+                <strong>Código:</strong>{" "}
+                {selectedProduct.codigo || selectedProduct.barcode || "Sin código"}
+              </p>
+
+              <p>
+                <strong>Precio:</strong> $
+                {Number(selectedProduct.precio || 0).toFixed(2)}
+              </p>
+
+              <p>
+                <strong>Cantidad:</strong>{" "}
+                {Number(selectedProduct.cantidad || 0)}
+              </p>
+
+              <p>
+                <strong>Importe:</strong> $
+                {Number(selectedProduct.importe || 0).toFixed(2)}
+              </p>
             </div>
           )}
         </div>
 
         <div className={styles.modalFooter}>
-          <button className={styles.cancelButton} onClick={onClose}>
-            Esc - Cancelar
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={onClose}
+          >
+            ESC - Cancelar
           </button>
-          <button className={styles.confirmButton} onClick={handleConfirm}>
-            Enter - Eliminar
+
+          <button
+            type="button"
+            className={styles.confirmButton}
+            onClick={handleConfirm}
+          >
+            ENTER - Eliminar
           </button>
         </div>
       </div>

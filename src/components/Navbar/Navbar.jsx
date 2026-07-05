@@ -17,6 +17,8 @@ import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
 import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
+const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
+
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -137,17 +139,6 @@ const Navbar = () => {
     });
   };
 
-  const clearSalesDraftSessionAcknowledgements = () => {
-    Object.keys(sessionStorage).forEach((key) => {
-      const isSalesDraftAck =
-        key.startsWith("sales_draft_") && key.endsWith("_session_ack");
-
-      if (isSalesDraftAck) {
-        sessionStorage.removeItem(key);
-      }
-    });
-  };
-
   const isTypingTarget = (target) => {
     if (!target) return false;
 
@@ -170,7 +161,8 @@ const Navbar = () => {
       confirmText: "Sí, volver",
       cancelText: "Cancelar",
       onConfirm: () => {
-        clearSalesDraftSessionAcknowledgements();
+        sessionStorage.setItem(SALES_DRAFT_RESTORE_REQUEST_KEY, "true");
+
         lockScreen();
         navigate("/login", { replace: true });
       },

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./ExitModal.module.css";
 
+import ExitIcon from "../../../../assets/icons/exitIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
 const ExitModal = ({ isOpen, onClose, onSave }) => {
   const [exitAmount, setExitAmount] = useState("");
   const [exitDescription, setExitDescription] = useState("");
@@ -26,38 +29,52 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
 
     const timer = setTimeout(() => {
       amountInputRef.current?.focus();
-    }, 50);
+    }, 80);
 
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         handleClose();
+        return;
       }
 
-      if (e.key === "Enter") {
+      if (event.key === "Enter") {
         const tag = document.activeElement?.tagName?.toLowerCase();
 
         if (tag === "textarea") return;
 
-        e.preventDefault();
+        event.preventDefault();
+        event.stopPropagation();
+
         handleSave();
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen]);
+  }, [isOpen, exitAmount, exitDescription]);
 
-  const handleAmountChange = (e) => {
-    let value = e.target.value;
+  const handleAmountChange = (event) => {
+    let value = event.target.value;
 
     value = value.replace(/[^0-9.]/g, "");
 
     const parts = value.split(".");
+
     if (parts.length > 2) {
       value = `${parts[0]}.${parts.slice(1).join("")}`;
     }
@@ -67,25 +84,31 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
     }
 
     setExitAmount(value);
-    if (exitError) setExitError("");
+
+    if (exitError) {
+      setExitError("");
+    }
   };
 
-  const handleDescriptionChange = (e) => {
-    setExitDescription(e.target.value);
-    if (exitError) setExitError("");
+  const handleDescriptionChange = (event) => {
+    setExitDescription(event.target.value);
+
+    if (exitError) {
+      setExitError("");
+    }
   };
 
   const handleSave = async () => {
     const amount = parseFloat(exitAmount);
 
     if (!exitAmount.trim() || Number.isNaN(amount) || amount <= 0) {
-      setExitError("Por favor, ingrese un monto válido.");
+      setExitError("Por favor, ingresa un monto válido.");
       amountInputRef.current?.focus();
       return;
     }
 
     if (!exitDescription.trim()) {
-      setExitError("Por favor, ingrese una descripción.");
+      setExitError("Por favor, ingresa una descripción.");
       return;
     }
 
@@ -109,16 +132,33 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div
         className={styles.modalContainer}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
-          <h2>Registrar Salida de Efectivo</h2>
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={ExitIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Registrar salida de efectivo
+            </span>
+          </h2>
+
           <button
             type="button"
             className={styles.closeButton}
             onClick={handleClose}
+            aria-label="Cerrar modal"
           >
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -157,14 +197,15 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
             className={styles.cancelButton}
             onClick={handleClose}
           >
-            Esc - Cancelar
+            ESC - Cancelar
           </button>
+
           <button
             type="button"
             className={styles.saveButton}
             onClick={handleSave}
           >
-            Guardar Salida
+            Guardar salida
           </button>
         </div>
       </div>
