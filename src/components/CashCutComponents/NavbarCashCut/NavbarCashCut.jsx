@@ -1,6 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import styles from "./NavbarCashCut.module.css";
 
+import ReceiptIcon from "../../../assets/icons/receipt-solid-full.svg";
+import PrintIcon from "../../../assets/icons/print-solid-full.svg";
+import LockIcon from "../../../assets/icons/lock-solid-full.svg";
+import ChevronDownIcon from "../../../assets/icons/chevron-down-solid-full.svg";
+import XmarkIcon from "../../../assets/icons/xmark-solid-full.svg";
+
 const toDateInputValue = (date = new Date()) => {
   if (!date) return "";
 
@@ -110,14 +116,22 @@ const NavbarCashCut = ({
     setIsPickerOpen(false);
   };
 
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
   };
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.left}>
-        <span className={styles.title}>🧾 CORTE DE CAJA</span>
+        <span className={styles.title}>
+          <img
+            src={ReceiptIcon}
+            alt=""
+            className={styles.titleIcon}
+            aria-hidden="true"
+          />
+          CORTE DE CAJA
+        </span>
 
         <div className={styles.datePickerWrapper} ref={pickerRef}>
           <button
@@ -139,19 +153,33 @@ const NavbarCashCut = ({
                 : selectedCut?.label || "Corte histórico"}
             </span>
 
-            <span className={styles.datePickerArrow}>▾</span>
+            <span className={styles.datePickerArrow}>
+              <img
+                src={ChevronDownIcon}
+                alt=""
+                className={styles.arrowIcon}
+                aria-hidden="true"
+              />
+            </span>
           </button>
 
           {isPickerOpen && (
             <div className={styles.calendarPanel}>
               <div className={styles.calendarHeader}>
                 <span className={styles.calendarTitle}>Seleccionar corte</span>
+
                 <button
                   type="button"
                   className={styles.closePickerBtn}
                   onClick={() => setIsPickerOpen(false)}
+                  aria-label="Cerrar selector"
                 >
-                  ×
+                  <img
+                    src={XmarkIcon}
+                    alt=""
+                    className={styles.closePickerIcon}
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
 
@@ -211,12 +239,15 @@ const NavbarCashCut = ({
           )}
         </div>
 
-        {isHistoricalView && <span className={styles.historyBadge}>Histórico</span>}
+        {isHistoricalView && (
+          <span className={styles.historyBadge}>Histórico</span>
+        )}
       </div>
 
       <div className={styles.right}>
         {!isHistoricalView && (
           <button
+            type="button"
             className={styles.btn}
             onClick={onCorteCajero}
             disabled={disableCorteCajero}
@@ -226,16 +257,29 @@ const NavbarCashCut = ({
                 : ""
             }
           >
-            🧾 Corte Cajero
+            <img
+              src={ReceiptIcon}
+              alt=""
+              className={styles.btnIcon}
+              aria-hidden="true"
+            />
+            Corte Cajero
           </button>
         )}
 
-        <button className={styles.btn} onClick={onImprimir}>
-          🖨️ Imprimir
+        <button type="button" className={styles.btn} onClick={onImprimir}>
+          <img
+            src={PrintIcon}
+            alt=""
+            className={styles.btnIcon}
+            aria-hidden="true"
+          />
+          Imprimir
         </button>
 
         {!isHistoricalView && (
           <button
+            type="button"
             className={`${styles.btn} ${styles.danger}`}
             onClick={onCerrarTurno}
             disabled={disableCerrarTurno}
@@ -245,7 +289,13 @@ const NavbarCashCut = ({
                 : ""
             }
           >
-            🔒 Cerrar Turno
+            <img
+              src={LockIcon}
+              alt=""
+              className={styles.btnIcon}
+              aria-hidden="true"
+            />
+            Cerrar Turno
           </button>
         )}
       </div>

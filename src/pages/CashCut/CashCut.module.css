@@ -4,13 +4,14 @@
   min-height: 100vh;
   width: 100%;
   overflow-y: auto;
+  background: #ffffff;
 }
 
 .pageContent {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 80px 28px 18px;
+  padding: 88px 28px 18px;
   box-sizing: border-box;
   flex: 1;
 }
@@ -32,7 +33,7 @@
 .sessionInfo {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #888;
+  color: #888888;
 }
 
 .userName {
@@ -46,7 +47,7 @@
   justify-content: center;
   gap: 16px;
   padding: 80px 0;
-  color: #888;
+  color: #888888;
   font-size: 14px;
   font-weight: 600;
 }
@@ -69,7 +70,7 @@
 .heroCard {
   background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
   width: 100%;
-  margin: 18px 0 0;
+  margin: 0;
   border-radius: 16px;
   padding: 24px 32px;
   display: flex;
@@ -104,7 +105,7 @@
 }
 
 .heroDate {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
 }
 
@@ -126,9 +127,19 @@
 }
 
 .heroStatLabel {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.heroStatLabel img {
+  width: 12px !important;
+  height: 12px !important;
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.9;
 }
 
 .heroStatValue {
@@ -168,11 +179,26 @@
 }
 
 .cardIcon {
-  font-size: 17px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardIcon img {
+  width: 15px !important;
+  height: 15px !important;
+  display: block;
+  object-fit: contain;
+  filter: invert(39%) sepia(92%) saturate(982%) hue-rotate(167deg)
+    brightness(87%) contrast(91%) !important;
+  opacity: 1 !important;
 }
 
 .cardTitle {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   color: #1a2332;
   letter-spacing: 0.3px;
@@ -199,14 +225,14 @@
 
 .dataLabel {
   font-size: 13px;
-  color: #555;
+  color: #555555;
   font-weight: 400;
 }
 
 .dataValue {
   font-size: 13px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #333333;
   text-align: right;
 }
 
@@ -217,9 +243,9 @@
 
 .emptyState {
   text-align: center;
-  color: #aaa;
+  color: #9e9e9e;
   font-size: 13px;
-  padding: 10px 0;
+  padding: 10px 12px;
   background: #f8f9fa;
   border-radius: 8px;
 }
@@ -228,10 +254,9 @@
   text-align: center;
   padding: 18px 0 28px;
   font-size: 12px;
-  color: #aaa;
+  color: #aaaaaa;
 }
 
-/* Mensaje de error arriba */
 .errorMsg {
   background: #ffe5e5;
   border: 2px solid #ff4d4f;
@@ -248,24 +273,20 @@
   animation: pulseWarning 1.4s infinite;
 }
 
-.errorMsg::before {
-  content: "⚠️";
-  font-size: 16px;
-}
-
 @keyframes pulseWarning {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
   }
+
   70% {
     box-shadow: 0 0 0 6px rgba(255, 77, 79, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
   }
 }
 
-/* Info del turno dentro del hero */
 .sessionInfoHero {
   margin-top: 14px;
   display: flex;
@@ -290,10 +311,9 @@
   letter-spacing: 0.6px;
 }
 
-/* Cancelaciones */
 .cancellationItem {
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eeeeee;
 }
 
 .cancellationItem:last-of-type {
@@ -314,21 +334,21 @@
 
 .cancellationFolio {
   font-size: 12px;
-  font-weight: 600;
-  color: #444;
+  font-weight: 700;
+  color: #444444;
   margin-bottom: 4px;
   letter-spacing: 0.3px;
 }
 
 .cancellationDate {
   font-size: 13px;
-  color: #666;
+  color: #666666;
   margin-bottom: 4px;
 }
 
 .cancellationReason {
   font-size: 13px;
-  color: #222;
+  color: #222222;
   line-height: 1.35;
   word-break: break-word;
 }
@@ -341,14 +361,14 @@
 
 .cancellationAmount {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   color: #c62828;
   line-height: 1.2;
 }
 
 .cancellationMethod {
   font-size: 12px;
-  color: #666;
+  color: #666666;
   margin-top: 4px;
   line-height: 1.3;
   word-break: break-word;
@@ -370,11 +390,41 @@
   flex-wrap: wrap;
 }
 
+.cutDoneAlert strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 
-/* Responsive */
+.cutDoneAlert img {
+  width: 15px !important;
+  height: 15px !important;
+  filter: invert(37%) sepia(92%) saturate(632%) hue-rotate(95deg)
+    brightness(87%) contrast(89%) !important;
+}
+
+@media (max-width: 900px) {
+  .pageContent {
+    padding: 88px 18px 18px;
+  }
+
+  .heroCard {
+    align-items: flex-start;
+  }
+
+  .heroStats {
+    width: 100%;
+  }
+
+  .heroStat {
+    flex: 1;
+    min-width: 145px;
+  }
+}
+
 @media (max-width: 520px) {
   .pageContent {
-    padding: 14px 14px;
+    padding: 88px 14px 14px;
   }
 
   .heroCard {
@@ -412,4 +462,3 @@
     margin-top: 2px;
   }
 }
-
