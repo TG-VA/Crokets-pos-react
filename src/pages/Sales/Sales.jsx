@@ -4625,11 +4625,12 @@
                     </span>
                   )}
 
-                  {getProductDiscountConcept(producto) && (
-                    <span className={styles.productDiscountConcept}>
-                      {getProductDiscountConcept(producto)}
-                    </span>
-                  )}
+                  {getProductDiscountConcept(producto) &&
+                    !producto.is_reward_discount_item && (
+                      <span className={styles.productDiscountConcept}>
+                        {getProductDiscountConcept(producto)}
+                      </span>
+                    )}
 
                   {producto.is_reward_discount_item && (
                     <span className={styles.rewardDiscountBadge}>
@@ -4900,5 +4901,5 @@
       </div>
     );
   };
-  
+
   export default Sales;
