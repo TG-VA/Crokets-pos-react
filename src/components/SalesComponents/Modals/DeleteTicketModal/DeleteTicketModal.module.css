@@ -1,9 +1,6 @@
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -16,6 +13,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -31,6 +29,7 @@
   display: flex;
   flex-direction: column;
   animation: slideDown 0.3s ease-in-out;
+  overflow: hidden;
 }
 
 @keyframes slideDown {
@@ -38,6 +37,7 @@
     transform: translateY(-50px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -57,27 +57,50 @@
 .modalHeader h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 800;
+}
+
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  filter: brightness(0) invert(1);
 }
 
 .closeButton {
+  width: 38px;
+  height: 38px;
   background: none;
   border: none;
   color: white;
-  font-size: 1.8rem;
   cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
+  padding: 7px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .closeButton:hover {
   background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .modalBody {
@@ -97,18 +120,34 @@
   text-align: center;
 }
 
-.warningIcon {
-  font-size: 4rem;
+.warningIconBox {
+  width: 86px;
+  height: 86px;
   margin-bottom: 1rem;
+  border-radius: 18px;
+  background: #fff4d6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.warningIcon {
+  width: 58px;
+  height: 58px;
+  display: block;
+  filter: invert(18%) sepia(81%) saturate(2891%) hue-rotate(351deg)
+    brightness(91%) contrast(94%);
+}
+
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
-    transform: scale(1.1);
+    transform: scale(1.06);
   }
 }
 
@@ -116,6 +155,7 @@
   font-size: 1.5rem;
   margin: 0 0 1rem 0;
   color: #d93025;
+  font-weight: 900;
 }
 
 .confirmMessage {
@@ -147,15 +187,29 @@
   color: #666;
 }
 
-.emptyIcon {
-  font-size: 4rem;
+.emptyIconBox {
+  width: 82px;
+  height: 82px;
   margin-bottom: 1rem;
+  border-radius: 18px;
+  background: #f2f4f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyIcon {
+  width: 48px;
+  height: 48px;
+  display: block;
   opacity: 0.5;
+  filter: invert(43%) sepia(8%) saturate(542%) hue-rotate(167deg)
+    brightness(91%) contrast(85%);
 }
 
 .emptyMessage p {
   font-size: 1.2rem;
-  font-weight: 500;
+  font-weight: 700;
   margin: 0 0 0.5rem 0;
   color: #333;
 }
@@ -169,7 +223,7 @@
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #eee;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.1rem;
   color: #333;
 }
@@ -195,7 +249,11 @@
   border-radius: 8px;
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .ticketItem:hover {
@@ -224,13 +282,13 @@
 
 .ticketName {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #333;
 }
 
 .ticketTotal {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #d93025;
 }
 
@@ -244,7 +302,7 @@
 
 .ticketProducts {
   color: #0078d7;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .ticketClient {
@@ -272,9 +330,13 @@
   border: none;
   border-radius: 5px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
   flex: 1;
 }
 
@@ -327,7 +389,6 @@
   color: #666;
 }
 
-/* Scrollbar personalizado */
 .ticketsContainer::-webkit-scrollbar {
   width: 8px;
 }
@@ -346,7 +407,6 @@
   background: #b8261d;
 }
 
-/* Responsive */
 @media (max-width: 600px) {
   .deleteModal {
     max-width: 95%;

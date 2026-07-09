@@ -3,6 +3,9 @@ import styles from "./ClientModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
 
+import SearchIcon from "../../../../assets/icons/searchIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
 const ClientModal = ({
   isOpen,
   onClose,
@@ -19,7 +22,6 @@ const ClientModal = ({
   const [loadingRewards, setLoadingRewards] = useState(false);
 
   const [loadingClients, setLoadingClients] = useState(false);
-  const [error, setError] = useState("");
   const [appModal, setAppModal] = useState({
     isOpen: false,
     type: "warning",
@@ -30,7 +32,6 @@ const ClientModal = ({
 
   const hasInitializedOpenRef = useRef(false);
   const lastInitializedClientIdRef = useRef(null);
-
 
   const closeAppModal = () => {
     setAppModal((prev) => ({
@@ -166,7 +167,9 @@ const ClientModal = ({
   };
 
   const getSelectedRewardQuantity = (rewardId) => {
-    const selectedReward = selectedRewards.find((reward) => reward.id === rewardId);
+    const selectedReward = selectedRewards.find(
+      (reward) => reward.id === rewardId
+    );
     return Number(selectedReward?.redeemQuantity || 0);
   };
 
@@ -225,10 +228,10 @@ const ClientModal = ({
     } catch (err) {
       console.error("Error cargando recompensas:", err);
       setRewards([]);
-      setError("No se pudieron cargar las recompensas disponibles.");
+
       showAppDanger(
         "No se pudieron cargar las recompensas disponibles.",
-        "Error cargando recompensas",
+        "Error cargando recompensas"
       );
     } finally {
       setLoadingRewards(false);
@@ -240,7 +243,6 @@ const ClientModal = ({
 
     try {
       setLoadingClients(true);
-      setError("");
 
       if (cleanSearch.length < 2) {
         setClients(currentSaleClient ? [currentSaleClient] : []);
@@ -292,8 +294,8 @@ const ClientModal = ({
       setClients(customersWithPoints);
     } catch (err) {
       console.error("Error buscando clientes:", err);
-      setError("No se pudieron cargar los clientes.");
       setClients(currentSaleClient ? [currentSaleClient] : []);
+
       showAppDanger("No se pudieron cargar los clientes.", "Error buscando clientes");
     } finally {
       setLoadingClients(false);
@@ -350,7 +352,6 @@ const ClientModal = ({
   const handleSelectClient = (client) => {
     setSelectedClient(client);
     setSelectedRewards([]);
-    setError("");
   };
 
   const handleAddReward = (reward) => {
@@ -361,9 +362,9 @@ const ClientModal = ({
     if (requiredPoints > remainingPoints) {
       showAppWarning(
         `El cliente no tiene puntos suficientes para esta recompensa.\n\nPuntos restantes: ${formatPoints(
-          remainingPoints,
+          remainingPoints
         )}\nPuntos requeridos: ${formatPoints(requiredPoints)}`,
-        "Puntos insuficientes",
+        "Puntos insuficientes"
       );
       return;
     }
@@ -405,7 +406,10 @@ const ClientModal = ({
         .map((reward) => {
           if (reward.id !== rewardId) return reward;
 
-          const nextQuantity = Math.max(Number(reward.redeemQuantity || 1) - 1, 0);
+          const nextQuantity = Math.max(
+            Number(reward.redeemQuantity || 1) - 1,
+            0
+          );
 
           return {
             ...reward,
@@ -452,7 +456,6 @@ const ClientModal = ({
     setSelectedClient(currentSaleClient);
     setSelectedRewards([]);
     setLoadingClients(false);
-    setError("");
     closeAppModal();
     onClose();
   };
@@ -479,7 +482,7 @@ const ClientModal = ({
     setSearchTerm("");
     setClients(currentSaleClient ? [currentSaleClient] : []);
     setLoadingClients(false);
-    setError("");
+    closeAppModal();
     loadRewards();
   }, [isOpen, currentSaleClient?.id]);
 
@@ -557,8 +560,14 @@ const ClientModal = ({
             type="button"
             className={styles.closeButton}
             onClick={closeModal}
+            aria-label="Cerrar modal"
           >
-            ×
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -567,39 +576,52 @@ const ClientModal = ({
             <label>Buscar cliente</label>
 
             <div className={styles.searchRow}>
-              <input
-                type="text"
-                className={styles.clientSearchBar}
-                placeholder={
-                  selectedClient
-                    ? "Buscar otro cliente..."
-                    : "Nombre, teléfono o correo..."
-                }
-                value={searchTerm}
-                onChange={(event) => {
-                  setSearchTerm(event.target.value);
-                  setError("");
-                }}
-                autoFocus
-              />
+              <div className={styles.searchInputContainer}>
+                <img
+                  src={SearchIcon}
+                  alt=""
+                  className={styles.searchIcon}
+                  aria-hidden="true"
+                />
 
-              {searchTerm && (
-                <button
-                  type="button"
-                  className={styles.clearSearchButton}
-                  onClick={() => {
-                    setSearchTerm("");
-                    setClients(currentSaleClient ? [currentSaleClient] : []);
-                    setSelectedClient(currentSaleClient);
-                    setSelectedRewards([]);
-                    setLoadingClients(false);
-                    setError("");
-                    closeAppModal();
+                <input
+                  type="text"
+                  className={styles.clientSearchBar}
+                  placeholder={
+                    selectedClient
+                      ? "Buscar otro cliente..."
+                      : "Nombre, teléfono o correo..."
+                  }
+                  value={searchTerm}
+                  onChange={(event) => {
+                    setSearchTerm(event.target.value);
                   }}
-                >
-                  ×
-                </button>
-              )}
+                  autoFocus
+                />
+
+                {searchTerm && (
+                  <button
+                    type="button"
+                    className={styles.clearSearchButton}
+                    onClick={() => {
+                      setSearchTerm("");
+                      setClients(currentSaleClient ? [currentSaleClient] : []);
+                      setSelectedClient(currentSaleClient);
+                      setSelectedRewards([]);
+                      setLoadingClients(false);
+                      closeAppModal();
+                    }}
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <img
+                      src={XmarkIcon}
+                      alt=""
+                      className={styles.clearSearchIcon}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
 
               <button
                 type="button"
@@ -607,7 +629,7 @@ const ClientModal = ({
                 onClick={() => {
                   if (normalizeSearch(searchTerm).length < 2) {
                     showAppWarning(
-                      "Escribe mínimo 2 caracteres para buscar un cliente.",
+                      "Escribe mínimo 2 caracteres para buscar un cliente."
                     );
                     return;
                   }
@@ -638,8 +660,6 @@ const ClientModal = ({
               </div>
             </div>
           )}
-
-          {error && <div className={styles.errorMessage}>{error}</div>}
 
           {(!selectedClient || visibleClients.length > 0 || loadingClients) && (
             <div className={styles.clientList}>
@@ -698,8 +718,8 @@ const ClientModal = ({
 
                   <p>
                     Selecciona una o varias recompensas. Las de producto gratis
-                    abrirán el selector de producto; las de descuento abrirán
-                    el buscador para agregar el producto con descuento.
+                    abrirán el selector de producto; las de descuento abrirán el
+                    buscador para agregar el producto con descuento.
                   </p>
                 </div>
 
@@ -844,7 +864,8 @@ const ClientModal = ({
                               {reward.name || "SIN NOMBRE"} x{redeemQuantity}
                             </strong>
                             <small>
-                              {getRewardTypeLabel(reward)} · {getRewardBenefitLabel(reward)}
+                              {getRewardTypeLabel(reward)} ·{" "}
+                              {getRewardBenefitLabel(reward)}
                             </small>
                           </div>
 

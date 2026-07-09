@@ -1,14 +1,22 @@
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  animation: overlayFadeIn 0.18s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContainer {
@@ -16,9 +24,23 @@
   border-radius: 8px;
   width: 100%;
   max-width: 450px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  animation: modalEnter 0.22s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modalHeader {
@@ -28,27 +50,55 @@
   padding: 1rem 1.5rem;
   background-color: #1092b1;
   color: white;
-  border-radius: 8px 8px 0 0;
 }
 
 .modalHeader h2 {
   margin: 0;
   font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: brightness(0) invert(1);
 }
 
 .closeButton {
-  background: none;
+  width: 38px;
+  height: 38px;
+  background: transparent;
   border: none;
   color: white;
-  font-size: 1.5rem;
   cursor: pointer;
-  padding: 5px;
-  border-radius: 3px;
-  transition: background-color 0.3s;
+  padding: 7px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .closeButton:hover {
   background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .modalBody {
@@ -65,7 +115,7 @@
 
 .formGroup label {
   margin-bottom: 0.5rem;
-  font-weight: bold;
+  font-weight: 800;
   color: #333333;
 }
 
@@ -73,16 +123,19 @@
 .formGroup textarea {
   padding: 0.75rem;
   border: 2px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  font-family: inherit;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .formGroup input:focus,
 .formGroup textarea:focus {
   outline: none;
   border-color: #fc8913;
-  box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.3);
+  box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.25);
 }
 
 .formGroup textarea {
@@ -93,14 +146,14 @@
 .errorMessage {
   color: #d93025;
   text-align: center;
-  font-weight: bold;
+  font-weight: 800;
   min-height: 20px;
+  margin: 0;
 }
 
 .modalActions {
   background-color: #f8f9fa;
   padding: 20px;
-  border-radius: 0 0 8px 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -111,12 +164,16 @@
 .saveButton,
 .cancelButton {
   padding: 0.75rem 1.5rem;
-  border-radius: 5px;
+  border-radius: 7px;
   border: none;
   cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s ease;
+  font-weight: 800;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   font-size: 1rem;
+  flex: 1;
 }
 
 .saveButton {
@@ -126,7 +183,8 @@
 
 .saveButton:hover {
   background-color: #0d7a94;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 146, 177, 0.28);
 }
 
 .cancelButton {
@@ -136,11 +194,21 @@
 
 .cancelButton:hover {
   background-color: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
 }
 
-/* Eliminar flechitas de input number */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+@media (max-width: 520px) {
+  .modalContainer {
+    width: calc(100% - 24px);
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .saveButton,
+  .cancelButton {
+    width: 100%;
+  }
 }

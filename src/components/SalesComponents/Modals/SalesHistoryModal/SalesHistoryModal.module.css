@@ -43,11 +43,14 @@
   background: none;
   border: none;
   color: white;
-  font-size: 24px;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
 
 .closeButton:hover {
@@ -540,6 +543,10 @@
   font-size: 14px;
   font-weight: 700;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .actionBtn:hover {
@@ -571,10 +578,13 @@
 .emptyState {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #6c757d;
   font-size: 16px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .footer {
@@ -593,8 +603,12 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .closeFooterBtn:hover {
@@ -760,8 +774,13 @@
   border: none;
   background: transparent;
   color: white;
-  font-size: 20px;
   cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
 
 .notesContent {
@@ -908,4 +927,105 @@
     text-align: left;
     white-space: normal;
   }
+}
+
+.inputIconContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: invert(47%) sepia(11%) saturate(504%) hue-rotate(167deg)
+    brightness(89%) contrast(87%);
+  pointer-events: none;
+}
+
+.inputWithIcon {
+  padding-left: 38px !important;
+}
+
+.filterLabelWithIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #495057;
+  font-weight: 700;
+}
+
+.labelIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: invert(48%) sepia(9%) saturate(594%) hue-rotate(167deg)
+    brightness(88%) contrast(89%);
+}
+
+.closeIcon,
+.notesCloseIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  display: block;
+}
+
+.tableHeaderContent,
+.tableHeaderContentCenter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tableHeaderContentCenter {
+  justify-content: center;
+}
+
+.tableHeaderContent img,
+.tableHeaderContentCenter img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.ticketIndicatorIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: invert(40%) sepia(12%) saturate(806%) hue-rotate(167deg)
+    brightness(90%) contrast(88%);
+}
+
+.actionIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  flex-shrink: 0;
+}
+
+.emptyStateIcon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  margin-bottom: 12px;
+  opacity: 0.75;
+  filter: invert(49%) sepia(10%) saturate(539%) hue-rotate(167deg)
+    brightness(90%) contrast(87%);
+}
+
+.footerButtonIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  flex-shrink: 0;
 }

@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./SearchModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
 import AppModal from "../../../AppModal/AppModal";
 
-const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
+import SearchIcon from "../../../../assets/icons/searchIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+
+const SearchModal = ({
+  isOpen,
+  onClose,
+  onAddToSale,
+  productosEnVenta = [],
+}) => {
   const { branch } = useBranch();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +43,48 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const searchRequestIdRef = useRef(0);
   const stockRequestIdRef = useRef(0);
   const kitRequestIdRef = useRef(0);
+  const searchTimeoutRef = useRef(null);
+  const lastStockProductKeyRef = useRef("");
+  const lastKitProductKeyRef = useRef("");
+
+  const selectedProduct =
+    selectedIndex >= 0 ? searchResults[selectedIndex] : null;
+
+  const selectedProductKey = selectedProduct?.id
+    ? `${selectedProduct.id}-${selectedProduct.is_kit ? "kit" : "product"}`
+    : "";
+
+  const cartQuantitiesMap = useMemo(() => {
+    const map = {};
+
+    const addQuantityToKey = (key, quantity) => {
+      const cleanKey = String(key || "").trim();
+
+      if (!cleanKey) return;
+
+      map[cleanKey] = Number(map[cleanKey] || 0) + quantity;
+    };
+
+    for (const item of productosEnVenta || []) {
+      const quantity = Number(item?.cantidad || item?.quantity || 0);
+
+      if (quantity <= 0) continue;
+
+      [
+        item?.id,
+        item?.product_id,
+        item?.producto_id,
+        item?.productId,
+        item?.barcode,
+        item?.codigo,
+        item?.code,
+        item?.name,
+        item?.nombre,
+      ].forEach((key) => addQuantityToKey(key, quantity));
+    }
+
+    return map;
+  }, [productosEnVenta]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -53,45 +103,67 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     searchRequestIdRef.current += 1;
     stockRequestIdRef.current += 1;
     kitRequestIdRef.current += 1;
+    lastStockProductKeyRef.current = "";
+    lastKitProductKeyRef.current = "";
 
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 80);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         handleClose();
         return;
       }
 
-      if (e.key === "ArrowDown") {
+      if (event.key === "ArrowDown") {
         if (searchResults.length === 0) return;
-        e.preventDefault();
+
+        event.preventDefault();
+
         setSelectedIndex((prev) =>
           prev < searchResults.length - 1 ? prev + 1 : prev
         );
         return;
       }
 
-      if (e.key === "ArrowUp") {
+      if (event.key === "ArrowUp") {
         if (searchResults.length === 0) return;
-        e.preventDefault();
+
+        event.preventDefault();
+
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
         return;
       }
 
-      if (e.key === "Enter") {
+      if (event.key === "Enter") {
         if (searchResults.length === 0) return;
-        e.preventDefault();
-        e.stopPropagation();
+
+        event.preventDefault();
+        event.stopPropagation();
 
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleSelectProduct(searchResults[selectedIndex]);
@@ -104,7 +176,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, searchResults, selectedIndex, kitValidation]);
+  }, [isOpen, searchResults, selectedIndex, addingProduct]);
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
@@ -122,27 +194,51 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   }, [selectedIndex]);
 
   useEffect(() => {
-    const selectedProduct =
-      selectedIndex >= 0 ? searchResults[selectedIndex] : null;
+    if (!isOpen) return;
 
     stockRequestIdRef.current += 1;
     kitRequestIdRef.current += 1;
 
-    setSelectedProductStocks([]);
-    setKitValidation({ isValid: true, message: "", items: [] });
-
-    if (!selectedProduct?.id) return;
+    if (!selectedProduct?.id) {
+      lastStockProductKeyRef.current = "";
+      lastKitProductKeyRef.current = "";
+      setSelectedProductStocks([]);
+      setKitValidation({ isValid: true, message: "", items: [] });
+      setLoadingStocks(false);
+      return;
+    }
 
     if (selectedProduct.is_kit) {
+      setSelectedProductStocks([]);
+
+      if (lastKitProductKeyRef.current === selectedProductKey) {
+        return;
+      }
+
+      lastKitProductKeyRef.current = selectedProductKey;
+      lastStockProductKeyRef.current = "";
+
       validateKitStock(selectedProduct.id);
       return;
     }
 
-    if (selectedProduct.tracks_inventory) {
-      fetchProductStocks(selectedProduct.id);
-    }
-  }, [selectedIndex, searchResults]);
+    setKitValidation({ isValid: true, message: "", items: [] });
+    lastKitProductKeyRef.current = "";
 
+    if (selectedProduct.tracks_inventory) {
+      if (lastStockProductKeyRef.current === selectedProductKey) {
+        return;
+      }
+
+      lastStockProductKeyRef.current = selectedProductKey;
+      fetchProductStocks(selectedProduct.id);
+      return;
+    }
+
+    lastStockProductKeyRef.current = "";
+    setSelectedProductStocks([]);
+    setLoadingStocks(false);
+  }, [isOpen, selectedProductKey]);
 
   const closeAppModal = () => {
     setAppModal((prev) => ({
@@ -166,6 +262,13 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     stockRequestIdRef.current += 1;
     kitRequestIdRef.current += 1;
 
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    lastStockProductKeyRef.current = "";
+    lastKitProductKeyRef.current = "";
+
     setSearchTerm("");
     setSearchResults([]);
     setSelectedIndex(-1);
@@ -185,6 +288,135 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
+
+  const escapeSearchTerm = (term) => {
+    return String(term || "")
+      .trim()
+      .replace(/[%_]/g, "")
+      .replace(/,/g, " ");
+  };
+
+  const getProductName = (product) => {
+    return String(product?.name || "").trim();
+  };
+
+  const getProductSortableName = (product) => {
+    return normalizeText(getProductName(product)).replace(/\s+/g, " ");
+  };
+
+  const getProductWeightInKg = (product) => {
+    const name = getProductName(product);
+
+    const match = name.match(
+      /(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilo|kilos|g|gr|gramo|gramos)\b/i
+    );
+
+    if (!match) return Number.POSITIVE_INFINITY;
+
+    const value = Number(String(match[1]).replace(",", "."));
+    const unit = String(match[2] || "").toLowerCase();
+
+    if (Number.isNaN(value)) return Number.POSITIVE_INFINITY;
+
+    if (["g", "gr", "gramo", "gramos"].includes(unit)) {
+      return value / 1000;
+    }
+
+    return value;
+  };
+
+  const getProductBaseName = (product) => {
+    return getProductSortableName(product)
+      .replace(
+        /\b\d+(?:[.,]\d+)?\s*(kg|kgs|kilo|kilos|g|gr|gramo|gramos)\b/gi,
+        ""
+      )
+      .replace(/\bkit\b/gi, "")
+      .replace(/[()+\-_/]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const sortProductsByNameAndWeight = (productsList = []) => {
+    return [...productsList].sort((a, b) => {
+      const baseNameA = getProductBaseName(a);
+      const baseNameB = getProductBaseName(b);
+
+      const baseNameCompare = baseNameA.localeCompare(baseNameB, "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+
+      if (baseNameCompare !== 0) return baseNameCompare;
+
+      const weightA = getProductWeightInKg(a);
+      const weightB = getProductWeightInKg(b);
+
+      if (weightA !== weightB) return weightA - weightB;
+
+      const fullNameCompare = getProductSortableName(a).localeCompare(
+        getProductSortableName(b),
+        "es",
+        {
+          sensitivity: "base",
+          numeric: true,
+        }
+      );
+
+      if (fullNameCompare !== 0) return fullNameCompare;
+
+      const barcodeA = String(a?.barcode || "");
+      const barcodeB = String(b?.barcode || "");
+
+      return barcodeA.localeCompare(barcodeB, "es", {
+        sensitivity: "base",
+        numeric: true,
+      });
+    });
+  };
+
+  const getProductCartQuantity = (productId, barcode = "", productName = "") => {
+    const possibleKeys = [
+      productId,
+      barcode,
+      productName,
+    ]
+      .map((key) => String(key || "").trim())
+      .filter(Boolean);
+
+    for (const key of possibleKeys) {
+      const quantity = Number(cartQuantitiesMap[key] || 0);
+
+      if (quantity > 0) {
+        return quantity;
+      }
+    }
+
+    return 0;
+  };
+
+  const getProductAvailableStock = (product) => {
+    if (!product) return 0;
+
+    if (!product.tracks_inventory || product.is_kit) {
+      return Number(product.stock || 0);
+    }
+
+    const realStock = Number(product.real_stock ?? product.stock ?? 0);
+    const quantityInSale = getProductCartQuantity(product.id, product.barcode, product.name);
+
+    return Math.max(realStock - quantityInSale, 0);
+  };
+
+  const getBranchAvailableStock = (productId, branchId, stock) => {
+    const realStock = Number(stock || 0);
+
+    if (!productId || String(branchId) !== String(branch?.id)) {
+      return realStock;
+    }
+
+    return Math.max(realStock - getProductCartQuantity(productId), 0);
+  };
 
   const fetchDiscountsMap = async (productIds = []) => {
     if (!productIds.length) return {};
@@ -320,7 +552,12 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       const validationItems = kitItems.map((item) => {
         const inventory = inventoryMap[item.component_product_id];
         const requiredQty = Number(item.quantity || 0);
-        const stock = Number(inventory?.stock || 0);
+        const realStock = Number(inventory?.stock || 0);
+        const stock = getBranchAvailableStock(
+          item.component_product_id,
+          branch.id,
+          realStock
+        );
         const tracksInventory = item.products?.tracks_inventory !== false;
 
         let ok = true;
@@ -348,6 +585,8 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           barcode: item.products?.barcode || "",
           requiredQty,
           stock,
+          realStock,
+          quantityInSale: getProductCartQuantity(item.component_product_id),
           ok,
           reason,
         };
@@ -379,7 +618,10 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     const cleanTerm = String(term || "").trim();
     const currentRequestId = ++searchRequestIdRef.current;
 
-    if (!cleanTerm) {
+    if (!cleanTerm || cleanTerm.length < 2) {
+      lastStockProductKeyRef.current = "";
+      lastKitProductKeyRef.current = "";
+
       setSearchResults([]);
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
@@ -398,6 +640,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setSelectedIndex(-1);
       setSelectedProductStocks([]);
       setKitValidation({ isValid: true, message: "", items: [] });
+      setLoading(false);
       return;
     }
 
@@ -405,82 +648,10 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       setLoading(true);
       setError("");
 
-      const normalizedTerm = normalizeText(cleanTerm);
+      const safeTerm = escapeSearchTerm(cleanTerm);
+      const likeTerm = `%${safeTerm}%`;
 
-      const { data: inventoryRows, error: inventoryError } = await supabase
-        .from("branch_inventory")
-        .select(`
-          id,
-          branch_id,
-          product_id,
-          stock,
-          is_active,
-          has_been_stocked,
-          cost_price,
-          sale_price,
-          updated_at
-        `)
-        .eq("branch_id", branch.id)
-        .order("updated_at", { ascending: false });
-
-      if (currentRequestId !== searchRequestIdRef.current) return;
-      if (inventoryError) throw inventoryError;
-
-      const productIds = [
-        ...new Set(
-          (inventoryRows || []).map((row) => row.product_id).filter(Boolean)
-        ),
-      ];
-
-      let inventoryProductsRows = [];
-
-      if (productIds.length > 0) {
-        const { data, error: productsError } = await supabase
-          .from("products")
-          .select(`
-            id,
-            barcode,
-            name,
-            sale_price,
-            cost_price,
-            status,
-            is_kit,
-            is_global,
-            tracks_inventory
-          `)
-          .in("id", productIds)
-          .eq("status", true);
-
-        if (currentRequestId !== searchRequestIdRef.current) return;
-        if (productsError) throw productsError;
-
-        inventoryProductsRows = data || [];
-      }
-
-      const { data: nonInventoryProductsRows, error: nonInventoryError } =
-        await supabase
-          .from("products")
-          .select(`
-            id,
-            barcode,
-            name,
-            sale_price,
-            cost_price,
-            status,
-            is_kit,
-            is_global,
-            tracks_inventory
-          `)
-          .eq("status", true)
-          .eq("is_global", true)
-          .eq("tracks_inventory", false);
-
-      if (currentRequestId !== searchRequestIdRef.current) return;
-      if (nonInventoryError) throw nonInventoryError;
-
-      // Los kits no tienen inventario propio en branch_inventory.
-      // Por eso se buscan aparte directamente desde products.
-      const { data: kitProductsRows, error: kitsError } = await supabase
+      const { data: productRows, error: productsError } = await supabase
         .from("products")
         .select(`
           id,
@@ -494,136 +665,124 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
           tracks_inventory
         `)
         .eq("status", true)
-        .eq("is_kit", true);
+        .or(`name.ilike.${likeTerm},barcode.ilike.${likeTerm}`)
+        .limit(80);
 
       if (currentRequestId !== searchRequestIdRef.current) return;
-      if (kitsError) throw kitsError;
+      if (productsError) throw productsError;
 
-      const allProductIds = [
-        ...new Set([
-          ...(inventoryProductsRows || []).map((product) => product.id),
-          ...(nonInventoryProductsRows || []).map((product) => product.id),
-          ...(kitProductsRows || []).map((product) => product.id),
-        ]),
-      ].filter(Boolean);
-
-      const discountsMap = await fetchDiscountsMap(allProductIds);
-
-      if (currentRequestId !== searchRequestIdRef.current) return;
-
-      const productMap = {};
-
-      for (const product of inventoryProductsRows || []) {
-        productMap[product.id] = product;
-      }
-
-      const inventoryResults = (inventoryRows || [])
-        .map((inventory) => {
-          const product = productMap[inventory.product_id];
-          if (!product) return null;
-
-          const baseProduct = {
-            ...product,
-            inventory_id: inventory.id,
-            branch_id: inventory.branch_id,
-            stock: Number(inventory.stock || 0),
-            is_active_in_branch: inventory.is_active !== false,
-            has_been_stocked: !!inventory.has_been_stocked,
-            branch_sale_price: Number(
-              inventory.sale_price ?? product.sale_price ?? 0
-            ),
-            branch_cost_price: Number(
-              inventory.cost_price ?? product.cost_price ?? 0
-            ),
-            tracks_inventory: true,
-          };
-
-          return applyDiscountToProduct(baseProduct, discountsMap);
-        })
+      const matchedProducts = productRows || [];
+      const matchedProductIds = matchedProducts
+        .map((product) => product.id)
         .filter(Boolean);
 
-      const inventoryProductIdSet = new Set(inventoryResults.map((p) => p.id));
+      if (matchedProductIds.length === 0) {
+        lastStockProductKeyRef.current = "";
+        lastKitProductKeyRef.current = "";
 
-      const nonInventoryResults = (nonInventoryProductsRows || [])
-        .filter((product) => !inventoryProductIdSet.has(product.id))
-        .map((product) => {
-          const baseProduct = {
-            ...product,
-            inventory_id: null,
-            branch_id: branch.id,
-            stock: null,
-            is_active_in_branch: true,
-            has_been_stocked: true,
-            branch_sale_price: Number(product.sale_price ?? 0),
-            branch_cost_price: Number(product.cost_price ?? 0),
-            tracks_inventory: false,
-          };
+        setSearchResults([]);
+        setSelectedIndex(-1);
+        setSelectedProductStocks([]);
+        setKitValidation({ isValid: true, message: "", items: [] });
+        return;
+      }
 
-          return applyDiscountToProduct(baseProduct, discountsMap);
-        });
+      const [
+        inventoryResponse,
+        discountsMap,
+      ] = await Promise.all([
+        supabase
+          .from("branch_inventory")
+          .select(`
+            id,
+            branch_id,
+            product_id,
+            stock,
+            is_active,
+            has_been_stocked,
+            cost_price,
+            sale_price,
+            updated_at
+          `)
+          .eq("branch_id", branch.id)
+          .in("product_id", matchedProductIds),
 
-      const existingProductIds = new Set([
-        ...inventoryResults.map((p) => p.id),
-        ...nonInventoryResults.map((p) => p.id),
+        fetchDiscountsMap(matchedProductIds),
       ]);
 
-      const kitResults = (kitProductsRows || [])
-        .filter((product) => !existingProductIds.has(product.id))
-        .map((product) => {
-          const baseProduct = {
-            ...product,
-            inventory_id: null,
-            branch_id: branch.id,
-            stock: null,
-            is_active_in_branch: true,
-            has_been_stocked: true,
-            branch_sale_price: Number(product.sale_price ?? 0),
-            branch_cost_price: Number(product.cost_price ?? 0),
-            tracks_inventory: true,
-          };
+      if (currentRequestId !== searchRequestIdRef.current) return;
 
-          return applyDiscountToProduct(baseProduct, discountsMap);
-        });
+      if (inventoryResponse.error) {
+        throw inventoryResponse.error;
+      }
 
-      const mergedResults = [
-        ...inventoryResults,
-        ...nonInventoryResults,
-        ...kitResults,
-      ]
-        .filter((product) => {
-          if (!product.is_kit && product.tracks_inventory) {
-            if (!product.is_active_in_branch) return false;
-            if (!product.has_been_stocked) return false;
-          }
+      const inventoryRows = inventoryResponse.data || [];
+      const inventoryMap = {};
 
-          const searchable = normalizeText(
-            `${product.name} ${product.barcode || ""}`
-          );
+      for (const row of inventoryRows) {
+        inventoryMap[row.product_id] = row;
+      }
 
-          return searchable.includes(normalizedTerm);
-        })
-        .sort((a, b) => {
-          if (a.is_kit && !b.is_kit) return -1;
-          if (!a.is_kit && b.is_kit) return 1;
+      const normalizedTerm = normalizeText(cleanTerm);
 
-          const aTracks = a.tracks_inventory ? 1 : 0;
-          const bTracks = b.tracks_inventory ? 1 : 0;
+      const mergedResults = sortProductsByNameAndWeight(
+        matchedProducts
+          .map((product) => {
+            const inventory = inventoryMap[product.id];
+            const isKit = product.is_kit === true;
+            const tracksInventory =
+              product.tracks_inventory !== false || isKit === true;
 
-          if (aTracks !== bTracks) return bTracks - aTracks;
+            if (!isKit && tracksInventory) {
+              if (!inventory) return null;
+              if (inventory.is_active === false) return null;
+              if (inventory.has_been_stocked !== true) return null;
+            }
 
-          const aStock = Number(a.stock ?? -1);
-          const bStock = Number(b.stock ?? -1);
+            const realStock = Number(inventory?.stock || 0);
 
-          if (aStock !== bStock) return bStock - aStock;
+            const baseProduct = {
+              ...product,
+              inventory_id: inventory?.id || null,
+              branch_id: inventory?.branch_id || branch.id,
+              stock: isKit || !tracksInventory ? null : realStock,
+              real_stock: isKit || !tracksInventory ? null : realStock,
+              quantity_in_sale: getProductCartQuantity(product.id, product.barcode, product.name),
+              is_active_in_branch: isKit
+                ? true
+                : tracksInventory
+                ? inventory?.is_active !== false
+                : true,
+              has_been_stocked: isKit
+                ? true
+                : tracksInventory
+                ? inventory?.has_been_stocked === true
+                : true,
+              branch_sale_price: Number(
+                inventory?.sale_price ?? product.sale_price ?? 0
+              ),
+              branch_cost_price: Number(
+                inventory?.cost_price ?? product.cost_price ?? 0
+              ),
+              tracks_inventory: tracksInventory,
+            };
 
-          return String(a.name || "").localeCompare(
-            String(b.name || ""),
-            "es",
-            { sensitivity: "base" }
-          );
-        });
+            return applyDiscountToProduct(baseProduct, discountsMap);
+          })
+          .filter(Boolean)
+          .filter((product) => {
+            const searchable = normalizeText(
+              `${product.name} ${product.barcode || ""}`
+            );
+
+            return searchable.includes(normalizedTerm);
+          })
+      );
 
       if (currentRequestId !== searchRequestIdRef.current) return;
+
+      lastStockProductKeyRef.current = "";
+      lastKitProductKeyRef.current = "";
 
       setSearchResults(mergedResults);
       setSelectedIndex(mergedResults.length > 0 ? 0 : -1);
@@ -648,6 +807,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
   const fetchProductStocks = async (productId) => {
     if (!productId) {
       setSelectedProductStocks([]);
+      setLoadingStocks(false);
       return;
     }
 
@@ -700,12 +860,23 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       const mergedStocks = validStockRows
         .map((row) => {
           const branchData = branchMap[row.branch_id];
+          const realStock = Number(row.stock || 0);
+          const availableStock = getBranchAvailableStock(
+            productId,
+            row.branch_id,
+            realStock
+          );
 
           return {
             branch_id: row.branch_id,
             branch_code: branchData?.code || "",
             branch_name: branchData?.name || "Sucursal",
-            stock: Number(row.stock || 0),
+            stock: availableStock,
+            real_stock: realStock,
+            quantity_in_sale:
+              row.branch_id === branch?.id
+                ? getProductCartQuantity(productId)
+                : 0,
             is_active: row.is_active !== false,
             has_been_stocked: !!row.has_been_stocked,
             sale_price: Number(row.sale_price || 0),
@@ -736,14 +907,22 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     }
   };
 
-  const handleInputChange = async (e) => {
-    const value = e.target.value;
+  const handleInputChange = (event) => {
+    const value = event.target.value;
+
     setSearchTerm(value);
 
-    if (!value.trim()) {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!value.trim() || value.trim().length < 2) {
       searchRequestIdRef.current += 1;
       stockRequestIdRef.current += 1;
       kitRequestIdRef.current += 1;
+
+      lastStockProductKeyRef.current = "";
+      lastKitProductKeyRef.current = "";
 
       setSearchResults([]);
       setSelectedIndex(-1);
@@ -755,10 +934,13 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       return;
     }
 
-    await performSearch(value);
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(value);
+    }, 350);
   };
 
   const handleSelectRow = (index) => {
+    if (index === selectedIndex) return;
     setSelectedIndex(index);
   };
 
@@ -773,7 +955,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
       return (
         product.is_active_in_branch &&
         product.has_been_stocked &&
-        Number(product.stock || 0) > 0
+        getProductAvailableStock(product) > 0
       );
     }
 
@@ -786,25 +968,29 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     if (product.is_kit && !kitValidation.isValid) {
       showAppWarning(
         kitValidation.message ||
-          "Este kit no tiene suficiente inventario en sus productos.",
+          "Este kit no tiene suficiente inventario en sus productos."
       );
       return;
     }
 
     if (!product.is_kit && product.tracks_inventory) {
+      const availableStock = getProductAvailableStock(product);
+
       if (!product.is_active_in_branch) {
         showAppWarning("Este producto está inactivo en la sucursal actual.");
         return;
       }
 
       if (!product.has_been_stocked) {
-        showAppWarning("Este producto aún no tiene inventario inicial registrado.");
+        showAppWarning(
+          "Este producto aún no tiene inventario inicial registrado."
+        );
         return;
       }
 
-      if (Number(product.stock || 0) <= 0) {
+      if (availableStock <= 0) {
         showAppWarning(
-          "Este producto no tiene existencia disponible en la sucursal actual.",
+          "Este producto no tiene existencia disponible en la venta actual."
         );
         return;
       }
@@ -830,7 +1016,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         handleClose();
       } catch (err) {
         console.error("Error agregando producto a la venta:", err);
-        showAppWarning(err?.message || "No se pudo agregar el producto a la venta.");
+        showAppWarning(
+          err?.message || "No se pudo agregar el producto a la venta."
+        );
       } finally {
         setAddingProduct(false);
       }
@@ -840,9 +1028,6 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
     handleClose();
   };
-
-  const selectedProduct =
-    selectedIndex >= 0 ? searchResults[selectedIndex] : null;
 
   const getDisplayPrice = (product) => {
     const price = Number(product?.branch_sale_price || 0);
@@ -872,9 +1057,30 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Búsqueda de Productos</h2>
-          <button className={styles.closeButton} onClick={handleClose}>
-            ✕
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={SearchIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Búsqueda de productos
+            </span>
+          </h2>
+
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={handleClose}
+            aria-label="Cerrar modal"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -883,6 +1089,13 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             <label htmlFor="searchInput">Nombre o código del producto:</label>
 
             <div className={styles.inputContainer}>
+              <img
+                src={SearchIcon}
+                alt=""
+                className={styles.inputIcon}
+                aria-hidden="true"
+              />
+
               <input
                 ref={searchInputRef}
                 id="searchInput"
@@ -927,21 +1140,29 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                   </div>
                 ) : searchResults.length === 0 ? (
                   <div className={styles.emptyMessage}>
-                    {searchTerm.trim()
+                    {searchTerm.trim().length >= 2
                       ? "No se encontraron productos vendibles para esta sucursal"
-                      : "Ingresa el nombre o código de un producto para buscar"}
+                      : "Ingresa al menos 2 caracteres para buscar"}
                   </div>
                 ) : (
                   <div className={styles.resultsList}>
                     {searchResults.map((product, index) => {
                       const displayPrice = getDisplayPrice(product);
                       const canSell = canAddSelectedProduct(product);
+                      const availableStock = getProductAvailableStock(product);
+                      const quantityInSale = getProductCartQuantity(product.id, product.barcode, product.name);
 
                       return (
                         <div
                           key={`${product.id}-${index}`}
                           className={`${styles.resultItem} ${
                             index === selectedIndex ? styles.selectedResult : ""
+                          } ${
+                            product.tracks_inventory &&
+                            !product.is_kit &&
+                            availableStock <= 0
+                              ? styles.unavailableResult
+                              : ""
                           }`}
                           onClick={() => handleSelectRow(index)}
                           onDoubleClick={() => handleSelectProduct(product)}
@@ -959,7 +1180,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                                   : styles.statusInactive
                               }`}
                             >
-                              {canSell ? "Activo" : "No vendible"}
+                              {canSell ? "Activo" : "Sin existencia"}
                             </span>
                           </div>
 
@@ -986,7 +1207,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                                     : styles.outOfStock
                                   : !product.tracks_inventory
                                   ? styles.inStock
-                                  : Number(product.stock || 0) > 0
+                                  : availableStock > 0
                                   ? styles.inStock
                                   : styles.outOfStock
                               }`}
@@ -996,9 +1217,17 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                                   ? "Kit disponible"
                                   : "Kit sin inventario completo"
                                 : product.tracks_inventory
-                                ? `Stock actual: ${Number(product.stock || 0)}`
+                                ? `Stock disponible: ${availableStock}`
                                 : "Sin control de inventario"}
                             </span>
+
+                            {product.tracks_inventory &&
+                              !product.is_kit &&
+                              quantityInSale > 0 && (
+                                <span className={styles.reservedStock}>
+                                  En venta: {quantityInSale}
+                                </span>
+                              )}
                           </div>
                         </div>
                       );
@@ -1085,6 +1314,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
                                   <div className={styles.branchStockMeta}>
                                     Código: {item.barcode || "Sin código"}
+                                    {item.quantityInSale > 0
+                                      ? ` · En venta: ${item.quantityInSale}`
+                                      : ""}
                                   </div>
                                 </div>
 
@@ -1150,7 +1382,9 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
 
                                   <div className={styles.branchStockMeta}>
                                     {stockRow.is_current_branch
-                                      ? "Sucursal actual"
+                                      ? stockRow.quantity_in_sale > 0
+                                        ? `Sucursal actual · En venta: ${stockRow.quantity_in_sale}`
+                                        : "Sucursal actual"
                                       : "Solo consulta"}
                                   </div>
                                 </div>
@@ -1201,20 +1435,25 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
                       </div>
                     )}
 
-                    {selectedProduct.discount_enabled && (
-                      <div className={styles.infoNotice}>
-                        Este producto tiene descuento automático aplicado.
-                        {selectedProduct.discount_concept
-                          ? ` Motivo: ${selectedProduct.discount_concept}.`
-                          : ""}
-                      </div>
-                    )}
+{selectedProduct.discount_enabled && (
+  <div className={styles.infoNotice}>
+    <p className={styles.discountNoticeTitle}>
+      Este producto tiene descuento automático aplicado.
+    </p>
+
+    {selectedProduct.discount_concept && (
+      <p className={styles.discountNoticeReason}>
+        <strong>Motivo:</strong> {selectedProduct.discount_concept}.
+      </p>
+    )}
+  </div>
+)}
 
                     <div className={styles.infoNotice}>
                       {selectedProduct.is_kit
-                        ? "El kit no maneja inventario propio. Se valida el inventario de sus componentes en la sucursal actual."
+                        ? "El kit no maneja inventario propio. Se valida el inventario disponible de sus componentes, restando lo que ya está en la venta actual."
                         : selectedProduct.tracks_inventory
-                        ? "Solo puedes agregar a la venta productos con inventario de la sucursal actual."
+                        ? "La existencia mostrada para la sucursal actual ya descuenta las piezas agregadas en esta venta."
                         : "Producto disponible para venta sin control de inventario."}
                     </div>
                   </>
@@ -1227,6 +1466,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
         <div className={styles.modalActions}>
           <div className={styles.actionButtons}>
             <button
+              type="button"
               className={`${styles.actionButton} ${styles.addButton}`}
               onClick={(event) => {
                 event.preventDefault();
@@ -1242,6 +1482,7 @@ const SearchModal = ({ isOpen, onClose, onAddToSale }) => {
             </button>
 
             <button
+              type="button"
               className={`${styles.actionButton} ${styles.cancelButton}`}
               onClick={handleClose}
             >

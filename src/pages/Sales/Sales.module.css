@@ -169,16 +169,21 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  width: 120px;
-  height: 80px;
+
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  height: 78px;
+
   background-color: #fc8913;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
-  padding: 0 15px;
+  padding: 0 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 0 0 auto;
 }
 
 .SquareButtonSecondary {
@@ -186,16 +191,22 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
+
+  gap: 8px;
   width: 190px;
-  height: 80px;
+  min-width: 190px;
+  max-width: 190px;
+  height: 78px;
+
   background-color: #27ae60;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
-  padding: 0 15px;
+  padding: 0 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 0 0 auto;
 }
 
 .SquareButtonSecondary:hover {
@@ -223,8 +234,8 @@
 }
 
 .squareIcon {
-  width: 24px;
-  height: 24px;
+  width: 23px;
+  height: 23px;
   object-fit: contain;
   margin-bottom: 5px;
   filter: brightness(0) invert(1);
@@ -232,16 +243,19 @@
 }
 
 .squareIconSecondary {
-  width: 24px;
-  height: 24px;
+  width: 23px;
+  height: 23px;
   object-fit: contain;
-  margin-bottom: 5px;
+  margin-right: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
   filter: brightness(0) invert(1);
   transition: filter 0.3s ease;
 }
 
 .SquareButtonSecondary:hover .squareIconSecondary {
-  filter: brightness(0) saturate(100%) invert(57%) sepia(18%) saturate(1828%) hue-rotate(93deg) brightness(95%) contrast(76%);
+  filter: brightness(0) saturate(100%) invert(57%) sepia(18%) saturate(1828%)
+    hue-rotate(93deg) brightness(95%) contrast(76%);
 }
 
 .squareButton:hover .squareIcon {
@@ -250,7 +264,7 @@
 
 .squareKey {
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.96rem;
   margin-bottom: 4px;
   margin-right: 4px;
   color: white;
@@ -258,7 +272,7 @@
 }
 
 .squareText {
-  font-size: 1rem;
+  font-size: 0.96rem;
   text-align: center;
   color: white;
   transition: color 0.3s ease;
@@ -401,52 +415,77 @@
   border-right: none;
 }
 
+/* Footer */
 .footerBar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  justify-content: space-between;
+
+  gap: 10px;
+  padding: 10px 14px;
+
   background-color: #ffffff;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+
   flex-wrap: nowrap;
+  overflow: visible;
 }
 
-.leftActions,
+.leftActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex: 0 0 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
 .rightActions {
   display: flex;
-  gap: 10px;
   align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+
+  flex: 1 1 auto;
   min-width: 0;
+  flex-wrap: nowrap;
+  overflow: visible;
 }
 
-.leftActions { flex-wrap: nowrap; flex: 1 1 auto; }
-.rightActions { flex-wrap: nowrap; justify-content: flex-end; flex: 0 0 auto; }
-
 .payButton {
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
+  height: 78px;
+
   background-color: #0078d7;
   color: #ffffff;
-  padding: 20px 70px;
+  padding: 0 18px;
   border-radius: 5px;
+
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
+
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-left: 8px;
-  max-width: 100%;
+  margin-left: 0;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .payButton:hover {
   background-color: #005fa3;
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .payIcon {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   margin-bottom: 5px;
   margin-right: 10px;
@@ -456,20 +495,23 @@
 
 .payKey {
   font-weight: bold;
-  font-size: 1.6em;
+  font-size: 1.3em;
   margin-right: 4px;
 }
 
 .payText {
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .totalSection {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  margin-left: 15px;
+
+  margin-left: 0;
   white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 105px;
 }
 
 .totalLabel {
@@ -478,7 +520,7 @@
 }
 
 .totalAmount {
-  font-size: 1.5em;
+  font-size: 1.45em;
   font-weight: bold;
   color: #005fa3;
 }
@@ -535,6 +577,7 @@
   color: #666;
   margin-top: -0.5rem;
 }
+
 .payButtonDisabled {
   opacity: 0.5;
   pointer-events: none;
@@ -582,7 +625,7 @@
 }
 
 .squareButton[data-tooltip]:hover::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -630,7 +673,6 @@
   white-space: nowrap;
   margin-left: 18px;
 }
-
 
 .recoveredDraftWarning {
   width: 100%;
@@ -711,71 +753,6 @@
   border: 1px solid #f59e0b !important;
 }
 
-
-@media (max-width: 600px) {
-  .notesModal {
-    max-width: 95%;
-    margin: 0 10px;
-  }
-
-  .notesTextarea {
-    min-height: 120px;
-  }
-}
-
-@media screen and (width: 1200px) and (height: 800px) {
-  .ventasContainer { overflow-x: hidden; overflow-y: auto; padding-bottom: 56px; }
-  .footerBar { box-sizing: border-box; padding: 8px 12px; gap: 8px; width: 100%; max-width: 100%; }
-  .leftActions, .rightActions { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; }
-  .leftActions { flex: 1 1 0; overflow: hidden; }
-  .rightActions { flex: 0 0 auto; }
-  .squareButton, .SquareButtonSecondary { width: auto; min-width: 90px; height: 64px; padding: 6px 10px; font-size: 13px; flex: 1 1 0; min-width: 0; white-space: nowrap; }
-  .squareKey, .squareText { font-size: 0.95rem; }
-  .payButton { padding: 10px 14px; }
-  .payKey { font-size: 1.1em; }
-  .payText { font-size: 0.95rem; }
-}
-
-@media screen and (max-width: 600px) and (max-height: 800px) {
-  .ventasContainer { overflow-x: hidden; overflow-y: auto; padding-bottom: 8px; }
-  .footerBar { flex-direction: column; box-sizing: border-box; padding: 4px 6px; gap: 4px; width: 100%; max-width: 100%; }
-  .leftActions, .rightActions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; }
-  .leftActions { width: 100%; }
-  .rightActions { width: 100%; }
-  .squareButton, .SquareButtonSecondary { width: 100%; height: 40px; padding: 4px 6px; font-size: 12px; flex: 1 1 auto; white-space: nowrap; }
-  .squareKey, .squareText { font-size: 0.8rem; }
-  .squareIcon, .squareIconSecondary { width: 16px; height: 16px; margin-bottom: 0; }
-  .totalSection { align-items: flex-start; margin-left: 0; }
-  .totalLabel { font-size: 0.8em; }
-  .totalAmount { font-size: 1.1em; }
-  .payButton { width: 100%; padding: 6px 8px; margin-left: 0; }
-  .payIcon { width: 20px; height: 20px; margin-bottom: 0; margin-right: 6px; }
-  .payKey { font-size: 0.9em; }
-  .payText { font-size: 0.85rem; }
-}
-
-@media (max-width: 1400px) {
-  .rightActions { flex: 0 0 auto; justify-content: flex-end; flex-wrap: nowrap; gap: 8px; }
-  .payButton { padding: 12px 18px; margin-left: 8px; }
-  .payKey { font-size: 1rem; }
-  .payText { font-size: 1rem; }
-  .totalSection { margin-left: 8px; }
-}
-@media (max-width: 700px) {
-  .recoveredDraftWarning {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .recoveredDraftActions {
-    width: 100%;
-  }
-
-  .recoveredDraftActions button {
-    flex: 1;
-  }
-}
-
 .productCell {
   display: flex;
   align-items: center;
@@ -823,6 +800,10 @@
   border-left: 4px solid #16a34a;
 }
 
+.rewardRow .productNameText {
+  color: #14532d;
+}
+
 .rewardDiscountBadge {
   display: inline-flex;
   align-items: center;
@@ -852,4 +833,402 @@
 .rewardDiscountRow.selectedRow {
   background: rgba(249, 115, 22, 0.18) !important;
   border-left: 4px solid #ea580c;
+}
+
+.discountAppliedRow {
+  background: #fffdf8;
+  border-left: 4px solid #fc8913;
+}
+
+.discountAppliedRow:hover {
+  background: #fff8ed;
+}
+
+.discountAppliedRow.selectedRow {
+  background: rgba(16, 146, 177, 0.14) !important;
+  border-left: 4px solid #1092b1;
+}
+
+.discountAppliedRow .productNameText {
+  color: #7c2d12;
+}
+
+.productDiscountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fff3e0;
+  color: #c45a00;
+  border: 1px solid #fdba74;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.productDiscountConcept {
+  width: 100%;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Texto especial del botón verde */
+.salesHistoryButtonText {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.05;
+  text-align: center;
+  white-space: normal;
+  transition: color 0.3s ease;
+}
+
+.salesHistoryButtonLine {
+  display: block;
+  white-space: nowrap;
+}
+
+.SquareButtonSecondary:hover .salesHistoryButtonText {
+  color: #27ae60;
+}
+
+@media (max-width: 600px) {
+  .notesModal {
+    max-width: 95%;
+    margin: 0 10px;
+  }
+
+  .notesTextarea {
+    min-height: 120px;
+  }
+}
+
+@media screen and (width: 1200px) and (height: 800px) {
+  .ventasContainer {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-bottom: 56px;
+  }
+
+  .footerBar {
+    box-sizing: border-box;
+    padding: 8px 10px;
+    gap: 7px;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .leftActions,
+  .rightActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 7px;
+  }
+
+  .leftActions {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .rightActions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .squareButton {
+    width: 86px;
+    min-width: 86px;
+    max-width: 86px;
+    height: 64px;
+    padding: 5px 6px;
+    font-size: 12px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .SquareButtonSecondary {
+    width: 142px;
+    min-width: 142px;
+    max-width: 142px;
+    height: 64px;
+    padding: 5px 6px;
+    gap: 5px;
+    flex: 0 0 auto;
+    white-space: normal;
+  }
+
+  .squareKey,
+  .squareText {
+    font-size: 0.76rem;
+  }
+
+  .salesHistoryButtonText {
+    font-size: 0.68rem;
+    line-height: 1.02;
+  }
+
+  .squareIcon,
+  .squareIconSecondary {
+    width: 17px;
+    height: 17px;
+  }
+
+  .totalSection {
+    min-width: 78px;
+  }
+
+  .totalLabel {
+    font-size: 0.72em;
+  }
+
+  .totalAmount {
+    font-size: 1.02em;
+  }
+
+  .payButton {
+    width: 155px;
+    min-width: 155px;
+    max-width: 155px;
+    height: 64px;
+    padding: 0 8px;
+  }
+
+  .payIcon {
+    width: 21px;
+    height: 21px;
+    margin-right: 6px;
+  }
+
+  .payKey {
+    font-size: 0.9em;
+  }
+
+  .payText {
+    font-size: 0.82rem;
+  }
+}
+
+@media screen and (max-width: 600px) and (max-height: 800px) {
+  .ventasContainer {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+
+  .footerBar {
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 4px 6px;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .leftActions,
+  .rightActions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .leftActions {
+    width: 100%;
+  }
+
+  .rightActions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .squareButton,
+  .SquareButtonSecondary {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 40px;
+    padding: 4px 6px;
+    font-size: 12px;
+    flex: 1 1 auto;
+    white-space: nowrap;
+  }
+
+  .squareKey,
+  .squareText {
+    font-size: 0.8rem;
+  }
+
+  .salesHistoryButtonText {
+    font-size: 0.75rem;
+    line-height: 1.02;
+  }
+
+  .squareIcon,
+  .squareIconSecondary {
+    width: 16px;
+    height: 16px;
+    margin-bottom: 0;
+  }
+
+  .totalSection {
+    align-items: flex-start;
+    margin-left: 0;
+    min-width: 0;
+  }
+
+  .totalLabel {
+    font-size: 0.8em;
+  }
+
+  .totalAmount {
+    font-size: 1.1em;
+  }
+
+  .payButton {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 44px;
+    padding: 6px 8px;
+    margin-left: 0;
+  }
+
+  .payIcon {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 0;
+    margin-right: 6px;
+  }
+
+  .payKey {
+    font-size: 0.9em;
+  }
+
+  .payText {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .footerBar {
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .leftActions {
+    gap: 7px;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .rightActions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow: visible;
+    min-width: 0;
+  }
+
+  .squareButton {
+    width: 96px;
+    min-width: 96px;
+    max-width: 96px;
+    height: 72px;
+    padding: 0 7px;
+  }
+
+  .SquareButtonSecondary {
+    width: 190px;
+    min-width: 190px;
+    max-width: 190px;
+    height: 72px;
+    padding: 0 7px;
+    gap: 6px;
+  }
+
+  .squareText,
+  .squareKey {
+    font-size: 0.84rem;
+  }
+
+  .salesHistoryButtonText {
+    font-size: 0.72rem;
+    line-height: 1.04;
+  }
+
+  .squareIcon,
+  .squareIconSecondary {
+    width: 19px;
+    height: 19px;
+  }
+
+  .payButton {
+    width: 175px;
+    min-width: 175px;
+    max-width: 175px;
+    height: 72px;
+    padding: 0 10px;
+    margin-left: 0;
+  }
+
+  .payIcon {
+    width: 23px;
+    height: 23px;
+    margin-right: 7px;
+  }
+
+  .payKey {
+    font-size: 1rem;
+  }
+
+  .payText {
+    font-size: 0.88rem;
+  }
+
+  .totalSection {
+    margin-left: 0;
+    min-width: 88px;
+  }
+
+  .totalLabel {
+    font-size: 0.82em;
+  }
+
+  .totalAmount {
+    font-size: 1.18em;
+  }
+}
+
+@media (max-width: 700px) {
+  .recoveredDraftWarning {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .recoveredDraftActions {
+    width: 100%;
+  }
+
+  .recoveredDraftActions button {
+    flex: 1;
+  }
 }

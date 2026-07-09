@@ -17,6 +17,8 @@ import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
 import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
+const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
+
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -152,17 +154,19 @@ const Navbar = () => {
 
   const handleLockScreen = () => {
     showAppConfirm({
-  type: "warning",
-  title: "Volver al inicio",
-  message:
-    "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
-  confirmText: "Sí, volver",
-  cancelText: "Cancelar",
-  onConfirm: () => {
-    lockScreen();
-    navigate("/login", { replace: true });
-  },
-});
+      type: "warning",
+      title: "Volver al inicio",
+      message:
+        "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
+      confirmText: "Sí, volver",
+      cancelText: "Cancelar",
+      onConfirm: () => {
+        sessionStorage.setItem(SALES_DRAFT_RESTORE_REQUEST_KEY, "true");
+
+        lockScreen();
+        navigate("/login", { replace: true });
+      },
+    });
   };
 
   const isItemActive = (item) => {

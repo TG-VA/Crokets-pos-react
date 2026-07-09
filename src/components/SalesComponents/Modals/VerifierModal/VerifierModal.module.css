@@ -5,7 +5,18 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  animation: overlayFadeIn 0.18s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .verifierModal {
@@ -18,7 +29,19 @@
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
-  animation: modalSlideIn 0.2s ease-out;
+  animation: modalEnter 0.22s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modalHeader {
@@ -34,24 +57,51 @@
 .modalHeader h2 {
   margin: 0;
   font-size: 1.55rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.2px;
 }
 
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.titleIcon {
+  width: 25px;
+  height: 25px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .closeButton {
-  background: none;
+  width: 40px;
+  height: 40px;
+  background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 1.75rem;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .closeButton:hover {
   background: rgba(255, 255, 255, 0.12);
   transform: scale(1.03);
+}
+
+.closeIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .verifierModalBody {
@@ -77,15 +127,34 @@
   gap: 12px;
 }
 
-.barcodeInput {
+.barcodeInputWrapper {
+  position: relative;
   flex: 1;
-  padding: 12px 16px;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  filter: invert(42%) sepia(18%) saturate(571%) hue-rotate(164deg)
+    brightness(91%) contrast(88%);
+  pointer-events: none;
+}
+
+.barcodeInput {
+  width: 100%;
+  padding: 12px 16px 12px 43px;
   border: 2px solid #bcc8d1;
   border-radius: 8px;
   font-size: 1rem;
   color: #243746;
   background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .barcodeInput:focus {
@@ -103,19 +172,24 @@
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
   min-width: 120px;
 }
 
 .searchButton:hover:not(:disabled) {
   background: #2980b9;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.25);
 }
 
 .searchButton:disabled {
   background: #c3ccd3;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .branchHint {
@@ -130,7 +204,7 @@
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 18px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   line-height: 1.35;
 }
@@ -147,7 +221,7 @@
   margin: 0 0 16px 0;
   color: #2c3e50;
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -308,9 +382,12 @@
   border: none;
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
   min-width: 190px;
 }
 
@@ -322,6 +399,7 @@
 .cancelButton:hover {
   background: #5a6268;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
 }
 
 .addButton {
@@ -332,12 +410,32 @@
 .addButton:hover:not(:disabled) {
   background: #219a52;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.25);
 }
 
 .addButton:disabled {
   background: #c3ccd3;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+.verifierModalBody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.verifierModalBody::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.verifierModalBody::-webkit-scrollbar-thumb {
+  background: #bdc3c7;
+  border-radius: 4px;
+}
+
+.verifierModalBody::-webkit-scrollbar-thumb:hover {
+  background: #95a5a6;
 }
 
 @media (max-width: 768px) {
@@ -396,17 +494,5 @@
 
   .kitItemQty {
     min-width: 0;
-  }
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

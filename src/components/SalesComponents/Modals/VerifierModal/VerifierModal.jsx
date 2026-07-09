@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./VerifierModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
+
+import VerifyIcon from "../../../../assets/icons/verifyIcon.svg";
+import SearchIcon from "../../../../assets/icons/searchIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
   const { branch } = useBranch();
@@ -31,34 +35,6 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
 
     return () => clearTimeout(timer);
   }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        handleClose();
-        return;
-      }
-
-      if (e.key === "F1" && product) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleAddToSale();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown, true);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown, true);
-    };
-  }, [isOpen, product]);
 
   const handleClose = () => {
     requestIdRef.current += 1;
@@ -162,7 +138,8 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     if (!cleanBarcode) {
       setProduct(null);
       setKitItems([]);
-      setError("Por favor ingrese un código de barras.");
+      setError("Por favor ingresa un código de barras.");
+      inputRef.current?.focus();
       return;
     }
 
@@ -353,7 +330,11 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     if (!product || !onAddToSale) return;
 
     if (product.is_active_in_branch === false) {
-      setError(product.is_kit ? "Este kit está inactivo." : "Este producto está inactivo en esta sucursal.");
+      setError(
+        product.is_kit
+          ? "Este kit está inactivo."
+          : "Este producto está inactivo en esta sucursal."
+      );
       return;
     }
 
@@ -388,8 +369,6 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
     handleClose();
   };
 
-  if (!isOpen) return null;
-
   const canAddToSale =
     product &&
     product.is_active_in_branch !== false &&
@@ -397,52 +376,125 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
       (product.has_been_stocked && Number(product.existencia || 0) > 0)) &&
     (!product.is_kit || kitItems.length > 0);
 
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (!isOpen) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
+        handleClose();
+        return;
+      }
+
+      if (event.key === "F1" && canAddToSale) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        handleAddToSale();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown, true);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [isOpen, product, kitItems, canAddToSale]);
+
+  if (!isOpen) return null;
+
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div
         className={styles.verifierModal}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
-          <h2>Verificador de Precios</h2>
-          <button className={styles.closeButton} onClick={handleClose}>
-            ✕
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={VerifyIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Verificador de precios
+            </span>
+          </h2>
+
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={handleClose}
+            aria-label="Cerrar modal"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
         <div className={styles.verifierModalBody}>
           <div className={styles.barcodeSection}>
-            <label htmlFor="barcodeInput">Código de Barras:</label>
+            <label htmlFor="barcodeInput">Código de barras:</label>
 
             <div className={styles.inputContainer}>
-              <input
-                ref={inputRef}
-                id="barcodeInput"
-                type="text"
-                className={styles.barcodeInput}
-                value={barcode}
-                onChange={(e) => {
-                  setBarcode(e.target.value);
-                  setError("");
+              <div className={styles.barcodeInputWrapper}>
+                <img
+                  src={SearchIcon}
+                  alt=""
+                  className={styles.inputIcon}
+                  aria-hidden="true"
+                />
 
-                  if (!e.target.value.trim()) {
-                    requestIdRef.current += 1;
-                    setProduct(null);
-                    setKitItems([]);
-                    setIsLoading(false);
-                  }
-                }}
-                placeholder="Escanee o ingrese el código..."
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleSearchProduct();
-                  }
-                }}
-              />
+                <input
+                  ref={inputRef}
+                  id="barcodeInput"
+                  type="text"
+                  className={styles.barcodeInput}
+                  value={barcode}
+                  onChange={(event) => {
+                    setBarcode(event.target.value);
+                    setError("");
+
+                    if (!event.target.value.trim()) {
+                      requestIdRef.current += 1;
+                      setProduct(null);
+                      setKitItems([]);
+                      setIsLoading(false);
+                    }
+                  }}
+                  placeholder="Escanea o ingresa el código..."
+                  autoFocus
+                  autoComplete="off"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.stopPropagation();
+
+                      handleSearchProduct();
+                    }
+                  }}
+                />
+              </div>
 
               <button
+                type="button"
                 className={styles.searchButton}
                 onClick={handleSearchProduct}
                 disabled={isLoading}
@@ -578,12 +630,17 @@ const VerifierModal = ({ isOpen, onClose, onAddToSale }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button className={styles.cancelButton} onClick={handleClose}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={handleClose}
+          >
             ESC - Cerrar
           </button>
 
           {product && (
             <button
+              type="button"
               className={styles.addButton}
               onClick={handleAddToSale}
               disabled={!canAddToSale}

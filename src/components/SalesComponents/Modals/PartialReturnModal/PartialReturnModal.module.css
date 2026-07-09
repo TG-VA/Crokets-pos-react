@@ -27,14 +27,18 @@
   --white: #ffffff;
   --danger: #dc3545;
   --success: #198754;
-  --warningBg: #fff3cd;
-  --warningBorder: #ffe69c;
+  --warningBg: #fff7df;
+  --warningBorder: #ffe0a3;
   --warningText: #7a5b00;
   --shadowFocus: 0 0 0 3px rgba(252, 137, 19, 0.18);
 }
 
 .header {
-  background: linear-gradient(135deg, var(--croketsOrange), var(--croketsOrangeDark));
+  background: linear-gradient(
+    135deg,
+    var(--croketsOrange),
+    var(--croketsOrangeDark)
+  );
   color: var(--white);
   padding: 16px 20px;
   display: flex;
@@ -49,6 +53,19 @@
   letter-spacing: 0.3px;
 }
 
+.titleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .headerMeta {
   margin-top: 4px;
   font-size: 0.82rem;
@@ -56,21 +73,39 @@
 }
 
 .closeButton {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: var(--white);
   border-radius: 10px;
-  font-size: 22px;
-  line-height: 1;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  padding: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.closeButton:hover {
+.closeButton:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.26);
   transform: scale(1.03);
+}
+
+.closeButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.closeIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .content {
@@ -291,7 +326,10 @@
   font-size: 1.15rem;
   font-weight: 900;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .qtyButton:hover:not(:disabled) {
@@ -318,7 +356,9 @@
   background: var(--white);
   color: var(--darkGray);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .qtyInput:focus {
@@ -371,7 +411,9 @@
   background: var(--white);
   color: var(--darkGray);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .input:focus,
@@ -444,7 +486,10 @@
   font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .actionButton:hover:not(:disabled) {

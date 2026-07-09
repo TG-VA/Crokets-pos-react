@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./DeleteTicketModal.module.css";
 
-const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) => {
+import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
+
+const DeleteTicketModal = ({
+  isOpen,
+  onClose,
+  onDeleteTicket,
+  pendingTickets,
+}) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
@@ -17,48 +26,94 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
     }
   }, [isOpen, pendingTickets]);
 
-  // Efecto para hacer scroll automático
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current && !showConfirmation) {
       const container = resultsListRef.current;
       const items = container.querySelectorAll(`.${styles.ticketItem}`);
-      
+
       if (items[selectedIndex]) {
         items[selectedIndex].scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
+          behavior: "smooth",
+          block: "nearest",
         });
       }
     }
   }, [selectedIndex, showConfirmation]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (event) => {
       if (!isOpen) return;
 
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
         if (showConfirmation) {
-          setShowConfirmation(false);
-          setTicketToDelete(null);
+          handleCancelDelete();
         } else {
           handleClose();
         }
-      } else if (!showConfirmation) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setSelectedIndex(prev => 
-            prev < pendingTickets.length - 1 ? prev + 1 : prev
-          );
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-        } else if (e.key === "Delete" || e.key === "Enter") {
-          e.preventDefault();
-          if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
-            handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
-          }
+
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.nativeEvent?.stopImmediatePropagation) {
+          event.nativeEvent.stopImmediatePropagation();
+        }
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
+        if (showConfirmation) {
+          handleConfirmDelete();
+          return;
+        }
+
+        if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
+          handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
+        }
+
+        return;
+      }
+
+      if (showConfirmation) return;
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+
+        setSelectedIndex((prev) =>
+          prev < pendingTickets.length - 1 ? prev + 1 : prev
+        );
+
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+
+        return;
+      }
+
+      if (event.key === "Delete") {
+        event.preventDefault();
+
+        if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
+          handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
         }
       }
     };
@@ -70,7 +125,7 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, pendingTickets, selectedIndex, showConfirmation]);
+  }, [isOpen, pendingTickets, selectedIndex, showConfirmation, ticketToDelete]);
 
   const handleClose = () => {
     setSelectedIndex(-1);
@@ -85,20 +140,19 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
   };
 
   const handleConfirmDelete = () => {
-    if (ticketToDelete) {
-      onDeleteTicket(ticketToDelete.index);
-      setShowConfirmation(false);
-      setTicketToDelete(null);
-      
-      // Si no quedan más tickets, cerrar el modal
-      if (pendingTickets.length === 1) {
-        handleClose();
-      } else {
-        // Ajustar el índice seleccionado si es necesario
-        if (selectedIndex >= pendingTickets.length - 1) {
-          setSelectedIndex(pendingTickets.length - 2);
-        }
-      }
+    if (!ticketToDelete) return;
+
+    onDeleteTicket(ticketToDelete.index);
+    setShowConfirmation(false);
+    setTicketToDelete(null);
+
+    if (pendingTickets.length === 1) {
+      handleClose();
+      return;
+    }
+
+    if (selectedIndex >= pendingTickets.length - 1) {
+      setSelectedIndex(pendingTickets.length - 2);
     }
   };
 
@@ -111,39 +165,69 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
-      <div
-        className={styles.deleteModal}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Eliminar Ticket Pendiente</h2>
+          <h2>
+            <span className={styles.titleContent}>
+              <img
+                src={DeleteIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
+              Eliminar ticket pendiente
+            </span>
+          </h2>
+
           <button
+            type="button"
             className={styles.closeButton}
             onClick={handleClose}
+            aria-label="Cerrar modal"
           >
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
         <div className={styles.modalBody}>
           {showConfirmation ? (
             <div className={styles.confirmationContainer}>
-              <div className={styles.warningIcon}>⚠️</div>
+              <div className={styles.warningIconBox}>
+                <img
+                  src={WarningIcon}
+                  alt=""
+                  className={styles.warningIcon}
+                  aria-hidden="true"
+                />
+              </div>
+
               <h3>¿Estás seguro?</h3>
+
               <p className={styles.confirmMessage}>
-                ¿Deseas eliminar el ticket <strong>{ticketToDelete?.ticket.name}</strong>?
+                ¿Deseas eliminar{" "}
+                <strong>{ticketToDelete?.ticket.name || "este ticket"}</strong>?
               </p>
+
               <p className={styles.confirmSubtext}>
                 Esta acción no se puede deshacer.
               </p>
+
               <div className={styles.confirmActions}>
                 <button
+                  type="button"
                   className={`${styles.actionButton} ${styles.confirmButton}`}
                   onClick={handleConfirmDelete}
                 >
                   Confirmar
                 </button>
+
                 <button
+                  type="button"
                   className={`${styles.actionButton} ${styles.cancelButton}`}
                   onClick={handleCancelDelete}
                 >
@@ -153,8 +237,17 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
             </div>
           ) : pendingTickets.length === 0 ? (
             <div className={styles.emptyMessage}>
-              <div className={styles.emptyIcon}>🗑️</div>
+              <div className={styles.emptyIconBox}>
+                <img
+                  src={DeleteIcon}
+                  alt=""
+                  className={styles.emptyIcon}
+                  aria-hidden="true"
+                />
+              </div>
+
               <p>No hay tickets pendientes por eliminar</p>
+
               <span className={styles.emptySubtext}>
                 Los tickets que guardes como pendientes aparecerán aquí
               </span>
@@ -164,6 +257,7 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
               <div className={styles.ticketsHeader}>
                 <span>Selecciona el ticket que deseas eliminar</span>
               </div>
+
               <div className={styles.ticketsContainer} ref={resultsListRef}>
                 <div className={styles.ticketsList}>
                   {pendingTickets.map((ticket, index) => (
@@ -176,27 +270,33 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
                     >
                       <div className={styles.ticketInfo}>
                         <div className={styles.ticketHeader}>
-                          <span className={styles.ticketName}>{ticket.name}</span>
+                          <span className={styles.ticketName}>
+                            {ticket.name}
+                          </span>
+
                           <span className={styles.ticketTotal}>
                             ${ticket.total.toFixed(2)}
                           </span>
                         </div>
+
                         <div className={styles.ticketDetails}>
                           <span className={styles.ticketProducts}>
                             {ticket.products.length} producto(s)
                           </span>
+
                           {ticket.client && (
                             <span className={styles.ticketClient}>
                               Cliente: {ticket.client.name}
                             </span>
                           )}
+
                           <span className={styles.ticketDate}>
-                            {new Date(ticket.date).toLocaleString('es-MX', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
+                            {new Date(ticket.date).toLocaleString("es-MX", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
                             })}
                           </span>
                         </div>
@@ -213,25 +313,32 @@ const DeleteTicketModal = ({ isOpen, onClose, onDeleteTicket, pendingTickets }) 
           <div className={styles.modalActions}>
             <div className={styles.actionButtons}>
               <button
+                type="button"
                 className={`${styles.actionButton} ${styles.deleteButton}`}
                 onClick={() => {
                   if (selectedIndex >= 0 && pendingTickets[selectedIndex]) {
-                    handleShowConfirmation(pendingTickets[selectedIndex], selectedIndex);
+                    handleShowConfirmation(
+                      pendingTickets[selectedIndex],
+                      selectedIndex
+                    );
                   }
                 }}
                 disabled={selectedIndex < 0}
               >
                 Eliminar ticket seleccionado
               </button>
+
               <button
+                type="button"
                 className={`${styles.actionButton} ${styles.cancelButton}`}
                 onClick={handleClose}
               >
                 ESC - Cancelar
               </button>
             </div>
+
             <div className={styles.actionHints}>
-              <span>↑↓ Navegar • Enter/Delete - Eliminar</span>
+              <span>↑↓ Navegar • Enter o Delete para eliminar</span>
             </div>
           </div>
         )}

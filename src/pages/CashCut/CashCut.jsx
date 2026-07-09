@@ -14,6 +14,20 @@ import { printTicket } from "../../utils/ticketPrinter";
 
 import styles from "./CashCut.module.css";
 
+import CircleCheckIcon from "../../assets/icons/circle-check-solid-full.svg";
+import MoneyBillWaveIcon from "../../assets/icons/money-bill-wave-solid-full.svg";
+import CreditCardIcon from "../../assets/icons/credit-card-solid-full.svg";
+import BuildingColumnsIcon from "../../assets/icons/building-columns-solid-full.svg";
+import CoinsIcon from "../../assets/icons/coins-solid-full.svg";
+import MoneyCheckIcon from "../../assets/icons/money-check-dollar-solid-full.svg";
+import ThumbtackIcon from "../../assets/icons/thumbtack-solid-full.svg";
+import EntryIcon from "../../assets/icons/entryIcon.svg";
+import ExitIcon from "../../assets/icons/exitIcon.svg";
+import BoxIcon from "../../assets/icons/box-solid-full.svg";
+import ReceiptIcon from "../../assets/icons/receipt-solid-full.svg";
+import GiftsIcon from "../../assets/icons/gifts-solid-full.svg";
+import RotateLeftIcon from "../../assets/icons/rotate-left-solid-full.svg";
+
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
     style: "currency",
@@ -59,14 +73,40 @@ const fmtTime = (d) =>
 const getFolio = (saleId) =>
   saleId ? `#${String(saleId).slice(0, 8).toUpperCase()}` : "—";
 
+const IconImg = ({ src, className = "", alt = "" }) => (
+  <img
+    src={src}
+    alt={alt}
+    className={className}
+    aria-hidden={alt ? undefined : "true"}
+    style={{
+      width: "1em",
+      height: "1em",
+      display: "inline-block",
+      objectFit: "contain",
+      verticalAlign: "middle",
+      filter: "brightness(0) invert(1)",
+    }}
+  />
+);
+
 const SectionCard = ({ icon, title, children }) => (
   <div className={styles.card}>
     <div className={styles.cardHeader}>
-      <span className={styles.cardIcon}>{icon}</span>
+      <span className={styles.cardIcon}>
+        <IconImg src={icon} />
+      </span>
       <span className={styles.cardTitle}>{title}</span>
     </div>
     <div className={styles.cardBody}>{children}</div>
   </div>
+);
+
+const HeroStatLabel = ({ icon, label }) => (
+  <span className={styles.heroStatLabel}>
+    <IconImg src={icon} />
+    <span>{label}</span>
+  </span>
 );
 
 const DataRow = ({ label, value, color, bold, borderTop }) => (
@@ -83,9 +123,7 @@ const DataRow = ({ label, value, color, bold, borderTop }) => (
   </div>
 );
 
-const EmptyState = ({ msg }) => (
-  <div className={styles.emptyState}>— {msg} —</div>
-);
+const EmptyState = ({ msg }) => <div className={styles.emptyState}>{msg}</div>;
 
 const CancellationItem = ({ item }) => (
   <div className={styles.cancellationItem}>
@@ -1390,7 +1428,8 @@ const CashCut = () => {
   );
 
   const ventasTransferenciaNeto = Math.max(
-    Number(ventasTransferencia || 0) - Number(devolucionesTransferenciaMetodo || 0),
+    Number(ventasTransferencia || 0) -
+      Number(devolucionesTransferenciaMetodo || 0),
     0
   );
 
@@ -1509,7 +1548,9 @@ const CashCut = () => {
           setErrorMsg("");
 
           if (!session?.id || !session?.branch_id) {
-            setErrorMsg("No hay turno activo. Abre caja antes de realizar un corte.");
+            setErrorMsg(
+              "No hay turno activo. Abre caja antes de realizar un corte."
+            );
             return;
           }
 
@@ -1533,7 +1574,9 @@ const CashCut = () => {
 
         {!isHistoricalView && hasShiftCut && currentShiftCut && (
           <div className={styles.cutDoneAlert}>
-            <strong>✅ Corte de cajero realizado.</strong>
+            <strong>
+              <IconImg src={CircleCheckIcon} /> Corte de cajero realizado.
+            </strong>
             <span> Pendiente cerrar turno.</span>
           </div>
         )}
@@ -1597,28 +1640,31 @@ const CashCut = () => {
 
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💵 Efectivo neto</span>
+                  <HeroStatLabel icon={MoneyBillWaveIcon} label="Efectivo neto" />
                   <span className={styles.heroStatValue}>
                     {fmt(ventasEfectivoNeto)}
                   </span>
                 </div>
 
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💳 Terminal neta</span>
+                  <HeroStatLabel icon={CreditCardIcon} label="Terminal neta" />
                   <span className={styles.heroStatValue}>
                     {fmt(ventasTerminalNeto)}
                   </span>
                 </div>
 
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>🏦 Transferencia neta</span>
+                  <HeroStatLabel
+                    icon={BuildingColumnsIcon}
+                    label="Transferencia neta"
+                  />
                   <span className={styles.heroStatValue}>
                     {fmt(ventasTransferenciaNeto)}
                   </span>
                 </div>
 
                 <div className={styles.heroStat}>
-                  <span className={styles.heroStatLabel}>💰 Total en caja</span>
+                  <HeroStatLabel icon={CoinsIcon} label="Total en caja" />
                   <span className={styles.heroStatValue}>
                     {fmt(expectedDisplay)}
                   </span>
@@ -1628,7 +1674,7 @@ const CashCut = () => {
 
             <div className={styles.grid}>
               {(isHistoricalView || currentShiftCut) && (
-                <SectionCard icon="📌" title="INFORMACIÓN DEL CORTE">
+                <SectionCard icon={ThumbtackIcon} title="INFORMACIÓN DEL CORTE">
                   <DataRow
                     label="Fecha del corte"
                     value={`${fmtShortDate(
@@ -1655,7 +1701,7 @@ const CashCut = () => {
                 </SectionCard>
               )}
 
-              <SectionCard icon="💰" title="DINERO EN CAJA">
+              <SectionCard icon={MoneyCheckIcon} title="DINERO EN CAJA">
                 <DataRow label="Fondo de caja inicial" value={fmt(openingAmount)} />
                 <DataRow
                   label="Entradas de efectivo"
@@ -1693,14 +1739,16 @@ const CashCut = () => {
                   color="#c62828"
                 />
                 <DataRow
-                  label={isHistoricalView || hasShiftCut ? "Total esperado" : "Total en caja"}
+                  label={
+                    isHistoricalView || hasShiftCut ? "Total esperado" : "Total en caja"
+                  }
                   value={fmt(expectedDisplay)}
                   bold
                   borderTop
                 />
               </SectionCard>
 
-              <SectionCard icon="💳" title="VENTAS POR MÉTODO DE PAGO">
+              <SectionCard icon={CreditCardIcon} title="VENTAS POR MÉTODO DE PAGO">
                 {ventasPorMetodo.length === 0 ? (
                   <EmptyState msg="No hubo ventas en este turno" />
                 ) : (
@@ -1764,7 +1812,7 @@ const CashCut = () => {
                 )}
               </SectionCard>
 
-              <SectionCard icon="⬇️" title="ENTRADAS DE EFECTIVO">
+              <SectionCard icon={EntryIcon} title="ENTRADAS DE EFECTIVO">
                 {entradasEfectivo.length === 0 ? (
                   <EmptyState msg="No hubo entradas de efectivo" />
                 ) : (
@@ -1789,7 +1837,7 @@ const CashCut = () => {
                 )}
               </SectionCard>
 
-              <SectionCard icon="⬆️" title="SALIDAS DE EFECTIVO">
+              <SectionCard icon={ExitIcon} title="SALIDAS DE EFECTIVO">
                 {salidasEfectivo.length === 0 ? (
                   <EmptyState msg="No hubo salidas de efectivo" />
                 ) : (
@@ -1814,7 +1862,7 @@ const CashCut = () => {
                 )}
               </SectionCard>
 
-              <SectionCard icon="📦" title="VENTAS POR DEPARTAMENTO">
+              <SectionCard icon={BoxIcon} title="VENTAS POR DEPARTAMENTO">
                 {ventasPorDepartamento.length === 0 ? (
                   <EmptyState msg="No hay datos de departamentos" />
                 ) : (
@@ -1834,7 +1882,7 @@ const CashCut = () => {
                 )}
               </SectionCard>
 
-              <SectionCard icon="🧾" title="RESUMEN DE VENTAS">
+              <SectionCard icon={ReceiptIcon} title="RESUMEN DE VENTAS">
                 <DataRow label="Subtotal registrado" value={fmt(subtotal)} />
                 <DataRow
                   label="Descuento aplicado"
@@ -1863,7 +1911,7 @@ const CashCut = () => {
 
               {(rewardSummary.canjesAplicados > 0 ||
                 rewardSummary.canjesRevertidos > 0) && (
-                <SectionCard icon="🎁" title="RECOMPENSAS">
+                <SectionCard icon={GiftsIcon} title="RECOMPENSAS">
                   {rewardSummary.canjesAplicados > 0 && (
                     <>
                       <DataRow
@@ -1897,7 +1945,7 @@ const CashCut = () => {
                 </SectionCard>
               )}
 
-              <SectionCard icon="↩️" title="CANCELACIONES">
+              <SectionCard icon={RotateLeftIcon} title="CANCELACIONES">
                 {cancelaciones.length === 0 ? (
                   <EmptyState msg="No hubo cancelaciones en este turno" />
                 ) : (
@@ -1916,7 +1964,7 @@ const CashCut = () => {
                 )}
               </SectionCard>
 
-              <SectionCard icon="↩️" title="DEVOLUCIONES PARCIALES">
+              <SectionCard icon={RotateLeftIcon} title="DEVOLUCIONES PARCIALES">
                 {devolucionesParciales.length === 0 ? (
                   <EmptyState msg="No hubo devoluciones parciales en este turno" />
                 ) : (
@@ -1937,7 +1985,8 @@ const CashCut = () => {
             </div>
 
             <div className={styles.footer}>
-              CROKETS · Sistema POS · Generado el {fmtDate(now)} a las {fmtTime(now)}
+              CROKETS · Sistema POS · Generado el {fmtDate(now)} a las{" "}
+              {fmtTime(now)}
             </div>
           </>
         )}
