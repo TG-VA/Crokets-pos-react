@@ -1,21 +1,45 @@
-.container{
+.container {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: 100px;
-  padding-bottom: 30px;
-  width: 100%;
   flex: 1;
+
+  /*
+   * Espacio ocupado por la Navbar principal fija.
+   */
+  padding-top: 100px;
+
+  /*
+   * Espacio para que el Footer no tape el contenido.
+   */
+  padding-bottom: 30px;
+
+  box-sizing: border-box;
+
+  /*
+   * Es necesario para permitir que los elementos sticky
+   * de las páginas internas se fijen respecto a la ventana.
+   */
+  overflow: visible;
 }
 
 .pageContent {
+  width: 100%;
   margin: 0;
   padding: 0;
   background-color: #f5f5f5;
+
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  gap: 10px;
-  width: 100%;
   flex: 1;
+
+  gap: 10px;
+  box-sizing: border-box;
+
+  /*
+   * No debe tener hidden, auto ni scroll.
+   * El desplazamiento vertical lo controla la página completa.
+   */
+  overflow: visible;
 }
