@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "../PageReport.module.css";
+import styles from "./InventoryFilters.module.css";
 
 import {
   QUANTITY_FILTER_PREFIX,

@@ -1,0 +1,115 @@
+.tableWrap {
+  width: 100%;
+  flex: none;
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  border: 1px solid var(--mediumGray);
+  border-radius: 10px;
+  overflow: visible;
+  box-sizing: border-box;
+  background: #ffffff;
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  min-width: 1100px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead {
+  position: static;
+}
+
+.table th {
+  position: sticky;
+  top: 132px;
+  z-index: 60;
+  height: 50px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  text-align: left;
+  vertical-align: middle;
+  color: #333333;
+  background: #f3f4f5;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-top: 1px solid #dfe3e6;
+  border-bottom: 1px solid #d6dadd;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 4px 9px rgba(31, 41, 55, 0.11);
+}
+
+.table th:first-child {
+  border-top-left-radius: 9px;
+}
+
+.table th:last-child {
+  border-top-right-radius: 9px;
+}
+
+.codeColumn { width: 12%; }
+
+.nameColumn { width: 34%; }
+
+.departmentColumn { width: 16%; }
+
+.existenceColumn { width: 14%; }
+
+.minimumColumn { width: 6%; }
+
+.maximumColumn { width: 6%; }
+
+.detailColumn { width: 12%; }
+
+.table td {
+  font-size: 0.84rem;
+  padding: 9px 12px;
+  border-bottom: 1px solid #e4e6e8;
+  vertical-align: middle;
+  background: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover > td {
+  background: #f8fbfc;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.thInner {
+  position: relative;
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.thLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.empty {
+  text-align: center;
+  font-weight: 700;
+  color: #666666;
+  padding: 28px 16px !important;
+}
+
+@media (max-width: 700px) {
+.table th {
+    position: static;
+    top: auto;
+  }
+}

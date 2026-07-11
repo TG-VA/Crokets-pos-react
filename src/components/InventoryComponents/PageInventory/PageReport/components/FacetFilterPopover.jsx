@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import styles from "../PageReport.module.css";
+import styles from "./InventoryFilters.module.css";
 
 const FacetFilterPopover = ({
   filterKey,

@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "../PageReport.module.css";
+import styles from "./InventoryReportTable.module.css";
 
 import InventoryReportRow from "./InventoryReportRow";
 import FacetFilterButton from "./FacetFilterButton";
