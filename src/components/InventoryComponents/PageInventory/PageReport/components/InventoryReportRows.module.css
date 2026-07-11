@@ -1,0 +1,158 @@
+.codeCell {
+  font-weight: 700;
+  color: #32383d;
+  white-space: nowrap;
+}
+
+.nameCell {
+  font-weight: 800;
+  color: #303438;
+}
+
+.outOfStockRow > td {
+  background: #fff9f8;
+}
+
+.outOfStockRow:hover > td {
+  background: #fff3f1 !important;
+}
+
+.lowStockRow > td {
+  background: #fffdf7;
+}
+
+.lowStockRow:hover > td {
+  background: #fff9e9 !important;
+}
+
+.notApplicableRow > td {
+  background: #fafbfc;
+  color: #6f7780;
+}
+
+.notApplicableRow:hover > td {
+  background: #f3f5f6 !important;
+}
+
+.stockCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 112px;
+}
+
+.stockValue {
+  min-width: 22px;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.stockBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.available .stockValue {
+  color: #16763a;
+}
+
+.available .stockBadge {
+  background: #e8f7ed;
+  color: #16763a;
+}
+
+.lowStock .stockValue {
+  color: #b66200;
+}
+
+.lowStock .stockBadge {
+  background: #fff1d6;
+  color: #a55700;
+}
+
+.outOfStock .stockValue {
+  color: #c62828;
+}
+
+.outOfStock .stockBadge {
+  background: #fde9e7;
+  color: #c62828;
+}
+
+.notApplicable .stockValue {
+  color: #737b82;
+}
+
+.notApplicable .stockBadge {
+  background: #eef0f2;
+  color: #687078;
+}
+
+.linkButton {
+  border: none;
+  background: transparent;
+  color: var(--croketsBlue);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.linkButton:hover {
+  color: var(--croketsBlueDark);
+  text-decoration: underline;
+}
+
+.notApplicableText {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eef0f2;
+  color: #737b82;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.detailCell {
+  background: #fbfdff !important;
+  padding: 14px 16px !important;
+}
+
+.nestedTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #dce4e8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.nestedTable th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  background: #eaf5f8;
+  font-size: 0.8rem;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mediumGray);
+}
+
+.nestedTable td {
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mediumGray);
+}
+
+.nestedTable tr:last-child td {
+  border-bottom: none;
+}
