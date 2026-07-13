@@ -1,0 +1,274 @@
+.tableWrap {
+  position: relative;
+  width: 100%;
+  flex: none;
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  box-sizing: border-box;
+  overflow: visible;
+  border: 1px solid var(--mediumGray);
+  border-radius: 10px;
+  background: var(--white);
+}
+
+.table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead {
+  position: static;
+}
+
+.table th {
+  position: sticky;
+  top: 132px;
+  z-index: 60;
+  height: 50px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border-top: 1px solid #dfe3e6;
+  border-bottom: 1px solid #d6dadd;
+  background: #f3f4f5;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 4px 9px rgba(31, 41, 55, 0.11);
+  color: var(--darkGray);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table th:first-child {
+  border-top-left-radius: 9px;
+}
+
+.table th:last-child {
+  border-top-right-radius: 9px;
+}
+
+.table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #e4e6e8;
+  background: var(--white);
+  font-size: 0.84rem;
+  vertical-align: middle;
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover > td {
+  background: #f8fbfc;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.thInner {
+  position: relative;
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.thLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  z-index: 5;
+  width: 10px;
+  height: calc(100% + 16px);
+  cursor: col-resize;
+}
+
+.resizing {
+  cursor: col-resize;
+}
+
+.resizing * {
+  user-select: none;
+}
+
+.colDate {
+  width: 140px;
+}
+
+.colProduct {
+  width: 280px;
+}
+
+.colTicket {
+  width: 120px;
+}
+
+.colType {
+  width: 160px;
+}
+
+.colQty {
+  width: 72px;
+}
+
+.colPrev {
+  width: 92px;
+}
+
+.colNew {
+  width: 92px;
+}
+
+.colReason {
+  width: 260px;
+}
+
+.colUser {
+  width: 140px;
+}
+
+.empty {
+  padding: 28px 16px !important;
+  color: #666666;
+  font-weight: 700;
+  text-align: center;
+}
+
+.center {
+  text-align: center;
+}
+
+.table th:nth-child(5),
+.table th:nth-child(6),
+.table th:nth-child(7),
+.table td:nth-child(5),
+.table td:nth-child(6),
+.table td:nth-child(7) {
+  padding-right: 6px;
+  padding-left: 6px;
+  text-align: center;
+}
+
+.table th:nth-child(5) .thInner,
+.table th:nth-child(6) .thInner,
+.table th:nth-child(7) .thInner {
+  justify-content: center;
+}
+
+.table th:last-child .thInner {
+  gap: 6px;
+}
+
+.table th:last-child .thLabel {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.productCell {
+  font-weight: 800;
+}
+
+.ticketCell {
+  max-width: 220px;
+  overflow: hidden;
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dateCell {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.filterButton {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--mediumGray);
+  border-radius: 12px;
+  background: var(--white);
+  color: #0f5f73;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.filterButton svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.filterButton:hover {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  transform: translateY(-1px);
+}
+
+.filterButtonActive {
+  border-color: var(--croketsBlue);
+  background: #eaf8fb;
+}
+
+.filterButtonActive svg {
+  display: none;
+}
+
+.filterButtonOpen {
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.18);
+}
+
+.filterBadge {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--croketsBlue);
+  color: var(--white);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .table th {
+    position: static;
+    top: auto;
+  }
+}

@@ -1,0 +1,138 @@
+.filterPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: 270px;
+  padding: 11px;
+  border: 1px solid var(--mediumGray);
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+}
+
+.filterPopoverHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterSearch {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--mediumGray);
+  border-radius: 8px;
+  background: var(--white);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.filterSearch:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
+}
+
+.filterPopoverActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.filterMiniButton {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--mediumGray);
+  border-radius: 8px;
+  background: var(--white);
+  color: #0f5f73;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filterMiniButton:hover {
+  border-color: var(--croketsBlue);
+  background: #f2fafc;
+  color: var(--croketsBlue);
+}
+
+.filterList {
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+  overflow: auto;
+}
+
+.filterOption {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 8px;
+  color: var(--darkGray);
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filterOption:hover {
+  background: var(--lightGray);
+}
+
+.filterOption input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--croketsBlue);
+  cursor: pointer;
+}
+
+.filterOptionLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterOptionCount {
+  color: #666666;
+  font-family: "Courier New", monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.filterEmpty {
+  padding: 8px 4px;
+  color: #666666;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.filterList::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.filterList::-webkit-scrollbar-track {
+  background: #f0f1f2;
+}
+
+.filterList::-webkit-scrollbar-thumb {
+  border: 2px solid #f0f1f2;
+  border-radius: 999px;
+  background: #b8c0c5;
+}
+
+.filterList::-webkit-scrollbar-thumb:hover {
+  background: #929da4;
+}
