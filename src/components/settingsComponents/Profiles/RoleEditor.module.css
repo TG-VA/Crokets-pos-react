@@ -1,0 +1,225 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  z-index: 999;
+}
+
+.panel {
+  position: fixed;
+  top: 96px;
+  right: 20px;
+  bottom: 78px;
+  width: min(720px, calc(100vw - 40px));
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #1092b1;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.header h2 {
+  margin: 0 0 6px;
+  color: #333333;
+  font-size: 1.55rem;
+}
+
+.header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.closeButton,
+.primaryButton,
+.ghostButton {
+  border: 0;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.closeButton {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 0 14px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+
+.summaryCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.summaryCard span {
+  display: block;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 5px;
+  letter-spacing: 0.04em;
+}
+
+.summaryCard strong {
+  color: #333333;
+  font-size: 1rem;
+}
+
+.errorBanner {
+  margin: 16px 24px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+
+.rolesList {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 24px 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.roleCard {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.roleCard input {
+  margin-top: 3px;
+  accent-color: #1092b1;
+}
+
+.roleCardActive {
+  border-color: rgba(16, 146, 177, 0.45);
+  background: rgba(16, 146, 177, 0.06);
+}
+
+.roleInfo strong {
+  display: block;
+  color: #333333;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.roleInfo span {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.preview {
+  margin: 0 24px 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.preview span {
+  display: block;
+  color: #9a3412;
+  font-size: 0.75rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.preview strong {
+  display: block;
+  color: #c2410c;
+  margin-bottom: 4px;
+}
+
+.preview p {
+  margin: 0;
+  color: #9a3412;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.ghostButton {
+  min-height: 42px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.primaryButton {
+  min-height: 42px;
+  padding: 0 16px;
+  background: #fc8913;
+  color: #ffffff;
+}
+
+.primaryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .panel {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
+  .summary,
+  .rolesList {
+    grid-template-columns: 1fr;
+  }
+}

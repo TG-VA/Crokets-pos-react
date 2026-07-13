@@ -46,6 +46,15 @@
   color: #333333;
   font-size: 0.9rem;
   opacity: 0.7;
+  display: block;
+}
+
+.permissionsHint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .createButton {
@@ -140,7 +149,7 @@
 
 .tableHeader {
   display: grid;
-  grid-template-columns: 2fr 2fr 2fr 1.5fr;
+  grid-template-columns: 1.7fr 1.5fr 1.4fr 2.5fr 1.15fr 1.1fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background: #1092b1;
@@ -163,7 +172,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2fr 2fr 2fr 1.5fr;
+  grid-template-columns: 1.7fr 1.5fr 1.4fr 2.5fr 1.15fr 1.1fr;
   gap: 1rem;
   padding: 1.5rem;
   border-bottom: 1px solid #e0e0e0;
@@ -189,6 +198,10 @@
 .userAvatar {
   width: 45px;
   height: 45px;
+  min-width: 45px;
+  min-height: 45px;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: linear-gradient(135deg, #fc8913, #e07a0d);
   color: #ffffff;
@@ -224,6 +237,30 @@
   flex-wrap: wrap;
 }
 
+.permissionsCell {
+  display: flex;
+  align-items: center;
+}
+
+.permissionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.permissionChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: rgba(16, 146, 177, 0.1);
+  color: #0d7a94;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .emailCell {
   color: #333333;
   font-size: 0.9rem;
@@ -243,6 +280,24 @@
 .dateCell {
   color: #333333;
   font-size: 0.85rem;
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.manageButton {
+  min-height: 36px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 146, 177, 0.22);
+  background: rgba(16, 146, 177, 0.08);
+  color: #0d7a94;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .statusBadge {
@@ -275,4 +330,27 @@
   background: rgba(231, 76, 60, 0.12);
   color: #b43729;
   font-weight: 600;
+}
+
+@media (max-width: 980px) {
+  .tableHeader {
+    display: none;
+  }
+
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .emailCell,
+  .metaCell,
+  .permissionsCell,
+  .dateCell,
+  .actionsCell {
+    padding-left: 61px;
+  }
+
+  .actionsCell {
+    justify-content: flex-start;
+  }
 }
