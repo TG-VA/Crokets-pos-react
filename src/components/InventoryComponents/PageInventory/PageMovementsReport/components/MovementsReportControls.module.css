@@ -1,0 +1,205 @@
+.controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.rangeControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.datePickerWrapper {
+  display: inline-block;
+}
+
+.datePickerWrapper :global(.react-datepicker-wrapper) {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
+.label {
+  color: #333333;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.dateInput {
+  width: 135px;
+  height: 40px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 2px solid var(--mediumGray);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
+}
+
+.datePickerPopper {
+  z-index: 100;
+}
+
+.datePickerCalendar {
+  border: 1px solid var(--mediumGray);
+  box-shadow: var(--shadow);
+  font-family: inherit;
+}
+
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quickButton {
+  height: 40px;
+  padding: 0 10px;
+  border: 2px solid var(--mediumGray);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.quickButton:hover {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  color: var(--croketsBlue);
+}
+
+.quickButtonActive {
+  border-color: var(--croketsBlue);
+  background: #e8f7fb;
+  color: var(--croketsBlue);
+}
+
+.select {
+  width: 100%;
+  min-width: 200px;
+  height: 40px;
+  padding: 0 36px 0 11px;
+  box-sizing: border-box;
+  border: 2px solid var(--mediumGray);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
+}
+
+.exportButton {
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 7px;
+  background: #fc8913;
+  color: var(--white);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.exportButton:hover:not(:disabled) {
+  background: #e97808;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(252, 137, 19, 0.24);
+}
+
+.exportButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 1450px) {
+  .controls {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .rangeControls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .controls,
+  .rangeControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controlGroup {
+    width: 100%;
+  }
+
+  .quickActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .quickButton {
+    flex: 1;
+  }
+
+  .datePickerWrapper,
+  .dateInput,
+  .select,
+  .exportButton {
+    width: 100%;
+  }
+}
