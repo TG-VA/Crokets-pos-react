@@ -1,4 +1,3 @@
-import React from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login/Login";
@@ -6,8 +5,8 @@ import CashRegister from "./pages/CashRegister/CashRegister";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Products from "./pages/Products/Products";
 import Inventory from "./pages/Inventory/Inventory";
-import Settings from "./pages/Settings/Settings";
-import Profiles from "./pages/Profiles/Profiles";
+import Settings from "./components/settingsComponents/Settings/Settings";
+import Profiles from "./components/settingsComponents/Profiles/Profiles";
 import CashCut from "./pages/CashCut/CashCut";
 import Invoices from "./pages/Invoices/Invoices";
 import Customers from "./pages/Customers/Customers";
@@ -156,7 +155,7 @@ function AppRoutes() {
           element={
             isAuthenticated && !isLocked ? (
               <Settings />
-            ) : (
+            ) : ( 
               <Navigate to="/login" replace />
             )
           }
