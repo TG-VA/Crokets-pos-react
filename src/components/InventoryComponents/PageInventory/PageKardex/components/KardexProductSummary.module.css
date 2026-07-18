@@ -1,0 +1,268 @@
+.productCard {
+  width: 100%;
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background-color: #fcfcfc;
+}
+
+.productMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+  min-height: 62px;
+  margin-bottom: 1rem;
+}
+
+.productName {
+  min-width: 0;
+  min-height: 62px;
+  display: flex;
+  align-items: flex-start;
+  color: var(--croketsBlue);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.productMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.metaBadge {
+  padding: 0.3rem 0.7rem;
+  box-sizing: border-box;
+  border: 1px solid var(--mediumGray);
+  border-radius: 6px;
+  background-color: var(--lightGray);
+  color: var(--darkGray);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inventoryStats {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.statBox {
+  min-width: 110px;
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  box-sizing: border-box;
+  border: 2px solid var(--mediumGray);
+  border-radius: 8px;
+  background-color: var(--white);
+  text-align: center;
+}
+
+.statLabel {
+  margin-bottom: 0.2rem;
+  color: #6f6f6f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  color: var(--textColor);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.statAgotado {
+  border-color: var(--errorColor);
+  background-color: #fff5f5;
+}
+
+.statAgotado .statLabel,
+.statAgotado .statValue {
+  color: var(--errorColor);
+}
+
+.statPorAgotarse {
+  border-color: var(--croketsOrange);
+  background-color: #fff8ed;
+}
+
+.statPorAgotarse .statLabel,
+.statPorAgotarse .statValue {
+  color: var(--croketsOrange);
+}
+
+.statDisponible {
+  border-color: var(--successColor);
+  background-color: #f0fff0;
+}
+
+.statDisponible .statLabel,
+.statDisponible .statValue {
+  color: var(--successColor);
+}
+
+.statSobrestock {
+  border-color: #7c5ce7;
+  background-color: #f5f2ff;
+}
+
+.statSobrestock .statLabel,
+.statSobrestock .statValue {
+  color: #6746d9;
+}
+
+.statSinInventario {
+  border-color: #a4abb1;
+  background-color: #f5f6f7;
+}
+
+.statSinInventario .statLabel,
+.statSinInventario .statValue {
+  color: #6f777d;
+}
+
+.productActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.changeButton,
+.removeButton,
+.exportButton {
+  height: 36px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.changeButton {
+  border: none;
+  background-color: var(--croketsBlue);
+  color: var(--white);
+}
+
+.changeButton:hover:not(:disabled) {
+  background-color: var(--croketsBlueDark);
+  transform: translateY(-2px);
+}
+
+.removeButton {
+  border: 1px solid #d7dde1;
+  background-color: var(--white);
+  color: #5d6870;
+}
+
+.removeButton:hover:not(:disabled) {
+  border-color: var(--errorColor);
+  background-color: #fff5f5;
+  color: var(--errorColor);
+  transform: translateY(-2px);
+}
+
+.exportButton {
+  border: none;
+  background-color: var(--croketsOrange);
+  color: var(--white);
+}
+
+.exportButton:hover:not(:disabled) {
+  filter: brightness(0.95);
+  transform: translateY(-2px);
+}
+
+.changeButton:disabled,
+.removeButton:disabled,
+.exportButton:disabled {
+  border-color: #cfd8dc;
+  background-color: #cfd8dc;
+  color: #6f7b80;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+@media (max-width: 1250px) {
+  .productCard {
+    min-height: 0;
+  }
+
+  .productMain {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .productName {
+    min-height: 0;
+  }
+
+  .productMeta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .productCard {
+    min-height: 0;
+  }
+
+  .productMain {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .productName {
+    min-height: 0;
+  }
+
+  .productMeta {
+    justify-content: flex-start;
+  }
+
+  .inventoryStats {
+    justify-content: flex-start;
+  }
+
+  .productActions {
+    flex-direction: column;
+  }
+
+  .changeButton,
+  .removeButton,
+  .exportButton {
+    width: 100%;
+  }
+}

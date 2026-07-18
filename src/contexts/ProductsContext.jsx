@@ -26,6 +26,7 @@ export const ProductsProvider = ({ children }) => {
   const { branch } = useBranch();
 
   const [products, setProducts] = useState([]);
+  const [kardexProducts, setKardexProducts] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
@@ -59,6 +60,7 @@ export const ProductsProvider = ({ children }) => {
   const loadProducts = useCallback(async () => {
     if (!branch?.id) {
       setProducts([]);
+      setKardexProducts([]);
       return;
     }
 
@@ -150,9 +152,8 @@ export const ProductsProvider = ({ children }) => {
           .map((row) => row.product_id)
       );
 
-      const formattedInventoryProducts = (inventoryRows || [])
-        .filter((row) => row.products)
-        .filter((row) => row.products.status === true)
+      const formattedBranchKardexProducts = (inventoryRows || [])
+        .filter((row) => Boolean(row.products))
         .map((row) => ({
           id: row.products.id,
           inventory_id: row.id,
@@ -171,6 +172,8 @@ export const ProductsProvider = ({ children }) => {
           maximo: Number(row.max_stock || 0),
           status: !!row.products.status,
           is_active: row.is_active ?? true,
+          is_kardex_inactive:
+            row.products.status !== true || row.is_active !== true,
           has_been_stocked: !!row.has_been_stocked,
           is_global: !!row.products.is_global,
           sale_type: row.products.sale_type || "unidad",
@@ -184,6 +187,10 @@ export const ProductsProvider = ({ children }) => {
           updated_at: row.updated_at || row.products.updated_at || null,
           use_inventory: !!row.products.tracks_inventory,
         }));
+
+      const formattedInventoryProducts = formattedBranchKardexProducts.filter(
+        (product) => product.status === true
+      );
 
       const formattedGlobalProductsWithoutInventory = (globalProducts || [])
         .filter((product) => !inventoryProductIds.has(product.id))
@@ -218,6 +225,8 @@ export const ProductsProvider = ({ children }) => {
           use_inventory: !!product.tracks_inventory,
         }));
 
+      setKardexProducts(formattedBranchKardexProducts);
+
       setProducts([
         ...formattedInventoryProducts,
         ...formattedGlobalProductsWithoutInventory,
@@ -225,6 +234,7 @@ export const ProductsProvider = ({ children }) => {
     } catch (error) {
       console.error("Error cargando productos:", error);
       setProducts([]);
+      setKardexProducts([]);
       setProductsError(error.message || "Error al cargar productos");
     } finally {
       setLoadingProducts(false);
@@ -885,6 +895,7 @@ export const ProductsProvider = ({ children }) => {
   const value = useMemo(
     () => ({
       products,
+      kardexProducts,
       departments,
       loadingProducts,
       loadingDepartments,
@@ -904,6 +915,7 @@ export const ProductsProvider = ({ children }) => {
     }),
     [
       products,
+      kardexProducts,
       departments,
       loadingProducts,
       loadingDepartments,
