@@ -1,0 +1,36 @@
+.emptyState {
+  width: 100%;
+  min-height: 400px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.emptyIcon {
+  margin-bottom: 1rem;
+  color: var(--mediumGray);
+}
+
+.emptyTitle {
+  margin-bottom: 0.5rem;
+  color: var(--croketsBlue);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.emptySubtitle {
+  max-width: 400px;
+  color: #6f6f6f;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.emptySubtitle strong {
+  color: var(--croketsBlue);
+}
