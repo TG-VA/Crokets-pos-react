@@ -1,5 +1,10 @@
 import React from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import CashRegister from "./pages/CashRegister/CashRegister";
@@ -11,6 +16,7 @@ import Profiles from "./pages/Profiles/Profiles";
 import CashCut from "./pages/CashCut/CashCut";
 import Invoices from "./pages/Invoices/Invoices";
 import Customers from "./pages/Customers/Customers";
+import Reports from "./pages/Reports/Reports";
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
@@ -152,6 +158,21 @@ function AppRoutes() {
         />
 
         <Route
+          path="/reports/*"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : isLocked ? (
+              <Navigate to="/login" replace />
+            ) : !cashRegistered ? (
+              <Navigate to="/cash-register" replace />
+            ) : (
+              <Reports />
+            )
+          }
+        />
+
+        <Route
           path="/settings"
           element={
             isAuthenticated && !isLocked ? (
@@ -188,6 +209,8 @@ function AppRoutes() {
             />
           }
         />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

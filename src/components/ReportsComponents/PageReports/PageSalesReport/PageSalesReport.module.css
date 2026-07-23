@@ -1,0 +1,90 @@
+.page {
+  width: 100%;
+  padding: 30px 30px 32px;
+  box-sizing: border-box;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  color: #24323a;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.description {
+  margin: 6px 0 0;
+  color: #68757d;
+  font-size: 14px;
+}
+
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #dfe5e8;
+  border-radius: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  color: #34434b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field input {
+  min-width: 170px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5da;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.searchButton {
+  height: 38px;
+  padding: 0 20px;
+  background: #1092b1;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.searchButton:hover {
+  background: #0d7f9a;
+}
+
+.emptyState {
+  margin-top: 18px;
+  padding: 40px 24px;
+  background: #ffffff;
+  border: 1px dashed #cbd5da;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.emptyState h2 {
+  margin: 0 0 8px;
+  color: #34434b;
+  font-size: 18px;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #758188;
+  font-size: 14px;
+}

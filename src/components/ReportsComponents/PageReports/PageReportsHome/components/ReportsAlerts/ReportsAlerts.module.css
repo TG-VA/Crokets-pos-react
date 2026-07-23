@@ -1,0 +1,310 @@
+.card {
+  min-width: 0;
+  height: 100%;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  background: #ffffff;
+  border: 1px solid #e1e6e9;
+  border-radius: 12px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  box-sizing: border-box;
+}
+
+.header {
+  padding-bottom: 14px;
+
+  border-bottom: 1px solid #edf0f2;
+}
+
+.title {
+  margin: 0;
+
+  color: #24323a;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.description {
+  margin: 4px 0 0;
+
+  color: #7a868d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.alertRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.alertRow {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  border-bottom: 1px solid #edf0f2;
+}
+
+.alertRow:last-child {
+  border-bottom: none;
+}
+
+.alertLabel {
+  min-width: 0;
+
+  color: #58656d;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.alertValue {
+  flex-shrink: 0;
+
+  color: #2e3c44;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.danger {
+  color: #c94a4a;
+}
+
+.warning {
+  color: #d4870a;
+}
+
+.inventorySummary {
+  margin-top: auto;
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  border: 1px solid;
+  border-radius: 10px;
+
+  box-sizing: border-box;
+}
+
+.inventoryHealthy {
+  background: #f2faf6;
+  border-color: #cde9da;
+}
+
+.inventoryWarning {
+  background: #fff9ef;
+  border-color: #efd9ac;
+}
+
+.inventorySummaryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.inventoryEyebrow {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #7a868d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inventoryStatus {
+  display: block;
+
+  color: #34434b;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.statusBadge {
+  min-width: 34px;
+  height: 28px;
+  padding: 0 9px;
+
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  box-sizing: border-box;
+}
+
+.statusHealthy {
+  background: #dcefe5;
+  color: #38745a;
+}
+
+.statusWarning {
+  background: #f9e8c7;
+  color: #b56f00;
+}
+
+.inventoryMetrics {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.inventoryMetric {
+  min-width: 0;
+  padding: 11px 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(210, 220, 224, 0.8);
+  border-radius: 8px;
+
+  box-sizing: border-box;
+}
+
+.inventoryMetric span {
+  color: #68757d;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.inventoryMetric strong {
+  color: #34434b;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.inventoryButton {
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  background: rgba(255, 255, 255, 0.72);
+  color: #536169;
+
+  border: 1px solid rgba(197, 211, 216, 0.9);
+  border-radius: 8px;
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.inventoryButton span {
+  flex-shrink: 0;
+
+  color: #1092b1;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.inventoryButton:hover {
+  background: #ffffff;
+  color: #1092b1;
+  border-color: rgba(16, 146, 177, 0.42);
+
+  transform: translateY(-1px);
+}
+
+.inventoryButton:focus-visible {
+  outline: 3px solid rgba(16, 146, 177, 0.2);
+  outline-offset: 2px;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loadingState div {
+  width: 100%;
+  height: 34px;
+
+  background: linear-gradient(
+    90deg,
+    #edf0f2 25%,
+    #f7f8f9 50%,
+    #edf0f2 75%
+  );
+
+  background-size: 200% 100%;
+  border-radius: 6px;
+
+  animation: loadingPulse 1.2s
+    ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1120px) {
+  .card {
+    height: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding: 17px;
+  }
+
+  .alertRow {
+    min-height: 40px;
+  }
+
+  .inventoryMetrics {
+    grid-template-columns: 1fr;
+  }
+}
