@@ -5,7 +5,9 @@ import {
   uniqueValues,
 } from "./reportsDashboardUtils";
 
-export const getSaleReturns = async (saleIds) => {
+export const getSaleReturns = async (
+  saleIds = []
+) => {
   if (!saleIds.length) return [];
 
   const { data, error } = await supabase
@@ -23,7 +25,9 @@ export const getSaleReturns = async (saleIds) => {
   return data || [];
 };
 
-export const getReturnItems = async (returnIds) => {
+export const getReturnItems = async (
+  returnIds = []
+) => {
   if (!returnIds.length) return [];
 
   const { data, error } = await supabase
@@ -58,7 +62,9 @@ export const getTodayCancelledSales = async ({
     .gte("created_at", todayStart)
     .lte("created_at", todayEnd);
 
-  if (cancelledError) throw cancelledError;
+  if (cancelledError) {
+    throw cancelledError;
+  }
 
   const saleIds = uniqueValues(
     (cancelledRows || []).map(
@@ -77,7 +83,9 @@ export const getTodayCancelledSales = async ({
     .in("id", saleIds)
     .eq("branch_id", branchId);
 
-  if (salesError) throw salesError;
+  if (salesError) {
+    throw salesError;
+  }
 
   return (salesRows || []).length;
 };
@@ -101,7 +109,9 @@ export const getTodayReturns = async ({
     .gte("created_at", todayStart)
     .lte("created_at", todayEnd);
 
-  if (returnsError) throw returnsError;
+  if (returnsError) {
+    throw returnsError;
+  }
 
   const saleIds = uniqueValues(
     (returnRows || []).map(
@@ -128,18 +138,26 @@ export const getTodayReturns = async ({
     .in("id", saleIds)
     .eq("branch_id", branchId);
 
-  if (salesError) throw salesError;
+  if (salesError) {
+    throw salesError;
+  }
 
   const validSaleIds = new Set(
-    (salesRows || []).map((row) => row.id)
+    (salesRows || []).map(
+      (row) => row.id
+    )
   );
 
-  const branchReturns = (returnRows || []).filter(
-    (row) => validSaleIds.has(row.sale_id)
+  const branchReturns = (
+    returnRows || []
+  ).filter((row) =>
+    validSaleIds.has(row.sale_id)
   );
 
-  const returnIds = branchReturns.map(
-    (row) => row.id
+  const returnIds = uniqueValues(
+    branchReturns.map(
+      (row) => row.id
+    )
   );
 
   const returnItems =
@@ -152,8 +170,8 @@ export const getTodayReturns = async ({
   );
 
   const units = returnItems.reduce(
-    (sum, row) =>
-      sum + toNumber(row.quantity),
+    (sum, item) =>
+      sum + toNumber(item.quantity),
     0
   );
 
@@ -164,70 +182,4 @@ export const getTodayReturns = async ({
     rows: branchReturns,
     items: returnItems,
   };
-};
-
-export const buildReturnedAmountBySale = (
-  returnRows
-) => {
-  const result = {};
-
-  for (const row of returnRows) {
-    if (!row.sale_id) continue;
-
-    result[row.sale_id] =
-      toNumber(result[row.sale_id]) +
-      toNumber(row.total_refund);
-  }
-
-  return result;
-};
-
-export const buildReturnedQuantityByProduct = (
-  returnItems
-) => {
-  const result = {};
-
-  for (const item of returnItems) {
-    if (!item.product_id) continue;
-
-    result[item.product_id] =
-      toNumber(result[item.product_id]) +
-      toNumber(item.quantity);
-  }
-
-  return result;
-};
-
-export const buildReturnedAmountByProduct = ({
-  returnRows = [],
-  returnItems = [],
-  validSaleIds,
-}) => {
-  const result = {};
-
-  if (!(validSaleIds instanceof Set)) {
-    return result;
-  }
-
-  const validReturnIds = new Set(
-    returnRows
-      .filter((row) =>
-        validSaleIds.has(row.sale_id)
-      )
-      .map((row) => row.id)
-      .filter(Boolean)
-  );
-
-  for (const item of returnItems) {
-    if (!item.product_id) continue;
-    if (!validReturnIds.has(item.return_id)) {
-      continue;
-    }
-
-    result[item.product_id] =
-      toNumber(result[item.product_id]) +
-      toNumber(item.total_price);
-  }
-
-  return result;
 };

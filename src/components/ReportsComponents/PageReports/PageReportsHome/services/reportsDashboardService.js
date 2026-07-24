@@ -3,9 +3,13 @@ import {
   getDateInputFromIso,
   getEmptyReportsDashboard,
   isCompletedSale,
-  toNumber,
   uniqueValues,
 } from "./reportsDashboardUtils";
+
+import {
+  buildTodaySalesKpis,
+  buildValidReturnsData,
+} from "./reportsDashboardCalculations";
 
 import {
   getPaymentMethodsByIds,
@@ -25,6 +29,9 @@ import {
   buildReturnedAmountByProduct,
   buildReturnedAmountBySale,
   buildReturnedQuantityByProduct,
+} from "./reportsReturnsCalculations";
+
+import {
   getReturnItems,
   getSaleReturns,
   getTodayCancelledSales,
@@ -58,6 +65,11 @@ export const getReportsDashboard = async (
       chartRange.start
     );
 
+  /*
+   * Primera carga:
+   * información principal de ventas, inventario
+   * e incidencias registradas durante el día.
+   */
   const [
     salesRows,
     inventoryRows,
@@ -86,9 +98,16 @@ export const getReportsDashboard = async (
   ]);
 
   const saleIds = uniqueValues(
-    salesRows.map((sale) => sale.id)
+    salesRows.map(
+      (sale) => sale.id
+    )
   );
 
+  /*
+   * Segunda carga:
+   * detalles, pagos y devoluciones de las ventas
+   * recuperadas dentro del periodo del dashboard.
+   */
   const [
     returnRows,
     detailRows,
@@ -100,7 +119,9 @@ export const getReportsDashboard = async (
   ]);
 
   const returnIds = uniqueValues(
-    returnRows.map((row) => row.id)
+    returnRows.map(
+      (row) => row.id
+    )
   );
 
   const returnItems =
@@ -124,6 +145,11 @@ export const getReportsDashboard = async (
       )
     );
 
+  /*
+   * Tercera carga:
+   * catálogos necesarios para presentar los
+   * nombres de productos y métodos de pago.
+   */
   const [
     productRows,
     paymentMethodRows,
@@ -135,13 +161,14 @@ export const getReportsDashboard = async (
     ),
   ]);
 
-  const returnedAmountBySale =
-    buildReturnedAmountBySale(
-      returnRows
-    );
-
+  /*
+   * Las ventas canceladas y pendientes quedan
+   * excluidas de los cálculos económicos.
+   */
   const completedSales =
-    salesRows.filter(isCompletedSale);
+    salesRows.filter(
+      isCompletedSale
+    );
 
   const completedSaleIds = new Set(
     completedSales.map(
@@ -149,86 +176,48 @@ export const getReportsDashboard = async (
     )
   );
 
+  /*
+   * Solo se consideran devoluciones asociadas
+   * a ventas válidas y completadas.
+   */
+  const {
+    validReturnRows,
+    validReturnItems,
+  } = buildValidReturnsData({
+    returnRows,
+    returnItems,
+    validSaleIds: completedSaleIds,
+  });
+
+  const returnedAmountBySale =
+    buildReturnedAmountBySale(
+      validReturnRows
+    );
+
   const returnedQuantityByProduct =
     buildReturnedQuantityByProduct(
-      returnItems
+      validReturnItems
     );
 
   const returnedAmountByProduct =
     buildReturnedAmountByProduct({
-      returnRows,
-      returnItems,
+      returnRows: validReturnRows,
+      returnItems: validReturnItems,
       validSaleIds: completedSaleIds,
     });
 
-  const todaySales =
-    completedSales.filter(
-      (sale) =>
-        getDateInputFromIso(
-          sale.sale_date
-        ) === todayInput
-    );
-
-  const todaySaleIds = new Set(
-    todaySales.map((sale) => sale.id)
-  );
-
-  const netSalesToday =
-    todaySales.reduce(
-      (sum, sale) => {
-        const returnedAmount =
-          toNumber(
-            returnedAmountBySale[
-              sale.id
-            ]
-          );
-
-        return (
-          sum +
-          Math.max(
-            toNumber(sale.total) -
-              returnedAmount,
-            0
-          )
-        );
-      },
-      0
-    );
-
-  const completedTicketsToday =
-    todaySales.length;
-
-  const averageTicketToday =
-    completedTicketsToday > 0
-      ? netSalesToday /
-        completedTicketsToday
-      : 0;
-
-  const grossUnitsSoldToday =
-    detailRows.reduce(
-      (sum, detail) => {
-        if (
-          !todaySaleIds.has(
-            detail.sale_id
-          )
-        ) {
-          return sum;
-        }
-
-        return (
-          sum +
-          toNumber(detail.quantity)
-        );
-      },
-      0
-    );
-
-  const returnedUnitsToday =
-    toNumber(todayReturns.units);
-
-  const netUnitsToday =
-    grossUnitsSoldToday -
-    returnedUnitsToday;
+  /*
+   * KPI correspondientes al día actual.
+   */
+  const kpis =
+    buildTodaySalesKpis({
+      completedSales,
+      detailRows,
+      returnedAmountBySale,
+      returnedUnitsToday:
+        todayReturns.units,
+      todayInput,
+    });
 
   const inventoryAlerts =
     buildInventoryAlerts(
@@ -236,17 +225,10 @@ export const getReportsDashboard = async (
     );
 
   return {
-    kpis: {
-      netSalesToday,
-      completedTicketsToday,
-      averageTicketToday,
-      grossUnitsSoldToday,
-      returnedUnitsToday,
-      netUnitsToday,
-    },
+    kpis,
 
     salesChart: buildSalesChart({
-      sales: salesRows,
+      sales: completedSales,
       returnedAmountBySale,
       firstDateInput:
         firstChartDateInput,
@@ -264,7 +246,8 @@ export const getReportsDashboard = async (
 
       mainPaymentMethod:
         buildMainPaymentMethod({
-          salesRows,
+          salesRows:
+            completedSales,
           paymentRows,
           validSaleIds:
             completedSaleIds,
@@ -274,10 +257,13 @@ export const getReportsDashboard = async (
 
     alerts: {
       cancelledSalesToday,
+
       returnsToday:
         todayReturns.count,
+
       returnedAmountToday:
         todayReturns.amount,
+
       returnedUnitsToday:
         todayReturns.units,
 
@@ -292,6 +278,7 @@ export const getReportsDashboard = async (
 
     meta: {
       branchId,
+
       generatedAt:
         new Date().toISOString(),
     },
