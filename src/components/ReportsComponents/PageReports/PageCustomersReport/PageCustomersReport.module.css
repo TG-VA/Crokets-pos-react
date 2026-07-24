@@ -1,0 +1,42 @@
+.page {
+  width: 100%;
+  padding: 30px 30px 32px;
+  box-sizing: border-box;
+}
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  color: #24323a;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.description {
+  margin: 6px 0 0;
+  color: #68757d;
+  font-size: 14px;
+}
+
+.content {
+  min-height: 220px;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #dfe5e8;
+  border-radius: 10px;
+}
+
+.content h2 {
+  margin: 0 0 8px;
+  color: #1092b1;
+  font-size: 18px;
+}
+
+.content p {
+  margin: 0;
+  color: #68757d;
+  font-size: 14px;
+  line-height: 1.5;
+}
