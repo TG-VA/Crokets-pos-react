@@ -39,6 +39,24 @@
   import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
   import AppModal from "../../components/AppModal/AppModal";
 
+  import {
+    getCartItemKey,
+    getCartQuantityForProduct,
+    isRewardCartItem,
+    isSameCartItem,
+    isValidUuid,
+    updateProductExistenceInCart,
+  } from "../../components/SalesComponents/utils/salesCartUtils";
+
+  import {
+    getRewardRedeemQuantity,
+    getRewardTotalPoints,
+    getRewardType,
+    getSyncedRewardsFromCart,
+    isPendingProductDiscountReward,
+    normalizeRewardsArray,
+  } from "../../components/SalesComponents/utils/salesRewardUtils";
+
   const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
   const DEFAULT_POINTS_AMOUNT = 50;
   const EMPTY_REWARDS = [];
@@ -467,97 +485,10 @@
       setRecoveredDraftSavedAt(null);
     };
 
-    const isValidUuid = (value) => {
-      return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        String(value || ""),
-      );
-    };
 
-    const getCartItemKey = (item) => {
-      return item?.cartLineId || item?.id || "";
-    };
 
-    const isSameCartItem = (firstItem, secondItem) => {
-      return getCartItemKey(firstItem) === getCartItemKey(secondItem);
-    };
 
-    const isRewardCartItem = (item) => {
-      return Boolean(item?.is_reward_item || item?.is_reward_discount_item);
-    };
 
-    const getSyncedRewardsFromCart = (cartItems = [], rewardsSource = currentSaleReward) => {
-      const rewardsMap = new Map();
-
-      normalizeRewardsArray(rewardsSource).forEach((reward) => {
-        if (reward?.id) {
-          rewardsMap.set(reward.id, reward);
-        }
-      });
-
-      const rewardSummaryById = new Map();
-
-      (Array.isArray(cartItems) ? cartItems : [])
-        .filter(isRewardCartItem)
-        .forEach((item) => {
-          const rewardId = item?.reward_id;
-          if (!rewardId) return;
-
-          const previous = rewardSummaryById.get(rewardId) || {
-            rewardId,
-            redeemQuantity: 0,
-            appliedProductQuantity: 0,
-            appliedDiscountAmount: 0,
-            hasProductDiscount: false,
-            productNames: [],
-          };
-
-          const lineRedeemQuantity = Math.max(
-            Number(item.reward_redeem_quantity || 0),
-            0,
-          );
-          const fallbackRedeemQuantity = Math.max(Number(item.cantidad || 1), 1);
-          const redeemQuantity = lineRedeemQuantity > 0
-            ? lineRedeemQuantity
-            : fallbackRedeemQuantity;
-
-          const productName = item.nombre || item.codigo || "PRODUCTO";
-
-          rewardSummaryById.set(rewardId, {
-            ...previous,
-            redeemQuantity: previous.redeemQuantity + redeemQuantity,
-            appliedProductQuantity:
-              previous.appliedProductQuantity + Math.max(Number(item.cantidad || 0), 0),
-            appliedDiscountAmount:
-              previous.appliedDiscountAmount +
-              Math.max(Number(item.reward_discount_amount ?? item.descuentoMonto ?? 0), 0),
-            hasProductDiscount:
-              previous.hasProductDiscount || Boolean(item.is_reward_discount_item),
-            productNames: previous.productNames.includes(productName)
-              ? previous.productNames
-              : [...previous.productNames, productName],
-          });
-        });
-
-      return Array.from(rewardSummaryById.values()).map((summary) => {
-        const baseReward = rewardsMap.get(summary.rewardId) || {};
-
-        return {
-          ...baseReward,
-          id: summary.rewardId,
-          name: baseReward.name || "RECOMPENSA",
-          redeemQuantity: Math.max(Number(summary.redeemQuantity || 1), 1),
-          appliedProductQuantity: Math.max(
-            Number(summary.appliedProductQuantity || 1),
-            1,
-          ),
-          appliedProductName: summary.productNames.join(", "),
-          appliedDiscountAmount: Number(summary.appliedDiscountAmount || 0),
-          reward_application_status: summary.hasProductDiscount
-            ? "applied_product_discount"
-            : baseReward.reward_application_status,
-        };
-      });
-    };
 
     const syncCurrentSaleRewardsWithCart = (cartItems) => {
       setCurrentSaleReward((prev) => getSyncedRewardsFromCart(cartItems, prev));
@@ -621,130 +552,16 @@
       });
     };
 
-    const normalizeRewardsArray = (value) => {
-      if (!value) return [];
-
-      const normalizeRewardItem = (item) => {
-        if (!item) return null;
-
-        if (item.reward?.id) {
-          return {
-            ...item.reward,
-            redeemQuantity: Math.max(Number(item.redeemQuantity || 1), 1),
-          };
-        }
-
-        if (item.id) {
-          return {
-            ...item,
-            redeemQuantity: Math.max(Number(item.redeemQuantity || 1), 1),
-          };
-        }
-
-        return null;
-      };
-
-      if (Array.isArray(value)) {
-        return value.map(normalizeRewardItem).filter(Boolean);
-      }
-
-      const normalized = normalizeRewardItem(value);
-      return normalized ? [normalized] : [];
-    };
-
-    const getRewardRedeemQuantity = (reward) => {
-      return Math.max(Number(reward?.redeemQuantity || 1), 1);
-    };
-
-    const getRewardTotalPoints = (reward) => {
-      return (
-        Number(reward?.points_required || 0) * getRewardRedeemQuantity(reward)
-      );
-    };
-
-    const getRewardType = (reward) => {
-      if (reward?.reward_type === "product_discount") return "product_discount";
-      return "free_product";
-    };
 
 
-    const isPendingProductDiscountReward = (reward) => {
-      return (
-        getRewardType(reward) === "product_discount" &&
-        reward?.reward_application_status !== "applied_product_discount"
-      );
-    };
 
-    const isAppliedProductDiscountReward = (reward) => {
-      return (
-        getRewardType(reward) === "product_discount" &&
-        reward?.reward_application_status === "applied_product_discount"
-      );
-    };
 
-    const getPendingProductDiscountRewards = (rewardsValue = currentSaleReward) => {
-      return normalizeRewardsArray(rewardsValue).filter(isPendingProductDiscountReward);
-    };
 
-    const getRewardDiscountUnitAmount = (reward, basePrice) => {
-      const price = Number(basePrice || 0);
-      const discountType = reward?.discount_type;
-      const discountValue = Number(reward?.discount_value || 0);
 
-      if (price <= 0 || discountValue <= 0) return 0;
 
-      if (discountType === "percent") {
-        return Math.min(Math.floor(price * (discountValue / 100)), price);
-      }
 
-      if (discountType === "fixed") {
-        return Math.min(Math.floor(discountValue), price);
-      }
 
-      return 0;
-    };
 
-    const getRewardDiscountLabel = (reward) => {
-      const discountType = reward?.discount_type;
-      const discountValue = Number(reward?.discount_value || 0);
-      const quantity = Math.max(Number(reward?.reward_quantity || 1), 1);
-
-      if (discountType === "percent") {
-        return `${discountValue}% en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
-      }
-
-      if (discountType === "fixed") {
-        return `$${discountValue.toFixed(2)} en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
-      }
-
-      return `Descuento en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
-    };
-
-    const getCartQuantityForProduct = (productId, cartItems = productosRef.current) => {
-      if (!productId) return 0;
-
-      return (cartItems || []).reduce((sum, item) => {
-        if (item?.id !== productId) return sum;
-        return sum + Number(item?.cantidad || 0);
-      }, 0);
-    };
-
-    const updateProductExistenceInCart = (cartItems, productId, stock) => {
-      if (!productId || stock === null || stock === undefined) return cartItems;
-
-      const totalInCart = getCartQuantityForProduct(productId, cartItems);
-      const nextExistence = Math.max(Number(stock || 0) - totalInCart, 0);
-
-      return cartItems.map((item) => {
-        if (item?.id !== productId || item?.tracks_inventory === false) return item;
-
-        return {
-          ...item,
-          stockReal: Number(stock || 0),
-          existencia: nextExistence,
-        };
-      });
-    };
 
     const getBranchInventoryRow = async (productId) => {
       if (!branch?.id) {
@@ -2745,7 +2562,7 @@
         salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
         costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 
-        const currentCartQuantity = getCartQuantityForProduct(product.id);
+        const currentCartQuantity = getCartQuantityForProduct(product.id, productosRef.current);
         const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
         if (rewardQuantity > availableToAdd) {
@@ -2759,7 +2576,7 @@
       }
 
       const discountAmount = salePrice * rewardQuantity;
-      const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id);
+      const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id, productosRef.current);
       const cartQuantityAfterAdd = cartQuantityBeforeAdd + rewardQuantity;
 
       const rewardItem = {
@@ -2949,7 +2766,7 @@
       for (const [productId, quantityToAdd] of Object.entries(quantityByProduct)) {
         const inventoryRow = await getBranchInventoryRow(productId);
         const stock = Number(inventoryRow?.stock || 0);
-        const currentCartQuantity = getCartQuantityForProduct(productId);
+        const currentCartQuantity = getCartQuantityForProduct(productId, productosRef.current);
         const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
         if (!inventoryRow || inventoryRow.is_active === false) {
@@ -3142,7 +2959,7 @@
         );
         costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 
-        const currentCartQuantity = getCartQuantityForProduct(product.id);
+        const currentCartQuantity = getCartQuantityForProduct(product.id, productosRef.current);
         const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
         if (cleanQuantity > availableToAdd) {
@@ -3161,7 +2978,7 @@
         0,
       );
       const discountTotal = cleanDiscountAmount * cleanQuantity;
-      const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id);
+      const cartQuantityBeforeAdd = getCartQuantityForProduct(product.id, productosRef.current);
       const cartQuantityAfterAdd = cartQuantityBeforeAdd + cleanQuantity;
 
       const rewardDiscountItem = {
