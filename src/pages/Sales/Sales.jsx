@@ -1,4 +1,4 @@
-  import React, { useState, useRef, useCallback, useEffect } from "react";
+ import React, { useState, useRef, useCallback, useEffect } from "react";
   import styles from "../../pages/Sales/Sales.module.css";
   import { supabase } from "../../lib/supabaseClient";
   import { useAuth } from "../../contexts/AuthContext";
@@ -39,6 +39,12 @@
   import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
   import AppModal from "../../components/AppModal/AppModal";
   import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
+  import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
+
+  import {
+    getBranchInventoryRow as getBranchInventoryRowFromService,
+    getProductWithDiscount,
+  } from "../../components/SalesComponents/services/salesInventoryService";
 
   import {
     getCartItemKey,
@@ -184,7 +190,6 @@
 
     const [productos, setProductos] = useState([]);
     const [stockWarningMsg, setStockWarningMsg] = useState("");
-    const realtimeTimerRef = useRef(null);
     const productosRef = useRef([]);
 
     const subtotal = productos.reduce(
@@ -397,181 +402,6 @@
 
 
 
-    const getBranchInventoryRow = async (productId) => {
-      if (!branch?.id) {
-        throw new Error("No se detectó la sucursal.");
-      }
-
-      const { data, error } = await supabase
-        .from("branch_inventory")
-        .select("stock, is_active, has_been_stocked, cost_price, sale_price")
-        .eq("branch_id", branch.id)
-        .eq("product_id", productId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      return data;
-    };
-
-    const getProductWithDiscount = async (product) => {
-      if (!product?.id) return product;
-
-      const { data: discountRow, error: discountError } = await supabase
-        .from("product_discounts")
-        .select("enabled, discount_percent, discount_concept")
-        .eq("product_id", product.id)
-        .maybeSingle();
-
-      if (discountError) throw discountError;
-
-      const hasDiscount =
-        !!discountRow?.enabled && Number(discountRow?.discount_percent || 0) > 0;
-
-      return {
-        ...product,
-        discount_enabled: hasDiscount,
-        discount_percent: hasDiscount
-          ? Number(discountRow.discount_percent || 0)
-          : 0,
-        discount_concept: hasDiscount ? discountRow?.discount_concept || "" : "",
-      };
-    };
-
-    const getKitAvailableStock = async (kitProductId) => {
-      if (!kitProductId || !branch?.id) {
-        return {
-          availableStock: 0,
-          isValid: false,
-          message: "No se detectó la sucursal para validar el kit.",
-        };
-      }
-
-      const { data: kitRow, error: kitError } = await supabase
-        .from("product_kits")
-        .select("id, is_active")
-        .eq("kit_product_id", kitProductId)
-        .maybeSingle();
-
-      if (kitError) throw kitError;
-
-      if (!kitRow?.id) {
-        return {
-          availableStock: 0,
-          isValid: false,
-          message: "Este kit no tiene configuración registrada.",
-        };
-      }
-
-      if (kitRow.is_active === false) {
-        return {
-          availableStock: 0,
-          isValid: false,
-          message: "Este kit está inactivo.",
-        };
-      }
-
-      const { data: kitItems, error: itemsError } = await supabase
-        .from("product_kit_items")
-        .select(
-          `
-          id,
-          component_product_id,
-          quantity,
-          products:component_product_id (
-            id,
-            name,
-            barcode,
-            tracks_inventory
-          )
-        `,
-        )
-        .eq("kit_id", kitRow.id);
-
-      if (itemsError) throw itemsError;
-
-      if (!kitItems || kitItems.length === 0) {
-        return {
-          availableStock: 0,
-          isValid: false,
-          message: "Este kit no tiene productos agregados.",
-        };
-      }
-
-      const inventoryComponentIds = kitItems
-        .filter((item) => item.products?.tracks_inventory !== false)
-        .map((item) => item.component_product_id)
-        .filter(Boolean);
-
-      let inventoryRows = [];
-
-      if (inventoryComponentIds.length > 0) {
-        const { data, error: inventoryError } = await supabase
-          .from("branch_inventory")
-          .select("product_id, stock, is_active, has_been_stocked")
-          .eq("branch_id", branch.id)
-          .in("product_id", inventoryComponentIds);
-
-        if (inventoryError) throw inventoryError;
-        inventoryRows = data || [];
-      }
-
-      const inventoryMap = {};
-      for (const row of inventoryRows) {
-        inventoryMap[row.product_id] = row;
-      }
-
-      let availableStock = Infinity;
-      let invalidMessage = "";
-
-      for (const item of kitItems) {
-        const requiredQty = Number(item.quantity || 0);
-        const tracksInventory = item.products?.tracks_inventory !== false;
-
-        if (!tracksInventory) continue;
-
-        if (requiredQty <= 0) {
-          invalidMessage = `El componente "${item.products?.name || "Producto"}" tiene cantidad inválida.`;
-          availableStock = 0;
-          break;
-        }
-
-        const inventory = inventoryMap[item.component_product_id];
-
-        if (!inventory) {
-          invalidMessage = `El componente "${item.products?.name || "Producto"}" no tiene inventario en esta sucursal.`;
-          availableStock = 0;
-          break;
-        }
-
-        if (inventory.is_active === false) {
-          invalidMessage = `El componente "${item.products?.name || "Producto"}" está inactivo en esta sucursal.`;
-          availableStock = 0;
-          break;
-        }
-
-        if (inventory.has_been_stocked !== true) {
-          invalidMessage = `El componente "${item.products?.name || "Producto"}" aún no tiene inventario inicial.`;
-          availableStock = 0;
-          break;
-        }
-
-        const componentStock = Number(inventory.stock || 0);
-        const possibleKits = Math.floor(componentStock / requiredQty);
-        availableStock = Math.min(availableStock, possibleKits);
-      }
-
-      if (availableStock === Infinity) {
-        availableStock = 0;
-      }
-
-      return {
-        availableStock: Math.max(Number(availableStock || 0), 0),
-        isValid: !invalidMessage && Number(availableStock || 0) > 0,
-        message: invalidMessage,
-      };
-    };
-
     const getOpenCashSession = async () => {
       if (!branch?.id || !user?.id) {
         throw new Error("No se detectó la sucursal o el usuario.");
@@ -637,143 +467,32 @@
       }
     }, [branch?.id, user?.id]);
 
-    const refreshCartInventoryFromRealtime = useCallback(async () => {
-      if (!branch?.id) return;
-
-      const currentProducts = productosRef.current || [];
-      const trackedProducts = currentProducts.filter(
-        (product) => product?.tracks_inventory,
-      );
-
-      if (trackedProducts.length === 0) {
-        setStockWarningMsg("");
-        return;
-      }
-
-      const kitProducts = trackedProducts.filter((product) => product?.is_kit);
-      const normalTrackedProducts = trackedProducts.filter(
-        (product) => !product?.is_kit,
-      );
-
-      const productIds = [
-        ...new Set(
-          normalTrackedProducts.map((product) => product.id).filter(Boolean),
-        ),
-      ];
-
-      try {
-        let inventoryRows = [];
-
-        if (productIds.length > 0) {
-          const { data, error } = await supabase
-            .from("branch_inventory")
-            .select(
-              "product_id, stock, is_active, has_been_stocked, cost_price, sale_price",
-            )
-            .eq("branch_id", branch.id)
-            .in("product_id", productIds);
-
-          if (error) throw error;
-          inventoryRows = data || [];
-        }
-
-        const inventoryByProduct = {};
-
-        inventoryRows.forEach((row) => {
-          inventoryByProduct[row.product_id] = row;
+    const getBranchInventoryRow = useCallback(
+      async (productId) => {
+        return getBranchInventoryRowFromService({
+          branchId: branch?.id,
+          productId,
         });
+      },
+      [branch?.id],
+    );
 
-        const kitAvailabilityByProduct = {};
-
-        for (const kitProduct of kitProducts) {
-          kitAvailabilityByProduct[kitProduct.id] = await getKitAvailableStock(
-            kitProduct.id,
-          );
-        }
-
-        let warning = "";
-
-        const updateProductInventory = (product) => {
-          if (!product?.tracks_inventory) return product;
-
-          if (product.is_kit) {
-            const kitAvailability = kitAvailabilityByProduct[product.id];
-            const stock = Number(kitAvailability?.availableStock || 0);
-            const quantity = Number(product.cantidad || 0);
-            const availableAfterCart = Math.max(stock - quantity, 0);
-
-            if (quantity > stock && !warning) {
-              warning = `Stock actualizado: el kit "${
-                product.nombre || product.codigo
-              }" ahora permite vender ${stock} kit(s) y tienes ${quantity} en venta.`;
-            } else if (kitAvailability?.message && !warning) {
-              warning = kitAvailability.message;
-            }
-
-            return {
-              ...product,
-              stockReal: stock,
-              existencia: availableAfterCart,
-            };
-          }
-
-          const inventoryRow = inventoryByProduct[product.id];
-
-          if (!inventoryRow || inventoryRow.is_active === false) {
-            if (!warning) {
-              warning = `El producto "${
-                product.nombre || product.codigo
-              }" ya no está activo en esta sucursal.`;
-            }
-
-            return {
-              ...product,
-              stockReal: 0,
-              existencia: 0,
-            };
-          }
-
-          const stock = Number(inventoryRow.stock || 0);
-          const quantity = Number(product.cantidad || 0);
-          const availableAfterCart = Math.max(stock - quantity, 0);
-
-          if (quantity > stock && !warning) {
-            warning = `Stock actualizado: "${
-              product.nombre || product.codigo
-            }" ahora tiene ${stock} disponible y tienes ${quantity} en venta.`;
-          }
-
-          return {
-            ...product,
-            stockReal: stock,
-            existencia: availableAfterCart,
-            costo: Number(inventoryRow.cost_price ?? product.costo ?? 0),
-          };
-        };
-
-        setProductos((prev) => {
-          const updated = prev.map(updateProductInventory);
-          productosRef.current = updated;
-          return updated;
-        });
-
-        setSelectedProduct((prev) =>
-          prev ? updateProductInventory(prev) : prev,
-        );
-
-        setStockWarningMsg(warning);
-      } catch (error) {
-        console.error("Error actualizando inventario del carrito:", error);
-      }
-    }, [branch?.id]);
+    const {
+      refreshCartInventory: refreshCartInventoryFromRealtime,
+      getKitAvailableStock,
+    } = useSalesInventoryRealtime({
+      branchId: branch?.id,
+      userId: user?.id,
+      enabled: draftReady,
+      productosRef,
+      setProductos,
+      setSelectedProduct,
+      setStockWarningMsg,
+      syncShiftCutStatus,
+    });
 
     useEffect(() => {
       syncShiftCutStatus();
-
-      const handleFocus = () => {
-        syncShiftCutStatus();
-        refreshCartInventoryFromRealtime();
-      };
 
       const handleStorage = (event) => {
         if (event.key === "shift_cut_done") {
@@ -785,102 +504,20 @@
         syncShiftCutStatus();
       };
 
-      window.addEventListener("focus", handleFocus);
       window.addEventListener("storage", handleStorage);
-      window.addEventListener("shift-cut-status-changed", handleCutStatusChanged);
+      window.addEventListener(
+        "shift-cut-status-changed",
+        handleCutStatusChanged,
+      );
 
       return () => {
-        window.removeEventListener("focus", handleFocus);
         window.removeEventListener("storage", handleStorage);
         window.removeEventListener(
           "shift-cut-status-changed",
           handleCutStatusChanged,
         );
       };
-    }, [syncShiftCutStatus, refreshCartInventoryFromRealtime]);
-
-    useEffect(() => {
-      if (!draftReady || !branch?.id || !user?.id) return;
-
-      const refreshSafely = async () => {
-        try {
-          await syncShiftCutStatus();
-          await refreshCartInventoryFromRealtime();
-        } catch (error) {
-          console.error("Error actualizando ventas en tiempo real:", error);
-        }
-      };
-
-      const scheduleRealtimeRefresh = () => {
-        if (realtimeTimerRef.current) {
-          clearTimeout(realtimeTimerRef.current);
-        }
-
-        realtimeTimerRef.current = setTimeout(refreshSafely, 500);
-      };
-
-      refreshSafely();
-
-      const intervalId = setInterval(() => {
-        const hasTrackedProducts = (productosRef.current || []).some(
-          (product) => product?.tracks_inventory,
-        );
-
-        if (hasTrackedProducts) {
-          refreshCartInventoryFromRealtime();
-        }
-      }, 2500);
-
-      const channel = supabase
-        .channel(`sales-realtime-${branch.id}-${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "branch_inventory",
-            filter: `branch_id=eq.${branch.id}`,
-          },
-          scheduleRealtimeRefresh,
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "cash_cuts",
-            filter: `branch_id=eq.${branch.id}`,
-          },
-          scheduleRealtimeRefresh,
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "cash_register_sessions",
-            filter: `branch_id=eq.${branch.id}`,
-          },
-          scheduleRealtimeRefresh,
-        )
-        .subscribe();
-
-      return () => {
-        clearInterval(intervalId);
-
-        if (realtimeTimerRef.current) {
-          clearTimeout(realtimeTimerRef.current);
-        }
-
-        supabase.removeChannel(channel);
-      };
-    }, [
-      branch?.id,
-      user?.id,
-      draftReady,
-      refreshCartInventoryFromRealtime,
-      syncShiftCutStatus,
-    ]);
+    }, [syncShiftCutStatus]);
 
     const openPaymentFlow = async () => {
       if (productos.length === 0) {
