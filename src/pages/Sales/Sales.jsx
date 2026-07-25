@@ -38,6 +38,7 @@
   import ProductDiscountRewardModal from "../../components/SalesComponents/Modals/ProductDiscountRewardModal/ProductDiscountRewardModal";
   import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
   import AppModal from "../../components/AppModal/AppModal";
+  import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
 
   import {
     getCartItemKey,
@@ -60,7 +61,6 @@
   const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
   const DEFAULT_POINTS_AMOUNT = 50;
   const EMPTY_REWARDS = [];
-  const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
   const Sales = () => {
     const { user } = useAuth();
@@ -184,24 +184,8 @@
 
     const [productos, setProductos] = useState([]);
     const [stockWarningMsg, setStockWarningMsg] = useState("");
-    const [draftReady, setDraftReady] = useState(false);
-    const [recoveredDraft, setRecoveredDraft] = useState(false);
-    const [recoveredDraftSavedAt, setRecoveredDraftSavedAt] = useState(null);
-
-    const draftKeyRef = useRef(null);
     const realtimeTimerRef = useRef(null);
     const productosRef = useRef([]);
-
-    const salesDraftKey =
-      branch?.id && user?.id ? `sales_draft_${branch.id}_${user.id}` : null;
-
-    const salesDraftSessionKey = salesDraftKey
-      ? `${salesDraftKey}_session_ack`
-      : null;
-
-    const salesDraftSessionAliveKey = salesDraftKey
-      ? `${salesDraftKey}_session_alive`
-      : null;
 
     const subtotal = productos.reduce(
       (sum, producto) =>
@@ -218,238 +202,30 @@
 
     const total = subtotal - discountTotal;
 
-    useEffect(() => {
-      if (!salesDraftKey) {
-        setDraftReady(false);
-        setRecoveredDraft(false);
-        setRecoveredDraftSavedAt(null);
-        return;
-      }
+    const restoreSalesDraft = useCallback((draft) => {
+      const restoredProducts = Array.isArray(draft?.productos)
+        ? draft.productos
+        : [];
 
-      if (draftKeyRef.current === salesDraftKey) return;
+      setProductos(restoredProducts);
+      productosRef.current = restoredProducts;
+      setSelectedProduct(null);
+      setCurrentSaleClient(draft?.currentSaleClient || null);
+      setCurrentSaleReward(draft?.currentSaleReward || null);
+      setTicketNumber(Number(draft?.ticketNumber || 1));
+      setSaleToken(draft?.saleToken || null);
+      setSaleNotes(draft?.saleNotes || "");
+      setBarcode(draft?.barcode || "");
+      setPendingTickets(
+        Array.isArray(draft?.pendingTickets)
+          ? draft.pendingTickets
+          : [],
+      );
+    }, []);
 
-      draftKeyRef.current = salesDraftKey;
-      setDraftReady(false);
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
-
-      try {
-        const rawDraft = localStorage.getItem(salesDraftKey);
-
-        if (!rawDraft) {
-          if (salesDraftSessionAliveKey) {
-            sessionStorage.setItem(salesDraftSessionAliveKey, "true");
-          }
-
-          setDraftReady(true);
-          return;
-        }
-
-        const draft = JSON.parse(rawDraft);
-
-        if (!draft || draft.version !== 1) {
-          if (salesDraftSessionAliveKey) {
-            sessionStorage.setItem(salesDraftSessionAliveKey, "true");
-          }
-
-          setDraftReady(true);
-          return;
-        }
-
-        const restoredProducts = Array.isArray(draft.productos)
-          ? draft.productos
-          : [];
-
-        setProductos(restoredProducts);
-        setSelectedProduct(null);
-        setCurrentSaleClient(draft.currentSaleClient || null);
-        setCurrentSaleReward(draft.currentSaleReward || null);
-        setTicketNumber(Number(draft.ticketNumber || 1));
-        setSaleToken(draft.saleToken || null);
-        setSaleNotes(draft.saleNotes || "");
-        setBarcode(draft.barcode || "");
-        setPendingTickets(
-          Array.isArray(draft.pendingTickets) ? draft.pendingTickets : [],
-        );
-
-        const hasRecoverableSale =
-          restoredProducts.length > 0 ||
-          !!draft.currentSaleClient ||
-          !!draft.currentSaleReward ||
-          !!draft.saleToken ||
-          String(draft.saleNotes || "").trim().length > 0 ||
-          String(draft.barcode || "").trim().length > 0;
-
-        const restorePromptRequested =
-          sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
-
-        const salesSessionAlreadyAlive =
-          salesDraftSessionAliveKey &&
-          sessionStorage.getItem(salesDraftSessionAliveKey) === "true";
-
-        const alreadyAcknowledgedThisSession =
-          salesDraftSessionKey &&
-          sessionStorage.getItem(salesDraftSessionKey) === "true";
-
-        const shouldShowRecoveryModal =
-          hasRecoverableSale &&
-          (restorePromptRequested ||
-            (!salesSessionAlreadyAlive && !alreadyAcknowledgedThisSession));
-
-        if (salesDraftSessionAliveKey) {
-          sessionStorage.setItem(salesDraftSessionAliveKey, "true");
-        }
-
-        if (shouldShowRecoveryModal) {
-          setRecoveredDraft(true);
-          setRecoveredDraftSavedAt(draft.savedAt || null);
-
-          setAppModal({
-            isOpen: true,
-            type: "warning",
-            title: "Venta pendiente encontrada",
-            message: draft.savedAt
-              ? `Hay una venta pendiente guardada automáticamente el ${new Date(
-                  draft.savedAt,
-                )
-                  .toLocaleString("es-MX")
-                  .replace(/:\d{2}(?=\s*[ap]\.?\s*m\.?)|(?<=\s[ap])\./gi, "")
-                  .replace(/\s+/g, " ")}
-
-¿Quieres recuperarla o descartarla?`
-              : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?",
-            confirmText: "Recuperar venta",
-            cancelText: "Descartar",
-            showCancel: true,
-            onConfirm: () => {
-              closeAppModal();
-              dismissRecoveredDraft();
-            },
-            onCancel: () => {
-              closeAppModal();
-              discardRecoveredDraft();
-            },
-          });
-        } else {
-          setRecoveredDraft(false);
-          setRecoveredDraftSavedAt(null);
-        }
-
-        setDraftReady(true);
-      } catch (error) {
-        console.error("Error restaurando venta en curso:", error);
-        localStorage.removeItem(salesDraftKey);
-
-        if (salesDraftSessionAliveKey) {
-          sessionStorage.setItem(salesDraftSessionAliveKey, "true");
-        }
-
-        setRecoveredDraft(false);
-        setRecoveredDraftSavedAt(null);
-        setDraftReady(true);
-      }
-    }, [salesDraftKey, salesDraftSessionKey, salesDraftSessionAliveKey]);
-
-    useEffect(() => {
-      if (!draftReady || !salesDraftKey || draftKeyRef.current !== salesDraftKey)
-        return;
-
-      const hasDraftData =
-        productos.length > 0 ||
-        pendingTickets.length > 0 ||
-        !!currentSaleClient ||
-        !!currentSaleReward ||
-        !!saleToken ||
-        saleNotes.trim().length > 0 ||
-        barcode.trim().length > 0;
-
-      if (!hasDraftData) {
-        localStorage.removeItem(salesDraftKey);
-        return;
-      }
-
-      const draft = {
-        version: 1,
-        savedAt: new Date().toISOString(),
-        branchId: branch?.id || null,
-        userId: user?.id || null,
-        productos,
-        currentSaleClient,
-        currentSaleReward,
-        ticketNumber,
-        saleToken,
-        saleNotes,
-        barcode,
-        pendingTickets,
-        subtotal,
-        discountTotal,
-        total,
-      };
-
-      try {
-        localStorage.setItem(salesDraftKey, JSON.stringify(draft));
-      } catch (error) {
-        console.error("Error guardando venta en curso:", error);
-      }
-    }, [
-      draftReady,
-      salesDraftKey,
-      productos,
-      pendingTickets,
-      currentSaleClient,
-      currentSaleReward,
-      saleToken,
-      saleNotes,
-      barcode,
-      ticketNumber,
-      subtotal,
-      discountTotal,
-      total,
-      branch?.id,
-      user?.id,
-    ]);
-
-    useEffect(() => {
-      productosRef.current = productos;
-
-      if (productos.length === 0) {
-        setStockWarningMsg("");
-      }
-    }, [productos]);
-
-    const clearSalesDraft = () => {
-      if (salesDraftKey) {
-        localStorage.removeItem(salesDraftKey);
-      }
-
-      if (salesDraftSessionKey) {
-        sessionStorage.removeItem(salesDraftSessionKey);
-      }
-
-      if (salesDraftSessionAliveKey) {
-        sessionStorage.removeItem(salesDraftSessionAliveKey);
-      }
-
-      sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
-    };
-
-    const dismissRecoveredDraft = () => {
-      if (salesDraftSessionKey) {
-        sessionStorage.setItem(salesDraftSessionKey, "true");
-      }
-
-      if (salesDraftSessionAliveKey) {
-        sessionStorage.setItem(salesDraftSessionAliveKey, "true");
-      }
-
-      sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
-
-      setRecoveredDraft(false);
-    };
-
-    const discardRecoveredDraft = () => {
-      clearSalesDraft();
+    const discardSalesDraftState = useCallback(() => {
       setProductos([]);
+      productosRef.current = [];
       setSelectedProduct(null);
       setCurrentSaleClient(null);
       setCurrentSaleReward(null);
@@ -462,9 +238,69 @@
       setSaleToken(null);
       setSaleNotes("");
       setStockWarningMsg("");
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
-    };
+    }, []);
+
+    const openSalesDraftRecoveryModal = useCallback(
+      ({ message, onConfirm, onCancel }) => {
+        setAppModal({
+          isOpen: true,
+          type: "warning",
+          title: "Venta pendiente encontrada",
+          message,
+          confirmText: "Recuperar venta",
+          cancelText: "Descartar",
+          showCancel: true,
+          onConfirm: () => {
+            closeAppModal();
+
+            if (typeof onConfirm === "function") {
+              onConfirm();
+            }
+          },
+          onCancel: () => {
+            closeAppModal();
+
+            if (typeof onCancel === "function") {
+              onCancel();
+            }
+          },
+        });
+      },
+      [],
+    );
+
+    const {
+      draftReady,
+      clearSalesDraft,
+    } = useSalesDraft({
+      branchId: branch?.id,
+      userId: user?.id,
+
+      productos,
+      pendingTickets,
+      currentSaleClient,
+      currentSaleReward,
+      ticketNumber,
+      saleToken,
+      saleNotes,
+      barcode,
+
+      subtotal,
+      discountTotal,
+      total,
+
+      onRestoreDraft: restoreSalesDraft,
+      onDiscardDraft: discardSalesDraftState,
+      onOpenRecoveryModal: openSalesDraftRecoveryModal,
+    });
+
+    useEffect(() => {
+      productosRef.current = productos;
+
+      if (productos.length === 0) {
+        setStockWarningMsg("");
+      }
+    }, [productos]);
 
     const resetCurrentSale = () => {
       setProductos([]);
@@ -481,8 +317,6 @@
       setSaleToken(null);
       setSaleNotes("");
       setStockWarningMsg("");
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
     };
 
 
@@ -3887,8 +3721,6 @@
       setTicketNumber((prev) => prev + 1);
       setBarcode("");
       setSaleToken(null);
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
     };
 
     const handleChangeToTicket = (ticket) => {
