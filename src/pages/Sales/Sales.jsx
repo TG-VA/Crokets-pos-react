@@ -42,6 +42,8 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
   import useSalesCashSession from "../../components/SalesComponents/hooks/useSalesCashSession";
   import useSalesCart from "../../components/SalesComponents/hooks/useSalesCart";
+  import useSalesDiscount from "../../components/SalesComponents/hooks/useSalesDiscount";
+  import useSalesStockValidation from "../../components/SalesComponents/hooks/useSalesStockValidation";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -1014,148 +1016,27 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       }
     };
 
-    const handleApplyDiscount = (discountData) => {
-      if (!selectedProduct) return;
+    const {
+      handleApplyDiscount,
+      handleOpenDiscountModal,
+    } = useSalesDiscount({
+      productosRef,
+      selectedProduct,
+      setProductos,
+      setSelectedProduct,
+      setDiscountModalOpen,
+      showAppWarning,
+    });
 
-      if (isRewardCartItem(selectedProduct)) {
-        showAppWarning(
-          "No puedes aplicar descuento manual a un producto aplicado como recompensa.",
-        );
-        return;
-      }
-
-      const newPrice = Number.parseFloat(discountData.newPrice);
-
-      if (Number.isNaN(newPrice) || newPrice < 0) {
-        showAppWarning("Precio de descuento inválido.");
-        return;
-      }
-
-      const updatedProductos = productos.map((producto) => {
-        if (!isSameCartItem(producto, selectedProduct)) return producto;
-
-        const precioOriginal = Number(
-          producto.precioOriginal ??
-            discountData.originalPrice ??
-            producto.precio ??
-            0,
-        );
-
-        const cantidad = Number(producto.cantidad || 0);
-        const precioFinal = newPrice;
-        const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
-        const descuentoTotalProducto = descuentoUnitario * cantidad;
-        const descuentoPorcentaje =
-          precioOriginal > 0 ? (descuentoUnitario / precioOriginal) * 100 : 0;
-
-        return {
-          ...producto,
-          precioOriginal,
-          precio: precioFinal,
-          importe: precioFinal * cantidad,
-          descuentoTipo: descuentoTotalProducto > 0 ? "amount" : null,
-          descuentoValor: descuentoUnitario,
-          descuentoMonto: descuentoTotalProducto,
-          discountPercent:
-            descuentoTotalProducto > 0 ? Number(descuentoPorcentaje.toFixed(2)) : 0,
-        };
-      });
-
-      setProductos(updatedProductos);
-      productosRef.current = updatedProductos;
-
-      const updatedSelected = updatedProductos.find((producto) =>
-        isSameCartItem(producto, selectedProduct),
-      );
-
-      setSelectedProduct(updatedSelected || null);
-    };
-
-    const handleOpenDiscountModal = () => {
-      if (!selectedProduct) {
-        showAppWarning("Por favor, selecciona un producto primero");
-        return;
-      }
-
-      if (selectedProduct.is_reward_item) {
-        showAppWarning(
-          "No puedes aplicar descuento manual a un producto aplicado como recompensa.",
-        );
-        return;
-      }
-
-      if (selectedProduct.is_reward_discount_item) {
-        showAppWarning(
-          "Este producto ya tiene un descuento aplicado por recompensa. No se puede aplicar otro descuento manual.",
-        );
-        return;
-      }
-
-      setDiscountModalOpen(true);
-    };
-
-    const validateCartStockBeforeSale = async () => {
-      await refreshCartInventoryFromRealtime();
-
-      for (const item of productosRef.current) {
-        if (!item.tracks_inventory) continue;
-
-        if (item.is_kit) {
-          const kitAvailability = await getKitAvailableStock(item.id);
-          const currentStock = Number(kitAvailability.availableStock || 0);
-
-          if (!kitAvailability.isValid || currentStock <= 0) {
-            showAppWarning(
-              kitAvailability.message ||
-                `El kit "${item.nombre || item.codigo}" ya no tiene inventario suficiente.`,
-            );
-            return false;
-          }
-
-          if (item.cantidad > currentStock) {
-            showAppWarning(
-              `La cantidad del kit "${
-                item.nombre || item.codigo
-              }" excede el inventario disponible. Disponible: ${currentStock}.`,
-            );
-            return false;
-          }
-
-          continue;
-        }
-
-        const inventoryRow = await getBranchInventoryRow(item.id);
-        const currentStock = Number(inventoryRow?.stock || 0);
-        const hasBeenStocked = !!inventoryRow?.has_been_stocked;
-
-        if (!hasBeenStocked && currentStock <= 0) {
-          showAppWarning(
-            `El producto "${
-              item.nombre || item.codigo
-            }" aún no tiene inventario inicial registrado.`,
-          );
-          return false;
-        }
-
-        if (currentStock <= 0) {
-          showAppWarning(
-            `El producto "${item.nombre || item.codigo}" ya no tiene existencia.`,
-          );
-          return false;
-        }
-
-        if (item.cantidad > currentStock) {
-          showAppWarning(
-            `La cantidad de "${
-              item.nombre || item.codigo
-            }" excede el inventario disponible.`,
-          );
-          return false;
-        }
-      }
-
-      return true;
-    };
+    const {
+      validateCartStockBeforeSale,
+    } = useSalesStockValidation({
+      productosRef,
+      refreshCartInventoryFromRealtime,
+      getKitAvailableStock,
+      getBranchInventoryRow,
+      showAppWarning,
+    });
 
     const handleMouseMove = useCallback((e) => {
       const { isResizing, columnIndex, startX, startWidth, nextStartWidth } =
