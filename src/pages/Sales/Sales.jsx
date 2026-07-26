@@ -63,6 +63,12 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   } from "../../components/SalesComponents/services/salesTransactionService";
 
   import {
+    DEFAULT_POINTS_AMOUNT,
+    getCustomerCurrentPointsBalance,
+    registerCustomerPointsForSale,
+  } from "../../components/SalesComponents/services/salesCustomerPointsService";
+
+  import {
     getCartItemKey,
     getCartQuantityForProduct,
     isRewardCartItem,
@@ -85,8 +91,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     buildProductsPayload,
   } from "../../components/SalesComponents/utils/salesPaymentUtils";
 
-  const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
-  const DEFAULT_POINTS_AMOUNT = 50;
   const EMPTY_REWARDS = [];
 
   const Sales = () => {
@@ -1783,146 +1787,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       }
     };
 
-    const getCustomerPointsAmountPerPoint = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("system_settings")
-          .select("setting_value, is_active")
-          .eq("setting_key", POINTS_AMOUNT_SETTING_KEY)
-          .is("branch_id", null)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        const configuredAmount = Number(data?.setting_value || 0);
-
-        if (
-          data?.is_active === false ||
-          !configuredAmount ||
-          configuredAmount <= 0
-        ) {
-          return DEFAULT_POINTS_AMOUNT;
-        }
-
-        return configuredAmount;
-      } catch (error) {
-        console.error("Error cargando regla de puntos:", error);
-        return DEFAULT_POINTS_AMOUNT;
-      }
-    };
-
-    const calculateEarnedCustomerPoints = (saleTotal, amountPerPoint) => {
-      const numericTotal = Number(saleTotal || 0);
-      const numericAmountPerPoint = Number(amountPerPoint || 0);
-
-      if (!numericTotal || numericTotal <= 0) return 0;
-      if (!numericAmountPerPoint || numericAmountPerPoint <= 0) return 0;
-
-      return Math.floor(numericTotal / numericAmountPerPoint);
-    };
-
-    const getCustomerCurrentPointsBalance = async (customerId) => {
-      if (!customerId) return 0;
-
-      const { data, error } = await supabase
-        .from("customer_points")
-        .select("points")
-        .eq("customer_id", customerId);
-
-      if (error) throw error;
-
-      return (data || []).reduce((sum, movement) => {
-        return sum + Number(movement.points || 0);
-      }, 0);
-    };
-
-    const registerCustomerPointsForSale = async ({
-      saleId,
-      customerId,
-      saleTotal,
-      saleDate,
-    }) => {
-      if (!saleId || !customerId) {
-        return {
-          points: 0,
-          amountPerPoint: DEFAULT_POINTS_AMOUNT,
-          registered: false,
-          newBalance: null,
-        };
-      }
-
-      const amountPerPoint = await getCustomerPointsAmountPerPoint();
-      const earnedPoints = calculateEarnedCustomerPoints(
-        saleTotal,
-        amountPerPoint,
-      );
-
-      if (earnedPoints <= 0) {
-        const currentBalance = await getCustomerCurrentPointsBalance(customerId);
-
-        return {
-          points: 0,
-          amountPerPoint,
-          registered: false,
-          newBalance: currentBalance,
-        };
-      }
-
-      const { data: existingMovement, error: existingError } = await supabase
-        .from("customer_points")
-        .select("id")
-        .eq("customer_id", customerId)
-        .eq("related_sale_id", saleId)
-        .eq("source", "sale")
-        .limit(1)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (existingMovement?.id) {
-        const currentBalance = await getCustomerCurrentPointsBalance(customerId);
-
-        return {
-          points: earnedPoints,
-          amountPerPoint,
-          registered: false,
-          newBalance: currentBalance,
-        };
-      }
-
-      const { error: pointsInsertError } = await supabase
-        .from("customer_points")
-        .insert([
-          {
-            id: crypto.randomUUID(),
-            customer_id: customerId,
-            points: earnedPoints,
-            movement_type: "earn",
-            source: "sale",
-            related_sale_id: saleId,
-            reward_id: null,
-            user_id: user?.id || null,
-            branch_id: branch?.id || null,
-            notes: `PUNTOS GENERADOS POR VENTA. TOTAL DE VENTA: $${Number(
-              saleTotal || 0,
-            ).toFixed(2)} MXN.`,
-            created_at: saleDate || new Date().toISOString(),
-          },
-        ]);
-
-      if (pointsInsertError) throw pointsInsertError;
-
-      const newBalance = await getCustomerCurrentPointsBalance(customerId);
-
-      return {
-        points: earnedPoints,
-        amountPerPoint,
-        registered: true,
-        newBalance,
-      };
-    };
-
-
     const getRewardCartItems = () => {
       return (productosRef.current || []).filter((item) => {
         return (
@@ -2428,12 +2292,16 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 
         if (currentSaleClient?.id) {
           try {
-            const earnedPointsResult = await registerCustomerPointsForSale({
-              saleId,
-              customerId: currentSaleClient.id,
-              saleTotal: Number(total),
-              saleDate,
-            });
+            const earnedPointsResult =
+              await registerCustomerPointsForSale({
+                saleId,
+                customerId:
+                  currentSaleClient.id,
+                saleTotal: Number(total),
+                saleDate,
+                userId: user.id,
+                branchId: branch.id,
+              });
 
             const currentBalance = await getCustomerCurrentPointsBalance(
               currentSaleClient.id,
