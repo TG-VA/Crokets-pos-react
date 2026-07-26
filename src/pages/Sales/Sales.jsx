@@ -3,7 +3,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import { supabase } from "../../lib/supabaseClient";
   import { useAuth } from "../../contexts/AuthContext";
   import { useBranch } from "../../contexts/BranchContext";
-  import { v4 as uuidv4 } from "uuid";
   import { buildTicketText } from "../../utils/ticketBuilder";
   import { printTicket } from "../../utils/ticketPrinter";
   import { checkUserIsAdmin } from "../../lib/permissionsService";
@@ -44,6 +43,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesCart from "../../components/SalesComponents/hooks/useSalesCart";
   import useSalesDiscount from "../../components/SalesComponents/hooks/useSalesDiscount";
   import useSalesStockValidation from "../../components/SalesComponents/hooks/useSalesStockValidation";
+  import useSalesPaymentFlow from "../../components/SalesComponents/hooks/useSalesPaymentFlow";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -75,6 +75,11 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     isPendingProductDiscountReward,
     normalizeRewardsArray,
   } from "../../components/SalesComponents/utils/salesRewardUtils";
+
+  import {
+    buildPaymentsPayload,
+    buildProductsPayload,
+  } from "../../components/SalesComponents/utils/salesPaymentUtils";
 
   const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
   const DEFAULT_POINTS_AMOUNT = 50;
@@ -441,119 +446,18 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     });
 
 
-    const openPaymentFlow = async () => {
-      if (productos.length === 0) {
-        showAppWarning("No hay productos en la venta.");
-        return;
-      }
-
-      if (processingSale) return;
-
-      const canSell = await validateShiftNotCut();
-
-      if (!canSell) {
-        showAppWarning(
-          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
-        );
-        return;
-      }
-
-      if (pendingProductDiscountRewards.length > 0 || activeProductDiscountReward) {
-        showAppWarning("Termina de aplicar la recompensa de descuento antes de cobrar.");
-        return;
-      }
-
-      setSaleToken((prev) => prev || uuidv4());
-      setShowPaymentModal(true);
-    };
-
-    const buildPaymentsPayload = (paymentData) => {
-      if (!paymentData?.method) {
-        throw new Error("No se detectó el método de pago.");
-      }
-
-      if (paymentData.method === "Mixto") {
-        const rows = [
-          {
-            payment_method_name: "Efectivo",
-            amount: Number(paymentData?.details?.efectivo || 0),
-            currency: "MXN",
-            exchange_rate: null,
-          },
-          {
-            payment_method_name: "Terminal",
-            amount: Number(paymentData?.details?.tarjeta || 0),
-            currency: "MXN",
-            exchange_rate: null,
-          },
-          {
-            payment_method_name: "Dólares",
-            amount: Number(paymentData?.details?.dolares || 0),
-            currency: "USD",
-            exchange_rate:
-              Number(paymentData?.details?.exchangeRate || 0) || null,
-          },
-        ].filter((row) => row.amount > 0);
-
-        if (rows.length === 0) {
-          throw new Error("El pago mixto no contiene montos válidos.");
-        }
-
-        return rows;
-      }
-
-      const paymentMethodNameMap = {
-        Efectivo: "Efectivo",
-        Dolares: "Dólares",
-        Terminal: "Terminal",
-        Transferencia: "Transferencia",
-      };
-
-      const paymentMethodName = paymentMethodNameMap[paymentData.method];
-
-      if (!paymentMethodName) {
-        throw new Error("Método de pago no válido.");
-      }
-
-      return [
-        {
-          payment_method_name: paymentMethodName,
-          amount:
-            paymentData.method === "Dolares"
-              ? Number(paymentData?.details?.dollarAmount || 0)
-              : Number(paymentData.total || 0),
-          currency: paymentData.method === "Dolares" ? "USD" : "MXN",
-          exchange_rate:
-            paymentData.method === "Dolares"
-              ? Number(paymentData?.details?.exchangeRate || 0) || null
-              : null,
-          reference:
-            paymentData.method === "Transferencia"
-              ? paymentData?.details?.trackingCode?.trim() || null
-              : null,
-        },
-      ];
-    };
-
-    const buildProductsPayload = () => {
-      return productos.map((p) => {
-        const hasDiscount = Number(p.descuentoMonto || 0) > 0;
-        const cleanDiscountType =
-          p.descuentoTipo === "percent" ? "percent" : hasDiscount ? "amount" : null;
-
-        return {
-          product_id: p.id,
-          quantity: Number(p.cantidad),
-          unit_price: Number(p.precio),
-          total_price: Number(p.importe),
-          original_unit_price: Number(p.precioOriginal ?? p.precio),
-          final_unit_price: Number(p.precio),
-          discount_type: cleanDiscountType,
-          discount_value: Number(p.descuentoValor || 0),
-          discount_amount: Number(p.descuentoMonto || 0),
-        };
-      });
-    };
+    const {
+      openPaymentFlow,
+    } = useSalesPaymentFlow({
+      productos,
+      processingSale,
+      validateShiftNotCut,
+      pendingProductDiscountRewards,
+      activeProductDiscountReward,
+      setSaleToken,
+      setShowPaymentModal,
+      showAppWarning,
+    });
 
     const buildRewardRowsFromCartItems = (rewardItems = []) => {
       return (rewardItems || [])
@@ -2429,7 +2333,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
           return false;
         }
 
-        const productsPayload = buildProductsPayload();
+        const productsPayload = buildProductsPayload(productos);
         const paymentsPayload = buildPaymentsPayload(paymentData);
         const saleDate = new Date().toISOString();
 
