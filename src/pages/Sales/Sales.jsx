@@ -1,4 +1,4 @@
- import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
   import styles from "../../pages/Sales/Sales.module.css";
   import { supabase } from "../../lib/supabaseClient";
   import { useAuth } from "../../contexts/AuthContext";
@@ -44,8 +44,11 @@
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
-    getProductWithDiscount,
   } from "../../components/SalesComponents/services/salesInventoryService";
+
+  import {
+    getSellableProductByBarcode,
+  } from "../../components/SalesComponents/services/salesProductService";
 
   import {
     createCashMovement,
@@ -83,6 +86,7 @@
     const [ticketNumber, setTicketNumber] = useState(1);
     const [pendingTickets, setPendingTickets] = useState([]);
     const [barcode, setBarcode] = useState("");
+    const barcodeSearchInProgressRef = useRef(false);
 
     const MIN_COLUMN_WIDTH = 80;
     const [columnWidths, setColumnWidths] = useState([400, 150, 80, 150, 150]);
@@ -1159,12 +1163,23 @@
           tracks_inventory: true,
         };
 
-        setProductos((prev) => {
-          const currentProducts = productosRef.current || prev;
-          const nextProducts = [...currentProducts, newProduct];
-          productosRef.current = nextProducts;
-          return nextProducts;
-        });
+        const nextProducts = [
+
+
+          ...currentCartProducts,
+
+
+          newProduct,
+
+
+        ];
+
+
+
+        setProductos(nextProducts);
+
+
+        productosRef.current = nextProducts;
         return;
       }
 
@@ -1262,12 +1277,23 @@
           tracks_inventory: true,
         };
 
-        setProductos((prev) => {
-          const currentProducts = productosRef.current || prev;
-          const nextProducts = [...currentProducts, newProduct];
-          productosRef.current = nextProducts;
-          return nextProducts;
-        });
+        const nextProducts = [
+
+
+          ...currentCartProducts,
+
+
+          newProduct,
+
+
+        ];
+
+
+
+        setProductos(nextProducts);
+
+
+        productosRef.current = nextProducts;
         return;
       }
 
@@ -1329,15 +1355,30 @@
         tracks_inventory: false,
       };
 
-      setProductos((prev) => {
-        const currentProducts = productosRef.current || prev;
-        const nextProducts = [...currentProducts, newProduct];
-        productosRef.current = nextProducts;
-        return nextProducts;
-      });
+      const nextProducts = [
+
+
+        ...currentCartProducts,
+
+
+        newProduct,
+
+
+      ];
+
+
+
+      setProductos(nextProducts);
+
+
+      productosRef.current = nextProducts;
     };
 
     const handleBarcodeSearch = async () => {
+      if (barcodeSearchInProgressRef.current) {
+        return;
+      }
+
       if (shiftAlreadyCut) {
         showAppWarning(
           "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
@@ -1351,90 +1392,34 @@
       }
 
       const cleanBarcode = barcode.trim();
-      if (!cleanBarcode) return;
+
+      if (!cleanBarcode) {
+        return;
+      }
+
+      barcodeSearchInProgressRef.current = true;
 
       try {
-        const { data: product, error: productError } = await supabase
-          .from("products")
-          .select(
-            "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory",
-          )
-          .eq("barcode", cleanBarcode)
-          .eq("status", true)
-          .maybeSingle();
+        const product =
+          await getSellableProductByBarcode({
+            barcode: cleanBarcode,
+            branchId: branch.id,
+          });
 
-        if (productError) throw productError;
+        await addProductToCart(product);
+      } catch (error) {
+        console.error(
+          "Error buscando producto:",
+          error,
+        );
 
-        if (!product) {
-          showAppWarning("Producto no encontrado.");
-          setBarcode("");
-          return;
-        }
-
-        if (product.is_kit) {
-          const productWithDiscount = await getProductWithDiscount(product);
-          await addProductToCart(productWithDiscount);
-          setBarcode("");
-          return;
-        }
-
-        if (!product.tracks_inventory) {
-          if (!product.is_global) {
-            showAppWarning("Este producto no está disponible para esta sucursal.");
-            setBarcode("");
-            return;
-          }
-
-          const productWithDiscount = await getProductWithDiscount(product);
-          await addProductToCart(productWithDiscount);
-          setBarcode("");
-          return;
-        }
-
-        const { data: inventoryRow, error: inventoryError } = await supabase
-          .from("branch_inventory")
-          .select("stock, is_active, has_been_stocked, cost_price, sale_price")
-          .eq("branch_id", branch.id)
-          .eq("product_id", product.id)
-          .maybeSingle();
-
-        if (inventoryError) throw inventoryError;
-
-        if (!inventoryRow) {
-          showAppWarning("Este producto no existe en el inventario de esta sucursal.");
-          setBarcode("");
-          return;
-        }
-
-        if (inventoryRow.is_active === false) {
-          showAppWarning("Este producto está inactivo en esta sucursal.");
-          setBarcode("");
-          return;
-        }
-
-        const currentStock = Number(inventoryRow.stock || 0);
-        const hasBeenStocked = !!inventoryRow.has_been_stocked;
-
-        if (!hasBeenStocked && currentStock <= 0) {
-          showAppWarning(
-            "Este producto aún no tiene inventario inicial registrado en esta sucursal.",
-          );
-          setBarcode("");
-          return;
-        }
-
-        if (currentStock <= 0) {
-          showAppWarning("No hay existencia disponible en esta sucursal.");
-          setBarcode("");
-          return;
-        }
-
-        const productWithDiscount = await getProductWithDiscount(product);
-        await addProductToCart(productWithDiscount);
+        showAppWarning(
+          error?.message ||
+            "Error buscando producto.",
+        );
+      } finally {
+        barcodeSearchInProgressRef.current = false;
         setBarcode("");
-      } catch (err) {
-        console.error("Error buscando producto:", err);
-        showAppWarning(err.message || "Error buscando producto.");
       }
     };
 
@@ -3685,11 +3670,20 @@
               type="text"
               className={styles.barcodeInput}
               value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleBarcodeSearch();
+              onChange={(event) => setBarcode(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") {
+                  return;
                 }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (event.repeat) {
+                  return;
+                }
+
+                handleBarcodeSearch();
               }}
               placeholder="Escanea o escribe código"
               disabled={shiftAlreadyCut}
