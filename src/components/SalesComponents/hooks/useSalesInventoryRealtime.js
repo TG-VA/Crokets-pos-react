@@ -52,8 +52,6 @@ const useSalesInventoryRealtime = ({
   setProductos,
   setSelectedProduct,
   setStockWarningMsg,
-
-  syncShiftCutStatus,
 }) => {
   const realtimeTimerRef =
     useRef(null);
@@ -89,14 +87,12 @@ const useSalesInventoryRealtime = ({
 
       const kitProducts =
         trackedProducts.filter(
-          (product) =>
-            product?.is_kit
+          (product) => product?.is_kit
         );
 
       const normalTrackedProducts =
         trackedProducts.filter(
-          (product) =>
-            !product?.is_kit
+          (product) => !product?.is_kit
         );
 
       const productIds =
@@ -240,35 +236,34 @@ const useSalesInventoryRealtime = ({
           return {
             ...product,
 
-            stockReal:
-              stock,
+            stockReal: stock,
 
             existencia:
               availableAfterCart,
 
-            costo:
-              Number(
-                inventoryRow
-                  .cost_price ??
-                  product.costo ??
-                  0
-              ),
+            costo: Number(
+              inventoryRow.cost_price ??
+                product.costo ??
+                0
+            ),
           };
         };
 
-        setProductos?.((previousProducts) => {
-          const updatedProducts =
-            previousProducts.map(
-              updateProductInventory
-            );
+        setProductos?.(
+          (previousProducts) => {
+            const updatedProducts =
+              previousProducts.map(
+                updateProductInventory
+              );
 
-          if (productosRef) {
-            productosRef.current =
-              updatedProducts;
+            if (productosRef) {
+              productosRef.current =
+                updatedProducts;
+            }
+
+            return updatedProducts;
           }
-
-          return updatedProducts;
-        });
+        );
 
         setSelectedProduct?.(
           (previousSelectedProduct) => {
@@ -303,19 +298,15 @@ const useSalesInventoryRealtime = ({
     ]);
 
   /*
-   * Sincroniza al recuperar el foco de la ventana.
+   * Actualiza el inventario cuando la ventana
+   * vuelve a tener el foco.
    */
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled) {
+      return undefined;
+    }
 
     const handleFocus = () => {
-      if (
-        typeof syncShiftCutStatus ===
-        "function"
-      ) {
-        syncShiftCutStatus();
-      }
-
       refreshCartInventory();
     };
 
@@ -333,11 +324,11 @@ const useSalesInventoryRealtime = ({
   }, [
     enabled,
     refreshCartInventory,
-    syncShiftCutStatus,
   ]);
 
   /*
-   * Suscripción Realtime y actualización periódica.
+   * Actualización periódica y suscripción Realtime
+   * exclusiva de branch_inventory.
    */
   useEffect(() => {
     if (
@@ -351,18 +342,10 @@ const useSalesInventoryRealtime = ({
     const refreshSafely =
       async () => {
         try {
-          if (
-            typeof
-              syncShiftCutStatus ===
-            "function"
-          ) {
-            await syncShiftCutStatus();
-          }
-
           await refreshCartInventory();
         } catch (error) {
           console.error(
-            "Error actualizando ventas en tiempo real:",
+            "Error actualizando inventario en tiempo real:",
             error
           );
         }
@@ -406,7 +389,7 @@ const useSalesInventoryRealtime = ({
 
     const channel = supabase
       .channel(
-        `sales-realtime-${branchId}-${userId}`
+        `sales-inventory-${branchId}-${userId}`
       )
       .on(
         "postgres_changes",
@@ -415,29 +398,6 @@ const useSalesInventoryRealtime = ({
           schema: "public",
           table:
             "branch_inventory",
-          filter:
-            `branch_id=eq.${branchId}`,
-        },
-        scheduleRealtimeRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "cash_cuts",
-          filter:
-            `branch_id=eq.${branchId}`,
-        },
-        scheduleRealtimeRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table:
-            "cash_register_sessions",
           filter:
             `branch_id=eq.${branchId}`,
         },
@@ -467,7 +427,6 @@ const useSalesInventoryRealtime = ({
     userId,
     productosRef,
     refreshCartInventory,
-    syncShiftCutStatus,
   ]);
 
   return {

@@ -40,11 +40,17 @@
   import AppModal from "../../components/AppModal/AppModal";
   import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
   import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
+  import useSalesCashSession from "../../components/SalesComponents/hooks/useSalesCashSession";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
     getProductWithDiscount,
   } from "../../components/SalesComponents/services/salesInventoryService";
+
+  import {
+    createCashMovement,
+    getAvailableCash as getAvailableCashFromService,
+  } from "../../components/SalesComponents/services/salesCashService";
 
   import {
     getCartItemKey,
@@ -92,6 +98,10 @@
 
     const tableRef = useRef(null);
 
+    const handleCloseExitModal = useCallback(() => {
+      setExitModalOpen(false);
+    }, []);
+
     const [isExitModalOpen, setExitModalOpen] = useState(false);
     const [isExitAuthModalOpen, setExitAuthModalOpen] = useState(false);
     const [isEntryModalOpen, setEntryModalOpen] = useState(false);
@@ -122,7 +132,6 @@
     const [currentSaleClient, setCurrentSaleClient] = useState(null);
     const [currentSaleReward, setCurrentSaleReward] = useState(null);
     const [processingSale, setProcessingSale] = useState(false);
-    const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
 
     const [appModal, setAppModal] = useState({
       isOpen: false,
@@ -391,81 +400,15 @@
       });
     };
 
-
-
-
-
-
-
-
-
-
-
-
-    const getOpenCashSession = async () => {
-      if (!branch?.id || !user?.id) {
-        throw new Error("No se detectó la sucursal o el usuario.");
-      }
-
-      const { data, error } = await supabase
-        .from("cash_register_sessions")
-        .select("id, branch_id, user_id, status, opened_at, opening_amount")
-        .eq("branch_id", branch.id)
-        .eq("user_id", user.id)
-        .eq("status", "open")
-        .order("opened_at", { ascending: false })
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        throw new Error("No hay una sesión de caja abierta para este usuario.");
-      }
-
-      return data;
-    };
-
-    const validateShiftNotCut = async () => {
-      try {
-        const session = await getOpenCashSession();
-
-        const { data, error } = await supabase
-          .from("cash_cuts")
-          .select("id")
-          .eq("cash_register_session_id", session.id)
-          .eq("cut_type", "shift")
-          .limit(1);
-
-        if (error) throw error;
-
-        const alreadyCut = (data || []).length > 0;
-
-        setShiftAlreadyCut(alreadyCut);
-
-        if (alreadyCut) {
-          localStorage.setItem("shift_cut_done", "true");
-        } else {
-          localStorage.removeItem("shift_cut_done");
-        }
-
-        return !alreadyCut;
-      } catch (error) {
-        console.error("Error validando corte:", error);
-        return false;
-      }
-    };
-
-    const syncShiftCutStatus = useCallback(async () => {
-      const localFlag = localStorage.getItem("shift_cut_done");
-
-      if (localFlag === "true") {
-        setShiftAlreadyCut(true);
-      }
-
-      if (branch?.id && user?.id) {
-        await validateShiftNotCut();
-      }
-    }, [branch?.id, user?.id]);
+    const {
+  shiftAlreadyCut,
+  getOpenSession: getOpenCashSession,
+  validateShiftNotCut,
+} = useSalesCashSession({
+  branchId: branch?.id,
+  userId: user?.id,
+  enabled: draftReady,
+});
 
     const getBranchInventoryRow = useCallback(
       async (productId) => {
@@ -488,36 +431,8 @@
       setProductos,
       setSelectedProduct,
       setStockWarningMsg,
-      syncShiftCutStatus,
     });
 
-    useEffect(() => {
-      syncShiftCutStatus();
-
-      const handleStorage = (event) => {
-        if (event.key === "shift_cut_done") {
-          syncShiftCutStatus();
-        }
-      };
-
-      const handleCutStatusChanged = () => {
-        syncShiftCutStatus();
-      };
-
-      window.addEventListener("storage", handleStorage);
-      window.addEventListener(
-        "shift-cut-status-changed",
-        handleCutStatusChanged,
-      );
-
-      return () => {
-        window.removeEventListener("storage", handleStorage);
-        window.removeEventListener(
-          "shift-cut-status-changed",
-          handleCutStatusChanged,
-        );
-      };
-    }, [syncShiftCutStatus]);
 
     const openPaymentFlow = async () => {
       if (productos.length === 0) {
@@ -543,85 +458,6 @@
 
       setSaleToken((prev) => prev || uuidv4());
       setShowPaymentModal(true);
-    };
-
-    const getAvailableCash = async (sessionId) => {
-      try {
-        const { data: session, error: sessionError } = await supabase
-          .from("cash_register_sessions")
-          .select("id, branch_id, opening_amount, opened_at")
-          .eq("id", sessionId)
-          .single();
-
-        if (sessionError) throw sessionError;
-
-        const openingAmount = Number(session?.opening_amount || 0);
-        const openedAt = session?.opened_at;
-        const branchId = session?.branch_id;
-
-        const { data: movements, error: movementsError } = await supabase
-          .from("cash_movements")
-          .select("movement_type, amount")
-          .eq("session_id", sessionId);
-
-        if (movementsError) throw movementsError;
-
-        let entradas = 0;
-        let salidas = 0;
-
-        for (const movement of movements || []) {
-          if (movement.movement_type === "entrada") {
-            entradas += Number(movement.amount || 0);
-          } else if (movement.movement_type === "salida") {
-            salidas += Number(movement.amount || 0);
-          }
-        }
-
-        const { data: cashMethods, error: cashMethodsError } = await supabase
-          .from("payment_methods")
-          .select("id, name")
-          .eq("name", "Efectivo");
-
-        if (cashMethodsError) throw cashMethodsError;
-
-        const cashMethodIds = (cashMethods || []).map((pm) => pm.id);
-
-        let ventasEfectivo = 0;
-
-        if (cashMethodIds.length > 0 && openedAt && branchId) {
-          const { data: cashPayments, error: cashPaymentsError } = await supabase
-            .from("sale_payments")
-            .select(
-              "amount, currency, exchange_rate, payment_method_id, created_at, branch_id",
-            )
-            .eq("branch_id", branchId)
-            .gte("created_at", openedAt)
-            .in("payment_method_id", cashMethodIds);
-
-          if (cashPaymentsError) throw cashPaymentsError;
-
-          ventasEfectivo = (cashPayments || []).reduce((sum, payment) => {
-            const amount = Number(payment.amount || 0);
-            const currency = String(payment.currency || "MXN").toUpperCase();
-            const exchangeRate = Number(payment.exchange_rate || 0);
-
-            if (currency === "MXN") {
-              return sum + amount;
-            }
-
-            if (currency === "USD" && exchangeRate > 0) {
-              return sum + amount * exchangeRate;
-            }
-
-            return sum;
-          }, 0);
-        }
-
-        return openingAmount + entradas + ventasEfectivo - salidas;
-      } catch (error) {
-        console.error("Error calculando efectivo disponible:", error);
-        return 0;
-      }
     };
 
     const buildPaymentsPayload = (paymentData) => {
@@ -1898,29 +1734,37 @@
 
         const openSession = await getOpenCashSession();
 
-        const { data, error } = await supabase
-          .from("cash_movements")
-          .insert([
-            {
-              session_id: openSession.id,
-              user_id: user.id,
-              movement_type: newMovement.type,
-              amount: Number(newMovement.amount),
-              description: newMovement.description?.trim() || null,
-              branch_id: branch.id,
-            },
-          ])
-          .select()
-          .single();
+        const movement = await createCashMovement({
+          sessionId: openSession.id,
+          userId: user.id,
+          branchId: branch.id,
+          movementType: newMovement.type,
+          amount: newMovement.amount,
+          description: newMovement.description,
+        });
 
-        if (error) throw error;
+        setCashMovements((prev) => [
+          ...prev,
+          movement,
+        ]);
 
-        setCashMovements((prev) => [...prev, data]);
-        showAppSuccess("Entrada de efectivo registrada correctamente.", "Entrada registrada");
+        showAppSuccess(
+          "Entrada de efectivo registrada correctamente.",
+          "Entrada registrada",
+        );
+
         return true;
       } catch (error) {
-        console.error("Error al guardar entrada de efectivo:", error);
-        showAppWarning(error.message || "No se pudo guardar la entrada de efectivo.");
+        console.error(
+          "Error al guardar entrada de efectivo:",
+          error,
+        );
+
+        showAppWarning(
+          error.message ||
+            "No se pudo guardar la entrada de efectivo.",
+        );
+
         return false;
       }
     };
@@ -1946,52 +1790,75 @@
 
         const openSession = await getOpenCashSession();
 
-        if (!openSession) {
-          showAppWarning("No hay sesión de caja abierta.");
+        const rawAvailableCash =
+          await getAvailableCashFromService({
+            sessionId: openSession.id,
+          });
+
+        const availableCash = Math.max(
+          Number(rawAvailableCash || 0),
+          0,
+        );
+
+        const exitAmount = Number(
+          newMovement.amount,
+        );
+
+        if (
+          !Number.isFinite(exitAmount) ||
+          exitAmount <= 0
+        ) {
+          showAppWarning(
+            "El monto de salida debe ser mayor a cero.",
+          );
           return false;
         }
-
-        const rawAvailableCash = await getAvailableCash(openSession.id);
-        const availableCash = Math.max(rawAvailableCash, 0);
-        const exitAmount = Number(newMovement.amount);
 
         if (exitAmount > availableCash) {
           showAppWarning(
             `No puedes retirar $${exitAmount.toFixed(
               2,
-            )}. Disponible en caja: $${availableCash.toFixed(2)}`,
+            )}. Disponible en caja: $${availableCash.toFixed(
+              2,
+            )}`,
           );
           return false;
         }
 
-        const payload = {
-          session_id: openSession.id,
-          user_id: user.id,
-          movement_type: newMovement.type,
+        const movement = await createCashMovement({
+          sessionId: openSession.id,
+          userId: user.id,
+          branchId: branch.id,
+          movementType: newMovement.type,
           amount: exitAmount,
-          description: newMovement.description?.trim() || null,
-          branch_id: branch.id,
-        };
+          description: newMovement.description,
+        });
 
-        const { data, error } = await supabase
-          .from("cash_movements")
-          .insert([payload])
-          .select()
-          .single();
+        setCashMovements((prev) => [
+          ...prev,
+          movement,
+        ]);
 
-        if (error) throw error;
-
-        setCashMovements((prev) => [...prev, data]);
         showAppModal({
           type: "danger",
           title: "Salida registrada",
-          message: "Salida de efectivo registrada correctamente.",
+          message:
+            "Salida de efectivo registrada correctamente.",
           confirmText: "Entendido",
         });
+
         return true;
       } catch (error) {
-        console.error("Error al guardar salida de efectivo:", error);
-        showAppWarning(error.message || "No se pudo guardar la salida de efectivo.");
+        console.error(
+          "Error al guardar salida de efectivo:",
+          error,
+        );
+
+        showAppWarning(
+          error.message ||
+            "No se pudo guardar la salida de efectivo.",
+        );
+
         return false;
       }
     };
@@ -3468,9 +3335,13 @@
 
         const target = e.target;
         const isInputElement =
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable;
+          target?.tagName === "INPUT" ||
+          target?.tagName === "TEXTAREA" ||
+          target?.isContentEditable;
+
+        if (isInputElement && e.key !== "Escape") {
+          return;
+        }
 
         if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
           e.preventDefault();
@@ -4057,7 +3928,7 @@
 
         <ExitModal
           isOpen={isExitModalOpen}
-          onClose={() => setExitModalOpen(false)}
+          onClose={handleCloseExitModal}
           onSave={handleSaveExit}
         />
 
