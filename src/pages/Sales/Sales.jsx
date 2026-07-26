@@ -59,6 +59,10 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   } from "../../components/SalesComponents/services/salesCashService";
 
   import {
+    createSaleTransaction,
+  } from "../../components/SalesComponents/services/salesTransactionService";
+
+  import {
     getCartItemKey,
     getCartQuantityForProduct,
     isRewardCartItem,
@@ -2337,24 +2341,26 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
         const paymentsPayload = buildPaymentsPayload(paymentData);
         const saleDate = new Date().toISOString();
 
-        const { data: saleId, error } = await supabase.rpc(
-          "create_sale_transaction",
-          {
-            p_branch_id: branch.id,
-            p_user_id: user.id,
-            p_customer_id: currentSaleClient?.id || null,
-            p_subtotal: Number(subtotal),
-            p_tax: 0,
-            p_total: Number(total),
-            p_sale_date: saleDate,
-            p_products: productsPayload,
-            p_payments: paymentsPayload,
-            p_client_sale_token: saleToken,
-            p_notes: paymentData?.notes?.trim() || null,
-          },
-        );
-
-        if (error) throw error;
+        const saleId =
+          await createSaleTransaction({
+            branchId: branch.id,
+            userId: user.id,
+            customerId:
+              currentSaleClient?.id ||
+              null,
+            subtotal: Number(
+              subtotal,
+            ),
+            tax: 0,
+            total: Number(total),
+            saleDate,
+            productsPayload,
+            paymentsPayload,
+            saleToken,
+            notes:
+              paymentData?.notes?.trim() ||
+              null,
+          });
 
         const rewardItemsForSale = getRewardCartItems();
 
