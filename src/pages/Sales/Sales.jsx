@@ -43,6 +43,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesStockValidation from "../../components/SalesComponents/hooks/useSalesStockValidation";
   import useSalesPaymentFlow from "../../components/SalesComponents/hooks/useSalesPaymentFlow";
   import useSalesCheckout from "../../components/SalesComponents/hooks/useSalesCheckout";
+  import useSalesPendingTickets from "../../components/SalesComponents/hooks/useSalesPendingTickets";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -584,6 +585,40 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       setProcessingSale,
       setShowPaymentModal,
       setSaleSuccessData,
+      showAppWarning,
+    });
+
+    const {
+      handleSavePendingTicket,
+      handleChangeToTicket,
+      handleDeleteTicket,
+      handleOpenChangeModal,
+      handleOpenDeleteModal,
+    } = useSalesPendingTickets({
+      productos,
+      productosRef,
+      pendingTickets,
+      setPendingTickets,
+      ticketNumber,
+      setTicketNumber,
+      currentSaleClient,
+      setCurrentSaleClient,
+      currentSaleReward,
+      setCurrentSaleReward,
+      subtotal,
+      discountTotal,
+      total,
+      setProductos,
+      setSelectedProduct,
+      setPendingFreeProductRewards,
+      setPendingProductDiscountRewards,
+      setActiveProductDiscountReward,
+      setRewardProductModalOpen,
+      setProductDiscountRewardModalOpen,
+      setBarcode,
+      setSaleToken,
+      setChangeModalOpen,
+      setDeleteModalOpen,
       showAppWarning,
     });
 
@@ -1421,94 +1456,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       } catch (error) {
         console.error("Error aplicando descuento de recompensa:", error);
         showAppWarning(error.message || "No se pudo aplicar el descuento de recompensa.");
-      }
-    };
-
-    const handleSavePendingTicket = (ticketName) => {
-      const pendingTicket = {
-        number: ticketNumber,
-        name: ticketName,
-        products: productos,
-        client: currentSaleClient,
-        reward: currentSaleReward,
-        subtotal,
-        discountTotal,
-        total,
-        date: new Date().toISOString(),
-      };
-
-      setPendingTickets((prev) => [...prev, pendingTicket]);
-
-      setProductos([]);
-      setCurrentSaleClient(null);
-      setCurrentSaleReward(null);
-      setPendingFreeProductRewards([]);
-      setPendingProductDiscountRewards([]);
-      setActiveProductDiscountReward(null);
-      setRewardProductModalOpen(false);
-      setProductDiscountRewardModalOpen(false);
-      setSelectedProduct(null);
-      setTicketNumber((prev) => prev + 1);
-      setBarcode("");
-      setSaleToken(null);
-    };
-
-    const handleChangeToTicket = (ticket) => {
-      if (productos.length > 0) {
-        const currentTicket = {
-          number: ticketNumber,
-          name: `Ticket ${ticketNumber}`,
-          products: productos,
-          client: currentSaleClient,
-          reward: currentSaleReward,
-          subtotal,
-          discountTotal,
-          total,
-          date: new Date().toISOString(),
-        };
-
-        const updatedPendingTickets = pendingTickets.filter((t) => t !== ticket);
-        setPendingTickets([...updatedPendingTickets, currentTicket]);
-      } else {
-        const updatedPendingTickets = pendingTickets.filter((t) => t !== ticket);
-        setPendingTickets(updatedPendingTickets);
-      }
-
-      const restoredProducts = Array.isArray(ticket.products) ? ticket.products : [];
-
-      setProductos(restoredProducts);
-      productosRef.current = restoredProducts;
-      setCurrentSaleClient(ticket.client);
-      setCurrentSaleReward(getSyncedRewardsFromCart(restoredProducts, ticket.reward || null));
-      setPendingFreeProductRewards([]);
-      setPendingProductDiscountRewards([]);
-      setActiveProductDiscountReward(null);
-      setRewardProductModalOpen(false);
-      setProductDiscountRewardModalOpen(false);
-      setTicketNumber(ticket.number);
-      setSelectedProduct(null);
-      setBarcode("");
-      setSaleToken(null);
-    };
-
-    const handleDeleteTicket = (index) => {
-      const updatedPendingTickets = pendingTickets.filter((_, i) => i !== index);
-      setPendingTickets(updatedPendingTickets);
-    };
-
-    const handleOpenChangeModal = () => {
-      if (pendingTickets.length === 0) {
-        showAppWarning("No hay tickets pendientes");
-      } else {
-        setChangeModalOpen(true);
-      }
-    };
-
-    const handleOpenDeleteModal = () => {
-      if (pendingTickets.length === 0) {
-        showAppWarning("No hay tickets pendientes por eliminar");
-      } else {
-        setDeleteModalOpen(true);
       }
     };
 
