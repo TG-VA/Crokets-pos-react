@@ -46,6 +46,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesPendingTickets from "../../components/SalesComponents/hooks/useSalesPendingTickets";
   import useSalesRewards from "../../components/SalesComponents/hooks/useSalesRewards";
   import useSalesTableColumns from "../../components/SalesComponents/hooks/useSalesTableColumns";
+  import useSalesCashMovements from "../../components/SalesComponents/hooks/useSalesCashMovements";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -54,11 +55,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import {
     getSellableProductByBarcode,
   } from "../../components/SalesComponents/services/salesProductService";
-
-  import {
-    createCashMovement,
-    getAvailableCash as getAvailableCashFromService,
-  } from "../../components/SalesComponents/services/salesCashService";
 
   import {
     getCartItemKey,
@@ -334,6 +330,20 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   enabled: draftReady,
 });
 
+    const {
+      handleSaveEntry,
+      handleSaveExit,
+    } = useSalesCashMovements({
+      userId: user?.id,
+      branchId: branch?.id,
+      shiftAlreadyCut,
+      getOpenCashSession,
+      setCashMovements,
+      showAppModal,
+      showAppWarning,
+      showAppSuccess,
+    });
+
     const getBranchInventoryRow = useCallback(
       async (productId) => {
         return getBranchInventoryRowFromService({
@@ -569,156 +579,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       setDeleteModalOpen,
       showAppWarning,
     });
-
-    const handleSaveEntry = async (newMovement) => {
-      if (shiftAlreadyCut) {
-        showAppWarning(
-          "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
-        );
-        return false;
-      }
-
-      try {
-        if (!user?.id) {
-          showAppWarning("No se detectó el usuario.");
-          return false;
-        }
-
-        if (!branch?.id) {
-          showAppWarning("No se detectó la sucursal.");
-          return false;
-        }
-
-        const openSession = await getOpenCashSession();
-
-        const movement = await createCashMovement({
-          sessionId: openSession.id,
-          userId: user.id,
-          branchId: branch.id,
-          movementType: newMovement.type,
-          amount: newMovement.amount,
-          description: newMovement.description,
-        });
-
-        setCashMovements((prev) => [
-          ...prev,
-          movement,
-        ]);
-
-        showAppSuccess(
-          "Entrada de efectivo registrada correctamente.",
-          "Entrada registrada",
-        );
-
-        return true;
-      } catch (error) {
-        console.error(
-          "Error al guardar entrada de efectivo:",
-          error,
-        );
-
-        showAppWarning(
-          error.message ||
-            "No se pudo guardar la entrada de efectivo.",
-        );
-
-        return false;
-      }
-    };
-
-    const handleSaveExit = async (newMovement) => {
-      if (shiftAlreadyCut) {
-        showAppWarning(
-          "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
-        );
-        return false;
-      }
-
-      try {
-        if (!user?.id) {
-          showAppWarning("No se detectó el usuario.");
-          return false;
-        }
-
-        if (!branch?.id) {
-          showAppWarning("No se detectó la sucursal.");
-          return false;
-        }
-
-        const openSession = await getOpenCashSession();
-
-        const rawAvailableCash =
-          await getAvailableCashFromService({
-            sessionId: openSession.id,
-          });
-
-        const availableCash = Math.max(
-          Number(rawAvailableCash || 0),
-          0,
-        );
-
-        const exitAmount = Number(
-          newMovement.amount,
-        );
-
-        if (
-          !Number.isFinite(exitAmount) ||
-          exitAmount <= 0
-        ) {
-          showAppWarning(
-            "El monto de salida debe ser mayor a cero.",
-          );
-          return false;
-        }
-
-        if (exitAmount > availableCash) {
-          showAppWarning(
-            `No puedes retirar $${exitAmount.toFixed(
-              2,
-            )}. Disponible en caja: $${availableCash.toFixed(
-              2,
-            )}`,
-          );
-          return false;
-        }
-
-        const movement = await createCashMovement({
-          sessionId: openSession.id,
-          userId: user.id,
-          branchId: branch.id,
-          movementType: newMovement.type,
-          amount: exitAmount,
-          description: newMovement.description,
-        });
-
-        setCashMovements((prev) => [
-          ...prev,
-          movement,
-        ]);
-
-        showAppModal({
-          type: "danger",
-          title: "Salida registrada",
-          message:
-            "Salida de efectivo registrada correctamente.",
-          confirmText: "Entendido",
-        });
-
-        return true;
-      } catch (error) {
-        console.error(
-          "Error al guardar salida de efectivo:",
-          error,
-        );
-
-        showAppWarning(
-          error.message ||
-            "No se pudo guardar la salida de efectivo.",
-        );
-
-        return false;
-      }
-    };
 
     const openClientModal = () => {
       setPendingFreeProductRewards([]);
