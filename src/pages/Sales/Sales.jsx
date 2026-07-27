@@ -99,6 +99,10 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     buildProductsPayload,
   } from "../../components/SalesComponents/utils/salesPaymentUtils";
 
+  import {
+    buildSaleSuccessPayload,
+  } from "../../components/SalesComponents/utils/salesSuccessUtils";
+
   const EMPTY_REWARDS = [];
 
   const Sales = () => {
@@ -1644,36 +1648,19 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
           });
         }
 
-        const saleSuccessPayload = {
-          saleId,
-          folio: String(saleId).slice(0, 8).toUpperCase(),
-          customerId: currentSaleClient?.id || null,
-          customerName: currentSaleClient?.name || "PÚBLICO EN GENERAL",
-          customerPhone: currentSaleClient?.phone || "",
-          total: Number(total),
-          subtotal: Number(subtotal),
-          discountTotal: Number(discountTotal || 0),
-          paymentMethod: paymentData?.method || "",
-          printed: !!paymentData?.shouldPrint,
-          pointsEarned: Number(pointsResult?.points || 0),
-          pointsUsed: Number(pointsResult?.pointsUsed || 0),
-          pointsBalance:
-            pointsResult?.newBalance !== undefined &&
-            pointsResult?.newBalance !== null
-              ? Number(pointsResult.newBalance)
-              : null,
-          pointsError: pointsResult?.error || null,
-          rewardPointsError: pointsResult?.rewardError || null,
-          rewardRedemptions: pointsResult?.rewardRedemptions || [],
-          rewardRedemptionsRegistered: !!rewardRedemptionResult?.registered,
-          rewardPointsRegistered: !!rewardPointsResult?.registered,
-          noPointsReason:
-            currentSaleClient?.id &&
-            Number(pointsResult?.points || 0) <= 0 &&
-            Number(pointsResult?.pointsUsed || 0) <= 0
-              ? "La venta no generó puntos porque el total no alcanzó el monto mínimo configurado."
-              : "",
-        };
+        const saleSuccessPayload =
+          buildSaleSuccessPayload({
+            saleId,
+            saleClient:
+              currentSaleClient,
+            subtotal,
+            discountTotal,
+            total,
+            paymentData,
+            pointsResult,
+            rewardRedemptionResult,
+            rewardPointsResult,
+          });
 
         clearSalesDraft();
         resetCurrentSale();
