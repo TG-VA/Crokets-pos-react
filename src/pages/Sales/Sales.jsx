@@ -45,6 +45,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesCheckout from "../../components/SalesComponents/hooks/useSalesCheckout";
   import useSalesPendingTickets from "../../components/SalesComponents/hooks/useSalesPendingTickets";
   import useSalesRewards from "../../components/SalesComponents/hooks/useSalesRewards";
+  import useSalesTableColumns from "../../components/SalesComponents/hooks/useSalesTableColumns";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -76,20 +77,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     const [pendingTickets, setPendingTickets] = useState([]);
     const [barcode, setBarcode] = useState("");
     const barcodeSearchInProgressRef = useRef(false);
-
-    const MIN_COLUMN_WIDTH = 80;
-    const [columnWidths, setColumnWidths] = useState([400, 150, 80, 150, 150]);
-    const [isInitialized, setIsInitialized] = useState(false);
-
-    const resizeRef = useRef({
-      isResizing: false,
-      columnIndex: -1,
-      startX: 0,
-      startWidth: 0,
-      nextStartWidth: 0,
-    });
-
-    const tableRef = useRef(null);
 
     const handleCloseExitModal = useCallback(() => {
       setExitModalOpen(false);
@@ -193,6 +180,12 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     const [productos, setProductos] = useState([]);
     const [stockWarningMsg, setStockWarningMsg] = useState("");
     const productosRef = useRef([]);
+
+    const {
+      tableRef,
+      gridTemplate,
+      handleMouseDown,
+    } = useSalesTableColumns();
 
     const subtotal = productos.reduce(
       (sum, producto) =>
@@ -576,98 +569,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       setDeleteModalOpen,
       showAppWarning,
     });
-
-    const handleMouseMove = useCallback((e) => {
-      const { isResizing, columnIndex, startX, startWidth, nextStartWidth } =
-        resizeRef.current;
-
-      if (!isResizing || columnIndex === -1) return;
-
-      const deltaX = e.clientX - startX;
-
-      let newWidth = startWidth + deltaX;
-      let newNextWidth = nextStartWidth - deltaX;
-
-      if (newWidth < MIN_COLUMN_WIDTH) {
-        newWidth = MIN_COLUMN_WIDTH;
-        newNextWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
-      }
-
-      if (newNextWidth < MIN_COLUMN_WIDTH) {
-        newNextWidth = MIN_COLUMN_WIDTH;
-        newWidth = startWidth + nextStartWidth - MIN_COLUMN_WIDTH;
-      }
-
-      setColumnWidths((prev) => {
-        const newWidths = [...prev];
-        newWidths[columnIndex] = newWidth;
-        newWidths[columnIndex + 1] = newNextWidth;
-        return newWidths;
-      });
-    }, []);
-
-    const handleMouseUp = useCallback(() => {
-      resizeRef.current.isResizing = false;
-      resizeRef.current.columnIndex = -1;
-
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    }, [handleMouseMove]);
-
-    const handleMouseDown = useCallback(
-      (e, index) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (index >= columnWidths.length - 1) return;
-
-        resizeRef.current = {
-          isResizing: true,
-          columnIndex: index,
-          startX: e.clientX,
-          startWidth: columnWidths[index],
-          nextStartWidth: columnWidths[index + 1],
-        };
-
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
-      },
-      [columnWidths, handleMouseMove, handleMouseUp],
-    );
-
-    useEffect(() => {
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [handleMouseMove, handleMouseUp]);
-
-    useEffect(() => {
-      if (tableRef.current && !isInitialized) {
-        const tableWidth = tableRef.current.offsetWidth;
-        const availableWidth = tableWidth - 22;
-        const proportions = [0.4, 0.15, 0.1, 0.15];
-
-        const calculatedWidths = proportions.map((prop) =>
-          Math.max(MIN_COLUMN_WIDTH, Math.floor(availableWidth * prop)),
-        );
-
-        const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
-        const lastColumnWidth = Math.max(
-          MIN_COLUMN_WIDTH,
-          availableWidth - usedWidth,
-        );
-
-        setColumnWidths([...calculatedWidths, lastColumnWidth]);
-        setIsInitialized(true);
-      }
-    }, [isInitialized]);
 
     const handleSaveEntry = async (newMovement) => {
       if (shiftAlreadyCut) {
@@ -1076,8 +977,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 
       return "";
     };
-
-    const gridTemplate = columnWidths.map((width) => `${width}px`).join(" ");
 
     return (
       <div className={styles.ventasContainer}>
