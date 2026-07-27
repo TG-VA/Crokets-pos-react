@@ -61,20 +61,12 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   } from "../../components/SalesComponents/services/salesTransactionService";
 
   import {
-    DEFAULT_POINTS_AMOUNT,
-    getCustomerCurrentPointsBalance,
-    registerCustomerPointsForSale,
-  } from "../../components/SalesComponents/services/salesCustomerPointsService";
-
-  import {
-    getRewardCartItems,
-    registerCustomerRewardPointsRedemption,
-    registerSaleRewardRedemptions,
-  } from "../../components/SalesComponents/services/salesRewardsService";
-
-  import {
     printSaleTicket,
   } from "../../components/SalesComponents/services/salesTicketService";
+
+  import {
+    processSaleCustomerBenefits,
+  } from "../../components/SalesComponents/services/salesPostSaleService";
 
   import {
     getCartItemKey,
@@ -1502,124 +1494,25 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
               null,
           });
 
-        const rewardItemsForSale = getRewardCartItems(productosRef.current);
-
-        let rewardRedemptionResult = {
-          registered: false,
-          rows: [],
-          totalPoints: 0,
-          totalQuantity: 0,
-          totalDiscountAmount: 0,
-          error: null,
-        };
-
-        let rewardPointsResult = {
-          pointsUsed: 0,
-          registered: false,
-          newBalance: null,
-          error: null,
-        };
-
-        let pointsResult = {
-          points: 0,
-          amountPerPoint: DEFAULT_POINTS_AMOUNT,
-          registered: false,
-          newBalance: null,
-          pointsUsed: 0,
-          rewardRedemptions: [],
-          error: null,
-        };
-
-        if (currentSaleClient?.id && rewardItemsForSale.length > 0) {
-          try {
-            rewardRedemptionResult =
-              await registerSaleRewardRedemptions({
-                saleId,
-                customerId:
-                  currentSaleClient.id,
-                saleDate,
-                rewardItems:
-                  rewardItemsForSale,
-                branchId: branch.id,
-                userId: user.id,
-              });
-
-            rewardPointsResult =
-              await registerCustomerRewardPointsRedemption({
-                saleId,
-                customerId:
-                  currentSaleClient.id,
-                saleDate,
-                rewardItems:
-                  rewardItemsForSale,
-                branchId: branch.id,
-                userId: user.id,
-              });
-          } catch (rewardError) {
-            console.error("Error registrando canje de recompensas:", rewardError);
-
-            rewardRedemptionResult = {
-              registered: false,
-              rows: [],
-              totalPoints: 0,
-              totalQuantity: 0,
-              totalDiscountAmount: 0,
-              error: rewardError,
-            };
-
-            rewardPointsResult = {
-              pointsUsed: 0,
-              registered: false,
-              newBalance: null,
-              error: rewardError,
-            };
-          }
-        }
-
-        if (currentSaleClient?.id) {
-          try {
-            const earnedPointsResult =
-              await registerCustomerPointsForSale({
-                saleId,
-                customerId:
-                  currentSaleClient.id,
-                saleTotal: Number(total),
-                saleDate,
-                userId: user.id,
-                branchId: branch.id,
-              });
-
-            const currentBalance = await getCustomerCurrentPointsBalance(
-              currentSaleClient.id,
-            );
-
-            pointsResult = {
-              ...earnedPointsResult,
-              newBalance: currentBalance,
-              pointsUsed: Number(rewardPointsResult?.pointsUsed || 0),
-              rewardRedemptions: rewardRedemptionResult?.rows || [],
-              rewardError:
-                rewardRedemptionResult?.error || rewardPointsResult?.error || null,
-            };
-          } catch (pointsError) {
-            console.error("Error registrando puntos de cliente:", pointsError);
-
-            pointsResult = {
-              points: 0,
-              amountPerPoint: DEFAULT_POINTS_AMOUNT,
-              registered: false,
-              newBalance:
-                rewardPointsResult?.newBalance !== undefined
-                  ? rewardPointsResult.newBalance
-                  : null,
-              pointsUsed: Number(rewardPointsResult?.pointsUsed || 0),
-              rewardRedemptions: rewardRedemptionResult?.rows || [],
-              error: pointsError,
-              rewardError:
-                rewardRedemptionResult?.error || rewardPointsResult?.error || null,
-            };
-          }
-        }
+        const {
+          pointsResult,
+          rewardRedemptionResult,
+          rewardPointsResult,
+        } =
+          await processSaleCustomerBenefits({
+            saleId,
+            customerId:
+              currentSaleClient?.id ||
+              null,
+            saleTotal: Number(
+              total,
+            ),
+            saleDate,
+            cartItems:
+              productosRef.current,
+            branchId: branch.id,
+            userId: user.id,
+          });
 
         if (paymentData?.shouldPrint) {
           await printSaleTicket({
