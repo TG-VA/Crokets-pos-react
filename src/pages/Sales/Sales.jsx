@@ -48,6 +48,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesTableColumns from "../../components/SalesComponents/hooks/useSalesTableColumns";
   import useSalesCashMovements from "../../components/SalesComponents/hooks/useSalesCashMovements";
   import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
+  import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -556,164 +557,14 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       setExitAuthModalOpen(false);
     };
 
-    useEffect(() => {
-      const handleKeyDown = (e) => {
-        const isAnyModalOpen =
-          showPaymentModal ||
-          isEntryModalOpen ||
-          isExitModalOpen ||
-          isExitAuthModalOpen ||
-          isClientModalOpen ||
-          isRewardProductModalOpen ||
-          isProductDiscountRewardModalOpen ||
-          isVerifierModalOpen ||
-          isSearchModalOpen ||
-          isDiscountModalOpen ||
-          isPendingModalOpen ||
-          isChangeModalOpen ||
-          isDeleteModalOpen ||
-          isDeleteItemModalOpen ||
-          isSalesHistoryModalOpen ||
-          !!saleSuccessData;
+    useSalesKeyboardShortcuts({
+      productos,
+      selectedProduct,
+      setSelectedProduct,
 
-        const target = e.target;
-        const isInputElement =
-          target?.tagName === "INPUT" ||
-          target?.tagName === "TEXTAREA" ||
-          target?.isContentEditable;
+      processingSale,
+      shiftAlreadyCut,
 
-        if (isInputElement && e.key !== "Escape") {
-          return;
-        }
-
-        if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isAnyModalOpen) {
-          e.preventDefault();
-
-          if (productos.length === 0) return;
-
-          if (!selectedProduct) {
-            setSelectedProduct(productos[0]);
-          } else {
-            const currentIndex = productos.findIndex((p) =>
-              isSameCartItem(p, selectedProduct),
-            );
-
-            if (e.key === "ArrowDown") {
-              const nextIndex = (currentIndex + 1) % productos.length;
-              setSelectedProduct(productos[nextIndex]);
-            } else if (e.key === "ArrowUp") {
-              const prevIndex =
-                currentIndex === 0 ? productos.length - 1 : currentIndex - 1;
-              setSelectedProduct(productos[prevIndex]);
-            }
-          }
-
-          return;
-        }
-
-        if (e.ctrlKey && e.key.toLowerCase() === "d") {
-          e.preventDefault();
-          handleOpenDiscountModal();
-          return;
-        }
-
-        if (!isAnyModalOpen && selectedProduct && !isInputElement) {
-          if (e.key === "+" || e.key === "=" || e.key === "Add") {
-            e.preventDefault();
-            increaseSelectedProductQuantity();
-            return;
-          }
-
-          if (e.key === "-" || e.key === "Subtract") {
-            e.preventDefault();
-            decreaseSelectedProductQuantity();
-            return;
-          }
-        }
-
-        switch (e.key) {
-          case "F12":
-            e.preventDefault();
-            openPaymentFlow();
-            break;
-          case "F5":
-            e.preventDefault();
-            handleOpenChangeModal();
-            break;
-          case "F6":
-            e.preventDefault();
-            setPendingModalOpen(true);
-            break;
-          case "F7":
-            e.preventDefault();
-            if (shiftAlreadyCut) {
-              showAppWarning(
-                "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
-              );
-            } else {
-              setEntryModalOpen(true);
-            }
-            break;
-          case "F8":
-            e.preventDefault();
-            openExitFlow();
-            break;
-          case "F9":
-            e.preventDefault();
-            setVerifierModalOpen(true);
-            break;
-          case "F10":
-            e.preventDefault();
-            setSearchModalOpen(true);
-            break;
-          case "Backspace":
-            if (isInputElement) return;
-
-            if (!isAnyModalOpen) {
-              e.preventDefault();
-
-              if (selectedProduct) {
-                setDeleteItemModalOpen(true);
-              } else {
-                showAppWarning("Por favor, selecciona un producto primero");
-              }
-            }
-            break;
-          case "Delete":
-            e.preventDefault();
-            handleOpenDeleteModal();
-            break;
-          case "Escape":
-            if (processingSale) return;
-
-            if (showPaymentModal) setShowPaymentModal(false);
-            else if (isEntryModalOpen) setEntryModalOpen(false);
-            else if (isExitModalOpen) setExitModalOpen(false);
-            else if (isExitAuthModalOpen) setExitAuthModalOpen(false);
-            else if (isClientModalOpen) setClientModalOpen(false);
-            else if (isRewardProductModalOpen) handleCloseRewardProductModal();
-            else if (isProductDiscountRewardModalOpen) handleCloseProductDiscountRewardModal();
-            else if (isVerifierModalOpen) setVerifierModalOpen(false);
-            else if (isSearchModalOpen) setSearchModalOpen(false);
-            else if (isDiscountModalOpen) setDiscountModalOpen(false);
-            else if (isPendingModalOpen) setPendingModalOpen(false);
-            else if (isChangeModalOpen) setChangeModalOpen(false);
-            else if (isDeleteModalOpen) setDeleteModalOpen(false);
-            else if (isDeleteItemModalOpen) setDeleteItemModalOpen(false);
-            else if (saleSuccessData) setSaleSuccessData(null);
-            else if (isSalesHistoryModalOpen) setSalesHistoryModalOpen(false);
-            break;
-          default:
-            break;
-        }
-      };
-
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [
       showPaymentModal,
       isEntryModalOpen,
       isExitModalOpen,
@@ -730,13 +581,33 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       isDeleteItemModalOpen,
       isSalesHistoryModalOpen,
       saleSuccessData,
-      selectedProduct,
-      productos,
-      pendingTickets,
-      processingSale,
-      shiftAlreadyCut,
+
+      setShowPaymentModal,
+      setEntryModalOpen,
+      setExitModalOpen,
+      setExitAuthModalOpen,
+      setClientModalOpen,
+      setVerifierModalOpen,
+      setSearchModalOpen,
+      setDiscountModalOpen,
+      setPendingModalOpen,
+      setChangeModalOpen,
+      setDeleteModalOpen,
+      setDeleteItemModalOpen,
+      setSalesHistoryModalOpen,
+      setSaleSuccessData,
+
+      openPaymentFlow,
+      handleOpenChangeModal,
+      handleOpenDeleteModal,
+      handleOpenDiscountModal,
+      handleCloseRewardProductModal,
+      handleCloseProductDiscountRewardModal,
+      increaseSelectedProductQuantity,
+      decreaseSelectedProductQuantity,
       openExitFlow,
-    ]);
+      showAppWarning,
+    });
 
     const getProductDiscountPercent = (producto) => {
       if (!producto) return 0;
