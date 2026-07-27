@@ -47,14 +47,11 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesRewards from "../../components/SalesComponents/hooks/useSalesRewards";
   import useSalesTableColumns from "../../components/SalesComponents/hooks/useSalesTableColumns";
   import useSalesCashMovements from "../../components/SalesComponents/hooks/useSalesCashMovements";
+  import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
   } from "../../components/SalesComponents/services/salesInventoryService";
-
-  import {
-    getSellableProductByBarcode,
-  } from "../../components/SalesComponents/services/salesProductService";
 
   import {
     getCartItemKey,
@@ -72,7 +69,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     const [ticketNumber, setTicketNumber] = useState(1);
     const [pendingTickets, setPendingTickets] = useState([]);
     const [barcode, setBarcode] = useState("");
-    const barcodeSearchInProgressRef = useRef(false);
 
     const handleCloseExitModal = useCallback(() => {
       setExitModalOpen(false);
@@ -425,73 +421,17 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       syncCurrentSaleRewardsWithCart,
     });
 
-    const handleBarcodeSearch = async () => {
-      if (barcodeSearchInProgressRef.current) {
-        return;
-      }
-
-      if (shiftAlreadyCut) {
-        showAppWarning(
-          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
-        );
-        return;
-      }
-
-      if (!branch?.id) {
-        showAppWarning("La sucursal aún no está cargada.");
-        return;
-      }
-
-      const cleanBarcode = barcode.trim();
-
-      if (!cleanBarcode) {
-        return;
-      }
-
-      barcodeSearchInProgressRef.current = true;
-
-      try {
-        const product =
-          await getSellableProductByBarcode({
-            barcode: cleanBarcode,
-            branchId: branch.id,
-          });
-
-        await addProductToCart(product);
-      } catch (error) {
-        console.error(
-          "Error buscando producto:",
-          error,
-        );
-
-        showAppWarning(
-          error?.message ||
-            "Error buscando producto.",
-        );
-      } finally {
-        barcodeSearchInProgressRef.current = false;
-        setBarcode("");
-      }
-    };
-
-    const handleAddProductFromVerifier = async (product) => {
-      if (shiftAlreadyCut) {
-        showAppWarning(
-          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
-        );
-        return;
-      }
-
-      if (!product) return;
-
-      try {
-        await addProductToCart(product);
-        console.log("Producto agregado desde verificador:", product);
-      } catch (err) {
-        console.error("Error agregando producto desde verificador:", err);
-        showAppWarning("No se pudo agregar el producto.");
-      }
-    };
+    const {
+      handleBarcodeSearch,
+      handleAddProductFromVerifier,
+    } = useSalesProductSearch({
+      barcode,
+      setBarcode,
+      branchId: branch?.id,
+      shiftAlreadyCut,
+      addProductToCart,
+      showAppWarning,
+    });
 
     const handleProductSelect = (producto) => {
       if (selectedProduct && isSameCartItem(selectedProduct, producto)) {
