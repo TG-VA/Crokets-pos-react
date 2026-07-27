@@ -42,6 +42,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesDiscount from "../../components/SalesComponents/hooks/useSalesDiscount";
   import useSalesStockValidation from "../../components/SalesComponents/hooks/useSalesStockValidation";
   import useSalesPaymentFlow from "../../components/SalesComponents/hooks/useSalesPaymentFlow";
+  import useSalesCheckout from "../../components/SalesComponents/hooks/useSalesCheckout";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -57,23 +58,10 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   } from "../../components/SalesComponents/services/salesCashService";
 
   import {
-    createSaleTransaction,
-  } from "../../components/SalesComponents/services/salesTransactionService";
-
-  import {
-    printSaleTicket,
-  } from "../../components/SalesComponents/services/salesTicketService";
-
-  import {
-    processSaleCustomerBenefits,
-  } from "../../components/SalesComponents/services/salesPostSaleService";
-
-  import {
     getCartItemKey,
     getCartQuantityForProduct,
     isRewardCartItem,
     isSameCartItem,
-    isValidUuid,
     updateProductExistenceInCart,
   } from "../../components/SalesComponents/utils/salesCartUtils";
 
@@ -85,15 +73,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
     isPendingProductDiscountReward,
     normalizeRewardsArray,
   } from "../../components/SalesComponents/utils/salesRewardUtils";
-
-  import {
-    buildPaymentsPayload,
-    buildProductsPayload,
-  } from "../../components/SalesComponents/utils/salesPaymentUtils";
-
-  import {
-    buildSaleSuccessPayload,
-  } from "../../components/SalesComponents/utils/salesSuccessUtils";
 
   const EMPTY_REWARDS = [];
 
@@ -582,6 +561,29 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       refreshCartInventoryFromRealtime,
       getKitAvailableStock,
       getBranchInventoryRow,
+      showAppWarning,
+    });
+
+    const {
+      handleProcessPayment,
+    } = useSalesCheckout({
+      user,
+      branch,
+      productos,
+      productosRef,
+      subtotal,
+      discountTotal,
+      total,
+      saleToken,
+      processingSale,
+      currentSaleClient,
+      validateShiftNotCut,
+      validateCartStockBeforeSale,
+      clearSalesDraft,
+      resetCurrentSale,
+      setProcessingSale,
+      setShowPaymentModal,
+      setSaleSuccessData,
       showAppWarning,
     });
 
@@ -1419,154 +1421,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       } catch (error) {
         console.error("Error aplicando descuento de recompensa:", error);
         showAppWarning(error.message || "No se pudo aplicar el descuento de recompensa.");
-      }
-    };
-
-    const handleProcessPayment = async (paymentData) => {
-      if (processingSale) return false;
-
-      try {
-        setProcessingSale(true);
-
-        const canSell = await validateShiftNotCut();
-
-        if (!canSell) {
-          showAppWarning(
-            "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
-          );
-          setShowPaymentModal(false);
-          return false;
-        }
-
-        if (!user?.id) {
-          showAppWarning("No se detectó el usuario.");
-          return false;
-        }
-
-        if (!branch?.id) {
-          showAppWarning("No se detectó la sucursal.");
-          return false;
-        }
-
-        if (productos.length === 0) {
-          showAppWarning("No hay productos en la venta.");
-          return false;
-        }
-
-        if (!saleToken) {
-          showAppWarning("No se generó el token de venta.");
-          return false;
-        }
-
-        const invalidProduct = productos.find((p) => !isValidUuid(p.id));
-        if (invalidProduct) {
-          showAppWarning("Hay productos sin UUID real. No se puede guardar la venta.");
-          return false;
-        }
-
-        const stockIsValid = await validateCartStockBeforeSale();
-        if (!stockIsValid) {
-          return false;
-        }
-
-        const productsPayload = buildProductsPayload(productos);
-        const paymentsPayload = buildPaymentsPayload(paymentData);
-        const saleDate = new Date().toISOString();
-
-        const saleId =
-          await createSaleTransaction({
-            branchId: branch.id,
-            userId: user.id,
-            customerId:
-              currentSaleClient?.id ||
-              null,
-            subtotal: Number(
-              subtotal,
-            ),
-            tax: 0,
-            total: Number(total),
-            saleDate,
-            productsPayload,
-            paymentsPayload,
-            saleToken,
-            notes:
-              paymentData?.notes?.trim() ||
-              null,
-          });
-
-        const {
-          pointsResult,
-          rewardRedemptionResult,
-          rewardPointsResult,
-        } =
-          await processSaleCustomerBenefits({
-            saleId,
-            customerId:
-              currentSaleClient?.id ||
-              null,
-            saleTotal: Number(
-              total,
-            ),
-            saleDate,
-            cartItems:
-              productosRef.current,
-            branchId: branch.id,
-            userId: user.id,
-          });
-
-        if (paymentData?.shouldPrint) {
-          await printSaleTicket({
-            saleId,
-            paymentData,
-            paymentPayload:
-              paymentsPayload,
-            notes:
-              paymentData?.notes?.trim() ||
-              null,
-            saleDate,
-            saleClient:
-              currentSaleClient,
-            pointsResult,
-            cartItems:
-              productosRef.current,
-            branch,
-            user,
-            subtotal: Number(
-              subtotal,
-            ),
-            discountTotal: Number(
-              discountTotal || 0,
-            ),
-            total: Number(total),
-          });
-        }
-
-        const saleSuccessPayload =
-          buildSaleSuccessPayload({
-            saleId,
-            saleClient:
-              currentSaleClient,
-            subtotal,
-            discountTotal,
-            total,
-            paymentData,
-            pointsResult,
-            rewardRedemptionResult,
-            rewardPointsResult,
-          });
-
-        clearSalesDraft();
-        resetCurrentSale();
-        setShowPaymentModal(false);
-        setSaleSuccessData(saleSuccessPayload);
-
-        return true;
-      } catch (error) {
-        console.error("Error al registrar venta:", error);
-        showAppWarning(error.message || "Error al registrar la venta.");
-        return false;
-      } finally {
-        setProcessingSale(false);
       }
     };
 
