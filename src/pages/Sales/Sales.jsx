@@ -6,11 +6,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import { checkUserIsAdmin } from "../../lib/permissionsService";
 
   // Importar iconos
-  import searchIcon from "../../assets/icons/searchIcon.svg";
-  import entryIcon from "../../assets/icons/entryIcon.svg";
-  import exitIcon from "../../assets/icons/exitIcon.svg";
   import deleteIcon from "../../assets/icons/deleteIcon.svg";
-  import verifyIcon from "../../assets/icons/verifyIcon.svg";
   import changeIcon from "../../assets/icons/changeIcon.svg";
   import assignClientIcon from "../../assets/icons/assignClientIcon.svg";
   import payIcon from "../../assets/icons/payIcon.svg";
@@ -50,6 +46,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
   import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
   import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
   import SalesProductsTable from "../../components/SalesComponents/SalesProductsTable/SalesProductsTable";
+  import SalesTopActions from "../../components/SalesComponents/SalesTopActions/SalesTopActions";
 
   import {
     getBranchInventoryRow as getBranchInventoryRowFromService,
@@ -311,12 +308,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
       setSaleNotes("");
       setStockWarningMsg("");
     };
-
-
-
-
-
-
     const {
   shiftAlreadyCut,
   getOpenSession: getOpenCashSession,
@@ -643,74 +634,16 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
           </div>
         )}
 
-        <div className={styles.topActionBar}>
-          <div
-            className={styles.horizontalActionButton}
-            onClick={() => setSearchModalOpen(true)}
-          >
-            <span className={styles.actionKey}>F10</span>
-            <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
-            <span className={styles.actionText}>Buscar</span>
-          </div>
-
-          <div
-            className={`${styles.horizontalActionButton} ${
-              shiftAlreadyCut ? styles.actionButtonDisabled : ""
-            }`}
-            onClick={() => {
-              if (shiftAlreadyCut) {
-                showAppWarning(
-                  "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
-                );
-                return;
-              }
-              setEntryModalOpen(true);
-            }}
-          >
-            <span className={styles.actionKey}>F7</span>
-            <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
-            <span className={styles.actionText}>Entradas</span>
-          </div>
-
-          <div
-            className={`${styles.horizontalActionButton} ${
-              shiftAlreadyCut ? styles.actionButtonDisabled : ""
-            }`}
-            onClick={openExitFlow}
-          >
-            <span className={styles.actionKey}>F8</span>
-            <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
-            <span className={styles.actionText}>Salidas</span>
-          </div>
-
-          <div
-            className={styles.horizontalActionButton}
-            onClick={() => {
-              if (selectedProduct) {
-                setDeleteItemModalOpen(true);
-              } else {
-                showAppWarning("Por favor, selecciona un producto primero");
-              }
-            }}
-          >
-            <span className={styles.actionKey}>DEL</span>
-            <img src={deleteIcon} alt="Borrar" className={styles.buttonIcon} />
-            <span className={styles.actionText}>Borrar Art.</span>
-          </div>
-
-          <div
-            className={styles.horizontalActionButton}
-            onClick={() => setVerifierModalOpen(true)}
-          >
-            <span className={styles.actionKey}>F9</span>
-            <img
-              src={verifyIcon}
-              alt="Verificador"
-              className={styles.buttonIcon}
-            />
-            <span className={styles.actionText}>Verificador</span>
-          </div>
-        </div>
+        <SalesTopActions
+          shiftAlreadyCut={shiftAlreadyCut}
+          selectedProduct={selectedProduct}
+          onOpenSearch={() => setSearchModalOpen(true)}
+          onOpenEntry={() => setEntryModalOpen(true)}
+          onOpenExit={openExitFlow}
+          onOpenDeleteItem={() => setDeleteItemModalOpen(true)}
+          onOpenVerifier={() => setVerifierModalOpen(true)}
+          showAppWarning={showAppWarning}
+        />
 
         <div className={styles.productInputBar}>
           <div className={styles.inputSection}>
