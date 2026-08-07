@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import styles from "../../pages/Sales/Sales.module.css";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +25,7 @@ import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/Ad
 import AppModal from "../../components/AppModal/AppModal";
 
 // Importar Hooks
+import useSalesCoreState from "../../components/SalesComponents/hooks/useSalesCoreState";
 import useSalesAppModal from "../../components/SalesComponents/hooks/useSalesAppModal";
 import useSalesModals from "../../components/SalesComponents/hooks/useSalesModals";
 import useSalesStateActions from "../../components/SalesComponents/hooks/useSalesStateActions";
@@ -64,23 +65,27 @@ const Sales = () => {
   const { user } = useAuth();
   const { branch } = useBranch();
 
-  const [saleToken, setSaleToken] = useState(null);
-  const [saleNotes, setSaleNotes] = useState("");
-  const [ticketNumber, setTicketNumber] = useState(1);
-  const [pendingTickets, setPendingTickets] = useState([]);
-  const [barcode, setBarcode] = useState("");
+  // --- 1. ESTADO CENTRAL DE LA VENTA ---
+  const {
+    saleToken, setSaleToken,
+    saleNotes, setSaleNotes,
+    ticketNumber, setTicketNumber,
+    pendingTickets, setPendingTickets,
+    barcode, setBarcode,
+    selectedProduct, setSelectedProduct,
+    pendingFreeProductRewards, setPendingFreeProductRewards,
+    pendingProductDiscountRewards, setPendingProductDiscountRewards,
+    activeProductDiscountReward, setActiveProductDiscountReward,
+    cashMovements, setCashMovements,
+    currentSaleClient, setCurrentSaleClient,
+    currentSaleReward, setCurrentSaleReward,
+    processingSale, setProcessingSale,
+    productos, setProductos,
+    stockWarningMsg, setStockWarningMsg,
+    productosRef,
+  } = useSalesCoreState();
 
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [pendingFreeProductRewards, setPendingFreeProductRewards] = useState([]);
-  const [pendingProductDiscountRewards, setPendingProductDiscountRewards] = useState([]);
-  const [activeProductDiscountReward, setActiveProductDiscountReward] = useState(null);
-
-  const [cashMovements, setCashMovements] = useState([]);
-  const [currentSaleClient, setCurrentSaleClient] = useState(null);
-  const [currentSaleReward, setCurrentSaleReward] = useState(null);
-  const [processingSale, setProcessingSale] = useState(false);
-
-  // --- HOOKS DE ESTADO DE UI ---
+  // --- 2. ALERTAS (APP MODAL) ---
   const {
     appModal,
     closeAppModal,
@@ -89,6 +94,7 @@ const Sales = () => {
     showAppSuccess,
   } = useSalesAppModal();
 
+  // --- 3. ESTADOS DE MODALES DE UI ---
   const {
     isExitModalOpen, setExitModalOpen, handleCloseExitModal,
     isExitAuthModalOpen, setExitAuthModalOpen, handleExitAuthorized, handleCloseExitAuth,
@@ -108,17 +114,13 @@ const Sales = () => {
     isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
   } = useSalesModals();
 
-  const [productos, setProductos] = useState([]);
-  const [stockWarningMsg, setStockWarningMsg] = useState("");
-  const productosRef = useRef([]);
-
   const {
     tableRef,
     gridTemplate,
     handleMouseDown,
   } = useSalesTableColumns();
 
-  // --- HOOK DE ACCIONES Y TOTALES ---
+  // --- 4. ACCIONES Y TOTALES ---
   const {
     subtotal,
     discountTotal,
@@ -149,13 +151,13 @@ const Sales = () => {
     closeAppModal,
   });
 
+  // --- 5. ORQUESTACIÓN DE LOGICA DE NEGOCIO ---
   const {
     draftReady,
     clearSalesDraft,
   } = useSalesDraft({
     branchId: branch?.id,
     userId: user?.id,
-
     productos,
     pendingTickets,
     currentSaleClient,
@@ -164,23 +166,13 @@ const Sales = () => {
     saleToken,
     saleNotes,
     barcode,
-
     subtotal,
     discountTotal,
     total,
-
     onRestoreDraft: restoreSalesDraft,
     onDiscardDraft: discardSalesDraftState,
     onOpenRecoveryModal: openSalesDraftRecoveryModal,
   });
-
-  useEffect(() => {
-    productosRef.current = productos;
-
-    if (productos.length === 0) {
-      setStockWarningMsg("");
-    }
-  }, [productos]);
 
   const {
     shiftAlreadyCut,
