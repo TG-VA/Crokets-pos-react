@@ -1,9 +1,7 @@
-import React, { useCallback } from "react";
+import React from "react";
 import styles from "../../pages/Sales/Sales.module.css";
-import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
-import { checkUserIsAdmin } from "../../lib/permissionsService";
 
 // Importar componentes de modales
 import ExitModal from "../../components/SalesComponents/Modals/ExitModal/ExitModal";
@@ -43,6 +41,7 @@ import useSalesTableColumns from "../../components/SalesComponents/hooks/useSale
 import useSalesCashMovements from "../../components/SalesComponents/hooks/useSalesCashMovements";
 import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
 import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
+import useSalesFlowHandlers from "../../components/SalesComponents/hooks/useSalesFlowHandlers";
 
 // Importar Componentes de UI extraídos
 import SalesHeader from "../../components/SalesComponents/SalesHeader/SalesHeader";
@@ -50,10 +49,6 @@ import SalesProductsTable from "../../components/SalesComponents/SalesProductsTa
 import SalesTopActions from "../../components/SalesComponents/SalesTopActions/SalesTopActions";
 import SalesFooterActions from "../../components/SalesComponents/SalesFooterActions/SalesFooterActions";
 import SalesProductInput from "../../components/SalesComponents/SalesProductInput/SalesProductInput";
-
-import {
-  getBranchInventoryRow as getBranchInventoryRowFromService,
-} from "../../components/SalesComponents/services/salesInventoryService";
 
 import {
   isSameCartItem,
@@ -198,15 +193,22 @@ const Sales = () => {
     showAppSuccess,
   });
 
-  const getBranchInventoryRow = useCallback(
-    async (productId) => {
-      return getBranchInventoryRowFromService({
-        branchId: branch?.id,
-        productId,
-      });
-    },
-    [branch?.id],
-  );
+  // --- 6. HANDLERS DE FLUJO SUELTOS ---
+  const { getBranchInventoryRow, openClientModal, openExitFlow } =
+    useSalesFlowHandlers({
+      user,
+      branch,
+      shiftAlreadyCut,
+      setPendingFreeProductRewards,
+      setRewardProductModalOpen,
+      setPendingProductDiscountRewards,
+      setActiveProductDiscountReward,
+      setProductDiscountRewardModalOpen,
+      setClientModalOpen,
+      setExitModalOpen,
+      setExitAuthModalOpen,
+      showAppWarning,
+    });
 
   const {
     refreshCartInventory: refreshCartInventoryFromRealtime,
@@ -377,41 +379,12 @@ const Sales = () => {
     showAppWarning,
   });
 
-  const openClientModal = () => {
-    setPendingFreeProductRewards([]);
-    setRewardProductModalOpen(false);
-    setPendingProductDiscountRewards([]);
-    setActiveProductDiscountReward(null);
-    setProductDiscountRewardModalOpen(false);
-    setClientModalOpen(true);
-  };
-
-  const openExitFlow = useCallback(async () => {
-    if (shiftAlreadyCut) {
-      showAppWarning(
-        "El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.",
-      );
-      return;
-    }
-
-    const isAdmin = await checkUserIsAdmin(user?.id);
-
-    if (isAdmin) {
-      setExitModalOpen(true);
-      return;
-    }
-
-    setExitAuthModalOpen(true);
-  }, [shiftAlreadyCut, user?.id, showAppWarning, setExitModalOpen, setExitAuthModalOpen]);
-
   useSalesKeyboardShortcuts({
     productos,
     selectedProduct,
     setSelectedProduct,
-
     processingSale,
     shiftAlreadyCut,
-
     showPaymentModal,
     isEntryModalOpen,
     isExitModalOpen,
@@ -428,7 +401,6 @@ const Sales = () => {
     isDeleteItemModalOpen,
     isSalesHistoryModalOpen,
     saleSuccessData,
-
     setShowPaymentModal,
     setEntryModalOpen,
     setExitModalOpen,
@@ -443,7 +415,6 @@ const Sales = () => {
     setDeleteItemModalOpen,
     setSalesHistoryModalOpen,
     setSaleSuccessData,
-
     openPaymentFlow,
     handleOpenChangeModal,
     handleOpenDeleteModal,
