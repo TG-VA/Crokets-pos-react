@@ -11,8 +11,14 @@ const useSalesCashMovements = ({
       showAppWarning("El turno ya fue cortado. Debes cerrar turno antes de hacer movimientos.");
       return false;
     }
-    if (!userId) return showAppWarning("No se detectó el usuario."), false;
-    if (!branchId) return showAppWarning("No se detectó la sucursal."), false;
+    if (!userId) {
+      showAppWarning("No se detectó el usuario.");
+      return false;
+    }
+    if (!branchId) {
+      showAppWarning("No se detectó la sucursal.");
+      return false;
+    }
     
     return true;
   }, [shiftAlreadyCut, userId, branchId, showAppWarning]);
