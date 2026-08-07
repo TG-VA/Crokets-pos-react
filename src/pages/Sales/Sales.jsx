@@ -25,6 +25,7 @@ import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/Ad
 import AppModal from "../../components/AppModal/AppModal";
 
 // Importar Hooks
+import useSalesAppModal from "../../components/SalesComponents/hooks/useSalesAppModal";
 import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
 import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
 import useSalesCashSession from "../../components/SalesComponents/hooks/useSalesCashSession";
@@ -102,69 +103,14 @@ const Sales = () => {
   const [currentSaleReward, setCurrentSaleReward] = useState(null);
   const [processingSale, setProcessingSale] = useState(false);
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "warning",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      showCancel: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppModal = ({
-    type = "warning",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-    cancelText = "Cancelar",
-    showCancel = false,
-    onConfirm = null,
-    onCancel = null,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message: String(message || ""),
-      confirmText,
-      cancelText,
-      showCancel,
-      onConfirm,
-      onCancel,
-    });
-  };
-
-  const showAppWarning = (message, title = "Aviso") => {
-    showAppModal({
-      type: "warning",
-      title,
-      message,
-      confirmText: "Entendido",
-    });
-  };
-
-  const showAppSuccess = (message, title = "Operación realizada") => {
-    showAppModal({
-      type: "success",
-      title,
-      message,
-      confirmText: "Entendido",
-    });
-  };
-
+  // --- NUEVO HOOK DE ALERTAS ---
+  const {
+    appModal,
+    closeAppModal,
+    showAppModal,
+    showAppWarning,
+    showAppSuccess,
+  } = useSalesAppModal();
 
   const [productos, setProductos] = useState([]);
   const [stockWarningMsg, setStockWarningMsg] = useState("");
@@ -231,8 +177,7 @@ const Sales = () => {
 
   const openSalesDraftRecoveryModal = useCallback(
     ({ message, onConfirm, onCancel }) => {
-      setAppModal({
-        isOpen: true,
+      showAppModal({
         type: "warning",
         title: "Venta pendiente encontrada",
         message,
@@ -241,21 +186,19 @@ const Sales = () => {
         showCancel: true,
         onConfirm: () => {
           closeAppModal();
-
           if (typeof onConfirm === "function") {
             onConfirm();
           }
         },
         onCancel: () => {
           closeAppModal();
-
           if (typeof onCancel === "function") {
             onCancel();
           }
         },
       });
     },
-    [],
+    [showAppModal, closeAppModal]
   );
 
   const {
@@ -354,7 +297,6 @@ const Sales = () => {
     setSelectedProduct,
     setStockWarningMsg,
   });
-
 
   const {
     openPaymentFlow,
@@ -537,7 +479,7 @@ const Sales = () => {
     }
 
     setExitAuthModalOpen(true);
-  }, [shiftAlreadyCut, user?.id]);
+  }, [shiftAlreadyCut, user?.id, showAppWarning]);
 
   const handleExitAuthorized = () => {
     setExitAuthModalOpen(false);
