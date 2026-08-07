@@ -27,6 +27,7 @@ import AppModal from "../../components/AppModal/AppModal";
 // Importar Hooks
 import useSalesAppModal from "../../components/SalesComponents/hooks/useSalesAppModal";
 import useSalesModals from "../../components/SalesComponents/hooks/useSalesModals";
+import useSalesStateActions from "../../components/SalesComponents/hooks/useSalesStateActions";
 import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
 import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
 import useSalesCashSession from "../../components/SalesComponents/hooks/useSalesCashSession";
@@ -117,84 +118,36 @@ const Sales = () => {
     handleMouseDown,
   } = useSalesTableColumns();
 
-  const subtotal = productos.reduce(
-    (sum, producto) =>
-      sum +
-      Number(producto.precioOriginal ?? producto.precio ?? 0) *
-        Number(producto.cantidad || 0),
-    0,
-  );
-
-  const discountTotal = productos.reduce(
-    (sum, producto) => sum + Number(producto.descuentoMonto || 0),
-    0,
-  );
-
-  const total = subtotal - discountTotal;
-
-  const restoreSalesDraft = useCallback((draft) => {
-    const restoredProducts = Array.isArray(draft?.productos)
-      ? draft.productos
-      : [];
-
-    setProductos(restoredProducts);
-    productosRef.current = restoredProducts;
-    setSelectedProduct(null);
-    setCurrentSaleClient(draft?.currentSaleClient || null);
-    setCurrentSaleReward(draft?.currentSaleReward || null);
-    setTicketNumber(Number(draft?.ticketNumber || 1));
-    setSaleToken(draft?.saleToken || null);
-    setSaleNotes(draft?.saleNotes || "");
-    setBarcode(draft?.barcode || "");
-    setPendingTickets(
-      Array.isArray(draft?.pendingTickets)
-        ? draft.pendingTickets
-        : [],
-    );
-  }, []);
-
-  const discardSalesDraftState = useCallback(() => {
-    setProductos([]);
-    productosRef.current = [];
-    setSelectedProduct(null);
-    setCurrentSaleClient(null);
-    setCurrentSaleReward(null);
-    setPendingFreeProductRewards([]);
-    setRewardProductModalOpen(false);
-    setPendingProductDiscountRewards([]);
-    setActiveProductDiscountReward(null);
-    setProductDiscountRewardModalOpen(false);
-    setBarcode("");
-    setSaleToken(null);
-    setSaleNotes("");
-    setStockWarningMsg("");
-  }, [setRewardProductModalOpen, setProductDiscountRewardModalOpen]);
-
-  const openSalesDraftRecoveryModal = useCallback(
-    ({ message, onConfirm, onCancel }) => {
-      showAppModal({
-        type: "warning",
-        title: "Venta pendiente encontrada",
-        message,
-        confirmText: "Recuperar venta",
-        cancelText: "Descartar",
-        showCancel: true,
-        onConfirm: () => {
-          closeAppModal();
-          if (typeof onConfirm === "function") {
-            onConfirm();
-          }
-        },
-        onCancel: () => {
-          closeAppModal();
-          if (typeof onCancel === "function") {
-            onCancel();
-          }
-        },
-      });
-    },
-    [showAppModal, closeAppModal]
-  );
+  // --- HOOK DE ACCIONES Y TOTALES ---
+  const {
+    subtotal,
+    discountTotal,
+    total,
+    restoreSalesDraft,
+    discardSalesDraftState,
+    openSalesDraftRecoveryModal,
+    resetCurrentSale,
+  } = useSalesStateActions({
+    productos,
+    setProductos,
+    productosRef,
+    setSelectedProduct,
+    setCurrentSaleClient,
+    setCurrentSaleReward,
+    setTicketNumber,
+    setSaleToken,
+    setSaleNotes,
+    setBarcode,
+    setPendingTickets,
+    setPendingFreeProductRewards,
+    setRewardProductModalOpen,
+    setPendingProductDiscountRewards,
+    setActiveProductDiscountReward,
+    setProductDiscountRewardModalOpen,
+    setStockWarningMsg,
+    showAppModal,
+    closeAppModal,
+  });
 
   const {
     draftReady,
@@ -228,23 +181,6 @@ const Sales = () => {
       setStockWarningMsg("");
     }
   }, [productos]);
-
-  const resetCurrentSale = () => {
-    setProductos([]);
-    setSelectedProduct(null);
-    setCurrentSaleClient(null);
-    setCurrentSaleReward(null);
-    setPendingFreeProductRewards([]);
-    setRewardProductModalOpen(false);
-    setPendingProductDiscountRewards([]);
-    setActiveProductDiscountReward(null);
-    setProductDiscountRewardModalOpen(false);
-    setTicketNumber((prev) => prev + 1);
-    setBarcode("");
-    setSaleToken(null);
-    setSaleNotes("");
-    setStockWarningMsg("");
-  };
 
   const {
     shiftAlreadyCut,
