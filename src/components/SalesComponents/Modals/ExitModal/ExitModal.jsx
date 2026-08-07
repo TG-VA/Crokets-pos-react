@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./ExitModal.module.css";
 
 import ExitIcon from "../../../../assets/icons/exitIcon.svg";
@@ -8,22 +8,73 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
   const [exitAmount, setExitAmount] = useState("");
   const [exitDescription, setExitDescription] = useState("");
   const [exitError, setExitError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const amountInputRef = useRef(null);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setExitAmount("");
     setExitDescription("");
     setExitError("");
-  };
+    setIsSaving(false);
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    if (isSaving) return;
+
     resetForm();
-    onClose();
-  };
+    onClose?.();
+  }, [isSaving, onClose, resetForm]);
+
+  const handleSave = useCallback(async () => {
+    if (isSaving) return;
+
+    const amount = Number.parseFloat(exitAmount);
+
+    if (!exitAmount.trim() || Number.isNaN(amount) || amount <= 0) {
+      setExitError("Por favor, ingresa un monto válido.");
+      amountInputRef.current?.focus();
+      return;
+    }
+
+    if (!exitDescription.trim()) {
+      setExitError("Por favor, ingresa una descripción.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      const result = await onSave?.({
+        amount,
+        description: exitDescription.trim(),
+        type: "salida",
+        createdAt: new Date().toISOString(),
+      });
+
+      if (result !== false) {
+        resetForm();
+        onClose?.();
+        return;
+      }
+
+      setIsSaving(false);
+    } catch (error) {
+      console.error("Error guardando salida:", error);
+      setExitError(error?.message || "No se pudo registrar la salida.");
+      setIsSaving(false);
+    }
+  }, [
+    exitAmount,
+    exitDescription,
+    isSaving,
+    onClose,
+    onSave,
+    resetForm,
+  ]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
 
     resetForm();
 
@@ -31,31 +82,26 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
       amountInputRef.current?.focus();
     }, 80);
 
+    return () => clearTimeout(timer);
+  }, [isOpen, resetForm]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-
-        if (event.nativeEvent?.stopImmediatePropagation) {
-          event.nativeEvent.stopImmediatePropagation();
-        }
-
-        if (event.stopImmediatePropagation) {
-          event.stopImmediatePropagation();
-        }
-
         handleClose();
         return;
       }
 
-      if (event.key === "Enter") {
-        const tag = document.activeElement?.tagName?.toLowerCase();
-
-        if (tag === "textarea") return;
-
+      if (
+        event.key === "Enter" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
         event.preventDefault();
         event.stopPropagation();
-
         handleSave();
       }
     };
@@ -63,24 +109,22 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
     document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      clearTimeout(timer);
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen, exitAmount, exitDescription]);
+  }, [isOpen, handleClose, handleSave]);
 
   const handleAmountChange = (event) => {
-    let value = event.target.value;
-
-    value = value.replace(/[^0-9.]/g, "");
-
+    let value = event.target.value.replace(/[^0-9.]/g, "");
     const parts = value.split(".");
 
     if (parts.length > 2) {
       value = `${parts[0]}.${parts.slice(1).join("")}`;
     }
 
-    if (parts[1]?.length > 2) {
-      value = `${parts[0]}.${parts[1].slice(0, 2)}`;
+    const normalizedParts = value.split(".");
+
+    if (normalizedParts[1]?.length > 2) {
+      value = `${normalizedParts[0]}.${normalizedParts[1].slice(0, 2)}`;
     }
 
     setExitAmount(value);
@@ -98,44 +142,26 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  const handleSave = async () => {
-    const amount = parseFloat(exitAmount);
-
-    if (!exitAmount.trim() || Number.isNaN(amount) || amount <= 0) {
-      setExitError("Por favor, ingresa un monto válido.");
-      amountInputRef.current?.focus();
-      return;
-    }
-
-    if (!exitDescription.trim()) {
-      setExitError("Por favor, ingresa una descripción.");
-      return;
-    }
-
-    const newMovement = {
-      amount,
-      description: exitDescription.trim(),
-      type: "salida",
-      createdAt: new Date().toISOString(),
-    };
-
-    const result = await onSave(newMovement);
-
-    if (result !== false) {
-      handleClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onClick={handleClose}>
+    <div
+      className={styles.modalOverlay}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
       <div
         className={styles.modalContainer}
-        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exit-modal-title"
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
-          <h2>
+          <h2 id="exit-modal-title">
             <span className={styles.titleContent}>
               <img
                 src={ExitIcon}
@@ -151,6 +177,7 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
             type="button"
             className={styles.closeButton}
             onClick={handleClose}
+            disabled={isSaving}
             aria-label="Cerrar modal"
           >
             <img
@@ -165,6 +192,7 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
         <div className={styles.modalBody}>
           <div className={styles.formGroup}>
             <label htmlFor="exitAmount">Monto:</label>
+
             <input
               ref={amountInputRef}
               type="text"
@@ -174,21 +202,28 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
               onChange={handleAmountChange}
               placeholder="0.00"
               autoComplete="off"
+              disabled={isSaving}
             />
           </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="exitDescription">Descripción:</label>
+
             <textarea
               id="exitDescription"
               value={exitDescription}
               onChange={handleDescriptionChange}
               placeholder="Ej. Pago a proveedor, retiro, etc."
               rows={4}
+              disabled={isSaving}
             />
           </div>
 
-          {exitError && <p className={styles.errorMessage}>{exitError}</p>}
+          {exitError && (
+            <p className={styles.errorMessage} role="alert">
+              {exitError}
+            </p>
+          )}
         </div>
 
         <div className={styles.modalActions}>
@@ -196,6 +231,7 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
             type="button"
             className={styles.cancelButton}
             onClick={handleClose}
+            disabled={isSaving}
           >
             ESC - Cancelar
           </button>
@@ -204,8 +240,9 @@ const ExitModal = ({ isOpen, onClose, onSave }) => {
             type="button"
             className={styles.saveButton}
             onClick={handleSave}
+            disabled={isSaving}
           >
-            Guardar salida
+            {isSaving ? "Guardando..." : "Guardar salida"}
           </button>
         </div>
       </div>
