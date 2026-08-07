@@ -26,6 +26,7 @@ import AppModal from "../../components/AppModal/AppModal";
 
 // Importar Hooks
 import useSalesAppModal from "../../components/SalesComponents/hooks/useSalesAppModal";
+import useSalesModals from "../../components/SalesComponents/hooks/useSalesModals";
 import useSalesDraft from "../../components/SalesComponents/hooks/useSalesDraft";
 import useSalesInventoryRealtime from "../../components/SalesComponents/hooks/useSalesInventoryRealtime";
 import useSalesCashSession from "../../components/SalesComponents/hooks/useSalesCashSession";
@@ -68,42 +69,17 @@ const Sales = () => {
   const [pendingTickets, setPendingTickets] = useState([]);
   const [barcode, setBarcode] = useState("");
 
-  const handleCloseExitModal = useCallback(() => {
-    setExitModalOpen(false);
-  }, []);
-
-  const [isExitModalOpen, setExitModalOpen] = useState(false);
-  const [isExitAuthModalOpen, setExitAuthModalOpen] = useState(false);
-  const [isEntryModalOpen, setEntryModalOpen] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [isClientModalOpen, setClientModalOpen] = useState(false);
-  const [isVerifierModalOpen, setVerifierModalOpen] = useState(false);
-  const [isSearchModalOpen, setSearchModalOpen] = useState(false);
-  const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
-  const [isPendingModalOpen, setPendingModalOpen] = useState(false);
-  const [isChangeModalOpen, setChangeModalOpen] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
-  const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
-  const [saleSuccessData, setSaleSuccessData] = useState(null);
-  const [isRewardProductModalOpen, setRewardProductModalOpen] = useState(false);
-  const [pendingFreeProductRewards, setPendingFreeProductRewards] = useState(
-    [],
-  );
-  const [isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen] =
-    useState(false);
-  const [pendingProductDiscountRewards, setPendingProductDiscountRewards] =
-    useState([]);
-  const [activeProductDiscountReward, setActiveProductDiscountReward] =
-    useState(null);
+  const [pendingFreeProductRewards, setPendingFreeProductRewards] = useState([]);
+  const [pendingProductDiscountRewards, setPendingProductDiscountRewards] = useState([]);
+  const [activeProductDiscountReward, setActiveProductDiscountReward] = useState(null);
 
   const [cashMovements, setCashMovements] = useState([]);
   const [currentSaleClient, setCurrentSaleClient] = useState(null);
   const [currentSaleReward, setCurrentSaleReward] = useState(null);
   const [processingSale, setProcessingSale] = useState(false);
 
-  // --- NUEVO HOOK DE ALERTAS ---
+  // --- HOOKS DE ESTADO DE UI ---
   const {
     appModal,
     closeAppModal,
@@ -111,6 +87,25 @@ const Sales = () => {
     showAppWarning,
     showAppSuccess,
   } = useSalesAppModal();
+
+  const {
+    isExitModalOpen, setExitModalOpen, handleCloseExitModal,
+    isExitAuthModalOpen, setExitAuthModalOpen, handleExitAuthorized, handleCloseExitAuth,
+    isEntryModalOpen, setEntryModalOpen,
+    showPaymentModal, setShowPaymentModal,
+    isClientModalOpen, setClientModalOpen,
+    isVerifierModalOpen, setVerifierModalOpen,
+    isSearchModalOpen, setSearchModalOpen,
+    isDiscountModalOpen, setDiscountModalOpen,
+    isPendingModalOpen, setPendingModalOpen,
+    isChangeModalOpen, setChangeModalOpen,
+    isDeleteModalOpen, setDeleteModalOpen,
+    isDeleteItemModalOpen, setDeleteItemModalOpen,
+    isSalesHistoryModalOpen, setSalesHistoryModalOpen,
+    saleSuccessData, setSaleSuccessData,
+    isRewardProductModalOpen, setRewardProductModalOpen,
+    isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
+  } = useSalesModals();
 
   const [productos, setProductos] = useState([]);
   const [stockWarningMsg, setStockWarningMsg] = useState("");
@@ -173,7 +168,7 @@ const Sales = () => {
     setSaleToken(null);
     setSaleNotes("");
     setStockWarningMsg("");
-  }, []);
+  }, [setRewardProductModalOpen, setProductDiscountRewardModalOpen]);
 
   const openSalesDraftRecoveryModal = useCallback(
     ({ message, onConfirm, onCancel }) => {
@@ -479,16 +474,7 @@ const Sales = () => {
     }
 
     setExitAuthModalOpen(true);
-  }, [shiftAlreadyCut, user?.id, showAppWarning]);
-
-  const handleExitAuthorized = () => {
-    setExitAuthModalOpen(false);
-    setExitModalOpen(true);
-  };
-
-  const handleCloseExitAuth = () => {
-    setExitAuthModalOpen(false);
-  };
+  }, [shiftAlreadyCut, user?.id, showAppWarning, setExitModalOpen, setExitAuthModalOpen]);
 
   useSalesKeyboardShortcuts({
     productos,
