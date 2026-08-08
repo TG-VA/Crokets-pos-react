@@ -68,47 +68,115 @@
   border-right: 1px solid #dee2e6;
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa;
+  background-color: #f9fafb;
 }
 
+/* =======================================================
+   ESTILOS MODERNOS Y RESETEO DE REACT-DATEPICKER
+======================================================= */
 .filtersContainer {
-  padding: 16px;
+  padding: 20px;
   border-bottom: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: #ffffff;
 }
 
 .filterGroup {
-  margin-bottom: 12px;
-}
-
-.filterGroup:last-child {
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .filterLabel {
-  display: block;
-  font-size: 12px;
-  margin-bottom: 4px;
-  color: #495057;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
 }
 
-.searchInput,
-.dateInput,
-.selectInput {
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
 }
 
-.searchInput:focus,
-.dateInput:focus,
-.selectInput:focus {
-  outline: none;
-  border-color: #17a2b8;
-  box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+.inputIconLeft {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  z-index: 10;
+  filter: invert(47%) sepia(11%) saturate(504%) hue-rotate(167deg) brightness(89%) contrast(87%);
 }
+
+/* EL FIX PRINCIPAL: ENVOLTURA PARA REACT-DATEPICKER */
+.datePickerContainer {
+  width: 100%;
+  flex: 1;
+}
+
+.datePickerContainer :global(.react-datepicker-wrapper),
+.datePickerContainer :global(.react-datepicker__input-container) {
+  display: block !important;
+  width: 100% !important;
+}
+
+/* INPUT BASE */
+.modernInput {
+  display: block !important;
+  width: 100% !important;
+  height: 42px !important;
+  /* El padding top/bottom en 0 junto con line-height asegura que el texto NO se corte */
+  padding: 0 12px 0 38px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  color: #111827 !important;
+  background-color: #f9fafb !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+  margin: 0 !important;
+  outline: none !important;
+  line-height: normal !important;
+}
+
+.modernInput:focus {
+  border-color: #1092b1 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.15) !important;
+}
+
+.modernSelect {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  cursor: pointer !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+  padding-right: 36px !important;
+}
+
+.rightPanel .modernInput {
+  padding-left: 12px !important;
+}
+
+.datePickerPopper {
+  z-index: 9999 !important;
+}
+
+.datePickerCalendar {
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+  font-family: inherit !important;
+}
+/* ======================================================= */
 
 .ticketListContainer {
   flex: 1;
@@ -929,54 +997,6 @@
   }
 }
 
-.inputIconContainer {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.inputIcon {
-  position: absolute;
-  left: 12px;
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  filter: invert(47%) sepia(11%) saturate(504%) hue-rotate(167deg)
-    brightness(89%) contrast(87%);
-  pointer-events: none;
-}
-
-.inputWithIcon {
-  padding-left: 38px !important;
-}
-
-.filterLabelWithIcon {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  margin-bottom: 4px;
-  color: #495057;
-  font-weight: 700;
-}
-
-.labelIcon {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  filter: invert(48%) sepia(9%) saturate(594%) hue-rotate(167deg)
-    brightness(88%) contrast(89%);
-}
-
-.closeIcon,
-.notesCloseIcon {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  display: block;
-}
-
 .tableHeaderContent,
 .tableHeaderContentCenter {
   display: inline-flex;
@@ -1028,4 +1048,13 @@
   object-fit: contain;
   filter: brightness(0) invert(1);
   flex-shrink: 0;
+}
+
+.closeIcon,
+.notesCloseIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  display: block;
 }

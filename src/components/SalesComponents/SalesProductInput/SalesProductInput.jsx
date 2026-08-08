@@ -1,5 +1,4 @@
 import React from "react";
-
 import styles from "../../../pages/Sales/Sales.module.css";
 
 const SalesProductInput = ({
@@ -7,6 +6,7 @@ const SalesProductInput = ({
   setBarcode,
   shiftAlreadyCut,
   onAddProduct,
+  inputRef // <--- 1. AGREGAMOS EL REF A LAS PROPS
 }) => {
   const handleChange = (event) => {
     setBarcode(event.target.value);
@@ -48,6 +48,7 @@ const SalesProductInput = ({
           onKeyDown={handleKeyDown}
           placeholder="Escanea o escribe código"
           disabled={shiftAlreadyCut}
+          ref={inputRef} // <--- 2. CONECTAMOS LA REFERENCIA AL INPUT REAL
         />
       </div>
 

@@ -45,10 +45,12 @@ const useSalesProductSearch = ({
 
       await addProductToCart(product);
     } catch (error) {
-      console.error("Error buscando producto:", error);
-      showAppWarning(error?.message || "Error buscando producto.");
+      // ⚠️ Eliminamos el console.error() para no ensuciar la consola con falsos "bugs".
+      // Simplemente atrapamos la regla de negocio y se la mostramos al cajero.
+      showAppWarning(error?.message || "El producto no se pudo agregar a la venta.");
     } finally {
       searchInProgressRef.current = false;
+      // Siempre limpiamos la barra pase lo que pase, para que no se interrumpa el flujo
       setBarcode("");
     }
   }, [barcode, branchId, addProductToCart, setBarcode, showAppWarning, validateSaleAvailable]);
@@ -59,8 +61,8 @@ const useSalesProductSearch = ({
     try {
       await addProductToCart(product);
     } catch (error) {
-      console.error("Error agregando producto desde verificador:", error);
-      showAppWarning("No se pudo agregar el producto.");
+      // También limpiamos el console.error() de esta función por si acaso
+      showAppWarning(error?.message || "No se pudo agregar el producto.");
     }
   }, [addProductToCart, showAppWarning, validateSaleAvailable]);
 

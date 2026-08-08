@@ -1,738 +1,122 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, memo } from "react";
 import styles from "./RewardProductSelectionModal.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
-
-const INITIAL_VISIBLE_PRODUCTS = 3;
-
-const RewardProductSelectionModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  rewards = [],
-  branchId = null,
-  cartProducts = [],
-}) => {
-  const [rewardProducts, setRewardProducts] = useState([]);
-  const [inventoryByProduct, setInventoryByProduct] = useState({});
-  const [selectedProductsByReward, setSelectedProductsByReward] = useState({});
-  const [searchByReward, setSearchByReward] = useState({});
-  const [expandedRewards, setExpandedRewards] = useState({});
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "warning",
-    title: "Aviso",
-    message: "",
-    confirmText: "Entendido",
-  });
-
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-    }));
-  };
-
-  const showAppModal = ({
-    type = "warning",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message: String(message || ""),
-      confirmText,
-    });
-  };
-
-
-  const showAppDanger = (message, title = "Error") => {
-    showAppModal({
-      type: "danger",
-      title,
-      message,
-      confirmText: "Entendido",
-    });
-  };
-
-  const freeProductRewards = useMemo(() => {
-    return (Array.isArray(rewards) ? rewards : [])
-      .filter(Boolean)
-      .filter((reward) => reward.reward_type !== "product_discount");
-  }, [rewards]);
-
-  const getRewardRedeemQuantity = (reward) => {
-    return Math.max(Number(reward?.redeemQuantity || 1), 1);
-  };
-
-  const getRewardProductsPerRedemption = (reward) => {
-    return Math.max(Number(reward?.reward_quantity || 1), 1);
-  };
-
-  const getRewardQuantity = (reward) => {
-    return (
-      getRewardProductsPerRedemption(reward) * getRewardRedeemQuantity(reward)
-    );
-  };
-
-  const getCartQuantityForProduct = (productId) => {
-    if (!productId) return 0;
-
-    return (Array.isArray(cartProducts) ? cartProducts : []).reduce(
-      (sum, item) => {
-        if (item?.id !== productId) return sum;
-        return sum + Number(item?.cantidad || 0);
-      },
-      0
-    );
-  };
-
-  const getRewardProductOptions = (rewardId) => {
-    return rewardProducts.filter((row) => row.reward_id === rewardId);
-  };
-
-  const getSelectedProductsMap = (rewardId) => {
-    return selectedProductsByReward[rewardId] || {};
-  };
-
-  const getSelectedQuantityForReward = (rewardId) => {
-    const selectedMap = getSelectedProductsMap(rewardId);
-
-    return Object.values(selectedMap).reduce((sum, quantity) => {
-      return sum + Number(quantity || 0);
-    }, 0);
-  };
-
-  const getSelectedQuantityForProduct = (rewardId, productId) => {
-    const selectedMap = getSelectedProductsMap(rewardId);
-    return Number(selectedMap[productId] || 0);
-  };
-
-  const getInventoryStatus = (product) => {
-    if (!product?.id) {
-      return {
-        available: false,
-        stock: 0,
-        rawStock: 0,
-        usedInCart: 0,
-        label: "Producto inválido",
-      };
-    }
-
-    if (product.status === false) {
-      return {
-        available: false,
-        stock: 0,
-        rawStock: 0,
-        usedInCart: 0,
-        label: "Producto inactivo",
-      };
-    }
-
-    if (product.tracks_inventory === false) {
-      return {
-        available: true,
-        stock: null,
-        rawStock: null,
-        usedInCart: 0,
-        label: "No controla inventario",
-      };
-    }
-
-    const inventoryRow = inventoryByProduct[product.id];
-    const usedInCart = getCartQuantityForProduct(product.id);
-
-    if (!inventoryRow) {
-      return {
-        available: false,
-        stock: 0,
-        rawStock: 0,
-        usedInCart,
-        label: "Sin inventario en sucursal",
-      };
-    }
-
-    if (inventoryRow.is_active === false) {
-      return {
-        available: false,
-        stock: 0,
-        rawStock: Number(inventoryRow.stock || 0),
-        usedInCart,
-        label: "Inactivo en sucursal",
-      };
-    }
-
-    const rawStock = Number(inventoryRow.stock || 0);
-    const availableStock = Math.max(rawStock - usedInCart, 0);
-
-    if (inventoryRow.has_been_stocked !== true && rawStock <= 0) {
-      return {
-        available: false,
-        stock: availableStock,
-        rawStock,
-        usedInCart,
-        label: "Sin inventario inicial",
-      };
-    }
-
-    if (rawStock <= 0) {
-      return {
-        available: false,
-        stock: availableStock,
-        rawStock,
-        usedInCart,
-        label: "Sin existencia",
-      };
-    }
-
-    if (availableStock <= 0) {
-      return {
-        available: false,
-        stock: availableStock,
-        rawStock,
-        usedInCart,
-        label: usedInCart > 0
-          ? "Sin disponible por carrito"
-          : "Sin existencia",
-      };
-    }
-
-    return {
-      available: true,
-      stock: availableStock,
-      rawStock,
-      usedInCart,
-      label:
-        usedInCart > 0
-          ? `${availableStock} disponible${
-              availableStock !== 1 ? "s" : ""
-            } (${usedInCart} en carrito)`
-          : `${availableStock} disponible${availableStock !== 1 ? "s" : ""}`,
-    };
-  };
-
-  const getFilteredOptionsForReward = (rewardId) => {
-    const options = getRewardProductOptions(rewardId);
-    const search = String(searchByReward[rewardId] || "").trim().toLowerCase();
-
-    if (!search) return options;
-
-    return options.filter((row) => {
-      const product = row.product || {};
-      const values = [product.name, product.barcode, product.sale_price];
-
-      return values.some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
-    });
-  };
-
-  const getVisibleOptionsForReward = (rewardId) => {
-    const filteredOptions = getFilteredOptionsForReward(rewardId);
-    const search = String(searchByReward[rewardId] || "").trim();
-
-    if (search || expandedRewards[rewardId]) {
-      return filteredOptions;
-    }
-
-    return filteredOptions.slice(0, INITIAL_VISIBLE_PRODUCTS);
-  };
-
-  const loadRewardProducts = async () => {
-    const rewardIds = freeProductRewards
-      .map((reward) => reward.id)
-      .filter(Boolean);
-
-    if (!rewardIds.length) {
-      setRewardProducts([]);
-      setInventoryByProduct({});
-      return;
-    }
-
-    try {
-      setLoadingProducts(true);
-      setError("");
-
-      const { data, error: rewardProductsError } = await supabase
-        .from("reward_products")
-        .select(`
-          id,
-          reward_id,
-          product_id,
-          products:product_id (
-            id,
-            barcode,
-            name,
-            cost_price,
-            sale_price,
-            is_kit,
-            status,
-            tracks_inventory
-          )
-        `)
-        .in("reward_id", rewardIds);
-
-      if (rewardProductsError) throw rewardProductsError;
-
-      const rows = (data || [])
-        .map((row) => ({
-          ...row,
-          product: row.products || null,
-        }))
-        .filter((row) => row.product?.id);
-
-      setRewardProducts(rows);
-
-      const productIds = [
-        ...new Set(
-          rows
-            .filter((row) => row.product?.tracks_inventory !== false)
-            .map((row) => row.product_id)
-            .filter(Boolean)
-        ),
-      ];
-
-      if (!branchId || productIds.length === 0) {
-        setInventoryByProduct({});
-        return;
-      }
-
-      const { data: inventoryRows, error: inventoryError } = await supabase
-        .from("branch_inventory")
-        .select(
-          "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
-        )
-        .eq("branch_id", branchId)
-        .in("product_id", productIds);
-
-      if (inventoryError) throw inventoryError;
-
-      const inventoryMap = {};
-
-      for (const row of inventoryRows || []) {
-        inventoryMap[row.product_id] = row;
-      }
-
-      setInventoryByProduct(inventoryMap);
-    } catch (err) {
-      console.error("Error cargando productos de recompensa:", err);
-      setRewardProducts([]);
-      setInventoryByProduct({});
-      setError("No se pudieron cargar los productos de las recompensas.");
-      showAppDanger(
-        "No se pudieron cargar los productos de las recompensas.",
-        "Error cargando recompensas",
-      );
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setSelectedProductsByReward({});
-    setSearchByReward({});
-    setExpandedRewards({});
-    setSaving(false);
-    setError("");
-    closeAppModal();
-    loadRewardProducts();
-  }, [isOpen, freeProductRewards, branchId]);
-
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event) => {
-      if (appModal.isOpen) return;
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!saving) onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown, true);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown, true);
-    };
-  }, [isOpen, saving, onClose, appModal.isOpen]);
-
-  const totalRequiredProducts = useMemo(() => {
-    return freeProductRewards.reduce((sum, reward) => {
-      return sum + getRewardQuantity(reward);
-    }, 0);
-  }, [freeProductRewards]);
-
-  const completedProducts = useMemo(() => {
-    return freeProductRewards.reduce((sum, reward) => {
-      return sum + getSelectedQuantityForReward(reward.id);
-    }, 0);
-  }, [freeProductRewards, selectedProductsByReward]);
-
-  const canConfirm =
-    freeProductRewards.length > 0 &&
-    totalRequiredProducts > 0 &&
-    completedProducts === totalRequiredProducts &&
-    !loadingProducts &&
-    !saving;
-
-  const handleSearchChange = (rewardId, value) => {
-    setSearchByReward((prev) => ({
-      ...prev,
-      [rewardId]: value,
-    }));
-
-    setExpandedRewards((prev) => ({
-      ...prev,
-      [rewardId]: false,
-    }));
-  };
-
-  const handleToggleExpandedReward = (rewardId) => {
-    setExpandedRewards((prev) => ({
-      ...prev,
-      [rewardId]: !prev[rewardId],
-    }));
-  };
-
-  const handleAddProduct = (reward, product) => {
-    if (!reward?.id || !product?.id || saving) return;
-
-    const status = getInventoryStatus(product);
-
-    if (!status.available) return;
-
-    const requiredQty = getRewardQuantity(reward);
-    const selectedQtyForReward = getSelectedQuantityForReward(reward.id);
-    const selectedQtyForProduct = getSelectedQuantityForProduct(
-      reward.id,
-      product.id
-    );
-
-    if (selectedQtyForReward >= requiredQty) return;
-
-    if (status.stock !== null && selectedQtyForProduct >= status.stock) return;
-
-    setSelectedProductsByReward((prev) => {
-      const currentRewardMap = prev[reward.id] || {};
-
-      return {
-        ...prev,
-        [reward.id]: {
-          ...currentRewardMap,
-          [product.id]: Number(currentRewardMap[product.id] || 0) + 1,
-        },
-      };
-    });
-  };
-
-  const handleSubtractProduct = (reward, product) => {
-    if (!reward?.id || !product?.id || saving) return;
-
-    setSelectedProductsByReward((prev) => {
-      const currentRewardMap = prev[reward.id] || {};
-      const currentQty = Number(currentRewardMap[product.id] || 0);
-
-      if (currentQty <= 0) return prev;
-
-      const nextRewardMap = {
-        ...currentRewardMap,
-        [product.id]: currentQty - 1,
-      };
-
-      if (nextRewardMap[product.id] <= 0) {
-        delete nextRewardMap[product.id];
-      }
-
-      return {
-        ...prev,
-        [reward.id]: nextRewardMap,
-      };
-    });
-  };
+import { useRewardProductSelection, INITIAL_VISIBLE_PRODUCTS } from "./useRewardProductSelection";
+
+const RewardProductSelectionModal = memo(({ isOpen, onClose, onConfirm, rewards = [], branchId = null, cartProducts = [] }) => {
+  const {
+    rewardProducts, selectedProductsByReward, searchByReward, setSearchByReward, expandedRewards, setExpandedRewards,
+    loadingProducts, saving, setSaving, error, appModal, closeAppModal, freeProductRewards, getInventoryStatus, 
+    getSelectedQuantityForReward, getSelectedQuantityForProduct, getFilteredOptionsForReward, handleAddProduct, handleSubtractProduct, svc
+  } = useRewardProductSelection({ isOpen, rewards, branchId, cartProducts });
+
+  const totalRequiredProducts = useMemo(() => freeProductRewards.reduce((s, r) => s + svc.getRewardQuantity(r), 0), [freeProductRewards, svc]);
+  const completedProducts = useMemo(() => freeProductRewards.reduce((s, r) => s + getSelectedQuantityForReward(r.id), 0), [freeProductRewards, getSelectedQuantityForReward]);
+  const canConfirm = freeProductRewards.length > 0 && totalRequiredProducts > 0 && completedProducts === totalRequiredProducts && !loadingProducts && !saving;
 
   const handleConfirm = async () => {
     if (!canConfirm) return;
-
     const selections = [];
-
     for (const reward of freeProductRewards) {
-      const selectedMap = getSelectedProductsMap(reward.id);
-      const options = getRewardProductOptions(reward.id);
-
+      const selectedMap = selectedProductsByReward[reward.id] || {};
+      const options = rewardProducts.filter(r => r.reward_id === reward.id);
       Object.entries(selectedMap).forEach(([productId, quantity]) => {
-        const cleanQuantity = Number(quantity || 0);
-
-        if (cleanQuantity <= 0) return;
-
-        const option = options.find((row) => row.product?.id === productId);
-
-        if (!option?.product) return;
-
-        selections.push({
-          reward,
-          product: option.product,
-          quantity: cleanQuantity,
-        });
+        if (Number(quantity) > 0) {
+          const opt = options.find(r => r.product?.id === productId);
+          if (opt?.product) selections.push({ reward, product: opt.product, quantity: Number(quantity) });
+        }
       });
     }
-
-    try {
-      setSaving(true);
-      await onConfirm(selections);
-    } finally {
-      setSaving(false);
-    }
+    try { setSaving(true); await onConfirm(selections); } 
+    finally { setSaving(false); }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (appModal.isOpen) return;
+      if (e.key === "Escape" && !saving) { e.preventDefault(); e.stopPropagation(); onClose(); }
+    };
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, saving, onClose, appModal.isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div
-      className={styles.overlay}
-      onClick={saving || appModal.isOpen ? undefined : onClose}
-    >
-      <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
+    <div className={styles.overlay} onClick={saving || appModal.isOpen ? undefined : onClose}>
+      <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <div>
-            <h2>Aplicar recompensas</h2>
-            <p>Selecciona cómo se repartirán los productos gratis.</p>
-          </div>
-
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={onClose}
-            disabled={saving || appModal.isOpen}
-          >
-            ×
-          </button>
+          <div><h2>Aplicar recompensas</h2><p>Selecciona cómo se repartirán los productos gratis.</p></div>
+          <button type="button" className={styles.closeButton} onClick={onClose} disabled={saving || appModal.isOpen}>×</button>
         </div>
 
         <div className={styles.body}>
           <div className={styles.summaryBox}>
-            <div>
-              <span>Productos a entregar</span>
-              <strong>{totalRequiredProducts}</strong>
-            </div>
-
-            <div>
-              <span>Seleccionados</span>
-              <strong>{completedProducts}</strong>
-            </div>
+            <div><span>Productos a entregar</span><strong>{totalRequiredProducts}</strong></div>
+            <div><span>Seleccionados</span><strong>{completedProducts}</strong></div>
           </div>
 
           {error && <div className={styles.errorMessage}>{error}</div>}
 
-          {loadingProducts ? (
-            <div className={styles.emptyMessage}>
-              Cargando productos aplicables...
-            </div>
-          ) : freeProductRewards.length === 0 ? (
-            <div className={styles.emptyMessage}>
-              No hay recompensas de producto gratis para aplicar.
-            </div>
-          ) : (
+          {loadingProducts ? <div className={styles.emptyMessage}>Cargando productos aplicables...</div> : freeProductRewards.length === 0 ? <div className={styles.emptyMessage}>No hay recompensas de producto gratis para aplicar.</div> : (
             <div className={styles.rewardBlocks}>
               {freeProductRewards.map((reward) => {
-                const options = getRewardProductOptions(reward.id);
+                const options = rewardProducts.filter(r => r.reward_id === reward.id);
                 const filteredOptions = getFilteredOptionsForReward(reward.id);
-                const visibleOptions = getVisibleOptionsForReward(reward.id);
-                const searchValue = searchByReward[reward.id] || "";
                 const isExpanded = Boolean(expandedRewards[reward.id]);
+                const search = String(searchByReward[reward.id] || "").trim();
+                const visibleOptions = search || isExpanded ? filteredOptions : filteredOptions.slice(0, INITIAL_VISIBLE_PRODUCTS);
                 const hasManyProducts = options.length > INITIAL_VISIBLE_PRODUCTS;
-                const requiredQty = getRewardQuantity(reward);
+                
+                const requiredQty = svc.getRewardQuantity(reward);
                 const selectedQty = getSelectedQuantityForReward(reward.id);
                 const remainingQty = Math.max(requiredQty - selectedQty, 0);
-                const redeemQuantity = getRewardRedeemQuantity(reward);
-                const productsPerRedemption =
-                  getRewardProductsPerRedemption(reward);
-                const totalPoints =
-                  Number(reward.points_required || 0) * redeemQuantity;
 
                 return (
                   <section key={reward.id} className={styles.rewardBlock}>
                     <div className={styles.rewardHeader}>
                       <div>
                         <h3>{reward.name || "RECOMPENSA"}</h3>
-                        <p>
-                          Selecciona {requiredQty} producto
-                          {requiredQty !== 1 ? "s" : ""} gratis.
-                          {redeemQuantity > 1 &&
-                            ` ${redeemQuantity} canjes de ${productsPerRedemption} producto${
-                              productsPerRedemption !== 1 ? "s" : ""
-                            }.`}
-                        </p>
-
-                        <div className={styles.rewardProgress}>
-                          <span>
-                            {selectedQty} de {requiredQty} seleccionados
-                          </span>
-                          <strong>
-                            {remainingQty} pendiente
-                            {remainingQty !== 1 ? "s" : ""}
-                          </strong>
-                        </div>
+                        <p>Selecciona {requiredQty} producto{requiredQty !== 1 ? "s" : ""} gratis. {svc.getRewardRedeemQuantity(reward) > 1 && ` ${svc.getRewardRedeemQuantity(reward)} canjes de ${svc.getRewardProductsPerRedemption(reward)} producto${svc.getRewardProductsPerRedemption(reward) !== 1 ? "s" : ""}.`}</p>
+                        <div className={styles.rewardProgress}><span>{selectedQty} de {requiredQty} seleccionados</span><strong>{remainingQty} pendiente{remainingQty !== 1 ? "s" : ""}</strong></div>
                       </div>
-
-                      <span>{totalPoints} pts</span>
+                      <span>{Number(reward.points_required || 0) * svc.getRewardRedeemQuantity(reward)} pts</span>
                     </div>
 
-                    {options.length === 0 ? (
-                      <div className={styles.emptyRewardProducts}>
-                        Esta recompensa no tiene productos vinculados.
-                      </div>
-                    ) : (
+                    {options.length === 0 ? <div className={styles.emptyRewardProducts}>Esta recompensa no tiene productos vinculados.</div> : (
                       <>
                         {hasManyProducts && (
                           <div className={styles.rewardSearchBox}>
-                            <input
-                              type="text"
-                              value={searchValue}
-                              onChange={(event) =>
-                                handleSearchChange(
-                                  reward.id,
-                                  event.target.value
-                                )
-                              }
-                              disabled={saving}
-                              placeholder="Buscar producto dentro de esta recompensa..."
-                            />
-
-                            {searchValue.trim() && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleSearchChange(reward.id, "")
-                                }
-                                disabled={saving}
-                              >
-                                Limpiar
-                              </button>
-                            )}
+                            <input type="text" value={search} onChange={e => { setSearchByReward(p => ({ ...p, [reward.id]: e.target.value })); setExpandedRewards(p => ({ ...p, [reward.id]: false })); }} disabled={saving} placeholder="Buscar producto dentro de esta recompensa..." />
+                            {search && <button type="button" onClick={() => setSearchByReward(p => ({ ...p, [reward.id]: "" }))} disabled={saving}>Limpiar</button>}
                           </div>
                         )}
 
-                        {filteredOptions.length === 0 ? (
-                          <div className={styles.emptyRewardProducts}>
-                            No hay productos con esa búsqueda.
-                          </div>
-                        ) : (
+                        {filteredOptions.length === 0 ? <div className={styles.emptyRewardProducts}>No hay productos con esa búsqueda.</div> : (
                           <div className={styles.productList}>
-                            {visibleOptions.map((row) => {
-                              const product = row.product;
+                            {visibleOptions.map(({ product }) => {
                               const status = getInventoryStatus(product);
-                              const selectedProductQty =
-                                getSelectedQuantityForProduct(
-                                  reward.id,
-                                  product.id
-                                );
-                              const selectedQtyForReward =
-                                getSelectedQuantityForReward(reward.id);
-                              const rewardIsComplete =
-                                selectedQtyForReward >= requiredQty;
-                              const stockLimitReached =
-                                status.stock !== null &&
-                                selectedProductQty >= status.stock;
-                              const canAdd =
-                                status.available &&
-                                !saving &&
-                                !rewardIsComplete &&
-                                !stockLimitReached;
-                              const isSelected = selectedProductQty > 0;
+                              const qty = getSelectedQuantityForProduct(reward.id, product.id);
+                              const isSelected = qty > 0;
+                              const canAdd = status.available && !saving && selectedQty < requiredQty && (status.stock === null || qty < status.stock);
 
                               return (
-                                <div
-                                  key={`${reward.id}-${product.id}`}
-                                  className={`${styles.productOption} ${
-                                    isSelected
-                                      ? styles.productOptionSelected
-                                      : ""
-                                  } ${
-                                    !status.available
-                                      ? styles.productOptionDisabled
-                                      : ""
-                                  }`}
-                                  onClick={() => {
-                                    if (canAdd) {
-                                      handleAddProduct(reward, product);
-                                    }
-                                  }}
-                                >
+                                <div key={`${reward.id}-${product.id}`} className={`${styles.productOption} ${isSelected ? styles.productOptionSelected : ""} ${!status.available ? styles.productOptionDisabled : ""}`} onClick={() => canAdd && handleAddProduct(reward, product)}>
                                   <div className={styles.productInfo}>
-                                    <strong>
-                                      {product.name || "SIN NOMBRE"}
-                                    </strong>
-                                    <span>
-                                      {product.barcode || "SIN CÓDIGO"}
-                                    </span>
-                                    <small>{status.label}</small>
+                                    <strong>{product.name || "SIN NOMBRE"}</strong><span>{product.barcode || "SIN CÓDIGO"}</span><small>{status.label}</small>
                                   </div>
-
                                   <div className={styles.productSide}>
                                     <div className={styles.productPrice}>
-                                      <strong>
-                                        $
-                                        {Number(
-                                          product.sale_price || 0
-                                        ).toFixed(2)}
-                                      </strong>
-
-                                      {isSelected && (
-                                        <span>
-                                          {selectedProductQty} seleccionado
-                                          {selectedProductQty !== 1 ? "s" : ""}
-                                        </span>
-                                      )}
-
-                                      {!status.available && (
-                                        <span>No disponible</span>
-                                      )}
-
-                                      {stockLimitReached &&
-                                        status.available && (
-                                          <span>Máximo stock</span>
-                                        )}
+                                      <strong>${Number(product.sale_price || 0).toFixed(2)}</strong>
+                                      {isSelected && <span>{qty} seleccionado{qty !== 1 ? "s" : ""}</span>}
+                                      {!status.available && <span>No disponible</span>}
+                                      {status.stock !== null && qty >= status.stock && status.available && <span>Máximo stock</span>}
                                     </div>
-
                                     <div className={styles.quantityControls}>
-                                      <button
-                                        type="button"
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          handleSubtractProduct(
-                                            reward,
-                                            product
-                                          );
-                                        }}
-                                        disabled={!isSelected || saving}
-                                      >
-                                        -
-                                      </button>
-
-                                      <strong>{selectedProductQty}</strong>
-
-                                      <button
-                                        type="button"
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          handleAddProduct(reward, product);
-                                        }}
-                                        disabled={!canAdd}
-                                      >
-                                        +
-                                      </button>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); handleSubtractProduct(reward, product); }} disabled={!isSelected || saving}>-</button>
+                                      <strong>{qty}</strong>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); handleAddProduct(reward, product); }} disabled={!canAdd}>+</button>
                                     </div>
                                   </div>
                                 </div>
@@ -740,23 +124,9 @@ const RewardProductSelectionModal = ({
                             })}
                           </div>
                         )}
-
-                        {hasManyProducts && !searchValue.trim() && (
-                          <button
-                            type="button"
-                            className={styles.showMoreButton}
-                            onClick={() =>
-                              handleToggleExpandedReward(reward.id)
-                            }
-                            disabled={saving}
-                          >
-                            {isExpanded
-                              ? "Ver menos productos"
-                              : `Ver ${options.length - INITIAL_VISIBLE_PRODUCTS} producto${
-                                  options.length - INITIAL_VISIBLE_PRODUCTS !== 1
-                                    ? "s"
-                                    : ""
-                                } más`}
+                        {hasManyProducts && !search && (
+                          <button type="button" className={styles.showMoreButton} onClick={() => setExpandedRewards(p => ({ ...p, [reward.id]: !p[reward.id] }))} disabled={saving}>
+                            {isExpanded ? "Ver menos productos" : `Ver ${options.length - INITIAL_VISIBLE_PRODUCTS} producto${options.length - INITIAL_VISIBLE_PRODUCTS !== 1 ? "s" : ""} más`}
                           </button>
                         )}
                       </>
@@ -769,37 +139,13 @@ const RewardProductSelectionModal = ({
         </div>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.cancelButton}
-            onClick={onClose}
-            disabled={saving || appModal.isOpen}
-          >
-            Cancelar
-          </button>
-
-          <button
-            type="button"
-            className={styles.confirmButton}
-            onClick={handleConfirm}
-            disabled={!canConfirm || appModal.isOpen}
-          >
-            {saving ? "Aplicando..." : "Aplicar recompensas"}
-          </button>
+          <button type="button" className={styles.cancelButton} onClick={onClose} disabled={saving || appModal.isOpen}>Cancelar</button>
+          <button type="button" className={styles.confirmButton} onClick={handleConfirm} disabled={!canConfirm || appModal.isOpen}>{saving ? "Aplicando..." : "Aplicar recompensas"}</button>
         </div>
       </div>
-
-      <AppModal
-        isOpen={appModal.isOpen}
-        type={appModal.type}
-        title={appModal.title}
-        message={appModal.message}
-        confirmText={appModal.confirmText}
-        onClose={closeAppModal}
-        onConfirm={closeAppModal}
-      />
+      <AppModal isOpen={appModal.isOpen} type={appModal.type} title={appModal.title} message={appModal.message} confirmText={appModal.confirmText} onClose={closeAppModal} onConfirm={closeAppModal} />
     </div>
   );
-};
+});
 
 export default RewardProductSelectionModal;
