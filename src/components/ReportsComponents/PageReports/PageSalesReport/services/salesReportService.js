@@ -4,9 +4,17 @@ import { formatDynamicDate } from "../../utils/formatters";
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
 export const getBranchesList = async () => {
-  const { data, error } = await supabase.from("branches").select("id, name");
+  const { data, error } = await supabase.from("branches").select("id, name, timezone");
   if (error) throw new Error("No se pudo cargar el catálogo de sucursales.");
-  return [{ id: "Todas", name: "Todas las sucursales" }, ...data.map((b) => ({ id: b.id, name: b.name }))];
+
+  return [
+    { id: "Todas", name: "Todas las sucursales", timezone: "America/Cancun" }, 
+    ...data.map((b) => ({ 
+      id: b.id, 
+      name: b.name, 
+      timezone: b.timezone || "America/Cancun" // Fallback de seguridad
+    }))
+  ];
 };
 
 export const getCashiersList = async () => {
