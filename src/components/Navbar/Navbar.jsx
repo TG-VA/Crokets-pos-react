@@ -1,25 +1,11 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
-
-import {
-  useAuth,
-} from "../../contexts/AuthContext";
-
-import {
-  useBranch,
-} from "../../contexts/BranchContext";
-
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBranch } from "../../contexts/BranchContext";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import AppModal from "../AppModal/AppModal";
 
 import Logo from "../../assets/images/LOGOCROKETS.png";
-
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
 import InventoryIcon from "../../assets/icons/store-solid-full.svg";
@@ -32,136 +18,35 @@ import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
 import styles from "./Navbar.module.css";
 
-const SALES_DRAFT_RESTORE_REQUEST_KEY =
-  "sales_draft_restore_prompt_requested";
+const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
 const NAV_ITEMS = [
-  {
-    id: "btnVentas",
-    label: "Ventas",
-    icon: SalesIcon,
-    path: "/dashboard",
-    shortcut: "F1",
-    matchPaths: [
-      "/dashboard",
-      "/sales",
-    ],
-  },
-  {
-    id: "btnProductos",
-    label: "Productos",
-    icon: ProductsIcon,
-    path: "/products",
-    shortcut: "F2",
-    matchPaths: [
-      "/products",
-    ],
-  },
-  {
-    id: "btnInventario",
-    label: "Inventario",
-    icon: InventoryIcon,
-    path: "/inventory",
-    shortcut: "F3",
-    matchPaths: [
-      "/inventory",
-    ],
-  },
-  {
-    id: "btnFacturas",
-    label: "Facturas",
-    icon: InvoicesIcon,
-    path: "/invoices",
-    matchPaths: [
-      "/invoices",
-    ],
-  },
-  {
-    id: "btnClientes",
-    label: "Clientes",
-    icon: CustomersIcon,
-    path: "/customers",
-    matchPaths: [
-      "/customers",
-    ],
-  },
-  {
-    id: "btnCorte",
-    label: "Corte",
-    icon: CashoutIcon,
-    path: "/cashcut",
-    matchPaths: [
-      "/cashcut",
-    ],
-  },
-  {
-    id: "btnReportes",
-    label: "Reportes",
-    icon: ReportsIcon,
-    path: "/reports",
-    matchPaths: [
-      "/reports",
-    ],
-  },
-  {
-    id: "btnConfiguracion",
-    label: "Configuración",
-    icon: SettingsIcon,
-    path: "/settings",
-    matchPaths: [
-      "/settings",
-    ],
-  },
+  { id: "btnVentas", label: "Ventas", icon: SalesIcon, path: "/dashboard", shortcut: "F1", matchPaths: ["/dashboard", "/sales"] },
+  { id: "btnProductos", label: "Productos", icon: ProductsIcon, path: "/products", shortcut: "F2", matchPaths: ["/products"] },
+  { id: "btnInventario", label: "Inventario", icon: InventoryIcon, path: "/inventory", shortcut: "F3", matchPaths: ["/inventory"] },
+  { id: "btnFacturas", label: "Facturas", icon: InvoicesIcon, path: "/invoices", matchPaths: ["/invoices"] },
+  { id: "btnClientes", label: "Clientes", icon: CustomersIcon, path: "/customers", matchPaths: ["/customers"] },
+  { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashcut", matchPaths: ["/cashcut"] },
+  { id: "btnReportes", label: "Reportes", icon: ReportsIcon, path: "/reports", matchPaths: ["/reports"] },
+  { id: "btnConfiguracion", label: "Configuración", icon: SettingsIcon, path: "/settings", matchPaths: ["/settings"] },
 ];
 
-const isTypingTarget = (
-  target
-) => {
-  if (!target) {
-    return false;
-  }
-
-  const tagName = String(
-    target.tagName || ""
-  ).toLowerCase();
-
-  return (
-    tagName === "input" ||
-    tagName === "textarea" ||
-    tagName === "select" ||
-    target.isContentEditable ===
-      true
-  );
-};
-
 const Navbar = () => {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, lockScreen } = useAuth();
+  const { branch } = useBranch();
 
-  const location =
-    useLocation();
+  // Inyectamos la lógica separada para atajos (F1, F2, etc.)
+  useKeyboardShortcuts(NAV_ITEMS);
 
-  const {
-    user,
-    lockScreen,
-  } = useAuth();
-
-  const {
-    branch,
-  } = useBranch();
-
-  const [
-    appModal,
-    setAppModal,
-  ] = useState({
+  const [appModal, setAppModal] = useState({
     isOpen: false,
     type: "info",
     title: "",
     message: "",
-    confirmText:
-      "Entendido",
-    cancelText:
-      "Cancelar",
+    confirmText: "Entendido",
+    cancelText: "Cancelar",
     showCancel: false,
     loading: false,
     onConfirm: null,
@@ -169,317 +54,105 @@ const Navbar = () => {
   });
 
   const closeAppModal = () => {
-    setAppModal(
-      (previousModal) => ({
-        ...previousModal,
-        isOpen: false,
-        loading: false,
-        onConfirm: null,
-        onCancel: null,
-      })
-    );
+    setAppModal((prev) => ({ ...prev, isOpen: false, loading: false, onConfirm: null, onCancel: null }));
   };
 
-  const showAppConfirm = ({
-    type = "warning",
-    title =
-      "Confirmar acción",
-    message = "",
-    confirmText =
-      "Confirmar",
-    cancelText =
-      "Cancelar",
-    onConfirm,
-  }) => {
+  // CORRECCIÓN: Forzamos los defaults para no tener "modales fantasma"
+  const showAppConfirm = (config) => {
     setAppModal({
       isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      showCancel: true,
+      type: config.type || "warning",
+      title: config.title || "Confirmar",
+      message: config.message || "",
+      confirmText: config.confirmText || "Aceptar",
+      cancelText: config.cancelText || "Cancelar",
+      // FIX NITPICK: Por defecto ya no mostramos el botón cancelar, a menos que config diga lo contrario
+      showCancel: config.showCancel !== undefined ? config.showCancel : false,
       loading: false,
-
-      onConfirm:
-        async () => {
-          closeAppModal();
-
-          if (
-            typeof onConfirm ===
-            "function"
-          ) {
-            await onConfirm();
-          }
-        },
-
-      onCancel:
-        closeAppModal,
+      onConfirm: async () => {
+        closeAppModal();
+        if (typeof config.onConfirm === "function") await config.onConfirm();
+      },
+      onCancel: closeAppModal,
     });
   };
 
-  const handleLockScreen =
-    () => {
-      showAppConfirm({
-        type: "warning",
-        title:
-          "Volver al inicio",
-        message:
-          "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
-        confirmText:
-          "Sí, volver",
-        cancelText:
-          "Cancelar",
-
-        onConfirm: () => {
-          sessionStorage.setItem(
-            SALES_DRAFT_RESTORE_REQUEST_KEY,
-            "true"
-          );
-
-          lockScreen();
-
-          navigate(
-            "/login",
-            {
-              replace: true,
-            }
-          );
-        },
-      });
-    };
-
-  const isItemActive = (
-    item
-  ) => {
-    return item.matchPaths.some(
-      (path) => {
-        if (
-          path === "/dashboard"
-        ) {
-          return (
-            location.pathname ===
-            "/dashboard"
-          );
-        }
-
-        return (
-          location.pathname ===
-            path ||
-          location.pathname.startsWith(
-            `${path}/`
-          )
-        );
-      }
-    );
+  const handleLockScreen = () => {
+    showAppConfirm({
+      type: "warning",
+      title: "Volver al inicio",
+      message: "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
+      confirmText: "Sí, volver",
+      showCancel: true, // <--- AHORA LO PEDIMOS EXPLÍCITAMENTE PARA ESTE CASO
+      onConfirm: () => {
+        sessionStorage.setItem(SALES_DRAFT_RESTORE_REQUEST_KEY, "true");
+        lockScreen();
+        navigate("/login", { replace: true });
+      },
+    });
   };
 
-  useEffect(() => {
-    const handleKeyDown = (
-      event
-    ) => {
-      if (
-        isTypingTarget(
-          event.target
-        )
-      ) {
-        return;
-      }
+  const isItemActive = (item) => {
+    return item.matchPaths.some((path) => {
+      if (path === "/dashboard") return location.pathname === "/dashboard";
+      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    });
+  };
 
-      const item =
-        NAV_ITEMS.find(
-          (navItem) =>
-            navItem.shortcut ===
-            event.key
-        );
-
-      if (!item) {
-        return;
-      }
-
-      event.preventDefault();
-
-      navigate(
-        item.path
-      );
-    };
-
-    window.addEventListener(
-      "keydown",
-      handleKeyDown
-    );
-
-    return () => {
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
-    };
-  }, [navigate]);
+  const username = (
+    user?.username ?? 
+    user?.user_metadata?.username ?? 
+    user?.email?.split("@")[0] ?? 
+    "—"
+  ).toUpperCase();
 
   return (
     <>
-      <nav
-        className={
-          styles.croketsNavbar
-        }
-      >
-        <div
-          className={
-            styles.navbarBrand
-          }
-        >
-          <img
-            src={Logo}
-            alt="CROKETS LOGO"
-            className={
-              styles.navbarLogo
-            }
-          />
+      <nav className={styles.croketsNavbar}>
+        <div className={styles.navbarBrand}>
+          <img src={Logo} alt="CROKETS LOGO" className={styles.navbarLogo} />
         </div>
 
-        <div
-          className={
-            styles.navbarMenu
-          }
-        >
-          {NAV_ITEMS.map(
-            (item) => {
-              const active =
-                isItemActive(
-                  item
-                );
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`${styles.navButton} ${styles[item.id]} ${
-                    active
-                      ? styles.active
-                      : ""
-                  }`}
-                  onClick={() =>
-                    navigate(
-                      item.path
-                    )
-                  }
-                >
-                  <img
-                    src={
-                      item.icon
-                    }
-                    alt={`${item.label} icono`}
-                    className={
-                      styles.navIcon
-                    }
-                  />
-
-                  {item.label}
-                </button>
-              );
-            }
-          )}
+        <div className={styles.navbarMenu}>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
+              onClick={() => navigate(item.path)}
+            >
+              <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
+              {item.label}
+            </button>
+          ))}
         </div>
 
-        <div
-          className={
-            styles.navbarUser
-          }
-        >
-          <div
-            className={
-              styles.userInfo
-            }
-          >
-            <div
-              className={
-                styles.userName
-              }
-            >
-              Usuario:{" "}
-              {(
-                user?.username ??
-                user
-                  ?.user_metadata
-                  ?.username ??
-                user?.email?.split(
-                  "@"
-                )[0] ??
-                "—"
-              ).toUpperCase()}
-            </div>
-
-            <div
-              className={
-                styles.branchInfo
-              }
-            >
-              Sucursal:{" "}
-              {branch?.code
-                ? `${branch.code} - ${branch.name}`
-                : "Cargando sucursal..."}
+        <div className={styles.navbarUser}>
+          <div className={styles.userInfo}>
+            <div className={styles.userName}>Usuario: {username}</div>
+            <div className={styles.branchInfo}>
+              Sucursal: {branch?.code ? `${branch.code} - ${branch.name}` : "Cargando sucursal..."}
             </div>
           </div>
 
-          <button
-            type="button"
-            className={`${styles.navButton} ${styles.logoutButton}`}
-            onClick={
-              handleLockScreen
-            }
-          >
-            <img
-              src={
-                LogoutIcon
-              }
-              alt="Salir"
-              className={
-                styles.navIcon
-              }
-            />
-
-            Salir
+          <button type="button" className={`${styles.navButton} ${styles.logoutButton}`} onClick={handleLockScreen}>
+            <img src={LogoutIcon} alt="Salir" className={styles.navIcon} /> Salir
           </button>
         </div>
       </nav>
 
-      <AppModal
-        isOpen={
-          appModal.isOpen
-        }
-        type={
-          appModal.type
-        }
-        title={
-          appModal.title
-        }
-        message={
-          appModal.message
-        }
-        confirmText={
-          appModal.confirmText
-        }
-        cancelText={
-          appModal.cancelText
-        }
-        showCancel={
-          appModal.showCancel
-        }
-        loading={
-          appModal.loading
-        }
-        onConfirm={
-          appModal.onConfirm ||
-          closeAppModal
-        }
-        onCancel={
-          appModal.onCancel ||
-          closeAppModal
-        }
-        onClose={
-          closeAppModal
-        }
+      <AppModal 
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={closeAppModal}
       />
     </>
   );

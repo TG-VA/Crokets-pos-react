@@ -38,7 +38,6 @@ const useSalesCheckout = ({
       setProcessingSale(true);
 
       try {
-        // --- 1. VALIDACIONES PREVIAS (Early Returns) ---
         const canSell = await validateShiftNotCut();
         if (!canSell) {
           showAppWarning("Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.");
@@ -60,14 +59,13 @@ const useSalesCheckout = ({
         const stockIsValid = await validateCartStockBeforeSale();
         if (!stockIsValid) return false;
 
-        // --- 2. PREPARACIÓN DE DATOS ---
         const productsPayload = buildProductsPayload(productos);
         const paymentsPayload = buildPaymentsPayload(paymentData);
         const saleDate = new Date().toISOString();
         const cleanNotes = paymentData?.notes?.trim() || null;
         const currentCartItems = Array.isArray(productosRef?.current) ? productosRef.current : productos;
 
-        // --- 3. TRANSACCIÓN PRINCIPAL (PUNTO DE NO RETORNO) ---
+        // 1. TRANSACCIÓN PRINCIPAL EN BD
         let saleId;
         try {
           saleId = await createSaleTransaction({
@@ -84,17 +82,12 @@ const useSalesCheckout = ({
             notes: cleanNotes,
           });
         } catch (error) {
-          // Si falla aquí, la venta NO se guardó. Podemos abortar seguro.
           console.error("Error crítico al registrar venta:", error);
           showAppWarning(error?.message || "Error al registrar la venta en la base de datos.");
           return false;
         }
 
-        // ====================================================================
-        // A PARTIR DE AQUÍ, LA VENTA ES EXITOSA. EL CARRITO DEBE LIMPIARSE SÍ O SÍ.
-        // ====================================================================
-
-        // --- 4. POST-VENTA (Beneficios / Puntos) ---
+        // 2. BENEFICIOS Y PUNTOS (Protegido para no romper la venta)
         let pointsResult, rewardRedemptionResult, rewardPointsResult;
         try {
           const benefits = await processSaleCustomerBenefits({
@@ -111,10 +104,9 @@ const useSalesCheckout = ({
           rewardPointsResult = benefits.rewardPointsResult;
         } catch (error) {
           console.error("Venta exitosa, pero falló procesar beneficios:", error);
-          // Opcional: Notificar, pero NO lanzar error general.
         }
 
-        // --- 5. IMPRESIÓN DEL TICKET ---
+        // 3. IMPRESIÓN DEL TICKET (Protegido para no romper la venta)
         try {
           if (paymentData?.shouldPrint) {
             await printSaleTicket({
@@ -135,10 +127,10 @@ const useSalesCheckout = ({
           }
         } catch (error) {
           console.error("Venta exitosa, pero falló la impresión:", error);
-          showAppWarning("Venta registrada con éxito, pero hubo un problema de conexión con la impresora.");
+          showAppWarning("Venta registrada con éxito, pero hubo un problema al imprimir el ticket.");
         }
 
-        // --- 6. FINALIZACIÓN Y LIMPIEZA GARANTIZADA ---
+        // 4. LIMPIEZA VISUAL SIMULTÁNEA (Elimina el parpadeo)
         const saleSuccessPayload = buildSaleSuccessPayload({
           saleId,
           saleClient: currentSaleClient,
@@ -159,7 +151,6 @@ const useSalesCheckout = ({
         return true;
 
       } catch (error) {
-        // Este catch externo ahora solo atrapará errores catastróficos inesperados del framework (RAM, variables nulas no capturadas)
         console.error("Error general inesperado en flujo de checkout:", error);
         showAppWarning("Ocurrió un error inesperado.");
         return false;
