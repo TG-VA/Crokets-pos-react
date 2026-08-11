@@ -65,7 +65,7 @@ export const useSalesReport = () => {
     return () => { isActive = false; };
   }, []);
 
-const getCurrentFilters = useCallback(() => {
+  const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
 
     // 1. Encontramos la sucursal seleccionada en nuestro catálogo
@@ -81,14 +81,13 @@ const getCurrentFilters = useCallback(() => {
       return `${year}-${month}-${day}`;
     };
 
-    // Usamos el Intl.DateTimeFormat para saber el offset real de ese timezone en esa fecha
-    // Esto maneja automáticamente los horarios de verano si la ciudad los tiene
-    const offsetString = new Intl.DateTimeFormat('en-US', {
+    const tzPart = new Intl.DateTimeFormat('en-US', {
       timeZone: businessTimeZone,
       timeZoneName: 'shortOffset'
-    }).formatToParts(startDate).find(part => part.type === 'timeZoneName').value.replace('GMT', '') || '-05:00';
+    }).formatToParts(startDate).find(part => part.type === 'timeZoneName').value;
 
-    // Construimos el ISO con el offset exacto de la ciudad seleccionada
+    const offsetString = tzPart === 'GMT' ? 'Z' : (tzPart.replace('GMT', '') || '-05:00');
+
     const startIso = `${formatYMD(startDate)}T00:00:00.000${offsetString}`;
     const endIso = `${formatYMD(endDate)}T23:59:59.999${offsetString}`;
     
@@ -104,7 +103,6 @@ const getCurrentFilters = useCallback(() => {
     };
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter, branchesList]);
 
-  // FIX: Se recibe un token de estado para evitar la Condición de Carrera
   const fetchSalesReport = useCallback(async (options = { isActive: true }) => {
     const filters = getCurrentFilters();
     if (!filters) return;
