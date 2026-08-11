@@ -18,7 +18,7 @@ const escapeHtml = (unsafe) => {
 };
 
 export const useSalesReport = () => {
-  // NUEVO: Estado del AppModal para reportes (reemplaza a uiError y alert)
+  // Estado del AppModal para reportes
   const [reportModal, setReportModal] = useState({ isOpen: false, type: "info", title: "", message: "" });
   const closeReportModal = () => setReportModal((prev) => ({ ...prev, isOpen: false }));
 
@@ -49,16 +49,20 @@ export const useSalesReport = () => {
   const [summary, setSummary] = useState({ totalIncome: 0, totalTickets: 0, averageTicket: 0, totalDiscounts: 0 });
 
   useEffect(() => {
+    let isActive = true;
     const fetchCatalogs = async () => {
       try {
         const [branches, cashiers] = await Promise.all([getBranchesList(), getCashiersList()]);
+        if (!isActive) return;
         setBranchesList(branches);
         setCashiersList(cashiers);
       } catch (err) {
+        if (!isActive) return;
         setReportModal({ isOpen: true, type: "danger", title: "Error de conexión", message: err.message || "No se pudieron cargar los catálogos." });
       }
     };
     fetchCatalogs();
+    return () => { isActive = false; };
   }, []);
 
   const getCurrentFilters = useCallback(() => {
@@ -88,7 +92,8 @@ export const useSalesReport = () => {
     };
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
 
-  const fetchSalesReport = useCallback(async () => {
+  // FIX: Se recibe un token de estado para evitar la Condición de Carrera
+  const fetchSalesReport = useCallback(async (options = { isActive: true }) => {
     const filters = getCurrentFilters();
     if (!filters) return;
     
@@ -98,6 +103,9 @@ export const useSalesReport = () => {
         getPaginatedSales(filters, currentPage, ITEMS_PER_PAGE),
         getSalesKPIs(filters)
       ]);
+
+      // Escudo anti-fantasmas: Si el filtro cambió mientras cargaba, abortar
+      if (!options.isActive) return;
 
       setPaginatedSales(salesRes.data);
       setTotalPages(Math.ceil(salesRes.totalCount / ITEMS_PER_PAGE) || 1);
@@ -111,16 +119,24 @@ export const useSalesReport = () => {
           : 0,
       });
     } catch (error) {
+      if (!options.isActive) return;
       console.error("Error cargando reporte de ventas:", error);
       setReportModal({ isOpen: true, type: "danger", title: "Error al generar reporte", message: error.message || "Revisa tu conexión a internet." });
       setPaginatedSales([]); 
     } finally {
-      setLoading(false);
+      if (options.isActive) {
+        setLoading(false);
+      }
     }
   }, [getCurrentFilters, currentPage]);
 
   useEffect(() => {
-    fetchSalesReport();
+    // Generamos un token por cada vez que cambien los filtros
+    const state = { isActive: true };
+    fetchSalesReport(state);
+    
+    // Si el usuario cambia de opinión rápido, matamos el token anterior
+    return () => { state.isActive = false; };
   }, [fetchSalesReport]);
 
   useEffect(() => {
@@ -305,7 +321,7 @@ export const useSalesReport = () => {
   };
 
   return {
-    reportModal, closeReportModal, // Exponemos el control del Modal
+    reportModal, closeReportModal, 
     dateRange, setDateRange, startDate, endDate,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
