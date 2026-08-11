@@ -65,15 +65,36 @@ export const useSalesReport = () => {
     return () => { isActive = false; };
   }, []);
 
-  const getCurrentFilters = useCallback(() => {
+const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
 
-    // 1. Encontramos la sucursal seleccionada en nuestro catálogo
     const selectedBranchObj = branchesList.find((b) => b.id === selectedBranch);
-
-    // 2. Usamos su timezone dinámico (o Cancún por defecto)
+    // REGLA DE NEGOCIO: "Todas" usa la hora corporativa (Cancún). Las demás, la suya.
     const businessTimeZone = selectedBranchObj?.timezone || "America/Cancun"; 
 
+    // Función pura recomendada por ChatGPT para normalizar GMT-5 a -05:00
+    const getTimezoneOffset = (date, timeZone) => {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        timeZoneName: 'shortOffset'
+      }).formatToParts(date);
+      
+      const tzPart = parts.find(part => part.type === 'timeZoneName').value;
+      if (tzPart === 'GMT') return 'Z';
+      
+      const offset = tzPart.replace('GMT', ''); // ej. "-5", "+5:30", "-04"
+      const match = offset.match(/([+-])(\d+)(?::(\d+))?/);
+      
+      if (match) {
+        const sign = match[1];
+        const hours = match[2].padStart(2, '0'); // Convierte "5" en "05"
+        const minutes = match[3] || '00';
+        return `${sign}${hours}:${minutes}`; // Retorna "-05:00" válido para ISO
+      }
+      return '-05:00'; // Fallback de máxima seguridad
+    };
+
+    // Extraemos la fecha seleccionada por el usuario en el calendario
     const formatYMD = (d) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -81,15 +102,13 @@ export const useSalesReport = () => {
       return `${year}-${month}-${day}`;
     };
 
-    const tzPart = new Intl.DateTimeFormat('en-US', {
-      timeZone: businessTimeZone,
-      timeZoneName: 'shortOffset'
-    }).formatToParts(startDate).find(part => part.type === 'timeZoneName').value;
+    // Calculamos los offsets independientes (Soluciona el bug del Horario de Verano)
+    const startOffset = getTimezoneOffset(startDate, businessTimeZone);
+    const endOffset = getTimezoneOffset(endDate, businessTimeZone);
 
-    const offsetString = tzPart === 'GMT' ? 'Z' : (tzPart.replace('GMT', '') || '-05:00');
-
-    const startIso = `${formatYMD(startDate)}T00:00:00.000${offsetString}`;
-    const endIso = `${formatYMD(endDate)}T23:59:59.999${offsetString}`;
+    // Construimos el ISO estricto
+    const startIso = `${formatYMD(startDate)}T00:00:00.000${startOffset}`;
+    const endIso = `${formatYMD(endDate)}T23:59:59.999${endOffset}`;
     
     return {
       startDateIso: startIso, 
@@ -102,7 +121,6 @@ export const useSalesReport = () => {
       timeZone: businessTimeZone
     };
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter, branchesList]);
-
   const fetchSalesReport = useCallback(async (options = { isActive: true }) => {
     const filters = getCurrentFilters();
     if (!filters) return;
