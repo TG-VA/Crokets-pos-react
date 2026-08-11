@@ -9,10 +9,10 @@ import Logo from "../../assets/images/LOGOCROKETS.png";
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
 import InventoryIcon from "../../assets/icons/store-solid-full.svg";
-import InvoicesIcon from "../../assets/icons/user-solid.svg";
-import CustomersIcon from "../../assets/icons/users-solid.svg";
-import CashoutIcon from "../../assets/icons/cash-register-solid-full.svg";
-import ReportsIcon from "../../assets/icons/chart-pie-solid-full.svg";
+import InvoicesIcon from "../../assets/icons/file-invoice-dollar-solid-full.svg";
+import CustomersIcon from "../../assets/icons/user-solid.svg";
+import CashoutIcon from "../../assets/icons/money-check-dollar-solid-full.svg";
+import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
 import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
@@ -66,7 +66,8 @@ const Navbar = () => {
       message: config.message || "",
       confirmText: config.confirmText || "Aceptar",
       cancelText: config.cancelText || "Cancelar",
-      showCancel: config.showCancel !== undefined ? config.showCancel : true,
+      // FIX NITPICK: Por defecto ya no mostramos el botón cancelar, a menos que config diga lo contrario
+      showCancel: config.showCancel !== undefined ? config.showCancel : false,
       loading: false,
       onConfirm: async () => {
         closeAppModal();
@@ -82,6 +83,7 @@ const Navbar = () => {
       title: "Volver al inicio",
       message: "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
       confirmText: "Sí, volver",
+      showCancel: true, // <--- AHORA LO PEDIMOS EXPLÍCITAMENTE PARA ESTE CASO
       onConfirm: () => {
         sessionStorage.setItem(SALES_DRAFT_RESTORE_REQUEST_KEY, "true");
         lockScreen();

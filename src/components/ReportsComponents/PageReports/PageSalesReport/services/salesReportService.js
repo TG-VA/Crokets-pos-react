@@ -1,5 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
-import { formatDynamicDate } from "../utils/formatters";
+import { formatDynamicDate } from "../../utils/formatters";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
