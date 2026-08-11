@@ -16,16 +16,14 @@ export const formatNumber = (value) => {
 };
 
 /**
- * Formateador de fecha/hora de última actualización
+ * Formateador de fecha/hora dinámico por Sucursal
  */
-export const formatLastUpdate = (isoDate) => {
+export const formatDynamicDate = (isoDate, timeZone = "America/Cancun") => {
   if (!isoDate) return "N/A";
   const date = new Date(isoDate);
   return new Intl.DateTimeFormat("es-MX", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
+    timeZone: timeZone, // ¡Dinámico!
+    dateStyle: "short",
+    timeStyle: "short"
   }).format(date);
 };

@@ -45,12 +45,32 @@ export const useSalesReport = () => {
 
   const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
-    const start = new Date(startDate); start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate); end.setHours(23, 59, 59, 999);
+
+    // Aquí defines la zona horaria del negocio.
+    // FUTURO: const businessTimeZone = currentBranch?.timezone || "America/Cancun";
+    const businessTimeZone = "America/Cancun"; 
+
+    // Extraemos solo la fecha visual seleccionada, ignorando la hora del PC local
+    const formatYMD = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Forzamos estrictamente los límites del día usando el Offset de Cancún (UTC-5)
+    const startIso = `${formatYMD(startDate)}T00:00:00.000-05:00`;
+    const endIso = `${formatYMD(endDate)}T23:59:59.999-05:00`;
     
     return {
-      startDate: start, endDate: end, branch: selectedBranch, cashier: selectedCashier,
-      status: saleStatus, payment: paymentMethod, discount: discountFilter
+      startDateIso: startIso, 
+      endDateIso: endIso, 
+      branch: selectedBranch, 
+      cashier: selectedCashier,
+      status: saleStatus, 
+      payment: paymentMethod, 
+      discount: discountFilter,
+      timeZone: businessTimeZone
     };
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
 
@@ -72,7 +92,10 @@ export const useSalesReport = () => {
         totalIncome: kpisRes.totalIncome,
         totalDiscounts: kpisRes.totalDiscounts,
         totalTickets: kpisRes.totalTickets,
-        averageTicket: kpisRes.totalTickets > 0 ? (kpisRes.totalIncome / kpisRes.totalTickets) : 0,
+        // Validación Financiera: Ticket Promedio no cuenta si los ingresos son 0 (Devoluciones totales)
+        averageTicket: kpisRes.totalTickets > 0 && kpisRes.totalIncome > 0 
+          ? (kpisRes.totalIncome / kpisRes.totalTickets) 
+          : 0,
       });
     } catch (error) {
       console.error("Error cargando reporte de ventas:", error);
@@ -152,8 +175,10 @@ export const useSalesReport = () => {
     setIsExportingSummary(true);
     
     try {
-      const exportData = await getAllSalesForExport(getCurrentFilters());
+      const filters = getCurrentFilters();
+      const exportData = await getAllSalesForExport(filters);
       const fileName = getExportFileName("Resumen_Ventas");
+      const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
       
       const htmlTemplate = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -178,7 +203,7 @@ export const useSalesReport = () => {
         </head>
         <body>
           <div class="title">RESUMEN DE VENTAS - CROKETS POS</div>
-          <div class="subtitle"><b>Fecha de emisión:</b> ${new Date().toLocaleDateString('es-MX')}</div>
+          <div class="subtitle"><b>Fecha de emisión:</b> ${emissionDate}</div>
           <table>
             <thead>
               <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Método de Pago</th><th>Estado</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total</th></tr>
@@ -208,8 +233,10 @@ export const useSalesReport = () => {
     setIsExportingDetailed(true);
 
     try {
-      const detailedData = await getDetailedSalesForExport(getCurrentFilters());
+      const filters = getCurrentFilters();
+      const detailedData = await getDetailedSalesForExport(filters);
       const fileName = getExportFileName("Reporte_Detallado");
+      const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
 
       const htmlTemplate = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -230,7 +257,7 @@ export const useSalesReport = () => {
         </head>
         <body>
           <div class="title">REPORTE DETALLADO DE PRODUCTOS - CROKETS POS</div>
-          <div class="subtitle"><b>Fecha de emisión:</b> ${new Date().toLocaleDateString('es-MX')}</div>
+          <div class="subtitle"><b>Fecha de emisión:</b> ${emissionDate}</div>
           <table>
             <thead>
               <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Estado</th><th>Código Producto</th><th>Descripción</th><th style="text-align: center;">Cantidad</th><th style="text-align: right;">Precio Unitario</th><th>Motivo Descuento</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total Línea</th></tr>

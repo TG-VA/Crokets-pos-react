@@ -1,0 +1,2804 @@
+diff --git a/src/App.jsx b/src/App.jsx
+index cc83b45..ed909c3 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,10 +1,5 @@
+ import React from "react";
+-import {
+-  HashRouter as Router,
+-  Routes,
+-  Route,
+-  Navigate,
+-} from "react-router-dom";
++import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+ 
+ import Login from "./pages/Login/Login";
+ import CashRegister from "./pages/CashRegister/CashRegister";
+@@ -21,15 +16,10 @@ import Reports from "./pages/Reports/Reports";
+ import { AuthProvider, useAuth } from "./contexts/AuthContext";
+ import { ProductsProvider } from "./contexts/ProductsContext";
+ import useResponsiveScale from "./hooks/useResponsiveScale";
++import AuthGuard from "./components/AuthGuard/AuthGuard";
+ 
+ function AppRoutes() {
+-  const {
+-    isAuthenticated,
+-    cashRegistered,
+-    setCashRegistered,
+-    loading,
+-    isLocked,
+-  } = useAuth();
++  const { isAuthenticated, cashRegistered, setCashRegistered, loading, isLocked } = useAuth();
+ 
+   if (loading) {
+     return <div>Iniciando punto de venta...</div>;
+@@ -38,178 +28,46 @@ function AppRoutes() {
+   return (
+     <Router>
+       <Routes>
+-        <Route
+-          path="/login"
+-          element={
+-            !isAuthenticated || isLocked ? (
+-              <Login />
+-            ) : (
+-              <Navigate
+-                to={cashRegistered ? "/dashboard" : "/cash-register"}
+-                replace
+-              />
+-            )
+-          }
++        {/* RUTA PÚBLICA / LOGIN */}
++        <Route 
++          path="/login" 
++          element={ 
++            !isAuthenticated || isLocked 
++              ? <Login /> 
++              : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
++          } 
+         />
+ 
+-        <Route
+-          path="/cash-register"
++        {/* APERTURA DE CAJA (No debe tener caja abierta) */}
++        <Route 
++          path="/cash-register" 
+           element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : cashRegistered ? (
+-              <Navigate to="/dashboard" replace />
+-            ) : (
++            <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
+               <CashRegister setCashRegistered={setCashRegistered} />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/dashboard"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Dashboard setCashRegistered={setCashRegistered} />
+-            )
+-          }
++            </AuthGuard>
++          } 
+         />
+ 
+-        <Route
+-          path="/products/*"
++        {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
++        <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
++        <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
++        <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
++        <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
++        <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
++        <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
++        <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
++
++        {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
++        <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
++        <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
++
++        {/* FALLBACK ROOT */}
++        <Route 
++          path="/" 
+           element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Products />
+-            )
+-          }
++            <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
++          } 
+         />
+-
+-        <Route
+-          path="/cashcut/*"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <CashCut />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/inventory/*"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Inventory />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/invoices/*"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Invoices />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/customers/*"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Customers />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/reports/*"
+-          element={
+-            !isAuthenticated ? (
+-              <Navigate to="/login" replace />
+-            ) : isLocked ? (
+-              <Navigate to="/login" replace />
+-            ) : !cashRegistered ? (
+-              <Navigate to="/cash-register" replace />
+-            ) : (
+-              <Reports />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/settings"
+-          element={
+-            isAuthenticated && !isLocked ? (
+-              <Settings />
+-            ) : (
+-              <Navigate to="/login" replace />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/profiles"
+-          element={
+-            isAuthenticated && !isLocked ? (
+-              <Profiles />
+-            ) : (
+-              <Navigate to="/login" replace />
+-            )
+-          }
+-        />
+-
+-        <Route
+-          path="/"
+-          element={
+-            <Navigate
+-              to={
+-                !isAuthenticated || isLocked
+-                  ? "/login"
+-                  : !cashRegistered
+-                  ? "/cash-register"
+-                  : "/dashboard"
+-              }
+-              replace
+-            />
+-          }
+-        />
+-
+         <Route path="*" element={<Navigate to="/" replace />} />
+       </Routes>
+     </Router>
+diff --git a/src/components/AuthGuard/AuthGuard.jsx b/src/components/AuthGuard/AuthGuard.jsx
+new file mode 100644
+index 0000000..508f0ef
+--- /dev/null
++++ b/src/components/AuthGuard/AuthGuard.jsx
+@@ -0,0 +1,27 @@
++import React from "react";
++import { Navigate } from "react-router-dom";
++import { useAuth } from "../../contexts/AuthContext";
++
++const AuthGuard = ({ children, requireCashRegister = true, requireNoCashRegister = false }) => {
++  const { isAuthenticated, isLocked, cashRegistered } = useAuth();
++
++  // 1. Validar Autenticación
++  if (!isAuthenticated || isLocked) {
++    return <Navigate to="/login" replace />;
++  }
++
++  // 2. Validar que tenga una caja abierta (si la ruta lo exige)
++  if (requireCashRegister && !cashRegistered) {
++    return <Navigate to="/cash-register" replace />;
++  }
++
++  // 3. Validar que NO tenga caja abierta (exclusivo para la ruta /cash-register)
++  if (requireNoCashRegister && cashRegistered) {
++    return <Navigate to="/dashboard" replace />;
++  }
++
++  // 4. Si pasa todos los filtros, renderizar la pantalla solicitada
++  return <>{children}</>;
++};
++
++export default AuthGuard;
+\ No newline at end of file
+diff --git a/src/components/Navbar/Navbar.jsx b/src/components/Navbar/Navbar.jsx
+index 38ac34e..e04ad5b 100644
+--- a/src/components/Navbar/Navbar.jsx
++++ b/src/components/Navbar/Navbar.jsx
+@@ -1,25 +1,11 @@
+-import React, {
+-  useEffect,
+-  useState,
+-} from "react";
+-
+-import {
+-  useLocation,
+-  useNavigate,
+-} from "react-router-dom";
+-
+-import {
+-  useAuth,
+-} from "../../contexts/AuthContext";
+-
+-import {
+-  useBranch,
+-} from "../../contexts/BranchContext";
+-
++import React, { useState } from "react";
++import { useLocation, useNavigate } from "react-router-dom";
++import { useAuth } from "../../contexts/AuthContext";
++import { useBranch } from "../../contexts/BranchContext";
++import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+ import AppModal from "../AppModal/AppModal";
+ 
+ import Logo from "../../assets/images/LOGOCROKETS.png";
+-
+ import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
+ import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
+ import InventoryIcon from "../../assets/icons/store-solid-full.svg";
+@@ -32,136 +18,35 @@ import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
+ 
+ import styles from "./Navbar.module.css";
+ 
+-const SALES_DRAFT_RESTORE_REQUEST_KEY =
+-  "sales_draft_restore_prompt_requested";
++const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
+ 
+ const NAV_ITEMS = [
+-  {
+-    id: "btnVentas",
+-    label: "Ventas",
+-    icon: SalesIcon,
+-    path: "/dashboard",
+-    shortcut: "F1",
+-    matchPaths: [
+-      "/dashboard",
+-      "/sales",
+-    ],
+-  },
+-  {
+-    id: "btnProductos",
+-    label: "Productos",
+-    icon: ProductsIcon,
+-    path: "/products",
+-    shortcut: "F2",
+-    matchPaths: [
+-      "/products",
+-    ],
+-  },
+-  {
+-    id: "btnInventario",
+-    label: "Inventario",
+-    icon: InventoryIcon,
+-    path: "/inventory",
+-    shortcut: "F3",
+-    matchPaths: [
+-      "/inventory",
+-    ],
+-  },
+-  {
+-    id: "btnFacturas",
+-    label: "Facturas",
+-    icon: InvoicesIcon,
+-    path: "/invoices",
+-    matchPaths: [
+-      "/invoices",
+-    ],
+-  },
+-  {
+-    id: "btnClientes",
+-    label: "Clientes",
+-    icon: CustomersIcon,
+-    path: "/customers",
+-    matchPaths: [
+-      "/customers",
+-    ],
+-  },
+-  {
+-    id: "btnCorte",
+-    label: "Corte",
+-    icon: CashoutIcon,
+-    path: "/cashcut",
+-    matchPaths: [
+-      "/cashcut",
+-    ],
+-  },
+-  {
+-    id: "btnReportes",
+-    label: "Reportes",
+-    icon: ReportsIcon,
+-    path: "/reports",
+-    matchPaths: [
+-      "/reports",
+-    ],
+-  },
+-  {
+-    id: "btnConfiguracion",
+-    label: "Configuración",
+-    icon: SettingsIcon,
+-    path: "/settings",
+-    matchPaths: [
+-      "/settings",
+-    ],
+-  },
++  { id: "btnVentas", label: "Ventas", icon: SalesIcon, path: "/dashboard", shortcut: "F1", matchPaths: ["/dashboard", "/sales"] },
++  { id: "btnProductos", label: "Productos", icon: ProductsIcon, path: "/products", shortcut: "F2", matchPaths: ["/products"] },
++  { id: "btnInventario", label: "Inventario", icon: InventoryIcon, path: "/inventory", shortcut: "F3", matchPaths: ["/inventory"] },
++  { id: "btnFacturas", label: "Facturas", icon: InvoicesIcon, path: "/invoices", matchPaths: ["/invoices"] },
++  { id: "btnClientes", label: "Clientes", icon: CustomersIcon, path: "/customers", matchPaths: ["/customers"] },
++  { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashcut", matchPaths: ["/cashcut"] },
++  { id: "btnReportes", label: "Reportes", icon: ReportsIcon, path: "/reports", matchPaths: ["/reports"] },
++  { id: "btnConfiguracion", label: "Configuración", icon: SettingsIcon, path: "/settings", matchPaths: ["/settings"] },
+ ];
+ 
+-const isTypingTarget = (
+-  target
+-) => {
+-  if (!target) {
+-    return false;
+-  }
+-
+-  const tagName = String(
+-    target.tagName || ""
+-  ).toLowerCase();
+-
+-  return (
+-    tagName === "input" ||
+-    tagName === "textarea" ||
+-    tagName === "select" ||
+-    target.isContentEditable ===
+-      true
+-  );
+-};
+-
+ const Navbar = () => {
+-  const navigate =
+-    useNavigate();
+-
+-  const location =
+-    useLocation();
++  const navigate = useNavigate();
++  const location = useLocation();
++  const { user, lockScreen } = useAuth();
++  const { branch } = useBranch();
+ 
+-  const {
+-    user,
+-    lockScreen,
+-  } = useAuth();
++  // Inyectamos la lógica separada para atajos (F1, F2, etc.)
++  useKeyboardShortcuts(NAV_ITEMS);
+ 
+-  const {
+-    branch,
+-  } = useBranch();
+-
+-  const [
+-    appModal,
+-    setAppModal,
+-  ] = useState({
++  const [appModal, setAppModal] = useState({
+     isOpen: false,
+     type: "info",
+     title: "",
+     message: "",
+-    confirmText:
+-      "Entendido",
+-    cancelText:
+-      "Cancelar",
++    confirmText: "Entendido",
++    cancelText: "Cancelar",
+     showCancel: false,
+     loading: false,
+     onConfirm: null,
+@@ -169,317 +54,98 @@ const Navbar = () => {
+   });
+ 
+   const closeAppModal = () => {
+-    setAppModal(
+-      (previousModal) => ({
+-        ...previousModal,
+-        isOpen: false,
+-        loading: false,
+-        onConfirm: null,
+-        onCancel: null,
+-      })
+-    );
++    setAppModal((prev) => ({ ...prev, isOpen: false, loading: false, onConfirm: null, onCancel: null }));
+   };
+ 
+-  const showAppConfirm = ({
+-    type = "warning",
+-    title =
+-      "Confirmar acción",
+-    message = "",
+-    confirmText =
+-      "Confirmar",
+-    cancelText =
+-      "Cancelar",
+-    onConfirm,
+-  }) => {
+-    setAppModal({
++  const showAppConfirm = (config) => {
++    setAppModal((prev) => ({
++      ...prev,
++      ...config,
+       isOpen: true,
+-      type,
+-      title,
+-      message,
+-      confirmText,
+-      cancelText,
+       showCancel: true,
+-      loading: false,
+-
+-      onConfirm:
+-        async () => {
+-          closeAppModal();
+-
+-          if (
+-            typeof onConfirm ===
+-            "function"
+-          ) {
+-            await onConfirm();
+-          }
+-        },
++      onConfirm: async () => {
++        closeAppModal();
++        if (typeof config.onConfirm === "function") await config.onConfirm();
++      },
++      onCancel: closeAppModal,
++    }));
++  };
+ 
+-      onCancel:
+-        closeAppModal,
++  const handleLockScreen = () => {
++    showAppConfirm({
++      type: "warning",
++      title: "Volver al inicio",
++      message: "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
++      confirmText: "Sí, volver",
++      onConfirm: () => {
++        sessionStorage.setItem(SALES_DRAFT_RESTORE_REQUEST_KEY, "true");
++        lockScreen();
++        navigate("/login", { replace: true });
++      },
+     });
+   };
+ 
+-  const handleLockScreen =
+-    () => {
+-      showAppConfirm({
+-        type: "warning",
+-        title:
+-          "Volver al inicio",
+-        message:
+-          "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
+-        confirmText:
+-          "Sí, volver",
+-        cancelText:
+-          "Cancelar",
+-
+-        onConfirm: () => {
+-          sessionStorage.setItem(
+-            SALES_DRAFT_RESTORE_REQUEST_KEY,
+-            "true"
+-          );
+-
+-          lockScreen();
+-
+-          navigate(
+-            "/login",
+-            {
+-              replace: true,
+-            }
+-          );
+-        },
+-      });
+-    };
+-
+-  const isItemActive = (
+-    item
+-  ) => {
+-    return item.matchPaths.some(
+-      (path) => {
+-        if (
+-          path === "/dashboard"
+-        ) {
+-          return (
+-            location.pathname ===
+-            "/dashboard"
+-          );
+-        }
+-
+-        return (
+-          location.pathname ===
+-            path ||
+-          location.pathname.startsWith(
+-            `${path}/`
+-          )
+-        );
+-      }
+-    );
++  const isItemActive = (item) => {
++    return item.matchPaths.some((path) => {
++      if (path === "/dashboard") return location.pathname === "/dashboard";
++      return location.pathname === path || location.pathname.startsWith(`${path}/`);
++    });
+   };
+ 
+-  useEffect(() => {
+-    const handleKeyDown = (
+-      event
+-    ) => {
+-      if (
+-        isTypingTarget(
+-          event.target
+-        )
+-      ) {
+-        return;
+-      }
+-
+-      const item =
+-        NAV_ITEMS.find(
+-          (navItem) =>
+-            navItem.shortcut ===
+-            event.key
+-        );
+-
+-      if (!item) {
+-        return;
+-      }
+-
+-      event.preventDefault();
+-
+-      navigate(
+-        item.path
+-      );
+-    };
+-
+-    window.addEventListener(
+-      "keydown",
+-      handleKeyDown
+-    );
+-
+-    return () => {
+-      window.removeEventListener(
+-        "keydown",
+-        handleKeyDown
+-      );
+-    };
+-  }, [navigate]);
++  const username = (
++    user?.username ?? 
++    user?.user_metadata?.username ?? 
++    user?.email?.split("@")[0] ?? 
++    "—"
++  ).toUpperCase();
+ 
+   return (
+     <>
+-      <nav
+-        className={
+-          styles.croketsNavbar
+-        }
+-      >
+-        <div
+-          className={
+-            styles.navbarBrand
+-          }
+-        >
+-          <img
+-            src={Logo}
+-            alt="CROKETS LOGO"
+-            className={
+-              styles.navbarLogo
+-            }
+-          />
+-        </div>
+-
+-        <div
+-          className={
+-            styles.navbarMenu
+-          }
+-        >
+-          {NAV_ITEMS.map(
+-            (item) => {
+-              const active =
+-                isItemActive(
+-                  item
+-                );
+-
+-              return (
+-                <button
+-                  key={item.id}
+-                  type="button"
+-                  className={`${styles.navButton} ${styles[item.id]} ${
+-                    active
+-                      ? styles.active
+-                      : ""
+-                  }`}
+-                  onClick={() =>
+-                    navigate(
+-                      item.path
+-                    )
+-                  }
+-                >
+-                  <img
+-                    src={
+-                      item.icon
+-                    }
+-                    alt={`${item.label} icono`}
+-                    className={
+-                      styles.navIcon
+-                    }
+-                  />
+-
+-                  {item.label}
+-                </button>
+-              );
+-            }
+-          )}
++      <nav className={styles.croketsNavbar}>
++        <div className={styles.navbarBrand}>
++          <img src={Logo} alt="CROKETS LOGO" className={styles.navbarLogo} />
+         </div>
+ 
+-        <div
+-          className={
+-            styles.navbarUser
+-          }
+-        >
+-          <div
+-            className={
+-              styles.userInfo
+-            }
+-          >
+-            <div
+-              className={
+-                styles.userName
+-              }
++        <div className={styles.navbarMenu}>
++          {NAV_ITEMS.map((item) => (
++            <button
++              key={item.id}
++              type="button"
++              className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
++              onClick={() => navigate(item.path)}
+             >
+-              Usuario:{" "}
+-              {(
+-                user?.username ??
+-                user
+-                  ?.user_metadata
+-                  ?.username ??
+-                user?.email?.split(
+-                  "@"
+-                )[0] ??
+-                "—"
+-              ).toUpperCase()}
+-            </div>
++              <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
++              {item.label}
++            </button>
++          ))}
++        </div>
+ 
+-            <div
+-              className={
+-                styles.branchInfo
+-              }
+-            >
+-              Sucursal:{" "}
+-              {branch?.code
+-                ? `${branch.code} - ${branch.name}`
+-                : "Cargando sucursal..."}
++        <div className={styles.navbarUser}>
++          <div className={styles.userInfo}>
++            <div className={styles.userName}>Usuario: {username}</div>
++            <div className={styles.branchInfo}>
++              Sucursal: {branch?.code ? `${branch.code} - ${branch.name}` : "Cargando sucursal..."}
+             </div>
+           </div>
+ 
+-          <button
+-            type="button"
+-            className={`${styles.navButton} ${styles.logoutButton}`}
+-            onClick={
+-              handleLockScreen
+-            }
+-          >
+-            <img
+-              src={
+-                LogoutIcon
+-              }
+-              alt="Salir"
+-              className={
+-                styles.navIcon
+-              }
+-            />
+-
+-            Salir
++          <button type="button" className={`${styles.navButton} ${styles.logoutButton}`} onClick={handleLockScreen}>
++            <img src={LogoutIcon} alt="Salir" className={styles.navIcon} /> Salir
+           </button>
+         </div>
+       </nav>
+ 
+-      <AppModal
+-        isOpen={
+-          appModal.isOpen
+-        }
+-        type={
+-          appModal.type
+-        }
+-        title={
+-          appModal.title
+-        }
+-        message={
+-          appModal.message
+-        }
+-        confirmText={
+-          appModal.confirmText
+-        }
+-        cancelText={
+-          appModal.cancelText
+-        }
+-        showCancel={
+-          appModal.showCancel
+-        }
+-        loading={
+-          appModal.loading
+-        }
+-        onConfirm={
+-          appModal.onConfirm ||
+-          closeAppModal
+-        }
+-        onCancel={
+-          appModal.onCancel ||
+-          closeAppModal
+-        }
+-        onClose={
+-          closeAppModal
+-        }
++      <AppModal 
++        isOpen={appModal.isOpen}
++        type={appModal.type}
++        title={appModal.title}
++        message={appModal.message}
++        confirmText={appModal.confirmText}
++        cancelText={appModal.cancelText}
++        showCancel={appModal.showCancel}
++        loading={appModal.loading}
++        onConfirm={appModal.onConfirm || closeAppModal}
++        onCancel={appModal.onCancel || closeAppModal}
++        onClose={closeAppModal}
+       />
+     </>
+   );
+diff --git a/src/components/Navbar/hooks/useKeyboardShortcuts.js b/src/components/Navbar/hooks/useKeyboardShortcuts.js
+new file mode 100644
+index 0000000..ff17002
+--- /dev/null
++++ b/src/components/Navbar/hooks/useKeyboardShortcuts.js
+@@ -0,0 +1,35 @@
++import { useEffect } from "react";
++import { useNavigate } from "react-router-dom";
++
++const isTypingTarget = (target) => {
++  if (!target) return false;
++  
++  const tagName = String(target.tagName || "").toLowerCase();
++
++  return (
++    tagName === "input" ||
++    tagName === "textarea" ||
++    tagName === "select" ||
++    target.isContentEditable === true
++  );
++};
++
++export const useKeyboardShortcuts = (navItems) => {
++  const navigate = useNavigate();
++
++  useEffect(() => {
++    const handleKeyDown = (event) => {
++      // Ignorar si el usuario está escribiendo en un input
++      if (isTypingTarget(event.target)) return;
++
++      const item = navItems.find((navItem) => navItem.shortcut === event.key);
++      if (!item) return;
++
++      event.preventDefault();
++      navigate(item.path);
++    };
++
++    window.addEventListener("keydown", handleKeyDown);
++    return () => window.removeEventListener("keydown", handleKeyDown);
++  }, [navigate, navItems]);
++};
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.jsx b/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.jsx
+index 7518272..5df69f8 100644
+--- a/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.jsx
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.jsx
+@@ -1,44 +1,242 @@
+ import React from "react";
++import DatePicker from "react-datepicker";
++import "react-datepicker/dist/react-datepicker.css";
++
++import { useSalesReport, ITEMS_PER_PAGE } from "./hooks/useSalesReport";
++import { formatCurrency } from "../utils/formatters";
++import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
+ import styles from "./PageSalesReport.module.css";
+ 
+ const PageSalesReport = () => {
++  const {
++    dateRange, setDateRange, startDate, endDate,
++    selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
++    saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
++    discountFilter, setDiscountFilter, branchesList, cashiersList,
++    currentPage, setCurrentPage, totalPages, paginatedSales, 
++    loading, summary, hasActiveFilters, handleClearFilters, handleRowClick,
++    handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary,
++    isTicketModalOpen, selectedTicket, ticketDetails,
++    loadingModal, handleCloseModal,
++  } = useSalesReport();
++
+   return (
+-    <section className={styles.page}>
+-      <header className={styles.header}>
+-        <div>
+-          <h1 className={styles.title}>Reporte de ventas</h1>
++    <div className={styles.reportContainer}>
++      <div className={styles.header}>
++        <div className={styles.titleGroup}>
++          <h2>Reporte de Ventas</h2>
++          <p>Auditoría de ingresos y transacciones generadas en un periodo.</p>
++        </div>
++        
++        <div className={styles.actionButtons}>
++          <button 
++            className={styles.exportDetailedBtn} 
++            onClick={handleExportDetailedExcel} 
++            disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
++          >
++            {isExportingDetailed ? "Procesando..." : "Exportar Detalle"}
++          </button>
++          
++          <button 
++            className={styles.exportBtn} 
++            onClick={handleExportExcel} 
++            disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
++          >
++            {isExportingSummary ? "Procesando..." : "Exportar Resumen"}
++          </button>
++        </div>
++      </div>
++
++      <div className={styles.filtersSection}>
++        <div className={styles.filterGroup}>
++          <label>Rango de Fechas:</label>
++          <div className={styles.datePickerWrapper}>
++            <DatePicker
++              selectsRange={true}
++              startDate={startDate}
++              endDate={endDate}
++              onChange={(update) => setDateRange(update)}
++              dateFormat="dd/MM/yyyy"
++              className={styles.datePickerInput}
++              placeholderText="Selecciona un rango..."
++            />
++          </div>
++        </div>
++
++        <div className={styles.filterGroup}>
++          <label>Sucursal:</label>
++          <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className={styles.selectInput}>
++            {branchesList.map((b) => (
++              <option key={b.id} value={b.id}>{b.name}</option>
++            ))}
++          </select>
++        </div>
++
++        <div className={styles.filterGroup}>
++          <label>Cajero:</label>
++          <select value={selectedCashier} onChange={(e) => setSelectedCashier(e.target.value)} className={styles.selectInput}>
++            {cashiersList.map((c) => (
++              <option key={c.id} value={c.id}>{c.name}</option>
++            ))}
++          </select>
++        </div>
+ 
+-          <p className={styles.description}>
+-            Consulta ventas, tickets, descuentos, devoluciones y métodos de
+-            pago.
+-          </p>
++        <div className={styles.filterGroup}>
++          <label>Estado:</label>
++          <select value={saleStatus} onChange={(e) => setSaleStatus(e.target.value)} className={styles.selectInput}>
++            <option value="Todos">Todos</option>
++            <option value="Completada">Completadas</option>
++            <option value="Devolución Parcial">Devoluciones Parciales</option>
++            <option value="Cancelada">Canceladas</option>
++          </select>
+         </div>
+-      </header>
+ 
+-      <div className={styles.filters}>
+-        <div className={styles.field}>
+-          <label htmlFor="sales-start-date">Fecha inicial</label>
+-          <input id="sales-start-date" type="date" />
++        <div className={styles.filterGroup}>
++          <label>Pago:</label>
++          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={styles.selectInput}>
++            <option value="Todos">Todos</option>
++            <option value="Efectivo">Efectivo</option>
++            <option value="Terminal">Terminal</option>
++            <option value="Transferencia">Transferencia</option>
++            <option value="Mixto">Mixto</option>
++          </select>
+         </div>
+ 
+-        <div className={styles.field}>
+-          <label htmlFor="sales-end-date">Fecha final</label>
+-          <input id="sales-end-date" type="date" />
++        <div className={styles.filterGroup}>
++          <label>Descuento:</label>
++          <select value={discountFilter} onChange={(e) => setDiscountFilter(e.target.value)} className={styles.selectInput}>
++            <option value="Todos">Todos</option>
++            <option value="ConDescuento">Con descuento</option>
++            <option value="SinDescuento">Sin descuento</option>
++          </select>
+         </div>
+ 
+-        <button type="button" className={styles.searchButton}>
+-          Consultar
+-        </button>
++        {hasActiveFilters && (
++          <button className={styles.clearFiltersBtn} onClick={handleClearFilters}>
++            Limpiar filtros
++          </button>
++        )}
++      </div>
++
++      <div className={styles.kpiGrid}>
++        <div className={styles.kpiCard}>
++          <span className={styles.kpiLabel}>Total Ingresos</span>
++          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.totalIncome)}</strong>
++        </div>
++        <div className={styles.kpiCard}>
++          <span className={styles.kpiLabel}>Tickets Listados</span>
++          <strong className={styles.kpiValue}>{loading ? "..." : summary.totalTickets}</strong>
++        </div>
++        <div className={styles.kpiCard}>
++          <span className={styles.kpiLabel}>Ticket Promedio</span>
++          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.averageTicket)}</strong>
++        </div>
++        <div className={styles.kpiCard}>
++          <span className={styles.kpiLabel}>Descuentos Otorgados</span>
++          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.totalDiscounts)}</strong>
++        </div>
+       </div>
+ 
+-      <div className={styles.emptyState}>
+-        <h2>Reporte pendiente de consulta</h2>
+-        <p>
+-          Selecciona un rango de fechas para consultar la información de
+-          ventas.
+-        </p>
++      <div className={styles.tableCard}>
++        <h3>Desglose de Transacciones</h3>
++        <div className={styles.tableWrapper}>
++          <table className={styles.dataTable}>
++            <thead>
++              <tr>
++                <th>Folio</th>
++                <th>Fecha</th>
++                <th>Sucursal</th>
++                <th>Cajero</th>
++                <th>Método</th>
++                <th>Estado</th>
++                <th className={styles.textRight}>Desc.</th>
++                <th className={styles.textRight}>Total</th>
++              </tr>
++            </thead>
++            <tbody>
++              {!startDate || !endDate ? (
++                <tr><td colSpan="8" className={styles.emptyState}>Por favor selecciona un rango de fechas para generar el reporte.</td></tr>
++              ) : loading ? (
++                <tr><td colSpan="8" className={styles.loadingState}>Cargando datos...</td></tr>
++              ) : paginatedSales.length === 0 ? (
++                <tr><td colSpan="8" className={styles.emptyState}>No hay ventas que coincidan con los filtros seleccionados.</td></tr>
++              ) : (
++                paginatedSales.map((sale) => (
++                  <tr 
++                    key={sale.id} 
++                    className={`${styles.clickableRow} ${sale.status === "Cancelada" ? styles.rowCancelled : ""}`}
++                    onClick={() => handleRowClick(sale)}
++                  >
++                    <td><strong>{sale.ticketNumber}</strong></td>
++                    <td>{sale.date}</td>
++                    <td><span className={styles.branchTag}>{sale.branch}</span></td>
++                    <td>{sale.cashier}</td>
++                    <td><span className={styles.badge}>{sale.method}</span></td>
++                    <td>
++                      <span className={`${styles.statusBadge} ${sale.status === "Completada" ? styles.statusSuccess : sale.status === "Cancelada" ? styles.statusDanger : styles.statusWarning}`}>
++                        {sale.status}
++                      </span>
++                    </td>
++                    <td className={`${styles.textRight} ${sale.discount > 0 ? styles.discountText : ""}`}>
++                      {sale.discount > 0 ? `-${formatCurrency(sale.discount)}` : "$0.00"}
++                    </td>
++                    <td className={styles.textRight}><strong>{formatCurrency(sale.total)}</strong></td>
++                  </tr>
++                ))
++              )}
++            </tbody>
++            {startDate && endDate && !loading && summary.totalTickets > 0 && (
++              <tfoot className={styles.tableFooter}>
++                <tr>
++                  <td colSpan="6" className={styles.textRight}><strong>Total acumulado (Filtro activo):</strong></td>
++                  <td className={`${styles.textRight} ${styles.discountText}`}>
++                    <strong>-{formatCurrency(summary.totalDiscounts)}</strong>
++                  </td>
++                  <td className={styles.textRight}>
++                    <strong className={styles.grandTotalText}>{formatCurrency(summary.totalIncome)}</strong>
++                  </td>
++                </tr>
++              </tfoot>
++            )}
++          </table>
++        </div>
++
++        {startDate && endDate && !loading && summary.totalTickets > 0 && (
++          <div className={styles.paginationContainer}>
++            <span className={styles.paginationInfo}>
++              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, summary.totalTickets)} de {summary.totalTickets} resultados
++            </span>
++            <div className={styles.paginationControls}>
++              <button 
++                className={styles.pageBtn} 
++                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
++                disabled={currentPage === 1}
++              >
++                Anterior
++              </button>
++              <span className={styles.pageNumber}>
++                Página {currentPage} de {totalPages}
++              </span>
++              <button 
++                className={styles.pageBtn} 
++                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
++                disabled={currentPage === totalPages}
++              >
++                Siguiente
++              </button>
++            </div>
++          </div>
++        )}
+       </div>
+-    </section>
++
++      <TicketDetailModal
++        isOpen={isTicketModalOpen}
++        onClose={handleCloseModal}
++        ticket={selectedTicket}
++        details={ticketDetails}
++        loading={loadingModal}
++      />
++    </div>
+   );
+ };
+ 
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.module.css b/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.module.css
+index a9bb768..01af69a 100644
+--- a/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.module.css
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport.module.css
+@@ -1,90 +1,447 @@
+-.page {
+-  width: 100%;
+-  padding: 30px 30px 32px;
++.reportContainer {
++  display: flex;
++  flex-direction: column;
++  gap: 18px;
++  padding: 16px 24px 28px 24px;
+   box-sizing: border-box;
++  animation: fadeIn 0.3s ease-out;
++}
++
++@keyframes fadeIn {
++  from { opacity: 0; transform: translateY(4px); }
++  to { opacity: 1; transform: translateY(0); }
+ }
+ 
+ .header {
+-  margin-bottom: 20px;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  background: #ffffff;
++  padding: 16px 20px;
++  border-radius: 10px;
++  border: 1px solid #e4e9f0;
++  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
++}
++
++.titleGroup {
++  display: flex;
++  flex-direction: column;
++  gap: 2px;
+ }
+ 
+-.title {
++.titleGroup h2 {
+   margin: 0;
+-  color: #24323a;
+-  font-size: 26px;
++  color: #1f2d3d;
++  font-size: 1.5rem;
+   font-weight: 800;
++  letter-spacing: -0.2px;
++}
++
++.titleGroup p {
++  margin: 0;
++  color: #667085;
++  font-size: 0.88rem;
++  font-weight: 500;
++}
++
++.exportBtn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  background-color: #20b15a;
++  color: #ffffff;
++  border: none;
++  padding: 10px 18px;
++  border-radius: 8px;
++  font-size: 0.88rem;
++  font-weight: 700;
++  cursor: pointer;
++  transition: all 0.15s ease;
++  box-shadow: 0 2px 6px rgba(32, 177, 90, 0.2);
++  height: 38px;
++  white-space: nowrap;
+ }
+ 
+-.description {
+-  margin: 6px 0 0;
+-  color: #68757d;
+-  font-size: 14px;
++.exportBtn:hover:not(:disabled) {
++  background-color: #1a9c4e;
++  transform: translateY(-1px);
++  box-shadow: 0 4px 10px rgba(32, 177, 90, 0.3);
+ }
+ 
+-.filters {
++.exportBtn:disabled {
++  background-color: #cbd5e1;
++  box-shadow: none;
++  cursor: not-allowed;
++  transform: none;
++}
++
++.filtersSection {
+   display: flex;
+   align-items: flex-end;
+-  gap: 14px;
+-  padding: 18px;
++  flex-wrap: wrap;
++  gap: 16px;
+   background: #ffffff;
+-  border: 1px solid #dfe5e8;
++  padding: 14px 18px;
+   border-radius: 10px;
++  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
++  border: 1px solid #e4e9f0;
+ }
+ 
+-.field {
++.filterGroup {
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
++  flex: 0 1 auto;
+ }
+ 
+-.field label {
+-  color: #34434b;
+-  font-size: 13px;
+-  font-weight: 700;
++.filterGroup label {
++  font-size: 0.75rem;
++  font-weight: 800;
++  color: #475467;
++  text-transform: uppercase;
++  letter-spacing: 0.3px;
+ }
+ 
+-.field input {
+-  min-width: 170px;
+-  height: 38px;
+-  padding: 0 10px;
+-  border: 1px solid #cbd5da;
+-  border-radius: 7px;
+-  font-size: 14px;
++.datePickerWrapper {
++  width: 240px;
+ }
+ 
+-.searchButton {
++.datePickerWrapper :global(.react-datepicker-wrapper) {
++  width: 100%;
++  display: block;
++}
++
++.datePickerInput, .selectInput {
++  width: 100%;
++  box-sizing: border-box;
++  padding: 8px 12px;
++  border: 1px solid #d0d5dd;
++  border-radius: 8px;
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: #1f2d3d;
++  outline: none;
++  background-color: #ffffff;
+   height: 38px;
+-  padding: 0 20px;
+-  background: #1092b1;
+-  color: #ffffff;
+-  border: none;
+-  border-radius: 7px;
+-  font-size: 14px;
+-  font-weight: 700;
++  transition: border-color 0.2s, box-shadow 0.2s;
++}
++
++.selectInput {
++  min-width: 180px;
+   cursor: pointer;
+ }
+ 
+-.searchButton:hover {
+-  background: #0d7f9a;
++.datePickerInput:focus, .selectInput:focus {
++  border-color: #1092b1;
++  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.15);
++}
++
++.kpiGrid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
++  gap: 16px;
++}
++
++.kpiCard {
++  background: #ffffff;
++  padding: 16px 18px;
++  border-radius: 10px;
++  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  border: 1px solid #e4e9f0;
++  position: relative;
++  overflow: hidden;
++}
++
++.kpiCard::before {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 0;
++  bottom: 0;
++  width: 4px;
++  background-color: #1092b1;
++}
++
++.kpiLabel {
++  font-size: 0.75rem;
++  font-weight: 800;
++  color: #667085;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
+ }
+ 
+-.emptyState {
+-  margin-top: 18px;
+-  padding: 40px 24px;
++.kpiValue {
++  font-size: 1.4rem;
++  font-weight: 900;
++  color: #1f2d3d;
++  line-height: 1.2;
++}
++
++.tableCard {
+   background: #ffffff;
+-  border: 1px dashed #cbd5da;
+   border-radius: 10px;
++  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
++  padding: 16px 18px;
++  border: 1px solid #e4e9f0;
++}
++
++.tableCard h3 {
++  margin: 0 0 14px 0;
++  color: #1f2d3d;
++  font-size: 1.05rem;
++  font-weight: 800;
++}
++
++.tableWrapper {
++  overflow-x: auto;
++  border-radius: 8px;
++  border: 1px solid #e4e9f0;
++}
++
++.dataTable {
++  width: 100%;
++  border-collapse: collapse;
++  text-align: left;
++}
++
++.dataTable th {
++  background-color: #f8fafc;
++  color: #475467;
++  font-weight: 800;
++  font-size: 0.75rem;
++  padding: 12px 16px;
++  text-transform: uppercase;
++  border-bottom: 2px solid #e4e9f0;
++  white-space: nowrap;
++}
++
++.dataTable td {
++  padding: 12px 16px;
++  border-bottom: 1px solid #f1f5f9;
++  color: #344054;
++  font-size: 0.85rem;
++  font-weight: 600;
++  white-space: nowrap;
++}
++
++.dataTable tbody tr:last-child td {
++  border-bottom: none;
++}
++
++.dataTable tbody tr:hover {
++  background-color: #f8fafc;
++}
++
++.branchTag {
++  display: inline-block;
++  background-color: #f1f5f9;
++  color: #334155;
++  padding: 4px 10px;
++  border-radius: 6px;
++  font-size: 0.75rem;
++  font-weight: 700;
++  border: 1px solid #e2e8f0;
++}
++
++.textRight {
++  text-align: right;
++}
++
++.badge {
++  display: inline-block;
++  background-color: #e0f2fe;
++  color: #0369a1;
++  padding: 4px 10px;
++  border-radius: 99px;
++  font-size: 0.7rem;
++  font-weight: 800;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.statusBadge {
++  display: inline-block;
++  padding: 4px 10px;
++  border-radius: 6px;
++  font-size: 0.7rem;
++  font-weight: 800;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.statusSuccess {
++  background-color: #ecfdf5;
++  color: #059669;
++  border: 1px solid #a7f3d0;
++}
++
++.statusDanger {
++  background-color: #fef2f2;
++  color: #dc2626;
++  border: 1px solid #fecaca;
++}
++
++.rowCancelled td {
++  opacity: 0.65;
++}
++
++.rowCancelled td:first-child strong {
++  text-decoration: line-through;
++}
++
++.discountText {
++  color: #d97706;
++  font-weight: 700;
++}
++
++.tableFooter tr {
++  background-color: #f8fafc;
++  border-top: 2px solid #e4e9f0;
++}
++
++.tableFooter td {
++  padding: 12px 14px;
++  font-size: 0.88rem;
++  color: #1f2d3d;
++}
++
++.grandTotalText {
++  color: #1092b1;
++  font-size: 1.05rem;
++  font-weight: 900;
++}
++
++.paginationContainer {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-top: 16px;
++  padding-top: 12px;
++  border-top: 1px solid #f1f5f9;
++}
++
++.paginationInfo {
++  font-size: 0.8rem;
++  font-weight: 600;
++  color: #64748b;
++}
++
++.paginationControls {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++}
++
++.pageNumber {
++  font-size: 0.85rem;
++  font-weight: 700;
++  color: #334155;
++}
++
++.pageBtn {
++  background-color: #ffffff;
++  border: 1px solid #d0d5dd;
++  color: #344054;
++  padding: 6px 14px;
++  border-radius: 6px;
++  font-size: 0.8rem;
++  font-weight: 700;
++  cursor: pointer;
++  transition: all 0.15s ease;
++}
++
++.pageBtn:hover:not(:disabled) {
++  background-color: #f8fafc;
++  border-color: #1092b1;
++  color: #1092b1;
++}
++
++.pageBtn:disabled {
++  opacity: 0.5;
++  cursor: not-allowed;
++  background-color: #f1f5f9;
++}
++
++.loadingState, .emptyState {
+   text-align: center;
++  padding: 40px !important;
++  color: #667085 !important;
++  font-weight: 700;
++  font-size: 0.9rem;
+ }
+ 
+-.emptyState h2 {
+-  margin: 0 0 8px;
+-  color: #34434b;
+-  font-size: 18px;
++.clearFiltersBtn {
++  background: transparent;
++  color: #ef4444;
++  border: 1px solid #fca5a5;
++  padding: 8px 12px;
++  border-radius: 8px;
++  font-size: 0.85rem;
++  font-weight: 700;
++  cursor: pointer;
++  transition: all 0.2s ease;
++  height: 38px;
++  margin-bottom: 0;
++  margin-left: auto;
+ }
+ 
+-.emptyState p {
+-  margin: 0;
+-  color: #758188;
+-  font-size: 14px;
++.clearFiltersBtn:hover {
++  background: #fef2f2;
++  border-color: #ef4444;
++}
++
++.clickableRow {
++  cursor: pointer;
++  transition: background-color 0.15s ease;
++}
++
++.clickableRow:hover td {
++  background-color: #f1f5f9;
++}
++
++.statusWarning {
++  background-color: #fffbeb;
++  color: #d97706;
++  border: 1px solid #fde68a;
++}
++
++/* CONTENEDOR DE BOTONES DE EXPORTACIÓN */
++.actionButtons {
++  display: flex;
++  gap: 12px;
++  align-items: center;
++}
++
++/* BOTÓN SECUNDARIO (DETALLADO) */
++.exportDetailedBtn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  background-color: #ffffff;
++  color: #1092b1;
++  border: 2px solid #1092b1;
++  padding: 8px 16px;
++  border-radius: 8px;
++  font-size: 0.88rem;
++  font-weight: 700;
++  cursor: pointer;
++  transition: all 0.15s ease;
++  height: 38px;
++  white-space: nowrap;
++}
++
++.exportDetailedBtn:hover:not(:disabled) {
++  background-color: #f0f9fa;
++  transform: translateY(-1px);
++}
++
++.exportDetailedBtn:disabled {
++  color: #94a3b8;
++  border-color: #cbd5e1;
++  cursor: not-allowed;
++  transform: none;
++  background-color: #f8fafc;
+ }
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.jsx b/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.jsx
+new file mode 100644
+index 0000000..9d74f59
+--- /dev/null
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.jsx
+@@ -0,0 +1,128 @@
++import React, { useEffect } from "react";
++import { formatCurrency } from "../../../utils/formatters";
++import styles from "./TicketDetailModal.module.css";
++
++export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading }) => {
++  useEffect(() => {
++    const handleKeyDown = (event) => {
++      if (event.key === "Escape") {
++        onClose();
++      }
++    };
++
++    if (isOpen) {
++      window.addEventListener("keydown", handleKeyDown);
++    }
++
++    return () => {
++      window.removeEventListener("keydown", handleKeyDown);
++    };
++  }, [isOpen, onClose]);
++
++  if (!isOpen || !ticket) return null;
++
++  return (
++    <div className={styles.modalOverlay} onClick={onClose}>
++      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
++        
++        <div className={styles.modalHeader}>
++          <div className={styles.headerText}>
++            <h2>
++              Ticket <span className={styles.ticketFolio}>#{ticket.ticketNumber}</span>
++            </h2>
++            <p className={styles.headerSub}>
++              {ticket.date} &nbsp;•&nbsp; <strong>Sucursal:</strong> {ticket.branch} &nbsp;•&nbsp; <strong>Cajero:</strong> {ticket.cashier}
++            </p>
++          </div>
++          <button className={styles.closeBtn} onClick={onClose}>&times;</button>
++        </div>
++
++        <div className={styles.modalBody}>
++          
++          <div className={styles.metaGrid}>
++            <div className={styles.metaItem}>
++              <span className={styles.metaLabel}>Cliente</span>
++              <span className={styles.metaValue}>{ticket.client}</span>
++            </div>
++            <div className={styles.metaItem}>
++              <span className={styles.metaLabel}>Método de Pago</span>
++              <span className={styles.metaValue}>{ticket.method}</span>
++            </div>
++            <div className={styles.metaItem}>
++              <span className={styles.metaLabel}>Estado</span>
++              <div className={styles.metaValue}>
++                <span className={`${styles.badge} ${
++                  ticket.status === "Completada" ? styles.success : 
++                  ticket.status === "Cancelada" ? styles.danger : 
++                  styles.warning
++                }`}>
++                  {ticket.status}
++                </span>
++              </div>
++            </div>
++          </div>
++
++          {ticket.notes && (
++            <div className={styles.notesContainer}>
++              <span className={styles.notesLabel}>Nota de la venta:</span>
++              <p className={styles.notesText}>{ticket.notes}</p>
++            </div>
++          )}
++
++          <div className={styles.tableContainer}>
++            <table className={styles.detailTable}>
++              <thead>
++                <tr>
++                  <th>Producto</th>
++                  <th className={styles.textCenter}>Cant.</th>
++                  <th className={styles.textRight}>P. Unit</th>
++                  <th className={styles.textRight}>Desc.</th>
++                  <th className={styles.textRight}>Total</th>
++                </tr>
++              </thead>
++              <tbody>
++                {loading ? (
++                  <tr><td colSpan="5" className={styles.emptyText}>Cargando productos...</td></tr>
++                ) : details.length === 0 ? (
++                  <tr><td colSpan="5" className={styles.emptyText}>No se encontraron productos registrados en este ticket.</td></tr>
++                ) : (
++                  details.map((item) => (
++                    <tr key={item.id}>
++                      <td>
++                        <div className={styles.productName}>{item.productName}</div>
++                        {item.barcode !== "N/A" && <small className={styles.barcodeText}>CÓD: {item.barcode}</small>}
++                      </td>
++                      <td className={styles.textCenter}>
++                        <span className={styles.qtyBadge}>{item.quantity}</span>
++                      </td>
++                      <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
++                      <td className={styles.textRight}>
++                        {item.discount > 0 ? (
++                          <div className={styles.discountWrapper}>
++                            <span className={styles.discountVal}>-{formatCurrency(item.discount)}</span>
++                            {item.discountType && (
++                              <span className={styles.discountTypeLabel}>{item.discountType}</span>
++                            )}
++                          </div>
++                        ) : (
++                          "$0.00"
++                        )}
++                      </td>
++                      <td className={styles.textRight}><strong>{formatCurrency(item.total)}</strong></td>
++                    </tr>
++                  ))
++                )}
++              </tbody>
++            </table>
++          </div>
++
++          <div className={styles.totalSection}>
++            <span className={styles.totalLabel}>Total cobrado:</span>
++            <strong className={styles.grandTotal}>{formatCurrency(ticket.total)}</strong>
++          </div>
++
++        </div>
++      </div>
++    </div>
++  );
++};
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.module.css b/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.module.css
+new file mode 100644
+index 0000000..2afc786
+--- /dev/null
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/components/TicketDetailModal/TicketDetailModal.module.css
+@@ -0,0 +1,310 @@
++.modalOverlay {
++  position: fixed;
++  top: 0;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  background-color: rgba(15, 23, 42, 0.65);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  z-index: 9999;
++  animation: fadeIn 0.2s ease-out;
++  backdrop-filter: blur(3px);
++}
++
++.modalContent {
++  background: #ffffff;
++  border-radius: 14px;
++  width: 90%;
++  max-width: 680px;
++  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
++  display: flex;
++  flex-direction: column;
++  overflow: hidden;
++  animation: slideUp 0.3s ease-out;
++}
++
++.modalHeader {
++  display: flex;
++  justify-content: space-between;
++  align-items: flex-start;
++  padding: 22px 24px;
++  background-color: #ffffff;
++  border-bottom: 1px solid #f1f5f9;
++}
++
++.headerText h2 {
++  margin: 0;
++  font-size: 1.5rem;
++  color: #1e293b;
++  font-weight: 800;
++  display: flex;
++  align-items: center;
++  gap: 10px;
++}
++
++.ticketFolio {
++  background-color: #e0f2fe;
++  color: #0284c7;
++  padding: 4px 12px;
++  border-radius: 8px;
++  font-family: "Courier New", Courier, monospace;
++  font-size: 1.35rem;
++  font-weight: 800;
++  letter-spacing: 1px;
++}
++
++.headerSub {
++  margin: 8px 0 0 0;
++  font-size: 0.98rem;
++  color: #475569;
++  line-height: 1.4;
++}
++
++.closeBtn {
++  background: #f1f5f9;
++  border: none;
++  border-radius: 50%;
++  width: 34px;
++  height: 34px;
++  font-size: 1.3rem;
++  color: #64748b;
++  cursor: pointer;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  transition: all 0.2s ease;
++}
++
++.closeBtn:hover {
++  background: #e2e8f0;
++  color: #0f172a;
++}
++
++.modalBody {
++  padding: 24px;
++  display: flex;
++  flex-direction: column;
++  gap: 20px;
++  max-height: 65vh;
++  overflow-y: auto;
++}
++
++.metaGrid {
++  display: grid;
++  grid-template-columns: repeat(3, 1fr);
++  gap: 16px;
++  background-color: #f8fafc;
++  padding: 16px;
++  border-radius: 10px;
++  border: 1px solid #e2e8f0;
++}
++
++.metaItem {
++  display: flex;
++  flex-direction: column;
++  align-items: flex-start;
++  gap: 6px;
++}
++
++.metaLabel {
++  font-size: 0.72rem;
++  font-weight: 800;
++  color: #64748b;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.metaValue {
++  font-size: 0.95rem;
++  font-weight: 700;
++  color: #0f172a;
++  display: inline-flex;
++  align-items: center;
++  width: auto;
++}
++
++.badge {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  padding: 4px 10px;
++  border-radius: 6px;
++  font-weight: 800;
++  font-size: 0.78rem;
++  width: fit-content;
++}
++
++.success {
++  background-color: #ecfdf5;
++  color: #059669;
++  border: 1px solid #a7f3d0;
++}
++
++.danger {
++  background-color: #fef2f2;
++  color: #dc2626;
++  border: 1px solid #fecaca;
++}
++
++.warning {
++  background-color: #fffbeb;
++  color: #d97706;
++  border: 1px solid #fde68a;
++}
++
++.tableContainer {
++  border: 1px solid #e2e8f0;
++  border-radius: 8px;
++  overflow: hidden;
++}
++
++.detailTable {
++  width: 100%;
++  border-collapse: collapse;
++}
++
++.detailTable th {
++  background-color: #f8fafc;
++  color: #475467;
++  font-size: 0.75rem;
++  padding: 10px 14px;
++  text-transform: uppercase;
++  border-bottom: 2px solid #e2e8f0;
++  text-align: left;
++}
++
++.detailTable td {
++  padding: 12px 14px;
++  border-bottom: 1px solid #f1f5f9;
++  font-size: 0.88rem;
++  color: #334155;
++  vertical-align: middle;
++}
++
++.detailTable tbody tr:hover {
++  background-color: #f8fafc;
++}
++
++.productName {
++  font-weight: 700;
++  color: #1e293b;
++  margin-bottom: 2px;
++}
++
++.barcodeText {
++  color: #94a3b8;
++  font-size: 0.75rem;
++  font-family: monospace;
++}
++
++.textRight {
++  text-align: right !important;
++}
++
++.textCenter {
++  text-align: center !important;
++}
++
++.qtyBadge {
++  background: #f1f5f9;
++  color: #475569;
++  padding: 2px 8px;
++  border-radius: 6px;
++  font-weight: 700;
++  font-size: 0.8rem;
++}
++
++.discountVal {
++  color: #ea580c;
++  font-weight: 700;
++}
++
++.emptyText {
++  text-align: center;
++  padding: 30px !important;
++  color: #64748b;
++  font-weight: 600;
++}
++
++.totalSection {
++  display: flex;
++  justify-content: flex-end;
++  align-items: center;
++  gap: 16px;
++  padding: 16px 20px;
++  background-color: #f8fafc;
++  border-radius: 8px;
++  border: 1px solid #e2e8f0;
++}
++
++.totalLabel {
++  font-size: 1rem;
++  color: #475569;
++  font-weight: 600;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.grandTotal {
++  color: #1092b1;
++  font-weight: 900;
++  font-size: 1.6rem;
++}
++
++.notesContainer {
++  background-color: #fffbebf8;
++  border: 1px solid #fef3c7;
++  border-left: 4px solid #f59e0b;
++  border-radius: 8px;
++  padding: 12px 14px;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.notesLabel {
++  font-size: 0.72rem;
++  font-weight: 800;
++  color: #b45309;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.notesText {
++  margin: 0;
++  font-size: 0.88rem;
++  color: #78350f;
++  font-weight: 600;
++  line-height: 1.4;
++  white-space: pre-wrap;
++}
++
++.discountWrapper {
++  display: flex;
++  flex-direction: column;
++  align-items: flex-end;
++  gap: 4px;
++}
++
++.discountTypeLabel {
++  font-size: 0.65rem;
++  background-color: #ffedd5;
++  color: #9a3412;
++  padding: 2px 6px;
++  border-radius: 4px;
++  font-weight: 800;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++@keyframes fadeIn {
++  from { opacity: 0; }
++  to { opacity: 1; }
++}
++
++@keyframes slideUp {
++  from { opacity: 0; transform: translateY(20px); }
++  to { opacity: 1; transform: translateY(0); }
++}
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/hooks/useSalesReport.js b/src/components/ReportsComponents/PageReports/PageSalesReport/hooks/useSalesReport.js
+new file mode 100644
+index 0000000..a80d00f
+--- /dev/null
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/hooks/useSalesReport.js
+@@ -0,0 +1,264 @@
++import { useState, useEffect, useCallback } from "react";
++import { 
++  getBranchesList, getCashiersList, getSaleDetailsById, 
++  getPaginatedSales, getSalesKPIs, 
++  getAllSalesForExport, getDetailedSalesForExport 
++} from "../services/salesReportService";
++
++export const ITEMS_PER_PAGE = 10; 
++
++export const useSalesReport = () => {
++  const [dateRange, setDateRange] = useState([new Date(), new Date()]);
++  const [startDate, endDate] = dateRange;
++  const [selectedBranch, setSelectedBranch] = useState("Todas");
++  const [selectedCashier, setSelectedCashier] = useState("Todos");
++  const [saleStatus, setSaleStatus] = useState("Completada");
++  const [paymentMethod, setPaymentMethod] = useState("Todos");
++  const [discountFilter, setDiscountFilter] = useState("Todos");
++
++  const [branchesList, setBranchesList] = useState([{ id: "Todas", name: "Cargando..." }]);
++  const [cashiersList, setCashiersList] = useState([{ id: "Todos", name: "Cargando..." }]);
++
++  const [currentPage, setCurrentPage] = useState(1);
++  const [totalPages, setTotalPages] = useState(1);
++  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
++  const [selectedTicket, setSelectedTicket] = useState(null);
++  
++  const [ticketDetails, setTicketDetails] = useState([]);
++  const [loadingModal, setLoadingModal] = useState(false);
++  
++  const [isExportingDetailed, setIsExportingDetailed] = useState(false);
++  const [isExportingSummary, setIsExportingSummary] = useState(false);
++
++  const [loading, setLoading] = useState(false);
++  const [paginatedSales, setPaginatedSales] = useState([]);
++  const [summary, setSummary] = useState({ totalIncome: 0, totalTickets: 0, averageTicket: 0, totalDiscounts: 0 });
++
++  useEffect(() => {
++    const fetchCatalogs = async () => {
++      const [branches, cashiers] = await Promise.all([getBranchesList(), getCashiersList()]);
++      setBranchesList(branches);
++      setCashiersList(cashiers);
++    };
++    fetchCatalogs();
++  }, []);
++
++  const getCurrentFilters = useCallback(() => {
++    if (!startDate || !endDate) return null;
++    const start = new Date(startDate); start.setHours(0, 0, 0, 0);
++    const end = new Date(endDate); end.setHours(23, 59, 59, 999);
++    
++    return {
++      startDate: start, endDate: end, branch: selectedBranch, cashier: selectedCashier,
++      status: saleStatus, payment: paymentMethod, discount: discountFilter
++    };
++  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
++
++  const fetchSalesReport = useCallback(async () => {
++    const filters = getCurrentFilters();
++    if (!filters) return;
++    
++    setLoading(true);
++    try {
++      const [salesRes, kpisRes] = await Promise.all([
++        getPaginatedSales(filters, currentPage, ITEMS_PER_PAGE),
++        getSalesKPIs(filters)
++      ]);
++
++      setPaginatedSales(salesRes.data);
++      setTotalPages(Math.ceil(salesRes.totalCount / ITEMS_PER_PAGE) || 1);
++      
++      setSummary({
++        totalIncome: kpisRes.totalIncome,
++        totalDiscounts: kpisRes.totalDiscounts,
++        totalTickets: kpisRes.totalTickets,
++        averageTicket: kpisRes.totalTickets > 0 ? (kpisRes.totalIncome / kpisRes.totalTickets) : 0,
++      });
++    } catch (error) {
++      console.error("Error cargando reporte de ventas:", error);
++    } finally {
++      setLoading(false);
++    }
++  }, [getCurrentFilters, currentPage]);
++
++  useEffect(() => {
++    fetchSalesReport();
++  }, [fetchSalesReport]);
++
++  // Si cambiamos los filtros, regresamos a la página 1 automáticamente
++  useEffect(() => {
++    setCurrentPage(1);
++  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
++
++  const handleClearFilters = () => {
++    setDateRange([new Date(), new Date()]);
++    setSelectedBranch("Todas");
++    setSelectedCashier("Todos");
++    setSaleStatus("Completada");
++    setPaymentMethod("Todos");
++    setDiscountFilter("Todos");
++  };
++
++  const handleRowClick = async (sale) => {
++    setSelectedTicket(sale);
++    setIsTicketModalOpen(true);
++    setLoadingModal(true);
++    setTicketDetails([]);
++    try {
++      const details = await getSaleDetailsById(sale.id);
++      setTicketDetails(details);
++    } catch (error) {
++      console.error("Error al obtener detalle:", error);
++    } finally {
++      setLoadingModal(false);
++    }
++  };
++
++  const handleCloseModal = () => {
++    setIsTicketModalOpen(false);
++    setSelectedTicket(null);
++    setTicketDetails([]);
++  };
++
++  const hasActiveFilters = selectedBranch !== "Todas" || selectedCashier !== "Todos" || saleStatus !== "Completada" || paymentMethod !== "Todos" || discountFilter !== "Todos";
++
++  const getExportFileName = (prefix) => {
++    const dStr = (d) => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : "";
++    let bName = "Global";
++    if (selectedBranch !== "Todas") {
++      const fb = branchesList.find((b) => b.id === selectedBranch);
++      bName = fb ? fb.name.trim() : "Sucursal";
++    }
++    const bLabel = bName.replace(/\s+/g, "_");
++    const startStr = dStr(startDate); const endStr = dStr(endDate);
++    const dateLabel = startStr && endStr ? (startStr === endStr ? startStr : `del_${startStr}_al_${endStr}`) : dStr(new Date());
++    return `${prefix}_${bLabel}_${dateLabel}.xls`;
++  };
++
++  const triggerDownload = (htmlTemplate, fileName) => {
++    const blob = new Blob(["\uFEFF" + htmlTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
++    const url = URL.createObjectURL(blob);
++    const link = document.createElement("a");
++    link.href = url;
++    link.setAttribute("download", fileName);
++    document.body.appendChild(link);
++    link.click();
++    document.body.removeChild(link);
++    URL.revokeObjectURL(url);
++  };
++
++  const handleExportExcel = async () => {
++    if (summary.totalTickets === 0) return;
++    setIsExportingSummary(true);
++    
++    try {
++      const exportData = await getAllSalesForExport(getCurrentFilters());
++      const fileName = getExportFileName("Resumen_Ventas");
++      
++      const htmlTemplate = `
++        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
++        <head>
++          <meta charset="utf-8" />
++          <style>
++            body { font-family: Arial, sans-serif; font-size: 10pt; color: #1f2d3d; }
++            .title { font-size: 16pt; font-weight: bold; color: #1092b1; margin-bottom: 4px; }
++            .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 16px; }
++            table { border-collapse: collapse; width: 100%; margin-top: 10px; }
++            th { background-color: #1092b1; color: #ffffff; font-size: 10pt; font-weight: bold; padding: 10px 14px; border: 1px solid #0e7c97; text-align: left; }
++            td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 9.5pt; vertical-align: middle; }
++            .text-center { text-align: center; }
++            .currency { mso-number-format: "\\$#,##0.00"; text-align: right; font-weight: bold; }
++            .discount { color: #d97706; mso-number-format: "-\\$#,##0.00"; text-align: right; font-weight: bold; }
++            .status-completed { background-color: #ecfdf5; color: #059669; font-weight: bold; text-align: center; }
++            .status-cancelled { background-color: #fef2f2; color: #dc2626; font-weight: bold; text-align: center; }
++            .status-warning { background-color: #fffbeb; color: #d97706; font-weight: bold; text-align: center; }
++            .tfoot-label { text-align: right; font-weight: bold; background-color: #f8fafc; }
++            .tfoot-value { background-color: #f8fafc; font-size: 11pt; }
++          </style>
++        </head>
++        <body>
++          <div class="title">RESUMEN DE VENTAS - CROKETS POS</div>
++          <div class="subtitle"><b>Fecha de emisión:</b> ${new Date().toLocaleDateString('es-MX')}</div>
++          <table>
++            <thead>
++              <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Método de Pago</th><th>Estado</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total</th></tr>
++            </thead>
++            <tbody>
++              ${exportData.map((sale) => `
++                <tr><td><b>#${sale.ticketNumber}</b></td><td>${sale.date}</td><td>${sale.branch}</td><td>${sale.cashier}</td><td>${sale.client}</td><td class="text-center">${sale.method}</td><td class="${sale.status === "Completada" ? "status-completed" : sale.status === "Cancelada" ? "status-cancelled" : "status-warning"}">${sale.status}</td><td class="discount">${sale.discount}</td><td class="currency">${sale.total}</td></tr>
++              `).join("")}
++            </tbody>
++            <tfoot>
++              <tr><td colspan="7" class="tfoot-label">TOTAL ACUMULADO (FILTRO ACTIVO):</td><td class="discount tfoot-value">${summary.totalDiscounts}</td><td class="currency tfoot-value">${summary.totalIncome}</td></tr>
++            </tfoot>
++          </table>
++        </body>
++        </html>
++      `;
++      triggerDownload(htmlTemplate, fileName);
++    } catch (error) {
++      console.error("Error exportando resumen:", error);
++    } finally {
++      setIsExportingSummary(false);
++    }
++  };
++
++  const handleExportDetailedExcel = async () => {
++    if (summary.totalTickets === 0) return;
++    setIsExportingDetailed(true);
++
++    try {
++      const detailedData = await getDetailedSalesForExport(getCurrentFilters());
++      const fileName = getExportFileName("Reporte_Detallado");
++
++      const htmlTemplate = `
++        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
++        <head>
++          <meta charset="utf-8" />
++          <style>
++            body { font-family: Arial, sans-serif; font-size: 10pt; color: #1f2d3d; }
++            .title { font-size: 16pt; font-weight: bold; color: #1092b1; margin-bottom: 4px; }
++            .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 16px; }
++            table { border-collapse: collapse; width: 100%; margin-top: 10px; }
++            th { background-color: #1092b1; color: #ffffff; font-size: 10pt; font-weight: bold; padding: 10px 14px; border: 1px solid #0e7c97; text-align: left; }
++            td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 9.5pt; vertical-align: middle; }
++            .text-center { text-align: center; }
++            .currency { mso-number-format: "\\$#,##0.00"; text-align: right; }
++            .discount { color: #d97706; mso-number-format: "-\\$#,##0.00"; text-align: right; }
++            .text-code { mso-number-format: "\\@"; color: #64748b; }
++          </style>
++        </head>
++        <body>
++          <div class="title">REPORTE DETALLADO DE PRODUCTOS - CROKETS POS</div>
++          <div class="subtitle"><b>Fecha de emisión:</b> ${new Date().toLocaleDateString('es-MX')}</div>
++          <table>
++            <thead>
++              <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Estado</th><th>Código Producto</th><th>Descripción</th><th style="text-align: center;">Cantidad</th><th style="text-align: right;">Precio Unitario</th><th>Motivo Descuento</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total Línea</th></tr>
++            </thead>
++            <tbody>
++              ${detailedData.map((row) => `
++                <tr><td><b>#${row.ticketNumber}</b></td><td>${row.date}</td><td>${row.branch}</td><td>${row.cashier}</td><td>${row.client}</td><td>${row.status}</td><td class="text-code">${row.barcode}</td><td>${row.productName}</td><td class="text-center">${row.quantity}</td><td class="currency">${row.unitPrice}</td><td>${row.discountType}</td><td class="discount">${row.discountAmount}</td><td class="currency"><b>${row.totalPrice}</b></td></tr>
++              `).join("")}
++            </tbody>
++          </table>
++        </body>
++        </html>
++      `;
++      triggerDownload(htmlTemplate, fileName);
++    } catch (error) {
++      console.error("Error exportando detalle:", error);
++    } finally {
++      setIsExportingDetailed(false);
++    }
++  };
++
++  return {
++    dateRange, setDateRange, startDate, endDate,
++    selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
++    saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
++    branchesList, cashiersList, currentPage, setCurrentPage, totalPages,
++    paginatedSales, isTicketModalOpen, selectedTicket, ticketDetails,
++    loadingModal, loading, summary, hasActiveFilters, handleClearFilters,
++    handleRowClick, handleCloseModal, handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary
++  };
++};
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/PageSalesReport/services/salesReportService.js b/src/components/ReportsComponents/PageReports/PageSalesReport/services/salesReportService.js
+new file mode 100644
+index 0000000..1be557b
+--- /dev/null
++++ b/src/components/ReportsComponents/PageReports/PageSalesReport/services/salesReportService.js
+@@ -0,0 +1,198 @@
++import { supabase } from "../../../../../lib/supabaseClient";
++
++const toUpper = (str) => (str ? str.toUpperCase() : "");
++
++export const getBranchesList = async () => {
++  const { data, error } = await supabase.from("branches").select("id, name");
++  if (error) return [{ id: "Todas", name: "Todas las sucursales" }];
++  return [{ id: "Todas", name: "Todas las sucursales" }, ...data.map((b) => ({ id: b.id, name: b.name }))];
++};
++
++export const getCashiersList = async () => {
++  const { data, error } = await supabase.from("users").select("id, username").eq("status", true);
++  if (error) return [{ id: "Todos", name: "Todos los cajeros" }];
++  return [{ id: "Todos", name: "TODOS LOS CAJEROS" }, ...data.map((c) => ({ id: c.id, name: c.username ? toUpper(c.username) : "SIN NOMBRE" }))];
++};
++
++// Función de ayuda para aplicar filtros dinámicos al Query
++const applyFilters = (query, filters) => {
++  query.gte("created_at", filters.startDate.toISOString())
++       .lte("created_at", filters.endDate.toISOString());
++
++  if (filters.branch !== "Todas") query.eq("branch_id", filters.branch);
++  if (filters.cashier !== "Todos") query.eq("user_id", filters.cashier);
++  if (filters.status !== "Todos") query.eq("computed_status", filters.status);
++  if (filters.payment !== "Todos") query.eq("payment_method", filters.payment);
++  if (filters.discount !== "Todos") query.eq("discount_filter", filters.discount);
++  
++  return query;
++};
++
++// 1. PAGINACIÓN REAL DEL SERVIDOR
++export const getPaginatedSales = async (filters, page, pageSize = 10) => {
++  let query = supabase.from("v_sales_report_list").select("*", { count: "exact" });
++  query = applyFilters(query, filters);
++  
++  const from = (page - 1) * pageSize;
++  const to = from + pageSize - 1;
++  query.order("created_at", { ascending: false }).range(from, to);
++  
++  const { data, count, error } = await query;
++  if (error) throw error;
++  
++  const mappedData = data.map(sale => ({
++    id: sale.id,
++    ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
++    date: new Date(sale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
++    cashier: sale.cashier_name ? toUpper(sale.cashier_name) : "SISTEMA",
++    client: sale.customer_name ? toUpper(sale.customer_name) : "PÚBLICO GENERAL",
++    branch: sale.branch_name || "Principal",
++    method: sale.payment_method,
++    discount: Number(sale.discount_total) || 0,
++    total: Number(sale.total) || 0,
++    status: sale.computed_status,
++    notes: sale.notes || "",
++  }));
++
++  return { data: mappedData, totalCount: count };
++};
++
++// 2. CALCULAR KPIs DIRECTO EN LA BASE DE DATOS (RPC)
++export const getSalesKPIs = async (filters) => {
++  const { data, error } = await supabase.rpc("get_sales_report_kpis", {
++    p_start: filters.startDate.toISOString(),
++    p_end: filters.endDate.toISOString(),
++    p_branch: filters.branch !== "Todas" ? filters.branch : null,
++    p_cashier: filters.cashier !== "Todos" ? filters.cashier : null,
++    p_status: filters.status,
++    p_payment: filters.payment,
++    p_discount: filters.discount
++  });
++
++  if (error) throw error;
++  
++  return {
++    totalIncome: data[0]?.total_income || 0,
++    totalDiscounts: data[0]?.total_discounts || 0,
++    totalTickets: data[0]?.total_tickets || 0,
++  };
++};
++
++export const getSaleDetailsById = async (saleId) => {
++  const [detailsResponse, rewardsResponse] = await Promise.all([
++    supabase.from("sale_details").select(`id, product_id, quantity, unit_price, discount_amount, discount_type, total_price, products ( name, barcode )`).eq("sale_id", saleId),
++    supabase.from("sale_reward_redemptions").select("sale_detail_id, product_id, reward_name").eq("sale_id", saleId)
++  ]);
++
++  if (detailsResponse.error) throw detailsResponse.error;
++
++  const detailsData = detailsResponse.data || [];
++  const rewardsData = rewardsResponse.data || [];
++
++  return detailsData.map((item) => {
++    let discountReason = "";
++    if (Number(item.discount_amount) > 0) {
++      const isReward = rewardsData.find((reward) => reward.sale_detail_id === item.id || reward.product_id === item.product_id);
++      if (isReward) {
++        discountReason = "Canje"; 
++      } else {
++        const typeStr = item.discount_type ? item.discount_type.toLowerCase() : "";
++        if (typeStr === "amount") discountReason = "Monto Fijo";
++        else if (typeStr === "percentage") discountReason = "Porcentaje";
++        else if (typeStr === "manual" || typeStr === "global") discountReason = toUpper(typeStr);
++        else discountReason = "Manual";
++      }
++    }
++    return {
++      id: item.id,
++      productName: item.products?.name || "Producto sin nombre",
++      barcode: item.products?.barcode || "N/A",
++      quantity: Number(item.quantity) || 0,
++      unitPrice: Number(item.unit_price) || 0,
++      discount: Number(item.discount_amount) || 0,
++      discountType: discountReason, 
++      total: Number(item.total_price) || 0,
++    };
++  });
++};
++
++// 3. EXPORTAR RESUMEN (Trae todos los registros del filtro sin paginar)
++export const getAllSalesForExport = async (filters) => {
++  let query = supabase.from("v_sales_report_list").select("*");
++  query = applyFilters(query, filters);
++  query.order("created_at", { ascending: false });
++
++  const { data, error } = await query;
++  if (error) throw error;
++
++  return data.map(sale => ({
++    ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
++    date: new Date(sale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
++    cashier: sale.cashier_name ? toUpper(sale.cashier_name) : "SISTEMA",
++    client: sale.customer_name ? toUpper(sale.customer_name) : "PÚBLICO GENERAL",
++    branch: sale.branch_name || "Principal",
++    method: sale.payment_method,
++    discount: Number(sale.discount_total) || 0,
++    total: Number(sale.total) || 0,
++    status: sale.computed_status,
++  }));
++};
++
++// 4. EXPORTAR DETALLADO
++export const getDetailedSalesForExport = async (filters) => {
++  let query = supabase.from("v_sales_report_list").select("id, branch_name, cashier_name, customer_name, computed_status, created_at");
++  query = applyFilters(query, filters);
++  
++  const { data: sales, error: salesError } = await query;
++  if (salesError) throw salesError;
++  if (!sales || sales.length === 0) return [];
++
++  const saleIds = sales.map((s) => s.id);
++  const chunkSize = 150;
++  let allDetailedRows = [];
++
++  for (let i = 0; i < saleIds.length; i += chunkSize) {
++    const chunk = saleIds.slice(i, i + chunkSize);
++    const [detailsRes, rewardsRes] = await Promise.all([
++      supabase.from("sale_details").select("id, sale_id, product_id, quantity, unit_price, discount_amount, discount_type, total_price, products (name, barcode)").in("sale_id", chunk),
++      supabase.from("sale_reward_redemptions").select("sale_detail_id, product_id, reward_name").in("sale_id", chunk),
++    ]);
++
++    if (detailsRes.error) continue;
++
++    detailsRes.data.forEach((item) => {
++      const parentSale = sales.find((s) => s.id === item.sale_id);
++      if (!parentSale) return;
++
++      let discountReason = "Ninguno";
++      if (Number(item.discount_amount) > 0) {
++        const isReward = (rewardsRes.data || []).find((r) => r.sale_detail_id === item.id || r.product_id === item.product_id);
++        if (isReward) { discountReason = "Canje Puntos"; } 
++        else {
++          const typeStr = item.discount_type ? item.discount_type.toLowerCase() : "";
++          if (typeStr === "amount") discountReason = "Monto Fijo";
++          else if (typeStr === "percentage") discountReason = "Porcentaje";
++          else if (typeStr === "manual" || typeStr === "global") discountReason = toUpper(typeStr);
++          else discountReason = "Manual";
++        }
++      }
++
++      allDetailedRows.push({
++        ticketNumber: parentSale.id ? parentSale.id.substring(0, 8).toUpperCase() : "S/N",
++        date: new Date(parentSale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
++        branch: parentSale.branch_name || "Principal",
++        cashier: parentSale.cashier_name ? toUpper(parentSale.cashier_name) : "SISTEMA",
++        client: parentSale.customer_name ? toUpper(parentSale.customer_name) : "PÚBLICO GENERAL",
++        status: parentSale.computed_status,
++        productName: item.products?.name || "Producto Eliminado",
++        barcode: item.products?.barcode || "N/A",
++        quantity: Number(item.quantity) || 0,
++        unitPrice: Number(item.unit_price) || 0,
++        discountType: discountReason,
++        discountAmount: Number(item.discount_amount) || 0,
++        totalPrice: Number(item.total_price) || 0,
++      });
++    });
++  }
++  return allDetailedRows;
++};
+\ No newline at end of file
+diff --git a/src/components/ReportsComponents/PageReports/utils/formatters.js b/src/components/ReportsComponents/PageReports/utils/formatters.js
+new file mode 100644
+index 0000000..fc5c461
+--- /dev/null
++++ b/src/components/ReportsComponents/PageReports/utils/formatters.js
+@@ -0,0 +1,31 @@
++/**
++ * Formateador de moneda nativo en formato MXN ($)
++ */
++export const formatCurrency = (amount) => {
++  return new Intl.NumberFormat("es-MX", {
++    style: "currency",
++    currency: "MXN",
++  }).format(amount || 0);
++};
++
++/**
++ * Formateador de números con separador de miles
++ */
++export const formatNumber = (value) => {
++  return new Intl.NumberFormat("es-MX").format(value || 0);
++};
++
++/**
++ * Formateador de fecha/hora de última actualización
++ */
++export const formatLastUpdate = (isoDate) => {
++  if (!isoDate) return "N/A";
++  const date = new Date(isoDate);
++  return new Intl.DateTimeFormat("es-MX", {
++    year: "numeric",
++    month: "short",
++    day: "numeric",
++    hour: "2-digit",
++    minute: "2-digit"
++  }).format(date);
++};
+\ No newline at end of file
+diff --git a/src/components/SalesComponents/Modals/NotesModal/NotesModal.jsx b/src/components/SalesComponents/Modals/NotesModal/NotesModal.jsx
+index 3996bc7..20d5623 100644
+--- a/src/components/SalesComponents/Modals/NotesModal/NotesModal.jsx
++++ b/src/components/SalesComponents/Modals/NotesModal/NotesModal.jsx
+@@ -4,12 +4,20 @@ import styles from "./NotesModal.module.css";
+ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
+   const [notes, setNotes] = useState(initialNotes);
+ 
+-  const handleClose = useCallback(() => {
++  const handleClose = useCallback((e) => {
++    if (e) {
++      e.stopPropagation();
++      e.preventDefault();
++    }
+     setNotes("");
+     onClose?.();
+   }, [onClose]);
+ 
+-  const handleSave = useCallback(() => {
++  const handleSave = useCallback((e) => {
++    if (e) {
++      e.stopPropagation();
++      e.preventDefault();
++    }
+     onSave?.(notes);
+     handleClose();
+   }, [notes, onSave, handleClose]);
+@@ -22,7 +30,11 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
+     if (!isOpen) return;
+     const handleKeyDown = (e) => {
+       if (e.key === "Escape") {
+-        e.preventDefault(); e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); e.stopImmediatePropagation?.(); handleClose();
++        e.preventDefault(); 
++        e.stopPropagation(); 
++        e.nativeEvent?.stopImmediatePropagation?.(); 
++        e.stopImmediatePropagation?.(); 
++        handleClose();
+       }
+     };
+     document.addEventListener("keydown", handleKeyDown, true);
+@@ -32,21 +44,39 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
+   if (!isOpen) return null;
+ 
+   return (
+-    <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && handleClose()}>
+-      <div className={styles.notesModal}>
++    <div 
++      className={styles.modalOverlay} 
++      // Detenemos el burbujeo en el overlay oscuro
++      onClick={(e) => {
++        e.stopPropagation();
++        if (e.target === e.currentTarget) handleClose(e);
++      }}
++    >
++      <div 
++        className={styles.notesModal} 
++        // ESCUDO PRINCIPAL: Ningún clic dentro de esta caja blanca pasará al modal de atrás
++        onClick={(e) => e.stopPropagation()}
++      >
+         <div className={styles.modalHeader}>
+           <h2>Agregar Notas</h2>
+-          <button className={styles.closeButton} onClick={handleClose}>✕</button>
++          <button type="button" className={styles.closeButton} onClick={handleClose}>✕</button>
+         </div>
+ 
+         <div className={styles.notesModalBody}>
+-          <textarea className={styles.notesTextarea} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Escriba aquí sus anotaciones sobre esta venta..." autoFocus maxLength={500} />
++          <textarea 
++            className={styles.notesTextarea} 
++            value={notes} 
++            onChange={(e) => setNotes(e.target.value)} 
++            placeholder="Escriba aquí sus anotaciones sobre esta venta..." 
++            autoFocus 
++            maxLength={500} 
++          />
+           <div className={styles.characterCount}>{notes.length}/500 caracteres</div>
+         </div>
+ 
+         <div className={styles.modalActions}>
+-          <button className={styles.cancelButton} onClick={handleClose}>ESC - Cancelar</button>
+-          <button className={styles.saveButton} onClick={handleSave}>Guardar Notas</button>
++          <button type="button" className={styles.cancelButton} onClick={handleClose}>ESC - Cancelar</button>
++          <button type="button" className={styles.saveButton} onClick={handleSave}>Guardar Notas</button>
+         </div>
+       </div>
+     </div>
+diff --git a/src/components/SalesComponents/hooks/useSalesCheckout.js b/src/components/SalesComponents/hooks/useSalesCheckout.js
+index 028ba97..eec8fef 100644
+--- a/src/components/SalesComponents/hooks/useSalesCheckout.js
++++ b/src/components/SalesComponents/hooks/useSalesCheckout.js
+@@ -38,7 +38,6 @@ const useSalesCheckout = ({
+       setProcessingSale(true);
+ 
+       try {
+-        // --- 1. VALIDACIONES PREVIAS (Early Returns) ---
+         const canSell = await validateShiftNotCut();
+         if (!canSell) {
+           showAppWarning("Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.");
+@@ -60,14 +59,13 @@ const useSalesCheckout = ({
+         const stockIsValid = await validateCartStockBeforeSale();
+         if (!stockIsValid) return false;
+ 
+-        // --- 2. PREPARACIÓN DE DATOS ---
+         const productsPayload = buildProductsPayload(productos);
+         const paymentsPayload = buildPaymentsPayload(paymentData);
+         const saleDate = new Date().toISOString();
+         const cleanNotes = paymentData?.notes?.trim() || null;
+         const currentCartItems = Array.isArray(productosRef?.current) ? productosRef.current : productos;
+ 
+-        // --- 3. TRANSACCIÓN PRINCIPAL (PUNTO DE NO RETORNO) ---
++        // 1. TRANSACCIÓN PRINCIPAL EN BD
+         let saleId;
+         try {
+           saleId = await createSaleTransaction({
+@@ -84,17 +82,12 @@ const useSalesCheckout = ({
+             notes: cleanNotes,
+           });
+         } catch (error) {
+-          // Si falla aquí, la venta NO se guardó. Podemos abortar seguro.
+           console.error("Error crítico al registrar venta:", error);
+           showAppWarning(error?.message || "Error al registrar la venta en la base de datos.");
+           return false;
+         }
+ 
+-        // ====================================================================
+-        // A PARTIR DE AQUÍ, LA VENTA ES EXITOSA. EL CARRITO DEBE LIMPIARSE SÍ O SÍ.
+-        // ====================================================================
+-
+-        // --- 4. POST-VENTA (Beneficios / Puntos) ---
++        // 2. BENEFICIOS Y PUNTOS (Protegido para no romper la venta)
+         let pointsResult, rewardRedemptionResult, rewardPointsResult;
+         try {
+           const benefits = await processSaleCustomerBenefits({
+@@ -111,10 +104,9 @@ const useSalesCheckout = ({
+           rewardPointsResult = benefits.rewardPointsResult;
+         } catch (error) {
+           console.error("Venta exitosa, pero falló procesar beneficios:", error);
+-          // Opcional: Notificar, pero NO lanzar error general.
+         }
+ 
+-        // --- 5. IMPRESIÓN DEL TICKET ---
++        // 3. IMPRESIÓN DEL TICKET (Protegido para no romper la venta)
+         try {
+           if (paymentData?.shouldPrint) {
+             await printSaleTicket({
+@@ -135,10 +127,10 @@ const useSalesCheckout = ({
+           }
+         } catch (error) {
+           console.error("Venta exitosa, pero falló la impresión:", error);
+-          showAppWarning("Venta registrada con éxito, pero hubo un problema de conexión con la impresora.");
++          showAppWarning("Venta registrada con éxito, pero hubo un problema al imprimir el ticket.");
+         }
+ 
+-        // --- 6. FINALIZACIÓN Y LIMPIEZA GARANTIZADA ---
++        // 4. LIMPIEZA VISUAL SIMULTÁNEA (Elimina el parpadeo)
+         const saleSuccessPayload = buildSaleSuccessPayload({
+           saleId,
+           saleClient: currentSaleClient,
+@@ -159,7 +151,6 @@ const useSalesCheckout = ({
+         return true;
+ 
+       } catch (error) {
+-        // Este catch externo ahora solo atrapará errores catastróficos inesperados del framework (RAM, variables nulas no capturadas)
+         console.error("Error general inesperado en flujo de checkout:", error);
+         showAppWarning("Ocurrió un error inesperado.");
+         return false;

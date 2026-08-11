@@ -1,8 +1,10 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { formatDynamicDate } from "../utils/formatters";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
 export const getBranchesList = async () => {
+  // En el futuro, a esta consulta le agregarás "timezone" (ej. select("id, name, timezone"))
   const { data, error } = await supabase.from("branches").select("id, name");
   if (error) return [{ id: "Todas", name: "Todas las sucursales" }];
   return [{ id: "Todas", name: "Todas las sucursales" }, ...data.map((b) => ({ id: b.id, name: b.name }))];
@@ -16,8 +18,8 @@ export const getCashiersList = async () => {
 
 // Función de ayuda para aplicar filtros dinámicos al Query
 const applyFilters = (query, filters) => {
-  query.gte("created_at", filters.startDate.toISOString())
-       .lte("created_at", filters.endDate.toISOString());
+  query.gte("created_at", filters.startDateIso)
+       .lte("created_at", filters.endDateIso);
 
   if (filters.branch !== "Todas") query.eq("branch_id", filters.branch);
   if (filters.cashier !== "Todos") query.eq("user_id", filters.cashier);
@@ -43,7 +45,7 @@ export const getPaginatedSales = async (filters, page, pageSize = 10) => {
   const mappedData = data.map(sale => ({
     id: sale.id,
     ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
-    date: new Date(sale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
+    date: formatDynamicDate(sale.created_at, filters.timeZone), // Usa el timezone dinámico
     cashier: sale.cashier_name ? toUpper(sale.cashier_name) : "SISTEMA",
     client: sale.customer_name ? toUpper(sale.customer_name) : "PÚBLICO GENERAL",
     branch: sale.branch_name || "Principal",
@@ -60,8 +62,8 @@ export const getPaginatedSales = async (filters, page, pageSize = 10) => {
 // 2. CALCULAR KPIs DIRECTO EN LA BASE DE DATOS (RPC)
 export const getSalesKPIs = async (filters) => {
   const { data, error } = await supabase.rpc("get_sales_report_kpis", {
-    p_start: filters.startDate.toISOString(),
-    p_end: filters.endDate.toISOString(),
+    p_start: filters.startDateIso,
+    p_end: filters.endDateIso,
     p_branch: filters.branch !== "Todas" ? filters.branch : null,
     p_cashier: filters.cashier !== "Todos" ? filters.cashier : null,
     p_status: filters.status,
@@ -116,7 +118,7 @@ export const getSaleDetailsById = async (saleId) => {
   });
 };
 
-// 3. EXPORTAR RESUMEN (Trae todos los registros del filtro sin paginar)
+// 3. EXPORTAR RESUMEN 
 export const getAllSalesForExport = async (filters) => {
   let query = supabase.from("v_sales_report_list").select("*");
   query = applyFilters(query, filters);
@@ -127,7 +129,7 @@ export const getAllSalesForExport = async (filters) => {
 
   return data.map(sale => ({
     ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
-    date: new Date(sale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
+    date: formatDynamicDate(sale.created_at, filters.timeZone),
     cashier: sale.cashier_name ? toUpper(sale.cashier_name) : "SISTEMA",
     client: sale.customer_name ? toUpper(sale.customer_name) : "PÚBLICO GENERAL",
     branch: sale.branch_name || "Principal",
@@ -179,7 +181,7 @@ export const getDetailedSalesForExport = async (filters) => {
 
       allDetailedRows.push({
         ticketNumber: parentSale.id ? parentSale.id.substring(0, 8).toUpperCase() : "S/N",
-        date: new Date(parentSale.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }),
+        date: formatDynamicDate(parentSale.created_at, filters.timeZone),
         branch: parentSale.branch_name || "Principal",
         cashier: parentSale.cashier_name ? toUpper(parentSale.cashier_name) : "SISTEMA",
         client: parentSale.customer_name ? toUpper(parentSale.customer_name) : "PÚBLICO GENERAL",
