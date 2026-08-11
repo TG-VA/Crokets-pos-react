@@ -9,6 +9,7 @@ import styles from "./PageSalesReport.module.css";
 
 const PageSalesReport = () => {
   const {
+    uiError,
     dateRange, setDateRange, startDate, endDate,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
@@ -139,6 +140,13 @@ const PageSalesReport = () => {
 
       <div className={styles.tableCard}>
         <h3>Desglose de Transacciones</h3>
+        
+        {uiError && (
+          <div style={{ backgroundColor: "#fee2e2", color: "#b91c1c", padding: "12px 16px", borderRadius: "8px", border: "1px solid #f87171", marginBottom: "16px", fontWeight: "bold" }}>
+            ⚠️ {uiError}
+          </div>
+        )}
+
         <div className={styles.tableWrapper}>
           <table className={styles.dataTable}>
             <thead>

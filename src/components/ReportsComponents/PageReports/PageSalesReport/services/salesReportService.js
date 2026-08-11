@@ -4,19 +4,17 @@ import { formatDynamicDate } from "../utils/formatters";
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
 export const getBranchesList = async () => {
-  // En el futuro, a esta consulta le agregarás "timezone" (ej. select("id, name, timezone"))
   const { data, error } = await supabase.from("branches").select("id, name");
-  if (error) return [{ id: "Todas", name: "Todas las sucursales" }];
+  if (error) throw new Error("No se pudo cargar el catálogo de sucursales.");
   return [{ id: "Todas", name: "Todas las sucursales" }, ...data.map((b) => ({ id: b.id, name: b.name }))];
 };
 
 export const getCashiersList = async () => {
   const { data, error } = await supabase.from("users").select("id, username").eq("status", true);
-  if (error) return [{ id: "Todos", name: "Todos los cajeros" }];
+  if (error) throw new Error("No se pudo cargar el catálogo de cajeros.");
   return [{ id: "Todos", name: "TODOS LOS CAJEROS" }, ...data.map((c) => ({ id: c.id, name: c.username ? toUpper(c.username) : "SIN NOMBRE" }))];
 };
 
-// Función de ayuda para aplicar filtros dinámicos al Query
 const applyFilters = (query, filters) => {
   query.gte("created_at", filters.startDateIso)
        .lte("created_at", filters.endDateIso);
@@ -30,7 +28,6 @@ const applyFilters = (query, filters) => {
   return query;
 };
 
-// 1. PAGINACIÓN REAL DEL SERVIDOR
 export const getPaginatedSales = async (filters, page, pageSize = 10) => {
   let query = supabase.from("v_sales_report_list").select("*", { count: "exact" });
   query = applyFilters(query, filters);
@@ -40,12 +37,12 @@ export const getPaginatedSales = async (filters, page, pageSize = 10) => {
   query.order("created_at", { ascending: false }).range(from, to);
   
   const { data, count, error } = await query;
-  if (error) throw error;
+  if (error) throw new Error("Error al consultar las ventas en la base de datos.");
   
   const mappedData = data.map(sale => ({
     id: sale.id,
     ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
-    date: formatDynamicDate(sale.created_at, filters.timeZone), // Usa el timezone dinámico
+    date: formatDynamicDate(sale.created_at, filters.timeZone),
     cashier: sale.cashier_name ? toUpper(sale.cashier_name) : "SISTEMA",
     client: sale.customer_name ? toUpper(sale.customer_name) : "PÚBLICO GENERAL",
     branch: sale.branch_name || "Principal",
@@ -59,7 +56,6 @@ export const getPaginatedSales = async (filters, page, pageSize = 10) => {
   return { data: mappedData, totalCount: count };
 };
 
-// 2. CALCULAR KPIs DIRECTO EN LA BASE DE DATOS (RPC)
 export const getSalesKPIs = async (filters) => {
   const { data, error } = await supabase.rpc("get_sales_report_kpis", {
     p_start: filters.startDateIso,
@@ -71,7 +67,7 @@ export const getSalesKPIs = async (filters) => {
     p_discount: filters.discount
   });
 
-  if (error) throw error;
+  if (error) throw new Error("Error al calcular los totales financieros.");
   
   return {
     totalIncome: data[0]?.total_income || 0,
@@ -94,7 +90,8 @@ export const getSaleDetailsById = async (saleId) => {
   return detailsData.map((item) => {
     let discountReason = "";
     if (Number(item.discount_amount) > 0) {
-      const isReward = rewardsData.find((reward) => reward.sale_detail_id === item.id || reward.product_id === item.product_id);
+      // FIX: Solo emparejamos por sale_detail_id estricto
+      const isReward = rewardsData.find((reward) => reward.sale_detail_id === item.id);
       if (isReward) {
         discountReason = "Canje"; 
       } else {
@@ -118,14 +115,16 @@ export const getSaleDetailsById = async (saleId) => {
   });
 };
 
-// 3. EXPORTAR RESUMEN 
+// EXPORTACIÓN LIMITADA (Protección contra RAM Overflow)
+const EXPORT_LIMIT = 5000;
+
 export const getAllSalesForExport = async (filters) => {
-  let query = supabase.from("v_sales_report_list").select("*");
+  let query = supabase.from("v_sales_report_list").select("*").limit(EXPORT_LIMIT);
   query = applyFilters(query, filters);
   query.order("created_at", { ascending: false });
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw new Error("Error al descargar el resumen para exportación.");
 
   return data.map(sale => ({
     ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
@@ -140,16 +139,18 @@ export const getAllSalesForExport = async (filters) => {
   }));
 };
 
-// 4. EXPORTAR DETALLADO
 export const getDetailedSalesForExport = async (filters) => {
-  let query = supabase.from("v_sales_report_list").select("id, branch_name, cashier_name, customer_name, computed_status, created_at");
+  let query = supabase.from("v_sales_report_list").select("id, branch_name, cashier_name, customer_name, computed_status, created_at").limit(EXPORT_LIMIT);
   query = applyFilters(query, filters);
   
   const { data: sales, error: salesError } = await query;
-  if (salesError) throw salesError;
+  if (salesError) throw new Error("Error descargando cabeceras para exportación detallada.");
   if (!sales || sales.length === 0) return [];
 
-  const saleIds = sales.map((s) => s.id);
+  // FIX: O(1) Búsqueda ultra rápida en memoria
+  const salesById = new Map(sales.map((sale) => [sale.id, sale]));
+  const saleIds = Array.from(salesById.keys());
+  
   const chunkSize = 150;
   let allDetailedRows = [];
 
@@ -160,15 +161,17 @@ export const getDetailedSalesForExport = async (filters) => {
       supabase.from("sale_reward_redemptions").select("sale_detail_id, product_id, reward_name").in("sale_id", chunk),
     ]);
 
-    if (detailsRes.error) continue;
+    // FIX: Rechazo estricto si falla el chunk, evita Excels incompletos
+    if (detailsRes.error) throw new Error("Error en la descarga de detalles del reporte.");
 
     detailsRes.data.forEach((item) => {
-      const parentSale = sales.find((s) => s.id === item.sale_id);
+      const parentSale = salesById.get(item.sale_id);
       if (!parentSale) return;
 
       let discountReason = "Ninguno";
       if (Number(item.discount_amount) > 0) {
-        const isReward = (rewardsRes.data || []).find((r) => r.sale_detail_id === item.id || r.product_id === item.product_id);
+        // FIX: Match estricto
+        const isReward = (rewardsRes.data || []).find((r) => r.sale_detail_id === item.id);
         if (isReward) { discountReason = "Canje Puntos"; } 
         else {
           const typeStr = item.discount_type ? item.discount_type.toLowerCase() : "";

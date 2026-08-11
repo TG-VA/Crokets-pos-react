@@ -34,7 +34,7 @@ export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading })
               {ticket.date} &nbsp;•&nbsp; <strong>Sucursal:</strong> {ticket.branch} &nbsp;•&nbsp; <strong>Cajero:</strong> {ticket.cashier}
             </p>
           </div>
-          <button className={styles.closeBtn} onClick={onClose}>&times;</button>
+          <button type="button" aria-label="Cerrar detalle de ticket" className={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
 
         <div className={styles.modalBody}>

@@ -8,6 +8,9 @@ import {
 export const ITEMS_PER_PAGE = 10; 
 
 export const useSalesReport = () => {
+  // Estado global para manejo de errores de UI
+  const [uiError, setUiError] = useState(null);
+
   const [dateRange, setDateRange] = useState([new Date(), new Date()]);
   const [startDate, endDate] = dateRange;
   const [selectedBranch, setSelectedBranch] = useState("Todas");
@@ -36,9 +39,14 @@ export const useSalesReport = () => {
 
   useEffect(() => {
     const fetchCatalogs = async () => {
-      const [branches, cashiers] = await Promise.all([getBranchesList(), getCashiersList()]);
-      setBranchesList(branches);
-      setCashiersList(cashiers);
+      try {
+        setUiError(null);
+        const [branches, cashiers] = await Promise.all([getBranchesList(), getCashiersList()]);
+        setBranchesList(branches);
+        setCashiersList(cashiers);
+      } catch (err) {
+        setUiError(err.message || "Error al conectar con la base de datos.");
+      }
     };
     fetchCatalogs();
   }, []);
@@ -46,11 +54,8 @@ export const useSalesReport = () => {
   const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
 
-    // Aquí defines la zona horaria del negocio.
-    // FUTURO: const businessTimeZone = currentBranch?.timezone || "America/Cancun";
     const businessTimeZone = "America/Cancun"; 
 
-    // Extraemos solo la fecha visual seleccionada, ignorando la hora del PC local
     const formatYMD = (d) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -58,7 +63,6 @@ export const useSalesReport = () => {
       return `${year}-${month}-${day}`;
     };
 
-    // Forzamos estrictamente los límites del día usando el Offset de Cancún (UTC-5)
     const startIso = `${formatYMD(startDate)}T00:00:00.000-05:00`;
     const endIso = `${formatYMD(endDate)}T23:59:59.999-05:00`;
     
@@ -79,6 +83,7 @@ export const useSalesReport = () => {
     if (!filters) return;
     
     setLoading(true);
+    setUiError(null);
     try {
       const [salesRes, kpisRes] = await Promise.all([
         getPaginatedSales(filters, currentPage, ITEMS_PER_PAGE),
@@ -92,13 +97,14 @@ export const useSalesReport = () => {
         totalIncome: kpisRes.totalIncome,
         totalDiscounts: kpisRes.totalDiscounts,
         totalTickets: kpisRes.totalTickets,
-        // Validación Financiera: Ticket Promedio no cuenta si los ingresos son 0 (Devoluciones totales)
         averageTicket: kpisRes.totalTickets > 0 && kpisRes.totalIncome > 0 
           ? (kpisRes.totalIncome / kpisRes.totalTickets) 
           : 0,
       });
     } catch (error) {
       console.error("Error cargando reporte de ventas:", error);
+      setUiError(error.message || "No se pudo generar el reporte. Revisa tu conexión.");
+      setPaginatedSales([]); 
     } finally {
       setLoading(false);
     }
@@ -108,7 +114,6 @@ export const useSalesReport = () => {
     fetchSalesReport();
   }, [fetchSalesReport]);
 
-  // Si cambiamos los filtros, regresamos a la página 1 automáticamente
   useEffect(() => {
     setCurrentPage(1);
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
@@ -127,11 +132,13 @@ export const useSalesReport = () => {
     setIsTicketModalOpen(true);
     setLoadingModal(true);
     setTicketDetails([]);
+    setUiError(null);
     try {
       const details = await getSaleDetailsById(sale.id);
       setTicketDetails(details);
     } catch (error) {
       console.error("Error al obtener detalle:", error);
+      setUiError("Error al cargar el detalle del ticket.");
     } finally {
       setLoadingModal(false);
     }
@@ -172,8 +179,13 @@ export const useSalesReport = () => {
 
   const handleExportExcel = async () => {
     if (summary.totalTickets === 0) return;
+    if (summary.totalTickets > 5000) {
+      alert("El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas.");
+      return;
+    }
+
     setIsExportingSummary(true);
-    
+    setUiError(null);
     try {
       const filters = getCurrentFilters();
       const exportData = await getAllSalesForExport(filters);
@@ -223,6 +235,7 @@ export const useSalesReport = () => {
       triggerDownload(htmlTemplate, fileName);
     } catch (error) {
       console.error("Error exportando resumen:", error);
+      setUiError(error.message || "Error al generar el archivo Excel.");
     } finally {
       setIsExportingSummary(false);
     }
@@ -230,8 +243,13 @@ export const useSalesReport = () => {
 
   const handleExportDetailedExcel = async () => {
     if (summary.totalTickets === 0) return;
-    setIsExportingDetailed(true);
+    if (summary.totalTickets > 5000) {
+      alert("El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas.");
+      return;
+    }
 
+    setIsExportingDetailed(true);
+    setUiError(null);
     try {
       const filters = getCurrentFilters();
       const detailedData = await getDetailedSalesForExport(filters);
@@ -274,12 +292,14 @@ export const useSalesReport = () => {
       triggerDownload(htmlTemplate, fileName);
     } catch (error) {
       console.error("Error exportando detalle:", error);
+      setUiError(error.message || "Error al generar el archivo Excel detallado.");
     } finally {
       setIsExportingDetailed(false);
     }
   };
 
   return {
+    uiError,
     dateRange, setDateRange, startDate, endDate,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
