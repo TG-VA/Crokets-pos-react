@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  HashRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import CashRegister from "./pages/CashRegister/CashRegister";
@@ -21,15 +16,10 @@ import Reports from "./pages/Reports/Reports";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
+import AuthGuard from "./components/AuthGuard/AuthGuard";
 
 function AppRoutes() {
-  const {
-    isAuthenticated,
-    cashRegistered,
-    setCashRegistered,
-    loading,
-    isLocked,
-  } = useAuth();
+  const { isAuthenticated, cashRegistered, setCashRegistered, loading, isLocked } = useAuth();
 
   if (loading) {
     return <div>Iniciando punto de venta...</div>;
@@ -38,178 +28,46 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
-        <Route
-          path="/login"
-          element={
-            !isAuthenticated || isLocked ? (
-              <Login />
-            ) : (
-              <Navigate
-                to={cashRegistered ? "/dashboard" : "/cash-register"}
-                replace
-              />
-            )
-          }
+        {/* RUTA PÚBLICA / LOGIN */}
+        <Route 
+          path="/login" 
+          element={ 
+            !isAuthenticated || isLocked 
+              ? <Login /> 
+              : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
+          } 
         />
 
-        <Route
-          path="/cash-register"
+        {/* APERTURA DE CAJA (No debe tener caja abierta) */}
+        <Route 
+          path="/cash-register" 
           element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : cashRegistered ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
+            <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
               <CashRegister setCashRegistered={setCashRegistered} />
-            )
-          }
+            </AuthGuard>
+          } 
         />
 
-        <Route
-          path="/dashboard"
+        {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
+        <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
+        <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
+        <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
+        <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
+        <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
+        <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
+        <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
+
+        {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
+        <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
+        <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
+
+        {/* FALLBACK ROOT */}
+        <Route 
+          path="/" 
           element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Dashboard setCashRegistered={setCashRegistered} />
-            )
-          }
+            <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
+          } 
         />
-
-        <Route
-          path="/products/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Products />
-            )
-          }
-        />
-
-        <Route
-          path="/cashcut/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <CashCut />
-            )
-          }
-        />
-
-        <Route
-          path="/inventory/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Inventory />
-            )
-          }
-        />
-
-        <Route
-          path="/invoices/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Invoices />
-            )
-          }
-        />
-
-        <Route
-          path="/customers/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Customers />
-            )
-          }
-        />
-
-        <Route
-          path="/reports/*"
-          element={
-            !isAuthenticated ? (
-              <Navigate to="/login" replace />
-            ) : isLocked ? (
-              <Navigate to="/login" replace />
-            ) : !cashRegistered ? (
-              <Navigate to="/cash-register" replace />
-            ) : (
-              <Reports />
-            )
-          }
-        />
-
-        <Route
-          path="/settings"
-          element={
-            isAuthenticated && !isLocked ? (
-              <Settings />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-
-        <Route
-          path="/profiles"
-          element={
-            isAuthenticated && !isLocked ? (
-              <Profiles />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-
-        <Route
-          path="/"
-          element={
-            <Navigate
-              to={
-                !isAuthenticated || isLocked
-                  ? "/login"
-                  : !cashRegistered
-                  ? "/cash-register"
-                  : "/dashboard"
-              }
-              replace
-            />
-          }
-        />
-
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
