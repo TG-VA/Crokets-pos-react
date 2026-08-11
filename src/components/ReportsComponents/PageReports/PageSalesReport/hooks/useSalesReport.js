@@ -65,10 +65,14 @@ export const useSalesReport = () => {
     return () => { isActive = false; };
   }, []);
 
-  const getCurrentFilters = useCallback(() => {
+const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
 
-    const businessTimeZone = "America/Cancun"; 
+    // 1. Encontramos la sucursal seleccionada en nuestro catálogo
+    const selectedBranchObj = branchesList.find((b) => b.id === selectedBranch);
+
+    // 2. Usamos su timezone dinámico (o Cancún por defecto)
+    const businessTimeZone = selectedBranchObj?.timezone || "America/Cancun"; 
 
     const formatYMD = (d) => {
       const year = d.getFullYear();
@@ -77,8 +81,16 @@ export const useSalesReport = () => {
       return `${year}-${month}-${day}`;
     };
 
-    const startIso = `${formatYMD(startDate)}T00:00:00.000-05:00`;
-    const endIso = `${formatYMD(endDate)}T23:59:59.999-05:00`;
+    // Usamos el Intl.DateTimeFormat para saber el offset real de ese timezone en esa fecha
+    // Esto maneja automáticamente los horarios de verano si la ciudad los tiene
+    const offsetString = new Intl.DateTimeFormat('en-US', {
+      timeZone: businessTimeZone,
+      timeZoneName: 'shortOffset'
+    }).formatToParts(startDate).find(part => part.type === 'timeZoneName').value.replace('GMT', '') || '-05:00';
+
+    // Construimos el ISO con el offset exacto de la ciudad seleccionada
+    const startIso = `${formatYMD(startDate)}T00:00:00.000${offsetString}`;
+    const endIso = `${formatYMD(endDate)}T23:59:59.999${offsetString}`;
     
     return {
       startDateIso: startIso, 
@@ -90,7 +102,7 @@ export const useSalesReport = () => {
       discount: discountFilter,
       timeZone: businessTimeZone
     };
-  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
+  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter, branchesList]);
 
   // FIX: Se recibe un token de estado para evitar la Condición de Carrera
   const fetchSalesReport = useCallback(async (options = { isActive: true }) => {
