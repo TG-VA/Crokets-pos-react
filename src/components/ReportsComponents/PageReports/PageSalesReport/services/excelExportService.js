@@ -1,3 +1,5 @@
+import { formatYMD } from "../utils/dateUtils";
+
 // helper privado para sanitizar
 const escapeHtml = (unsafe) => {
   return (unsafe || "").toString()
@@ -10,16 +12,18 @@ const escapeHtml = (unsafe) => {
 
 // helper privado para nombrar el archivo
 const getExportFileName = (prefix, startDate, endDate, selectedBranch, branchesList) => {
-  const dStr = (d) => d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : "";
   let bName = "Global";
   if (selectedBranch !== "Todas") {
     const fb = branchesList.find((b) => b.id === selectedBranch);
     bName = fb ? fb.name.trim() : "Sucursal";
   }
   const bLabel = bName.replace(/\s+/g, "_");
-  const startStr = dStr(startDate);
-  const endStr = dStr(endDate);
-  const dateLabel = startStr && endStr ? (startStr === endStr ? startStr : `del_${startStr}_al_${endStr}`) : dStr(new Date());
+  
+  // CORRECCIÓN: Usamos la función importada para unificar el concepto de fecha
+  const startStr = formatYMD(startDate);
+  const endStr = formatYMD(endDate);
+  const dateLabel = startStr && endStr ? (startStr === endStr ? startStr : `del_${startStr}_al_${endStr}`) : formatYMD(new Date());
+  
   return `${prefix}_${bLabel}_${dateLabel}.xls`;
 };
 

@@ -22,13 +22,13 @@ export const getTimezoneOffset = (date, timeZone) => {
 };
 
 /**
- * Extrae el Año, Mes y Día de una fecha basándose en la zona horaria del negocio,
- * ignorando el reloj local de la computadora.
+ * Extrae el Año, Mes y Día de la fecha seleccionada tratándola como fecha de calendario pura.
+ * Extraemos los componentes locales asumiendo que el DatePicker guarda la intención del usuario.
  */
-export const formatYMD = (d, timeZone) => {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
-  const year = parts.find(p => p.type === 'year').value;
-  const month = parts.find(p => p.type === 'month').value;
-  const day = parts.find(p => p.type === 'day').value;
+export const formatYMD = (d) => {
+  if (!d) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };

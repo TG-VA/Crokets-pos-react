@@ -65,8 +65,8 @@ export const useSalesReport = () => {
     const startOffset = getTimezoneOffset(startDate, businessTimeZone);
     const endOffset = getTimezoneOffset(endDate, businessTimeZone);
 
-    const startIso = `${formatYMD(startDate, businessTimeZone)}T00:00:00.000${startOffset}`;
-    const endIso = `${formatYMD(endDate, businessTimeZone)}T23:59:59.999${endOffset}`;
+    const startIso = `${formatYMD(startDate)}T00:00:00.000${startOffset}`;
+    const endIso = `${formatYMD(endDate)}T23:59:59.999${endOffset}`;
     
     return {
       startDateIso: startIso, 
