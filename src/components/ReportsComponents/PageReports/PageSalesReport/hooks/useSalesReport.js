@@ -4,21 +4,12 @@ import {
   getPaginatedSales, getSalesKPIs, 
   getAllSalesForExport, getDetailedSalesForExport 
 } from "../services/salesReportService";
+import { generateSummaryExcel, generateDetailedExcel } from "../services/excelExportService";
+import { getTimezoneOffset, formatYMD } from "../utils/dateUtils"; // <-- IMPORTACIÓN PURA
 
 export const ITEMS_PER_PAGE = 10; 
 
-// Helper para evitar que caracteres como < o > rompan el HTML del Excel
-const escapeHtml = (unsafe) => {
-  return (unsafe || "").toString()
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-};
-
 export const useSalesReport = () => {
-  // Estado del AppModal para reportes
   const [reportModal, setReportModal] = useState({ isOpen: false, type: "info", title: "", message: "" });
   const closeReportModal = () => setReportModal((prev) => ({ ...prev, isOpen: false }));
 
@@ -65,55 +56,17 @@ export const useSalesReport = () => {
     return () => { isActive = false; };
   }, []);
 
-const getCurrentFilters = useCallback(() => {
+  const getCurrentFilters = useCallback(() => {
     if (!startDate || !endDate) return null;
 
     const selectedBranchObj = branchesList.find((b) => b.id === selectedBranch);
-    // REGLA DE NEGOCIO: "Todas" usa la hora corporativa (Cancún). Las demás, la suya.
     const businessTimeZone = selectedBranchObj?.timezone || "America/Cancun"; 
-
-    const getTimezoneOffset = (date, timeZone) => {
-      // 1. Instante seguro (mediodía UTC) para evitar cruzar la medianoche por culpa del navegador local
-      const safeDate = new Date(
-        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12)
-      );
-
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        timeZoneName: 'shortOffset'
-      }).formatToParts(safeDate);
-      
-      const tzPart = parts.find(part => part.type === 'timeZoneName')?.value;
-      
-      if (!tzPart || tzPart === 'GMT') return 'Z';
-      
-      const offset = tzPart.replace('GMT', '');
-      const match = offset.match(/([+-])(\d+)(?::(\d+))?/);
-      
-      // 2. Fail-fast: Lanzar error explícito en lugar de usar un fallback silencioso
-      if (!match) {
-        throw new Error(`Offset de timezone inválido: ${tzPart}`);
-      }
-      
-      const sign = match[1];
-      const hours = match[2].padStart(2, '0');
-      const minutes = match[3] || '00';
-      
-      return `${sign}${hours}:${minutes}`;
-    };
-
-    const formatYMD = (d) => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
 
     const startOffset = getTimezoneOffset(startDate, businessTimeZone);
     const endOffset = getTimezoneOffset(endDate, businessTimeZone);
 
-    const startIso = `${formatYMD(startDate)}T00:00:00.000${startOffset}`;
-    const endIso = `${formatYMD(endDate)}T23:59:59.999${endOffset}`;
+    const startIso = `${formatYMD(startDate, businessTimeZone)}T00:00:00.000${startOffset}`;
+    const endIso = `${formatYMD(endDate, businessTimeZone)}T23:59:59.999${endOffset}`;
     
     return {
       startDateIso: startIso, 
@@ -138,7 +91,6 @@ const getCurrentFilters = useCallback(() => {
         getSalesKPIs(filters)
       ]);
 
-      // Escudo anti-fantasmas: Si el filtro cambió mientras cargaba, abortar
       if (!options.isActive) return;
 
       setPaginatedSales(salesRes.data);
@@ -165,11 +117,8 @@ const getCurrentFilters = useCallback(() => {
   }, [getCurrentFilters, currentPage]);
 
   useEffect(() => {
-    // Generamos un token por cada vez que cambien los filtros
     const state = { isActive: true };
     fetchSalesReport(state);
-    
-    // Si el usuario cambia de opinión rápido, matamos el token anterior
     return () => { state.isActive = false; };
   }, [fetchSalesReport]);
 
@@ -210,35 +159,10 @@ const getCurrentFilters = useCallback(() => {
 
   const hasActiveFilters = selectedBranch !== "Todas" || selectedCashier !== "Todos" || saleStatus !== "Completada" || paymentMethod !== "Todos" || discountFilter !== "Todos";
 
-  const getExportFileName = (prefix) => {
-    const dStr = (d) => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : "";
-    let bName = "Global";
-    if (selectedBranch !== "Todas") {
-      const fb = branchesList.find((b) => b.id === selectedBranch);
-      bName = fb ? fb.name.trim() : "Sucursal";
-    }
-    const bLabel = bName.replace(/\s+/g, "_");
-    const startStr = dStr(startDate); const endStr = dStr(endDate);
-    const dateLabel = startStr && endStr ? (startStr === endStr ? startStr : `del_${startStr}_al_${endStr}`) : dStr(new Date());
-    return `${prefix}_${bLabel}_${dateLabel}.xls`;
-  };
-
-  const triggerDownload = (htmlTemplate, fileName) => {
-    const blob = new Blob(["\uFEFF" + htmlTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const handleExportExcel = async () => {
     if (summary.totalTickets === 0) return;
     if (summary.totalTickets > 5000) {
-      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas." });
+      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación. Reduce el rango de fechas." });
       return;
     }
 
@@ -246,50 +170,7 @@ const getCurrentFilters = useCallback(() => {
     try {
       const filters = getCurrentFilters();
       const exportData = await getAllSalesForExport(filters);
-      const fileName = getExportFileName("Resumen_Ventas");
-      const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
-      
-      const htmlTemplate = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: Arial, sans-serif; font-size: 10pt; color: #1f2d3d; }
-            .title { font-size: 16pt; font-weight: bold; color: #1092b1; margin-bottom: 4px; }
-            .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 16px; }
-            table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-            th { background-color: #1092b1; color: #ffffff; font-size: 10pt; font-weight: bold; padding: 10px 14px; border: 1px solid #0e7c97; text-align: left; }
-            td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 9.5pt; vertical-align: middle; }
-            .text-center { text-align: center; }
-            .currency { mso-number-format: "\\$#,##0.00"; text-align: right; font-weight: bold; }
-            .discount { color: #d97706; mso-number-format: "-\\$#,##0.00"; text-align: right; font-weight: bold; }
-            .status-completed { background-color: #ecfdf5; color: #059669; font-weight: bold; text-align: center; }
-            .status-cancelled { background-color: #fef2f2; color: #dc2626; font-weight: bold; text-align: center; }
-            .status-warning { background-color: #fffbeb; color: #d97706; font-weight: bold; text-align: center; }
-            .tfoot-label { text-align: right; font-weight: bold; background-color: #f8fafc; }
-            .tfoot-value { background-color: #f8fafc; font-size: 11pt; }
-          </style>
-        </head>
-        <body>
-          <div class="title">RESUMEN DE VENTAS - CROKETS POS</div>
-          <div class="subtitle"><b>Fecha de emisión:</b> ${emissionDate}</div>
-          <table>
-            <thead>
-              <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Método de Pago</th><th>Estado</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total</th></tr>
-            </thead>
-            <tbody>
-              ${exportData.map((sale) => `
-                <tr><td><b>#${sale.ticketNumber}</b></td><td>${sale.date}</td><td>${escapeHtml(sale.branch)}</td><td>${escapeHtml(sale.cashier)}</td><td>${escapeHtml(sale.client)}</td><td class="text-center">${escapeHtml(sale.method)}</td><td class="${sale.status === "Completada" ? "status-completed" : sale.status === "Cancelada" ? "status-cancelled" : "status-warning"}">${sale.status}</td><td class="discount">${sale.discount}</td><td class="currency">${sale.total}</td></tr>
-              `).join("")}
-            </tbody>
-            <tfoot>
-              <tr><td colspan="7" class="tfoot-label">TOTAL ACUMULADO (FILTRO ACTIVO):</td><td class="discount tfoot-value">${summary.totalDiscounts}</td><td class="currency tfoot-value">${summary.totalIncome}</td></tr>
-            </tfoot>
-          </table>
-        </body>
-        </html>
-      `;
-      triggerDownload(htmlTemplate, fileName);
+      generateSummaryExcel(exportData, summary, filters, branchesList, startDate, endDate);
     } catch (error) {
       console.error("Error exportando resumen:", error);
       setReportModal({ isOpen: true, type: "danger", title: "Error en Exportación", message: error.message || "Error al generar el archivo Excel." });
@@ -301,7 +182,7 @@ const getCurrentFilters = useCallback(() => {
   const handleExportDetailedExcel = async () => {
     if (summary.totalTickets === 0) return;
     if (summary.totalTickets > 5000) {
-      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas." });
+      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación. Reduce el rango de fechas." });
       return;
     }
 
@@ -309,43 +190,7 @@ const getCurrentFilters = useCallback(() => {
     try {
       const filters = getCurrentFilters();
       const detailedData = await getDetailedSalesForExport(filters);
-      const fileName = getExportFileName("Reporte_Detallado");
-      const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
-
-      const htmlTemplate = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: Arial, sans-serif; font-size: 10pt; color: #1f2d3d; }
-            .title { font-size: 16pt; font-weight: bold; color: #1092b1; margin-bottom: 4px; }
-            .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 16px; }
-            table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-            th { background-color: #1092b1; color: #ffffff; font-size: 10pt; font-weight: bold; padding: 10px 14px; border: 1px solid #0e7c97; text-align: left; }
-            td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 9.5pt; vertical-align: middle; }
-            .text-center { text-align: center; }
-            .currency { mso-number-format: "\\$#,##0.00"; text-align: right; }
-            .discount { color: #d97706; mso-number-format: "-\\$#,##0.00"; text-align: right; }
-            .text-code { mso-number-format: "\\@"; color: #64748b; }
-          </style>
-        </head>
-        <body>
-          <div class="title">REPORTE DETALLADO DE PRODUCTOS - CROKETS POS</div>
-          <div class="subtitle"><b>Fecha de emisión:</b> ${emissionDate}</div>
-          <table>
-            <thead>
-              <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Estado</th><th>Código Producto</th><th>Descripción</th><th style="text-align: center;">Cantidad</th><th style="text-align: right;">Precio Unitario</th><th>Motivo Descuento</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total Línea</th></tr>
-            </thead>
-            <tbody>
-              ${detailedData.map((row) => `
-                <tr><td><b>#${row.ticketNumber}</b></td><td>${row.date}</td><td>${escapeHtml(row.branch)}</td><td>${escapeHtml(row.cashier)}</td><td>${escapeHtml(row.client)}</td><td>${row.status}</td><td class="text-code">${escapeHtml(row.barcode)}</td><td>${escapeHtml(row.productName)}</td><td class="text-center">${row.quantity}</td><td class="currency">${row.unitPrice}</td><td>${escapeHtml(row.discountType)}</td><td class="discount">${row.discountAmount}</td><td class="currency"><b>${row.totalPrice}</b></td></tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </body>
-        </html>
-      `;
-      triggerDownload(htmlTemplate, fileName);
+      generateDetailedExcel(detailedData, filters, branchesList, startDate, endDate);
     } catch (error) {
       console.error("Error exportando detalle:", error);
       setReportModal({ isOpen: true, type: "danger", title: "Error en Exportación", message: error.message || "Error al generar el archivo Excel detallado." });
