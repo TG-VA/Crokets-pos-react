@@ -7,9 +7,20 @@ import {
 
 export const ITEMS_PER_PAGE = 10; 
 
+// Helper para evitar que caracteres como < o > rompan el HTML del Excel
+const escapeHtml = (unsafe) => {
+  return (unsafe || "").toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 export const useSalesReport = () => {
-  // Estado global para manejo de errores de UI
-  const [uiError, setUiError] = useState(null);
+  // NUEVO: Estado del AppModal para reportes (reemplaza a uiError y alert)
+  const [reportModal, setReportModal] = useState({ isOpen: false, type: "info", title: "", message: "" });
+  const closeReportModal = () => setReportModal((prev) => ({ ...prev, isOpen: false }));
 
   const [dateRange, setDateRange] = useState([new Date(), new Date()]);
   const [startDate, endDate] = dateRange;
@@ -40,12 +51,11 @@ export const useSalesReport = () => {
   useEffect(() => {
     const fetchCatalogs = async () => {
       try {
-        setUiError(null);
         const [branches, cashiers] = await Promise.all([getBranchesList(), getCashiersList()]);
         setBranchesList(branches);
         setCashiersList(cashiers);
       } catch (err) {
-        setUiError(err.message || "Error al conectar con la base de datos.");
+        setReportModal({ isOpen: true, type: "danger", title: "Error de conexión", message: err.message || "No se pudieron cargar los catálogos." });
       }
     };
     fetchCatalogs();
@@ -83,7 +93,6 @@ export const useSalesReport = () => {
     if (!filters) return;
     
     setLoading(true);
-    setUiError(null);
     try {
       const [salesRes, kpisRes] = await Promise.all([
         getPaginatedSales(filters, currentPage, ITEMS_PER_PAGE),
@@ -103,7 +112,7 @@ export const useSalesReport = () => {
       });
     } catch (error) {
       console.error("Error cargando reporte de ventas:", error);
-      setUiError(error.message || "No se pudo generar el reporte. Revisa tu conexión.");
+      setReportModal({ isOpen: true, type: "danger", title: "Error al generar reporte", message: error.message || "Revisa tu conexión a internet." });
       setPaginatedSales([]); 
     } finally {
       setLoading(false);
@@ -132,13 +141,12 @@ export const useSalesReport = () => {
     setIsTicketModalOpen(true);
     setLoadingModal(true);
     setTicketDetails([]);
-    setUiError(null);
     try {
       const details = await getSaleDetailsById(sale.id);
       setTicketDetails(details);
     } catch (error) {
       console.error("Error al obtener detalle:", error);
-      setUiError("Error al cargar el detalle del ticket.");
+      setReportModal({ isOpen: true, type: "warning", title: "Detalle no disponible", message: "Error al cargar los productos del ticket." });
     } finally {
       setLoadingModal(false);
     }
@@ -180,12 +188,11 @@ export const useSalesReport = () => {
   const handleExportExcel = async () => {
     if (summary.totalTickets === 0) return;
     if (summary.totalTickets > 5000) {
-      alert("El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas.");
+      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas." });
       return;
     }
 
     setIsExportingSummary(true);
-    setUiError(null);
     try {
       const filters = getCurrentFilters();
       const exportData = await getAllSalesForExport(filters);
@@ -222,7 +229,7 @@ export const useSalesReport = () => {
             </thead>
             <tbody>
               ${exportData.map((sale) => `
-                <tr><td><b>#${sale.ticketNumber}</b></td><td>${sale.date}</td><td>${sale.branch}</td><td>${sale.cashier}</td><td>${sale.client}</td><td class="text-center">${sale.method}</td><td class="${sale.status === "Completada" ? "status-completed" : sale.status === "Cancelada" ? "status-cancelled" : "status-warning"}">${sale.status}</td><td class="discount">${sale.discount}</td><td class="currency">${sale.total}</td></tr>
+                <tr><td><b>#${sale.ticketNumber}</b></td><td>${sale.date}</td><td>${escapeHtml(sale.branch)}</td><td>${escapeHtml(sale.cashier)}</td><td>${escapeHtml(sale.client)}</td><td class="text-center">${escapeHtml(sale.method)}</td><td class="${sale.status === "Completada" ? "status-completed" : sale.status === "Cancelada" ? "status-cancelled" : "status-warning"}">${sale.status}</td><td class="discount">${sale.discount}</td><td class="currency">${sale.total}</td></tr>
               `).join("")}
             </tbody>
             <tfoot>
@@ -235,7 +242,7 @@ export const useSalesReport = () => {
       triggerDownload(htmlTemplate, fileName);
     } catch (error) {
       console.error("Error exportando resumen:", error);
-      setUiError(error.message || "Error al generar el archivo Excel.");
+      setReportModal({ isOpen: true, type: "danger", title: "Error en Exportación", message: error.message || "Error al generar el archivo Excel." });
     } finally {
       setIsExportingSummary(false);
     }
@@ -244,12 +251,11 @@ export const useSalesReport = () => {
   const handleExportDetailedExcel = async () => {
     if (summary.totalTickets === 0) return;
     if (summary.totalTickets > 5000) {
-      alert("El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas.");
+      setReportModal({ isOpen: true, type: "warning", title: "Límite excedido", message: "El reporte excede el límite de 5,000 registros para exportación segura. Por favor, reduce el rango de fechas." });
       return;
     }
 
     setIsExportingDetailed(true);
-    setUiError(null);
     try {
       const filters = getCurrentFilters();
       const detailedData = await getDetailedSalesForExport(filters);
@@ -282,7 +288,7 @@ export const useSalesReport = () => {
             </thead>
             <tbody>
               ${detailedData.map((row) => `
-                <tr><td><b>#${row.ticketNumber}</b></td><td>${row.date}</td><td>${row.branch}</td><td>${row.cashier}</td><td>${row.client}</td><td>${row.status}</td><td class="text-code">${row.barcode}</td><td>${row.productName}</td><td class="text-center">${row.quantity}</td><td class="currency">${row.unitPrice}</td><td>${row.discountType}</td><td class="discount">${row.discountAmount}</td><td class="currency"><b>${row.totalPrice}</b></td></tr>
+                <tr><td><b>#${row.ticketNumber}</b></td><td>${row.date}</td><td>${escapeHtml(row.branch)}</td><td>${escapeHtml(row.cashier)}</td><td>${escapeHtml(row.client)}</td><td>${row.status}</td><td class="text-code">${escapeHtml(row.barcode)}</td><td>${escapeHtml(row.productName)}</td><td class="text-center">${row.quantity}</td><td class="currency">${row.unitPrice}</td><td>${escapeHtml(row.discountType)}</td><td class="discount">${row.discountAmount}</td><td class="currency"><b>${row.totalPrice}</b></td></tr>
               `).join("")}
             </tbody>
           </table>
@@ -292,14 +298,14 @@ export const useSalesReport = () => {
       triggerDownload(htmlTemplate, fileName);
     } catch (error) {
       console.error("Error exportando detalle:", error);
-      setUiError(error.message || "Error al generar el archivo Excel detallado.");
+      setReportModal({ isOpen: true, type: "danger", title: "Error en Exportación", message: error.message || "Error al generar el archivo Excel detallado." });
     } finally {
       setIsExportingDetailed(false);
     }
   };
 
   return {
-    uiError,
+    reportModal, closeReportModal, // Exponemos el control del Modal
     dateRange, setDateRange, startDate, endDate,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,

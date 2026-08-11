@@ -9,10 +9,10 @@ import Logo from "../../assets/images/LOGOCROKETS.png";
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../assets/icons/tag-solid-full.svg";
 import InventoryIcon from "../../assets/icons/store-solid-full.svg";
-import InvoicesIcon from "../../assets/icons/file-invoice-dollar-solid-full.svg";
-import CustomersIcon from "../../assets/icons/user-solid.svg";
-import CashoutIcon from "../../assets/icons/money-check-dollar-solid-full.svg";
-import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
+import InvoicesIcon from "../../assets/icons/user-solid.svg";
+import CustomersIcon from "../../assets/icons/users-solid.svg";
+import CashoutIcon from "../../assets/icons/cash-register-solid-full.svg";
+import ReportsIcon from "../../assets/icons/chart-pie-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
 import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
 
@@ -57,18 +57,23 @@ const Navbar = () => {
     setAppModal((prev) => ({ ...prev, isOpen: false, loading: false, onConfirm: null, onCancel: null }));
   };
 
+  // CORRECCIÓN: Forzamos los defaults para no tener "modales fantasma"
   const showAppConfirm = (config) => {
-    setAppModal((prev) => ({
-      ...prev,
-      ...config,
+    setAppModal({
       isOpen: true,
-      showCancel: true,
+      type: config.type || "warning",
+      title: config.title || "Confirmar",
+      message: config.message || "",
+      confirmText: config.confirmText || "Aceptar",
+      cancelText: config.cancelText || "Cancelar",
+      showCancel: config.showCancel !== undefined ? config.showCancel : true,
+      loading: false,
       onConfirm: async () => {
         closeAppModal();
         if (typeof config.onConfirm === "function") await config.onConfirm();
       },
       onCancel: closeAppModal,
-    }));
+    });
   };
 
   const handleLockScreen = () => {
