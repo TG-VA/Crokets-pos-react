@@ -1,29 +1,14 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 const useSalesStateActions = ({
-  productos, setProductos, productosRef, setSelectedProduct, setCurrentSaleClient,
+  setProductos, productosRef, setSelectedProduct, setCurrentSaleClient,
   setCurrentSaleReward, setTicketNumber, setSaleToken, setSaleNotes, setBarcode,
   setPendingTickets, setPendingFreeProductRewards, setRewardProductModalOpen,
   setPendingProductDiscountRewards, setActiveProductDiscountReward,
   setProductDiscountRewardModalOpen, setStockWarningMsg, showAppModal, closeAppModal,
 }) => {
   
-  // --- CÁLCULO DE TOTALES (MEMOIZADOS PARA RENDIMIENTO) ---
-  const { subtotal, discountTotal, total } = useMemo(() => {
-    const sub = productos.reduce(
-      (sum, p) => sum + Number(p.precioOriginal ?? p.precio ?? 0) * Number(p.cantidad || 0), 0
-    );
-    const desc = productos.reduce(
-      (sum, p) => sum + Number(p.descuentoMonto || 0), 0
-    );
-    return {
-      subtotal: sub,
-      discountTotal: desc,
-      total: Math.max(sub - desc, 0), // Math.max evita totales negativos por seguridad
-    };
-  }, [productos]);
-
-  // --- ACCIONES DE ESTADO DE LA VENTA ---
+  // 1. Restaurar un estado previo
   const restoreSalesDraft = useCallback((draft) => {
     const restoredProducts = Array.isArray(draft?.productos) ? draft.productos : [];
     
@@ -43,7 +28,8 @@ const useSalesStateActions = ({
     setTicketNumber, setSaleToken, setSaleNotes, setBarcode, setPendingTickets,
   ]);
 
-  const discardSalesDraftState = useCallback(() => {
+  // 2. Lógica base unificada para limpiar la pantalla (DRY - Don't Repeat Yourself)
+  const clearSalesWorkspace = useCallback(({ incrementTicket = false } = {}) => {
     setProductos([]);
     if (productosRef) productosRef.current = [];
     setSelectedProduct(null);
@@ -58,13 +44,22 @@ const useSalesStateActions = ({
     setSaleToken(null);
     setSaleNotes("");
     setStockWarningMsg("");
+
+    if (incrementTicket) {
+      setTicketNumber((prev) => prev + 1);
+    }
   }, [
     setProductos, productosRef, setSelectedProduct, setCurrentSaleClient, setCurrentSaleReward,
     setPendingFreeProductRewards, setRewardProductModalOpen, setPendingProductDiscountRewards,
     setActiveProductDiscountReward, setProductDiscountRewardModalOpen, setBarcode, setSaleToken,
-    setSaleNotes, setStockWarningMsg,
+    setSaleNotes, setStockWarningMsg, setTicketNumber
   ]);
 
+  // Alias para mantener compatibilidad con tu orquestador principal
+  const discardSalesDraftState = useCallback(() => clearSalesWorkspace({ incrementTicket: false }), [clearSalesWorkspace]);
+  const resetCurrentSale = useCallback(() => clearSalesWorkspace({ incrementTicket: true }), [clearSalesWorkspace]);
+
+  // 3. Control de UI
   const openSalesDraftRecoveryModal = useCallback(({ message, onConfirm, onCancel }) => {
     showAppModal({
       type: "warning",
@@ -84,32 +79,7 @@ const useSalesStateActions = ({
     });
   }, [showAppModal, closeAppModal]);
 
-  const resetCurrentSale = useCallback(() => {
-    setProductos([]);
-    setSelectedProduct(null);
-    setCurrentSaleClient(null);
-    setCurrentSaleReward(null);
-    setPendingFreeProductRewards([]);
-    setRewardProductModalOpen(false);
-    setPendingProductDiscountRewards([]);
-    setActiveProductDiscountReward(null);
-    setProductDiscountRewardModalOpen(false);
-    setTicketNumber((prev) => prev + 1);
-    setBarcode("");
-    setSaleToken(null);
-    setSaleNotes("");
-    setStockWarningMsg("");
-  }, [
-    setProductos, setSelectedProduct, setCurrentSaleClient, setCurrentSaleReward,
-    setPendingFreeProductRewards, setRewardProductModalOpen, setPendingProductDiscountRewards,
-    setActiveProductDiscountReward, setProductDiscountRewardModalOpen, setTicketNumber,
-    setBarcode, setSaleToken, setSaleNotes, setStockWarningMsg,
-  ]);
-
   return {
-    subtotal,
-    discountTotal,
-    total,
     restoreSalesDraft,
     discardSalesDraftState,
     openSalesDraftRecoveryModal,
