@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import styles from "../../pages/Sales/Sales.module.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
@@ -42,6 +42,7 @@ import useSalesCashMovements from "../../components/SalesComponents/hooks/useSal
 import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
 import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
 import useSalesFlowHandlers from "../../components/SalesComponents/hooks/useSalesFlowHandlers";
+import useSalesAutofocus from "../../components/SalesComponents/hooks/useSalesAutofocus";
 
 // Importar Componentes de UI extraídos
 import SalesHeader from "../../components/SalesComponents/SalesHeader/SalesHeader";
@@ -63,22 +64,12 @@ const Sales = () => {
 
   // --- 1. ESTADO CENTRAL DE LA VENTA ---
   const {
-    saleToken, setSaleToken,
-    saleNotes, setSaleNotes,
-    ticketNumber, setTicketNumber,
-    pendingTickets, setPendingTickets,
-    barcode, setBarcode,
-    selectedProduct, setSelectedProduct,
-    pendingFreeProductRewards, setPendingFreeProductRewards,
-    pendingProductDiscountRewards, setPendingProductDiscountRewards,
-    activeProductDiscountReward, setActiveProductDiscountReward,
-    cashMovements, setCashMovements,
-    currentSaleClient, setCurrentSaleClient,
-    currentSaleReward, setCurrentSaleReward,
-    processingSale, setProcessingSale,
-    productos, setProductos,
-    stockWarningMsg, setStockWarningMsg,
-    productosRef,
+    saleToken, setSaleToken, saleNotes, setSaleNotes, ticketNumber, setTicketNumber,
+    pendingTickets, setPendingTickets, barcode, setBarcode, selectedProduct, setSelectedProduct,
+    pendingFreeProductRewards, setPendingFreeProductRewards, pendingProductDiscountRewards, setPendingProductDiscountRewards,
+    activeProductDiscountReward, setActiveProductDiscountReward, cashMovements, setCashMovements,
+    currentSaleClient, setCurrentSaleClient, currentSaleReward, setCurrentSaleReward,
+    processingSale, setProcessingSale, productos, setProductos, stockWarningMsg, setStockWarningMsg, productosRef,
   } = useSalesCoreState();
 
   // --- 2. ALERTAS (APP MODAL) ---
@@ -88,20 +79,13 @@ const Sales = () => {
   const {
     isExitModalOpen, setExitModalOpen, handleCloseExitModal,
     isExitAuthModalOpen, setExitAuthModalOpen, handleExitAuthorized, handleCloseExitAuth,
-    isEntryModalOpen, setEntryModalOpen,
-    showPaymentModal, setShowPaymentModal,
-    isClientModalOpen, setClientModalOpen,
-    isVerifierModalOpen, setVerifierModalOpen,
-    isSearchModalOpen, setSearchModalOpen,
-    isDiscountModalOpen, setDiscountModalOpen,
-    isPendingModalOpen, setPendingModalOpen,
-    isChangeModalOpen, setChangeModalOpen,
-    isDeleteModalOpen, setDeleteModalOpen,
-    isDeleteItemModalOpen, setDeleteItemModalOpen,
-    isSalesHistoryModalOpen, setSalesHistoryModalOpen,
-    saleSuccessData, setSaleSuccessData,
-    isRewardProductModalOpen, setRewardProductModalOpen,
-    isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
+    isEntryModalOpen, setEntryModalOpen, showPaymentModal, setShowPaymentModal,
+    isClientModalOpen, setClientModalOpen, isVerifierModalOpen, setVerifierModalOpen,
+    isSearchModalOpen, setSearchModalOpen, isDiscountModalOpen, setDiscountModalOpen,
+    isPendingModalOpen, setPendingModalOpen, isChangeModalOpen, setChangeModalOpen,
+    isDeleteModalOpen, setDeleteModalOpen, isDeleteItemModalOpen, setDeleteItemModalOpen,
+    isSalesHistoryModalOpen, setSalesHistoryModalOpen, saleSuccessData, setSaleSuccessData,
+    isRewardProductModalOpen, setRewardProductModalOpen, isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
   } = useSalesModals();
 
   const { tableRef, gridTemplate, handleMouseDown } = useSalesTableColumns();
@@ -201,27 +185,13 @@ const Sales = () => {
     handleCloseProductDiscountRewardModal, increaseSelectedProductQuantity, decreaseSelectedProductQuantity, openExitFlow, showAppWarning,
   });
 
-  // =======================================================================
-  // MAGIA DEL FOCO AUTOMÁTICO
-  // =======================================================================
-  // Vigila si ABSOLUTAMENTE TODOS los modales están cerrados
-  const anyModalOpen = 
-    appModal.isOpen || isExitModalOpen || isExitAuthModalOpen || isEntryModalOpen || 
-    showPaymentModal || isClientModalOpen || isVerifierModalOpen || isSearchModalOpen || 
-    isDiscountModalOpen || isPendingModalOpen || isChangeModalOpen || isDeleteModalOpen || 
-    isDeleteItemModalOpen || isSalesHistoryModalOpen || !!saleSuccessData || 
-    isRewardProductModalOpen || isProductDiscountRewardModalOpen;
-
-  useEffect(() => {
-    // Si ningún modal está abierto, devolvemos el foco al input principal
-    if (!anyModalOpen && barcodeInputRef.current) {
-      // Pequeño timeout para dar tiempo a que React termine de destruir los modales
-      setTimeout(() => {
-        barcodeInputRef.current.focus();
-      }, 50); 
-    }
-  }, [anyModalOpen]);
-  // =======================================================================
+  useSalesAutofocus(barcodeInputRef, [
+    appModal.isOpen, isExitModalOpen, isExitAuthModalOpen, isEntryModalOpen, 
+    showPaymentModal, isClientModalOpen, isVerifierModalOpen, isSearchModalOpen, 
+    isDiscountModalOpen, isPendingModalOpen, isChangeModalOpen, isDeleteModalOpen, 
+    isDeleteItemModalOpen, isSalesHistoryModalOpen, !!saleSuccessData, 
+    isRewardProductModalOpen, isProductDiscountRewardModalOpen
+  ]);
 
   return (
     <div className={styles.ventasContainer}>
@@ -245,13 +215,12 @@ const Sales = () => {
         showAppWarning={showAppWarning}
       />
 
-      {/* AQUÍ PASAMOS LA REFERENCIA AL INPUT COMPONENT */}
       <SalesProductInput 
         barcode={barcode} 
         setBarcode={setBarcode} 
         shiftAlreadyCut={shiftAlreadyCut} 
         onAddProduct={handleBarcodeSearch} 
-        inputRef={barcodeInputRef} /* <--- PROP NUEVO */
+        inputRef={barcodeInputRef} 
       />
 
       <SalesProductsTable
