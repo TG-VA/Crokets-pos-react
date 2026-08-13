@@ -17,7 +17,6 @@ const SearchModal = memo(({ isOpen, onClose, onAddToSale, productosEnVenta = [] 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
-      // Evitar que el Escape cierre toda la aplicación si el modal está abierto
       if (e.key === "Escape") { 
         e.preventDefault(); 
         e.stopPropagation(); 
@@ -44,7 +43,6 @@ const SearchModal = memo(({ isOpen, onClose, onAddToSale, productosEnVenta = [] 
 
   if (!isOpen) return null;
 
-  // Manejador estricto para evitar que el click cierre el modal
   const handleModalClick = (e) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
@@ -72,7 +70,7 @@ const SearchModal = memo(({ isOpen, onClose, onAddToSale, productosEnVenta = [] 
                 placeholder="Escribe nombre o código..." 
                 autoComplete="off" 
                 autoFocus
-                onClick={handleModalClick} /* Blindaje extra en el input */
+                onClick={handleModalClick}
               />
             </div>
             <div className={styles.searchHelp}>Busca dentro de los productos vendibles para: <strong>{branch?.code ? `${branch.code} - ` : ""}{branch?.name || "Sucursal"}</strong></div>
@@ -88,25 +86,87 @@ const SearchModal = memo(({ isOpen, onClose, onAddToSale, productosEnVenta = [] 
                 {error ? <div className={styles.emptyMessage}>{error}</div> : loading ? <div className={styles.emptyMessage}>Cargando...</div> : searchResults.length === 0 ? <div className={styles.emptyMessage}>{searchTerm.length >= 2 ? "No se encontraron productos" : "Ingresa al menos 2 caracteres"}</div> : (
                   <div className={styles.resultsList}>
                     {searchResults.map((product, index) => {
+                      const isSelected = selectedIndex === index;
                       const displayPrice = getDisplayPrice(product);
-                      const canSell = canAddSelectedProduct(product);
-                      const stock = getProductAvailableStock(product);
                       const qty = getProductCartQuantity(product.id, product.barcode, product.name);
+                      const stock = getProductAvailableStock(product);
+                      
+                      const tracksInventory = product.tracks_inventory && !product.is_kit;
+                      const realStock = stock + qty;
+
+                      // Variables de estado visual
+                      let badgeText = "Activo";
+                      let badgeClass = `${styles.statusBadge} ${styles.statusActive}`;
+                      let badgeStyle = {};
+                      let stockDisplay = "";
+                      let isUnavailable = false;
+
+                      // ==========================================
+                      // 1. LÓGICA AISLADA PARA KITS
+                      // ==========================================
+                      if (product.is_kit) {
+                        if (isSelected) {
+                          // Si está seleccionado, leemos la validación real
+                          if (!kitValidation.isValid) {
+                            badgeText = "No disponible";
+                            badgeClass = `${styles.statusBadge} ${styles.statusInactive}`;
+                            stockDisplay = "Kit incompleto";
+                            isUnavailable = true;
+                          } else {
+                            badgeText = "Activo";
+                            stockDisplay = "Kit disponible";
+                          }
+                        } else {
+                          // Si NO está seleccionado, somos honestos: no sabemos el stock aún
+                          badgeText = "Validar stock";
+                          badgeClass = styles.statusBadge;
+                          badgeStyle = { backgroundColor: '#f3f4f6', color: '#4b5563', border: '1px solid #d1d5db' };
+                          stockDisplay = "Selecciona para validar";
+                        }
+                      } 
+                      // ==========================================
+                      // 2. LÓGICA PARA PRODUCTOS NORMALES
+                      // ==========================================
+                      else {
+                        stockDisplay = tracksInventory ? `Stock: ${stock}` : "Sin control inv.";
+                        const canSellNormal = tracksInventory ? (product.is_active_in_branch && product.has_been_stocked && stock > 0) : true;
+
+                        if (!canSellNormal) {
+                          isUnavailable = true;
+                          if (tracksInventory && stock <= 0 && realStock > 0) {
+                            badgeText = "Límite en carrito";
+                            badgeClass = styles.statusBadge;
+                            badgeStyle = { backgroundColor: '#fffbeb', color: '#d97706', border: '1px solid #d97706' };
+                          } else if (tracksInventory && stock <= 0 && realStock <= 0) {
+                            badgeText = "Agotado";
+                            badgeClass = styles.statusBadge;
+                            badgeStyle = { backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #ef4444' };
+                          } else {
+                            badgeText = "No disponible";
+                            badgeClass = `${styles.statusBadge} ${styles.statusInactive}`;
+                          }
+                        }
+                      }
 
                       return (
-                        <div key={product.id} className={`${styles.resultItem} ${index === selectedIndex ? styles.selectedResult : ""} ${product.tracks_inventory && !product.is_kit && stock <= 0 ? styles.unavailableResult : ""}`} onClick={() => setSelectedIndex(index)} onDoubleClick={() => handleSelectProduct(product)}>
+                        <div key={product.id} className={`${styles.resultItem} ${isSelected ? styles.selectedResult : ""} ${isUnavailable ? styles.unavailableResult : ""}`} onClick={() => setSelectedIndex(index)} onDoubleClick={() => handleSelectProduct(product)}>
                           <div className={styles.productTopRow}>
                             <div className={styles.productName}>{product.name}{product.is_kit ? " (KIT)" : ""}</div>
-                            <span className={`${styles.statusBadge} ${canSell ? styles.statusActive : styles.statusInactive}`}>{canSell ? "Activo" : "Sin existencia"}</span>
+                            <span className={badgeClass} style={badgeStyle}>{badgeText}</span>
                           </div>
                           <div className={styles.productDetails}>
                             <span className={styles.productCode}>Código: {product.barcode || "N/A"}</span>
                             <span className={styles.productPrice}>${displayPrice.finalPrice.toFixed(2)}</span>
                             {product.discount_enabled && <span className={styles.productStock}>Desc. {product.discount_percent}%</span>}
-                            <span className={`${styles.productStock} ${canSell || (!product.is_kit && !product.tracks_inventory) ? styles.inStock : styles.outOfStock}`}>
-                              {product.is_kit ? (canSell ? "Kit disponible" : "Kit incompleto") : product.tracks_inventory ? `Stock: ${stock}` : "Sin control inv."}
+                            
+                            <span className={`${styles.productStock} ${!isUnavailable ? styles.inStock : styles.outOfStock}`}>
+                              {stockDisplay}
                             </span>
-                            {product.tracks_inventory && !product.is_kit && qty > 0 && <span className={styles.reservedStock}>En venta: {qty}</span>}
+                            
+                            {/* Ahora los Kits también muestran cuántos hay en el carrito */}
+                            {(tracksInventory || product.is_kit) && qty > 0 && (
+                              <span className={styles.reservedStock}>En venta: {qty}</span>
+                            )}
                           </div>
                         </div>
                       );

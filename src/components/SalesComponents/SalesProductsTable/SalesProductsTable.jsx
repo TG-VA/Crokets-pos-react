@@ -27,7 +27,7 @@ const getProductDiscountConcept = (producto) => {
   return "";
 };
 
-//React.memo evita que la tabla parpadee o se recargue innecesariamente
+// React.memo evita que la tabla parpadee o se recargue innecesariamente
 const SalesProductsTable = memo(({
   productos = [], selectedProduct = null, onProductSelect, tableRef, gridTemplate, onColumnResizeStart
 }) => {
@@ -49,6 +49,14 @@ const SalesProductsTable = memo(({
           const discountConcept = getProductDiscountConcept(producto);
           const isSelected = selectedProduct && isSameCartItem(selectedProduct, producto);
 
+          // Lógica inteligente de Stock para la UI
+          const tracksInventory = Boolean(producto.tracks_inventory);
+          const existencia = Number(producto.existencia || 0);
+          const stockReal = Number(producto.stockReal || 0);
+          
+          const isLimitReached = tracksInventory && existencia <= 0 && stockReal > 0;
+          const isCompletelyEmpty = tracksInventory && existencia <= 0 && stockReal <= 0;
+
           // Lógica de clases CSS aplanada y limpia
           const rowClasses = [
             styles.tableRow,
@@ -67,6 +75,40 @@ const SalesProductsTable = memo(({
             >
               <span className={`${styles.tableCell} ${styles.productCell}`}>
                 <span className={styles.productNameText}>{producto.nombre || producto.codigo}</span>
+                
+                {/* 🟠 CASO 1: HAY STOCK PERO YA METISTE TODO AL CARRITO */}
+                {isLimitReached && (
+                  <span style={{ 
+                    backgroundColor: '#fffbeb', 
+                    color: '#d97706', 
+                    border: '1px solid #d97706', 
+                    padding: '2px 6px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.70rem', 
+                    fontWeight: 'bold', 
+                    marginLeft: '8px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Límite en carrito
+                  </span>
+                )}
+
+                {/* 🔴 CASO 2: EL INVENTARIO ESTÁ EN CERO ABSOLUTO */}
+                {isCompletelyEmpty && (
+                  <span style={{ 
+                    backgroundColor: '#fee2e2', 
+                    color: '#ef4444', 
+                    border: '1px solid #ef4444', 
+                    padding: '2px 6px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.70rem', 
+                    fontWeight: 'bold', 
+                    marginLeft: '8px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Agotado
+                  </span>
+                )}
                 
                 {producto.is_reward_item && <span className={styles.rewardBadge}>Recompensa</span>}
                 

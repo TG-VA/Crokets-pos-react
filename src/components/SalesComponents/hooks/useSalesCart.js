@@ -1,19 +1,16 @@
 import { useCallback } from "react";
 import { isRewardCartItem, isSameCartItem } from "../utils/salesCartUtils";
+import { validateProductForCart } from "../services/salesCartValidationService"; // <-- NUEVO SERVICIO
 
+// --- FUNCIONES PURAS (SIN ESTADO) ---
 const calculateDiscountedProduct = (basePrice, product) => {
   const originalPrice = Number(basePrice || 0);
   const discountEnabled = Boolean(product?.discount_enabled) && Number(product?.discount_percent || 0) > 0;
 
   if (!discountEnabled) {
     return {
-      precioOriginal: originalPrice,
-      precioFinal: originalPrice,
-      descuentoTipo: null,
-      descuentoValor: 0,
-      descuentoMontoUnitario: 0,
-      discountPercent: 0,
-      discountConcept: "",
+      precioOriginal: originalPrice, precioFinal: originalPrice, descuentoTipo: null,
+      descuentoValor: 0, descuentoMontoUnitario: 0, discountPercent: 0, discountConcept: "",
     };
   }
 
@@ -23,11 +20,8 @@ const calculateDiscountedProduct = (basePrice, product) => {
   return {
     precioOriginal: originalPrice,
     precioFinal: Math.max(originalPrice - descuentoMontoUnitario, 0),
-    descuentoTipo: "percent",
-    descuentoValor: discountPercent,
-    descuentoMontoUnitario,
-    discountPercent,
-    discountConcept: product.discount_concept || "",
+    descuentoTipo: "percent", descuentoValor: discountPercent,
+    descuentoMontoUnitario, discountPercent, discountConcept: product.discount_concept || "",
   };
 };
 
@@ -48,6 +42,7 @@ const updateCartItemQuantity = ({ item, quantity, stock }) => {
   };
 };
 
+// --- HOOK PRINCIPAL ---
 const useSalesCart = ({
   productosRef,
   selectedProduct,
@@ -59,70 +54,31 @@ const useSalesCart = ({
   syncCurrentSaleRewardsWithCart,
 }) => {
   
-  const commitCart = useCallback(
-    (nextProducts, nextSelectedProduct) => {
-      productosRef.current = nextProducts;
-      setProductos(nextProducts);
-      if (nextSelectedProduct !== undefined) {
-        setSelectedProduct(nextSelectedProduct);
-      }
-    },
-    [productosRef, setProductos, setSelectedProduct]
-  );
+  const commitCart = useCallback((nextProducts, nextSelectedProduct) => {
+    productosRef.current = nextProducts;
+    setProductos(nextProducts);
+    if (nextSelectedProduct !== undefined) {
+      setSelectedProduct(nextSelectedProduct);
+    }
+  }, [productosRef, setProductos, setSelectedProduct]);
 
-  const updateExistingProduct = useCallback(
-    ({ currentProducts, productId, quantity, stock }) => {
-      return currentProducts.map((item) => {
-        if (item.id !== productId || isRewardCartItem(item)) return item;
-        return updateCartItemQuantity({ item, quantity, stock });
-      });
-    },
-    []
-  );
+  const createCartProduct = useCallback(({ product, salePrice, costPrice, stock, tracksInventory, isKit }) => {
+    const discountData = calculateDiscountedProduct(salePrice, product);
+    return {
+      id: product.id, codigo: product.barcode, nombre: product.name,
+      precioOriginal: discountData.precioOriginal, precio: discountData.precioFinal, costo: costPrice,
+      cantidad: 1, importe: discountData.precioFinal, descuentoTipo: discountData.descuentoTipo,
+      descuentoValor: discountData.descuentoValor, descuentoMonto: discountData.descuentoMontoUnitario,
+      discountPercent: discountData.discountPercent, discountConcept: discountData.discountConcept,
+      stockReal: tracksInventory ? Number(stock || 0) : null,
+      existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
+      is_kit: Boolean(isKit), tracks_inventory: Boolean(tracksInventory),
+    };
+  }, []);
 
-  const getUpdatedSelectedProduct = useCallback(
-    ({ nextProducts, productId }) => {
-      if (selectedProduct?.id !== productId) return undefined;
-      return nextProducts.find((item) => item.id === productId && !isRewardCartItem(item)) || null;
-    },
-    [selectedProduct]
-  );
-
-  const createCartProduct = useCallback(
-    ({ product, salePrice, costPrice, stock, tracksInventory, isKit }) => {
-      const discountData = calculateDiscountedProduct(salePrice, product);
-
-      return {
-        id: product.id,
-        codigo: product.barcode,
-        nombre: product.name,
-        precioOriginal: discountData.precioOriginal,
-        precio: discountData.precioFinal,
-        costo: costPrice,
-        cantidad: 1,
-        importe: discountData.precioFinal,
-        descuentoTipo: discountData.descuentoTipo,
-        descuentoValor: discountData.descuentoValor,
-        descuentoMonto: discountData.descuentoMontoUnitario,
-        discountPercent: discountData.discountPercent,
-        discountConcept: discountData.discountConcept,
-        stockReal: tracksInventory ? Number(stock || 0) : null,
-        existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
-        is_kit: Boolean(isKit),
-        tracks_inventory: Boolean(tracksInventory),
-      };
-    },
-    []
-  );
-
-  // --- LÓGICA DE ACTUALIZACIÓN COMÚN ---
   const applyProductToCart = useCallback((product, stock, salePrice, costPrice, tracksInventory) => {
-    // IMPORTANTE: Leemos el ref justo en el momento de aplicar los cambios (después de los await)
     const currentProducts = productosRef.current || [];
-    
-    const existingProduct = currentProducts.find(
-      (item) => item.id === product.id && !isRewardCartItem(item)
-    );
+    const existingProduct = currentProducts.find((item) => item.id === product.id && !isRewardCartItem(item));
 
     if (existingProduct) {
       const nextQuantity = Number(existingProduct.cantidad || 0) + 1;
@@ -132,84 +88,52 @@ const useSalesCart = ({
         return false;
       }
 
-      const nextProducts = updateExistingProduct({
-        currentProducts,
-        productId: product.id,
-        quantity: nextQuantity,
-        stock,
+      const nextProducts = currentProducts.map((item) => {
+        if (item.id !== product.id || isRewardCartItem(item)) return item;
+        return updateCartItemQuantity({ item, quantity: nextQuantity, stock });
       });
 
-      commitCart(nextProducts, getUpdatedSelectedProduct({ nextProducts, productId: product.id }));
+      const nextSelected = nextProducts.find((item) => item.id === product.id && !isRewardCartItem(item)) || null;
+      commitCart(nextProducts, selectedProduct?.id === product.id ? nextSelected : undefined);
       return true;
     }
 
     const newProduct = createCartProduct({
-      product,
-      salePrice: Number(salePrice ?? 0),
-      costPrice: Number(costPrice ?? 0),
-      stock,
-      tracksInventory,
-      isKit: product.is_kit,
+      product, salePrice: Number(salePrice ?? 0), costPrice: Number(costPrice ?? 0),
+      stock, tracksInventory, isKit: product.is_kit,
     });
 
     commitCart([...currentProducts, newProduct]);
     return true;
-  }, [commitCart, createCartProduct, getUpdatedSelectedProduct, productosRef, showAppWarning, updateExistingProduct]);
+  }, [commitCart, createCartProduct, productosRef, selectedProduct, showAppWarning]);
 
-
-  // --- ORQUESTADOR PRINCIPAL ---
+  // =======================================================================
+  // ORQUESTADOR PRINCIPAL (Ahora limpio de reglas de negocio)
+  // =======================================================================
   const addProductToCart = useCallback(async (product) => {
-    if (!product?.id) return false;
+    // 1. Delegamos la validación dura al servicio
+    const validation = await validateProductForCart({ 
+      product, 
+      getKitAvailableStock, 
+      getBranchInventoryRow 
+    });
 
-    // 1. FLUJO PARA KITS
-    if (product.is_kit) {
-      const kitAvailability = await getKitAvailableStock(product.id);
-      const stock = Number(kitAvailability?.availableStock || 0);
-
-      if (!kitAvailability?.isValid || stock <= 0) {
-        showAppWarning(kitAvailability?.message || "Este kit no tiene inventario suficiente en sus componentes.");
-        return false;
-      }
-
-      return applyProductToCart(product, stock, product.sale_price, product.cost_price, true);
+    // 2. Si el dominio dice que NO, le avisamos al usuario y abortamos
+    if (!validation.isValid) {
+      showAppWarning(validation.message);
+      return false;
     }
 
-    // 2. FLUJO PARA PRODUCTOS INVENTARIADOS
-    const tracksInventory = Boolean(product.tracks_inventory);
-    if (tracksInventory) {
-      const inventoryRow = await getBranchInventoryRow(product.id);
-
-      if (!inventoryRow || inventoryRow.is_active === false) {
-        showAppWarning("Este producto no está activo en el inventario de esta sucursal.");
-        return false;
-      }
-
-      const stock = Number(inventoryRow.stock || 0);
-      const hasBeenStocked = Boolean(inventoryRow.has_been_stocked);
-
-      if (!hasBeenStocked && stock <= 0) {
-        showAppWarning("Este producto aún no tiene inventario inicial registrado.");
-        return false;
-      }
-
-      if (stock <= 0) {
-        showAppWarning("No hay existencia disponible.");
-        return false;
-      }
-
-      return applyProductToCart(
-        product, 
-        stock, 
-        inventoryRow.sale_price ?? product.sale_price, 
-        inventoryRow.cost_price ?? product.cost_price, 
-        true
-      );
-    }
-
-    // 3. FLUJO PARA PRODUCTOS SIN INVENTARIO (Servicios, genéricos, etc.)
-    return applyProductToCart(product, null, product.sale_price, product.cost_price, false);
-
+    // 3. Si el dominio dice que SÍ, modificamos el estado de React
+    return applyProductToCart(
+      product, 
+      validation.stock, 
+      validation.salePrice, 
+      validation.costPrice, 
+      validation.tracksInventory
+    );
   }, [applyProductToCart, getBranchInventoryRow, getKitAvailableStock, showAppWarning]);
+  // =======================================================================
 
   const increaseSelectedProductQuantity = useCallback(() => {
     if (!selectedProduct) return;
