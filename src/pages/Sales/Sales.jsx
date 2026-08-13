@@ -42,7 +42,7 @@ import useSalesCashMovements from "../../components/SalesComponents/hooks/useSal
 import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
 import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
 import useSalesFlowHandlers from "../../components/SalesComponents/hooks/useSalesFlowHandlers";
-import useSalesAutofocus from "../../components/SalesComponents/hooks/useSalesAutofocus"; // <-- NUEVO HOOK
+import useSalesAutofocus from "../../components/SalesComponents/hooks/useSalesAutofocus";
 
 // Importar Componentes de UI extraídos
 import SalesHeader from "../../components/SalesComponents/SalesHeader/SalesHeader";
@@ -185,9 +185,6 @@ const Sales = () => {
     handleCloseProductDiscountRewardModal, increaseSelectedProductQuantity, decreaseSelectedProductQuantity, openExitFlow, showAppWarning,
   });
 
-  // =======================================================================
-  // MAGIA DEL FOCO AUTOMÁTICO (Abstraída)
-  // =======================================================================
   useSalesAutofocus(barcodeInputRef, [
     appModal.isOpen, isExitModalOpen, isExitAuthModalOpen, isEntryModalOpen, 
     showPaymentModal, isClientModalOpen, isVerifierModalOpen, isSearchModalOpen, 
