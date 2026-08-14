@@ -14,7 +14,8 @@ export const validateRewardSelectionsInventory = async (rewardSelections = [], c
     quantityByProduct[product.id] = Number(quantityByProduct[product.id] || 0) + quantity;
   }
 
-  for (const [productId, quantityToAdd] of Object.entries(quantityByProduct)) {
+  // Ejecutamos todas las consultas de inventario en paralelo
+  const validationPromises = Object.entries(quantityByProduct).map(async ([productId, quantityToAdd]) => {
     const inventoryRow = await getBranchInventoryRow(productId);
     const stock = Number(inventoryRow?.stock || 0);
     const currentCartQuantity = getCartQuantityForProduct(productId, currentCart);
@@ -27,15 +28,21 @@ export const validateRewardSelectionsInventory = async (rewardSelections = [], c
       return { success: false, message: "Uno de los productos de recompensa aún no tiene inventario inicial." };
     }
     if (Number(quantityToAdd) > availableToAdd) {
-      return { success: false, message: `No hay inventario suficiente para aplicar las recompensas. Disponible para agregar: ${availableToAdd}.` };
+      return { success: false, message: `No hay inventario suficiente. Disponible para agregar: ${availableToAdd}.` };
     }
-  }
+    return { success: true };
+  });
+
+  const results = await Promise.all(validationPromises);
+  const failedResult = results.find(r => !r.success);
+  
+  if (failedResult) return failedResult;
+
   return { success: true };
 };
 
 /**
  * Procesa la lógica de negocio para regalar un producto (Free Product).
- * Devuelve un nuevo arreglo del carrito (Inmutabilidad).
  */
 export const processFreeRewardProduct = async ({
   reward, product, quantity, currentCart, getBranchInventoryRow
@@ -53,7 +60,7 @@ export const processFreeRewardProduct = async ({
   if (tracksInventory) {
     const inventoryRow = await getBranchInventoryRow(product.id);
     if (!inventoryRow || inventoryRow.is_active === false) {
-      return { success: false, message: `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.` };
+      return { success: false, message: `El producto no está activo en esta sucursal.` };
     }
 
     stock = Number(inventoryRow.stock || 0);
@@ -64,7 +71,7 @@ export const processFreeRewardProduct = async ({
     const availableToAdd = Math.max(stock - currentCartQuantity, 0);
 
     if (rewardQuantity > availableToAdd) {
-      return { success: false, message: `No hay inventario suficiente para aplicar "${reward.name || "RECOMPENSA"}". Disponible: ${availableToAdd}.` };
+      return { success: false, message: `No hay inventario suficiente para aplicar la recompensa. Disponible: ${availableToAdd}.` };
     }
   }
 
@@ -72,8 +79,9 @@ export const processFreeRewardProduct = async ({
   const cartQuantityAfterAdd = getCartQuantityForProduct(product.id, currentCart) + rewardQuantity;
   const baseRewardQty = Math.max(Number(reward.reward_quantity || 1), 1);
 
+  // Uso de crypto.randomUUID() para pureza de IDs
   const rewardItem = {
-    cartLineId: `reward_${reward.id}_${product.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    cartLineId: `reward_${reward.id}_${product.id}_${crypto.randomUUID()}`,
     id: product.id, codigo: product.barcode, nombre: product.name,
     precioOriginal: salePrice, precio: 0, costo: costPrice, cantidad: rewardQuantity, importe: 0,
     descuentoTipo: "reward", descuentoValor: salePrice, descuentoMonto: discountAmount,
@@ -113,7 +121,6 @@ export const processFreeRewardProduct = async ({
 
 /**
  * Procesa la lógica de negocio para aplicar un descuento por recompensa.
- * Devuelve un nuevo arreglo del carrito (Inmutabilidad).
  */
 export const processDiscountRewardProduct = async ({
   reward, product, quantity, originalUnitPrice, discountAmount, finalUnitPrice, discountType, discountValue, totalPoints,
@@ -131,7 +138,7 @@ export const processDiscountRewardProduct = async ({
   if (tracksInventory) {
     const inventoryRow = await getBranchInventoryRow(product.id);
     if (!inventoryRow || inventoryRow.is_active === false) {
-      return { success: false, message: `El producto "${product.name || product.barcode || "PRODUCTO"}" no está activo en esta sucursal.` };
+      return { success: false, message: `El producto no está activo en esta sucursal.` };
     }
 
     stock = Number(inventoryRow.stock || 0);
@@ -140,21 +147,24 @@ export const processDiscountRewardProduct = async ({
 
     const availableToAdd = Math.max(stock - getCartQuantityForProduct(product.id, currentCart), 0);
     if (cleanQuantity > availableToAdd) {
-      return { success: false, message: `No hay inventario suficiente para aplicar "${reward.name || "RECOMPENSA"}". Disponible: ${availableToAdd}.` };
+      return { success: false, message: `No hay inventario suficiente para aplicar la recompensa. Disponible: ${availableToAdd}.` };
     }
   }
 
-  const cleanDiscountAmount = Math.max(Math.floor(Number(discountAmount || 0)), 0);
-  const cleanFinalUnitPrice = Math.max(Number(finalUnitPrice ?? salePrice - cleanDiscountAmount), 0);
-  const discountTotal = cleanDiscountAmount * cleanQuantity;
+  // CORRECCIÓN: Se eliminó Math.floor() para no mutilar los centavos.
+  // CORRECCIÓN: Blindaje estricto de la relación matemática.
+  const cleanFinalUnitPrice = Math.max(Number(finalUnitPrice ?? salePrice - Number(discountAmount || 0)), 0);
+  const calculatedUnitDiscount = Math.max(salePrice - cleanFinalUnitPrice, 0); // Forzamos: original - final = descuento.
+  const calculatedTotalDiscount = calculatedUnitDiscount * cleanQuantity;
+
   const cartQuantityAfterAdd = getCartQuantityForProduct(product.id, currentCart) + cleanQuantity;
 
   const rewardDiscountItem = {
-    cartLineId: `reward_discount_${reward.id}_${product.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    cartLineId: `reward_discount_${reward.id}_${product.id}_${crypto.randomUUID()}`,
     id: product.id, codigo: product.barcode, nombre: product.name,
     precioOriginal: salePrice, precio: cleanFinalUnitPrice, costo: costPrice,
     cantidad: cleanQuantity, importe: cleanFinalUnitPrice * cleanQuantity,
-    descuentoTipo: "amount", descuentoValor: cleanDiscountAmount, descuentoMonto: discountTotal,
+    descuentoTipo: "amount", descuentoValor: calculatedUnitDiscount, descuentoMonto: calculatedTotalDiscount,
     discountPercent: discountType === "percent" ? Number(discountValue || 0) : 0,
     discountConcept: reward.name || "RECOMPENSA",
     stockReal: stock, existencia: tracksInventory && stock !== null ? Math.max(stock - cartQuantityAfterAdd, 0) : "∞",
@@ -166,7 +176,7 @@ export const processDiscountRewardProduct = async ({
     reward_product_quantity: cleanQuantity,
     reward_discount_type: discountType || reward.discount_type || null,
     reward_discount_value: Number(discountValue ?? reward.discount_value ?? 0),
-    reward_discount_amount: discountTotal,
+    reward_discount_amount: calculatedTotalDiscount,
   };
 
   let nextCart = [...currentCart, rewardDiscountItem];
