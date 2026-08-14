@@ -22,8 +22,15 @@ import ProductDiscountRewardModal from "../../components/SalesComponents/Modals/
 import AdminAuthorizationModal from "../../components/AdminAuthorizationModal/AdminAuthorizationModal";
 import AppModal from "../../components/AppModal/AppModal";
 
-// Importar Hooks
-import useSalesCoreState from "../../components/SalesComponents/hooks/useSalesCoreState";
+// Nuevos Hooks de Estado (Puristas)
+import { useSalesCartState } from "../../components/SalesComponents/hooks/useSalesCartState";
+import { useSalesTransactionState } from "../../components/SalesComponents/hooks/useSalesTransactionState";
+import { useSalesRewardsState } from "../../components/SalesComponents/hooks/useSalesRewardsState";
+import { useSalesPendingTicketsState } from "../../components/SalesComponents/hooks/useSalesPendingTicketsState";
+import { useSalesTerminalState } from "../../components/SalesComponents/hooks/useSalesTerminalState";
+
+// Importar Hooks Funcionales
+import useSalesTotals from "../../components/SalesComponents/hooks/useSalesTotals"; // <-- NUEVO HOOK DE MATEMÁTICAS
 import useSalesAppModal from "../../components/SalesComponents/hooks/useSalesAppModal";
 import useSalesModals from "../../components/SalesComponents/hooks/useSalesModals";
 import useSalesStateActions from "../../components/SalesComponents/hooks/useSalesStateActions";
@@ -62,15 +69,12 @@ const Sales = () => {
   // === REFERENCIA PARA EL FOCO AUTOMÁTICO ===
   const barcodeInputRef = useRef(null);
 
-  // --- 1. ESTADO CENTRAL DE LA VENTA ---
-  const {
-    saleToken, setSaleToken, saleNotes, setSaleNotes, ticketNumber, setTicketNumber,
-    pendingTickets, setPendingTickets, barcode, setBarcode, selectedProduct, setSelectedProduct,
-    pendingFreeProductRewards, setPendingFreeProductRewards, pendingProductDiscountRewards, setPendingProductDiscountRewards,
-    activeProductDiscountReward, setActiveProductDiscountReward, cashMovements, setCashMovements,
-    currentSaleClient, setCurrentSaleClient, currentSaleReward, setCurrentSaleReward,
-    processingSale, setProcessingSale, productos, setProductos, stockWarningMsg, setStockWarningMsg, productosRef,
-  } = useSalesCoreState();
+  // --- 1. ESTADO CENTRAL DE LA VENTA (SEGREGADO) ---
+  const { productos, setProductos, selectedProduct, setSelectedProduct, stockWarningMsg, setStockWarningMsg, productosRef } = useSalesCartState();
+  const { saleToken, setSaleToken, saleNotes, setSaleNotes, processingSale, setProcessingSale } = useSalesTransactionState();
+  const { currentSaleClient, setCurrentSaleClient, currentSaleReward, setCurrentSaleReward, pendingFreeProductRewards, setPendingFreeProductRewards, pendingProductDiscountRewards, setPendingProductDiscountRewards, activeProductDiscountReward, setActiveProductDiscountReward } = useSalesRewardsState();
+  const { ticketNumber, setTicketNumber, pendingTickets, setPendingTickets } = useSalesPendingTicketsState();
+  const { barcode, setBarcode, cashMovements, setCashMovements } = useSalesTerminalState();
 
   // --- 2. ALERTAS (APP MODAL) ---
   const { appModal, closeAppModal, showAppModal, showAppWarning, showAppSuccess } = useSalesAppModal();
@@ -91,10 +95,14 @@ const Sales = () => {
   const { tableRef, gridTemplate, handleMouseDown } = useSalesTableColumns();
 
   // --- 4. ACCIONES Y TOTALES ---
+  // A) Matemáticas Puras
+  const { subtotal, discountTotal, total } = useSalesTotals(productos);
+
+  // B) Reseteo de Estado
   const {
-    subtotal, discountTotal, total, restoreSalesDraft, discardSalesDraftState, openSalesDraftRecoveryModal, resetCurrentSale,
+    restoreSalesDraft, discardSalesDraftState, openSalesDraftRecoveryModal, resetCurrentSale,
   } = useSalesStateActions({
-    productos, setProductos, productosRef, setSelectedProduct, setCurrentSaleClient, setCurrentSaleReward, setTicketNumber,
+    setProductos, productosRef, setSelectedProduct, setCurrentSaleClient, setCurrentSaleReward, setTicketNumber,
     setSaleToken, setSaleNotes, setBarcode, setPendingTickets, setPendingFreeProductRewards, setRewardProductModalOpen,
     setPendingProductDiscountRewards, setActiveProductDiscountReward, setProductDiscountRewardModalOpen, setStockWarningMsg,
     showAppModal, closeAppModal,
@@ -169,10 +177,22 @@ const Sales = () => {
   const {
     handleSavePendingTicket, handleChangeToTicket, handleDeleteTicket, handleOpenChangeModal, handleOpenDeleteModal,
   } = useSalesPendingTickets({
-    productos, productosRef, pendingTickets, setPendingTickets, ticketNumber, setTicketNumber, currentSaleClient, setCurrentSaleClient,
-    currentSaleReward, setCurrentSaleReward, subtotal, discountTotal, total, setProductos, setSelectedProduct, setPendingFreeProductRewards,
-    setPendingProductDiscountRewards, setActiveProductDiscountReward, setRewardProductModalOpen, setProductDiscountRewardModalOpen,
-    setBarcode, setSaleToken, setChangeModalOpen, setDeleteModalOpen, showAppWarning,
+    pendingTickets, setPendingTickets, ticketNumber, setTicketNumber,
+    currentSaleData: { productos, currentSaleClient, currentSaleReward, subtotal, discountTotal, total },
+    onClearSale: resetCurrentSale, 
+    onLoadSale: (ticketData) => {
+      setProductos(ticketData.productos);
+      if (productosRef) productosRef.current = ticketData.productos;
+      setCurrentSaleClient(ticketData.client);
+      setCurrentSaleReward(ticketData.reward);
+      
+      setBarcode("");
+      setSaleToken(null);
+      setPendingFreeProductRewards([]);
+      setPendingProductDiscountRewards([]);
+      setActiveProductDiscountReward(null);
+    },
+    setChangeModalOpen, setDeleteModalOpen, showAppWarning,
   });
 
   useSalesKeyboardShortcuts({

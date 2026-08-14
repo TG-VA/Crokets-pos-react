@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { isRewardCartItem, isSameCartItem } from "../utils/salesCartUtils";
+import { applyManualDiscountToCart } from "../services/salesDiscountService";
 
 const useSalesDiscount = ({
   productosRef,
@@ -9,55 +9,22 @@ const useSalesDiscount = ({
   setDiscountModalOpen,
   showAppWarning,
 }) => {
+  
   const handleApplyDiscount = useCallback(
     (discountData) => {
-      if (!selectedProduct) return;
+      // 1. Delegamos las matemáticas al servicio puro
+      const result = applyManualDiscountToCart(productosRef.current || [], selectedProduct, discountData);
 
-      if (isRewardCartItem(selectedProduct)) {
-        showAppWarning("No puedes aplicar descuento manual a un producto aplicado como recompensa.");
+      // 2. Control de errores
+      if (!result.success) {
+        showAppWarning(result.message);
         return;
       }
 
-      const newPrice = Number.parseFloat(discountData?.newPrice);
-
-      if (Number.isNaN(newPrice) || newPrice < 0) {
-        showAppWarning("Precio de descuento inválido.");
-        return;
-      }
-
-      const currentProducts = productosRef.current || [];
-
-      const updatedProducts = currentProducts.map((product) => {
-        if (!isSameCartItem(product, selectedProduct)) return product;
-
-        const originalPrice = Number(
-          product.precioOriginal ?? discountData?.originalPrice ?? product.precio ?? 0
-        );
-        const quantity = Number(product.cantidad || 0);
-        const finalPrice = newPrice;
-        
-        const unitDiscount = Math.max(originalPrice - finalPrice, 0);
-        const totalDiscount = unitDiscount * quantity;
-        const discountPercent = originalPrice > 0 ? (unitDiscount / originalPrice) * 100 : 0;
-
-        return {
-          ...product,
-          precioOriginal: originalPrice,
-          precio: finalPrice,
-          importe: finalPrice * quantity,
-          descuentoTipo: totalDiscount > 0 ? "amount" : null,
-          descuentoValor: unitDiscount,
-          descuentoMonto: totalDiscount,
-          discountPercent: totalDiscount > 0 ? Number(discountPercent.toFixed(2)) : 0,
-        };
-      });
-
-      // Actualización síncrona segura
-      productosRef.current = updatedProducts;
-      setProductos(updatedProducts);
-
-      const updatedSelected = updatedProducts.find((product) => isSameCartItem(product, selectedProduct));
-      setSelectedProduct(updatedSelected || null);
+      // 3. Actualización de UI e Inmutabilidad
+      productosRef.current = result.nextCart;
+      setProductos(result.nextCart);
+      setSelectedProduct(result.nextSelectedProduct || null);
     },
     [productosRef, selectedProduct, setProductos, setSelectedProduct, showAppWarning]
   );
