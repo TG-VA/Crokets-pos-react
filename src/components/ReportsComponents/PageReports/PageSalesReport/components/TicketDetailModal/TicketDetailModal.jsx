@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { formatCurrency } from "../../../utils/formatters";
+import { formatCurrency } from "../../../../../../utils/formatters"; 
 import styles from "./TicketDetailModal.module.css";
 
 export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading }) => {

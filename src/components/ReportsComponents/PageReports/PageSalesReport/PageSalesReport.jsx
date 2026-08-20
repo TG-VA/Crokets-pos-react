@@ -3,7 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 import { useSalesReport, ITEMS_PER_PAGE } from "./hooks/useSalesReport";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency } from "../../../../utils/formatters";
 import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./PageSalesReport.module.css";

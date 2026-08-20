@@ -20,10 +20,12 @@ export const formatNumber = (value) => {
  */
 export const formatDynamicDate = (isoDate, timeZone = "America/Cancun") => {
   if (!isoDate) return "N/A";
+
   const date = new Date(isoDate);
+
   return new Intl.DateTimeFormat("es-MX", {
     timeZone: timeZone, // ¡Dinámico!
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(date);
 };
