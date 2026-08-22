@@ -1,15 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
-import {
-  getSystemLocalTimestamp,
-  logInventoryMovement,
-} from "../../../../../utils/inventoryMovements";
 
 import {
   createTransferFolio,
-  createTransferId,
   normalizeTransferOrder,
-  readTransferOrders,
-  writeTransferOrders,
 } from "../utils/transfersUtils";
 
 const getBranchFallback = (currentBranch) => {
@@ -35,158 +28,6 @@ const getProductPrices = (product) => {
     costPrice: Number(product?.costo ?? product?.costPrice ?? 0) || 0,
     salePrice: Number(product?.precio ?? product?.salePrice ?? 0) || 0,
   };
-};
-
-const getMovementReason = ({
-  folio,
-  action,
-  counterpartBranchName,
-  note = "",
-}) => {
-  const baseReason = `TRASPASO ${action} ${folio} ${counterpartBranchName}`.trim();
-
-  if (!note) {
-    return baseReason;
-  }
-
-  return `${baseReason} - ${String(note).trim()}`;
-};
-
-const findInventoryRow = async ({ branchId, productId }) => {
-  const { data, error } = await supabase
-    .from("branch_inventory")
-    .select("id, stock")
-    .eq("branch_id", branchId)
-    .eq("product_id", productId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-};
-
-const updateInventoryRow = async ({
-  inventoryRowId,
-  nextStock,
-  costPrice,
-  salePrice,
-  updatedAt,
-}) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .update({
-      stock: nextStock,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      sale_price: salePrice,
-      updated_at: updatedAt,
-    })
-    .eq("id", inventoryRowId);
-
-  if (error) {
-    throw error;
-  }
-};
-
-const insertInventoryRow = async ({
-  branchId,
-  productId,
-  initialStock,
-  costPrice,
-  salePrice,
-  createdAt,
-}) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .insert({
-      branch_id: branchId,
-      product_id: productId,
-      stock: initialStock,
-      min_stock: 0,
-      max_stock: 0,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      sale_price: salePrice,
-      created_at: createdAt,
-      updated_at: createdAt,
-    });
-
-  if (error) {
-    throw error;
-  }
-};
-
-const applyInventoryDelta = async ({
-  branchId,
-  product,
-  deltaQuantity,
-  reason,
-  userId = null,
-  movementCreatedAt,
-  databaseTimestamp,
-}) => {
-  const productId = getProductId(product);
-
-  if (!branchId || !productId) {
-    throw new Error("No se pudo aplicar el movimiento del traspaso.");
-  }
-
-  const normalizedDelta = Number(deltaQuantity);
-
-  if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) {
-    return;
-  }
-
-  const inventoryRow = await findInventoryRow({
-    branchId,
-    productId,
-  });
-
-  const previousStock = Number(inventoryRow?.stock ?? 0);
-  const newStock = previousStock + normalizedDelta;
-
-  if (newStock < 0) {
-    throw new Error(
-      `El producto ${product?.name || product?.descripcion || "seleccionado"} no tiene existencia suficiente para completar el traspaso.`
-    );
-  }
-
-  const { costPrice, salePrice } = getProductPrices(product);
-
-  if (inventoryRow?.id) {
-    await updateInventoryRow({
-      inventoryRowId: inventoryRow.id,
-      nextStock: newStock,
-      costPrice,
-      salePrice,
-      updatedAt: databaseTimestamp,
-    });
-  } else {
-    await insertInventoryRow({
-      branchId,
-      productId,
-      initialStock: normalizedDelta,
-      costPrice,
-      salePrice,
-      createdAt: databaseTimestamp,
-    });
-  }
-
-  await logInventoryMovement({
-    branchId,
-    productId,
-    movementType: "adjustment",
-    quantity: normalizedDelta,
-    previousStock,
-    newStock,
-    reason,
-    userId,
-    createdAt: movementCreatedAt,
-  });
 };
 
 const buildTransferItems = (items = []) => {
@@ -215,6 +56,62 @@ const validateTransferItems = (items = []) => {
   return normalizedItems;
 };
 
+const TRANSFER_SELECT = `
+  id,
+  from_branch_id,
+  to_branch_id,
+  user_id,
+  status,
+  notes,
+  created_at,
+  approved_at,
+  completed_at,
+  from_branch:branches!inventory_transfers_from_branch_id_fkey (
+    id,
+    name,
+    code
+  ),
+  to_branch:branches!inventory_transfers_to_branch_id_fkey (
+    id,
+    name,
+    code
+  ),
+  user:users!inventory_transfers_user_id_fkey (
+    id,
+    username,
+    email
+  ),
+  inventory_transfer_items (
+    id,
+    product_id,
+    quantity,
+    cost_price,
+    product:products!inventory_transfer_items_product_id_fkey (
+      id,
+      name,
+      barcode
+    )
+  )
+`;
+
+const fetchTransferOrderById = async (transferOrderId) => {
+  const { data, error } = await supabase
+    .from("inventory_transfers")
+    .select(TRANSFER_SELECT)
+    .eq("id", transferOrderId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return normalizeTransferOrder(data);
+};
+
 export const fetchTransferBranchOptions = async (currentBranch) => {
   try {
     const { data, error } = await supabase
@@ -235,8 +132,17 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
   }
 };
 
-export const loadStoredTransfers = () => {
-  return readTransferOrders();
+export const loadTransferOrders = async () => {
+  const { data, error } = await supabase
+    .from("inventory_transfers")
+    .select(TRANSFER_SELECT)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (Array.isArray(data) ? data : []).map(normalizeTransferOrder);
 };
 
 export const createTransferOrder = async ({
@@ -254,54 +160,50 @@ export const createTransferOrder = async ({
     throw new Error("Selecciona la sucursal destino.");
   }
 
+  if (!user?.id) {
+    throw new Error("No se detectó el usuario que genera el traspaso.");
+  }
+
   if (originBranch.id === destinationBranch.id) {
     throw new Error("La sucursal destino debe ser distinta a la origen.");
   }
 
   const normalizedItems = validateTransferItems(items);
   const folio = createTransferFolio();
-  const now = new Date();
-  const movementCreatedAt = getSystemLocalTimestamp(now);
-  const databaseTimestamp = now.toISOString();
 
-  for (const item of normalizedItems) {
-    await applyInventoryDelta({
-      branchId: originBranch.id,
-      product: item,
-      deltaQuantity: item.requestedQty * -1,
-      reason: getMovementReason({
-        folio,
-        action: "ENVIADO A",
-        counterpartBranchName: destinationBranch.name || "SUCURSAL DESTINO",
-        note: notes,
-      }),
-      userId: user?.id || null,
-      movementCreatedAt,
-      databaseTimestamp,
-    });
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    "create_transfer_order",
+    {
+      p_from_branch_id: originBranch.id,
+      p_to_branch_id: destinationBranch.id,
+      p_user_id: user.id,
+      p_notes: notes || "",
+      p_folio: folio,
+      p_items: normalizedItems.map((item) => ({
+        productId: item.productId,
+        barcode: item.barcode,
+        name: item.name,
+        requestedQty: item.requestedQty,
+        costPrice: item.costPrice,
+        salePrice: item.salePrice,
+      })),
+    }
+  );
+
+  if (rpcError) {
+    throw new Error(
+      rpcError?.message ||
+        "No se pudo crear la orden de traspaso (RPC create_transfer_order)."
+    );
   }
 
-  const transferOrder = normalizeTransferOrder({
-    id: createTransferId(),
-    folio,
-    status: "pending_receipt",
-    notes,
-    createdAt: databaseTimestamp,
-    createdByUserId: user?.id || null,
-    createdByUsername: user?.username || user?.email || "SISTEMA",
-    originBranchId: originBranch.id,
-    originBranchName: originBranch.name || "SUCURSAL ORIGEN",
-    destinationBranchId: destinationBranch.id,
-    destinationBranchName: destinationBranch.name || "SUCURSAL DESTINO",
-    items: normalizedItems,
-  });
+  if (!rpcResult?.success || !rpcResult?.transferId) {
+    throw new Error(
+      "La operación de creación no devolvió una referencia válida. Intenta nuevamente."
+    );
+  }
 
-  const updatedOrders = writeTransferOrders([
-    transferOrder,
-    ...readTransferOrders(),
-  ]);
-
-  return updatedOrders.find((order) => order.id === transferOrder.id) || transferOrder;
+  return fetchTransferOrderById(rpcResult.transferId);
 };
 
 export const receiveTransferOrder = async ({
@@ -314,8 +216,7 @@ export const receiveTransferOrder = async ({
     throw new Error("No hay una sucursal activa para recibir el traspaso.");
   }
 
-  const storedOrders = readTransferOrders();
-  const transferOrder = storedOrders.find((order) => order.id === transferOrderId);
+  const transferOrder = await fetchTransferOrderById(transferOrderId);
 
   if (!transferOrder) {
     throw new Error("No se encontró la orden de traspaso.");
@@ -328,12 +229,6 @@ export const receiveTransferOrder = async ({
   if (transferOrder.status !== "pending_receipt") {
     throw new Error("La orden seleccionada ya fue recibida.");
   }
-
-  const now = new Date();
-  const movementCreatedAt = getSystemLocalTimestamp(now);
-  const databaseTimestamp = now.toISOString();
-
-  const completedItems = [];
 
   for (const item of transferOrder.items) {
     const requestedQty = Number(item?.requestedQty ?? 0) || 0;
@@ -350,70 +245,42 @@ export const receiveTransferOrder = async ({
         `La recepción de ${item.name} debe estar entre 0 y ${requestedQty} piezas.`
       );
     }
-
-    const receivedQty = Math.floor(parsedReceivedQty);
-    const returnedQty = requestedQty - receivedQty;
-
-    if (receivedQty > 0) {
-      await applyInventoryDelta({
-        branchId: transferOrder.destinationBranchId,
-        product: item,
-        deltaQuantity: receivedQty,
-        reason: getMovementReason({
-          folio: transferOrder.folio,
-          action: "RECIBIDO DE",
-          counterpartBranchName: transferOrder.originBranchName,
-        }),
-        userId: user?.id || null,
-        movementCreatedAt,
-        databaseTimestamp,
-      });
-    }
-
-    if (returnedQty > 0) {
-      await applyInventoryDelta({
-        branchId: transferOrder.originBranchId,
-        product: item,
-        deltaQuantity: returnedQty,
-        reason: getMovementReason({
-          folio: transferOrder.folio,
-          action: "DEVOLUCION AUTOMATICA A",
-          counterpartBranchName: transferOrder.originBranchName,
-          note: `Diferencia en recepcion hacia ${transferOrder.destinationBranchName}`,
-        }),
-        userId: user?.id || null,
-        movementCreatedAt,
-        databaseTimestamp,
-      });
-    }
-
-    completedItems.push({
-      ...item,
-      receivedQty,
-      returnedQty,
-    });
   }
 
-  const nextStatus = completedItems.some((item) => item.returnedQty > 0)
-    ? "received_with_difference"
-    : "received_complete";
+  const normalizedReceivedMap = {};
+  for (const item of transferOrder.items) {
+    const requestedQty = Number(item?.requestedQty ?? 0) || 0;
+    const parsedReceivedQty = Number(
+      receivedQuantities[item.productId] ?? requestedQty
+    );
+    normalizedReceivedMap[item.productId] = Math.floor(parsedReceivedQty);
+  }
 
-  const updatedOrder = normalizeTransferOrder({
-    ...transferOrder,
-    status: nextStatus,
-    receivedAt: databaseTimestamp,
-    receivedByUserId: user?.id || null,
-    receivedByUsername: user?.username || user?.email || "SISTEMA",
-    items: completedItems,
-  });
-
-  const updatedOrders = writeTransferOrders(
-    storedOrders.map((order) =>
-      order.id === transferOrderId ? updatedOrder : order
-    )
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    "receive_transfer_order",
+    {
+      p_transfer_id: transferOrderId,
+      p_destination_branch: currentBranch.id,
+      p_user_id: user?.id || null,
+      p_username: user?.username || user?.email || "SISTEMA",
+      p_received_qty_map: normalizedReceivedMap,
+    }
   );
 
-  return updatedOrders.find((order) => order.id === transferOrderId) || updatedOrder;
+  if (rpcError) {
+    throw new Error(
+      rpcError?.message ||
+        "No se pudo recibir la orden de traspaso (RPC receive_transfer_order)."
+    );
+  }
+
+  if (!rpcResult?.success || !rpcResult?.transferId) {
+    throw new Error(
+      "La operación de recepción no devolvió una referencia válida. Intenta nuevamente."
+    );
+  }
+
+  return fetchTransferOrderById(transferOrderId);
 };
 
 export const cancelTransferOrder = async ({
@@ -425,8 +292,7 @@ export const cancelTransferOrder = async ({
     throw new Error("No hay una sucursal activa para cancelar el traspaso.");
   }
 
-  const storedOrders = readTransferOrders();
-  const transferOrder = storedOrders.find((order) => order.id === transferOrderId);
+  const transferOrder = await fetchTransferOrderById(transferOrderId);
 
   if (!transferOrder) {
     throw new Error("No se encontró la orden de traspaso.");
@@ -442,46 +308,28 @@ export const cancelTransferOrder = async ({
     );
   }
 
-  const now = new Date();
-  const movementCreatedAt = getSystemLocalTimestamp(now);
-  const databaseTimestamp = now.toISOString();
-
-  for (const item of transferOrder.items) {
-    const requestedQty = Number(item?.requestedQty ?? 0) || 0;
-
-    if (requestedQty <= 0) {
-      continue;
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    "cancel_transfer_order",
+    {
+      p_transfer_id: transferOrderId,
+      p_current_branch: currentBranch.id,
+      p_user_id: user?.id || null,
+      p_username: user?.username || user?.email || "SISTEMA",
     }
-
-    await applyInventoryDelta({
-      branchId: transferOrder.originBranchId,
-      product: item,
-      deltaQuantity: requestedQty,
-      reason: getMovementReason({
-        folio: transferOrder.folio,
-        action: "CANCELADO Y DEVUELTO A",
-        counterpartBranchName: transferOrder.originBranchName,
-        note: `Cancelado antes de recibir en ${transferOrder.destinationBranchName}`,
-      }),
-      userId: user?.id || null,
-      movementCreatedAt,
-      databaseTimestamp,
-    });
-  }
-
-  const updatedOrder = normalizeTransferOrder({
-    ...transferOrder,
-    status: "cancelled",
-    cancelledAt: databaseTimestamp,
-    cancelledByUserId: user?.id || null,
-    cancelledByUsername: user?.username || user?.email || "SISTEMA",
-  });
-
-  const updatedOrders = writeTransferOrders(
-    storedOrders.map((order) =>
-      order.id === transferOrderId ? updatedOrder : order
-    )
   );
 
-  return updatedOrders.find((order) => order.id === transferOrderId) || updatedOrder;
+  if (rpcError) {
+    throw new Error(
+      rpcError?.message ||
+        "No se pudo cancelar la orden de traspaso (RPC cancel_transfer_order)."
+    );
+  }
+
+  if (!rpcResult?.success || !rpcResult?.transferId) {
+    throw new Error(
+      "La operación de cancelación no devolvió una referencia válida. Intenta nuevamente."
+    );
+  }
+
+  return fetchTransferOrderById(transferOrderId);
 };
