@@ -8,7 +8,7 @@ import {
   cancelTransferOrder,
   createTransferOrder,
   fetchTransferBranchOptions,
-  loadStoredTransfers,
+  loadTransferOrders,
   receiveTransferOrder,
 } from "../services/transfersService";
 import {
@@ -57,8 +57,16 @@ const useTransfersPage = () => {
     }
   }, [branch]);
 
-  const reloadOrders = useCallback(() => {
-    setTransferOrders(loadStoredTransfers());
+  const reloadOrders = useCallback(async () => {
+    try {
+      const orders = await loadTransferOrders();
+      setTransferOrders(orders);
+    } catch (loadError) {
+      console.error("No se pudieron cargar los traspasos:", loadError);
+      setError(
+        loadError?.message || "No se pudieron cargar los traspasos desde Supabase."
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -67,22 +75,6 @@ const useTransfersPage = () => {
 
   useEffect(() => {
     reloadOrders();
-  }, [reloadOrders]);
-
-  useEffect(() => {
-    const handleStorage = (event) => {
-      if (event.key && event.key !== "inventoryTransfers_v1") {
-        return;
-      }
-
-      reloadOrders();
-    };
-
-    window.addEventListener("storage", handleStorage);
-
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-    };
   }, [reloadOrders]);
 
   const destinationOptions = useMemo(() => {
@@ -417,7 +409,7 @@ const useTransfersPage = () => {
       });
 
       await refreshProducts();
-      reloadOrders();
+      await reloadOrders();
       setDraftItems([]);
       setTransferNotes("");
       clearLookupSelection();
@@ -482,7 +474,7 @@ const useTransfersPage = () => {
       });
 
       await refreshProducts();
-      reloadOrders();
+      await reloadOrders();
       setSuccess(
         completedTransfer.status === "received_with_difference"
           ? `Se recibió ${completedTransfer.folio} con diferencias y el faltante regresó automáticamente a ${completedTransfer.originBranchName}.`
@@ -521,7 +513,7 @@ const useTransfersPage = () => {
         });
 
         await refreshProducts();
-        reloadOrders();
+        await reloadOrders();
         setSuccess(
           `Se canceló ${cancelledTransfer.folio} y las piezas regresaron a ${cancelledTransfer.originBranchName}.`
         );
