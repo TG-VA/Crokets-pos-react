@@ -1,130 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import styles from "./ProductsSearchModal.module.css";
+import { useProductSearchModal } from "../hooks/useProductSearchModal";
 
 const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const resultsListRef = useRef(null);
-
-  const getProductName = (product) => {
-    return String(
-      product?.descripcion ||
-        product?.nombre ||
-        product?.name ||
-        ""
-    ).trim();
-  };
-
-  const searchResults = useMemo(() => {
-    const term = (searchTerm || "").trim().toLowerCase();
-
-    if (!term) return [];
-
-    return (products || [])
-      .filter((p) => {
-        const code = (p?.codigo ?? "").toString().toLowerCase();
-        const desc = (p?.descripcion ?? "").toString().toLowerCase();
-        const dept = (p?.departamento ?? "").toString().toLowerCase();
-
-        return (
-          code.includes(term) ||
-          desc.includes(term) ||
-          dept.includes(term)
-        );
-      })
-      .sort((a, b) => {
-        const nameA = getProductName(a);
-        const nameB = getProductName(b);
-
-        return nameA.localeCompare(nameB, "es", {
-          sensitivity: "base",
-          numeric: true,
-        });
-      });
-  }, [products, searchTerm]);
-
-  useEffect(() => {
-    if (!searchTerm.trim() || searchResults.length === 0) {
-      setSelectedIndex(-1);
-      return;
-    }
-
-    setSelectedIndex(0);
-  }, [searchTerm, searchResults.length]);
-
-  useEffect(() => {
-    if (selectedIndex >= 0 && resultsListRef.current) {
-      const container = resultsListRef.current;
-      const items = container.querySelectorAll(`.${styles.resultItem}`);
-
-      if (items[selectedIndex]) {
-        items[selectedIndex].scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "nearest",
-        });
-      }
-    }
-  }, [selectedIndex]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        handleClose();
-        return;
-      }
-
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < searchResults.length - 1 ? prev + 1 : prev
-        );
-        return;
-      }
-
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        return;
-      }
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-
-        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
-          handleSelectProduct(searchResults[selectedIndex]);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown, true);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown, true);
-    };
-  }, [isOpen, searchResults, selectedIndex]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setSearchTerm("");
-    setSelectedIndex(-1);
-  }, [isOpen]);
-
-  const handleClose = () => {
-    setSearchTerm("");
-    setSelectedIndex(-1);
-    onClose?.();
-  };
-
-  const handleSelectProduct = (product) => {
-    onSelect?.(product);
-    handleClose();
-  };
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedIndex,
+    searchResults,
+    resultsListRef,
+    handleClose,
+    handleSelectProduct,
+  } = useProductSearchModal({ isOpen, onClose, products, onSelect });
 
   if (!isOpen) return null;
 
@@ -179,45 +66,50 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                 </div>
               ) : (
                 <div className={styles.resultsList}>
-                  {searchResults.map((product, index) => (
-                    <div
-                      key={product.codigo}
-                      className={`${styles.resultItem} ${
-                        index === selectedIndex ? styles.selectedResult : ""
-                      }`}
-                      onClick={() => handleSelectProduct(product)}
-                    >
-                      <div className={styles.productInfo}>
-                        <div className={styles.productName}>
-                          {product.descripcion}
-                        </div>
+                  {searchResults.map((product, index) => {
+                    // Limpieza estricta de clases dinámicas para evitar espacios colgantes
+                    const itemClasses = [
+                      styles.resultItem,
+                      index === selectedIndex ? styles.selectedResult : ""
+                    ].filter(Boolean).join(" ");
 
-                        <div className={styles.productDetails}>
-                          <span className={styles.productCode}>
-                            Código: {product.codigo}
-                          </span>
+                    return (
+                      <div
+                        key={product.codigo}
+                        className={itemClasses}
+                        onClick={() => handleSelectProduct(product)}
+                      >
+                        <div className={styles.productInfo}>
+                          <div className={styles.productName}>
+                            {product.descripcion}
+                          </div>
 
-                          <span className={styles.productPrice}>
-                            ${Number(product.precio || 0).toFixed(2)}
-                          </span>
+                          <div className={styles.productDetails}>
+                            <span className={styles.productCode}>
+                              Código: {product.codigo}
+                            </span>
 
-                          <span
-                            className={`${styles.productStock} ${
-                              (product.existencia || 0) > 0
-                                ? styles.inStock
-                                : styles.outOfStock
-                            }`}
-                          >
-                            Stock: {product.existencia ?? 0}
-                          </span>
+                            <span className={styles.productPrice}>
+                              ${Number(product.precio || 0).toFixed(2)}
+                            </span>
 
-                          <span className={styles.productCode}>
-                            Dept: {product.departamento}
-                          </span>
+                            <span
+                              className={[
+                                styles.productStock,
+                                (product.existencia || 0) > 0 ? styles.inStock : styles.outOfStock
+                              ].filter(Boolean).join(" ")}
+                            >
+                              Stock: {product.existencia ?? 0}
+                            </span>
+
+                            <span className={styles.productCode}>
+                              Dept: {product.departamento}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -227,7 +119,7 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
         <div className={styles.modalActions}>
           <div className={styles.actionButtons}>
             <button
-              className={`${styles.actionButton} ${styles.selectButton}`}
+              className={[styles.actionButton, styles.selectButton].join(" ")}
               onClick={() => {
                 if (selectedIndex >= 0 && searchResults[selectedIndex]) {
                   handleSelectProduct(searchResults[selectedIndex]);
@@ -239,7 +131,7 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
             </button>
 
             <button
-              className={`${styles.actionButton} ${styles.cancelButton}`}
+              className={[styles.actionButton, styles.cancelButton].join(" ")}
               onClick={handleClose}
             >
               ESC - Cerrar

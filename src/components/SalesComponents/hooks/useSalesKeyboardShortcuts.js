@@ -2,15 +2,12 @@ import { useEffect, useRef } from "react";
 import { isSameCartItem } from "../utils/salesCartUtils";
 
 const useSalesKeyboardShortcuts = (props) => {
-  // 1. Guardamos TODAS las props en una referencia
   const stateRef = useRef(props);
-
-  // 2. Mantenemos la referencia siempre actualizada (sin causar re-renders del efecto)
+  
   stateRef.current = props;
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // 3. Extraemos las variables más recientes desde la referencia
       const {
         productos, selectedProduct, setSelectedProduct, processingSale, shiftAlreadyCut,
         showPaymentModal, isEntryModalOpen, isExitModalOpen, isExitAuthModalOpen,
@@ -36,10 +33,10 @@ const useSalesKeyboardShortcuts = (props) => {
       const target = event.target;
       const isInputElement = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
 
-      // Ignorar atajos si el usuario está escribiendo (excepto Escape para salir del input)
-      if (isInputElement && event.key !== "Escape") return;
+      const allowedKeysInInput = ["Escape", "F5", "F6", "F7", "F8", "F9", "F10", "F12"];
 
-      // --- NAVEGACIÓN CON FLECHAS ---
+      if (isInputElement && !allowedKeysInInput.includes(event.key)) return;
+
       if ((event.key === "ArrowDown" || event.key === "ArrowUp") && !isAnyModalOpen) {
         event.preventDefault();
         if (productos.length === 0) return;
@@ -60,14 +57,12 @@ const useSalesKeyboardShortcuts = (props) => {
         return;
       }
 
-      // --- DESCUENTO RÁPIDO (Ctrl + D) ---
       if (event.ctrlKey && event.key.toLowerCase() === "d") {
         event.preventDefault();
         handleOpenDiscountModal();
         return;
       }
 
-      // --- CANTIDADES (+ / -) ---
       if (!isAnyModalOpen && selectedProduct && !isInputElement) {
         if (event.key === "+" || event.key === "=" || event.key === "Add") {
           event.preventDefault();
@@ -81,7 +76,6 @@ const useSalesKeyboardShortcuts = (props) => {
         }
       }
 
-      // --- TECLAS DE FUNCIÓN Y ACCIONES ---
       switch (event.key) {
         case "F12": event.preventDefault(); openPaymentFlow(); break;
         case "F5": event.preventDefault(); handleOpenChangeModal(); break;
@@ -135,8 +129,9 @@ const useSalesKeyboardShortcuts = (props) => {
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    // La intercepción se realiza en la fase de captura para superar las restricciones nativas del input
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => document.removeEventListener("keydown", handleKeyDown, { capture: true });
     
   }, []); 
 };
