@@ -312,24 +312,66 @@ const useTransfersPage = () => {
       return;
     }
 
-    const foundProduct =
-      getProductByCodigo(cleanSearch) ||
-      searchableProducts.find(
-        (product) =>
-          String(product?.descripcion || "")
-            .trim()
-            .toUpperCase() === cleanSearch.toUpperCase()
-      );
+    const byCode = getProductByCodigo(cleanSearch);
+    if (byCode) {
+      setError("");
+      handleAddDraftItem(byCode, 1);
+      return;
+    }
 
-    if (!foundProduct) {
+    const searchKey = cleanSearch.trim().toLowerCase();
+    const searchTokens = searchKey.split(/\s+/).filter(Boolean);
+
+    const exactMatch = searchableProducts.find(
+      (product) =>
+        String(product?.descripcion || "")
+          .trim()
+          .toLowerCase() === searchKey
+    );
+    if (exactMatch) {
+      setError("");
+      handleAddDraftItem(exactMatch, 1);
+      return;
+    }
+
+    const partialMatches = searchableProducts.filter((product) => {
+      const desc = String(product?.descripcion || "")
+        .trim()
+        .toLowerCase();
+      const dept = String(product?.departamento || "")
+        .trim()
+        .toLowerCase();
+      const code = String(product?.codigo || "")
+        .trim()
+        .toLowerCase();
+
+      if (searchTokens.length === 0) return false;
+
+      return searchTokens.every(
+        (token) =>
+          code.includes(token) ||
+          desc.includes(token) ||
+          dept.includes(token)
+      );
+    });
+
+    if (partialMatches.length === 1) {
+      setError("");
+      handleAddDraftItem(partialMatches[0], 1);
+      return;
+    }
+
+    if (partialMatches.length > 1) {
+      setSearchModalOpen(true);
       setError(
-        "No se encontró un producto con ese código. Presiona F10 para buscarlo."
+        `Hay ${partialMatches.length} coincidencias. Selecciona una del modal.`
       );
       return;
     }
 
-    setError("");
-    handleAddDraftItem(foundProduct, 1);
+    setError(
+      "No se encontró un producto con ese código. Presiona F10 para buscarlo."
+    );
   }, [
     getProductByCodigo,
     handleAddDraftItem,
