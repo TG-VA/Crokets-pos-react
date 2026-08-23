@@ -399,17 +399,40 @@ const useTransfersPage = () => {
           return item;
         }
 
-        const parsedQuantity = Number(value);
-        const nextQuantity = Number.isFinite(parsedQuantity)
+        if (value === "" || value === null || value === undefined) {
+          return {
+            ...item,
+            quantity: "",
+          };
+        }
+
+        const rawNumeric = String(value).replace(/[^0-9]/g, "");
+        if (rawNumeric === "") {
+          return {
+            ...item,
+            quantity: "",
+          };
+        }
+
+        const parsedQuantity = Number(rawNumeric);
+        const floored = Number.isFinite(parsedQuantity)
           ? Math.floor(parsedQuantity)
-          : 0;
+          : NaN;
+
+        if (!Number.isFinite(floored)) {
+          return item;
+        }
+
+        if (floored === 0) {
+          return item;
+        }
+
+        const limited =
+          floored > item.availableStock ? item.availableStock : floored;
 
         return {
           ...item,
-          quantity:
-            nextQuantity > item.availableStock
-              ? item.availableStock
-              : Math.max(1, nextQuantity),
+          quantity: limited,
         };
       })
     );
@@ -432,6 +455,30 @@ const useTransfersPage = () => {
 
     if (!destinationBranchId) {
       setError("Selecciona la sucursal destino.");
+      return;
+    }
+
+    const emptyQtyItem = draftItems.find((item) => {
+      const qty = Number(item?.quantity);
+      return !Number.isFinite(qty) || qty <= 0;
+    });
+
+    if (emptyQtyItem) {
+      setError(
+        `Escribe una cantidad válida para "${emptyQtyItem.name}" (debe ser mayor a 0).`
+      );
+      return;
+    }
+
+    const overStockedItem = draftItems.find((item) => {
+      const qty = Number(item?.quantity ?? 0);
+      return qty > (item?.availableStock ?? 0);
+    });
+
+    if (overStockedItem) {
+      setError(
+        `"${overStockedItem.name}" supera el stock disponible de ${overStockedItem.availableStock}.`
+      );
       return;
     }
 

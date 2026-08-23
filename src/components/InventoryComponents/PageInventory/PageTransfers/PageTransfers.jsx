@@ -1,3 +1,6 @@
+import React, { useState } from "react";
+
+import AppModal from "../../../AppModal/AppModal";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import useTransfersPage from "./hooks/useTransfersPage";
 import styles from "./PageTransfers.module.css";
@@ -64,6 +67,54 @@ const PageTransfers = () => {
     setDestinationBranchId,
     setTransferNotes,
   } = useTransfersPage();
+
+  const [cancelConfirm, setCancelConfirm] = useState({
+    isOpen: false,
+    orderId: "",
+    folio: "",
+    originBranchName: "",
+    requestedUnits: 0,
+    loading: false,
+  });
+
+  const closeCancelConfirm = () => {
+    setCancelConfirm({
+      isOpen: false,
+      orderId: "",
+      folio: "",
+      originBranchName: "",
+      requestedUnits: 0,
+      loading: false,
+    });
+  };
+
+  const showCancelConfirm = (order) => {
+    if (!order?.id) return;
+    setCancelConfirm({
+      isOpen: true,
+      orderId: order.id,
+      folio: String(order.folio || order.id).toUpperCase(),
+      originBranchName: String(order.originBranchName || "la sucursal origen"),
+      requestedUnits: Number(order.totals?.requestedUnits ?? 0),
+      loading: false,
+    });
+  };
+
+  const handleConfirmCancel = async () => {
+    const orderId = cancelConfirm.orderId;
+    if (!orderId) {
+      closeCancelConfirm();
+      return;
+    }
+
+    setCancelConfirm((prev) => ({ ...prev, loading: true }));
+
+    try {
+      await handleCancelTransfer(orderId);
+    } finally {
+      closeCancelConfirm();
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -276,16 +327,38 @@ const PageTransfers = () => {
                         <td>
                           <input
                             type="number"
-                            min="1"
+                            min="0"
                             max={item.availableStock}
+                            step="1"
+                            inputMode="numeric"
                             className={styles.quantityInput}
-                            value={item.quantity}
+                            value={item.quantity ?? ""}
                             onChange={(event) =>
                               handleDraftQuantityChange(
                                 item.productId,
                                 event.target.value
                               )
                             }
+                            onKeyDown={(event) => {
+                              if (event.key === "0") {
+                                const target = event.currentTarget;
+                                const cursorStart = target.selectionStart ?? 0;
+                                const cursorEnd = target.selectionEnd ?? 0;
+                                const currentValue = String(
+                                  target.value ?? ""
+                                );
+                                const nextValue =
+                                  currentValue.slice(0, cursorStart) +
+                                  "0" +
+                                  currentValue.slice(cursorEnd);
+                                const numeric = Number(
+                                  nextValue.replace(/[^0-9]/g, "")
+                                );
+                                if (!Number.isNaN(numeric) && numeric === 0) {
+                                  event.preventDefault();
+                                }
+                              }
+                            }}
                           />
                         </td>
                         <td>
@@ -568,8 +641,8 @@ const PageTransfers = () => {
                             <button
                               type="button"
                               className={styles.ghostButton}
-                              onClick={() => handleCancelTransfer(order.id)}
-                              disabled={submitting}
+                              onClick={() => showCancelConfirm(order)}
+                              disabled={submitting || cancelConfirm.loading}
                             >
                               Cancelar
                             </button>
@@ -594,6 +667,24 @@ const PageTransfers = () => {
           </section>
         ) : null}
       </div>
+
+      <AppModal
+        isOpen={cancelConfirm.isOpen}
+        type="warning"
+        title="Cancelar traspaso"
+        message={
+          cancelConfirm.folio
+            ? `¿Deseas cancelar el traspaso ${cancelConfirm.folio}? ${cancelConfirm.requestedUnits > 0 ? `Las ${cancelConfirm.requestedUnits} pieza(s) volverán automáticamente a ${cancelConfirm.originBranchName}. ` : ""}Esta acción no se puede deshacer.`
+            : "¿Deseas cancelar este traspaso? Esta acción no se puede deshacer."
+        }
+        confirmText="Sí, cancelar"
+        cancelText="Cancelar"
+        showCancel
+        loading={cancelConfirm.loading}
+        onConfirm={handleConfirmCancel}
+        onCancel={closeCancelConfirm}
+        onClose={closeCancelConfirm}
+      />
     </div>
   );
 };
