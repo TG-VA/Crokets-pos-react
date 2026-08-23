@@ -55,3 +55,28 @@
   filter: invert(42%) sepia(56%) saturate(665%) hue-rotate(152deg)
     brightness(92%) contrast(91%);
 }
+
+.badgePendientes {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--croketsOrange, #ff7a45);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  user-select: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navButton.active .badgePendientes {
+  background: #ffffff;
+  color: var(--croketsOrange, #ff7a45);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
