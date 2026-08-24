@@ -2,6 +2,39 @@ const normalizeText = (value, fallback = "") => {
   return String(value ?? "").trim() || fallback;
 };
 
+const parseTransferDate = (value) => {
+  if (value == null || value === "") return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const raw = String(value).trim();
+
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) {
+    const date = new Date(Number(raw));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const hasTimezone =
+    raw.endsWith("Z") ||
+    raw.includes("+") ||
+    raw.slice(1).includes("-");
+
+  if (hasTimezone) {
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(`${raw}Z`);
+  if (!Number.isNaN(date.getTime())) return date;
+
+  const fallbackDate = new Date(raw);
+  return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate;
+};
+
 const TRANSFER_META_SEPARATOR = "\n\n##TRANSFER_META##";
 
 const normalizeInteger = (value, fallback = 0) => {
@@ -55,7 +88,10 @@ const formatTimePart = (date) => {
 };
 
 export const createTransferFolio = (date = new Date()) => {
-  const referenceDate = date instanceof Date ? date : new Date(date);
+  const referenceDate =
+    (date instanceof Date && !Number.isNaN(date.getTime())
+      ? date
+      : parseTransferDate(date)) ?? new Date();
 
   return `TR-${formatDatePart(referenceDate)}-${formatTimePart(
     referenceDate
@@ -321,13 +357,9 @@ export const getTransferStatusMetaForBranch = (order = {}, currentBranchId = "")
 };
 
 export const formatTransferDateTime = (value) => {
-  if (!value) {
-    return "—";
-  }
+  const date = parseTransferDate(value);
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
+  if (!date) {
     return "—";
   }
 
@@ -344,7 +376,9 @@ export const formatTransferDateTime = (value) => {
 
 export const sortTransfersByDate = (orders = []) => {
   return [...(Array.isArray(orders) ? orders : [])].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const dateA = parseTransferDate(a?.createdAt)?.getTime() ?? 0;
+    const dateB = parseTransferDate(b?.createdAt)?.getTime() ?? 0;
+    return dateB - dateA;
   });
 };
 
