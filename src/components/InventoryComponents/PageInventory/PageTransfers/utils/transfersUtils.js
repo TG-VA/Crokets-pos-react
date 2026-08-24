@@ -14,20 +14,44 @@ const normalizeInteger = (value, fallback = 0) => {
   return Math.max(0, Math.floor(parsedValue));
 };
 
-const formatDatePart = (date) => {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear()).slice(-2);
+const DEFAULT_TIME_ZONE = "America/Mexico_City";
 
-  return `${day}${month}${year}`;
+const getMexicoCityParts = (date) => {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: DEFAULT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = dtf.formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return {
+    year: String(parts.year ?? "").slice(-2),
+    month: String(parts.month ?? ""),
+    day: String(parts.day ?? ""),
+    hour:
+      parts.hour === "24" ? "00" : String(parts.hour ?? ""),
+    minute: String(parts.minute ?? ""),
+    second: String(parts.second ?? ""),
+  };
+};
+
+const formatDatePart = (date) => {
+  const parts = getMexicoCityParts(date);
+  return `${parts.day}${parts.month}${parts.year}`;
 };
 
 const formatTimePart = (date) => {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${hours}${minutes}${seconds}`;
+  const parts = getMexicoCityParts(date);
+  return `${parts.hour}${parts.minute}${parts.second}`;
 };
 
 export const createTransferFolio = (date = new Date()) => {
@@ -255,6 +279,47 @@ export const getTransferStatusMeta = (status) => {
   };
 };
 
+export const getTransferStatusMetaForBranch = (order = {}, currentBranchId = "") => {
+  const baseMeta = getTransferStatusMeta(order?.status);
+  const normalizedStatus = normalizeText(order?.status, "pending_receipt");
+  const normalizedCurrentBranchId = normalizeText(currentBranchId);
+
+  if (!normalizedCurrentBranchId) {
+    return baseMeta;
+  }
+
+  const isOriginBranch =
+    normalizeText(order?.originBranchId) === normalizedCurrentBranchId;
+  const isDestinationBranch =
+    normalizeText(order?.destinationBranchId) === normalizedCurrentBranchId;
+
+  if (normalizedStatus === "received_complete") {
+    if (isOriginBranch) {
+      return { ...baseMeta, label: "Enviado completo" };
+    }
+
+    if (isDestinationBranch) {
+      return { ...baseMeta, label: "Recibido completo" };
+    }
+
+    return baseMeta;
+  }
+
+  if (normalizedStatus === "received_with_difference") {
+    if (isOriginBranch) {
+      return { ...baseMeta, label: "Enviado con diferencia" };
+    }
+
+    if (isDestinationBranch) {
+      return { ...baseMeta, label: "Recibido con diferencia" };
+    }
+
+    return baseMeta;
+  }
+
+  return baseMeta;
+};
+
 export const formatTransferDateTime = (value) => {
   if (!value) {
     return "—";
@@ -267,6 +332,7 @@ export const formatTransferDateTime = (value) => {
   }
 
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: DEFAULT_TIME_ZONE,
     year: "numeric",
     month: "short",
     day: "numeric",
