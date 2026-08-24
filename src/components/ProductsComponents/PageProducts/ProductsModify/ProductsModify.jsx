@@ -334,9 +334,9 @@ const ProductsModify = () => {
 
                       <select
                         className={styles.input}
-                        value={form.commission_enable ? "activo" : "inactivo"}
+                        value={form.commission_enabled ? "activo" : "inactivo"}
                         onChange={(e) =>
-                          updateField("commission_enable", e.target.value === "activo")
+                          updateField("commission_enabled", e.target.value === "activo")
                         }
                       >
                         <option value="activo">Activo</option>
@@ -345,27 +345,41 @@ const ProductsModify = () => {
                     </div>
 
                     <div className={styles.formRow}>
+                      <label className={styles.label}>Tipo de comisión</label>
+
+                      <select
+                        className={styles.input}
+                        value={form.commission_type || "percent"}
+                        onChange={(e) => updateField("commission_type", e.target.value)}
+                        disabled={!form.commission_enabled}
+                      >
+                        <option value="percent">Porcentaje (%)</option>
+                        <option value="flat">Monto Fijo (Moneda)</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formRow}>
                       <label className={styles.label}>
-                        Porcentaje comisión (%)
+                        {form.commission_type === "percent" ? "Porcentaje comisión (%)" : "Valor de comisión"}
                       </label>
 
                       <input
-                        name="commission_percent"
-                        className={inputClassName("commission_percent")}
+                        name="commission_value"
+                        className={inputClassName("commission_value")}
                         type="number"
                         inputMode="decimal"
                         step="0.01"
-                        value={form.commission_percent}
+                        value={form.commission_value}
                         onChange={(e) =>
-                          updateField("commission_percent", e.target.value)
+                          updateField("commission_value", e.target.value)
                         }
-                        onBlur={() => markTouched("commission_percent")}
+                        onBlur={() => markTouched("commission_value")}
                         onWheel={preventNumberScrollChange}
                         onKeyDown={preventNumberArrows}
-                        disabled={!form.commission_enable}
+                        disabled={!form.commission_enabled}
                       />
 
-                      {renderError("commission_percent")}
+                      {renderError("commission_value")}
                     </div>
                   </section>
                 </div>

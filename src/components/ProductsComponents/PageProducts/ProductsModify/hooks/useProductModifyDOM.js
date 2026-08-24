@@ -8,7 +8,7 @@ export const useProductModifyDOM = ({ isFormValid, errors, usesInventory, form, 
     const order = [
       "codigo", "descripcion", "costo", "precio", "tax",
       ...(usesInventory ? ["minimo", "maximo"] : []),
-      ...(form.commission_enable ? ["commission_percent"] : []),
+      ...(form.commission_enabled ? ["commission_value"] : []),
       ...(form.discount_enable ? ["discount_percent", "discount_price", "discount_concept"] : []),
     ];
 
@@ -18,7 +18,7 @@ export const useProductModifyDOM = ({ isFormValid, errors, usesInventory, form, 
           codigo: 'input[name="codigo"]', descripcion: 'input[name="descripcion"]',
           costo: 'input[name="costo"]', precio: 'input[name="precio"]',
           tax: 'input[name="tax"]', minimo: 'input[name="minimo"]', maximo: 'input[name="maximo"]',
-          commission_percent: 'input[name="commission_percent"]', discount_percent: 'input[name="discount_percent"]',
+          commission_value: 'input[name="commission_value"]', discount_percent: 'input[name="discount_percent"]',
           discount_price: 'input[name="discount_price"]', discount_concept: 'input[name="discount_concept"]',
         };
         const target = bodyRef.current?.querySelector(selectorMap[field]);

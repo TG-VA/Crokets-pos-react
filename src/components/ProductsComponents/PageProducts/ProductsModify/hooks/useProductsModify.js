@@ -89,8 +89,10 @@ export const useProductsModify = () => {
       use_inventory: product.use_inventory ?? product.tracks_inventory ?? true,
       sale_type: product.sale_type ?? "unidad", unit: product.unit ?? "pieza",
       tax: product.tax ?? 16, cfdi: product.cfdi ?? "", status: product.status ? "activo" : "inactivo",
-      isGlobal: !!product.is_global, commission_enable: !!product.commission_enable,
-      commission_percent: product.commission_percent ?? 0, discount_enable: false,
+      isGlobal: !!product.is_global, commission_enabled: !!product.commission_enabled,
+      commission_type: product.commission_type || "percent",
+      commission_value: product.commission_value ?? product.commission_percent ?? 0,
+      discount_enable: false,
       discount_percent: 0, discount_price: "", discount_concept: "",
     });
 
@@ -131,8 +133,10 @@ export const useProductsModify = () => {
         use_inventory: usesInventory, sale_type: form.sale_type || "unidad",
         unit: form.unit || "pieza", tax: parseFloat(form.tax) || 0,
         cfdi: form.cfdi.toString().trim(), status: form.status,
-        isGlobal: !!form.isGlobal, commission_enable: !!form.commission_enable,
-        commission_percent: parseFloat(form.commission_percent) || 0,
+        isGlobal: !!form.isGlobal, commission_enabled: !!form.commission_enabled,
+        commission_type: form.commission_type || "percent",
+        commission_value: parseFloat(form.commission_value) || 0,
+        commission_percent: form.commission_type === "percent" ? (parseFloat(form.commission_value) || 0) : 0,
       };
 
       const productResult = await updateProductByCodigo(selectedProduct.codigo, payload);

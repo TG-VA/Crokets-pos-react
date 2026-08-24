@@ -42,7 +42,7 @@ export const ProductsProvider = ({ children }) => {
 
       const { data, error } = await supabase
         .from("departments")
-        .select("id, name, status, created_at, updated_at")
+        .select("id, name, status, commission_enabled, commission_type, commission_value, created_at, updated_at")
         .order("name", { ascending: true });
 
       if (error) throw error;
@@ -107,6 +107,8 @@ export const ProductsProvider = ({ children }) => {
             profit,
             commission_enabled,
             commission_percent,
+            commission_type,
+            commission_value,
             clave_sat,
             tracks_inventory,
             created_at,
@@ -135,6 +137,8 @@ export const ProductsProvider = ({ children }) => {
           profit,
           commission_enabled,
           commission_percent,
+          commission_type,
+          commission_value,
           clave_sat,
           tracks_inventory,
           created_at,
@@ -179,8 +183,10 @@ export const ProductsProvider = ({ children }) => {
           sale_type: row.products.sale_type || "unidad",
           unit: row.products.unit || "pieza",
           tax: Number(row.products.tax ?? 0),
-          commission_enable: !!row.products.commission_enabled,
+          commission_enabled: !!row.products.commission_enabled,
           commission_percent: Number(row.products.commission_percent ?? 0),
+          commission_type: row.products.commission_type || "percent",
+          commission_value: Number(row.products.commission_value ?? 0),
           cfdi: row.products.clave_sat || "",
           tracks_inventory: !!row.products.tracks_inventory,
           created_at: row.created_at || row.products.created_at,
@@ -201,8 +207,7 @@ export const ProductsProvider = ({ children }) => {
           branch_id: branch.id,
           codigo: product.barcode || "",
           descripcion: (product.name || "").toUpperCase(),
-          departamento:
-            departmentsMap.get(product.department_id) || "Sin departamento",
+          departamento: departmentsMap.get(product.department_id) || "Sin departamento",
           costo: Number(product.cost_price ?? 0),
           precio: Number(product.sale_price ?? 0),
           ganancia: Number(product.profit ?? 0),
@@ -216,8 +221,10 @@ export const ProductsProvider = ({ children }) => {
           sale_type: product.sale_type || "unidad",
           unit: product.unit || "pieza",
           tax: Number(product.tax ?? 0),
-          commission_enable: !!product.commission_enabled,
+          commission_enabled: !!product.commission_enabled,
           commission_percent: Number(product.commission_percent ?? 0),
+          commission_type: product.commission_type || "percent",
+          commission_value: Number(product.commission_value ?? 0),
           cfdi: product.clave_sat || "",
           tracks_inventory: !!product.tracks_inventory,
           created_at: product.created_at || null,
@@ -272,7 +279,7 @@ export const ProductsProvider = ({ children }) => {
   );
 
   const addDepartment = useCallback(
-    async (name) => {
+    async (name, commissionData = {}) => {
       const cleanName = (name || "").trim();
 
       if (!cleanName) return false;
@@ -281,6 +288,9 @@ export const ProductsProvider = ({ children }) => {
         const { error } = await supabase.from("departments").insert({
           name: cleanName,
           status: true,
+          commission_enabled: !!commissionData.commission_enabled,
+          commission_type: commissionData.commission_type || "percent",
+          commission_value: Number(commissionData.commission_value || 0),
         });
 
         if (error) throw error;
@@ -301,6 +311,14 @@ export const ProductsProvider = ({ children }) => {
       if (!id || !data) return false;
 
       try {
+        const { data: oldDept, error: oldDeptError } = await supabase
+          .from("departments")
+          .select("commission_enabled, commission_type, commission_value")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (oldDeptError) throw oldDeptError;
+
         const payload = {};
 
         if (typeof data.name === "string") {
@@ -311,6 +329,18 @@ export const ProductsProvider = ({ children }) => {
           payload.status = data.status;
         }
 
+        if (typeof data.commission_enabled === "boolean") {
+          payload.commission_enabled = data.commission_enabled;
+        }
+
+        if (typeof data.commission_type === "string") {
+          payload.commission_type = data.commission_type;
+        }
+
+        if (typeof data.commission_value === "number" || typeof data.commission_value === "string") {
+          payload.commission_value = Number(data.commission_value || 0);
+        }
+
         payload.updated_at = new Date().toISOString();
 
         const { error } = await supabase
@@ -319,6 +349,32 @@ export const ProductsProvider = ({ children }) => {
           .eq("id", id);
 
         if (error) throw error;
+
+        if (data.propagateToProducts) {
+          const comEnabled = typeof data.commission_enabled === "boolean" ? data.commission_enabled : false;
+          const comType = data.commission_type || "percent";
+          const comVal = Number(data.commission_value || 0);
+
+          let query = supabase
+            .from("products")
+            .update({
+              commission_enabled: comEnabled,
+              commission_type: comType,
+              commission_value: comVal,
+              commission_percent: comType === "percent" && comEnabled ? comVal : 0.00,
+            })
+            .eq("department_id", id);
+
+          if (oldDept) {
+            query = query
+              .eq("commission_enabled", !!oldDept.commission_enabled)
+              .eq("commission_type", oldDept.commission_type || "percent")
+              .eq("commission_value", Number(oldDept.commission_value || 0));
+          }
+
+          const { error: productsUpdateError } = await query;
+          if (productsUpdateError) throw productsUpdateError;
+        }
 
         await loadDepartments();
         await loadProducts();
@@ -401,8 +457,10 @@ export const ProductsProvider = ({ children }) => {
             cost_price: Number(payload.costo || 0),
             sale_price: Number(payload.precio || 0),
             tax: Number(payload.tax || 0),
-            commission_enabled: !!payload.commission_enable,
+            commission_enabled: !!payload.commission_enabled,
             commission_percent: Number(payload.commission_percent || 0),
+            commission_type: payload.commission_type || "percent",
+            commission_value: Number(payload.commission_value || 0),
             clave_sat: payload.cfdi ? payload.cfdi.trim() : null,
             status: payload.status === "activo",
             is_global: !!payload.isGlobal,
@@ -574,8 +632,10 @@ export const ProductsProvider = ({ children }) => {
             tax: Number(payload.tax || 0),
             cost_price: costPrice,
             sale_price: salePrice,
-            commission_enabled: !!payload.commission_enable,
+            commission_enabled: !!payload.commission_enabled,
             commission_percent: Number(payload.commission_percent || 0),
+            commission_type: payload.commission_type || "percent",
+            commission_value: Number(payload.commission_value || 0),
             clave_sat: payload.cfdi ? payload.cfdi.trim() : null,
             status: payload.status === "activo",
             is_global: !!payload.isGlobal,
