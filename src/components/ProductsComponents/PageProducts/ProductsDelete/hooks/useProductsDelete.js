@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useProducts } from "../../../../contexts/ProductsContext";
+import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useProductsDeleteDOM } from "./useProductsDeleteDOM";
-import { useAppModal } from "../../../../../../hooks/useAppModal";
+import { useAppModal } from "../../../../../hooks/useAppModal";
 
 const CONFIRM_TEXT = "ELIMINAR";
 

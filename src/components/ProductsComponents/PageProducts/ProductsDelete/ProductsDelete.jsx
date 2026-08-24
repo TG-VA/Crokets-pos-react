@@ -2,7 +2,7 @@ import React from "react";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./ProductsDelete.module.css";
-import { useProductsDelete } from "./hooks/useProductsDeleteDOM";
+import { useProductsDelete } from "./hooks/useProductsDelete";
 
 const ProductsDelete = () => {
   const {
