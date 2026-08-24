@@ -1,210 +1,30 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useProducts } from "../../../../contexts/ProductsContext";
+import React from "react";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./ProductsDelete.module.css";
-
-const CONFIRM_TEXT = "ELIMINAR";
+import { useProductsDelete } from "./hooks/useProductsDelete";
 
 const ProductsDelete = () => {
-  const { products, getProductByCodigo, deleteProductByCodigo } = useProducts();
-
-  const [barcode, setBarcode] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
-  const inputRef = useRef(null);
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const showAppConfirm = ({
-    type = "warning",
-    title = "Confirmar acción",
-    message = "",
-    confirmText = "Confirmar",
-    cancelText = "Cancelar",
-    onConfirm,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      showCancel: true,
-      loading: false,
-      onConfirm: async () => {
-        closeAppModal();
-
-        if (onConfirm) {
-          await onConfirm();
-        }
-      },
-      onCancel: closeAppModal,
-    });
-  };
-
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (appModal.isOpen) return;
-
-      if (e.key === "F10") {
-        e.preventDefault();
-        setSearchModalOpen(true);
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [appModal.isOpen]);
-
-  const focusBarcodeInput = () => {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
-
-  const handleLookup = () => {
-    const cleanBarcode = barcode.trim();
-
-    if (!cleanBarcode) {
-      showAppAlert({
-        type: "warning",
-        title: "Código requerido",
-        message: "Captura un código de barras.",
-        confirmText: "Entendido",
-      });
-      return;
-    }
-
-    const found = getProductByCodigo(cleanBarcode);
-
-    if (!found) {
-      showAppAlert({
-        type: "warning",
-        title: "Producto no encontrado",
-        message: "Producto no encontrado.",
-        confirmText: "Entendido",
-      });
-      setSelectedProduct(null);
-      setConfirmText("");
-      focusBarcodeInput();
-      return;
-    }
-
-    setSelectedProduct(found);
-    setConfirmText("");
-  };
-
-  const handleCancel = () => {
-    setSelectedProduct(null);
-    setBarcode("");
-    setConfirmText("");
-    focusBarcodeInput();
-  };
-
-  const executeDelete = async () => {
-    if (!selectedProduct || deleting) return;
-
-    try {
-      setDeleting(true);
-
-      const result = await deleteProductByCodigo(selectedProduct.codigo);
-
-      if (!result?.success) {
-        showAppAlert({
-          type: "danger",
-          title: "No se pudo eliminar el producto",
-          message: result?.error || "No se pudo eliminar el producto.",
-          confirmText: "Entendido",
-        });
-        return;
-      }
-
-      showAppAlert({
-        type: "success",
-        title: "Producto eliminado",
-        message: "Producto eliminado correctamente.",
-        confirmText: "Entendido",
-      });
-
-      handleCancel();
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedProduct || deleting) return;
-
-    if (confirmText.trim().toUpperCase() !== CONFIRM_TEXT) {
-      showAppAlert({
-        type: "warning",
-        title: "Confirmación requerida",
-        message: `Para confirmar escribe ${CONFIRM_TEXT}.`,
-        confirmText: "Entendido",
-      });
-      return;
-    }
-
-    showAppConfirm({
-      type: "danger",
-      title: "Eliminar producto",
-      message: `¿Seguro que deseas eliminar del sistema el producto "${
-        selectedProduct.descripcion || "Sin descripción"
-      }"?\n\nEste producto ya no estará disponible para venta.`,
-      confirmText: "Sí, eliminar",
-      cancelText: "No, regresar",
-      onConfirm: executeDelete,
-    });
-  };
-
-  const canDelete =
-    !!selectedProduct && confirmText.trim().toUpperCase() === CONFIRM_TEXT;
+  const {
+    products,
+    barcode,
+    setBarcode,
+    selectedProduct,
+    setSelectedProduct,
+    searchModalOpen,
+    setSearchModalOpen,
+    confirmText,
+    setConfirmText,
+    deleting,
+    appModal,
+    closeAppModal,
+    inputRef,
+    handleLookup,
+    handleCancel,
+    handleDelete,
+    canDelete,
+    CONFIRM_TEXT
+  } = useProductsDelete();
 
   return (
     <div className={styles.container}>
@@ -292,8 +112,7 @@ const ProductsDelete = () => {
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Existencia</span>
                       <span className={styles.infoValue}>
-                        {selectedProduct.use_inventory ||
-                        selectedProduct.tracks_inventory
+                        {selectedProduct.use_inventory || selectedProduct.tracks_inventory
                           ? Number(selectedProduct.existencia || 0)
                           : "Sin control de inventario"}
                       </span>

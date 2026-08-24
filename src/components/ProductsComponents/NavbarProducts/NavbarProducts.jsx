@@ -1,11 +1,10 @@
-import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React from "react";
+import { NavLink } from "react-router-dom";
 import styles from "./NavbarProducts.module.css";
 
-import { useAuth } from "../../../contexts/AuthContext";
 import { useBranch } from "../../../contexts/BranchContext";
-import { checkUserIsAdmin } from "../../../lib/permissionsService";
 import AdminAuthorizationModal from "../../AdminAuthorizationModal/AdminAuthorizationModal";
+import { useProtectedNavigation } from "./hooks/useProtectedNavigation";
 
 import ProductsIcon from "../../../assets/icons/boxes-stacked-solid-full.svg";
 import NewIcon from "../../../assets/icons/plus-solid-full.svg";
@@ -15,112 +14,77 @@ import PromotionsIcon from "../../../assets/icons/gifts-solid-full.svg";
 import ImportIcon from "../../../assets/icons/file-import-solid-full.svg";
 import DepartmentsIcon from "../../../assets/icons/building-solid-full.svg";
 
+// Configuración estática extraída fuera del renderizado
+const NAVBAR_OPTIONS = [
+  {
+    id: "productos",
+    label: "Productos",
+    icon: ProductsIcon,
+    path: "/products",
+    end: true,
+    requiresAdmin: false,
+  },
+  {
+    id: "nuevo",
+    label: "Nuevo",
+    icon: NewIcon,
+    path: "/products/nuevo",
+    requiresAdmin: true,
+  },
+  {
+    id: "modificar",
+    label: "Modificar",
+    icon: EditIcon,
+    path: "/products/modificar",
+    requiresAdmin: false,
+  },
+  {
+    id: "eliminar",
+    label: "Eliminar",
+    icon: DeleteIcon,
+    path: "/products/eliminar",
+    requiresAdmin: true,
+  },
+  {
+    id: "departamentos",
+    label: "Departamentos",
+    icon: DepartmentsIcon,
+    path: "/products/departamentos",
+    requiresAdmin: true,
+  },
+  {
+    id: "promociones",
+    label: "Promociones",
+    icon: PromotionsIcon,
+    path: "/products/promociones",
+    requiresAdmin: true,
+  },
+  {
+    id: "importar",
+    label: "Importar",
+    icon: ImportIcon,
+    path: "/products/importar",
+    requiresAdmin: true,
+  },
+];
+
 const NavbarProducts = ({ onProtectedAccessAuthorized }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const { branch } = useBranch();
-
-  const [adminAuthOpen, setAdminAuthOpen] = useState(false);
-  const [pendingOption, setPendingOption] = useState(null);
-
-  const options = [
-    {
-      id: "productos",
-      label: "Productos",
-      icon: ProductsIcon,
-      path: "/products",
-      end: true,
-      requiresAdmin: false,
-    },
-    {
-      id: "nuevo",
-      label: "Nuevo",
-      icon: NewIcon,
-      path: "/products/nuevo",
-      requiresAdmin: true,
-    },
-    {
-      id: "modificar",
-      label: "Modificar",
-      icon: EditIcon,
-      path: "/products/modificar",
-      requiresAdmin: false,
-    },
-    {
-      id: "eliminar",
-      label: "Eliminar",
-      icon: DeleteIcon,
-      path: "/products/eliminar",
-      requiresAdmin: true,
-    },
-    {
-      id: "departamentos",
-      label: "Departamentos",
-      icon: DepartmentsIcon,
-      path: "/products/departamentos",
-      requiresAdmin: true,
-    },
-    {
-      id: "promociones",
-      label: "Promociones",
-      icon: PromotionsIcon,
-      path: "/products/promociones",
-      requiresAdmin: true,
-    },
-    {
-      id: "importar",
-      label: "Importar",
-      icon: ImportIcon,
-      path: "/products/importar",
-      requiresAdmin: true,
-    },
-  ];
-
-  const handleProtectedNavigation = async (event, option) => {
-    if (!option.requiresAdmin) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const isAdmin = await checkUserIsAdmin(user?.id);
-
-    if (isAdmin) {
-      onProtectedAccessAuthorized?.(option.path);
-      navigate(option.path);
-      return;
-    }
-
-    setPendingOption(option);
-    setAdminAuthOpen(true);
-  };
-
-  const handleAdminAuthorized = () => {
-    if (!pendingOption?.path) {
-      setAdminAuthOpen(false);
-      setPendingOption(null);
-      return;
-    }
-
-    const destination = pendingOption.path;
-
-    onProtectedAccessAuthorized?.(destination);
-
-    setAdminAuthOpen(false);
-    setPendingOption(null);
-    navigate(destination);
-  };
-
-  const handleCloseAdminAuth = () => {
-    setAdminAuthOpen(false);
-    setPendingOption(null);
-  };
+  
+  // Consumimos la lógica de acceso protegido desde el nuevo hook
+  const {
+    adminAuthOpen,
+    pendingOption,
+    handleProtectedNavigation,
+    handleAdminAuthorized,
+    handleCloseAdminAuth,
+  } = useProtectedNavigation(onProtectedAccessAuthorized);
 
   return (
     <>
       <div className={styles.navbarProducts}>
         <div className={styles.buttonsContainer}>
-          {options.map((option) => (
+          {NAVBAR_OPTIONS.map((option) => (
             <NavLink
               key={option.id}
               to={option.path}
@@ -130,7 +94,8 @@ const NavbarProducts = ({ onProtectedAccessAuthorized }) => {
                 `${styles.navButton} ${isActive ? styles.active : ""}`
               }
             >
-              <img src={option.icon} alt={option.label} className={styles.icon} />
+              {/* Corrección de a11y: alt vacío para icono decorativo */}
+              <img src={option.icon} alt="" className={styles.icon} />
               <span>{option.label}</span>
             </NavLink>
           ))}
