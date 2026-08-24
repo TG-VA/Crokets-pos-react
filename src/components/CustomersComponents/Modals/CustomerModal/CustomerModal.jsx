@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./CustomerModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const emptyForm = {
   name: "",
@@ -466,22 +467,10 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     closeAppModal();
   }, [isOpen, customerToEdit]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscapeKey = (event) => {
-      if (event.key === "Escape" && !saving && !appModal.isOpen) {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscapeKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [isOpen, saving, appModal.isOpen, onClose]);
+  useEscapeKey((event) => {
+    event.preventDefault();
+    onClose();
+  }, isOpen && !saving && !appModal.isOpen);
 
   if (!isOpen) return null;
 
