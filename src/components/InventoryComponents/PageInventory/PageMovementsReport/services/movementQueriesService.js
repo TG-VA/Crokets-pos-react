@@ -99,17 +99,16 @@ export const loadMovementBranches =
     }
   };
 
-const INVENTORY_MOVEMENTS_TABLE_CANDIDATES = [
-  "inventory_movements",
-  "inventory_movement",
-  "stock_movements",
-  "inventory_movements_log",
-];
-
-const buildBaseMovementsQuery = (tableName, { branchId, maxMovements }) => {
-  let query = supabase
-    .from(tableName)
-    .select(`
+export const loadBaseMovements =
+  async ({
+    branchId,
+    maxMovements,
+  }) => {
+    let query = supabase
+      .from(
+        INVENTORY_MOVEMENTS_TABLE
+      )
+      .select(`
         id,
         sale_id,
         branch_id,
@@ -122,57 +121,29 @@ const buildBaseMovementsQuery = (tableName, { branchId, maxMovements }) => {
         user_id,
         created_at
       `)
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(maxMovements);
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(maxMovements);
 
-  if (branchId) {
-    query = query.eq("branch_id", branchId);
-  }
-
-  return query;
-};
-
-export const loadBaseMovements =
-  async ({
-    branchId,
-    maxMovements,
-  }) => {
-    let lastError = null;
-
-    for (const tableName of INVENTORY_MOVEMENTS_TABLE_CANDIDATES) {
-      try {
-        const query = buildBaseMovementsQuery(tableName, {
-          branchId,
-          maxMovements,
-        });
-
-        const response = await query;
-
-        if (response && response.error) {
-          if (isMissingRelationError(response.error, tableName)) {
-            lastError = response.error;
-            continue;
-          }
-          throw response.error;
-        }
-
-        return Array.isArray(response?.data) ? response.data : [];
-      } catch (err) {
-        if (isMissingRelationError(err, tableName)) {
-          lastError = err;
-          continue;
-        }
-        throw err;
-      }
+    if (branchId) {
+      query = query.eq(
+        "branch_id",
+        branchId
+      );
     }
 
-    if (lastError) {
-      throw lastError;
+    const response = await query;
+
+    if (response.error) {
+      throw response.error;
     }
 
-    return [];
+    return Array.isArray(
+      response.data
+    )
+      ? response.data
+      : [];
   };
 
 export const loadRewardRedemptions =

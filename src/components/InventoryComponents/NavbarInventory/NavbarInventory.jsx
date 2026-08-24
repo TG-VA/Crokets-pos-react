@@ -42,7 +42,7 @@ const NavbarInventory = () => {
 
     load();
 
-    let interval = setInterval(load, 30 * 1000);
+    let interval = setInterval(load, 10 * 1000);
 
     return () => {
       mounted = false;

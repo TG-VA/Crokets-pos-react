@@ -69,6 +69,16 @@ const useTransfersPage = () => {
     }
   }, []);
 
+  const reloadProductsSilently = useCallback(async () => {
+    try {
+      if (typeof refreshProducts === "function") {
+        await refreshProducts();
+      }
+    } catch (err) {
+      console.error("No se pudo refrescar ProductsContext durante el poll:", err);
+    }
+  }, [refreshProducts]);
+
   useEffect(() => {
     loadBranches();
   }, [loadBranches]);
@@ -76,6 +86,26 @@ const useTransfersPage = () => {
   useEffect(() => {
     reloadOrders();
   }, [reloadOrders]);
+
+  useEffect(() => {
+    let interval = null;
+    const runLoop = async () => {
+      try {
+        await Promise.all([
+          reloadOrders(),
+          reloadProductsSilently(),
+        ]);
+      } catch (err) {
+        console.error("Polling automático traspasos/inventario falló:", err);
+      }
+    };
+
+    interval = setInterval(runLoop, 10 * 1000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [reloadOrders, reloadProductsSilently]);
 
   const destinationOptions = useMemo(() => {
     return branchOptions.filter((option) => option.id !== branch?.id);
