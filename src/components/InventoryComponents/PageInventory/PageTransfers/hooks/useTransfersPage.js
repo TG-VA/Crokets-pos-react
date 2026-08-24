@@ -658,6 +658,7 @@ const useTransfersPage = () => {
     draftTotals,
     error,
     loadingProducts,
+    products,
     productSearch,
     searchModalOpen,
     searchableProducts,
