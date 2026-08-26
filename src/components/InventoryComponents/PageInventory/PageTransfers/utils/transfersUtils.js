@@ -18,12 +18,11 @@ const parseTransferDate = (value) => {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  const hasTimezone =
+  const hasExplicitTimezone =
     raw.endsWith("Z") ||
-    raw.includes("+") ||
-    raw.slice(1).includes("-");
+    /[+\-]\d{2}:?\d{2}$/.test(raw);
 
-  if (hasTimezone) {
+  if (hasExplicitTimezone) {
     const date = new Date(raw);
     return Number.isNaN(date.getTime()) ? null : date;
   }
