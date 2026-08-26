@@ -62,24 +62,30 @@ const NavbarInventory = () => {
   return (
     <div className={styles.navbarInventory}>
       <div className={styles.buttonsContainer}>
-        {options.map((option) => (
-          <NavLink
-            key={option.id}
-            to={option.path}
-            end={option.end}
-            className={({ isActive }) =>
-              `${styles.navButton} ${isActive ? styles.active : ""}`
-            }
-          >
-            <img src={option.icon} alt={option.label} className={styles.icon} />
-            <span>{option.label}</span>
-            {option.id === "traspasos" && Number(option.badgeCount || 0) > 0 ? (
-              <span className={styles.badgePendientes} title={`${option.badgeCount} recepción(es) pendiente(s)`}>
-                {option.badgeCount}
-              </span>
-            ) : null}
-          </NavLink>
-        ))}
+        {options.map((option) => {
+          const badgeCount = Number(option.badgeCount || 0);
+          return (
+            <NavLink
+              key={option.id}
+              to={option.path}
+              end={option.end}
+              className={({ isActive }) =>
+                `${styles.navButton} ${isActive ? styles.active : ""}`
+              }
+            >
+              <img src={option.icon} alt={option.label} className={styles.icon} />
+              <span>{option.label}</span>
+              {option.id === "traspasos" && badgeCount > 0 ? (
+                <span
+                  className={styles.badgePendientes}
+                  title={`${badgeCount} recepción(es) pendiente(s)`}
+                >
+                  {badgeCount}
+                </span>
+              ) : null}
+            </NavLink>
+          );
+        })}
       </div>
     </div>
   );
