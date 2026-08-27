@@ -46,11 +46,19 @@ const normalizeInteger = (value, fallback = 0) => {
   return Math.max(0, Math.floor(parsedValue));
 };
 
-const DEFAULT_TIME_ZONE = "America/Mexico_City";
+const getAppTimeZone = () => {
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    const configured = import.meta.env.VITE_APP_TIMEZONE;
+    if (typeof configured === "string" && configured.trim() !== "") {
+      return configured.trim();
+    }
+  }
+  return undefined;
+};
 
-const getMexicoCityParts = (date) => {
+const getAppTimezoneParts = (date) => {
   const dtf = new Intl.DateTimeFormat("en-US", {
-    timeZone: DEFAULT_TIME_ZONE,
+    timeZone: getAppTimeZone(),
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -77,12 +85,12 @@ const getMexicoCityParts = (date) => {
 };
 
 const formatDatePart = (date) => {
-  const parts = getMexicoCityParts(date);
+  const parts = getAppTimezoneParts(date);
   return `${parts.day}${parts.month}${parts.year}`;
 };
 
 const formatTimePart = (date) => {
-  const parts = getMexicoCityParts(date);
+  const parts = getAppTimezoneParts(date);
   return `${parts.hour}${parts.minute}${parts.second}`;
 };
 
@@ -363,7 +371,7 @@ export const formatTransferDateTime = (value) => {
   }
 
   return new Intl.DateTimeFormat("es-MX", {
-    timeZone: DEFAULT_TIME_ZONE,
+    timeZone: getAppTimeZone(),
     year: "numeric",
     month: "short",
     day: "numeric",
