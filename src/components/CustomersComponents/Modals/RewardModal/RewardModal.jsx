@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 250;
@@ -679,22 +680,10 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
     initializeModal();
   }, [isOpen, rewardToEdit]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscapeKey = (event) => {
-      if (event.key === "Escape" && !saving && !appModal.isOpen) {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscapeKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [isOpen, saving, appModal.isOpen, onClose]);
+  useEscapeKey((event) => {
+    event.preventDefault();
+    onClose();
+  }, isOpen && !saving && !appModal.isOpen);
 
   if (!isOpen) return null;
 

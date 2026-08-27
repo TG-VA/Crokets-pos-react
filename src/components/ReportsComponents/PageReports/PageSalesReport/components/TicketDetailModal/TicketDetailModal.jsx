@@ -1,23 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { formatCurrency } from "../../../../../../utils/formatters"; 
 import styles from "./TicketDetailModal.module.css";
+import { useEscapeKey } from "../../../../../../hooks/useEscapeKey";
 
 export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading }) => {
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !ticket) return null;
 
