@@ -13,6 +13,7 @@
 
 .modal {
   width: min(470px, 100%);
+  max-height: min(92vh, 900px);
   background: #ffffff;
   border-radius: 20px;
   overflow: hidden;
@@ -22,6 +23,27 @@
     0 4px 14px rgba(15, 23, 42, 0.12);
   animation: modalEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.size-large {
+  width: min(1120px, calc(100% - 48px));
+  max-height: min(88vh, 900px);
+}
+
+.modal.size-large .body {
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.modal.size-large .iconWrapper {
+  align-self: flex-start;
+}
+
+.modal.size-large .children {
+  margin-top: 10px;
 }
 
 .modal::before {
@@ -37,6 +59,9 @@
   gap: 18px;
   padding: 31px 32px 28px;
   align-items: flex-start;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .iconWrapper {
@@ -90,6 +115,14 @@
   white-space: pre-line;
 }
 
+.children {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -97,6 +130,7 @@
   padding: 17px 24px 19px;
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
+  flex: 0 0 auto;
 }
 
 .cancelButton,

@@ -154,46 +154,53 @@ export const ProductsProvider = ({ children }) => {
 
       const formattedBranchKardexProducts = (inventoryRows || [])
         .filter((row) => Boolean(row.products))
-        .map((row) => ({
-          id: row.products.id,
-          inventory_id: row.id,
-          product_id: row.product_id,
-          branch_id: row.branch_id,
-          codigo: row.products.barcode || "",
-          descripcion: (row.products.name || "").toUpperCase(),
-          departamento:
-            departmentsMap.get(row.products.department_id) ||
-            "Sin departamento",
-          costo: Number(row.cost_price ?? row.products.cost_price ?? 0),
-          precio: Number(row.sale_price ?? row.products.sale_price ?? 0),
-          ganancia: Number(row.products.profit ?? 0),
-          existencia: Number(row.stock || 0),
-          minimo: Number(row.min_stock || 0),
-          maximo: Number(row.max_stock || 0),
-          status: !!row.products.status,
-          is_active: row.is_active ?? true,
-          is_kardex_inactive:
-            row.products.status !== true || row.is_active !== true,
-          has_been_stocked: !!row.has_been_stocked,
-          is_global: !!row.products.is_global,
-          sale_type: row.products.sale_type || "unidad",
-          unit: row.products.unit || "pieza",
-          tax: Number(row.products.tax ?? 0),
-          commission_enable: !!row.products.commission_enabled,
-          commission_percent: Number(row.products.commission_percent ?? 0),
-          cfdi: row.products.clave_sat || "",
-          tracks_inventory: !!row.products.tracks_inventory,
-          created_at: row.created_at || row.products.created_at,
-          updated_at: row.updated_at || row.products.updated_at || null,
-          use_inventory: !!row.products.tracks_inventory,
-        }));
+        .map((row) => {
+          const masterCost = Number(row.products.cost_price ?? 0);
+          const masterSale = Number(row.products.sale_price ?? 0);
+          const branchCost = Number(row.cost_price ?? 0);
+          const branchSale = Number(row.sale_price ?? 0);
+          return {
+            id: row.products.id,
+            inventory_id: row.id,
+            product_id: row.product_id,
+            branch_id: row.branch_id,
+            codigo: row.products.barcode || "",
+            descripcion: (row.products.name || "").toUpperCase(),
+            departamento:
+              departmentsMap.get(row.products.department_id) ||
+              "Sin departamento",
+            costo: branchCost > 0 ? branchCost : masterCost,
+            precio: branchSale > 0 ? branchSale : masterSale,
+            ganancia: Number(row.products.profit ?? 0),
+            existencia: Number(row.stock || 0),
+            minimo: Number(row.min_stock || 0),
+            maximo: Number(row.max_stock || 0),
+            status: !!row.products.status,
+            is_active: row.is_active ?? true,
+            is_kardex_inactive:
+              row.products.status !== true || row.is_active !== true,
+            has_been_stocked: !!row.has_been_stocked,
+            is_global: !!row.products.is_global,
+            sale_type: row.products.sale_type || "unidad",
+            unit: row.products.unit || "pieza",
+            tax: Number(row.products.tax ?? 0),
+            commission_enable: !!row.products.commission_enabled,
+            commission_percent: Number(row.products.commission_percent ?? 0),
+            cfdi: row.products.clave_sat || "",
+            tracks_inventory: !!row.products.tracks_inventory,
+            created_at: row.created_at || row.products.created_at,
+            updated_at: row.updated_at || row.products.updated_at || null,
+            use_inventory: !!row.products.tracks_inventory,
+          };
+        });
 
       const formattedInventoryProducts = formattedBranchKardexProducts.filter(
         (product) => product.status === true
       );
 
       const formattedGlobalProductsWithoutInventory = (globalProducts || [])
-        .filter((product) => !inventoryProductIds.has(product.id))
+        .filter((product) => product.status === true)
+        .filter((product) => !inventoryProductIds.has(String(product.id).trim()))
         .map((product) => ({
           id: product.id,
           inventory_id: null,
@@ -227,10 +234,32 @@ export const ProductsProvider = ({ children }) => {
 
       setKardexProducts(formattedBranchKardexProducts);
 
-      setProducts([
+      const mergedUnsorted = [
         ...formattedInventoryProducts,
         ...formattedGlobalProductsWithoutInventory,
-      ]);
+      ];
+
+      const dedupedMap = new Map();
+      for (const p of mergedUnsorted) {
+        const key = String(p?.id ?? "").trim();
+        if (!key) continue;
+        const existing = dedupedMap.get(key);
+        if (!existing) {
+          dedupedMap.set(key, p);
+          continue;
+        }
+        const best = existing.inventory_id ? existing : p;
+        dedupedMap.set(key, best);
+      }
+
+      const dedupedSorted = Array.from(dedupedMap.values());
+      dedupedSorted.sort((a, b) => {
+        const nameA = String(a?.descripcion || "").toUpperCase();
+        const nameB = String(b?.descripcion || "").toUpperCase();
+        return nameA.localeCompare(nameB, "es");
+      });
+
+      setProducts(dedupedSorted);
     } catch (error) {
       console.error("Error cargando productos:", error);
       setProducts([]);

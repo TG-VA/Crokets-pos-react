@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
@@ -15,6 +15,13 @@ import CashoutIcon from "../../assets/icons/money-check-dollar-solid-full.svg";
 import ReportsIcon from "../../assets/icons/chart-line-solid-full.svg";
 import SettingsIcon from "../../assets/icons/gear-solid-full.svg";
 import LogoutIcon from "../../assets/icons/door-open-solid-full.svg";
+
+import {
+  loadTransferOrders,
+} from "../InventoryComponents/PageInventory/PageTransfers/services/transfersService";
+import {
+  getPendingReceiptsCount,
+} from "../InventoryComponents/PageInventory/PageTransfers/utils/transfersUtils";
 
 import styles from "./Navbar.module.css";
 
@@ -52,6 +59,40 @@ const Navbar = () => {
     onConfirm: null,
     onCancel: null,
   });
+
+  const [pendingInventoryTransfers, setPendingInventoryTransfers] = useState(0);
+
+  useEffect(() => {
+    let interval = null;
+    let mounted = true;
+
+    const refreshPending = async () => {
+      if (!branch?.id) {
+        if (mounted) setPendingInventoryTransfers(0);
+        return;
+      }
+      try {
+        const orders = await loadTransferOrders();
+        if (!mounted) return;
+        const count = getPendingReceiptsCount({
+          orders,
+          currentBranchId: branch.id,
+        });
+        setPendingInventoryTransfers(Number.isFinite(count) ? count : 0);
+      } catch (err) {
+        console.error("No se pudo cargar el conteo de traspasos pendientes en navbar:", err);
+        if (mounted) setPendingInventoryTransfers(0);
+      }
+    };
+
+    refreshPending();
+    interval = setInterval(refreshPending, 10 * 1000);
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [branch?.id]);
 
   const closeAppModal = () => {
     setAppModal((prev) => ({ ...prev, isOpen: false, loading: false, onConfirm: null, onCancel: null }));
@@ -114,17 +155,31 @@ const Navbar = () => {
         </div>
 
         <div className={styles.navbarMenu}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
-              onClick={() => navigate(item.path)}
-            >
-              <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const badgeCount = item.id === "btnInventario"
+              ? pendingInventoryTransfers
+              : 0;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
+                onClick={() => navigate(item.path)}
+              >
+                <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
+                {item.label}
+                {badgeCount > 0 ? (
+                  <span
+                    className={styles.navBadgePendientes}
+                    title={`${badgeCount} recepción(es) pendiente(s) de inventario`}
+                  >
+                    {badgeCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         <div className={styles.navbarUser}>
