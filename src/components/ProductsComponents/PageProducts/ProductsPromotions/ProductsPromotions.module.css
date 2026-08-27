@@ -550,32 +550,6 @@
   gap: 10px;
 }
 
-.kitRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-.kitActions {
-  display: flex;
-  gap: 10px;
-}
-
-.kitStatus {
-  font-weight: 700;
-  margin-right: 10px;
-}
-
-.kitStatusActive {
-  color: var(--successColor);
-}
-
-.kitStatusInactive {
-  color: var(--errorColor);
-}
-
 .selectedProductItem {
   background-color: #e6f3ff;
   border-radius: 6px;
