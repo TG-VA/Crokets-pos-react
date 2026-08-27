@@ -71,6 +71,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
           precioOriginal: salePrice, precio: dInfo.finalPrice, costo: Number(productRow.cost_price || 0),
           existencia: "∞", is_active_in_branch: kitIsActive, has_been_stocked: true, is_kit: !!productRow.is_kit,
           tracks_inventory: false, discount_enabled: dInfo.discountEnabled, discount_percent: dInfo.discountPercent, discount_concept: dInfo.discountConcept,
+          max_kits_per_sale: productRow.max_kits_per_sale,
         };
 
         setProduct(mappedProduct); setKitItems(loadedKitItems);
@@ -92,6 +93,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
         existencia: Number(inventoryRow.stock || 0), is_active_in_branch: inventoryRow.is_active !== false,
         has_been_stocked: !!inventoryRow.has_been_stocked, is_kit: !!productRow.is_kit, tracks_inventory: true,
         discount_enabled: dInfo.discountEnabled, discount_percent: dInfo.discountPercent, discount_concept: dInfo.discountConcept,
+        max_kits_per_sale: productRow.max_kits_per_sale,
       };
 
       setProduct(mappedProduct); setKitItems(loadedKitItems);
@@ -123,6 +125,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
       id: product.id, barcode: product.codigo, name: product.nombre, sale_price: product.precioOriginal, cost_price: product.costo,
       is_kit: product.is_kit, tracks_inventory: product.tracks_inventory, discount_enabled: !!product.discount_enabled,
       discount_percent: Number(product.discount_percent || 0), discount_concept: product.discount_concept || "",
+      max_kits_per_sale: product.max_kits_per_sale,
     });
     handleClose();
   }, [product, onAddToSale, kitItems.length, handleClose]);

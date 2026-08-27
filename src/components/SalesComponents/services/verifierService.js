@@ -64,7 +64,7 @@ export const fetchKitData = async (productId) => {
 export const fetchProductByBarcode = async (barcode) => {
   const { data, error } = await supabase
     .from("products")
-    .select("id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory")
+    .select("id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory, max_kits_per_sale")
     .eq("barcode", barcode)
     .eq("status", true)
     .maybeSingle();
