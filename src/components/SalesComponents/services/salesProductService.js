@@ -1,7 +1,7 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { getProductWithDiscount } from "./salesInventoryService";
 
-const PRODUCT_SELECT = "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory";
+const PRODUCT_SELECT = "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory, max_kits_per_sale";
 const BRANCH_INVENTORY_SELECT = "stock, is_active, has_been_stocked, cost_price, sale_price";
 
 const createProductError = (message, code) => {

@@ -228,6 +228,7 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 | is_global | boolean | default true (visible en todas las sucursales) |
 | is_kit | boolean | NN, default false |
 | tracks_inventory | boolean | NN, default true |
+| max_kits_per_sale | integer | default 1 (límite máximo de kits por venta) |
 
 ### departments
 | Columna | Tipo | Notas |

@@ -73,6 +73,7 @@ const useSalesCart = ({
       stockReal: tracksInventory ? Number(stock || 0) : null,
       existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
       is_kit: Boolean(isKit), tracks_inventory: Boolean(tracksInventory),
+      max_kits_per_sale: product.max_kits_per_sale,
     };
   }, []);
 
@@ -83,6 +84,14 @@ const useSalesCart = ({
     if (existingProduct) {
       const nextQuantity = Number(existingProduct.cantidad || 0) + 1;
       
+      if (product.is_kit) {
+        const maxKits = Number(product.max_kits_per_sale ?? 1);
+        if (nextQuantity > maxKits) {
+          showAppWarning(`Límite de venta: Solo se permite vender un máximo de ${maxKits} unidades de este kit por transacción.`);
+          return false;
+        }
+      }
+
       if (tracksInventory && nextQuantity > stock) {
         showAppWarning(product.is_kit ? "No hay suficiente inventario para vender otro kit." : "No hay suficiente inventario.");
         return false;
@@ -147,6 +156,14 @@ const useSalesCart = ({
 
     const currentQuantity = Number(currentProduct.cantidad || 0);
     const stock = Number(currentProduct.stockReal || 0);
+
+    if (currentProduct.is_kit) {
+      const maxKits = Number(currentProduct.max_kits_per_sale ?? 1);
+      if (currentQuantity >= maxKits) {
+        showAppWarning(`Límite de venta: Solo se permite vender un máximo de ${maxKits} unidades de este kit por transacción.`);
+        return;
+      }
+    }
 
     if (currentProduct.tracks_inventory && currentQuantity >= stock) {
       showAppWarning("No hay suficiente inventario.");

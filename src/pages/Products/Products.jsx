@@ -76,7 +76,7 @@ const Products = () => {
             element={
               <ProtectedProductRoute
                 routePath="/products/promociones"
-                routeLabel="Promociones"
+                routeLabel="Promociones y Kits"
                 action="products_promotions_access"
                 authorizedRoutes={authorizedRoutes}
                 onAuthorizedRoute={handleAuthorizedRoute}

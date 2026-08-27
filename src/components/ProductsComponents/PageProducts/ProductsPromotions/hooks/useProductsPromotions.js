@@ -13,7 +13,7 @@ import {
 export const useProductsPromotions = () => {
   const { appModal, closeAppModal, showAppAlert, showAppConfirm } = useAppModal();
 
-  const [form, setForm] = useState({ barcode: "", description: "", price: "" });
+  const [form, setForm] = useState({ barcode: "", description: "", price: "", max_kits_per_sale: "1" });
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [kits, setKits] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(null);
@@ -34,7 +34,7 @@ export const useProductsPromotions = () => {
   const updateField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const resetForm = () => {
-    setForm({ barcode: "", description: "", price: "" });
+    setForm({ barcode: "", description: "", price: "", max_kits_per_sale: "1" });
     setSelectedProducts([]);
     setSelectedProductId(null);
     setEditingKit(null);
@@ -119,6 +119,11 @@ export const useProductsPromotions = () => {
       showAppAlert({ type: "warning", title: "Precio requerido", message: "Captura un precio válido para el kit." });
       return false;
     }
+    const maxKits = Number(form.max_kits_per_sale);
+    if (!Number.isInteger(maxKits) || maxKits < 1) {
+      showAppAlert({ type: "warning", title: "Límite inválido", message: "El límite de venta por transacción debe ser un número entero mayor o igual a 1." });
+      return false;
+    }
     if (selectedProducts.length === 0) {
       showAppAlert({ type: "warning", title: "Productos requeridos", message: "Agrega al menos un producto al kit." });
       return false;
@@ -146,13 +151,14 @@ export const useProductsPromotions = () => {
     const cleanBarcode = form.barcode.trim();
     const cleanDescription = form.description.trim().toUpperCase();
     const kitPriceValue = Number(form.price);
+    const maxKitsValue = Number(form.max_kits_per_sale || 1);
 
     try {
       setSaving(true);
       const isValid = await validateDuplicatedKit(cleanBarcode, cleanDescription, editingKit?.kit_product_id || null);
       if (!isValid) return;
 
-      const kitData = { barcode: cleanBarcode, description: cleanDescription, price: kitPriceValue };
+      const kitData = { barcode: cleanBarcode, description: cleanDescription, price: kitPriceValue, max_kits_per_sale: maxKitsValue };
 
       if (editingKit) {
         await updateKitTransaction(editingKit, kitData, selectedProducts);
@@ -177,7 +183,12 @@ export const useProductsPromotions = () => {
     try {
       const items = await fetchKitItems(kit.id);
       setEditingKit(kit);
-      setForm({ barcode: kit.products?.barcode || "", description: kit.products?.name || "", price: String(Number(kit.products?.sale_price || 0)) });
+      setForm({
+        barcode: kit.products?.barcode || "",
+        description: kit.products?.name || "",
+        price: String(Number(kit.products?.sale_price || 0)),
+        max_kits_per_sale: String(Number(kit.products?.max_kits_per_sale ?? 1)),
+      });
       setSelectedProducts((items || []).filter((item) => item.products).map((item) => ({
         id: item.products.id, barcode: item.products.barcode || "", name: item.products.name || "Producto",
         sale_price: Number(item.products.sale_price || 0), cost_price: Number(item.products.cost_price || 0), quantity: Number(item.quantity || 1),

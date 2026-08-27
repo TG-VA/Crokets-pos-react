@@ -18,7 +18,7 @@ const ProductsPromotions = () => {
       <div className={styles.innerContainer}>
         <div className={styles.header}>
           <h1 className={styles.title}>
-            {editingKit ? "Editar Kit" : "Promociones (Kits)"}
+            {editingKit ? "Editar Kit" : "Promociones y Kits"}
           </h1>
         </div>
 
@@ -58,6 +58,20 @@ const ProductsPromotions = () => {
                   placeholder="0.00"
                   value={form.price}
                   onChange={(e) => updateField("price", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formRow}>
+                <label className={styles.label}>Límite por venta</label>
+                <input
+                  className={styles.input}
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  placeholder="1"
+                  value={form.max_kits_per_sale}
+                  onChange={(e) => updateField("max_kits_per_sale", e.target.value)}
                 />
               </div>
 
