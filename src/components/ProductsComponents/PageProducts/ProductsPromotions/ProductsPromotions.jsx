@@ -63,16 +63,21 @@ const ProductsPromotions = () => {
 
               <div className={styles.formRow}>
                 <label className={styles.label}>Límite por venta</label>
-                <input
-                  className={styles.input}
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  step="1"
-                  placeholder="1"
-                  value={form.max_kits_per_sale}
-                  onChange={(e) => updateField("max_kits_per_sale", e.target.value)}
-                />
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    step="1"
+                    placeholder="1"
+                    value={form.max_kits_per_sale}
+                    onChange={(e) => updateField("max_kits_per_sale", e.target.value)}
+                  />
+                  <span style={{ fontSize: "0.80rem", color: "#666666", fontStyle: "italic" }}>
+                    * El límite se aplica de forma individual para cada sucursal.
+                  </span>
+                </div>
               </div>
 
               <div className={styles.formRow}>
