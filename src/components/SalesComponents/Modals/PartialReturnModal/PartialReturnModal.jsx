@@ -1,9 +1,10 @@
-import React, { useEffect, memo } from "react";
+import React, { memo } from "react";
 import styles from "./PartialReturnModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import ChangeIcon from "../../../../assets/icons/changeIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import { usePartialReturn, formatCurrency } from "./usePartialReturn";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const PartialReturnModal = memo(({ isOpen, onClose, selectedTicket, paymentMethods = [], onReturnCreated }) => {
   const {
@@ -11,16 +12,17 @@ const PartialReturnModal = memo(({ isOpen, onClose, selectedTicket, paymentMetho
     processing, summary, appModal, closeAppModal, handleQtyChange, handleDecreaseQty, handleIncreaseQty, handleSave
   } = usePartialReturn({ isOpen, onClose, selectedTicket, paymentMethods, onReturnCreated });
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEscapeKey = (e) => {
-      if (e.key !== "Escape") return;
-      e.preventDefault(); e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); e.stopImmediatePropagation?.();
-      appModal.isOpen ? closeAppModal() : (!processing && onClose());
-    };
-    document.addEventListener("keydown", handleEscapeKey, true);
-    return () => document.removeEventListener("keydown", handleEscapeKey, true);
-  }, [isOpen, appModal.isOpen, processing, onClose, closeAppModal]);
+  useEscapeKey((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent?.stopImmediatePropagation?.();
+    e.stopImmediatePropagation?.();
+    if (appModal.isOpen) {
+      closeAppModal();
+    } else if (!processing) {
+      onClose();
+    }
+  }, isOpen);
 
   if (!isOpen) return null;
 

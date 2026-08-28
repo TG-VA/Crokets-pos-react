@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import styles from "./NotesModal.module.css";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
   const [notes, setNotes] = useState(initialNotes);
@@ -26,20 +27,13 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
     if (isOpen) setNotes(initialNotes || "");
   }, [isOpen, initialNotes]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault(); 
-        e.stopPropagation(); 
-        e.nativeEvent?.stopImmediatePropagation?.(); 
-        e.stopImmediatePropagation?.(); 
-        handleClose();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown, true);
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, handleClose]);
+  useEscapeKey((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent?.stopImmediatePropagation?.();
+    e.stopImmediatePropagation?.();
+    handleClose();
+  }, isOpen);
 
   if (!isOpen) return null;
 

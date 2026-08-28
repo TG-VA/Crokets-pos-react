@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, memo, useCallback } from "react";
 import styles from "./DiscountModal.module.css";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 import PercentIcon from "../../../../assets/icons/percent-solid-full.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
@@ -36,14 +37,13 @@ const DiscountModal = memo(({ isOpen, onClose, onApplyDiscount, selectedProduct 
 
   const handleClose = useCallback(() => onClose(), [onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); e.stopImmediatePropagation?.(); handleClose(); }
-    };
-    document.addEventListener("keydown", handleKeyDown, true);
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, handleClose]);
+  useEscapeKey((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent?.stopImmediatePropagation?.();
+    e.stopImmediatePropagation?.();
+    handleClose();
+  }, isOpen);
 
   const sanitize = (value) => String(value || "").replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
 

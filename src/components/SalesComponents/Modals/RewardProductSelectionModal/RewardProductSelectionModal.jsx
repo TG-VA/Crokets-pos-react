@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, memo } from "react";
 import styles from "./RewardProductSelectionModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import { useRewardProductSelection, INITIAL_VISIBLE_PRODUCTS } from "./useRewardProductSelection";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const RewardProductSelectionModal = memo(({ isOpen, onClose, onConfirm, rewards = [], branchId = null, cartProducts = [] }) => {
   const {
@@ -31,15 +32,12 @@ const RewardProductSelectionModal = memo(({ isOpen, onClose, onConfirm, rewards 
     finally { setSaving(false); }
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (appModal.isOpen) return;
-      if (e.key === "Escape" && !saving) { e.preventDefault(); e.stopPropagation(); onClose(); }
-    };
-    document.addEventListener("keydown", handleKeyDown, true);
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, saving, onClose, appModal.isOpen]);
+  useEscapeKey((e) => {
+    if (appModal.isOpen) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+  }, isOpen && !saving);
 
   if (!isOpen) return null;
 

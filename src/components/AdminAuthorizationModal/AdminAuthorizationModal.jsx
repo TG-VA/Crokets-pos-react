@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styles from "./AdminAuthorizationModal.module.css";
 import { authorizeAdminAction } from "../../lib/adminAuthorizationService";
+import { useEscapeKey } from "../../hooks/useEscapeKey";
 
 const AdminAuthorizationModal = ({
   isOpen,
@@ -19,8 +20,6 @@ const AdminAuthorizationModal = ({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null;
-
   const resetForm = () => {
     setUsername("");
     setPassword("");
@@ -34,6 +33,10 @@ const AdminAuthorizationModal = ({
     resetForm();
     onClose?.();
   };
+
+  useEscapeKey(handleClose, isOpen && !loading);
+
+  if (!isOpen) return null;
 
   const handleAuthorize = async (e) => {
     e.preventDefault();
