@@ -3,6 +3,7 @@ import {
   applyDiscountToPrice, fetchProductDiscount, fetchKitData, 
   fetchProductByBarcode, fetchProductInventory 
 } from "../../services/verifierService";
+import { getSoldKitsCountInBranch } from "../../services/salesProductService";
 
 export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
   const [barcode, setBarcode] = useState("");
@@ -57,8 +58,18 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
         const kitInfo = await fetchKitData(productRow.id);
         if (currentReq !== requestIdRef.current) return;
         loadedKitItems = kitInfo.items;
-        kitIsActive = kitInfo.isActive;
-        if (!kitIsActive) setError("Este kit está inactivo.");
+        
+        const soldCount = await getSoldKitsCountInBranch(productRow.id, branch.id);
+        if (currentReq !== requestIdRef.current) return;
+        const maxKits = Number(productRow.max_kits_per_sale ?? 1);
+        
+        if (soldCount >= maxKits) {
+          setError(`Límite excedido: Se han vendido ${soldCount} de ${maxKits} permitidos en esta sucursal.`);
+          kitIsActive = false;
+        } else {
+          kitIsActive = kitInfo.isActive;
+          if (!kitIsActive) setError("Este kit está inactivo.");
+        }
       }
 
       if (!tracksInventory) {
