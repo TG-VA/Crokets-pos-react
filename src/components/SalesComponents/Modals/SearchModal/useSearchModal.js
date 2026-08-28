@@ -221,8 +221,10 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     if (onAddToSale) {
       try {
         setAddingProduct(true);
-        await onAddToSale({ id: product.id, barcode: product.barcode, name: product.name, sale_price: product.branch_sale_price, cost_price: product.branch_cost_price, is_kit: !!product.is_kit, tracks_inventory: !!product.tracks_inventory, discount_enabled: !!product.discount_enabled, discount_percent: Number(product.discount_percent || 0), discount_concept: product.discount_concept || "", max_kits_per_sale: product.max_kits_per_sale });
-        handleClose();
+        const success = await onAddToSale({ id: product.id, barcode: product.barcode, name: product.name, sale_price: product.branch_sale_price, cost_price: product.branch_cost_price, is_kit: !!product.is_kit, tracks_inventory: !!product.tracks_inventory, discount_enabled: !!product.discount_enabled, discount_percent: Number(product.discount_percent || 0), discount_concept: product.discount_concept || "", max_kits_per_sale: product.max_kits_per_sale });
+        if (success !== false) {
+          handleClose();
+        }
       } catch (e) { showAppWarning(e?.message || "Error al agregar."); } 
       finally { setAddingProduct(false); }
     } else handleClose();
