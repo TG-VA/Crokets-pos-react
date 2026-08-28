@@ -97,3 +97,20 @@ export const getSellableProductByBarcode = async ({ barcode, branchId }) => {
     inventoryRow,
   });
 };
+
+export const getSoldKitsCountInBranch = async (productId, branchId) => {
+  if (!productId || !branchId) return 0;
+  
+  const { data, error } = await supabase
+    .from("sale_details")
+    .select("quantity")
+    .eq("product_id", productId)
+    .eq("branch_id", branchId);
+
+  if (error) {
+    console.error("Error fetching sold kits count in branch:", error);
+    return 0;
+  }
+
+  return (data || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+};
