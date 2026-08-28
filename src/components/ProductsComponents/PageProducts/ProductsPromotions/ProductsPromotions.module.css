@@ -104,6 +104,18 @@
   cursor: not-allowed;
 }
 
+.limitInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.limitHelperText {
+  font-size: 0.80rem;
+  color: #666666;
+  font-style: italic;
+}
+
 .summaryBox {
   min-height: 40px;
   padding: 8px 12px;

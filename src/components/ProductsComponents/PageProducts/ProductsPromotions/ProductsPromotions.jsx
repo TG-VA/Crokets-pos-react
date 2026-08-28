@@ -63,7 +63,7 @@ const ProductsPromotions = () => {
 
               <div className={styles.formRow}>
                 <label className={styles.label}>Límite por venta</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div className={styles.limitInputContainer}>
                   <input
                     className={styles.input}
                     type="number"
@@ -74,7 +74,7 @@ const ProductsPromotions = () => {
                     value={form.max_kits_per_sale}
                     onChange={(e) => updateField("max_kits_per_sale", e.target.value)}
                   />
-                  <span style={{ fontSize: "0.80rem", color: "#666666", fontStyle: "italic" }}>
+                  <span className={styles.limitHelperText}>
                     * El límite se aplica de forma individual para cada sucursal.
                   </span>
                 </div>
