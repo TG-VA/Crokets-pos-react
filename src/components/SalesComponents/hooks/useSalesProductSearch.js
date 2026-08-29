@@ -56,13 +56,14 @@ const useSalesProductSearch = ({
   }, [barcode, branchId, addProductToCart, setBarcode, showAppWarning, validateSaleAvailable]);
 
   const handleAddProductFromVerifier = useCallback(async (product) => {
-    if (!validateSaleAvailable() || !product) return;
+    if (!validateSaleAvailable() || !product) return false;
 
     try {
-      await addProductToCart(product);
+      return await addProductToCart(product);
     } catch (error) {
       // También limpiamos el console.error() de esta función por si acaso
       showAppWarning(error?.message || "No se pudo agregar el producto.");
+      return false;
     }
   }, [addProductToCart, showAppWarning, validateSaleAvailable]);
 
