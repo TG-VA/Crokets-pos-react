@@ -48,6 +48,7 @@ const InventoryReportFilters = ({
             <option value="low">Stock Bajo</option>
             <option value="exhausted">Agotado</option>
             <option value="excess">Exceso de Stock</option>
+            <option value="not_stocked">No Surtido</option>
           </select>
         </div>
 

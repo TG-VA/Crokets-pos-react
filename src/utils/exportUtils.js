@@ -160,6 +160,16 @@ export const exportInventoryReportToExcel = async (reportData, branchName = 'Tod
       { header: '% del Inventario', key: 'percentage', width: 18 }
     ], reportData.byDepartment || []);
 
+    createStyledSheet('Productos Agotados', [
+      { header: 'Código', key: 'barcode', width: 18 },
+      { header: 'Producto', key: 'name', width: 42 },
+      { header: 'Departamento', key: 'departmentName', width: 22 },
+      { header: 'Stock Mínimo', key: 'min_stock', width: 15 },
+      { header: 'Stock Máximo', key: 'max_stock', width: 15 },
+      { header: 'Costo Unitario ($)', key: 'cost_price', width: 18 },
+      { header: 'Precio Venta ($)', key: 'sale_price', width: 18 }
+    ], reportData.exhaustedProducts || []);
+
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 

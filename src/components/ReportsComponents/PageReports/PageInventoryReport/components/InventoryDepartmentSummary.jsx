@@ -42,8 +42,8 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
                 </td>
               </tr>
             ) : (
-              departmentData.map((dept, index) => (
-                <tr key={index}>
+              departmentData.map((dept) => (
+                <tr key={dept.name}>
                   <td className={styles.fontBold}>{dept.name}</td>
                   <td className={styles.textRight}>{dept.productCount.toLocaleString()}</td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>

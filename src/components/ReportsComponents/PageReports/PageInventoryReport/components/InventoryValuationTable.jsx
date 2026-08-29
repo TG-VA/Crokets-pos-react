@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
-
-const ITEMS_PER_PAGE = 25;
+import { ITEMS_PER_PAGE, getStatusBadge } from "../utils/inventoryReportUtils";
 
 const InventoryValuationTable = ({ items = [], isLoading = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -13,16 +12,6 @@ const InventoryValuationTable = ({ items = [], isLoading = false }) => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [items, currentPage]);
-
-  const getStatusBadge = (status, label) => {
-    let badgeClass = styles.badgeNeutral;
-    if (status === "exhausted") badgeClass = styles.badgeExhausted;
-    else if (status === "low") badgeClass = styles.badgeLow;
-    else if (status === "optimal") badgeClass = styles.badgeOptimal;
-    else if (status === "excess") badgeClass = styles.badgeExcess;
-
-    return <span className={`${styles.kpiAlertBadge} ${badgeClass}`}>{label}</span>;
-  };
 
   if (isLoading) {
     return (

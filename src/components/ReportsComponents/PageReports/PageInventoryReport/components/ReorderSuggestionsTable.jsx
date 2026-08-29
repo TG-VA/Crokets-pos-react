@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
-
-const ITEMS_PER_PAGE = 25;
+import { ITEMS_PER_PAGE, getStatusBadge } from "../utils/inventoryReportUtils";
 
 const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,13 +94,7 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
                     {formatCurrency(item.estimatedInvestment)}
                   </td>
                   <td className={styles.textCenter}>
-                    <span
-                      className={`${styles.kpiAlertBadge} ${
-                        item.status === "exhausted" ? styles.badgeExhausted : styles.badgeLow
-                      }`}
-                    >
-                      {item.statusLabel}
-                    </span>
+                    {getStatusBadge(item.status, item.statusLabel)}
                   </td>
                 </tr>
               ))
