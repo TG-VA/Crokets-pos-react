@@ -57,9 +57,12 @@ export const fetchInventoryReportData = async (branchId = "ALL") => {
           total_sale: 0,
           has_been_stocked: false,
           has_inventory_record: true,
-          single_branch_cost: rowCost,
-          single_branch_sale: rowSale,
         };
+
+        if (branchId !== "ALL") {
+          inventoryMap[pId].single_branch_cost = rowCost;
+          inventoryMap[pId].single_branch_sale = rowSale;
+        }
       }
 
       inventoryMap[pId].stock += rowStock;
