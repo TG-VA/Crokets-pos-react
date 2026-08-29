@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { isRewardCartItem, isSameCartItem } from "../utils/salesCartUtils";
 import { validateProductForCart } from "../services/salesCartValidationService"; // <-- NUEVO SERVICIO
+import { getSoldKitsCountInBranch } from "../services/salesProductService";
 
 // --- FUNCIONES PURAS (SIN ESTADO) ---
 const calculateDiscountedProduct = (basePrice, product) => {
@@ -52,6 +53,7 @@ const useSalesCart = ({
   getKitAvailableStock,
   showAppWarning,
   syncCurrentSaleRewardsWithCart,
+  branchId,
 }) => {
   
   const commitCart = useCallback((nextProducts, nextSelectedProduct) => {
@@ -73,6 +75,7 @@ const useSalesCart = ({
       stockReal: tracksInventory ? Number(stock || 0) : null,
       existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
       is_kit: Boolean(isKit), tracks_inventory: Boolean(tracksInventory),
+      max_kits_per_sale: product.max_kits_per_sale,
     };
   }, []);
 
@@ -82,7 +85,7 @@ const useSalesCart = ({
 
     if (existingProduct) {
       const nextQuantity = Number(existingProduct.cantidad || 0) + 1;
-      
+
       if (tracksInventory && nextQuantity > stock) {
         showAppWarning(product.is_kit ? "No hay suficiente inventario para vender otro kit." : "No hay suficiente inventario.");
         return false;
@@ -124,6 +127,25 @@ const useSalesCart = ({
       return false;
     }
 
+    // 2b. Validar límite de kits por sucursal acumulado en la base de datos
+    if (product.is_kit && branchId) {
+      const soldCount = await getSoldKitsCountInBranch(product.id, branchId);
+      const currentProducts = productosRef.current || [];
+      const existingProduct = currentProducts.find((item) => item.id === product.id && !isRewardCartItem(item));
+      const nextQuantity = (existingProduct ? Number(existingProduct.cantidad || 0) : 0) + 1;
+      const totalQuantity = soldCount + nextQuantity;
+      const maxKits = Number(product.max_kits_per_sale ?? 1);
+
+      if (totalQuantity > maxKits) {
+        if (soldCount >= maxKits) {
+          showAppWarning(`Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`);
+        } else {
+          showAppWarning(`Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`);
+        }
+        return false;
+      }
+    }
+
     // 3. Si el dominio dice que SÍ, modificamos el estado de React
     return applyProductToCart(
       product, 
@@ -132,10 +154,10 @@ const useSalesCart = ({
       validation.costPrice, 
       validation.tracksInventory
     );
-  }, [applyProductToCart, getBranchInventoryRow, getKitAvailableStock, showAppWarning]);
+  }, [applyProductToCart, getBranchInventoryRow, getKitAvailableStock, showAppWarning, branchId]);
   // =======================================================================
 
-  const increaseSelectedProductQuantity = useCallback(() => {
+  const increaseSelectedProductQuantity = useCallback(async () => {
     if (!selectedProduct) return;
     if (isRewardCartItem(selectedProduct)) {
       showAppWarning("No puedes modificar la cantidad de un producto aplicado como recompensa.");
@@ -147,6 +169,22 @@ const useSalesCart = ({
 
     const currentQuantity = Number(currentProduct.cantidad || 0);
     const stock = Number(currentProduct.stockReal || 0);
+
+    if (currentProduct.is_kit && branchId) {
+      const soldCount = await getSoldKitsCountInBranch(currentProduct.id, branchId);
+      const nextQuantity = currentQuantity + 1;
+      const totalQuantity = soldCount + nextQuantity;
+      const maxKits = Number(currentProduct.max_kits_per_sale ?? 1);
+
+      if (totalQuantity > maxKits) {
+        if (soldCount >= maxKits) {
+          showAppWarning(`Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`);
+        } else {
+          showAppWarning(`Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`);
+        }
+        return;
+      }
+    }
 
     if (currentProduct.tracks_inventory && currentQuantity >= stock) {
       showAppWarning("No hay suficiente inventario.");
@@ -160,7 +198,7 @@ const useSalesCart = ({
     });
     const nextSelected = nextProducts.find((item) => isSameCartItem(item, selectedProduct)) || null;
     commitCart(nextProducts, nextSelected);
-  }, [commitCart, productosRef, selectedProduct, showAppWarning]);
+  }, [commitCart, productosRef, selectedProduct, showAppWarning, branchId, updateCartItemQuantity]);
 
   const decreaseSelectedProductQuantity = useCallback(() => {
     if (!selectedProduct) return;

@@ -128,6 +128,66 @@ const Departments = () => {
               </select>
             </div>
 
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Genera comisión</label>
+
+              <select
+                className={styles.input}
+                value={formData.commission_enabled ? "activo" : "inactivo"}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    commission_enabled: e.target.value === "activo",
+                  })
+                }
+                disabled={saving}
+              >
+                <option value="inactivo">Inactivo</option>
+                <option value="activo">Activo</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Tipo de comisión</label>
+
+              <select
+                className={styles.input}
+                value={formData.commission_type || "percent"}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    commission_type: e.target.value,
+                  })
+                }
+                disabled={saving || !formData.commission_enabled}
+              >
+                <option value="percent">Porcentaje (%)</option>
+                <option value="flat">Monto Fijo (Moneda)</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                {formData.commission_type === "percent" ? "Porcentaje de comisión (%)" : "Valor de comisión"}
+              </label>
+
+              <input
+                className={styles.input}
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={formData.commission_value}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    commission_value: e.target.value,
+                  })
+                }
+                placeholder={formData.commission_type === "percent" ? "Ej. 10" : "Ej. 20.00"}
+                disabled={saving || !formData.commission_enabled}
+              />
+            </div>
+
             <div className={styles.actions}>
               <button
                 type="submit"

@@ -17,8 +17,9 @@ const createInitialForm = () => ({
   status: "activo",
   isGlobal: false,
   created_at: new Date().toISOString().slice(0, 10),
-  commission_enable: false,
-  commission_percent: 0,
+  commission_enabled: false,
+  commission_type: "percent",
+  commission_value: 0,
 });
 
 export const useProductFormValidation = (getProductByCodigo) => {
@@ -26,14 +27,14 @@ export const useProductFormValidation = (getProductByCodigo) => {
   const [touched, setTouched] = useState({
     codigo: false, descripcion: false, costo: false, precio: false,
     departamento: false, existencia: false, minimo: false, maximo: false,
-    tax: false, commission_percent: false,
+    tax: false, commission_value: false,
   });
 
   const resetTouched = () => {
     setTouched({
       codigo: false, descripcion: false, costo: false, precio: false,
       departamento: false, existencia: false, minimo: false, maximo: false,
-      tax: false, commission_percent: false,
+      tax: false, commission_value: false,
     });
   };
 
@@ -50,8 +51,8 @@ export const useProductFormValidation = (getProductByCodigo) => {
         next.minimo = 0;
         next.maximo = 0;
       }
-      if (key === "commission_enable" && !value) {
-        next.commission_percent = 0;
+      if (key === "commission_enabled" && !value) {
+        next.commission_value = 0;
       }
       return next;
     });
@@ -63,7 +64,7 @@ export const useProductFormValidation = (getProductByCodigo) => {
     setTouched({
       codigo: true, descripcion: true, costo: true, precio: true,
       departamento: true, existencia: true, minimo: true, maximo: true,
-      tax: true, commission_percent: true,
+      tax: true, commission_value: true,
     });
   };
 
@@ -87,7 +88,7 @@ export const useProductFormValidation = (getProductByCodigo) => {
     const existencia = form.existencia === "" || form.existencia === null ? NaN : Number(form.existencia);
     const minimo = form.minimo === "" || form.minimo === null ? NaN : Number(form.minimo);
     const maximo = form.maximo === "" || form.maximo === null ? NaN : Number(form.maximo);
-    const commissionPercent = form.commission_percent === "" || form.commission_percent === null ? NaN : Number(form.commission_percent);
+    const commissionValue = form.commission_value === "" || form.commission_value === null ? NaN : Number(form.commission_value);
 
     if (!codigo) nextErrors.codigo = "El codigo de barras es obligatorio.";
     else if (getProductByCodigo(codigo)) nextErrors.codigo = "Ese codigo ya existe.";
@@ -122,9 +123,9 @@ export const useProductFormValidation = (getProductByCodigo) => {
       }
     }
 
-    if (form.commission_enable) {
-      if (!Number.isFinite(commissionPercent)) nextErrors.commission_percent = "Debes capturar el porcentaje de comision.";
-      else if (commissionPercent < 0) nextErrors.commission_percent = "La comision no puede ser negativa.";
+    if (form.commission_enabled) {
+      if (!Number.isFinite(commissionValue)) nextErrors.commission_value = "Debes capturar el valor de la comision.";
+      else if (commissionValue < 0) nextErrors.commission_value = "La comision no puede ser negativa.";
     }
 
     return nextErrors;

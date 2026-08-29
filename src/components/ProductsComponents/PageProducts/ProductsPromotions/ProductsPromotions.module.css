@@ -104,6 +104,18 @@
   cursor: not-allowed;
 }
 
+.limitInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.limitHelperText {
+  font-size: 0.80rem;
+  color: #666666;
+  font-style: italic;
+}
+
 .summaryBox {
   min-height: 40px;
   padding: 8px 12px;
@@ -548,32 +560,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.kitRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-.kitActions {
-  display: flex;
-  gap: 10px;
-}
-
-.kitStatus {
-  font-weight: 700;
-  margin-right: 10px;
-}
-
-.kitStatusActive {
-  color: var(--successColor);
-}
-
-.kitStatusInactive {
-  color: var(--errorColor);
 }
 
 .selectedProductItem {

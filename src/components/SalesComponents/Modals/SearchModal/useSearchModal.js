@@ -3,6 +3,7 @@ import {
   normalizeText, sortProductsByNameAndWeight, fetchProductSearch, 
   fetchKitData, fetchProductStocksAcrossBranches 
 } from "../../services/searchModalService";
+import { getSoldKitsCountInBranch } from "../../services/salesProductService";
 
 export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta, branch }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,11 +76,29 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     return () => { clearTimeout(timer); if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [isOpen, closeAppModal]);
 
-  const validateKitStock = useCallback(async (kitProductId) => {
+  const validateKitStock = useCallback(async (kitProductId, maxKitsLimit) => {
     if (!kitProductId || !branch?.id) return;
     const currentId = ++kitRequestIdRef.current;
     try {
       setKitValidation({ isValid: false, message: "Validando inventario...", items: [] });
+
+      // 1. Validar límite de kits por sucursal acumulado en la base de datos primero
+      const soldCount = await getSoldKitsCountInBranch(kitProductId, branch.id);
+      if (currentId !== kitRequestIdRef.current) return;
+
+      const maxKits = Number(maxKitsLimit ?? 1);
+      const qtyInSale = getProductCartQuantity(kitProductId);
+      const totalQuantity = soldCount + qtyInSale;
+
+      if (totalQuantity >= maxKits) {
+        setKitValidation({ 
+          isValid: false, 
+          message: `Límite excedido: Se han vendido ${soldCount} de ${maxKits} permitidos en esta sucursal${qtyInSale > 0 ? ` (${qtyInSale} en el carrito)` : ""}.`, 
+          items: [] 
+        });
+        return;
+      }
+
       const { kitRow, kitItems, inventoryMap } = await fetchKitData(kitProductId, branch.id);
       if (currentId !== kitRequestIdRef.current) return;
       if (!kitRow?.id) return setKitValidation({ isValid: false, message: "Kit sin configuración.", items: [] });
@@ -138,7 +157,7 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     
     if (selectedProduct.is_kit) {
       setSelectedProductStocks([]);
-      if (lastKitProductKeyRef.current !== selectedProductKey) { lastKitProductKeyRef.current = selectedProductKey; lastStockProductKeyRef.current = ""; validateKitStock(selectedProduct.id); }
+      if (lastKitProductKeyRef.current !== selectedProductKey) { lastKitProductKeyRef.current = selectedProductKey; lastStockProductKeyRef.current = ""; validateKitStock(selectedProduct.id, selectedProduct.max_kits_per_sale); }
       return;
     }
     
@@ -221,8 +240,10 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     if (onAddToSale) {
       try {
         setAddingProduct(true);
-        await onAddToSale({ id: product.id, barcode: product.barcode, name: product.name, sale_price: product.branch_sale_price, cost_price: product.branch_cost_price, is_kit: !!product.is_kit, tracks_inventory: !!product.tracks_inventory, discount_enabled: !!product.discount_enabled, discount_percent: Number(product.discount_percent || 0), discount_concept: product.discount_concept || "" });
-        handleClose();
+        const success = await onAddToSale({ id: product.id, barcode: product.barcode, name: product.name, sale_price: product.branch_sale_price, cost_price: product.branch_cost_price, is_kit: !!product.is_kit, tracks_inventory: !!product.tracks_inventory, discount_enabled: !!product.discount_enabled, discount_percent: Number(product.discount_percent || 0), discount_concept: product.discount_concept || "", max_kits_per_sale: product.max_kits_per_sale });
+        if (success !== false) {
+          handleClose();
+        }
       } catch (e) { showAppWarning(e?.message || "Error al agregar."); } 
       finally { setAddingProduct(false); }
     } else handleClose();

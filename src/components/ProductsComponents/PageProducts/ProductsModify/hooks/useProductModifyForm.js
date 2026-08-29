@@ -4,14 +4,14 @@ const createInitialForm = () => ({
   codigo: "", descripcion: "", costo: "", precio: "", departamento: "",
   minimo: 0, maximo: 0, use_inventory: true, sale_type: "unidad",
   unit: "pieza", tax: 16, cfdi: "", status: "activo", isGlobal: false,
-  commission_enable: false, commission_percent: 0, discount_enable: false,
+  commission_enabled: false, commission_type: "percent", commission_value: 0, discount_enable: false,
   discount_percent: 0, discount_price: "", discount_concept: "",
 });
 
 const createInitialTouched = () => ({
   codigo: false, descripcion: false, costo: false, precio: false,
   departamento: false, minimo: false, maximo: false, tax: false,
-  commission_percent: false, discount_percent: false, discount_price: false, discount_concept: false,
+  commission_value: false, discount_percent: false, discount_price: false, discount_concept: false,
 });
 
 export const useProductModifyForm = (departments, getProductByCodigo, selectedProduct) => {
@@ -81,8 +81,8 @@ export const useProductModifyForm = (departments, getProductByCodigo, selectedPr
         next.minimo = 0;
         next.maximo = 0;
       }
-      if (key === "commission_enable" && !value) {
-        next.commission_percent = 0;
+      if (key === "commission_enabled" && !value) {
+        next.commission_value = 0;
       }
       if (key === "precio") {
         if (next.discount_enable && Number(next.discount_percent) > 0) {
@@ -113,7 +113,7 @@ export const useProductModifyForm = (departments, getProductByCodigo, selectedPr
     const minimo = form.minimo === "" || form.minimo === null ? NaN : Number(form.minimo);
     const maximo = form.maximo === "" || form.maximo === null ? NaN : Number(form.maximo);
     const tax = form.tax === "" || form.tax === null ? NaN : Number(form.tax);
-    const commissionPercent = form.commission_percent === "" || form.commission_percent === null ? NaN : Number(form.commission_percent);
+    const commissionValue = form.commission_value === "" || form.commission_value === null ? NaN : Number(form.commission_value);
     const discountPercent = form.discount_percent === "" || form.discount_percent === null ? NaN : Number(form.discount_percent);
     const discountPrice = form.discount_price === "" || form.discount_price === null ? NaN : Number(form.discount_price);
 
@@ -153,9 +153,9 @@ export const useProductModifyForm = (departments, getProductByCodigo, selectedPr
       }
     }
 
-    if (form.commission_enable) {
-      if (!Number.isFinite(commissionPercent)) nextErrors.commission_percent = "Debes capturar el porcentaje de comisión.";
-      else if (commissionPercent < 0) nextErrors.commission_percent = "La comisión no puede ser negativa.";
+    if (form.commission_enabled) {
+      if (!Number.isFinite(commissionValue)) nextErrors.commission_value = "Debes capturar el valor de la comisión.";
+      else if (commissionValue < 0) nextErrors.commission_value = "La comisión no puede ser negativa.";
     }
 
     if (form.discount_enable) {

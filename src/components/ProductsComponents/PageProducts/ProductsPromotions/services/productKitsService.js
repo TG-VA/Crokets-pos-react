@@ -5,7 +5,7 @@ export const fetchKits = async () => {
     .from("product_kits")
     .select(`
       id, kit_product_id, is_active, created_at, updated_at,
-      products:product_kits_kit_product_id_fkey (id, barcode, name, sale_price, status, is_global)
+      products:product_kits_kit_product_id_fkey (id, barcode, name, sale_price, status, is_global, max_kits_per_sale)
     `)
     .order("created_at", { ascending: false });
 
@@ -52,7 +52,7 @@ export const createNewKitTransaction = async (kitData, selectedProducts) => {
         barcode: kitData.barcode, name: kitData.description, sale_type: "unidad", department_id: null,
         unit: "pieza", cost_price: 0, sale_price: kitData.price, tax: 16, commission_enabled: false,
         commission_percent: 0, clave_sat: null, status: true, is_global: true, is_kit: true,
-        tracks_inventory: false, created_at: now, updated_at: now,
+        tracks_inventory: false, created_at: now, updated_at: now, max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
       })
       .select("id")
       .single();
@@ -102,7 +102,7 @@ export const updateKitTransaction = async (editingKit, kitData, selectedProducts
 
     const { error: productError } = await supabase
       .from("products")
-      .update({ barcode: kitData.barcode, name: kitData.description, sale_price: kitData.price, updated_at: now })
+      .update({ barcode: kitData.barcode, name: kitData.description, sale_price: kitData.price, max_kits_per_sale: Number(kitData.max_kits_per_sale || 1), updated_at: now })
       .eq("id", editingKit.kit_product_id);
 
     if (productError) throw productError;

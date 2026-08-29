@@ -128,7 +128,7 @@ export const useProductsImport = () => {
           rowNumber: index + 2, raw: row, errors: rowErrors, department_name: departmentName || null, department_needs_create: departmentNeedsCreate,
           product: {
             barcode, name, cost_price: Number(costPrice || 0), sale_price: Number(salePrice || 0), sale_type: saleType, unit, tracks_inventory: normalizedTracksInventory,
-            tax: Number(tax || 0), is_global: isGlobal === true, department_id: departmentId, clave_sat: claveSat || null, status: true, is_kit: false, commission_enabled: false, commission_percent: 0,
+            tax: Number(tax || 0), is_global: isGlobal === true, department_id: departmentId, clave_sat: claveSat || null, status: true, is_kit: false, commission_enabled: false, commission_percent: 0, commission_type: "percent", commission_value: 0,
           },
           inventory: { stock: normalizedStockInitial, min_stock: normalizedMinStock, max_stock: normalizedMaxStock, is_active: true, has_been_stocked: normalizedTracksInventory ? normalizedStockInitial > 0 : false },
         };

@@ -11,6 +11,9 @@ export const useDepartments = () => {
   const [formData, setFormData] = useState({
     name: "",
     status: true,
+    commission_enabled: false,
+    commission_type: "percent",
+    commission_value: "",
   });
 
   const selectedDept = useMemo(
@@ -39,7 +42,13 @@ export const useDepartments = () => {
 
   useEffect(() => {
     if (selectedId === "new") {
-      setFormData({ name: "", status: true });
+      setFormData({
+        name: "",
+        status: true,
+        commission_enabled: false,
+        commission_type: "percent",
+        commission_value: "",
+      });
       return;
     }
 
@@ -47,6 +56,9 @@ export const useDepartments = () => {
       setFormData({
         name: selectedDept.name || "",
         status: selectedDept.status !== false,
+        commission_enabled: !!selectedDept.commission_enabled,
+        commission_type: selectedDept.commission_type || "percent",
+        commission_value: selectedDept.commission_value !== undefined && selectedDept.commission_value !== null ? selectedDept.commission_value.toString() : "",
       });
     } else {
       setSelectedId("new");
@@ -88,55 +100,117 @@ export const useDepartments = () => {
       return;
     }
 
+    if (formData.commission_enabled && (!formData.commission_value || parseFloat(formData.commission_value) < 0)) {
+      showAppAlert({
+        type: "warning",
+        title: "Comisión inválida",
+        message: "Por favor, captura un valor de comisión válido (no negativo).",
+      });
+      return;
+    }
+
     try {
-      setSaving(true);
-
       if (selectedId === "new") {
-        const success = await addDepartment(cleanName);
+        try {
+          setSaving(true);
+          const success = await addDepartment(cleanName, {
+            commission_enabled: !!formData.commission_enabled,
+            commission_type: formData.commission_type || "percent",
+            commission_value: parseFloat(formData.commission_value) || 0,
+          });
 
-        if (!success) {
-          console.error("Error al crear el departamento.");
+          if (!success) {
+            console.error("Error al crear el departamento.");
+            showAppAlert({
+              type: "danger",
+              title: "No se pudo crear",
+              message: "No se pudo crear el departamento.",
+            });
+            return;
+          }
+
+          showAppAlert({
+            type: "success",
+            title: "Departamento creado",
+            message: "Departamento creado correctamente.",
+          });
+
+          setFormData({
+            name: "",
+            status: true,
+            commission_enabled: false,
+            commission_type: "percent",
+            commission_value: "",
+          });
+          setSelectedId("new");
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
+
+      const saveData = async (propagateToProducts = false) => {
+        try {
+          setSaving(true);
+          const success = await updateDepartment(selectedId, {
+            name: cleanName,
+            status: formData.status,
+            commission_enabled: !!formData.commission_enabled,
+            commission_type: formData.commission_type || "percent",
+            commission_value: parseFloat(formData.commission_value) || 0,
+            propagateToProducts,
+          });
+
+          if (!success) {
+            console.error("Error al actualizar el departamento.");
+            showAppAlert({
+              type: "danger",
+              title: "No se pudo actualizar",
+              message: "No se pudo actualizar el departamento.",
+            });
+            return;
+          }
+
+          showAppAlert({
+            type: "success",
+            title: "Departamento actualizado",
+            message: propagateToProducts
+              ? "Departamento actualizado y comisión aplicada a sus productos correctamente."
+              : "Departamento actualizado correctamente.",
+          });
+        } catch (err) {
+          console.error("Error al actualizar el departamento:", err);
           showAppAlert({
             type: "danger",
-            title: "No se pudo crear",
-            message: "No se pudo crear el departamento.",
+            title: "Error de red",
+            message: "Ocurrió un error al intentar comunicarse con el servidor.",
           });
-          return;
+        } finally {
+          setSaving(false);
         }
+      };
 
-        showAppAlert({
-          type: "success",
-          title: "Departamento creado",
-          message: "Departamento creado correctamente.",
+      const hasCommissionChanged = selectedDept && (
+        !!selectedDept.commission_enabled !== !!formData.commission_enabled ||
+        (selectedDept.commission_type || "percent") !== formData.commission_type ||
+        Number(selectedDept.commission_value || 0) !== (parseFloat(formData.commission_value) || 0)
+      );
+
+      if (hasCommissionChanged) {
+        showAppConfirm({
+          type: "info",
+          title: "Actualizar comisión de productos",
+          message: "¿Deseas aplicar los cambios de comisión de este departamento a todos los productos que pertenecen a él? Ten en cuenta que esto sobrescribirá cualquier comisión individual que tengan configurada.",
+          confirmText: "Sí, aplicar a productos",
+          cancelText: "No, solo guardar departamento",
+          onConfirm: () => saveData(true),
+          onCancel: () => saveData(false),
         });
-
-        setFormData({ name: "", status: true });
-        setSelectedId("new");
-        return;
+      } else {
+        await saveData(false);
       }
-
-      const success = await updateDepartment(selectedId, {
-        name: cleanName,
-        status: formData.status,
-      });
-
-      if (!success) {
-        console.error("Error al actualizar el departamento.");
-        showAppAlert({
-          type: "danger",
-          title: "No se pudo actualizar",
-          message: "No se pudo actualizar el departamento.",
-        });
-        return;
-      }
-
-      showAppAlert({
-        type: "success",
-        title: "Departamento actualizado",
-        message: "Departamento actualizado correctamente.",
-      });
-    } finally {
-      setSaving(false);
+    } catch (error) {
+      console.error("Error al guardar departamento:", error);
     }
   };
 

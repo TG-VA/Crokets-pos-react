@@ -149,7 +149,7 @@ const Sales = () => {
   const {
     addProductToCart, increaseSelectedProductQuantity, decreaseSelectedProductQuantity, handleDeleteSelectedProduct,
   } = useSalesCart({
-    productosRef, selectedProduct, setProductos, setSelectedProduct, getBranchInventoryRow, getKitAvailableStock, showAppWarning, syncCurrentSaleRewardsWithCart,
+    productosRef, selectedProduct, setProductos, setSelectedProduct, getBranchInventoryRow, getKitAvailableStock, showAppWarning, syncCurrentSaleRewardsWithCart, branchId: branch?.id,
   });
 
   const { handleBarcodeSearch, handleAddProductFromVerifier } = useSalesProductSearch({

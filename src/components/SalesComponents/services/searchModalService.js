@@ -53,7 +53,7 @@ export const fetchProductSearch = async (searchTerm, branchId) => {
 
   const { data: matchedProducts, error: productsError } = await supabase
     .from("products")
-    .select("id, barcode, name, sale_price, cost_price, status, is_kit, is_global, tracks_inventory")
+    .select("id, barcode, name, sale_price, cost_price, status, is_kit, is_global, tracks_inventory, max_kits_per_sale")
     .eq("status", true)
     .or(`name.ilike.${likeTerm},barcode.ilike.${likeTerm}`)
     .limit(80);

@@ -56,6 +56,20 @@ const useSalesCheckout = ({
           return false;
         }
 
+        // Validar límite de kits por venta al cobrar
+        const kitWithExceededLimit = productos.find((product) => {
+          if (!product.is_kit) return false;
+          const maxKits = Number(product.max_kits_per_sale ?? 1);
+          return Number(product.cantidad || 0) > maxKits;
+        });
+
+        if (kitWithExceededLimit) {
+          const maxKits = Number(kitWithExceededLimit.max_kits_per_sale ?? 1);
+          showAppWarning(`Límite de venta excedido: El kit "${kitWithExceededLimit.nombre}" tiene un límite de ${maxKits} unidades por transacción, pero hay ${kitWithExceededLimit.cantidad} en el carrito.`);
+          setShowPaymentModal(false);
+          return false;
+        }
+
         const stockIsValid = await validateCartStockBeforeSale();
         if (!stockIsValid) return false;
 

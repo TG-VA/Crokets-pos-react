@@ -222,12 +222,13 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 | cost_price / sale_price | numeric | NN |
 | profit | numeric | |
 | tax | numeric | default 16.00 |
-| commission_enabled / commission_percent | boolean / numeric | comisión por venta |
+| commission_enabled / commission_percent / commission_type / commission_value | boolean / numeric / varchar / numeric | comisión por venta (porcentaje o monto fijo) |
 | clave_sat | varchar | → sat_claves_productos_servicios.clave |
 | status | boolean | default true |
 | is_global | boolean | default true (visible en todas las sucursales) |
 | is_kit | boolean | NN, default false |
 | tracks_inventory | boolean | NN, default true |
+| max_kits_per_sale | integer | default 1 (límite máximo de kits por venta) |
 
 ### departments
 | Columna | Tipo | Notas |
@@ -235,6 +236,9 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 | id | uuid | PK |
 | name | varchar | NN |
 | status | boolean | default true |
+| commission_enabled | boolean | default false (comisión por venta de depto) |
+| commission_type | varchar | default 'percent' (tipo: percent/flat) |
+| commission_value | numeric | default 0.00 |
 
 ### product_kits
 | Columna | Tipo | Notas |

@@ -77,8 +77,10 @@ export const useProductsNew = () => {
         status: form.status,
         isGlobal: !!form.isGlobal,
         created_at: form.created_at,
-        commission_enable: !!form.commission_enable,
-        commission_percent: parseFloat(form.commission_percent) || 0,
+        commission_enabled: !!form.commission_enabled,
+        commission_type: form.commission_type || "percent",
+        commission_value: parseFloat(form.commission_value) || 0,
+        commission_percent: form.commission_type === "percent" ? (parseFloat(form.commission_value) || 0) : 0,
       };
 
       const result = await addProduct(payload);

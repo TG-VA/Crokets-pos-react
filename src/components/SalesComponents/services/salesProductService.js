@@ -1,7 +1,7 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { getProductWithDiscount } from "./salesInventoryService";
 
-const PRODUCT_SELECT = "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory";
+const PRODUCT_SELECT = "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory, max_kits_per_sale";
 const BRANCH_INVENTORY_SELECT = "stock, is_active, has_been_stocked, cost_price, sale_price";
 
 const createProductError = (message, code) => {
@@ -96,4 +96,21 @@ export const getSellableProductByBarcode = async ({ barcode, branchId }) => {
     product: discountedProduct,
     inventoryRow,
   });
+};
+
+export const getSoldKitsCountInBranch = async (productId, branchId) => {
+  if (!productId || !branchId) return 0;
+  
+  const { data, error } = await supabase
+    .from("sale_details")
+    .select("quantity")
+    .eq("product_id", productId)
+    .eq("branch_id", branchId);
+
+  if (error) {
+    console.error("Error fetching sold kits count in branch:", error);
+    return 0;
+  }
+
+  return (data || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 };

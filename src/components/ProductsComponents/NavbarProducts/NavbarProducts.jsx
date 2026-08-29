@@ -54,7 +54,7 @@ const NAVBAR_OPTIONS = [
   },
   {
     id: "promociones",
-    label: "Promociones",
+    label: "Promociones y Kits",
     icon: PromotionsIcon,
     path: "/products/promociones",
     requiresAdmin: true,
