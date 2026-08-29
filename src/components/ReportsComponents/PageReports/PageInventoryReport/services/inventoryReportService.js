@@ -57,8 +57,8 @@ export const fetchInventoryReportData = async (branchId = "ALL") => {
           total_sale: 0,
           has_been_stocked: false,
           has_inventory_record: true,
-          fallback_cost: rowCost,
-          fallback_sale: rowSale,
+          single_branch_cost: rowCost,
+          single_branch_sale: rowSale,
         };
       }
 
@@ -93,21 +93,28 @@ export const fetchInventoryReportData = async (branchId = "ALL") => {
       const maxStock = tracks ? Number(inv?.max_stock || 0) : 0;
       const hasBeenStocked = Boolean(inv?.has_been_stocked);
 
-      // Costo y precio unitario efectivo (promedio ponderado si hay existencias consolidadas)
+      // Costo y precio unitario efectivo 100% determinista:
+      // - Si hay existencias físicas: promedio ponderado exacto (total_cost / stock).
+      // - Si stock es 0 en una sucursal específica: precio/costo configurado para esa sucursal.
+      // - Si stock es 0 en consolidado global ("ALL"): catálogo maestro de productos (baseCost/baseSale).
       let costPrice = baseCost;
       let salePrice = baseSale;
 
       if (inv) {
         if (stock > 0 && inv.total_cost > 0) {
           costPrice = inv.total_cost / stock;
-        } else if (inv.fallback_cost > 0) {
-          costPrice = inv.fallback_cost;
+        } else if (branchId !== "ALL" && inv.single_branch_cost > 0) {
+          costPrice = inv.single_branch_cost;
+        } else {
+          costPrice = baseCost;
         }
 
         if (stock > 0 && inv.total_sale > 0) {
           salePrice = inv.total_sale / stock;
-        } else if (inv.fallback_sale > 0) {
-          salePrice = inv.fallback_sale;
+        } else if (branchId !== "ALL" && inv.single_branch_sale > 0) {
+          salePrice = inv.single_branch_sale;
+        } else {
+          salePrice = baseSale;
         }
       }
 
