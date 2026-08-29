@@ -39,14 +39,14 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
           </span>
         </div>
 
-        <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: "0.8rem", color: "#64748b", display: "block" }}>
+        <div className={styles.reorderHeaderInvestment}>
+          <span className={styles.reorderInvestmentSub}>
             Inversión Estimada Total:
           </span>
-          <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>
+          <strong className={styles.reorderInvestmentAmount}>
             {formatCurrency(totalEstimatedInvestment)}
           </strong>
-          <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "6px" }}>
+          <span className={styles.reorderInvestmentPieces}>
             ({totalSuggestedUnits.toLocaleString()} piezas)
           </span>
         </div>
@@ -86,7 +86,7 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
                   <td className={`${styles.textRight} ${styles.fontMono}`}>
                     {`${item.min_stock} / ${item.max_stock}`}
                   </td>
-                  <td className={`${styles.textRight} ${styles.fontBold}`} style={{ color: "#0284c7" }}>
+                  <td className={styles.reorderQtyCell}>
                     +{item.suggestedQty.toLocaleString()}
                   </td>
                   <td className={styles.textRight}>{formatCurrency(item.cost_price)}</td>

@@ -2,6 +2,31 @@
 
 Lista de verificación completa para la revisión de PRs (humana y mediante agentes de IA como Claude, Gemini, Cursor o Copilot).
 
+## Metodología de Verificación (obligatoria antes de marcar cualquier ítem)
+
+- **Evidencia textual obligatoria:** ningún ítem puede marcarse "CUMPLIDO" sin citar el
+  archivo, línea o fragmento exacto del diff que lo demuestra. Una explicación de la
+  intención del código ("se agregó el filtro is_active") no es evidencia; el fragmento
+  citado sí lo es.
+- **Verificación mecánica antes que interpretación:** para ítems verificables por
+  búsqueda de texto (estilos inline, emojis, console.log, EOF newline), ejecutar
+  la búsqueda literal sobre el diff (`grep`, búsqueda de patrón) y reportar el resultado,
+  no inferirlo por lectura.
+- **Rastrear el dato, no el nombre de la variable:** para ítems de la sección 2
+  (Corrección de Datos), seguir el valor a través de todo su ciclo de vida en el
+  código —dónde se asigna, si se reasigna en loops/iteraciones, en qué rama de
+  condicionales termina— en vez de asumir que un nombre como `fallback_cost` o
+  `weighted_average` hace lo que su nombre sugiere.
+- **Buscar el caso que rompe la regla, no el caso feliz:** para cada fórmula o
+  agregación nueva, identificar explícitamente el escenario de datos que la
+  quebraría (valores distintos entre filas, cero, registros faltantes) y confirmar
+  en el código qué pasa en ese escenario — no solo confirmar que existe una regla
+  para el caso general.
+- **Un "100%" o "sin reservas" requiere que cada ítem tenga su cita.** Si algún
+  ítem no se pudo verificar con evidencia concreta, el veredicto no puede ser
+  aprobación total — debe marcarse como pendiente de verificar, no como cumplido
+  por omisión.
+
 ## Checklist de Revisión
 
 ### 1. Funcionalidad y Arquitectura

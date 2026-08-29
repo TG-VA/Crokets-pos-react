@@ -52,7 +52,7 @@ const InventoryKpiCards = ({ kpis = {}, isLoading = false }) => {
       <div className={styles.kpiCard}>
         <span className={styles.kpiLabel}>Volumen de Inventario</span>
         <span className={styles.kpiValue}>
-          {totalUnits.toLocaleString()} <span style={{ fontSize: "1rem", fontWeight: "normal" }}>piezas</span>
+          {totalUnits.toLocaleString()} <span className={styles.kpiUnitLabel}>piezas</span>
         </span>
         <span className={styles.kpiSubtext}>
           {totalSkus.toLocaleString()} productos controlados

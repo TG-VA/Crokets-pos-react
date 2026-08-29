@@ -378,3 +378,37 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.kpiUnitLabel {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.reorderHeaderInvestment {
+  text-align: right;
+}
+
+.reorderInvestmentSub {
+  font-size: 0.8rem;
+  color: #64748b;
+  display: block;
+}
+
+.reorderInvestmentAmount {
+  font-size: 1.1rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.reorderInvestmentPieces {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-left: 6px;
+}
+
+.reorderQtyCell {
+  text-align: right;
+  font-weight: 700;
+  color: #0284c7;
+}
+
