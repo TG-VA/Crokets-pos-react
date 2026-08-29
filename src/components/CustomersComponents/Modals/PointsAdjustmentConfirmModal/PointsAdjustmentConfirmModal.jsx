@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import styles from "./PointsAdjustmentConfirmModal.module.css";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 
 const PointsAdjustmentConfirmModal = ({
   isOpen,
@@ -17,21 +18,7 @@ const PointsAdjustmentConfirmModal = ({
 }) => {
   const isAdd = adjustmentType === "add";
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscapeKey = (event) => {
-      if (event.key === "Escape" && !saving) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscapeKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [isOpen, saving, onClose]);
+  useEscapeKey(onClose, isOpen && !saving);
 
   if (!isOpen) return null;
 
