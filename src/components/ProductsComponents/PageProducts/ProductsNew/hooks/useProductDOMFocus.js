@@ -21,7 +21,7 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
     const order = [
       "codigo", "descripcion", "costo", "precio", "tax",
       ...(usesInventory ? ["existencia", "minimo", "maximo"] : []),
-      ...(form.commission_enable ? ["commission_percent"] : []),
+      ...(form.commission_enabled ? ["commission_value"] : []),
     ];
 
     for (const field of order) {
@@ -31,7 +31,7 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
           costo: 'input[name="costo"]', precio: 'input[name="precio"]',
           tax: 'input[name="tax"]', existencia: 'input[name="existencia"]',
           minimo: 'input[name="minimo"]', maximo: 'input[name="maximo"]',
-          commission_percent: 'input[name="commission_percent"]',
+          commission_value: 'input[name="commission_value"]',
         };
         const target = bodyRef.current?.querySelector(selectorMap[field]);
         if (target) {
