@@ -5,7 +5,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 16px;
-  margin-bottom: 20px;
 }
 
 .kpiCard {
@@ -98,7 +97,6 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 16px 20px;
-  margin-bottom: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-wrap: wrap;
