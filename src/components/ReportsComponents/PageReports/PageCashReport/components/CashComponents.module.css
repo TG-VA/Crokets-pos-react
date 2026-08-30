@@ -1,0 +1,777 @@
+/* =========================================================
+   ESTILOS GENERALES Y FILTROS DEL REPORTE DE CAJA
+   ========================================================= */
+
+.filtersWrapper {
+  background-color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e4e9f0;
+}
+
+.filtersToolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 1 auto;
+}
+
+.filterLabel {
+  font-size: 0.725rem;
+  font-weight: 700;
+  color: #475467;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.datePickerWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.datePickerInput,
+.selectInput {
+  background-color: #f8fafc;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  color: #1f2d3d;
+  font-weight: 500;
+  outline: none;
+  min-width: 160px;
+  height: 36px;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.datePickerInput:focus,
+.selectInput:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  background-color: #ffffff;
+}
+
+.presetsInlineGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+.presetPill {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.presetPill:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.verticalDivider {
+  width: 1px;
+  height: 30px;
+  background-color: #e2e8f0;
+  margin: 0 4px 3px 4px;
+}
+
+/* =========================================================
+   TARJETAS DE KPIS (MÉTRICAS RESUMEN)
+   ========================================================= */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.kpiCard {
+  background-color: #ffffff;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.kpiCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #94a3b8;
+}
+
+.kpiCardSlate::before {
+  background-color: #64748b;
+}
+
+.kpiCardPrimary::before {
+  background-color: #0284c7;
+}
+
+.kpiCardNavy::before {
+  background-color: #1e293b;
+}
+
+.kpiCardSuccess::before {
+  background-color: #16a34a;
+}
+
+.kpiCardDanger::before {
+  background-color: #dc2626;
+}
+
+.kpiLabel {
+  font-size: 0.725rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpiValue {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.kpiSubtitle {
+  font-size: 0.725rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.kpiValueSuccess {
+  color: #16a34a;
+}
+
+.kpiValueDanger {
+  color: #dc2626;
+}
+
+/* =========================================================
+   TABLAS Y CONTENEDORES
+   ========================================================= */
+
+.tableCard {
+  background-color: #ffffff;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableCardHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background-color: #ffffff;
+}
+
+.tableCardTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tableCardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.tableCardSubtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.tableResponsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.dataTable th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 11px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.dataTable td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.dataTableRow:hover {
+  background-color: #f8fafc;
+}
+
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickableRow:hover {
+  background-color: #f0f9ff;
+}
+
+.activeSessionRow {
+  background-color: #f8fafc;
+}
+
+.activeSessionRow:hover {
+  background-color: #f1f5f9;
+}
+
+.tableFooterTotal {
+  background-color: #f8fafc;
+  border-top: 2px solid #cbd5e1;
+}
+
+.tableFooterTotal td {
+  padding: 12px 14px;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom: none;
+}
+
+/* =========================================================
+   BADGES Y ESTADOS
+   ========================================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeSuccess {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badgeDanger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badgeWarning {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badgeInfo {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.badgePurple {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.badgeNeutral {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.badgeIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.actionButton {
+  background-color: #f1f5f9;
+  color: #0284c7;
+  border: 1px solid #cbd5e1;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionButton:hover {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+/* =========================================================
+   PAGINACIÓN
+   ========================================================= */
+
+.paginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid #f1f5f9;
+  background-color: #ffffff;
+}
+
+.paginationInfo {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageIndicator {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* =========================================================
+   ESTADO VACÍO Y SKELETON LOADERS
+   ========================================================= */
+
+.emptyState {
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.emptyStateIcon {
+  width: 42px;
+  height: 42px;
+  opacity: 0.4;
+}
+
+.emptyStateTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+
+.emptyStateText {
+  font-size: 0.825rem;
+  color: #94a3b8;
+  max-width: 360px;
+  margin: 0;
+}
+
+.skeletonCell {
+  height: 16px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  width: 80%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* =========================================================
+   MODAL DE DETALLE DE SESIÓN
+   ========================================================= */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContainer {
+  background-color: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  flex-shrink: 0;
+}
+
+.modalHeaderTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.modalSubtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.closeModalBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.closeModalBtn:hover {
+  background-color: #e2e8f0;
+}
+
+.closeIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.modalSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalSectionTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 0;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 5px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.detailGrid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .detailGrid,
+  .detailGrid4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .detailGrid,
+  .detailGrid4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailItem {
+  background-color: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detailLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.detailValue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  flex-shrink: 0;
+}
+
+.secondaryBtn {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondaryBtn:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+/* =========================================================
+   UTILIDADES SEMÁNTICAS Y ESTRUCTURALES DEL MODAL
+   ========================================================= */
+
+.textSuccess {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.textDanger {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.textPrimary {
+  color: #0284c7;
+  font-weight: 700;
+}
+
+.textWarning {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.textPurple {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.textMuted {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.textDark {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.textDescription {
+  color: #334155;
+}
+
+.textExplanation {
+  font-size: 0.775rem;
+  color: #64748b;
+}
+
+.cellNowrap {
+  white-space: nowrap;
+}
+
+.cellCenter {
+  text-align: center;
+}
+
+.cellSemiBold {
+  font-weight: 600;
+}
+
+.cellBold {
+  font-weight: 700;
+}
+
+.cellExtraBold {
+  font-weight: 800;
+}
+
+.detailValueSmall {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.detailItemMuted {
+  background-color: #f1f5f9;
+}
+
+.modalLoadingWrapper {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.skeletonTitle {
+  width: 60%;
+  height: 20px;
+}
+
+.skeletonBox {
+  width: 100%;
+  height: 80px;
+}
+
+.skeletonTable {
+  width: 80%;
+  height: 60px;
+}
+
+.modalSectionExplanation {
+  font-size: 0.775rem;
+  color: #64748b;
+  margin: -2px 0 6px 0;
+}
+
+.modalPaginationWrapper {
+  padding: 8px 12px;
+  border: none;
+}
+
+.modalTableTopMargin {
+  margin-top: 10px;
+}
+
+.modalNotesCard {
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+
