@@ -37,7 +37,7 @@ const MovementsReportControls = ({
             selectsStart
             startDate={startDateValue}
             endDate={endDateValue}
-            maxDate={endDateValue}
+            maxDate={endDateValue || new Date()}
             dateFormat="dd/MM/yyyy"
             className={styles.dateInput}
             calendarClassName={
@@ -67,6 +67,7 @@ const MovementsReportControls = ({
             startDate={startDateValue}
             endDate={endDateValue}
             minDate={startDateValue}
+            maxDate={new Date()}
             dateFormat="dd/MM/yyyy"
             className={styles.dateInput}
             calendarClassName={

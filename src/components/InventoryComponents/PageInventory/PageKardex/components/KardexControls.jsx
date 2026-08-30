@@ -160,7 +160,7 @@ const KardexControls = ({
               endDateValue
             }
             maxDate={
-              endDateValue
+              endDateValue || new Date()
             }
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/mm/yyyy"
@@ -211,6 +211,7 @@ const KardexControls = ({
             minDate={
               startDateValue
             }
+            maxDate={new Date()}
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/mm/yyyy"
             className={

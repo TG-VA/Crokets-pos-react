@@ -230,6 +230,7 @@ const InvoicesPending = () => {
           <input
             type="date"
             value={dateFilter}
+            max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setDateFilter(e.target.value)}
             className={styles.dateInput}
           />

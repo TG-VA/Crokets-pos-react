@@ -201,6 +201,7 @@ const NavbarCashCut = ({
                   type="date"
                   className={styles.calendarInput}
                   value={selectedDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={handleDateChange}
                 />
               </div>

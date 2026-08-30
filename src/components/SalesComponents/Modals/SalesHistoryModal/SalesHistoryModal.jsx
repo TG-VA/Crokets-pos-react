@@ -138,6 +138,7 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                     <DatePicker
                       selected={selectedDateObj}
                       onChange={handleDateChange}
+                      maxDate={new Date()}
                       dateFormat="dd/MM/yyyy"
                       locale="es"
                       className={styles.modernInput}

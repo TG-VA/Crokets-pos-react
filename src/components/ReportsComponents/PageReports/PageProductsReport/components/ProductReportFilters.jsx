@@ -40,6 +40,7 @@ const ProductReportFilters = ({
           type="date" 
           name="startDate" 
           value={dateRange.startDate} 
+          max={dateRange.endDate || new Date().toISOString().split("T")[0]}
           onChange={handleChange} 
           className={styles.dateInput}
         />
@@ -50,6 +51,7 @@ const ProductReportFilters = ({
           type="date" 
           name="endDate" 
           value={dateRange.endDate} 
+          max={new Date().toISOString().split("T")[0]}
           onChange={handleChange} 
           className={styles.dateInput}
         />

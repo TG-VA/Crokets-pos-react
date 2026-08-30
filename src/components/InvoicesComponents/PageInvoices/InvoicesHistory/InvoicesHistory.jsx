@@ -287,7 +287,7 @@ const InvoiceHistory = () => {
             className={styles.dateInput}
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            max={endDate}
+            max={endDate || new Date().toISOString().split("T")[0]}
           />
         </div>
 
@@ -299,6 +299,7 @@ const InvoiceHistory = () => {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate}
+            max={new Date().toISOString().split("T")[0]}
           />
         </div>
 
