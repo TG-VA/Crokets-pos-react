@@ -126,7 +126,7 @@ const CashPaymentMethodsSummary = ({ paymentMethods = [], loading = false }) => 
                     <span
                       className={`${styles.badge} ${
                         method.affectsCash ? styles.badgeSuccess : styles.badgeInfo
-                      }`}
+                      }`.trim()}
                     >
                       {method.affectsCash ? "Efectivo en Caja" : "Dinero Electrónico / Bancario"}
                     </span>
@@ -141,7 +141,7 @@ const CashPaymentMethodsSummary = ({ paymentMethods = [], loading = false }) => 
                         <div
                           className={`${styles.progressFill} ${
                             method.affectsCash ? styles.progressFillSuccess : styles.progressFillPrimary
-                          }`}
+                          }`.trim()}
                           style={{ width: `${Math.min(share, 100)}%` }}
                         />
                       </div>

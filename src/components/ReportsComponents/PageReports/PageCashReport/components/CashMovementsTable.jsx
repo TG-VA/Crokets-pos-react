@@ -117,7 +117,7 @@ const CashMovementsTable = ({
                     <span
                       className={`${styles.badge} ${
                         typeInfo.isPositive ? styles.badgeSuccess : styles.badgeDanger
-                      }`}
+                      }`.trim()}
                     >
                       <img
                         src={typeInfo.isPositive ? EntryIcon : ExitIcon}

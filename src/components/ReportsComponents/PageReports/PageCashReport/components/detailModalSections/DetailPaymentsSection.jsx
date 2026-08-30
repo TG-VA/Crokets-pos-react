@@ -29,7 +29,7 @@ const DetailPaymentsSection = ({ paymentsByMethod = [] }) => {
                   <span
                     className={`${styles.badge} ${
                       pm.affectsCash ? styles.badgeSuccess : styles.badgeInfo
-                    }`}
+                    }`.trim()}
                   >
                     {pm.affectsCash ? "Efectivo" : "Electrónico"}
                   </span>

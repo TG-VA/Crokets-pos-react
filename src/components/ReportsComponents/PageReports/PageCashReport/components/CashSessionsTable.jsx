@@ -212,7 +212,7 @@ const CashSessionsTable = ({
                             : diffInfo.status === "surplus"
                             ? styles.badgeInfo
                             : styles.badgeDanger
-                        }`}
+                        }`.trim()}
                       >
                         <img
                           src={
@@ -226,7 +226,7 @@ const CashSessionsTable = ({
                         {diffInfo.formatted}
                       </span>
                     ) : (
-                      <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                      <span className={`${styles.badge} ${styles.badgeNeutral}`.trim()}>
                         Pendiente
                       </span>
                     )}
@@ -237,7 +237,7 @@ const CashSessionsTable = ({
                     <span
                       className={`${styles.badge} ${
                         isClosed ? styles.badgeNeutral : styles.badgeWarning
-                      }`}
+                      }`.trim()}
                     >
                       {isClosed ? "Cerrada" : "Abierta"}
                     </span>
@@ -277,7 +277,7 @@ const CashSessionsTable = ({
                       : totalDiffInfo.status === "surplus"
                       ? styles.badgeInfo
                       : styles.badgeDanger
-                  }`}
+                  }`.trim()}
                 >
                   <img
                     src={

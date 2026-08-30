@@ -50,7 +50,7 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
                         typeInfo.isPositive
                           ? styles.badgeSuccess
                           : styles.badgeDanger
-                      }`}
+                      }`.trim()}
                     >
                       <img
                         src={typeInfo.isPositive ? EntryIcon : ExitIcon}

@@ -64,13 +64,13 @@ const CashKpiCards = ({ kpis = {}, loading = false }) => {
       <div
         className={`${styles.kpiCard} ${
           isNegativeDiff ? styles.kpiCardDanger : styles.kpiCardSuccess
-        }`}
+        }`.trim()}
       >
         <span className={styles.kpiLabel}>Diferencia Neta</span>
         <strong
           className={`${styles.kpiValue} ${
             isNegativeDiff ? styles.kpiValueDanger : styles.kpiValueSuccess
-          }`}
+          }`.trim()}
         >
           {diffStatus.formatted}
         </strong>

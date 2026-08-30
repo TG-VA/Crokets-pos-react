@@ -16,7 +16,7 @@ const DetailTurnInfoSection = ({ sessionDetail, branchTz, diffInfo, isClosed }) 
             <span
               className={`${styles.badge} ${
                 isClosed ? styles.badgeNeutral : styles.badgeWarning
-              }`}
+              }`.trim()}
             >
               {isClosed ? "Cerrada" : "Abierta"}
             </span>
@@ -64,7 +64,7 @@ const DetailTurnInfoSection = ({ sessionDetail, branchTz, diffInfo, isClosed }) 
                     : diffInfo.status === "surplus"
                     ? styles.badgeInfo
                     : styles.badgeDanger
-                }`}
+                }`.trim()}
               >
                 <img
                   src={
@@ -78,7 +78,7 @@ const DetailTurnInfoSection = ({ sessionDetail, branchTz, diffInfo, isClosed }) 
                 {diffInfo.formatted}
               </span>
             ) : (
-              <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+              <span className={`${styles.badge} ${styles.badgeNeutral}`.trim()}>
                 Pendiente
               </span>
             )}

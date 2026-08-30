@@ -123,7 +123,7 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                           : diffInfo.status === "surplus"
                           ? styles.badgeInfo
                           : styles.badgeDanger
-                      }`}
+                      }`.trim()}
                     >
                       <img
                         src={
@@ -147,7 +147,7 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                               : accuracy >= 70
                               ? styles.progressFillWarning
                               : styles.progressFillDanger
-                          }`}
+                          }`.trim()}
                           style={{ width: `${Math.min(accuracy, 100)}%` }}
                         />
                       </div>
@@ -187,7 +187,7 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                           : info.status === "surplus"
                           ? styles.badgeInfo
                           : styles.badgeDanger
-                      }`}
+                      }`.trim()}
                     >
                       <img
                         src={

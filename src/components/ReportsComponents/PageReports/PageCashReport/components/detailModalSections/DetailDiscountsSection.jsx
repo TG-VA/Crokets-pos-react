@@ -26,7 +26,7 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span
             className={`${styles.detailValue} ${
               sessionDetail.totalDiscounts > 0 ? styles.textWarning : styles.textDark
-            }`}
+            }`.trim()}
           >
             {formatCurrency(sessionDetail.totalDiscounts)}
           </span>
@@ -44,7 +44,7 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span
             className={`${styles.detailValue} ${
               sessionDetail.totalRedemptions > 0 ? styles.textPurple : styles.textDark
-            }`}
+            }`.trim()}
           >
             {sessionDetail.totalRedemptions || 0} artículo(s)
           </span>
@@ -55,7 +55,7 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span
             className={`${styles.detailValue} ${
               sessionDetail.totalPointsUsed > 0 ? styles.textPurple : styles.textDark
-            }`}
+            }`.trim()}
           >
             {sessionDetail.totalPointsUsed || 0} pts
           </span>
@@ -91,7 +91,7 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
                           : item.discountType.includes("Catálogo")
                           ? styles.badgeInfo
                           : styles.badgeWarning
-                      }`}
+                      }`.trim()}
                     >
                       {item.discountType}
                     </span>
