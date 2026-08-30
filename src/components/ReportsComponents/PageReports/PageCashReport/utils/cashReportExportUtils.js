@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { formatDynamicDate, formatCurrency, getShortFolio, formatMovementType } from "./cashReportFormatters";
+import { formatDynamicDate, getShortFolio, formatMovementType } from "./cashReportFormatters";
 
 /**
  * Exporta el reporte de caja a un archivo Excel (.xlsx) multisección
@@ -11,6 +11,8 @@ export const exportCashReportToExcel = async ({
   kpis = {},
   branchName = "Todas las sucursales",
   dateRangeText = "Periodo seleccionado",
+  startDate = null,
+  endDate = null,
 }) => {
   try {
     if ((!sessions || sessions.length === 0) && (!movements || movements.length === 0)) {
@@ -27,8 +29,8 @@ export const exportCashReportToExcel = async ({
     // ==========================================
     const wsSessions = workbook.addWorksheet("Turnos y Cortes");
 
-    // Título y encabezado informativo
-    wsSessions.mergeCells("A1:I1");
+    // Título y encabezado informativo (12 columnas: A a L)
+    wsSessions.mergeCells("A1:L1");
     const titleCell = wsSessions.getCell("A1");
     titleCell.value = "CROKETS POS - REPORTE DE CAJA Y TURNOS";
     titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
@@ -36,7 +38,7 @@ export const exportCashReportToExcel = async ({
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     wsSessions.getRow(1).height = 30;
 
-    wsSessions.mergeCells("A2:I2");
+    wsSessions.mergeCells("A2:L2");
     const metaCell = wsSessions.getCell("A2");
     metaCell.value = `Sucursal: ${branchName} | Periodo: ${dateRangeText} | Generado: ${new Date().toLocaleDateString("es-MX")}`;
     metaCell.font = { italic: true, size: 10, color: { argb: "FF475569" } };
@@ -132,11 +134,12 @@ export const exportCashReportToExcel = async ({
       const cashSales = Number(s.cashSales || 0);
       const cardSales = Number(s.cardSales || 0);
       const totalSales = Number(s.totalSales || 0);
+      const branchTz = s.branches?.timezone || "America/Cancun";
 
       const row = wsSessions.addRow([
         getShortFolio(s.id),
-        formatDynamicDate(s.opened_at),
-        s.closed_at ? formatDynamicDate(s.closed_at) : "En curso (Abierta)",
+        formatDynamicDate(s.opened_at, branchTz),
+        s.closed_at ? formatDynamicDate(s.closed_at, branchTz) : "En curso (Abierta)",
         s.branches?.name || "Sucursal",
         s.users?.username ? String(s.users.username).toUpperCase() : "USUARIO",
         Number(s.opening_amount || 0),
@@ -206,12 +209,13 @@ export const exportCashReportToExcel = async ({
 
     movements.forEach((m) => {
       const typeInfo = formatMovementType(m.movement_type);
+      const branchTz = m.branches?.timezone || "America/Cancun";
       const row = wsMovements.addRow([
-        formatDynamicDate(m.created_at),
+        formatDynamicDate(m.created_at, branchTz),
         typeInfo.label,
         Number(m.amount || 0),
         m.description || "Sin descripción",
-        m.users?.username || "Usuario",
+        m.users?.username ? String(m.users.username).toUpperCase() : "USUARIO",
         m.branches?.name || "Sucursal",
         getShortFolio(m.session_id),
       ]);
@@ -281,9 +285,9 @@ export const exportCashReportToExcel = async ({
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
 
     // Construcción del nombre del archivo: Reporte de caja [SUCURSAL] [RANGO DE FECHAS].xlsx
     const cleanBranch = (branchName || "Todas las sucursales").trim().replace(/[\/\\:*?"<>|]/g, "-");
@@ -306,14 +310,21 @@ export const exportCashReportToExcel = async ({
       dateSegment = formatSafeDate(new Date());
     }
 
-    a.download = `Reporte de caja [${cleanBranch}] [${dateSegment}].xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    anchor.download = `Reporte de caja [${cleanBranch}] [${dateSegment}].xlsx`;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+
+    try {
+      anchor.click();
+    } finally {
+      anchor.remove();
+      // En Electron/Browser diferir la revocación del Blob para que el cuadro de diálogo Save As pueda guardar
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 60000);
+    }
   } catch (err) {
     console.error("Error al exportar reporte de caja a Excel:", err);
     alert("Ocurrió un error al generar el archivo Excel.");
   }
 };
-
