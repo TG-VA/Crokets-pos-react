@@ -475,7 +475,8 @@
    MODAL DE DETALLE DE SESIÓN
    ========================================================= */
 
-.modalBackdrop {
+.modalBackdrop,
+.modalOverlay {
   position: fixed;
   inset: 0;
   background-color: rgba(15, 23, 42, 0.6);

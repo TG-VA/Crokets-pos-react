@@ -28,11 +28,11 @@ const CashSessionDetailModal = ({
   const cutData = sessionDetail?.cash_cuts?.[0] || null;
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.modalHeader}>
-          <div className={styles.modalTitleGroup}>
+          <div className={styles.modalHeaderTitleGroup}>
             <h2 className={styles.modalTitle}>
               Detalle de Turno: {sessionDetail ? getShortFolio(sessionDetail.id) : "Cargando..."}
             </h2>
