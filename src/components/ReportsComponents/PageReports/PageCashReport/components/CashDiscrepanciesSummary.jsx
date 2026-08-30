@@ -99,20 +99,20 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
 
               return (
                 <tr key={c.userId} className={styles.dataTableRow}>
-                  <td style={{ fontWeight: 600, color: "#1e293b" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <td className={styles.textSlateDark}>
+                    <div className={styles.badgeProgressGroup}>
                       <img src={UserIcon} alt="" className={styles.badgeIcon} />
                       {String(c.username || "USUARIO").toUpperCase()}
                     </div>
                   </td>
                   <td>{formatNumber(c.closedSessions)}</td>
-                  <td style={{ color: "#16a34a", fontWeight: 600 }}>
+                  <td className={styles.textSuccess}>
                     {formatNumber(c.exactSessions)}
                   </td>
-                  <td style={{ color: c.shortageCount > 0 ? "#dc2626" : "#64748b", fontWeight: c.shortageCount > 0 ? 600 : 400 }}>
+                  <td className={c.shortageCount > 0 ? styles.textDanger : styles.textMuted}>
                     {formatNumber(c.shortageCount)} {c.shortageCount > 0 && `(-${formatCurrency(c.totalShortage)})`}
                   </td>
-                  <td style={{ color: c.surplusCount > 0 ? "#0284c7" : "#64748b", fontWeight: c.surplusCount > 0 ? 600 : 400 }}>
+                  <td className={c.surplusCount > 0 ? styles.textPrimary : styles.textMuted}>
                     {formatNumber(c.surplusCount)} {c.surplusCount > 0 && `(+${formatCurrency(c.totalSurplus)})`}
                   </td>
                   <td>
@@ -138,30 +138,20 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <div
-                        style={{
-                          width: "70px",
-                          height: "8px",
-                          backgroundColor: "#e2e8f0",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                        }}
-                      >
+                    <div className={styles.badgeProgressGroup}>
+                      <div className={styles.progressTrack}>
                         <div
-                          style={{
-                            width: `${Math.min(accuracy, 100)}%`,
-                            height: "100%",
-                            backgroundColor:
-                              accuracy >= 90
-                                ? "#16a34a"
-                                : accuracy >= 70
-                                ? "#d97706"
-                                : "#dc2626",
-                          }}
+                          className={`${styles.progressFill} ${
+                            accuracy >= 90
+                              ? styles.progressFillSuccess
+                              : accuracy >= 70
+                              ? styles.progressFillWarning
+                              : styles.progressFillDanger
+                          }`}
+                          style={{ width: `${Math.min(accuracy, 100)}%` }}
                         />
                       </div>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569" }}>
+                      <span className={styles.badgePercentText}>
                         {accuracy.toFixed(0)}%
                       </span>
                     </div>
@@ -172,17 +162,17 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
           </tbody>
           <tfoot>
             <tr className={styles.tableFooterTotal}>
-              <td style={{ fontWeight: 800, color: "#0f172a" }}>
+              <td className={styles.cellExtraBold}>
                 Totales ({cashierAudit.length} usuario{cashierAudit.length !== 1 ? "s" : ""})
               </td>
               <td>{formatNumber(cashierAudit.reduce((acc, c) => acc + (c.closedSessions || 0), 0))}</td>
-              <td style={{ color: "#16a34a" }}>
+              <td className={styles.textSuccess}>
                 {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.exactSessions || 0), 0))}
               </td>
-              <td style={{ color: "#dc2626" }}>
+              <td className={styles.textDanger}>
                 {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.shortageCount || 0), 0))}
               </td>
-              <td style={{ color: "#0284c7" }}>
+              <td className={styles.textPrimary}>
                 {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.surplusCount || 0), 0))}
               </td>
               <td>

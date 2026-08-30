@@ -110,7 +110,7 @@ const CashMovementsTable = ({
 
               return (
                 <tr key={mov.id} className={styles.dataTableRow}>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td className={styles.cellNowrap}>
                     {formatDynamicDate(mov.created_at, branchTz)}
                   </td>
                   <td>
@@ -128,24 +128,21 @@ const CashMovementsTable = ({
                     </span>
                   </td>
                   <td
-                    style={{
-                      fontWeight: 700,
-                      color: typeInfo.isPositive ? "#16a34a" : "#dc2626",
-                    }}
+                    className={typeInfo.isPositive ? styles.textSuccess : styles.textDanger}
                   >
                     {typeInfo.isPositive ? "+" : "-"}
                     {formatCurrency(mov.amount)}
                   </td>
-                  <td style={{ color: "#334155", maxWidth: "280px" }}>
+                  <td className={styles.cellDescMovements}>
                     {mov.description || "Sin descripción"}
                   </td>
-                  <td style={{ fontWeight: 600 }}>
+                  <td className={styles.cellSemiBold}>
                     {mov.users?.username
                       ? String(mov.users.username).toUpperCase()
                       : "USUARIO"}
                   </td>
                   <td>{mov.branches?.name || "Sucursal"}</td>
-                  <td style={{ color: "#64748b", fontFamily: "monospace" }}>
+                  <td className={styles.cellFolio}>
                     {getShortFolio(mov.session_id)}
                   </td>
                 </tr>

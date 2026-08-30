@@ -775,4 +775,133 @@
   color: #334155;
 }
 
+/* =========================================================
+   UTILIDADES PARA TABLAS PRINCIPALES Y KPIS
+   ========================================================= */
+
+.colDateTime {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.colDateTimeOpen {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.colDateTimeClose {
+  color: #475569;
+  font-weight: 400;
+}
+
+.colDateTimeOngoing {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.datePrefixLabel {
+  color: #64748b;
+  font-size: 0.725rem;
+  font-weight: 700;
+}
+
+.colBranchUser {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.branchNameText {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.cashierNameText {
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cellFolio {
+  font-weight: 700;
+  color: #0284c7;
+  white-space: nowrap;
+}
+
+.cellHeaderAction,
+.cellActionBtn {
+  text-align: center;
+}
+
+.badgeProgressGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressTrack {
+  width: 80px;
+  height: 6px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressFillPrimary {
+  background-color: #0284c7;
+}
+
+.progressFillSuccess {
+  background-color: #16a34a;
+}
+
+.progressFillWarning {
+  background-color: #eab308;
+}
+
+.progressFillDanger {
+  background-color: #dc2626;
+}
+
+.badgePercentText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.cellDescMovements {
+  color: #334155;
+  max-width: 280px;
+}
+
+.kpiSkeleton1 {
+  width: 50%;
+  height: 12px;
+}
+
+.kpiSkeleton2 {
+  width: 80%;
+  height: 24px;
+  margin: 6px 0;
+}
+
+.kpiSkeleton3 {
+  width: 65%;
+  height: 10px;
+}
+
+.textSlateDark {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+
 

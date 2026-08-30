@@ -59,7 +59,7 @@ const CashSessionsTable = ({
                 <th>Efectivo Contado</th>
                 <th>Diferencia</th>
                 <th>Estado</th>
-                <th style={{ textAlign: "center" }}>Acción</th>
+                <th className={styles.cellHeaderAction}>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -126,7 +126,7 @@ const CashSessionsTable = ({
               <th>Efectivo Contado</th>
               <th>Diferencia</th>
               <th>Estado</th>
-              <th style={{ textAlign: "center" }}>Acción</th>
+              <th className={styles.cellHeaderAction}>Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -145,19 +145,19 @@ const CashSessionsTable = ({
                   onClick={() => onOpenDetail(session.id)}
                 >
                   {/* Folio */}
-                  <td style={{ fontWeight: 700, color: "#0284c7", whiteSpace: "nowrap" }}>
+                  <td className={styles.cellFolio}>
                     {getShortFolio(session.id)}
                   </td>
 
                   {/* Apertura / Cierre en 2 líneas */}
                   <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "0.8rem" }}>
-                      <span style={{ color: "#0f172a", fontWeight: 500 }}>
-                        <strong style={{ color: "#64748b", fontSize: "0.725rem" }}>A: </strong>
+                    <div className={styles.colDateTime}>
+                      <span className={styles.colDateTimeOpen}>
+                        <strong className={styles.datePrefixLabel}>A: </strong>
                         {formatDynamicDate(session.opened_at, branchTz)}
                       </span>
-                      <span style={{ color: session.closed_at ? "#475569" : "#d97706", fontWeight: session.closed_at ? 400 : 600 }}>
-                        <strong style={{ color: "#64748b", fontSize: "0.725rem" }}>C: </strong>
+                      <span className={session.closed_at ? styles.colDateTimeClose : styles.colDateTimeOngoing}>
+                        <strong className={styles.datePrefixLabel}>C: </strong>
                         {session.closed_at
                           ? formatDynamicDate(session.closed_at, branchTz)
                           : "En curso"}
@@ -167,11 +167,11 @@ const CashSessionsTable = ({
 
                   {/* Sucursal & Cajero en 2 líneas */}
                   <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <span style={{ color: "#475569", fontSize: "0.8rem" }}>
+                    <div className={styles.colBranchUser}>
+                      <span className={styles.branchNameText}>
                         {session.branches?.name || "Sucursal"}
                       </span>
-                      <strong style={{ color: "#0f172a", fontSize: "0.85rem" }}>
+                      <strong className={styles.cashierNameText}>
                         {session.users?.username
                           ? String(session.users.username).toUpperCase()
                           : "USUARIO"}
@@ -183,22 +183,22 @@ const CashSessionsTable = ({
                   <td>{formatCurrency(session.opening_amount)}</td>
 
                   {/* Ventas en Efectivo */}
-                  <td style={{ fontWeight: 600, color: cashSales > 0 ? "#16a34a" : "#64748b" }}>
+                  <td className={cashSales > 0 ? styles.textSuccess : styles.textMuted}>
                     {formatCurrency(cashSales)}
                   </td>
 
                   {/* Ventas en Tarjeta / Digital */}
-                  <td style={{ fontWeight: 600, color: cardSales > 0 ? "#0284c7" : "#64748b" }}>
+                  <td className={cardSales > 0 ? styles.textPrimary : styles.textMuted}>
                     {formatCurrency(cardSales)}
                   </td>
 
                   {/* Total Turno */}
-                  <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                  <td className={styles.cellBold}>
                     {formatCurrency(totalSales)}
                   </td>
 
                   {/* Efectivo Contado */}
-                  <td style={{ fontWeight: 700 }}>
+                  <td className={styles.cellBold}>
                     {isClosed ? formatCurrency(session.closing_amount) : "—"}
                   </td>
 
@@ -244,14 +244,14 @@ const CashSessionsTable = ({
                   </td>
 
                   {/* Botón de Detalle */}
-                  <td style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                  <td className={styles.cellActionBtn} onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       className={styles.actionButton}
                       onClick={() => onOpenDetail(session.id)}
                       title="Ver desglose completo del turno"
                     >
-                      <img src={EyeIcon} alt="Ver" className={styles.badgeIcon} />
+                      <img src={EyeIcon} alt="" className={styles.badgeIcon} />
                       Detalle
                     </button>
                   </td>
@@ -261,13 +261,13 @@ const CashSessionsTable = ({
           </tbody>
           <tfoot>
             <tr className={styles.tableFooterTotal}>
-              <td colSpan={3} style={{ fontWeight: 800, color: "#0f172a" }}>
+              <td colSpan={3} className={styles.cellExtraBold}>
                 Totales Consolidados ({targetSessions.length} turno{targetSessions.length !== 1 ? "s" : ""})
               </td>
               <td>{formatCurrency(totalOpening)}</td>
-              <td style={{ color: "#16a34a" }}>{formatCurrency(totalCashSales)}</td>
-              <td style={{ color: "#0284c7" }}>{formatCurrency(totalCardSales)}</td>
-              <td style={{ color: "#0f172a", fontWeight: 900 }}>{formatCurrency(totalSalesVolume)}</td>
+              <td className={styles.textSuccess}>{formatCurrency(totalCashSales)}</td>
+              <td className={styles.textPrimary}>{formatCurrency(totalCardSales)}</td>
+              <td className={`${styles.cellExtraBold} ${styles.textDark}`}>{formatCurrency(totalSalesVolume)}</td>
               <td>{formatCurrency(totalCountedCash)}</td>
               <td>
                 <span

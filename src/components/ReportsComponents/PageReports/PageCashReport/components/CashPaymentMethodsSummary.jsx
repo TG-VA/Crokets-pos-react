@@ -116,8 +116,8 @@ const CashPaymentMethodsSummary = ({ paymentMethods = [], loading = false }) => 
 
               return (
                 <tr key={method.id} className={styles.dataTableRow}>
-                  <td style={{ fontWeight: 600, color: "#1e293b" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <td className={styles.textSlateDark}>
+                    <div className={styles.badgeProgressGroup}>
                       <img src={icon} alt="" className={styles.badgeIcon} />
                       {method.methodName}
                     </div>
@@ -132,29 +132,20 @@ const CashPaymentMethodsSummary = ({ paymentMethods = [], loading = false }) => 
                     </span>
                   </td>
                   <td>{formatNumber(method.count)}</td>
-                  <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                  <td className={styles.cellBold}>
                     {formatCurrency(amount)}
                   </td>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <div
-                        style={{
-                          width: "80px",
-                          height: "8px",
-                          backgroundColor: "#e2e8f0",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                        }}
-                      >
+                    <div className={styles.badgeProgressGroup}>
+                      <div className={styles.progressTrack}>
                         <div
-                          style={{
-                            width: `${Math.min(share, 100)}%`,
-                            height: "100%",
-                            backgroundColor: method.affectsCash ? "#16a34a" : "#0284c7",
-                          }}
+                          className={`${styles.progressFill} ${
+                            method.affectsCash ? styles.progressFillSuccess : styles.progressFillPrimary
+                          }`}
+                          style={{ width: `${Math.min(share, 100)}%` }}
                         />
                       </div>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569" }}>
+                      <span className={styles.badgePercentText}>
                         {share.toFixed(1)}%
                       </span>
                     </div>
@@ -165,11 +156,11 @@ const CashPaymentMethodsSummary = ({ paymentMethods = [], loading = false }) => 
           </tbody>
           <tfoot>
             <tr className={styles.tableFooterTotal}>
-              <td style={{ fontWeight: 800, color: "#0f172a" }}>Total General</td>
+              <td className={styles.cellExtraBold}>Total General</td>
               <td></td>
-              <td style={{ fontWeight: 800, color: "#0f172a" }}>{formatNumber(totalTransactionsAll)}</td>
-              <td style={{ fontWeight: 900, color: "#0284c7" }}>{formatCurrency(totalAmountAll)}</td>
-              <td style={{ fontWeight: 800, color: "#475569" }}>100.0%</td>
+              <td className={styles.cellExtraBold}>{formatNumber(totalTransactionsAll)}</td>
+              <td className={`${styles.cellExtraBold} ${styles.textPrimary}`}>{formatCurrency(totalAmountAll)}</td>
+              <td className={styles.cellExtraBold}>100.0%</td>
             </tr>
           </tfoot>
         </table>

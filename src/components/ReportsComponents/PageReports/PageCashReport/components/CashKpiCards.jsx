@@ -11,9 +11,9 @@ const CashKpiCards = ({ kpis = {}, loading = false }) => {
       <div className={styles.kpiGrid}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className={styles.kpiCard}>
-            <div className={styles.skeletonCell} style={{ width: "50%", height: "12px" }} />
-            <div className={styles.skeletonCell} style={{ width: "80%", height: "24px", margin: "6px 0" }} />
-            <div className={styles.skeletonCell} style={{ width: "65%", height: "10px" }} />
+            <div className={`${styles.skeletonCell} ${styles.kpiSkeleton1}`} />
+            <div className={`${styles.skeletonCell} ${styles.kpiSkeleton2}`} />
+            <div className={`${styles.skeletonCell} ${styles.kpiSkeleton3}`} />
           </div>
         ))}
       </div>
