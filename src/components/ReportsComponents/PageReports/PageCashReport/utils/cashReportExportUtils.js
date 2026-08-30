@@ -284,8 +284,29 @@ export const exportCashReportToExcel = async ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    const cleanDate = new Date().toISOString().slice(0, 10);
-    a.download = `Reporte_Caja_${cleanDate}.xlsx`;
+
+    // Construcción del nombre del archivo: Reporte de caja [SUCURSAL] [RANGO DE FECHAS].xlsx
+    const cleanBranch = (branchName || "Todas las sucursales").trim().replace(/[\/\\:*?"<>|]/g, "-");
+    const formatSafeDate = (d) => {
+      if (!d) return "";
+      const dateObj = new Date(d);
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const year = dateObj.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    const startStr = formatSafeDate(startDate);
+    const endStr = formatSafeDate(endDate);
+
+    let dateSegment = startStr;
+    if (endStr && endStr !== startStr) {
+      dateSegment = `${startStr} al ${endStr}`;
+    } else if (!dateSegment) {
+      dateSegment = formatSafeDate(new Date());
+    }
+
+    a.download = `Reporte de caja [${cleanBranch}] [${dateSegment}].xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -295,3 +316,4 @@ export const exportCashReportToExcel = async ({
     alert("Ocurrió un error al generar el archivo Excel.");
   }
 };
+

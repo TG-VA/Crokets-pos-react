@@ -245,6 +245,8 @@ export const useCashReport = () => {
         kpis,
         branchName,
         dateRangeText,
+        startDate,
+        endDate,
       });
     } catch (err) {
       console.error("Error ejecutando exportación:", err);
