@@ -57,6 +57,7 @@ const PageSalesReport = () => {
               selectsRange={true}
               startDate={startDate}
               endDate={endDate}
+              maxDate={new Date()}
               onChange={(update) => setDateRange(update)}
               dateFormat="dd/MM/yyyy"
               className={styles.datePickerInput}

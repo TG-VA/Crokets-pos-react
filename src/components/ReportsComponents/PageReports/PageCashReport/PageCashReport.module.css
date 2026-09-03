@@ -1,42 +1,179 @@
-.page {
-  width: 100%;
-  padding: 24px 30px 32px;
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 24px 28px 24px;
+  box-sizing: border-box;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 120px);
 }
 
 .header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid #e4e9f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .title {
   margin: 0;
-  color: #24323a;
-  font-size: 26px;
+  color: #1f2d3d;
+  font-size: 1.5rem;
   font-weight: 800;
+  letter-spacing: -0.2px;
 }
 
 .description {
-  margin: 6px 0 0;
-  color: #68757d;
-  font-size: 14px;
-}
-
-.content {
-  min-height: 220px;
-  padding: 28px;
-  background: #ffffff;
-  border: 1px solid #dfe5e8;
-  border-radius: 10px;
-}
-
-.content h2 {
-  margin: 0 0 8px;
-  color: #1092b1;
-  font-size: 18px;
-}
-
-.content p {
   margin: 0;
-  color: #68757d;
-  font-size: 14px;
-  line-height: 1.5;
+  color: #667085;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #20b15a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(32, 177, 90, 0.2);
+  height: 38px;
+  white-space: nowrap;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background-color: #1a9c4e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(32, 177, 90, 0.3);
+}
+
+.exportBtn:disabled {
+  background-color: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clearFiltersBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 38px;
+  white-space: nowrap;
+}
+
+.clearFiltersBtn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btnIcon {
+  width: 15px;
+  height: 15px;
+}
+
+.exportBtn .btnIcon {
+  filter: brightness(0) invert(1);
+}
+
+.navTabsContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.tabBtn:hover {
+  color: #0f172a;
+  background-color: #f1f5f9;
+}
+
+.tabBtnActive {
+  color: #0284c7;
+  border-bottom-color: #0284c7;
+  background-color: #ffffff;
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.tabBadge {
+  background-color: #e2e8f0;
+  color: #334155;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+}
+
+.tabBtnActive .tabBadge {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.errorMessage {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
