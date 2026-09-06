@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
 import styles from "./NavbarInventory.module.css";
 
-import { useBranch } from "../../../contexts/BranchContext";
-import { loadTransferOrders } from "../PageInventory/PageTransfers/services/transfersService";
-import { getPendingReceiptsCount } from "../PageInventory/PageTransfers/utils/transfersUtils";
+import { usePendingTransfers } from "../../../contexts/PendingTransfersContext";
 
 import AddIcon from "../../../assets/icons/plus-solid-full.svg";
 import SettingsIcon from "../../../assets/icons/gear-solid-full.svg";
@@ -14,41 +12,7 @@ import KardexIcon from "../../../assets/icons/boxes-stacked-solid-full.svg";
 import TransfersIcon from "../../../assets/icons/file-import-solid-full.svg";
 
 const NavbarInventory = () => {
-  const { branch } = useBranch();
-  const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
-
-  useEffect(() => {
-    if (!branch?.id) {
-      setPendingReceiptsCount(0);
-      return undefined;
-    }
-
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        const orders = await loadTransferOrders();
-        if (!mounted) return;
-        const count = getPendingReceiptsCount({
-          orders,
-          currentBranchId: branch.id,
-        });
-        setPendingReceiptsCount(Number.isFinite(count) ? count : 0);
-      } catch (err) {
-        console.error("No se pudo cargar el conteo de traspasos pendientes:", err);
-        if (mounted) setPendingReceiptsCount(0);
-      }
-    };
-
-    load();
-
-    let interval = setInterval(load, 10 * 1000);
-
-    return () => {
-      mounted = false;
-      if (interval) clearInterval(interval);
-    };
-  }, [branch?.id]);
+  const { pendingReceiptsCount } = usePendingTransfers();
 
   const options = [
     { id: "agregar", label: "Agregar", icon: AddIcon, path: "/inventory/agregar" },

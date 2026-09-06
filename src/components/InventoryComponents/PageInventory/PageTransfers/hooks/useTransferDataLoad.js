@@ -17,6 +17,7 @@ const DEFAULT_TAB = "send";
 const useTransferDataLoad = ({
   branch,
   user,
+  isActive = true,
   refreshProducts,
   clearFeedback,
   setSuccess,
@@ -74,6 +75,8 @@ const useTransferDataLoad = ({
   }, [reloadOrders]);
 
   useEffect(() => {
+    if (!isActive) return undefined;
+
     let interval = null;
     const runLoop = async () => {
       try {
@@ -91,7 +94,7 @@ const useTransferDataLoad = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [reloadOrders, reloadProductsSilently]);
+  }, [isActive, reloadOrders, reloadProductsSilently]);
 
   const destinationOptions = useMemo(() => {
     return branchOptions.filter((option) => option.id !== branch?.id);
@@ -168,6 +171,7 @@ const useTransferDataLoad = ({
           cancelError?.message ||
             "No se pudo cancelar la orden de traspaso."
         );
+        throw cancelError;
       } finally {
         setSubmitting(false);
       }

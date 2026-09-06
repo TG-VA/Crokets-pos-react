@@ -13,6 +13,7 @@ import Customers from "./pages/Customers/Customers";
 import Reports from "./pages/Reports/Reports";
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PendingTransfersProvider } from "./contexts/PendingTransfersContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
@@ -78,9 +79,11 @@ function App() {
 
   return (
     <AuthProvider>
-      <ProductsProvider>
-        <AppRoutes />
-      </ProductsProvider>
+      <PendingTransfersProvider>
+        <ProductsProvider>
+          <AppRoutes />
+        </ProductsProvider>
+      </PendingTransfersProvider>
     </AuthProvider>
   );
 }

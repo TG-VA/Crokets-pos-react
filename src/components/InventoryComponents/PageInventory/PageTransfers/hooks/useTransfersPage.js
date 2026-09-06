@@ -7,7 +7,7 @@ import useTransferDataLoad from "./useTransferDataLoad";
 import useSendForm from "./useSendForm";
 import useReceiveForm from "./useReceiveForm";
 
-const useTransfersPage = () => {
+const useTransfersPage = ({ isActive = true } = {}) => {
   const { branch } = useBranch();
   const { user } = useAuth();
   const {
@@ -28,6 +28,7 @@ const useTransfersPage = () => {
   const dataLoad = useTransferDataLoad({
     branch,
     user,
+    isActive,
     refreshProducts,
     clearFeedback,
     setSuccess,
