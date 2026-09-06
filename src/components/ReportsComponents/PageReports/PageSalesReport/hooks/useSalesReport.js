@@ -14,6 +14,7 @@ export const useSalesReport = () => {
   const closeReportModal = () => setReportModal((prev) => ({ ...prev, isOpen: false }));
 
   const [dateRange, setDateRange] = useState([new Date(), new Date()]);
+  const [activeDatePreset, setActiveDatePreset] = useState("today");
   const [startDate, endDate] = dateRange;
   const [selectedBranch, setSelectedBranch] = useState("Todas");
   const [selectedCashier, setSelectedCashier] = useState("Todos");
@@ -126,14 +127,72 @@ export const useSalesReport = () => {
     setCurrentPage(1);
   }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
 
+  const setQuickDatePreset = (preset) => {
+    setActiveDatePreset(preset);
+    const now = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch (preset) {
+      case "today":
+        start = new Date(now);
+        end = new Date(now);
+        break;
+      case "yesterday": {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = y;
+        end = new Date(y);
+        break;
+      }
+      case "this_week": {
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes
+        const mon = new Date(now);
+        mon.setDate(diff);
+        start = mon;
+        end = new Date();
+        break;
+      }
+      case "this_month":
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case "last_month":
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      default:
+        break;
+    }
+
+    setDateRange([start, end]);
+  };
+
+  const handleDateRangeChange = (update) => {
+    setActiveDatePreset("custom");
+    setDateRange(update);
+  };
+
   const handleClearFilters = () => {
-    setDateRange([new Date(), new Date()]);
+    const now = new Date();
+    setActiveDatePreset("today");
+    setDateRange([now, now]);
     setSelectedBranch("Todas");
     setSelectedCashier("Todos");
     setSaleStatus("Completada");
     setPaymentMethod("Todos");
     setDiscountFilter("Todos");
   };
+
+  const hasActiveFilters = Boolean(
+    selectedBranch !== "Todas" ||
+    selectedCashier !== "Todos" ||
+    saleStatus !== "Completada" ||
+    paymentMethod !== "Todos" ||
+    discountFilter !== "Todos" ||
+    activeDatePreset !== "today"
+  );
 
   const handleRowClick = async (sale) => {
     setSelectedTicket(sale);
@@ -156,8 +215,6 @@ export const useSalesReport = () => {
     setSelectedTicket(null);
     setTicketDetails([]);
   };
-
-  const hasActiveFilters = selectedBranch !== "Todas" || selectedCashier !== "Todos" || saleStatus !== "Completada" || paymentMethod !== "Todos" || discountFilter !== "Todos";
 
   const handleExportExcel = async () => {
     if (summary.totalTickets === 0) return;
@@ -201,7 +258,8 @@ export const useSalesReport = () => {
 
   return {
     reportModal, closeReportModal, 
-    dateRange, setDateRange, startDate, endDate,
+    dateRange, setDateRange: handleDateRangeChange, startDate, endDate,
+    activeDatePreset, setQuickDatePreset,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
     branchesList, cashiersList, currentPage, setCurrentPage, totalPages,

@@ -28,6 +28,7 @@ export const useCashReport = () => {
   // Rango de fechas (Por defecto: Hoy)
   const today = new Date();
   const [dateRange, setDateRange] = useState([today, today]);
+  const [activeDatePreset, setActiveDatePreset] = useState("today");
   const [startDate, endDate] = dateRange;
 
   // Pestaña activa
@@ -134,6 +135,7 @@ export const useCashReport = () => {
 
   // Presets rápidos de fechas
   const setQuickDatePreset = (preset) => {
+    setActiveDatePreset(preset);
     const now = new Date();
     let start = new Date();
     let end = new Date();
@@ -143,14 +145,19 @@ export const useCashReport = () => {
         start = new Date(now);
         end = new Date(now);
         break;
-      case "yesterday":
-        start = new Date(now.setDate(now.getDate() - 1));
-        end = new Date(start);
+      case "yesterday": {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = y;
+        end = new Date(y);
         break;
+      }
       case "this_week": {
         const day = now.getDay();
         const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes
-        start = new Date(now.setDate(diff));
+        const mon = new Date(now);
+        mon.setDate(diff);
+        start = mon;
         end = new Date();
         break;
       }
@@ -169,9 +176,15 @@ export const useCashReport = () => {
     setDateRange([start, end]);
   };
 
+  const handleDateRangeChange = (update) => {
+    setActiveDatePreset("custom");
+    setDateRange(update);
+  };
+
   // Limpiar filtros a valores por defecto
   const handleClearFilters = () => {
     const now = new Date();
+    setActiveDatePreset("today");
     setDateRange([now, now]);
     setSelectedBranchId(branch?.id || "ALL");
     setSelectedCashierId("ALL");
@@ -261,9 +274,10 @@ export const useCashReport = () => {
       (selectedBranchId !== "ALL" && selectedBranchId !== branch?.id) ||
       selectedCashierId !== "ALL" ||
       sessionStatus !== "ALL" ||
-      movementType !== "ALL"
+      movementType !== "ALL" ||
+      activeDatePreset !== "today"
     );
-  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType]);
+  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType, activeDatePreset]);
 
   return {
     // Filtros
@@ -278,9 +292,10 @@ export const useCashReport = () => {
     movementType,
     setMovementType,
     dateRange,
-    setDateRange,
+    setDateRange: handleDateRangeChange,
     startDate,
     endDate,
+    activeDatePreset,
     setQuickDatePreset,
     handleClearFilters,
     hasActiveFilters,

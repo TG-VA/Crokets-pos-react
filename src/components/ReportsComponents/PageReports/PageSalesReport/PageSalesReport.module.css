@@ -29,7 +29,8 @@
   gap: 2px;
 }
 
-.titleGroup h2 {
+.titleGroup h2,
+.title {
   margin: 0;
   color: #1f2d3d;
   font-size: 1.5rem;
@@ -37,7 +38,8 @@
   letter-spacing: -0.2px;
 }
 
-.titleGroup p {
+.titleGroup p,
+.description {
   margin: 0;
   color: #667085;
   font-size: 0.88rem;
@@ -48,6 +50,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   background-color: #20b15a;
   color: #ffffff;
   border: none;
@@ -75,35 +78,110 @@
   transform: none;
 }
 
+.btnIcon {
+  width: 15px;
+  height: 15px;
+}
+
 .filtersSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #ffffff;
+  padding: 16px 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e4e9f0;
+}
+
+.filtersTopRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dateFilterGroup {
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 16px;
-  background: #ffffff;
-  padding: 14px 18px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  border: 1px solid #e4e9f0;
+  gap: 12px;
+}
+
+.filtersBottomRow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filtersBottomRow .filterGroup {
+  flex: 1 1 170px;
+  min-width: 150px;
 }
 
 .filterGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 0 1 auto;
 }
 
+.filterLabel,
 .filterGroup label {
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: 0.725rem;
+  font-weight: 700;
   color: #475467;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
+}
+
+.presetsInlineGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+
+.presetPill {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.presetPill:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.presetPillActive {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+
+.presetPillActive:hover {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  color: #ffffff;
 }
 
 .datePickerWrapper {
-  width: 240px;
+  width: 210px;
 }
 
 .datePickerWrapper :global(.react-datepicker-wrapper) {
@@ -111,29 +189,78 @@
   display: block;
 }
 
-.datePickerInput, .selectInput {
+.datePickerInput,
+.selectInput {
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 12px;
+  padding: 7px 12px;
   border: 1px solid #d0d5dd;
   border-radius: 8px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #1f2d3d;
   outline: none;
-  background-color: #ffffff;
-  height: 38px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #f8fafc;
+  height: 36px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .selectInput {
-  min-width: 180px;
+  min-width: 160px;
   cursor: pointer;
 }
 
-.datePickerInput:focus, .selectInput:focus {
-  border-color: #1092b1;
-  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.15);
+.datePickerInput:focus,
+.selectInput:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  background-color: #ffffff;
+}
+
+.clearBtn {
+  background-color: #f1f5f9;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #475467;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clearBtn:hover {
+  background-color: #e2e8f0;
+  color: #1f2d3d;
+}
+
+.clearBtnActive {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+.clearBtnActive:hover {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.clearBtnIcon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+.activeFilterDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #0284c7;
+  display: inline-block;
 }
 
 .kpiGrid {
@@ -367,8 +494,8 @@
 
 .loadingState, .emptyState {
   text-align: center;
-  padding: 40px !important;
-  color: #667085 !important;
+  padding: 40px;
+  color: #667085;
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -420,6 +547,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   background-color: #ffffff;
   color: #1092b1;
   border: 2px solid #1092b1;

@@ -15,7 +15,6 @@ import EntryIcon from "../../../../assets/icons/entryIcon.svg";
 import CreditCardIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import UserIcon from "../../../../assets/icons/user-solid.svg";
 import TableListIcon from "../../../../assets/icons/table-list-solid-full.svg";
-import RotateLeftIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
 
 const PageCashReport = () => {
   const {
@@ -34,6 +33,7 @@ const PageCashReport = () => {
     setDateRange,
     startDate,
     endDate,
+    activeDatePreset,
     setQuickDatePreset,
     handleClearFilters,
     hasActiveFilters,
@@ -75,7 +75,7 @@ const PageCashReport = () => {
 
   return (
     <div className={styles.pageContainer}>
-      {/* Encabezado Principal con Título y Botones de Acción */}
+      {/* Cabecera Principal */}
       <header className={styles.header}>
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Caja y Arqueos</h1>
@@ -85,18 +85,6 @@ const PageCashReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              className={styles.clearFiltersBtn}
-              onClick={handleClearFilters}
-              title="Restablecer filtros"
-            >
-              <img src={RotateLeftIcon} alt="" className={styles.btnIcon} />
-              Limpiar
-            </button>
-          )}
-
           <button
             type="button"
             className={styles.exportBtn}
@@ -126,7 +114,10 @@ const PageCashReport = () => {
         setDateRange={setDateRange}
         startDate={startDate}
         endDate={endDate}
+        activeDatePreset={activeDatePreset}
         setQuickDatePreset={setQuickDatePreset}
+        onClear={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
         activeTab={activeTab}
       />
 
