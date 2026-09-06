@@ -27,6 +27,24 @@ Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimi
   - **MANTENER `console.error`:** Los `console.error` dentro de bloques `catch` o manejadores de fallos de Supabase/SQLite **DEBEN MANTENERSE** para trazabilidad en producción (retirando emojis si los tuvieran).
 - **Formato de archivos:** Todos los archivos deben finalizar con un salto de línea en blanco (EOF newline).
 - **Autenticación y permisos:** Manejados vía `AuthContext`, `permissionsService.js` y `adminAuthorizationService.js`. Respetar este flujo sin reinventar checks de rol.
+- **Principios SOLID en React:**
+  - **SRP (Single Responsibility):** Desacoplar vistas JSX, hooks de estado, servicios de cálculo matemático y servicios de datos/BD en archivos específicos.
+  - **OCP (Open/Closed):** Favorecer componentes extensibles mediante descriptores/configuración (ej. mapeo de arrays de KPIs, columnas) en lugar de bloques JSX duplicados.
+  - **LSP (Liskov Substitution):** Mantener contratos predecibles y retornos de tipo seguro en formateadores y utilidades, evitando excepciones no controladas.
+  - **ISP (Interface Segregation):** Evitar props monolíticas ("fat props"); pasar a los subcomponentes únicamente los datos y callbacks que realmente consumen.
+  - **DIP (Dependency Inversion):** Los componentes de UI nunca deben importar directamente clientes de base de datos (`supabase`, `sqlite3`). Toda interacción con la persistencia debe abstraerse en hooks o servicios.
+
+## Arquitectura Modular y Escalabilidad (Servicios, Hooks y Utils)
+
+Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de botella en Git:
+- **Servicios segregados por ciclo de vida:**
+  - `*ReportService.js`: Consultas globales y datasets principales de la vista.
+  - `*DetailService.js`: Consultas a profundidad bajo demanda (modales de inspección, historial 360°, auditorías).
+  - `*CalculationService.js`: Algoritmos, agregaciones y fórmulas puras en memoria (sin I/O ni llamadas a BD).
+- **Hooks desacoplados por subdominio:**
+  - Separar el estado y ciclo de vida de la página principal (`use*Report.js`) del estado de modales o subflujos (`use*Detail.js`).
+- **Utilidades especializadas:**
+  - Separar funciones puras de formateo visual (`*Formatters.js`) de generadores pesados de archivos externos (`*ExportUtils.js`).
 
 ## Qué evitar
 
