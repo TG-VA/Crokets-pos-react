@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import useTransfersPage from "./hooks/useTransfersPage";
@@ -13,6 +14,9 @@ import TransferDetailModal from "./components/modals/TransferDetailModal";
 import styles from "./PageTransfers.module.css";
 
 const PageTransfers = () => {
+  const location = useLocation();
+  const isActive = location.pathname.startsWith("/inventory/traspasos");
+
   const {
     activeTab,
     branch,
@@ -52,7 +56,7 @@ const PageTransfers = () => {
     closeSearchModal,
     setDestinationBranchId,
     setTransferNotes,
-  } = useTransfersPage();
+  } = useTransfersPage({ isActive });
 
   const [cancelConfirm, setCancelConfirm] = useState({
     isOpen: false,
@@ -124,8 +128,12 @@ const PageTransfers = () => {
 
     try {
       await handleCancelTransfer(orderId);
-    } finally {
       closeCancelConfirm();
+    } catch {
+      // Dejamos el modal abierto y solo apagamos loading para que el usuario
+      // tenga el contexto (folio, unidades, origen) al reintentar. El error
+      // generico ya lo muestra el FeedbackBanner superior via setError.
+      setCancelConfirm((prev) => ({ ...prev, loading: false }));
     }
   };
 

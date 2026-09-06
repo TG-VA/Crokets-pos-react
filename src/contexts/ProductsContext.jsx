@@ -155,10 +155,6 @@ export const ProductsProvider = ({ children }) => {
       const formattedBranchKardexProducts = (inventoryRows || [])
         .filter((row) => Boolean(row.products))
         .map((row) => {
-          const masterCost = Number(row.products.cost_price ?? 0);
-          const masterSale = Number(row.products.sale_price ?? 0);
-          const branchCost = Number(row.cost_price ?? 0);
-          const branchSale = Number(row.sale_price ?? 0);
           return {
             id: row.products.id,
             inventory_id: row.id,
@@ -169,8 +165,8 @@ export const ProductsProvider = ({ children }) => {
             departamento:
               departmentsMap.get(row.products.department_id) ||
               "Sin departamento",
-            costo: branchCost > 0 ? branchCost : masterCost,
-            precio: branchSale > 0 ? branchSale : masterSale,
+            costo: Number(row.cost_price ?? row.products.cost_price ?? 0),
+            precio: Number(row.sale_price ?? row.products.sale_price ?? 0),
             ganancia: Number(row.products.profit ?? 0),
             existencia: Number(row.stock || 0),
             minimo: Number(row.min_stock || 0),

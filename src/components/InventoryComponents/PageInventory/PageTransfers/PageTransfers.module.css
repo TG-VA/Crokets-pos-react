@@ -557,13 +557,13 @@
   cursor: pointer;
 }
 
-.clickableRow:hover td {
-  background: #f0fbfd !important;
+tbody tr.clickableRow:hover td {
+  background: #f0fbfd;
   box-shadow: inset 2px 0 0 0 var(--croketsBlue);
 }
 
-.alignRight {
-  text-align: right !important;
+td.alignRight {
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -610,20 +610,20 @@
   color: var(--croketsBlueDark);
 }
 
-.detailMutedText {
-  color: #6c7a86 !important;
-  font-size: 0.8rem !important;
-  font-weight: 500 !important;
+td.alignRight.detailMutedText {
+  color: #6c7a86;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
-.detailWarningText {
-  color: var(--warningText) !important;
-  font-weight: 700 !important;
+td.alignRight.detailWarningText {
+  color: var(--warningText);
+  font-weight: 700;
 }
 
-.detailErrorText {
-  color: var(--errorText) !important;
-  font-weight: 700 !important;
+td.alignRight.detailErrorText {
+  color: var(--errorText);
+  font-weight: 700;
 }
 
 .detailNotes {

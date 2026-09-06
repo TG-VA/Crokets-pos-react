@@ -46,6 +46,16 @@ const normalizeInteger = (value, fallback = 0) => {
   return Math.max(0, Math.floor(parsedValue));
 };
 
+const getDetectedSystemTimeZone = () => {
+  try {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (typeof detected === "string" && detected.trim() !== "") {
+      return detected.trim();
+    }
+  } catch (_error) {}
+  return undefined;
+};
+
 const getAppTimeZone = () => {
   if (typeof import.meta !== "undefined" && import.meta.env) {
     const configured = import.meta.env.VITE_APP_TIMEZONE;
@@ -53,7 +63,7 @@ const getAppTimeZone = () => {
       return configured.trim();
     }
   }
-  return undefined;
+  return getDetectedSystemTimeZone();
 };
 
 const getAppTimezoneParts = (date) => {
@@ -460,34 +470,49 @@ export const getTransferMetrics = ({
   orders = [],
   currentBranchId = "",
 }) => {
+  const currentBranch = String(currentBranchId || "");
+
   return orders.reduce(
     (summary, order) => {
-      if (order.status === "cancelled") {
+      const isOrigin =
+        String(order?.originBranchId || "") === currentBranch;
+      const isDestination =
+        String(order?.destinationBranchId || "") === currentBranch;
+      const participates = isOrigin || isDestination;
+
+      // Cancelados: cancela la sucursal origen. Mostramos cancelados de los
+      // traspasos en los que la sucursal actual participo (origen o destino),
+      // no cancels de sucursales ajenas.
+      if (order.status === "cancelled" && participates) {
         summary.cancelled += 1;
       }
 
-      if (order.originBranchId === currentBranchId) {
+      if (isOrigin) {
         summary.sent += 1;
       }
 
-      if (
-        order.destinationBranchId === currentBranchId &&
-        order.status === "pending_receipt"
-      ) {
+      if (isDestination && order.status === "pending_receipt") {
         summary.pendingReceipts += 1;
       }
 
-      if (
-        order.destinationBranchId === currentBranchId &&
-        order.status !== "pending_receipt"
-      ) {
+      // Recepciones cerradas: historial como destino (complete/complete+dif)
+      if (isDestination && order.status !== "pending_receipt") {
         summary.completedReceipts += 1;
       }
 
-      summary.unitsInTransit +=
-        Number(order?.totals?.requestedUnits ?? 0) -
-        Number(order?.totals?.receivedUnits ?? 0) -
-        Number(order?.totals?.returnedUnits ?? 0);
+      // En transito: unidades que siguen moviendose Y afectan a la sucursal
+      // actual. Cuenta:
+      //  - lo que envio la sucursal como origen y aun no se recibe
+      //  - lo que le toca recibir a la sucursal como destino y esta pendiente
+      if (participates && order.status === "pending_receipt") {
+        const requested = Number(order?.totals?.requestedUnits ?? 0) || 0;
+        const received = Number(order?.totals?.receivedUnits ?? 0) || 0;
+        const returned = Number(order?.totals?.returnedUnits ?? 0) || 0;
+        const remaining = requested - received - returned;
+        if (Number.isFinite(remaining) && remaining > 0) {
+          summary.unitsInTransit += remaining;
+        }
+      }
 
       return summary;
     },

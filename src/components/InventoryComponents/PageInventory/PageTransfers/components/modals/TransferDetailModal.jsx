@@ -33,6 +33,30 @@ const TransferDetailModal = ({
   const isDestinationRoute =
     String(order?.destinationBranchId) === String(branch?.id);
 
+  // Detecta si AL MENOS UNA fila tiene snapshot real (no NULL).
+  // Importante: revisamos !== null/undefined (NO > 0), porque stock 0
+  // es un valor valido y distinto de "traspaso antiguo sin dato".
+  const hasAnyStockSnapshot = items.some((item) => {
+    return (
+      (item?.origin_stock_before !== null &&
+        item?.origin_stock_before !== undefined) ||
+      (item?.origin_stock_after !== null &&
+        item?.origin_stock_after !== undefined) ||
+      (item?.destination_stock_before !== null &&
+        item?.destination_stock_before !== undefined) ||
+      (item?.destination_stock_after !== null &&
+        item?.destination_stock_after !== undefined)
+    );
+  });
+
+  const previousStockLabel = hasAnyStockSnapshot
+    ? "Inventario anterior"
+    : "Inv. anterior";
+  const postEventStockLabel = hasAnyStockSnapshot
+    ? "Inventario post-evento"
+    : "Inv. post-evento";
+  const dashPlaceholder = "—";
+
   return (
     <AppModal
       isOpen={!!order}
@@ -41,10 +65,7 @@ const TransferDetailModal = ({
       title={`Detalle del traspaso ${String(
         order?.folio || order?.id || ""
       ).toUpperCase()}`}
-      showCancel
-      cancelText="Cerrar"
       confirmText="Cerrar"
-      onCancel={onClose}
       onClose={onClose}
       onConfirm={onClose}
     >
@@ -112,8 +133,26 @@ const TransferDetailModal = ({
               <th className={styles.alignRight}>Recibido</th>
               <th className={styles.alignRight}>Devuelto</th>
               <th className={styles.alignRight}>Diferencia</th>
-              <th className={styles.alignRight}>Inventario anterior</th>
-              <th className={styles.alignRight}>Inventario actual</th>
+              <th
+                className={styles.alignRight}
+                title={
+                  hasAnyStockSnapshot
+                    ? "Foto historica tomada milisegundos ANTES del evento (envio o recepcion). 100% real, inamovible. Guion (—) significa traspaso creado antes de esta migracion."
+                    : "Esta instancia no tiene snapshots historicos de inventario para traspasos antiguos."
+                }
+              >
+                {previousStockLabel}
+              </th>
+              <th
+                className={styles.alignRight}
+                title={
+                  hasAnyStockSnapshot
+                    ? "Foto historica tomada milisegundos DESPUES del evento, calculada por el RPC. 100% real, inamovible. Guion (—) significa traspaso creado antes de esta migracion."
+                    : "Esta instancia no tiene snapshots historicos de inventario para traspasos antiguos."
+                }
+              >
+                {postEventStockLabel}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -130,30 +169,34 @@ const TransferDetailModal = ({
               const currentStock =
                 Number(inventoryRow?.currentStock ?? 0) || 0;
 
-              let previousStock = currentStock;
-              if (isCancelled) {
-                previousStock = currentStock;
-              } else if (isOriginRoute) {
-                if (isPending) {
-                  previousStock = currentStock + requestedQty;
-                } else {
-                  previousStock =
-                    currentStock +
-                    (receivedQty + returnedQty > 0
-                      ? receivedQty + returnedQty
-                      : requestedQty);
-                }
-              } else if (isDestinationRoute) {
-                if (isPending) {
-                  previousStock = currentStock;
-                } else {
-                  previousStock =
-                    currentStock -
-                    (receivedQty > 0 ? receivedQty : requestedQty);
+              // --- Lectura de snapshots historicos (NULLABLE).
+              // Si el dato no existe (NULL) mostramos guion — SIN retro-calculo.
+              // Regla de visualizacion segun la sucursal del usuario:
+              //   - Usuario ORIGEN:    muestra origin_stock_before / origin_stock_after
+              //   - Usuario DESTINO:   muestra destination_stock_before / destination_stock_after
+              //   - Sucursal no participante o dato inexistente: guion (—)
+              let rawBefore = null;
+              let rawAfter = null;
+              if (!isCancelled) {
+                if (isOriginRoute) {
+                  rawBefore = item?.origin_stock_before;
+                  rawAfter = item?.origin_stock_after;
+                } else if (isDestinationRoute) {
+                  rawBefore = item?.destination_stock_before;
+                  rawAfter = item?.destination_stock_after;
                 }
               }
 
-              if (previousStock < 0) previousStock = 0;
+              const hasBefore =
+                rawBefore !== null && rawBefore !== undefined;
+              const hasAfter = rawAfter !== null && rawAfter !== undefined;
+
+              const previousStock = hasBefore ? Number(rawBefore) : null;
+              const postEventStock = hasAfter ? Number(rawAfter) : null;
+
+              const stockCellTitle = hasBefore || hasAfter
+                ? "Foto historica del evento, tomada por el RPC. 100% real e inamovible."
+                : "Sin snapshot historico para este traspaso (creado antes de la migracion o evento aun no ocurrido).";
 
               return (
                 <tr key={item?.id || item?.productId || index}>
@@ -192,12 +235,30 @@ const TransferDetailModal = ({
                   >
                     {difference > 0 ? `-${difference}` : difference}
                   </td>
-                  <td className={styles.alignRight}>
+                  <td
+                    className={styles.alignRight}
+                    title={
+                      isOriginRoute || isDestinationRoute
+                        ? stockCellTitle
+                        : "Solo visible para sucursales participantes en el traspaso."
+                    }
+                  >
                     {isOriginRoute || isDestinationRoute
-                      ? previousStock
-                      : "—"}
+                      ? (previousStock !== null
+                          ? previousStock
+                          : dashPlaceholder)
+                      : dashPlaceholder}
                   </td>
-                  <td className={styles.alignRight}>{currentStock}</td>
+                  <td
+                    className={styles.alignRight}
+                    title={stockCellTitle}
+                  >
+                    {isOriginRoute || isDestinationRoute
+                      ? (postEventStock !== null
+                          ? postEventStock
+                          : dashPlaceholder)
+                      : dashPlaceholder}
+                  </td>
                 </tr>
               );
             })}

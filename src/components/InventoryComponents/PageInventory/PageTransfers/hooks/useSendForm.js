@@ -11,7 +11,6 @@ const useSendForm = ({
   getProductByCodigo,
   refreshProducts,
   reloadOrders,
-  reloadProductsSilently,
   setActiveTab,
   submitting,
   setSubmitting,
@@ -61,6 +60,38 @@ const useSendForm = ({
 
     setDestinationBranchId(destinationOptions[0]?.id || "");
   }, [destinationBranchId, destinationOptions]);
+
+  useEffect(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return undefined;
+    }
+    if (!Array.isArray(draftItems) || draftItems.length === 0) {
+      return undefined;
+    }
+
+    const stockByProductId = new Map(
+      products.map((product) => {
+        const productId = String(product?.id || product?.product_id || "");
+        const currentStock = Number(product?.existencia ?? 0) || 0;
+        return [productId, currentStock];
+      })
+    );
+
+    let changed = false;
+    const nextItems = draftItems.map((item) => {
+      const productId = String(item?.productId || "");
+      const freshStock = stockByProductId.get(productId);
+      if (freshStock === undefined) return item;
+      const currentStored = Number(item?.availableStock ?? 0) || 0;
+      if (freshStock === currentStored) return item;
+      changed = true;
+      return { ...item, availableStock: freshStock };
+    });
+
+    if (changed) {
+      setDraftItems(nextItems);
+    }
+  }, [products, draftItems]);
 
   const openSearchModal = useCallback(() => {
     setSearchModalOpen(true);
@@ -334,14 +365,30 @@ const useSendForm = ({
       return;
     }
 
+    const stockByProductId = new Map(
+      (Array.isArray(products) ? products : []).map((product) => {
+        const productId = String(product?.id || product?.product_id || "");
+        const currentStock = Number(product?.existencia ?? 0) || 0;
+        return [productId, currentStock];
+      })
+    );
+
     const overStockedItem = draftItems.find((item) => {
       const qty = Number(item?.quantity ?? 0);
-      return qty > (item?.availableStock ?? 0);
+      const productId = String(item?.productId || "");
+      const freshStock = stockByProductId.has(productId)
+        ? stockByProductId.get(productId)
+        : Number(item?.availableStock ?? 0);
+      return qty > freshStock;
     });
 
     if (overStockedItem) {
+      const productId = String(overStockedItem?.productId || "");
+      const freshStock = stockByProductId.has(productId)
+        ? stockByProductId.get(productId)
+        : Number(overStockedItem?.availableStock ?? 0);
       setError(
-        `"${overStockedItem.name}" supera el stock disponible de ${overStockedItem.availableStock}.`
+        `"${overStockedItem.name}" supera el stock disponible de ${freshStock}.`
       );
       return;
     }
@@ -369,7 +416,7 @@ const useSendForm = ({
       setSuccess(
         `Traspaso ${createdTransfer.folio} enviado a ${createdTransfer.destinationBranchName}.`
       );
-      setActiveTab("receive");
+      setActiveTab("history");
     } catch (submitError) {
       console.error("No se pudo generar el traspaso:", submitError);
       setError(
@@ -386,6 +433,7 @@ const useSendForm = ({
     clearLookupSelection,
     destinationBranchId,
     draftItems,
+    products,
     refreshProducts,
     reloadOrders,
     setActiveTab,

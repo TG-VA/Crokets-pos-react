@@ -44,7 +44,7 @@ const useReceiveForm = ({
   }, [pendingReceiptOrders, selectedReceiptOrderId]);
 
   useEffect(() => {
-    if (!selectedReceiptOrder) {
+    if (!selectedReceiptOrderId || !selectedReceiptOrder) {
       setReceiptQuantities({});
       return;
     }
@@ -58,7 +58,7 @@ const useReceiveForm = ({
     );
 
     setReceiptQuantities(nextReceiptQuantities);
-  }, [selectedReceiptOrder]);
+  }, [selectedReceiptOrderId]);
 
   const handleSelectReceiptOrder = useCallback(
     (orderId) => {

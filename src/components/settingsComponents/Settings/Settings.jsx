@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../Navbar/Navbar";
 import Footer from "../../Footer/Footer";
+import AppModal from "../../AppModal/AppModal";
 import styles from "./Settings.module.css";
 
 const SETTINGS_SECTIONS = [
@@ -136,14 +137,46 @@ const SETTINGS_SECTIONS = [
 const Settings = () => {
   const navigate = useNavigate();
 
+  const [appModal, setAppModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Entendido",
+    onConfirm: null,
+    onCancel: null,
+    onClose: null,
+  });
+
+  const closeAppModal = () => {
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      onConfirm: null,
+      onCancel: null,
+      onClose: null,
+    }));
+  };
+
+  const showComingSoon = (optionName) => {
+    setAppModal({
+      isOpen: true,
+      type: "info",
+      title: "Proximamente disponible",
+      message: `La funcionalidad "${optionName}" se encuentra en desarrollo y estara disponible en la siguiente fase del proyecto.`,
+      confirmText: "Entendido",
+      onConfirm: closeAppModal,
+      onCancel: closeAppModal,
+      onClose: closeAppModal,
+    });
+  };
+
   const handleOptionClick = (optionName) => {
     if (optionName === "Perfiles") {
       navigate("/profiles");
-    } else {
-      alert(
-        `Función "${optionName}" próximamente disponible.\nEsta página será creada en la siguiente fase del desarrollo.`
-      );
+      return;
     }
+    showComingSoon(optionName);
   };
 
   return (
@@ -231,6 +264,16 @@ const Settings = () => {
         </div>
       </main>
       <Footer />
+      <AppModal
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
+        onClose={appModal.onClose || closeAppModal}
+      />
     </div>
   );
 };
