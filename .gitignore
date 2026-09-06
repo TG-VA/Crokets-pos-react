@@ -57,3 +57,11 @@ temp_catalogs/
 # Scripts locales de importación (si algún día generas respaldos)
 *.bak
 *.tmp
+
+# Archivos duplicados y temporales accidentales (macOS Finder, Windows, editores)
+* copy.*
+* copy*.*
+* copia.*
+* copia*.*
+* (1).*
+*~
