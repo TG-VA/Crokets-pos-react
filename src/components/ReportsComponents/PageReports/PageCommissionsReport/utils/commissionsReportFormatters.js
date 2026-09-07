@@ -51,7 +51,8 @@ export const formatDynamicDateTime = (isoString) => {
     const minutes = String(d.getMinutes()).padStart(2, "0");
     const ampm = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
-    return `${day}/${month}/${year} ${hours}:${minutes}\u00A0${ampm}`;
+    const paddedHours = String(hours).padStart(2, "0");
+    return `${day}/${month}/${year} ${paddedHours}:${minutes}\u00A0${ampm}`;
   } catch {
     return "---";
   }
