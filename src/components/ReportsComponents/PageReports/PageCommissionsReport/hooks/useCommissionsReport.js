@@ -31,6 +31,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
   const [selectedBranchId, setSelectedBranchId] = useState(initialBranchId);
   const [selectedCashierId, setSelectedCashierId] = useState("ALL");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState("ALL");
+  const [selectedDiscountFilter, setSelectedDiscountFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("cashiers");
 
@@ -103,6 +104,21 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
         end.setHours(23, 59, 59, 999);
         break;
       }
+      case "this_fortnight": {
+        const currentDay = now.getDate();
+        if (currentDay <= 15) {
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now.getFullYear(), now.getMonth(), 15);
+          end.setHours(23, 59, 59, 999);
+        } else {
+          start = new Date(now.getFullYear(), now.getMonth(), 16);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          end.setHours(23, 59, 59, 999);
+        }
+        break;
+      }
       case "this_month":
         start = new Date(now.getFullYear(), now.getMonth(), 1);
         start.setHours(0, 0, 0, 0);
@@ -161,19 +177,27 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     loadCommissions();
   }, [loadCommissions]);
 
-  // Filtrado reactivo en memoria por término de búsqueda
+  // Filtrado reactivo en memoria por descuento y término de búsqueda
   const filteredRows = useMemo(() => {
-    if (!searchTerm.trim()) return rawData;
+    let rows = rawData;
+
+    if (selectedDiscountFilter === "WITH_DISCOUNT") {
+      rows = rows.filter((row) => row.hasDiscount);
+    } else if (selectedDiscountFilter === "WITHOUT_DISCOUNT") {
+      rows = rows.filter((row) => !row.hasDiscount);
+    }
+
+    if (!searchTerm.trim()) return rows;
     const term = searchTerm.toLowerCase().trim();
 
-    return rawData.filter((row) => {
+    return rows.filter((row) => {
       const matchProduct = (row.productName || "").toLowerCase().includes(term);
       const matchBarcode = (row.barcode || "").toLowerCase().includes(term);
       const matchCashier = (row.cashierName || "").toLowerCase().includes(term);
       const matchTicket = (row.ticketNumber || "").toLowerCase().includes(term);
       return matchProduct || matchBarcode || matchCashier || matchTicket;
     });
-  }, [rawData, searchTerm]);
+  }, [rawData, searchTerm, selectedDiscountFilter]);
 
   // Agregaciones
   const cashierSummaries = useMemo(() => {
@@ -188,20 +212,33 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     return calculateGlobalKpis(cashierSummaries, filteredRows);
   }, [cashierSummaries, filteredRows]);
 
-  // Indicador de filtros activos
-  const hasActiveFilters = Boolean(
-    activeDatePreset !== "today" ||
-      selectedBranchId !== "ALL" ||
-      selectedCashierId !== "ALL" ||
-      selectedDepartmentId !== "ALL" ||
-      (searchTerm || "").trim()
-  );
+  // Contador de filtros activos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (activeDatePreset !== "today") count++;
+    if (selectedBranchId !== "ALL") count++;
+    if (selectedCashierId !== "ALL") count++;
+    if (selectedDepartmentId !== "ALL") count++;
+    if (selectedDiscountFilter !== "ALL") count++;
+    if ((searchTerm || "").trim()) count++;
+    return count;
+  }, [
+    activeDatePreset,
+    selectedBranchId,
+    selectedCashierId,
+    selectedDepartmentId,
+    selectedDiscountFilter,
+    searchTerm,
+  ]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   const handleClearFilters = useCallback(() => {
     setQuickDatePreset("today");
     setSelectedBranchId(initialBranchId || "ALL");
     setSelectedCashierId("ALL");
     setSelectedDepartmentId("ALL");
+    setSelectedDiscountFilter("ALL");
     setSearchTerm("");
   }, [setQuickDatePreset, initialBranchId]);
 
@@ -254,6 +291,8 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     setSelectedCashierId,
     selectedDepartmentId,
     setSelectedDepartmentId,
+    selectedDiscountFilter,
+    setSelectedDiscountFilter,
     searchTerm,
     setSearchTerm,
     activeTab,
@@ -269,6 +308,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     error,
     isExporting,
     hasActiveFilters,
+    activeFiltersCount,
     handleClearFilters,
     reloadReport: loadCommissions,
     handleExportExcel,

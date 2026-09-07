@@ -23,6 +23,8 @@ export const PageCommissionsReport = () => {
     setSelectedCashierId,
     selectedDepartmentId,
     setSelectedDepartmentId,
+    selectedDiscountFilter,
+    setSelectedDiscountFilter,
     searchTerm,
     setSearchTerm,
     activeTab,
@@ -38,6 +40,7 @@ export const PageCommissionsReport = () => {
     error,
     isExporting,
     hasActiveFilters,
+    activeFiltersCount,
     handleClearFilters,
     handleExportExcel,
     selectedCashierForModal,
@@ -98,9 +101,12 @@ export const PageCommissionsReport = () => {
         departmentsList={departmentsList}
         selectedDepartmentId={selectedDepartmentId}
         setSelectedDepartmentId={setSelectedDepartmentId}
+        selectedDiscountFilter={selectedDiscountFilter}
+        setSelectedDiscountFilter={setSelectedDiscountFilter}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         hasActiveFilters={hasActiveFilters}
+        activeFiltersCount={activeFiltersCount}
         handleClearFilters={handleClearFilters}
       />
 

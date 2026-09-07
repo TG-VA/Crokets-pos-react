@@ -10,6 +10,7 @@ const DATE_PRESETS = [
   { id: "today", label: "Hoy" },
   { id: "yesterday", label: "Ayer" },
   { id: "this_week", label: "Esta semana" },
+  { id: "this_fortnight", label: "Esta quincena" },
   { id: "this_month", label: "Este mes" },
   { id: "last_month", label: "Mes anterior" },
 ];
@@ -29,9 +30,12 @@ export const CommissionsReportFilters = ({
   departmentsList = [],
   selectedDepartmentId = "ALL",
   setSelectedDepartmentId,
+  selectedDiscountFilter = "ALL",
+  setSelectedDiscountFilter,
   searchTerm = "",
   setSearchTerm,
   hasActiveFilters = false,
+  activeFiltersCount = 0,
   handleClearFilters,
 }) => {
   return (
@@ -49,6 +53,9 @@ export const CommissionsReportFilters = ({
                 maxDate={new Date()}
                 onChange={handleDateRangeChange}
                 dateFormat="dd/MM/yyyy"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
                 className={styles.datePickerInput}
                 placeholderText="Seleccionar periodo..."
               />
@@ -89,12 +96,14 @@ export const CommissionsReportFilters = ({
             alt="Limpiar filtros"
             className={styles.clearBtnIcon}
           />
-          <span>Limpiar</span>
+          <span>
+            {activeFiltersCount > 0 ? `Limpiar (${activeFiltersCount})` : "Limpiar"}
+          </span>
           {hasActiveFilters && <span className={styles.activeFilterDot} />}
         </button>
       </div>
 
-      {/* Fila 2: Sucursal, Cajero, Departamento y Búsqueda */}
+      {/* Fila 2: Sucursal, Cajero, Departamento, Descuento y Búsqueda */}
       <div className={styles.filtersBottomRow}>
         <div className={`${styles.filterField} ${styles.filterFieldGrow}`}>
           <label className={styles.filterLabel}>Sucursal:</label>
@@ -141,6 +150,19 @@ export const CommissionsReportFilters = ({
                 {dept.name}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div className={`${styles.filterField} ${styles.filterFieldGrow}`}>
+          <label className={styles.filterLabel}>Descuento:</label>
+          <select
+            value={selectedDiscountFilter}
+            onChange={(e) => setSelectedDiscountFilter(e.target.value)}
+            className={styles.selectInput}
+          >
+            <option value="ALL">Todos</option>
+            <option value="WITH_DISCOUNT">Solo con descuento</option>
+            <option value="WITHOUT_DISCOUNT">Sin descuento</option>
           </select>
         </div>
 
