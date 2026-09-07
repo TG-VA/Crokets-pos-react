@@ -11,6 +11,7 @@ import CashIcon from "../../../assets/icons/money-check-dollar-solid-full.svg";
 import CustomersIcon from "../../../assets/icons/user-solid.svg";
 import InvoicesIcon from "../../../assets/icons/file-invoice-dollar-solid-full.svg";
 import ProfitabilityIcon from "../../../assets/icons/chart-line-solid-full.svg";
+import CommissionsIcon from "../../../assets/icons/coins-solid-full.svg";
 
 const REPORT_OPTIONS = [
   {
@@ -61,6 +62,12 @@ const REPORT_OPTIONS = [
     label: "Rentabilidad",
     icon: ProfitabilityIcon,
     path: "/reports/rentabilidad",
+  },
+  {
+    id: "comisiones",
+    label: "Comisiones",
+    icon: CommissionsIcon,
+    path: "/reports/comisiones",
   },
 ];
 
