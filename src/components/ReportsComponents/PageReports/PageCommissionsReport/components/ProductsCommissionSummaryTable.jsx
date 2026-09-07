@@ -25,6 +25,18 @@ export const ProductsCommissionSummaryTable = ({
     return productSummaries.slice(startIndex, startIndex + pageSize);
   }, [productSummaries, safeCurrentPage, pageSize]);
 
+  const totals = useMemo(() => {
+    return productSummaries.reduce(
+      (acc, p) => {
+        acc.units += Number(p.unitsSold || 0);
+        acc.sales += Number(p.totalSales || 0);
+        acc.commissions += Number(p.totalCommissionPaid || 0);
+        return acc;
+      },
+      { units: 0, sales: 0, commissions: 0 }
+    );
+  }, [productSummaries]);
+
   return (
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
@@ -41,14 +53,20 @@ export const ProductsCommissionSummaryTable = ({
           <thead>
             <tr>
               <th style={{ width: "130px" }}>Código</th>
-              <th>Producto</th>
-              <th>Departamento</th>
-              <th className={styles.textCenter} style={{ width: "130px" }}>
+              <th style={{ minWidth: "220px" }}>Producto</th>
+              <th style={{ minWidth: "150px" }}>Departamento</th>
+              <th className={styles.textCenter} style={{ width: "140px" }}>
                 Regla Comisión
               </th>
-              <th className={styles.textRight}>Piezas Vendidas</th>
-              <th className={styles.textRight}>Venta Total</th>
-              <th className={styles.textRight}>Comisión Pagada</th>
+              <th className={styles.textCenter} style={{ width: "120px" }}>
+                Piezas Vendidas
+              </th>
+              <th className={styles.textRight} style={{ width: "150px" }}>
+                Venta Total
+              </th>
+              <th className={styles.textRight} style={{ width: "150px" }}>
+                Comisión Pagada
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -77,7 +95,7 @@ export const ProductsCommissionSummaryTable = ({
                         {formatCommissionRule(item.commissionType, item.commissionValue)}
                       </span>
                     </td>
-                    <td className={`${styles.textRight} ${styles.fontMono}`}>
+                    <td className={`${styles.textCenter} ${styles.fontMono}`}>
                       {formatInteger(item.unitsSold)}
                     </td>
                     <td className={`${styles.textRight} ${styles.fontMono}`}>
@@ -94,6 +112,27 @@ export const ProductsCommissionSummaryTable = ({
               })
             )}
           </tbody>
+          {totalItems > 0 && (
+            <tfoot>
+              <tr className={styles.tableFooterTotal}>
+                <td colSpan={4} className={styles.footerTotalLabel}>
+                  Totales Consolidados ({totalItems} producto{totalItems !== 1 ? "s" : ""})
+                </td>
+                <td className={`${styles.textCenter} ${styles.fontMono}`}>
+                  {formatInteger(totals.units)}
+                </td>
+                <td className={`${styles.textRight} ${styles.fontMono}`}>
+                  {formatCurrency(totals.sales)}
+                </td>
+                <td
+                  className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
+                  style={{ color: "#0284c7" }}
+                >
+                  {formatCurrency(totals.commissions)}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 

@@ -28,6 +28,18 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
     return commissionableRows.slice(startIndex, startIndex + pageSize);
   }, [commissionableRows, safeCurrentPage, pageSize]);
 
+  const totals = useMemo(() => {
+    return commissionableRows.reduce(
+      (acc, r) => {
+        acc.quantity += Number(r.quantity || 0);
+        acc.totalPrice += Number(r.totalPrice || 0);
+        acc.commissionAmount += Number(r.commissionAmount || 0);
+        return acc;
+      },
+      { quantity: 0, totalPrice: 0, commissionAmount: 0 }
+    );
+  }, [commissionableRows]);
+
   return (
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
@@ -44,22 +56,24 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
           <thead>
             <tr>
               <th style={{ width: "110px" }}>Ticket</th>
-              <th style={{ width: "150px" }}>Fecha / Hora</th>
-              <th>Cajero</th>
-              <th>Sucursal</th>
-              <th>Producto</th>
-              <th className={styles.textRight} style={{ width: "80px" }}>
+              <th style={{ width: "175px", whiteSpace: "nowrap" }}>
+                Fecha / Hora
+              </th>
+              <th style={{ minWidth: "150px" }}>Cajero</th>
+              <th style={{ minWidth: "140px" }}>Sucursal</th>
+              <th style={{ minWidth: "200px" }}>Producto</th>
+              <th className={styles.textCenter} style={{ width: "90px" }}>
                 Cant.
               </th>
-              <th className={styles.textRight} style={{ width: "100px" }}>
+              <th className={styles.textRight} style={{ width: "120px" }}>
                 P. Unitario
               </th>
-              <th className={styles.textRight} style={{ width: "110px" }}>
+              <th className={styles.textRight} style={{ width: "130px" }}>
                 Total Venta
               </th>
               <th
-                className={`${styles.textRight}`}
-                style={{ width: "110px", color: "#0284c7" }}
+                className={styles.textRight}
+                style={{ width: "130px", color: "#0284c7" }}
               >
                 Comisión
               </th>
@@ -78,13 +92,13 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
                   <td className={`${styles.fontMono} ${styles.fontBold}`}>
                     {row.ticketNumber}
                   </td>
-                  <td className={styles.fontMono}>
+                  <td className={`${styles.fontMono} ${styles.cellDateTime}`}>
                     {formatDateTime(row.createdAt)}
                   </td>
                   <td className={styles.fontBold}>{row.cashierName}</td>
                   <td>{row.branchName || "Sin sucursal"}</td>
                   <td>{row.productName}</td>
-                  <td className={`${styles.textRight} ${styles.fontMono}`}>
+                  <td className={`${styles.textCenter} ${styles.fontMono}`}>
                     {formatInteger(row.quantity)}
                   </td>
                   <td className={`${styles.textRight} ${styles.fontMono}`}>
@@ -103,6 +117,28 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
               ))
             )}
           </tbody>
+          {totalItems > 0 && (
+            <tfoot>
+              <tr className={styles.tableFooterTotal}>
+                <td colSpan={5} className={styles.footerTotalLabel}>
+                  Totales Consolidados ({totalItems} partida{totalItems !== 1 ? "s" : ""})
+                </td>
+                <td className={`${styles.textCenter} ${styles.fontMono}`}>
+                  {formatInteger(totals.quantity)}
+                </td>
+                <td />
+                <td className={`${styles.textRight} ${styles.fontMono}`}>
+                  {formatCurrency(totals.totalPrice)}
+                </td>
+                <td
+                  className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
+                  style={{ color: "#0284c7" }}
+                >
+                  {formatCurrency(totals.commissionAmount)}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 

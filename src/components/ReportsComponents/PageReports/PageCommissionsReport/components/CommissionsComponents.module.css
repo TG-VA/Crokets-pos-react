@@ -457,6 +457,64 @@
   border: 1px solid #a7f3d0;
 }
 
+/* Badges de Podio / Ranking */
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.rankGold {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 3px rgba(180, 83, 9, 0.15);
+}
+
+.rankSilver {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.rankBronze {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.rankNormal {
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Fila de Totales de Tabla */
+.tableFooterTotal {
+  background-color: #f8fafc;
+  border-top: 2px solid #cbd5e1;
+  font-weight: 800;
+}
+
+.tableFooterTotal td {
+  padding: 12px 14px;
+  color: #0f172a;
+  border-bottom: none;
+}
+
+.footerTotalLabel {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475467;
+}
+
 .btnDetail {
   background-color: #f0f9ff;
   border: 1px solid #bae6fd;
@@ -468,6 +526,9 @@
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btnDetail:hover {
@@ -475,6 +536,17 @@
   color: #ffffff;
   border-color: #0284c7;
 }
+
+.btnDetailIcon {
+  width: 13px;
+  height: 13px;
+  transition: filter 0.15s ease;
+}
+
+.btnDetail:hover .btnDetailIcon {
+  filter: brightness(0) invert(1);
+}
+
 
 /* --------------------------------------------------------------------------
    PAGINACIÓN
