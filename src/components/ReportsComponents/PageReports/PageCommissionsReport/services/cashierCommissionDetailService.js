@@ -34,7 +34,12 @@ export const groupCashierSalesByTicket = (cashierRows = []) => {
     ticket.totalCommissionAmount += Number(row.commissionAmount) || 0;
   });
 
-  return Array.from(ticketMap.values()).sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  return Array.from(ticketMap.values())
+    .map((t) => ({
+      ...t,
+      ticketTotal: t.totalSalesAmount,
+      ticketCommission: t.totalCommissionAmount,
+    }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
+

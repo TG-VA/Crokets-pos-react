@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./CommissionsComponents.module.css";
 import { useCashierCommissionDetail } from "../hooks/useCashierCommissionDetail";
 import {
@@ -33,6 +33,22 @@ export const CashierCommissionDetailModal = ({
     endDate,
   });
 
+  // Cerrar modal al presionar la tecla ESC
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !cashier) return null;
 
   return (
@@ -55,13 +71,13 @@ export const CashierCommissionDetailModal = ({
             type="button"
             className={styles.modalCloseBtn}
             onClick={onClose}
-            title="Cerrar ventana"
+            title="Cerrar ventana (ESC)"
           >
             &times;
           </button>
         </div>
 
-        {/* Cuerpo del Modal */}
+        {/* Cuerpo del Modal con altura estandarizada */}
         <div className={styles.modalBody}>
           {/* Mini Tarjetas de Resumen */}
           <div className={styles.modalMiniKpiGrid}>
@@ -93,19 +109,21 @@ export const CashierCommissionDetailModal = ({
           </div>
 
           {/* Tabla de Tickets de Venta */}
-          <div className={styles.tableResponsive}>
+          <div className={styles.modalTableResponsive}>
             <table className={styles.dataTable}>
               <thead>
                 <tr>
                   <th style={{ width: "120px" }}>Ticket</th>
-                  <th style={{ width: "160px" }}>Fecha / Hora</th>
+                  <th style={{ width: "175px", whiteSpace: "nowrap" }}>
+                    Fecha / Hora
+                  </th>
                   <th>Productos con Comisión</th>
-                  <th className={styles.textRight} style={{ width: "110px" }}>
+                  <th className={styles.textRight} style={{ width: "120px" }}>
                     Venta Ticket
                   </th>
                   <th
                     className={styles.textRight}
-                    style={{ width: "110px", color: "#0284c7" }}
+                    style={{ width: "120px", color: "#0284c7" }}
                   >
                     Comisión
                   </th>
@@ -124,7 +142,7 @@ export const CashierCommissionDetailModal = ({
                       <td className={`${styles.fontMono} ${styles.fontBold}`}>
                         {group.ticketNumber}
                       </td>
-                      <td className={styles.fontMono}>
+                      <td className={`${styles.fontMono} ${styles.cellDateTime}`}>
                         {formatDateTime(group.createdAt)}
                       </td>
                       <td>
@@ -213,20 +231,13 @@ export const CashierCommissionDetailModal = ({
             <img
               src={excelIcon}
               alt="Excel"
-              style={{ width: "15px", height: "15px" }}
+              className={styles.btnExportStatementIcon}
             />
             <span>
               {isExportingStatement
                 ? "Generando..."
                 : "Descargar Comprobante (.xlsx)"}
             </span>
-          </button>
-          <button
-            type="button"
-            className={styles.btnCloseModal}
-            onClick={onClose}
-          >
-            Cerrar
           </button>
         </div>
       </div>

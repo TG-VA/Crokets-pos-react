@@ -587,8 +587,9 @@
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
+  max-width: 950px;
+  height: 720px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -640,16 +641,18 @@
 
 .modalBody {
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  flex: 1;
+  gap: 14px;
 }
 
 .modalMiniKpiGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .modalMiniKpiCard {
@@ -675,6 +678,20 @@
   color: #0f172a;
 }
 
+.modalTableResponsive {
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  min-height: 280px;
+}
+
+.cellDateTime {
+  white-space: nowrap;
+}
+
 .modalFooter {
   padding: 14px 20px;
   border-top: 1px solid #e2e8f0;
@@ -682,45 +699,39 @@
   justify-content: flex-end;
   gap: 10px;
   background-color: #f8fafc;
+  flex-shrink: 0;
 }
 
 .btnExportStatement {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background-color: #20b15a;
   color: #ffffff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  height: 38px;
 }
 
 .btnExportStatement:hover:not(:disabled) {
   background-color: #1a9c4e;
+  transform: translateY(-1px);
 }
 
 .btnExportStatement:disabled {
   background-color: #cbd5e1;
   cursor: not-allowed;
+  transform: none;
 }
 
-.btnCloseModal {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.btnExportStatementIcon {
+  width: 15px;
+  height: 15px;
+  filter: brightness(0) invert(1);
 }
 
-.btnCloseModal:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
-}
