@@ -157,7 +157,7 @@ export const exportCommissionsReportToExcel = async ({
     // ==========================================
     const wsAudit = workbook.addWorksheet("Auditoría Partida por Partida");
 
-    wsAudit.mergeCells("A1:I1");
+    wsAudit.mergeCells("A1:K1");
     const title3 = wsAudit.getCell("A1");
     title3.value = "CROKETS POS - AUDITORÍA DETALLADA DE COMISIONES";
     title3.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
@@ -172,8 +172,10 @@ export const exportCommissionsReportToExcel = async ({
       "Cajero",
       "Sucursal",
       "Producto",
+      "Regla Comisión",
       "Cantidad",
       "Precio Unit.",
+      "Descuento",
       "Total Partida",
       "Comisión Generada",
     ]);
@@ -186,30 +188,40 @@ export const exportCommissionsReportToExcel = async ({
     detailedRows
       .filter((r) => r.hasCommission)
       .forEach((r) => {
+        const ruleText =
+          r.commissionType === "percent" || r.commissionType === "percentage"
+            ? `${Number(r.commissionValue || 0)}% s/venta`
+            : `$${Number(r.commissionValue || 0).toFixed(2)} / pz`;
+
         const row = wsAudit.addRow([
           r.ticketNumber,
           formatDynamicDateTime(r.createdAt),
           r.cashierName,
           r.branchName,
           r.productName,
+          ruleText,
           r.quantity,
           r.unitPrice,
+          r.discountAmount || 0,
           r.totalPrice,
           r.commissionAmount,
         ]);
 
-        row.getCell(7).numFmt = '"$"#,##0.00';
         row.getCell(8).numFmt = '"$"#,##0.00';
         row.getCell(9).numFmt = '"$"#,##0.00';
+        row.getCell(10).numFmt = '"$"#,##0.00';
+        row.getCell(11).numFmt = '"$"#,##0.00';
       });
 
     wsAudit.columns = [
       { width: 16 },
       { width: 22 },
-      { width: 24 },
-      { width: 20 },
+      { width: 22 },
+      { width: 18 },
       { width: 34 },
+      { width: 18 },
       { width: 12 },
+      { width: 16 },
       { width: 16 },
       { width: 16 },
       { width: 20 },

@@ -34,10 +34,11 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
       (acc, r) => {
         acc.quantity += Number(r.quantity || 0);
         acc.totalPrice += Number(r.totalPrice || 0);
+        acc.discountAmount += Number(r.discountAmount || 0);
         acc.commissionAmount += Number(r.commissionAmount || 0);
         return acc;
       },
-      { quantity: 0, totalPrice: 0, commissionAmount: 0 }
+      { quantity: 0, totalPrice: 0, discountAmount: 0, commissionAmount: 0 }
     );
   }, [commissionableRows]);
 
@@ -72,7 +73,7 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
               <th className={styles.textRight} style={{ width: "110px" }}>
                 P. Unitario
               </th>
-              <th className={styles.textRight} style={{ width: "120px" }}>
+              <th className={styles.textRight} style={{ width: "125px" }}>
                 Total Venta
               </th>
               <th
@@ -142,8 +143,17 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
                     <td className={`${styles.textRight} ${styles.fontMono}`}>
                       {formatCurrency(row.unitPrice)}
                     </td>
-                    <td className={`${styles.textRight} ${styles.fontMono}`}>
-                      {formatCurrency(row.totalPrice)}
+                    <td className={styles.textRight}>
+                      <div className={styles.colFinancialValue}>
+                        <span className={styles.fontMono}>
+                          {formatCurrency(row.totalPrice)}
+                        </span>
+                        {row.hasDiscount && row.discountAmount > 0 && (
+                          <span className={styles.discountSubtext}>
+                            Desc. -{formatCurrency(row.discountAmount)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className={styles.textRight}>
                       <div className={styles.colCommissionPaid}>
@@ -189,8 +199,17 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
                     >
                       ---
                     </td>
-                    <td className={`${styles.textRight} ${styles.fontMono}`}>
-                      {formatCurrency(totals.totalPrice)}
+                    <td className={styles.textRight}>
+                      <div className={styles.colFinancialValue}>
+                        <span className={styles.fontMono}>
+                          {formatCurrency(totals.totalPrice)}
+                        </span>
+                        {totals.discountAmount > 0 && (
+                          <span className={styles.discountSubtext}>
+                            -{formatCurrency(totals.discountAmount)} desc.
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className={styles.textRight}>
                       <div className={styles.colCommissionPaid}>

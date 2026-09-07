@@ -103,9 +103,9 @@ export const fetchCommissionsData = async ({
     const { data: details, error: detailsError } = await supabase
       .from("sale_details")
       .select(
-        `id, sale_id, product_id, quantity, unit_price, total_price,
+        `id, sale_id, product_id, quantity, unit_price, discount_amount, discount_type, total_price,
          products (
-           id, barcode, name, department_id,
+           id, barcode, name, sale_price, department_id,
            commission_enabled, commission_type, commission_value, commission_percent,
            departments ( id, name, commission_enabled, commission_type, commission_value )
          )`
@@ -133,6 +133,26 @@ export const fetchCommissionsData = async ({
 
       const commissionCalc = calculateItemCommission(item);
 
+      const qty = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unit_price) || 0;
+      const totalPrice = Number(item.total_price) || 0;
+      const baseCatalogPrice = Number(product.sale_price || unitPrice || 0);
+
+      let itemDiscountAmount = Number(item.discount_amount || 0);
+
+      // Si no hay discount_amount explícito en la partida pero el unit_price fue menor al precio de catálogo:
+      if (itemDiscountAmount <= 0 && baseCatalogPrice > 0 && unitPrice < baseCatalogPrice) {
+        itemDiscountAmount = (baseCatalogPrice - unitPrice) * (qty || 1);
+      }
+
+      // O si el total_price registrado fue menor que quantity * unit_price:
+      const expectedTotal = unitPrice * (qty || 1);
+      if (itemDiscountAmount <= 0 && expectedTotal > totalPrice + 0.01) {
+        itemDiscountAmount = expectedTotal - totalPrice;
+      }
+
+      const hasDiscount = itemDiscountAmount > 0;
+
       detailedRows.push({
         detailId: item.id,
         saleId: parentSale.id,
@@ -147,9 +167,13 @@ export const fetchCommissionsData = async ({
         productName: product.name || "Producto sin nombre",
         departmentId: product.department_id,
         departmentName: department.name || "Sin Departamento",
-        quantity: Number(item.quantity) || 0,
-        unitPrice: Number(item.unit_price) || 0,
-        totalPrice: Number(item.total_price) || 0,
+        quantity: qty,
+        unitPrice,
+        catalogPrice: baseCatalogPrice,
+        discountAmount: Math.max(0, itemDiscountAmount),
+        discountType: item.discount_type || null,
+        hasDiscount,
+        totalPrice,
         hasCommission: commissionCalc.hasCommission,
         commissionAmount: commissionCalc.commissionAmount,
         commissionType: commissionCalc.commissionType,
