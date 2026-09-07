@@ -20,10 +20,7 @@ export const getBranchesList = async () => {
     throw new Error("No se pudo cargar el catálogo de sucursales.");
   }
 
-  return [
-    { id: "ALL", name: "Todas las sucursales" },
-    ...data.map((b) => ({ id: b.id, name: b.name })),
-  ];
+  return (data || []).map((b) => ({ id: b.id, name: b.name }));
 };
 
 export const getCashiersList = async () => {
@@ -38,13 +35,10 @@ export const getCashiersList = async () => {
     throw new Error("No se pudo cargar el catálogo de cajeros.");
   }
 
-  return [
-    { id: "ALL", name: "Todos los cajeros" },
-    ...data.map((u) => ({
-      id: u.id,
-      name: u.username ? toUpper(u.username) : "SIN NOMBRE",
-    })),
-  ];
+  return (data || []).map((u) => ({
+    id: u.id,
+    name: u.username ? toUpper(u.username) : "SIN NOMBRE",
+  }));
 };
 
 export const getDepartmentsList = async () => {
@@ -59,10 +53,7 @@ export const getDepartmentsList = async () => {
     throw new Error("No se pudo cargar el catálogo de departamentos.");
   }
 
-  return [
-    { id: "ALL", name: "Todos los departamentos" },
-    ...data.map((d) => ({ id: d.id, name: d.name })),
-  ];
+  return (data || []).map((d) => ({ id: d.id, name: d.name }));
 };
 
 /**

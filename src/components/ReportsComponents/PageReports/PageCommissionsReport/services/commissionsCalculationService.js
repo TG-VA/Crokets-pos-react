@@ -89,12 +89,16 @@ export const aggregateCashierCommissions = (detailedRows = []) => {
   });
 
   return Array.from(cashierMap.values())
-    .map((c) => ({
+    .sort((a, b) => b.totalCommission - a.totalCommission)
+    .map((c, idx) => ({
       ...c,
+      rank: idx + 1,
       ticketsCount: c.saleIds.size,
-      averageCommissionPerTicket: c.saleIds.size > 0 ? c.totalCommission / c.saleIds.size : 0,
-    }))
-    .sort((a, b) => b.totalCommission - a.totalCommission);
+      commissionablePieces: c.totalUnits,
+      commissionableSales: c.totalSales,
+      averageCommissionPerTicket:
+        c.saleIds.size > 0 ? c.totalCommission / c.saleIds.size : 0,
+    }));
 };
 
 /**
@@ -113,6 +117,8 @@ export const aggregateProductCommissions = (detailedRows = []) => {
         barcode: row.barcode || "---",
         productName: row.productName || "Producto sin nombre",
         departmentName: row.departmentName || "Sin Depto.",
+        commissionType: row.commissionType || "percent",
+        commissionValue: row.commissionValue || 0,
         ruleLabel: row.ruleLabel || "---",
         totalUnits: 0,
         totalSales: 0,
@@ -129,11 +135,13 @@ export const aggregateProductCommissions = (detailedRows = []) => {
   });
 
   return Array.from(productMap.values())
+    .sort((a, b) => b.totalCommission - a.totalCommission)
     .map((p) => ({
       ...p,
+      unitsSold: p.totalUnits,
+      totalCommissionPaid: p.totalCommission,
       ticketsCount: p.salesCount.size,
-    }))
-    .sort((a, b) => b.totalCommission - a.totalCommission);
+    }));
 };
 
 /**
@@ -163,8 +171,10 @@ export const calculateGlobalKpis = (cashierSummaries = [], detailedRows = []) =>
     totalCommissions,
     totalCommissionableSales,
     totalCommissionableUnits,
+    totalCommissionablePieces: totalCommissionableUnits,
     topCashierName: topCashier ? topCashier.cashierName : "Ninguno",
     topCashierAmount: topCashier ? topCashier.totalCommission : 0,
     totalCashiersWithCommissions: cashierSummaries.length,
   };
 };
+

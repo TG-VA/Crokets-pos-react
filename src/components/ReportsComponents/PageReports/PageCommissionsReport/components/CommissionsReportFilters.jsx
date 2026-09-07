@@ -122,7 +122,7 @@ export const CommissionsReportFilters = ({
             <option value="ALL">Todos los cajeros</option>
             {cashiersList.map((cashier) => (
               <option key={cashier.id} value={cashier.id}>
-                {String(cashier.username || "").toUpperCase()}
+                {cashier.name}
               </option>
             ))}
           </select>

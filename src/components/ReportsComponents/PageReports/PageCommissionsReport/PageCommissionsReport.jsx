@@ -186,14 +186,16 @@ export const PageCommissionsReport = () => {
       )}
 
       {/* Modal de Detalle 360° de Cajero */}
-      <CashierCommissionDetailModal
-        isOpen={isModalOpen}
-        onClose={handleCloseCashierModal}
-        cashier={selectedCashierForModal}
-        allDetailedRows={filteredRows}
-        startDate={startDate}
-        endDate={endDate}
-      />
+      {isModalOpen && selectedCashierForModal && (
+        <CashierCommissionDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseCashierModal}
+          cashier={selectedCashierForModal}
+          allDetailedRows={filteredRows}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      )}
     </div>
   );
 };
