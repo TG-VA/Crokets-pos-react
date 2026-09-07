@@ -484,6 +484,17 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+.productCellStacked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.subtextBarcode {
+  font-size: 0.725rem;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
 
 /* Badges de Podio / Ranking */
 .rankBadge {

@@ -4,6 +4,7 @@ import {
   formatCurrency,
   formatDateTime,
   formatInteger,
+  formatCommissionRule,
 } from "../utils/commissionsReportFormatters";
 
 export const CommissionsAuditTable = ({ detailedRows = [] }) => {
@@ -55,25 +56,28 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
         <table className={styles.dataTable}>
           <thead>
             <tr>
-              <th style={{ width: "110px" }}>Ticket</th>
-              <th style={{ width: "175px", whiteSpace: "nowrap" }}>
+              <th style={{ width: "100px" }}>Ticket</th>
+              <th style={{ width: "165px", whiteSpace: "nowrap" }}>
                 Fecha / Hora
               </th>
-              <th style={{ minWidth: "150px" }}>Cajero</th>
-              <th style={{ minWidth: "140px" }}>Sucursal</th>
-              <th style={{ minWidth: "200px" }}>Producto</th>
-              <th className={styles.textCenter} style={{ width: "90px" }}>
+              <th style={{ minWidth: "120px" }}>Cajero</th>
+              <th style={{ minWidth: "120px" }}>Sucursal</th>
+              <th style={{ minWidth: "180px" }}>Producto</th>
+              <th className={styles.textCenter} style={{ width: "135px" }}>
+                Regla Comisión
+              </th>
+              <th className={styles.textCenter} style={{ width: "70px" }}>
                 Cant.
               </th>
-              <th className={styles.textRight} style={{ width: "120px" }}>
+              <th className={styles.textRight} style={{ width: "110px" }}>
                 P. Unitario
               </th>
-              <th className={styles.textRight} style={{ width: "130px" }}>
+              <th className={styles.textRight} style={{ width: "120px" }}>
                 Total Venta
               </th>
               <th
                 className={styles.textRight}
-                style={{ width: "130px", color: "#0284c7" }}
+                style={{ width: "135px", color: "#0284c7" }}
               >
                 Comisión
               </th>
@@ -82,61 +86,128 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
           <tbody>
             {paginatedRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className={styles.emptyState}>
+                <td colSpan={10} className={styles.emptyState}>
                   No hay partidas con comisión para mostrar con los filtros aplicados.
                 </td>
               </tr>
             ) : (
-              paginatedRows.map((row) => (
-                <tr key={`${row.saleId}-${row.detailId}`}>
-                  <td className={`${styles.fontMono} ${styles.fontBold}`}>
-                    {row.ticketNumber}
-                  </td>
-                  <td className={`${styles.fontMono} ${styles.cellDateTime}`}>
-                    {formatDateTime(row.createdAt)}
-                  </td>
-                  <td className={styles.fontBold}>{row.cashierName}</td>
-                  <td>{row.branchName || "Sin sucursal"}</td>
-                  <td>{row.productName}</td>
-                  <td className={`${styles.textCenter} ${styles.fontMono}`}>
-                    {formatInteger(row.quantity)}
-                  </td>
-                  <td className={`${styles.textRight} ${styles.fontMono}`}>
-                    {formatCurrency(row.unitPrice)}
-                  </td>
-                  <td className={`${styles.textRight} ${styles.fontMono}`}>
-                    {formatCurrency(row.totalPrice)}
-                  </td>
-                  <td
-                    className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
-                    style={{ color: "#0284c7" }}
-                  >
-                    {formatCurrency(row.commissionAmount)}
-                  </td>
-                </tr>
-              ))
+              paginatedRows.map((row) => {
+                const isPercent =
+                  row.commissionType === "percent" ||
+                  row.commissionType === "percentage";
+                const badgeClass = `${styles.commissionBadge} ${
+                  isPercent
+                    ? styles.commissionBadgePercent
+                    : styles.commissionBadgeFixed
+                }`.trim();
+
+                const totalPriceNum = Number(row.totalPrice || 0);
+                const commAmountNum = Number(row.commissionAmount || 0);
+                const effectivePercent =
+                  totalPriceNum > 0
+                    ? ((commAmountNum / totalPriceNum) * 100).toFixed(1)
+                    : "0.0";
+
+                return (
+                  <tr key={`${row.saleId}-${row.detailId}`}>
+                    <td className={`${styles.fontMono} ${styles.fontBold}`}>
+                      {row.ticketNumber}
+                    </td>
+                    <td className={`${styles.fontMono} ${styles.cellDateTime}`}>
+                      {formatDateTime(row.createdAt)}
+                    </td>
+                    <td className={styles.fontBold}>{row.cashierName}</td>
+                    <td>{row.branchName || "Sin sucursal"}</td>
+                    <td>
+                      <div className={styles.productCellStacked}>
+                        <span>{row.productName}</span>
+                        {row.barcode && row.barcode !== "---" && (
+                          <span className={styles.subtextBarcode}>
+                            {row.barcode}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className={styles.textCenter}>
+                      <span className={badgeClass}>
+                        {formatCommissionRule(
+                          row.commissionType,
+                          row.commissionValue
+                        )}
+                      </span>
+                    </td>
+                    <td className={`${styles.textCenter} ${styles.fontMono}`}>
+                      {formatInteger(row.quantity)}
+                    </td>
+                    <td className={`${styles.textRight} ${styles.fontMono}`}>
+                      {formatCurrency(row.unitPrice)}
+                    </td>
+                    <td className={`${styles.textRight} ${styles.fontMono}`}>
+                      {formatCurrency(row.totalPrice)}
+                    </td>
+                    <td className={styles.textRight}>
+                      <div className={styles.colCommissionPaid}>
+                        <span
+                          className={`${styles.fontBold} ${styles.fontMono}`}
+                          style={{ color: "#0284c7" }}
+                        >
+                          {formatCurrency(row.commissionAmount)}
+                        </span>
+                        <span className={styles.effectivePercentSubtext}>
+                          {effectivePercent}% de venta
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
           {totalItems > 0 && (
             <tfoot>
-              <tr className={styles.tableFooterTotal}>
-                <td colSpan={5} className={styles.footerTotalLabel}>
-                  Totales Consolidados ({totalItems} partida{totalItems !== 1 ? "s" : ""})
-                </td>
-                <td className={`${styles.textCenter} ${styles.fontMono}`}>
-                  {formatInteger(totals.quantity)}
-                </td>
-                <td />
-                <td className={`${styles.textRight} ${styles.fontMono}`}>
-                  {formatCurrency(totals.totalPrice)}
-                </td>
-                <td
-                  className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
-                  style={{ color: "#0284c7" }}
-                >
-                  {formatCurrency(totals.commissionAmount)}
-                </td>
-              </tr>
+              {(() => {
+                const overallPercent =
+                  totals.totalPrice > 0
+                    ? (
+                        (totals.commissionAmount / totals.totalPrice) *
+                        100
+                      ).toFixed(1)
+                    : "0.0";
+
+                return (
+                  <tr className={styles.tableFooterTotal}>
+                    <td colSpan={6} className={styles.footerTotalLabel}>
+                      Totales Consolidados ({totalItems} partida
+                      {totalItems !== 1 ? "s" : ""})
+                    </td>
+                    <td className={`${styles.textCenter} ${styles.fontMono}`}>
+                      {formatInteger(totals.quantity)}
+                    </td>
+                    <td
+                      className={styles.textCenter}
+                      style={{ color: "#94a3b8" }}
+                    >
+                      ---
+                    </td>
+                    <td className={`${styles.textRight} ${styles.fontMono}`}>
+                      {formatCurrency(totals.totalPrice)}
+                    </td>
+                    <td className={styles.textRight}>
+                      <div className={styles.colCommissionPaid}>
+                        <span
+                          className={`${styles.fontBold} ${styles.fontMono}`}
+                          style={{ color: "#0284c7" }}
+                        >
+                          {formatCurrency(totals.commissionAmount)}
+                        </span>
+                        <span className={styles.effectivePercentSubtext}>
+                          {overallPercent}% efectivo
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })()}
             </tfoot>
           )}
         </table>
