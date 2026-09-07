@@ -83,7 +83,7 @@ export const PageCommissionsReport = () => {
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       {/* Tarjetas KPI Globales */}
-      <CommissionsKpiCards kpis={kpis} />
+      <CommissionsKpiCards kpis={kpis} isLoading={isLoading} />
 
       {/* Toolbar de Filtros */}
       <CommissionsReportFilters
