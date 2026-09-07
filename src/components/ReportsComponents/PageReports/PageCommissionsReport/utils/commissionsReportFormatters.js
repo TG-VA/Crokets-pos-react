@@ -61,8 +61,9 @@ export const formatDateTime = formatDynamicDateTime;
 
 export const formatCommissionRule = (type, value) => {
   const num = Number(value) || 0;
-  if (type === "percent") {
-    return `${num}% por pieza`;
+  if (type === "percent" || type === "percentage") {
+    return `${num}% sobre venta`;
   }
-  return `${formatCurrency(num)} por pieza`;
+  return `${formatCurrency(num)} / pz`;
 };
+

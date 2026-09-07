@@ -54,17 +54,17 @@ export const ProductsCommissionSummaryTable = ({
             <tr>
               <th style={{ width: "130px" }}>Código</th>
               <th style={{ minWidth: "220px" }}>Producto</th>
-              <th style={{ minWidth: "150px" }}>Departamento</th>
-              <th className={styles.textCenter} style={{ width: "140px" }}>
+              <th style={{ width: "160px" }}>Departamento</th>
+              <th className={styles.textCenter} style={{ width: "150px" }}>
                 Regla Comisión
               </th>
               <th className={styles.textCenter} style={{ width: "120px" }}>
                 Piezas Vendidas
               </th>
-              <th className={styles.textRight} style={{ width: "150px" }}>
+              <th className={styles.textRight} style={{ width: "140px" }}>
                 Venta Total
               </th>
-              <th className={styles.textRight} style={{ width: "150px" }}>
+              <th className={styles.textRight} style={{ width: "160px" }}>
                 Comisión Pagada
               </th>
             </tr>
@@ -85,11 +85,22 @@ export const ProductsCommissionSummaryTable = ({
                     : styles.commissionBadgeFixed
                 }`.trim();
 
+                const totalSalesNum = Number(item.totalSales || 0);
+                const commissionPaidNum = Number(item.totalCommissionPaid || 0);
+                const effectivePercent =
+                  totalSalesNum > 0
+                    ? ((commissionPaidNum / totalSalesNum) * 100).toFixed(1)
+                    : "0.0";
+
                 return (
                   <tr key={item.productId}>
                     <td className={styles.fontMono}>{item.barcode || "S/C"}</td>
                     <td className={styles.fontBold}>{item.productName}</td>
-                    <td>{item.departmentName || "Sin depto."}</td>
+                    <td>
+                      <span className={styles.deptPill}>
+                        {item.departmentName || "Sin depto."}
+                      </span>
+                    </td>
                     <td className={styles.textCenter}>
                       <span className={badgeClass}>
                         {formatCommissionRule(item.commissionType, item.commissionValue)}
@@ -101,11 +112,18 @@ export const ProductsCommissionSummaryTable = ({
                     <td className={`${styles.textRight} ${styles.fontMono}`}>
                       {formatCurrency(item.totalSales)}
                     </td>
-                    <td
-                      className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
-                      style={{ color: "#0284c7" }}
-                    >
-                      {formatCurrency(item.totalCommissionPaid)}
+                    <td className={styles.textRight}>
+                      <div className={styles.colCommissionPaid}>
+                        <span
+                          className={`${styles.fontBold} ${styles.fontMono}`}
+                          style={{ color: "#0284c7" }}
+                        >
+                          {formatCurrency(item.totalCommissionPaid)}
+                        </span>
+                        <span className={styles.effectivePercentSubtext}>
+                          {effectivePercent}% de venta
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -114,23 +132,39 @@ export const ProductsCommissionSummaryTable = ({
           </tbody>
           {totalItems > 0 && (
             <tfoot>
-              <tr className={styles.tableFooterTotal}>
-                <td colSpan={4} className={styles.footerTotalLabel}>
-                  Totales Consolidados ({totalItems} producto{totalItems !== 1 ? "s" : ""})
-                </td>
-                <td className={`${styles.textCenter} ${styles.fontMono}`}>
-                  {formatInteger(totals.units)}
-                </td>
-                <td className={`${styles.textRight} ${styles.fontMono}`}>
-                  {formatCurrency(totals.sales)}
-                </td>
-                <td
-                  className={`${styles.textRight} ${styles.fontBold} ${styles.fontMono}`}
-                  style={{ color: "#0284c7" }}
-                >
-                  {formatCurrency(totals.commissions)}
-                </td>
-              </tr>
+              {(() => {
+                const overallPercent =
+                  totals.sales > 0
+                    ? ((totals.commissions / totals.sales) * 100).toFixed(1)
+                    : "0.0";
+
+                return (
+                  <tr className={styles.tableFooterTotal}>
+                    <td colSpan={4} className={styles.footerTotalLabel}>
+                      Totales Consolidados ({totalItems} producto{totalItems !== 1 ? "s" : ""})
+                    </td>
+                    <td className={`${styles.textCenter} ${styles.fontMono}`}>
+                      {formatInteger(totals.units)}
+                    </td>
+                    <td className={`${styles.textRight} ${styles.fontMono}`}>
+                      {formatCurrency(totals.sales)}
+                    </td>
+                    <td className={styles.textRight}>
+                      <div className={styles.colCommissionPaid}>
+                        <span
+                          className={`${styles.fontBold} ${styles.fontMono}`}
+                          style={{ color: "#0284c7" }}
+                        >
+                          {formatCurrency(totals.commissions)}
+                        </span>
+                        <span className={styles.effectivePercentSubtext}>
+                          {overallPercent}% efectivo
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })()}
             </tfoot>
           )}
         </table>

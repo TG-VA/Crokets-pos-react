@@ -457,6 +457,34 @@
   border: 1px solid #a7f3d0;
 }
 
+.deptPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 0.775rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.colCommissionPaid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.effectivePercentSubtext {
+  font-size: 0.725rem;
+  color: #64748b;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+
 /* Badges de Podio / Ranking */
 .rankBadge {
   display: inline-flex;
