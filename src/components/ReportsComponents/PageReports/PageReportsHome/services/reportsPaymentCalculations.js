@@ -46,6 +46,11 @@ export const buildMainPaymentMethod = ({
     }
   }
 
+  const totalPaymentsAmount = Object.values(amountByMethod).reduce(
+    (sum, val) => sum + toNumber(val),
+    0
+  );
+
   const topMethodId = Object.keys(
     amountByMethod
   ).sort(
@@ -59,13 +64,21 @@ export const buildMainPaymentMethod = ({
   const method =
     paymentMethodMap[topMethodId] || null;
 
+  const methodAmount = toNumber(
+    amountByMethod[topMethodId]
+  );
+
+  const sharePercentage =
+    totalPaymentsAmount > 0
+      ? Math.round((methodAmount / totalPaymentsAmount) * 100)
+      : 0;
+
   return {
     id: topMethodId,
     name:
       method?.name ||
       "Método desconocido",
-    amount: toNumber(
-      amountByMethod[topMethodId]
-    ),
+    amount: methodAmount,
+    sharePercentage,
   };
 };

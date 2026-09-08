@@ -8,15 +8,33 @@ const ReportKpiCard = ({
   description = "",
   loading = false,
   variant = "default",
+  icon = null,
 }) => {
   const variantClass =
     styles[variant] || styles.default;
+  const badgeClass =
+    styles[`${variant}Badge`] || styles.defaultBadge;
 
   return (
     <article
       className={`${styles.card} ${variantClass}`}
     >
-      <span className={styles.title}>{title}</span>
+      <div className={styles.headerRow}>
+        <span className={styles.title}>{title}</span>
+
+        {icon ? (
+          <div
+            className={`${styles.iconBadge} ${badgeClass}`}
+          >
+            <img
+              src={icon}
+              alt=""
+              aria-hidden="true"
+              className={styles.icon}
+            />
+          </div>
+        ) : null}
+      </div>
 
       {loading ? (
         <div className={styles.loadingValue} />

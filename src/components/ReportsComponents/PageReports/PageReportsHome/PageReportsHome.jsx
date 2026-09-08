@@ -8,6 +8,12 @@ import ReportsSalesChart from "./components/ReportsSalesChart/ReportsSalesChart"
 import { formatCurrency, formatNumber } from "../../../../utils/formatters";
 import useReportsDashboard from "./hooks/useReportsDashboard";
 
+import rotateIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
+import dollarIcon from "../../../../assets/icons/dollar-sign-solid-full.svg";
+import receiptIcon from "../../../../assets/icons/receipt-solid-full.svg";
+import chartIcon from "../../../../assets/icons/chart-line-solid-full.svg";
+import boxIcon from "../../../../assets/icons/box-solid-full.svg";
+
 import styles from "./PageReportsHome.module.css";
 
 const formatLastUpdate = (isoDate) => {
@@ -51,6 +57,7 @@ const PageReportsHome = () => {
       value: formatCurrency(kpis.netSalesToday),
       description: "Ventas completadas menos devoluciones",
       variant: "success",
+      icon: dollarIcon,
     },
     {
       key: "completedTickets",
@@ -58,6 +65,7 @@ const PageReportsHome = () => {
       value: formatNumber(kpis.completedTicketsToday),
       description: "Operaciones finalizadas hoy",
       variant: "default",
+      icon: receiptIcon,
     },
     {
       key: "averageTicket",
@@ -65,6 +73,7 @@ const PageReportsHome = () => {
       value: formatCurrency(kpis.averageTicketToday),
       description: "Promedio neto por venta",
       variant: "info",
+      icon: chartIcon,
     },
     {
       key: "netUnits",
@@ -72,6 +81,7 @@ const PageReportsHome = () => {
       value: formatNumber(kpis.netUnitsToday),
       description: unitsDescription,
       variant: Number(kpis.netUnitsToday || 0) < 0 ? "danger" : "success",
+      icon: boxIcon,
     },
   ];
 
@@ -106,7 +116,17 @@ const PageReportsHome = () => {
             onClick={reloadDashboard}
             disabled={loading || refreshing || !branch?.id}
           >
-            {refreshing ? "Actualizando..." : "Actualizar"}
+            <img
+              src={rotateIcon}
+              alt=""
+              aria-hidden="true"
+              className={`${styles.refreshIcon} ${
+                refreshing ? styles.spin : ""
+              }`}
+            />
+            <span>
+              {refreshing ? "Actualizando..." : "Actualizar"}
+            </span>
           </button>
         </div>
       </header>
@@ -140,6 +160,7 @@ const PageReportsHome = () => {
             description={kpi.description}
             loading={loading}
             variant={kpi.variant}
+            icon={kpi.icon}
           />
         ))}
       </section>

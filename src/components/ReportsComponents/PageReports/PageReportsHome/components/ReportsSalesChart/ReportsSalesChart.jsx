@@ -164,10 +164,16 @@ const ReportsSalesChart = ({
                         />
                       </div>
                     ) : (
-                      <div
-                        className={styles.zeroMarker}
-                        aria-label={`${item.label}: sin ventas`}
-                      />
+                      <div className={styles.zeroMarkerWrapper}>
+                        <span className={styles.tooltip}>
+                          <strong>Sin ventas</strong>
+                          <small>0 tickets</small>
+                        </span>
+                        <div
+                          className={styles.zeroMarker}
+                          aria-label={`${item.label}: sin ventas`}
+                        />
+                      </div>
                     )}
                   </div>
 
