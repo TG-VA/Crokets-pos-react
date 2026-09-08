@@ -165,14 +165,30 @@ const ReportsSalesChart = ({
                       </div>
                     ) : (
                       <div
-                        className={styles.zeroMarker}
+                        className={styles.zeroGroup}
                         aria-label={`${item.label}: sin ventas`}
-                      />
+                      >
+                        <span className={styles.tooltip}>
+                          <strong>Sin ventas</strong>
+                          <small>0 tickets</small>
+                        </span>
+
+                        <div className={styles.zeroMarker} />
+                      </div>
                     )}
                   </div>
 
-                  <span className={styles.dayLabel}>
-                    {item.label}
+                  <span
+                    className={`${styles.dayLabel} ${
+                      item.isToday ? styles.todayLabel : ""
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {item.isToday ? (
+                      <span className={styles.todayBadge}>
+                        Hoy
+                      </span>
+                    ) : null}
                   </span>
                 </div>
               );

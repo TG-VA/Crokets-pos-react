@@ -26,6 +26,7 @@ export const buildSalesChart = ({
       label: formatChartDayLabel(dateInput),
       total: 0,
       tickets: 0,
+      isToday: index === DASHBOARD_DAYS - 1,
     };
   }
 
