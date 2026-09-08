@@ -92,14 +92,10 @@ export const getDashboardDateRanges = () => {
   const todayInput = getDateInputValue(today);
   const todayRange = getCancunDayRange(todayInput);
 
-  const firstChartDay = new Date(today);
+  const baseDate = new Date(`${todayInput}T12:00:00${CANCUN_OFFSET}`);
+  baseDate.setDate(baseDate.getDate() - (DASHBOARD_DAYS - 1));
 
-  firstChartDay.setDate(
-    today.getDate() - (DASHBOARD_DAYS - 1),
-  );
-
-  const firstChartDayInput =
-    getDateInputValue(firstChartDay);
+  const firstChartDayInput = getDateInputValue(baseDate);
 
   return {
     todayInput,

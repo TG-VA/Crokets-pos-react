@@ -31,6 +31,8 @@ const ReportsAlerts = ({
   returnsToday = 0,
   returnedAmountToday = 0,
   returnedUnitsToday = 0,
+  outOfStockCount: propOutOfStockCount,
+  lowStockCount: propLowStockCount,
   outOfStockProducts = [],
   lowStockProducts = [],
   loading = false,
@@ -38,10 +40,14 @@ const ReportsAlerts = ({
   const navigate = useNavigate();
 
   const outOfStockCount =
-    outOfStockProducts.length;
+    typeof propOutOfStockCount === "number"
+      ? propOutOfStockCount
+      : outOfStockProducts.length || 0;
 
   const lowStockCount =
-    lowStockProducts.length;
+    typeof propLowStockCount === "number"
+      ? propLowStockCount
+      : lowStockProducts.length || 0;
 
   const totalInventoryAlerts =
     outOfStockCount + lowStockCount;
@@ -180,7 +186,7 @@ const ReportsAlerts = ({
                   className={
                     outOfStockCount > 0
                       ? styles.danger
-                      : ""
+                      : undefined
                   }
                 >
                   {outOfStockCount}
@@ -196,7 +202,7 @@ const ReportsAlerts = ({
                   className={
                     lowStockCount > 0
                       ? styles.warning
-                      : ""
+                      : undefined
                   }
                 >
                   {lowStockCount}
@@ -209,8 +215,20 @@ const ReportsAlerts = ({
               className={styles.inventoryButton}
               onClick={openInventoryReport}
             >
-              Ver reporte de inventario
-              <span aria-hidden="true">→</span>
+              <span>Ver reporte de inventario</span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                aria-hidden="true"
+                className={styles.buttonArrow}
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"
+                />
+              </svg>
             </button>
           </div>
         </>

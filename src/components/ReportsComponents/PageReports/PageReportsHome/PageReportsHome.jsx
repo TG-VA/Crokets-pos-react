@@ -14,6 +14,7 @@ const formatLastUpdate = (isoDate) => {
   if (!isoDate) return "";
 
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: "America/Cancun",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(isoDate));
@@ -42,6 +43,37 @@ const PageReportsHome = () => {
   )} vendidas · ${formatNumber(
     kpis.returnedUnitsToday
   )} devueltas`;
+
+  const kpiDescriptors = [
+    {
+      key: "netSales",
+      title: "Ventas netas",
+      value: formatCurrency(kpis.netSalesToday),
+      description: "Ventas completadas menos devoluciones",
+      variant: "success",
+    },
+    {
+      key: "completedTickets",
+      title: "Tickets completados",
+      value: formatNumber(kpis.completedTicketsToday),
+      description: "Operaciones finalizadas hoy",
+      variant: "default",
+    },
+    {
+      key: "averageTicket",
+      title: "Ticket promedio",
+      value: formatCurrency(kpis.averageTicketToday),
+      description: "Promedio neto por venta",
+      variant: "info",
+    },
+    {
+      key: "netUnits",
+      title: "Unidades netas",
+      value: formatNumber(kpis.netUnitsToday),
+      description: unitsDescription,
+      variant: Number(kpis.netUnitsToday || 0) < 0 ? "danger" : "success",
+    },
+  ];
 
   return (
     <section className={styles.page}>
@@ -100,45 +132,16 @@ const PageReportsHome = () => {
         className={styles.kpisGrid}
         aria-label="Indicadores principales"
       >
-        <ReportKpiCard
-          title="Ventas netas"
-          value={formatCurrency(kpis.netSalesToday)}
-          description="Ventas completadas menos devoluciones"
-          loading={loading}
-          variant="success"
-        />
-
-        <ReportKpiCard
-          title="Tickets completados"
-          value={formatNumber(
-            kpis.completedTicketsToday
-          )}
-          description="Operaciones finalizadas hoy"
-          loading={loading}
-          variant="default"
-        />
-
-        <ReportKpiCard
-          title="Ticket promedio"
-          value={formatCurrency(
-            kpis.averageTicketToday
-          )}
-          description="Promedio neto por venta"
-          loading={loading}
-          variant="info"
-        />
-
-        <ReportKpiCard
-          title="Unidades netas"
-          value={formatNumber(kpis.netUnitsToday)}
-          description={unitsDescription}
-          loading={loading}
-          variant={
-            Number(kpis.netUnitsToday || 0) < 0
-              ? "danger"
-              : "success"
-          }
-        />
+        {kpiDescriptors.map((kpi) => (
+          <ReportKpiCard
+            key={kpi.key}
+            title={kpi.title}
+            value={kpi.value}
+            description={kpi.description}
+            loading={loading}
+            variant={kpi.variant}
+          />
+        ))}
       </section>
 
       <div className={styles.mainGrid}>
@@ -157,6 +160,12 @@ const PageReportsHome = () => {
           }
           returnedUnitsToday={
             alerts.returnedUnitsToday
+          }
+          outOfStockCount={
+            alerts.outOfStockCount
+          }
+          lowStockCount={
+            alerts.lowStockCount
           }
           outOfStockProducts={
             alerts.outOfStockProducts

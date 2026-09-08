@@ -104,3 +104,22 @@ export const getPaymentMethodsByIds = async (
     return data || [];
   });
 };
+
+export const getProductById = async (productId) => {
+  if (!productId) return null;
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      id,
+      name,
+      barcode
+    `)
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data || null;
+};
+
