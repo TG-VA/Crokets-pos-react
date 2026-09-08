@@ -1,6 +1,6 @@
 .page {
   width: 100%;
-  padding: 22px 28px 28px;
+  padding: 22px 28px 40px;
 
   display: flex;
   flex-direction: column;
@@ -255,7 +255,7 @@
 
 @media (max-width: 620px) {
   .page {
-    padding: 22px 18px 28px;
+    padding: 22px 18px 36px;
   }
 
   .title {
