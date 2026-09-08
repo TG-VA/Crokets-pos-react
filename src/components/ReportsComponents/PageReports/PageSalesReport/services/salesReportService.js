@@ -20,7 +20,7 @@ export const getBranchesList = async () => {
 export const getCashiersList = async () => {
   const { data, error } = await supabase.from("users").select("id, username").eq("status", true);
   if (error) throw new Error("No se pudo cargar el catálogo de cajeros.");
-  return [{ id: "Todos", name: "TODOS LOS CAJEROS" }, ...data.map((c) => ({ id: c.id, name: c.username ? toUpper(c.username) : "SIN NOMBRE" }))];
+  return [{ id: "Todos", name: "Todos los cajeros" }, ...data.map((c) => ({ id: c.id, name: c.username ? toUpper(c.username) : "SIN NOMBRE" }))];
 };
 
 const applyFilters = (query, filters) => {

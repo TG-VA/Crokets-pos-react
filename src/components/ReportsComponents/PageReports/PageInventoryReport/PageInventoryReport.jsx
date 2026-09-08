@@ -5,6 +5,8 @@ import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { supabase } from "../../../../lib/supabaseClient";
 
+import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
+
 import InventoryKpiCards from "./components/InventoryKpiCards";
 import InventoryReportFilters from "./components/InventoryReportFilters";
 import InventoryValuationTable from "./components/InventoryValuationTable";
@@ -98,7 +100,7 @@ const PageInventoryReport = () => {
 
   return (
     <div className={styles.pageContainer}>
-      {/* Cabecera */}
+      {/* Cabecera Principal */}
       <header className={styles.headerCard}>
         <div className={styles.headerTitleGroup}>
           <h1 className={styles.title}>Reporte de Inventario</h1>
@@ -108,22 +110,16 @@ const PageInventoryReport = () => {
         </div>
 
         <div className={styles.headerActions}>
-          <div className={styles.branchSelectContainer}>
-            <label className={styles.branchSelectLabel}>SUCURSAL:</label>
-            <select
-              value={selectedBranchId}
-              onChange={handleBranchChange}
-              disabled={loadingBranches}
-              className={styles.branchSelectInput}
-            >
-              <option value="ALL">Todas las sucursales</option>
-              {branchesList.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button
+            type="button"
+            className={styles.exportBtn}
+            onClick={handleExport}
+            disabled={isLoading || isExporting || (!reportData || reportData.length === 0)}
+            title="Descargar reporte de inventario en Excel"
+          >
+            <img src={fileImportIcon} alt="" className={styles.btnIcon} />
+            {isExporting ? "Exportando..." : "Exportar Excel"}
+          </button>
         </div>
       </header>
 
@@ -135,6 +131,10 @@ const PageInventoryReport = () => {
 
       {/* Barra de Filtros */}
       <InventoryReportFilters
+        branchesList={branchesList}
+        selectedBranchId={selectedBranchId}
+        onSelectBranch={handleBranchChange}
+        loadingBranches={loadingBranches}
         departments={departments}
         selectedDepartment={selectedDepartment}
         onSelectDepartment={setSelectedDepartment}
@@ -142,8 +142,12 @@ const PageInventoryReport = () => {
         onSelectStockStatus={setSelectedStockStatus}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onExportExcel={handleExport}
-        isExporting={isExporting}
+        onClear={() => {
+          setSelectedDepartment("ALL");
+          setSelectedStockStatus("ALL");
+          setSearchTerm("");
+          setSelectedBranchId(branch?.id || "ALL");
+        }}
         isLoading={isLoading}
       />
 

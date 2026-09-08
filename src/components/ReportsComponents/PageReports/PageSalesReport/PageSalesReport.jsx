@@ -7,11 +7,14 @@ import { formatCurrency } from "../../../../utils/formatters";
 import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./PageSalesReport.module.css";
+import rotateLeftIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
+import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
 
 const PageSalesReport = () => {
   const {
     reportModal, closeReportModal, // Desestructuramos el Modal
     dateRange, setDateRange, startDate, endDate,
+    activeDatePreset, setQuickDatePreset,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
     discountFilter, setDiscountFilter, branchesList, cashiersList,
@@ -24,101 +27,177 @@ const PageSalesReport = () => {
 
   return (
     <div className={styles.reportContainer}>
-      <div className={styles.header}>
+      {/* Cabecera Principal */}
+      <header className={styles.header}>
         <div className={styles.titleGroup}>
-          <h2>Reporte de Ventas</h2>
-          <p>Auditoría de ingresos y transacciones generadas en un periodo.</p>
+          <h1 className={styles.title}>Reporte de Ventas</h1>
+          <p className={styles.description}>Auditoría de ingresos y transacciones generadas en un periodo.</p>
         </div>
         
         <div className={styles.actionButtons}>
           <button 
+            type="button"
             className={styles.exportDetailedBtn} 
             onClick={handleExportDetailedExcel} 
             disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
+            title="Exportar todas las ventas desglosadas a nivel partida"
           >
+            <img src={fileImportIcon} alt="" className={styles.btnIcon} />
             {isExportingDetailed ? "Procesando..." : "Exportar Detalle"}
           </button>
           
           <button 
+            type="button"
             className={styles.exportBtn} 
             onClick={handleExportExcel} 
             disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
+            title="Exportar resumen consolidado de ventas"
           >
+            <img src={fileImportIcon} alt="" className={styles.btnIcon} />
             {isExportingSummary ? "Procesando..." : "Exportar Resumen"}
           </button>
         </div>
-      </div>
+      </header>
 
+      {/* Barra de Filtros en 2 Filas Semánticas */}
       <div className={styles.filtersSection}>
-        <div className={styles.filterGroup}>
-          <label>Rango de Fechas:</label>
-          <div className={styles.datePickerWrapper}>
-            <DatePicker
-              selectsRange={true}
-              startDate={startDate}
-              endDate={endDate}
-              maxDate={new Date()}
-              onChange={(update) => setDateRange(update)}
-              dateFormat="dd/MM/yyyy"
-              className={styles.datePickerInput}
-              placeholderText="Selecciona un rango..."
-            />
+        {/* Fila 1: Filtro de Periodo Temporal y Acción Global Limpiar */}
+        <div className={styles.filtersTopRow}>
+          <div className={styles.dateFilterGroup}>
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Rango de fechas:</label>
+              <div className={styles.datePickerWrapper}>
+                <DatePicker
+                  selectsRange
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(update) => setDateRange(update)}
+                  isClearable={false}
+                  dateFormat="dd/MM/yyyy"
+                  className={styles.datePickerInput}
+                />
+              </div>
+            </div>
+
+            {/* Píldoras de Presets Rápidos */}
+            <div className={styles.presetsInlineGroup}>
+              <button
+                type="button"
+                className={`${styles.presetPill} ${
+                  activeDatePreset === "today" ? styles.presetPillActive : ""
+                }`.trim()}
+                onClick={() => setQuickDatePreset("today")}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className={`${styles.presetPill} ${
+                  activeDatePreset === "yesterday" ? styles.presetPillActive : ""
+                }`.trim()}
+                onClick={() => setQuickDatePreset("yesterday")}
+              >
+                Ayer
+              </button>
+              <button
+                type="button"
+                className={`${styles.presetPill} ${
+                  activeDatePreset === "this_week" ? styles.presetPillActive : ""
+                }`.trim()}
+                onClick={() => setQuickDatePreset("this_week")}
+              >
+                Esta semana
+              </button>
+              <button
+                type="button"
+                className={`${styles.presetPill} ${
+                  activeDatePreset === "this_month" ? styles.presetPillActive : ""
+                }`.trim()}
+                onClick={() => setQuickDatePreset("this_month")}
+              >
+                Este mes
+              </button>
+              <button
+                type="button"
+                className={`${styles.presetPill} ${
+                  activeDatePreset === "last_month" ? styles.presetPillActive : ""
+                }`.trim()}
+                onClick={() => setQuickDatePreset("last_month")}
+              >
+                Mes pasado
+              </button>
+            </div>
+          </div>
+
+          {/* Botón Limpiar alineado a la derecha en la fila superior */}
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className={`${styles.clearBtn} ${
+              hasActiveFilters ? styles.clearBtnActive : ""
+            }`.trim()}
+            title={
+              hasActiveFilters
+                ? "Restablecer filtros activos"
+                : "Filtros en estado predeterminado"
+            }
+          >
+            <img src={rotateLeftIcon} alt="" className={styles.clearBtnIcon} />
+            Limpiar
+            {hasActiveFilters && <span className={styles.activeFilterDot} />}
+          </button>
+        </div>
+
+        {/* Fila 2: Selectores de Filtros Operativos de la Venta */}
+        <div className={styles.filtersBottomRow}>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Sucursal:</label>
+            <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className={styles.selectInput}>
+              {branchesList.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Cajero:</label>
+            <select value={selectedCashier} onChange={(e) => setSelectedCashier(e.target.value)} className={styles.selectInput}>
+              {cashiersList.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Estado:</label>
+            <select value={saleStatus} onChange={(e) => setSaleStatus(e.target.value)} className={styles.selectInput}>
+              <option value="Todos">Todos los estados</option>
+              <option value="Completada">Completadas</option>
+              <option value="Devolución Parcial">Devoluciones Parciales</option>
+              <option value="Cancelada">Canceladas</option>
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Pago:</label>
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={styles.selectInput}>
+              <option value="Todos">Todos los métodos</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Terminal">Terminal</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Mixto">Mixto</option>
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Descuento:</label>
+            <select value={discountFilter} onChange={(e) => setDiscountFilter(e.target.value)} className={styles.selectInput}>
+              <option value="Todos">Todos los descuentos</option>
+              <option value="ConDescuento">Con descuento</option>
+              <option value="SinDescuento">Sin descuento</option>
+            </select>
           </div>
         </div>
-
-        <div className={styles.filterGroup}>
-          <label>Sucursal:</label>
-          <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className={styles.selectInput}>
-            {branchesList.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label>Cajero:</label>
-          <select value={selectedCashier} onChange={(e) => setSelectedCashier(e.target.value)} className={styles.selectInput}>
-            {cashiersList.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label>Estado:</label>
-          <select value={saleStatus} onChange={(e) => setSaleStatus(e.target.value)} className={styles.selectInput}>
-            <option value="Todos">Todos</option>
-            <option value="Completada">Completadas</option>
-            <option value="Devolución Parcial">Devoluciones Parciales</option>
-            <option value="Cancelada">Canceladas</option>
-          </select>
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label>Pago:</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={styles.selectInput}>
-            <option value="Todos">Todos</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Terminal">Terminal</option>
-            <option value="Transferencia">Transferencia</option>
-            <option value="Mixto">Mixto</option>
-          </select>
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label>Descuento:</label>
-          <select value={discountFilter} onChange={(e) => setDiscountFilter(e.target.value)} className={styles.selectInput}>
-            <option value="Todos">Todos</option>
-            <option value="ConDescuento">Con descuento</option>
-            <option value="SinDescuento">Sin descuento</option>
-          </select>
-        </div>
-
-        {hasActiveFilters && (
-          <button className={styles.clearFiltersBtn} onClick={handleClearFilters}>
-            Limpiar filtros
-          </button>
-        )}
       </div>
 
       <div className={styles.kpiGrid}>

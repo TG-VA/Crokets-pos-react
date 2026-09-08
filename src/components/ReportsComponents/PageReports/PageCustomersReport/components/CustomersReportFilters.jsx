@@ -7,6 +7,7 @@ import React from "react";
 import styles from "./CustomersComponents.module.css";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import rotateLeftIcon from "../../../../../assets/icons/rotate-left-solid-full.svg";
+import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const CustomersReportFilters = ({
   branchesList = [],
@@ -20,6 +21,13 @@ const CustomersReportFilters = ({
   setSearchTerm,
   activeTab = "RANKING",
 }) => {
+  const hasActiveFilters = Boolean(
+    (searchTerm || "").trim() ||
+    (selectedBranchId && selectedBranchId !== "ALL") ||
+    (customerType && customerType !== "ALL") ||
+    (riskFilter && riskFilter !== "ALL")
+  );
+
   const handleReset = () => {
     setSelectedBranchId("ALL");
     setCustomerType("ALL");
@@ -97,6 +105,16 @@ const CustomersReportFilters = ({
               }
               className={`${styles.searchInput} ${styles.searchInputWithIcon}`.trim()}
             />
+            {Boolean(searchTerm) && (
+              <button
+                type="button"
+                className={styles.searchClearBtn}
+                onClick={() => setSearchTerm("")}
+                title="Borrar texto de búsqueda"
+              >
+                <img src={xmarkIcon} alt="" className={styles.searchClearIcon} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -104,11 +122,18 @@ const CustomersReportFilters = ({
         <button
           type="button"
           onClick={handleReset}
-          className={styles.btnReset}
-          title="Restablecer filtros"
+          className={`${styles.clearBtn} ${
+            hasActiveFilters ? styles.clearBtnActive : ""
+          }`.trim()}
+          title={
+            hasActiveFilters
+              ? "Restablecer filtros activos"
+              : "Filtros en estado predeterminado"
+          }
         >
-          <img src={rotateLeftIcon} alt="" style={{ width: 14, height: 14 }} />
+          <img src={rotateLeftIcon} alt="" className={styles.clearBtnIcon} />
           Limpiar
+          {hasActiveFilters && <span className={styles.activeFilterDot} />}
         </button>
       </div>
     </div>
