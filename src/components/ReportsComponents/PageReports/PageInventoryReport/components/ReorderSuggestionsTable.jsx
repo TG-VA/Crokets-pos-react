@@ -1,17 +1,24 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
-import { ITEMS_PER_PAGE, getStatusBadge } from "../utils/inventoryReportUtils";
+import { getStatusBadge } from "../utils/inventoryReportUtils";
 
 const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+  const totalPages = Math.ceil(items.length / pageSize) || 1;
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Resetear a página 1 cuando la longitud o el filtrado de items cambie
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items.length]);
 
   const currentItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [items, currentPage]);
+    const startIndex = (safeCurrentPage - 1) * pageSize;
+    return items.slice(startIndex, startIndex + pageSize);
+  }, [items, safeCurrentPage, pageSize]);
 
   const totalEstimatedInvestment = useMemo(() => {
     return items.reduce((acc, item) => acc + (item.estimatedInvestment || 0), 0);
@@ -103,24 +110,47 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {items.length > 0 && (
         <div className={styles.paginationBar}>
-          <span>
-            Página {currentPage} de {totalPages} ({items.length} sugerencias)
-          </span>
+          <div className={styles.paginationInfo}>
+            <span>
+              Mostrando {Math.min((safeCurrentPage - 1) * pageSize + 1, items.length)} a{" "}
+              {Math.min(safeCurrentPage * pageSize, items.length)} de {items.length} sugerencias
+            </span>
+            <span className={styles.paginationDivider}>|</span>
+            <label className={styles.pageSizeLabel}>
+              Por página:
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className={styles.pageSizeSelect}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </label>
+          </div>
+
           <div className={styles.paginationActions}>
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={currentPage === 1}
+              disabled={safeCurrentPage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             >
               Anterior
             </button>
+            <span className={styles.pageIndicator}>
+              Página {safeCurrentPage} de {totalPages}
+            </span>
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={currentPage >= totalPages}
+              disabled={safeCurrentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             >
               Siguiente

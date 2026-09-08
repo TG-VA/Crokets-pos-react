@@ -260,7 +260,12 @@ const PageInventoryReport = () => {
       )}
 
       {activeTab === "exhausted" && (
-        <InventoryValuationTable items={filteredExhausted} isLoading={isLoading} />
+        <InventoryValuationTable
+          items={filteredExhausted}
+          isLoading={isLoading}
+          title="Productos Agotados"
+          subtitle={`Mostrando ${filteredExhausted.length} producto(s) con stock en cero`}
+        />
       )}
     </div>
   );
