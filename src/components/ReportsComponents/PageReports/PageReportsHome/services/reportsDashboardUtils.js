@@ -74,6 +74,14 @@ export const getDateInputValue = (date) => {
   }).format(targetDate);
 };
 
+export const shiftDateInput = (dateInput, offsetDays = 0) => {
+  if (!dateInput) return "";
+  const [year, month, day] = dateInput.split("-").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day + offsetDays));
+
+  return utcDate.toISOString().slice(0, 10);
+};
+
 export const getCancunDayRange = (dateInput) => {
   return {
     start: new Date(
@@ -92,10 +100,10 @@ export const getDashboardDateRanges = () => {
   const todayInput = getDateInputValue(today);
   const todayRange = getCancunDayRange(todayInput);
 
-  const baseDate = new Date(`${todayInput}T12:00:00${CANCUN_OFFSET}`);
-  baseDate.setDate(baseDate.getDate() - (DASHBOARD_DAYS - 1));
-
-  const firstChartDayInput = getDateInputValue(baseDate);
+  const firstChartDayInput = shiftDateInput(
+    todayInput,
+    -(DASHBOARD_DAYS - 1)
+  );
 
   return {
     todayInput,

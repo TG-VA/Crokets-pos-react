@@ -1,10 +1,9 @@
 import {
-  CANCUN_OFFSET,
   DASHBOARD_DAYS,
   formatChartDayLabel,
   getDateInputFromIso,
-  getDateInputValue,
   isCompletedSale,
+  shiftDateInput,
   toNumber,
 } from "./reportsDashboardUtils";
 
@@ -20,13 +19,7 @@ export const buildSalesChart = ({
     index < DASHBOARD_DAYS;
     index += 1
   ) {
-    const date = new Date(
-      `${firstDateInput}T12:00:00${CANCUN_OFFSET}`
-    );
-
-    date.setDate(date.getDate() + index);
-
-    const dateInput = getDateInputValue(date);
+    const dateInput = shiftDateInput(firstDateInput, index);
 
     totalsByDate[dateInput] = {
       date: dateInput,
