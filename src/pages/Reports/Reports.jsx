@@ -13,6 +13,7 @@ import PageCashReport from "../../components/ReportsComponents/PageReports/PageC
 import PageCustomersReport from "../../components/ReportsComponents/PageReports/PageCustomersReport/PageCustomersReport";
 import PageInvoicesReport from "../../components/ReportsComponents/PageReports/PageInvoicesReport/PageInvoicesReport";
 import PageProfitabilityReport from "../../components/ReportsComponents/PageReports/PageProfitabilityReport/PageProfitabilityReport";
+import PageCommissionsReport from "../../components/ReportsComponents/PageReports/PageCommissionsReport/PageCommissionsReport";
 
 import styles from "./Reports.module.css";
 
@@ -36,6 +37,7 @@ const Reports = () => {
             path="rentabilidad"
             element={<PageProfitabilityReport />}
           />
+          <Route path="comisiones" element={<PageCommissionsReport />} />
 
           <Route path="*" element={<Navigate to="/reports" replace />} />
         </Routes>
