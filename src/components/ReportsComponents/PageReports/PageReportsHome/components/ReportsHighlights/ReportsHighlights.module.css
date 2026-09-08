@@ -68,10 +68,29 @@
 
 .cardLabel {
   color: #1092b1;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+}
+
+.iconBadge {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(16, 146, 177, 0.08);
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.headerIcon {
+  width: 13px;
+  height: 13px;
+  opacity: 0.75;
 }
 
 .cardContent {
@@ -105,8 +124,7 @@
   margin-top: 10px;
 }
 
-.metric,
-.singleMetric {
+.metric {
   min-width: 0;
 
   padding: 12px 14px;
@@ -120,10 +138,6 @@
   border-radius: 9px;
 
   box-sizing: border-box;
-}
-
-.singleMetric {
-  margin-top: 10px;
 }
 
 .metricLabel {
@@ -143,7 +157,7 @@
 
 .primaryAmount {
   color: #1092b1;
-  font-size: 21px;
+  font-size: 16px;
   font-weight: 800;
 
   overflow-wrap: anywhere;

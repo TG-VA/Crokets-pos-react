@@ -1,12 +1,15 @@
 import { toNumber } from "./reportsDashboardUtils";
 
-export const buildTopProduct = ({
+export const getTopProductStats = ({
   detailRows = [],
   validSaleIds,
   returnedQuantityByProduct = {},
   returnedAmountByProduct = {},
-  productRows = [],
 }) => {
+  if (!(validSaleIds instanceof Set)) {
+    return null;
+  }
+
   const quantityByProduct = {};
   const amountByProduct = {};
 
@@ -72,17 +75,8 @@ export const buildTopProduct = ({
     return null;
   }
 
-  const product = productRows.find(
-    (row) => row.id === topProductId
-  );
-
   return {
-    id: topProductId,
-    name:
-      product?.name ||
-      product?.barcode ||
-      "Producto",
-    barcode: product?.barcode || "",
+    productId: topProductId,
     quantity: toNumber(
       quantityByProduct[topProductId]
     ),
@@ -91,3 +85,45 @@ export const buildTopProduct = ({
     ),
   };
 };
+
+export const formatTopProduct = (stats, product = null) => {
+  if (!stats?.productId) return null;
+
+  return {
+    id: stats.productId,
+    name:
+      product?.name ||
+      product?.barcode ||
+      "Producto",
+    barcode: product?.barcode || "",
+    quantity: stats.quantity,
+    amount: stats.amount,
+  };
+};
+
+export const buildTopProduct = ({
+  detailRows = [],
+  validSaleIds,
+  returnedQuantityByProduct = {},
+  returnedAmountByProduct = {},
+  productRows = [],
+  product = null,
+}) => {
+  const stats = getTopProductStats({
+    detailRows,
+    validSaleIds,
+    returnedQuantityByProduct,
+    returnedAmountByProduct,
+  });
+
+  if (!stats) return null;
+
+  const matchedProduct =
+    product ||
+    productRows.find(
+      (row) => row.id === stats.productId
+    );
+
+  return formatTopProduct(stats, matchedProduct);
+};
+

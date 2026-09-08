@@ -4,8 +4,11 @@ export {
 
 export {
   buildTopProduct,
+  getTopProductStats,
+  formatTopProduct,
 } from "./reportsTopProductCalculations";
 
 export {
   buildMainPaymentMethod,
 } from "./reportsPaymentCalculations";
+

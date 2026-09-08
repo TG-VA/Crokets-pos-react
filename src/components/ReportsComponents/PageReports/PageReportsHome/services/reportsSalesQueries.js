@@ -1,11 +1,12 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchInChunks } from "./reportsDashboardUtils";
 
 export const getSalesRows = async ({
   branchId,
   start,
   end,
 }) => {
-  const { data, error } = await supabase
+  let query = supabase
     .from("sales")
     .select(`
       id,
@@ -17,10 +18,26 @@ export const getSalesRows = async ({
       status,
       branch_id
     `)
-    .eq("branch_id", branchId)
     .gte("sale_date", start)
     .lte("sale_date", end)
     .order("sale_date", { ascending: true });
+
+  if (branchId && branchId !== "ALL" && branchId !== "Todas") {
+    query = query.eq("branch_id", branchId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  return data || [];
+};
+
+export const getBranchesCatalog = async () => {
+  const { data, error } = await supabase
+    .from("branches")
+    .select("id, name")
+    .order("name", { ascending: true });
 
   if (error) throw error;
 
@@ -30,42 +47,82 @@ export const getSalesRows = async ({
 export const getSaleDetails = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_details")
-    .select(`
-      sale_id,
-      product_id,
-      quantity,
-      total_price
-    `)
-    .in("sale_id", saleIds);
+  return fetchInChunks(saleIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_details")
+      .select(`
+        sale_id,
+        product_id,
+        quantity,
+        total_price
+      `)
+      .in("sale_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getSalePayments = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_payments")
-    .select(`
-      sale_id,
-      amount,
-      currency,
-      exchange_rate,
-      payment_method_id
-    `)
-    .in("sale_id", saleIds);
+  return fetchInChunks(saleIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_payments")
+      .select(`
+        sale_id,
+        amount,
+        currency,
+        exchange_rate,
+        payment_method_id
+      `)
+      .in("sale_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getProductsByIds = async (productIds) => {
   if (!productIds.length) return [];
+
+  return fetchInChunks(productIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        barcode
+      `)
+      .in("id", chunk);
+
+    if (error) throw error;
+
+    return data || [];
+  });
+};
+
+export const getPaymentMethodsByIds = async (
+  paymentMethodIds,
+) => {
+  if (!paymentMethodIds.length) return [];
+
+  return fetchInChunks(paymentMethodIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("payment_methods")
+      .select("id, name")
+      .in("id", chunk);
+
+    if (error) throw error;
+
+    return data || [];
+  });
+};
+
+export const getProductById = async (productId) => {
+  if (!productId) return null;
 
   const { data, error } = await supabase
     .from("products")
@@ -74,24 +131,11 @@ export const getProductsByIds = async (productIds) => {
       name,
       barcode
     `)
-    .in("id", productIds);
+    .eq("id", productId)
+    .maybeSingle();
 
   if (error) throw error;
 
-  return data || [];
+  return data || null;
 };
 
-export const getPaymentMethodsByIds = async (
-  paymentMethodIds,
-) => {
-  if (!paymentMethodIds.length) return [];
-
-  const { data, error } = await supabase
-    .from("payment_methods")
-    .select("id, name")
-    .in("id", paymentMethodIds);
-
-  if (error) throw error;
-
-  return data || [];
-};

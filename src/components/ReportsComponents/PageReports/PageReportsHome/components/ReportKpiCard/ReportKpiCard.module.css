@@ -2,21 +2,30 @@
   position: relative;
 
   min-width: 0;
-  min-height: 128px;
-  padding: 18px 20px;
+  min-height: 124px;
+  padding: 16px 18px;
 
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 
   background: #ffffff;
   border: 1px solid #e1e6e9;
   border-radius: 11px;
 
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.04);
 
   box-sizing: border-box;
   overflow: hidden;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.07);
 }
 
 .card::before {
@@ -32,11 +41,56 @@
   background: #1092b1;
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .title {
   color: #536169;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.iconBadge {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.icon {
+  width: 13px;
+  height: 13px;
+  opacity: 0.75;
+}
+
+.defaultBadge {
+  background: rgba(16, 146, 177, 0.1);
+}
+
+.successBadge {
+  background: rgba(41, 149, 96, 0.1);
+}
+
+.infoBadge {
+  background: rgba(84, 114, 189, 0.1);
+}
+
+.warningBadge {
+  background: rgba(220, 147, 22, 0.1);
+}
+
+.dangerBadge {
+  background: rgba(203, 77, 77, 0.1);
 }
 
 .value {
