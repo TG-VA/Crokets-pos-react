@@ -12,6 +12,7 @@ import {
 } from "./reportsDashboardCalculations";
 
 import {
+  getBranchesCatalog,
   getProductById,
   getPaymentMethodsByIds,
   getSaleDetails,
@@ -44,16 +45,15 @@ import {
   getBranchInventory,
 } from "./reportsInventoryService";
 
-export { getEmptyReportsDashboard };
+export { getEmptyReportsDashboard, getBranchesCatalog };
 
 export const getReportsDashboard = async (
-  branchId
+  branchId = "ALL"
 ) => {
-  if (!branchId) {
-    throw new Error(
-      "No se detectó la sucursal activa."
-    );
-  }
+  const isConsolidated =
+    !branchId ||
+    branchId === "ALL" ||
+    branchId === "Todas";
 
   const {
     todayInput,
@@ -224,7 +224,8 @@ export const getReportsDashboard = async (
 
   const inventoryAlerts =
     buildInventoryAlerts(
-      inventoryRows
+      inventoryRows,
+      isConsolidated
     );
 
   return {
@@ -280,7 +281,8 @@ export const getReportsDashboard = async (
     },
 
     meta: {
-      branchId,
+      branchId: isConsolidated ? "ALL" : branchId,
+      isConsolidated,
 
       generatedAt:
         new Date().toISOString(),

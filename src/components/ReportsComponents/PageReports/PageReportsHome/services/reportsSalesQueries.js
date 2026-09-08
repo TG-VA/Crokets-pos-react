@@ -6,7 +6,7 @@ export const getSalesRows = async ({
   start,
   end,
 }) => {
-  const { data, error } = await supabase
+  let query = supabase
     .from("sales")
     .select(`
       id,
@@ -18,10 +18,26 @@ export const getSalesRows = async ({
       status,
       branch_id
     `)
-    .eq("branch_id", branchId)
     .gte("sale_date", start)
     .lte("sale_date", end)
     .order("sale_date", { ascending: true });
+
+  if (branchId && branchId !== "ALL" && branchId !== "Todas") {
+    query = query.eq("branch_id", branchId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  return data || [];
+};
+
+export const getBranchesCatalog = async () => {
+  const { data, error } = await supabase
+    .from("branches")
+    .select("id, name")
+    .order("name", { ascending: true });
 
   if (error) throw error;
 

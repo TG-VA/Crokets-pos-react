@@ -79,24 +79,33 @@ export const getTodayCancelledSales = async ({
 
   if (!saleIds.length) return 0;
 
-  const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
-    const {
-      data,
-      error: salesError,
-    } = await supabase
-      .from("sales")
-      .select("id")
-      .in("id", chunk)
-      .eq("branch_id", branchId);
+  const isSpecificBranch =
+    Boolean(branchId) &&
+    branchId !== "ALL" &&
+    branchId !== "Todas";
 
-    if (salesError) {
-      throw salesError;
-    }
+  if (isSpecificBranch) {
+    const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
+      const {
+        data,
+        error: salesError,
+      } = await supabase
+        .from("sales")
+        .select("id")
+        .in("id", chunk)
+        .eq("branch_id", branchId);
 
-    return data || [];
-  });
+      if (salesError) {
+        throw salesError;
+      }
 
-  return (salesRows || []).length;
+      return data || [];
+    });
+
+    return (salesRows || []).length;
+  }
+
+  return saleIds.length;
 };
 
 export const getTodayReturns = async ({
@@ -138,34 +147,43 @@ export const getTodayReturns = async ({
     };
   }
 
-  const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
-    const {
-      data,
-      error: salesError,
-    } = await supabase
-      .from("sales")
-      .select("id")
-      .in("id", chunk)
-      .eq("branch_id", branchId);
+  const isSpecificBranch =
+    Boolean(branchId) &&
+    branchId !== "ALL" &&
+    branchId !== "Todas";
 
-    if (salesError) {
-      throw salesError;
-    }
+  let applicableReturns = returnRows || [];
 
-    return data || [];
-  });
+  if (isSpecificBranch) {
+    const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
+      const {
+        data,
+        error: salesError,
+      } = await supabase
+        .from("sales")
+        .select("id")
+        .in("id", chunk)
+        .eq("branch_id", branchId);
 
-  const validSaleIds = new Set(
-    (salesRows || []).map(
-      (row) => row.id
-    )
-  );
+      if (salesError) {
+        throw salesError;
+      }
 
-  const branchReturns = (
-    returnRows || []
-  ).filter((row) =>
-    validSaleIds.has(row.sale_id)
-  );
+      return data || [];
+    });
+
+    const validSaleIds = new Set(
+      (salesRows || []).map(
+        (row) => row.id
+      )
+    );
+
+    applicableReturns = (
+      returnRows || []
+    ).filter((row) =>
+      validSaleIds.has(row.sale_id)
+    );
+  }
 
   const returnIds = uniqueValues(
     branchReturns.map(

@@ -32,7 +32,10 @@ const PageReportsHome = () => {
     loading,
     refreshing,
     error,
-    branch,
+    branches,
+    selectedBranchId,
+    setSelectedBranchId,
+    selectedBranch,
     reloadDashboard,
   } = useReportsDashboard();
 
@@ -85,6 +88,13 @@ const PageReportsHome = () => {
     },
   ];
 
+  const branchDescription =
+    selectedBranchId === "ALL"
+      ? "Indicadores consolidados de todas las sucursales."
+      : `Indicadores principales de la sucursal ${
+          selectedBranch?.name || ""
+        }.`;
+
   return (
     <section className={styles.page}>
       <header className={styles.header}>
@@ -98,12 +108,32 @@ const PageReportsHome = () => {
           </h1>
 
           <p className={styles.description}>
-            Indicadores principales de la sucursal
-            {branch?.name ? ` ${branch.name}` : " activa"}.
+            {branchDescription}
           </p>
         </div>
 
         <div className={styles.headerActions}>
+          {branches.length > 1 ? (
+            <div className={styles.branchSelectWrapper}>
+              <select
+                id="dashboard-branch-select"
+                className={styles.branchSelect}
+                value={selectedBranchId}
+                onChange={(e) =>
+                  setSelectedBranchId(e.target.value)
+                }
+                disabled={loading || refreshing}
+                aria-label="Seleccionar sucursal"
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           {meta.generatedAt ? (
             <span className={styles.lastUpdate}>
               Actualizado {formatLastUpdate(meta.generatedAt)}
@@ -114,7 +144,7 @@ const PageReportsHome = () => {
             type="button"
             className={styles.refreshButton}
             onClick={reloadDashboard}
-            disabled={loading || refreshing || !branch?.id}
+            disabled={loading || refreshing}
           >
             <img
               src={rotateIcon}

@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useBranch } from "../../../../../contexts/BranchContext";
-
 import {
+  getBranchesCatalog,
   getEmptyReportsDashboard,
   getReportsDashboard,
 } from "../services/reportsDashboardService";
 
 const AUTO_REFRESH_INTERVAL = 300_000; // 5 minutos
 
-const useReportsDashboard = () => {
-  const { branch } = useBranch();
+const ALL_BRANCHES_OPTION = {
+  id: "ALL",
+  name: "Todas las sucursales (Consolidado)",
+};
 
-  const branchId = branch?.id ?? null;
+const useReportsDashboard = () => {
+  const [branches, setBranches] = useState([ALL_BRANCHES_OPTION]);
+  const [selectedBranchId, setSelectedBranchId] = useState("ALL");
 
   const [dashboard, setDashboard] = useState(() =>
     getEmptyReportsDashboard()
@@ -26,18 +29,37 @@ const useReportsDashboard = () => {
   const requestIdRef = useRef(0);
   const lastFetchTimeRef = useRef(0);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    getBranchesCatalog()
+      .then((items) => {
+        if (!isMounted) return;
+
+        setBranches([
+          ALL_BRANCHES_OPTION,
+          ...(items || []).map((item) => ({
+            id: item.id,
+            name: item.name,
+          })),
+        ]);
+      })
+      .catch((catalogError) => {
+        console.error(
+          "Error al cargar catálogo de sucursales:",
+          catalogError
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const loadDashboard = useCallback(
     async ({ silent = false } = {}) => {
       const currentRequestId = requestIdRef.current + 1;
       requestIdRef.current = currentRequestId;
-
-      if (!branchId) {
-        setDashboard(getEmptyReportsDashboard());
-        setLoading(false);
-        setRefreshing(false);
-        setError("");
-        return;
-      }
 
       if (silent) {
         setRefreshing(true);
@@ -49,7 +71,7 @@ const useReportsDashboard = () => {
       lastFetchTimeRef.current = Date.now();
 
       try {
-        const result = await getReportsDashboard(branchId);
+        const result = await getReportsDashboard(selectedBranchId);
 
         const isCurrentRequest =
           currentRequestId === requestIdRef.current;
@@ -88,11 +110,10 @@ const useReportsDashboard = () => {
         setRefreshing(false);
       }
     },
-    [branchId]
+    [selectedBranchId]
   );
 
   const reloadDashboard = useCallback(async () => {
-    // Evitar spam de clics si ya está cargando o si se ejecutó hace menos de 4 segundos
     const now = Date.now();
     if (loading || refreshing || now - lastFetchTimeRef.current < 4000) {
       return;
@@ -116,13 +137,10 @@ const useReportsDashboard = () => {
     setDashboard(getEmptyReportsDashboard());
 
     loadDashboard();
-  }, [branchId, loadDashboard]);
+  }, [selectedBranchId, loadDashboard]);
 
   useEffect(() => {
-    if (!branchId) return undefined;
-
     const intervalId = window.setInterval(() => {
-      // Solo refrescar en segundo plano si la pestaña está visible
       if (typeof document !== "undefined" && document.hidden) {
         return;
       }
@@ -135,17 +153,23 @@ const useReportsDashboard = () => {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [branchId, loadDashboard]);
+  }, [selectedBranchId, loadDashboard]);
+
+  const selectedBranch =
+    branches.find((b) => b.id === selectedBranchId) || ALL_BRANCHES_OPTION;
 
   return {
     dashboard,
     loading,
     refreshing,
     error,
-    branch,
-    branchId,
+    branches,
+    selectedBranchId,
+    setSelectedBranchId,
+    selectedBranch,
     reloadDashboard,
   };
 };
 
 export default useReportsDashboard;
+
