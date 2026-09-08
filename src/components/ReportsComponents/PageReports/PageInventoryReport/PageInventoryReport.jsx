@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import styles from "./PageInventoryReport.module.css";
 import subStyles from "./components/InventoryComponents.module.css";
 import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
@@ -15,17 +16,25 @@ import { useInventoryReport } from "./hooks/useInventoryReport";
 
 const PageInventoryReport = () => {
   const { branch, setBranch } = useBranch();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const branchParam = searchParams.get("branchId") || location.state?.branchId;
 
   const [branchesList, setBranchesList] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
-  const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
+  const [selectedBranchId, setSelectedBranchId] = useState(
+    branchParam || branch?.id || "ALL"
+  );
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    if (branch?.id) {
+    if (branchParam) {
+      setSelectedBranchId(branchParam);
+    } else if (branch?.id) {
       setSelectedBranchId(branch.id);
     }
-  }, [branch?.id]);
+  }, [branch?.id, branchParam]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -51,6 +60,7 @@ const PageInventoryReport = () => {
   const handleBranchChange = (e) => {
     const newBranchId = e.target.value;
     setSelectedBranchId(newBranchId);
+    setSearchParams(newBranchId ? { branchId: newBranchId } : {});
 
     if (newBranchId !== "ALL") {
       const selectedObj = branchesList.find((b) => b.id === newBranchId);

@@ -202,6 +202,7 @@ const PageReportsHome = () => {
         />
 
         <ReportsAlerts
+          selectedBranchId={selectedBranchId}
           cancelledSalesToday={
             alerts.cancelledSalesToday
           }

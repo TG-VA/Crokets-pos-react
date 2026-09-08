@@ -27,6 +27,7 @@ const AlertRow = ({
 };
 
 const ReportsAlerts = ({
+  selectedBranchId = "ALL",
   cancelledSalesToday = 0,
   returnsToday = 0,
   returnedAmountToday = 0,
@@ -60,7 +61,10 @@ const ReportsAlerts = ({
     : "Sin alertas críticas";
 
   const openInventoryReport = () => {
-    navigate("/reports/inventario");
+    const targetBranch = selectedBranchId || "ALL";
+    navigate(`/reports/inventario?branchId=${encodeURIComponent(targetBranch)}`, {
+      state: { branchId: targetBranch },
+    });
   };
 
   return (
