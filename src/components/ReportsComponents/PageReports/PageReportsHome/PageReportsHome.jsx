@@ -5,23 +5,10 @@ import ReportsAlerts from "./components/ReportsAlerts/ReportsAlerts";
 import ReportsHighlights from "./components/ReportsHighlights/ReportsHighlights";
 import ReportsSalesChart from "./components/ReportsSalesChart/ReportsSalesChart";
 
+import { formatCurrency, formatNumber } from "../../../../utils/formatters";
 import useReportsDashboard from "./hooks/useReportsDashboard";
 
 import styles from "./PageReportsHome.module.css";
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(Number(value || 0));
-};
-
-const formatNumber = (value) => {
-  return new Intl.NumberFormat("es-MX", {
-    maximumFractionDigits: 2,
-  }).format(Number(value || 0));
-};
 
 const formatLastUpdate = (isoDate) => {
   if (!isoDate) return "";

@@ -2,14 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import styles from "./ReportsAlerts.module.css";
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(Number(value || 0));
-};
+import { formatCurrency } from "../../../../../../utils/formatters";
 
 const AlertRow = ({
   label,

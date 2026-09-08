@@ -1,17 +1,10 @@
 import React, { useMemo } from "react";
 
 import styles from "./ReportsSalesChart.module.css";
+import { formatCurrency } from "../../../../../../utils/formatters";
 
 const MAX_BAR_HEIGHT_PERCENTAGE = 84;
 const MIN_BAR_HEIGHT_PERCENTAGE = 7;
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(Number(value || 0));
-};
 
 const ReportsSalesChart = ({
   data = [],

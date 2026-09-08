@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchInChunks } from "./reportsDashboardUtils";
 
 export const getSalesRows = async ({
   branchId,
@@ -30,55 +31,61 @@ export const getSalesRows = async ({
 export const getSaleDetails = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_details")
-    .select(`
-      sale_id,
-      product_id,
-      quantity,
-      total_price
-    `)
-    .in("sale_id", saleIds);
+  return fetchInChunks(saleIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_details")
+      .select(`
+        sale_id,
+        product_id,
+        quantity,
+        total_price
+      `)
+      .in("sale_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getSalePayments = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_payments")
-    .select(`
-      sale_id,
-      amount,
-      currency,
-      exchange_rate,
-      payment_method_id
-    `)
-    .in("sale_id", saleIds);
+  return fetchInChunks(saleIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_payments")
+      .select(`
+        sale_id,
+        amount,
+        currency,
+        exchange_rate,
+        payment_method_id
+      `)
+      .in("sale_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getProductsByIds = async (productIds) => {
   if (!productIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      id,
-      name,
-      barcode
-    `)
-    .in("id", productIds);
+  return fetchInChunks(productIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        barcode
+      `)
+      .in("id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getPaymentMethodsByIds = async (
@@ -86,12 +93,14 @@ export const getPaymentMethodsByIds = async (
 ) => {
   if (!paymentMethodIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("payment_methods")
-    .select("id, name")
-    .in("id", paymentMethodIds);
+  return fetchInChunks(paymentMethodIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("payment_methods")
+      .select("id, name")
+      .in("id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };

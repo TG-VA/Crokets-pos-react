@@ -44,12 +44,34 @@ export const uniqueValues = (values = []) => {
   return [...new Set(values.filter(Boolean))];
 };
 
-export const getDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+export const fetchInChunks = async (items = [], chunkSize = 150, fetchFn) => {
+  if (!Array.isArray(items) || !items.length) return [];
+  if (items.length <= chunkSize) {
+    return fetchFn(items);
+  }
 
-  return `${year}-${month}-${day}`;
+  const results = [];
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    const chunkResult = await fetchFn(chunk);
+    if (Array.isArray(chunkResult)) {
+      results.push(...chunkResult);
+    }
+  }
+
+  return results;
+};
+
+export const getDateInputValue = (date) => {
+  if (!date) return "";
+  const targetDate = date instanceof Date ? date : new Date(date);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(targetDate);
 };
 
 export const getCancunDayRange = (dateInput) => {

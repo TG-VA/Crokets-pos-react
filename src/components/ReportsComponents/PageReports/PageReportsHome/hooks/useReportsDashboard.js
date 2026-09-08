@@ -7,7 +7,7 @@ import {
   getReportsDashboard,
 } from "../services/reportsDashboardService";
 
-const AUTO_REFRESH_INTERVAL = 60_000;
+const AUTO_REFRESH_INTERVAL = 300_000; // 5 minutos
 
 const useReportsDashboard = () => {
   const { branch } = useBranch();
@@ -24,6 +24,7 @@ const useReportsDashboard = () => {
 
   const mountedRef = useRef(true);
   const requestIdRef = useRef(0);
+  const lastFetchTimeRef = useRef(0);
 
   const loadDashboard = useCallback(
     async ({ silent = false } = {}) => {
@@ -45,6 +46,7 @@ const useReportsDashboard = () => {
       }
 
       setError("");
+      lastFetchTimeRef.current = Date.now();
 
       try {
         const result = await getReportsDashboard(branchId);
@@ -90,10 +92,16 @@ const useReportsDashboard = () => {
   );
 
   const reloadDashboard = useCallback(async () => {
+    // Evitar spam de clics si ya está cargando o si se ejecutó hace menos de 4 segundos
+    const now = Date.now();
+    if (loading || refreshing || now - lastFetchTimeRef.current < 4000) {
+      return;
+    }
+
     await loadDashboard({
       silent: dashboard.meta.generatedAt !== null,
     });
-  }, [dashboard.meta.generatedAt, loadDashboard]);
+  }, [dashboard.meta.generatedAt, loadDashboard, loading, refreshing]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -114,6 +122,11 @@ const useReportsDashboard = () => {
     if (!branchId) return undefined;
 
     const intervalId = window.setInterval(() => {
+      // Solo refrescar en segundo plano si la pestaña está visible
+      if (typeof document !== "undefined" && document.hidden) {
+        return;
+      }
+
       loadDashboard({
         silent: true,
       });
@@ -121,22 +134,6 @@ const useReportsDashboard = () => {
 
     return () => {
       window.clearInterval(intervalId);
-    };
-  }, [branchId, loadDashboard]);
-
-  useEffect(() => {
-    if (!branchId) return undefined;
-
-    const handleWindowFocus = () => {
-      loadDashboard({
-        silent: true,
-      });
-    };
-
-    window.addEventListener("focus", handleWindowFocus);
-
-    return () => {
-      window.removeEventListener("focus", handleWindowFocus);
     };
   }, [branchId, loadDashboard]);
 

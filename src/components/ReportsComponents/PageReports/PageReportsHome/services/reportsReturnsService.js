@@ -1,6 +1,7 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
 import {
+  fetchInChunks,
   toNumber,
   uniqueValues,
 } from "./reportsDashboardUtils";
@@ -10,19 +11,21 @@ export const getSaleReturns = async (
 ) => {
   if (!saleIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_returns")
-    .select(`
-      id,
-      sale_id,
-      total_refund,
-      created_at
-    `)
-    .in("sale_id", saleIds);
+  return fetchInChunks(saleIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_returns")
+      .select(`
+        id,
+        sale_id,
+        total_refund,
+        created_at
+      `)
+      .in("sale_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getReturnItems = async (
@@ -30,22 +33,24 @@ export const getReturnItems = async (
 ) => {
   if (!returnIds.length) return [];
 
-  const { data, error } = await supabase
-    .from("sale_return_items")
-    .select(`
-      id,
-      return_id,
-      sale_detail_id,
-      product_id,
-      quantity,
-      unit_price,
-      total_price
-    `)
-    .in("return_id", returnIds);
+  return fetchInChunks(returnIds, 150, async (chunk) => {
+    const { data, error } = await supabase
+      .from("sale_return_items")
+      .select(`
+        id,
+        return_id,
+        sale_detail_id,
+        product_id,
+        quantity,
+        unit_price,
+        total_price
+      `)
+      .in("return_id", chunk);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data || [];
+    return data || [];
+  });
 };
 
 export const getTodayCancelledSales = async ({
@@ -74,18 +79,22 @@ export const getTodayCancelledSales = async ({
 
   if (!saleIds.length) return 0;
 
-  const {
-    data: salesRows,
-    error: salesError,
-  } = await supabase
-    .from("sales")
-    .select("id")
-    .in("id", saleIds)
-    .eq("branch_id", branchId);
+  const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
+    const {
+      data,
+      error: salesError,
+    } = await supabase
+      .from("sales")
+      .select("id")
+      .in("id", chunk)
+      .eq("branch_id", branchId);
 
-  if (salesError) {
-    throw salesError;
-  }
+    if (salesError) {
+      throw salesError;
+    }
+
+    return data || [];
+  });
 
   return (salesRows || []).length;
 };
@@ -129,18 +138,22 @@ export const getTodayReturns = async ({
     };
   }
 
-  const {
-    data: salesRows,
-    error: salesError,
-  } = await supabase
-    .from("sales")
-    .select("id")
-    .in("id", saleIds)
-    .eq("branch_id", branchId);
+  const salesRows = await fetchInChunks(saleIds, 150, async (chunk) => {
+    const {
+      data,
+      error: salesError,
+    } = await supabase
+      .from("sales")
+      .select("id")
+      .in("id", chunk)
+      .eq("branch_id", branchId);
 
-  if (salesError) {
-    throw salesError;
-  }
+    if (salesError) {
+      throw salesError;
+    }
+
+    return data || [];
+  });
 
   const validSaleIds = new Set(
     (salesRows || []).map(
