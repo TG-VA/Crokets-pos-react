@@ -43,6 +43,7 @@ export const useCashReport = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [syncedAt, setSyncedAt] = useState(null);
 
   // Paginación
   const [currentSessionsPage, setCurrentSessionsPage] = useState(1);
@@ -120,6 +121,7 @@ export const useCashReport = () => {
       setPaymentMethodsSummary(paymentsData);
       setCurrentSessionsPage(1);
       setCurrentMovementsPage(1);
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar datos del reporte de caja:", err);
       setError("No se pudieron cargar los datos del reporte de caja. Intente nuevamente.");
@@ -324,6 +326,7 @@ export const useCashReport = () => {
     // Estados de carga
     loading,
     error,
+    syncedAt,
     isExporting,
     loadReportData,
     handleExportExcel,

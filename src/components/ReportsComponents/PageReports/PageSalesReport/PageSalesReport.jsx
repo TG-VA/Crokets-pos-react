@@ -3,7 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 import { useSalesReport, ITEMS_PER_PAGE } from "./hooks/useSalesReport";
-import { formatCurrency } from "../../../../utils/formatters";
+import { formatCurrency, formatSyncTime } from "../../../../utils/formatters";
 import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./PageSalesReport.module.css";
@@ -19,7 +19,7 @@ const PageSalesReport = () => {
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
     discountFilter, setDiscountFilter, branchesList, cashiersList,
     currentPage, setCurrentPage, totalPages, paginatedSales, 
-    loading, summary, hasActiveFilters, handleClearFilters, handleRowClick,
+    loading, summary, syncedAt, hasActiveFilters, handleClearFilters, handleRowClick,
     handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary,
     isTicketModalOpen, selectedTicket, ticketDetails,
     loadingModal, handleCloseModal,
@@ -35,6 +35,12 @@ const PageSalesReport = () => {
         </div>
         
         <div className={styles.actionButtons}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button 
             type="button"
             className={styles.exportDetailedBtn} 

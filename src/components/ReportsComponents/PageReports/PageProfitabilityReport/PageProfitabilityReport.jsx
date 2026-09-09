@@ -8,6 +8,7 @@ import styles from "./PageProfitabilityReport.module.css";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { useProfitabilityReport } from "./hooks/useProfitabilityReport";
 import { exportProfitabilityReportToExcel } from "./utils/profitabilityReportExportUtils";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 import ProfitabilityFilters from "./components/ProfitabilityFilters";
 import ProfitabilityKpiCards from "./components/ProfitabilityKpiCards";
@@ -50,6 +51,7 @@ const PageProfitabilityReport = () => {
     kpis,
     isLoading,
     error,
+    syncedAt,
     refresh,
   } = useProfitabilityReport(branch?.id || "ALL");
 
@@ -105,6 +107,12 @@ const PageProfitabilityReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button
             type="button"
             onClick={handleExport}

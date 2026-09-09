@@ -54,6 +54,7 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncedAt, setSyncedAt] = useState(null);
 
   // Cargar lista de sucursales disponibles al montar
   useEffect(() => {
@@ -90,6 +91,7 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
       if (data.departmentsList) {
         setDepartmentsList(data.departmentsList);
       }
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar reporte de rentabilidad:", err);
       setError("No se pudieron cargar los datos de rentabilidad.");
@@ -241,6 +243,7 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
     kpis: reportData.kpis,
     isLoading,
     error,
+    syncedAt,
     refresh: loadData,
   };
 };

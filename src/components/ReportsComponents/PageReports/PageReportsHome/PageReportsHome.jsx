@@ -5,7 +5,7 @@ import ReportsAlerts from "./components/ReportsAlerts/ReportsAlerts";
 import ReportsHighlights from "./components/ReportsHighlights/ReportsHighlights";
 import ReportsSalesChart from "./components/ReportsSalesChart/ReportsSalesChart";
 
-import { formatCurrency, formatNumber } from "../../../../utils/formatters";
+import { formatCurrency, formatNumber, formatSyncTime } from "../../../../utils/formatters";
 import useReportsDashboard from "./hooks/useReportsDashboard";
 
 import rotateIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
@@ -15,16 +15,6 @@ import chartIcon from "../../../../assets/icons/chart-line-solid-full.svg";
 import boxIcon from "../../../../assets/icons/box-solid-full.svg";
 
 import styles from "./PageReportsHome.module.css";
-
-const formatLastUpdate = (isoDate) => {
-  if (!isoDate) return "";
-
-  return new Intl.DateTimeFormat("es-MX", {
-    timeZone: "America/Cancun",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(isoDate));
-};
 
 const PageReportsHome = () => {
   const {
@@ -136,7 +126,7 @@ const PageReportsHome = () => {
 
           {meta.generatedAt ? (
             <span className={styles.lastUpdate}>
-              Actualizado {formatLastUpdate(meta.generatedAt)}
+              Sincronizado {formatSyncTime(meta.generatedAt)}
             </span>
           ) : null}
 

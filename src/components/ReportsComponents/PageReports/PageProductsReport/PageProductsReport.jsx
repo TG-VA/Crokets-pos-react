@@ -11,6 +11,7 @@ import DeadStockTable from "./components/DeadStockTable";
 import { useProductsReport } from "./hooks/useProductsReport";
 import { useBranch } from "../../../../contexts/BranchContext"; 
 import { supabase } from "../../../../lib/supabaseClient";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 const PageProductsReport = () => {
   const { branch, setBranch } = useBranch();
@@ -67,6 +68,7 @@ const PageProductsReport = () => {
     reportData, 
     isLoading, 
     error,
+    syncedAt,
     generateReport
   } = useProductsReport(selectedBranchId);
 
@@ -78,6 +80,11 @@ const PageProductsReport = () => {
           <p className={styles.description}>
             Consulta productos vendidos, ingresos, cantidades totales y rendimiento por departamento.
           </p>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
         </div>
 
         <div className={styles.headerActions}>
