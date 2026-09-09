@@ -4,7 +4,6 @@ import { useProductsList } from "./hooks/useProductsList";
 
 const ProductsList = () => {
   const {
-    products,
     loadingProducts,
     productsError,
     searchTerm,
@@ -18,6 +17,14 @@ const ProductsList = () => {
     selectedRowRef,
     departments,
     filteredProducts,
+    paginatedProducts,
+    currentPage,
+    totalPages,
+    pageSize,
+    pageStart,
+    pageEnd,
+    handlePageChange,
+    handlePageSizeChange,
     formatDept,
     handleDepartmentSelect,
     handleRowClick,
@@ -142,7 +149,8 @@ const ProductsList = () => {
           </span>
         ) : (
           <span className={styles.resultsCount}>
-            Mostrando {filteredProducts.length} de {products.length} productos
+            Mostrando {pageStart + 1} a {pageEnd} de {filteredProducts.length}{" "}
+            productos
             {selectedDepartment &&
               ` en ${formatDept(selectedDepartment).toUpperCase()}`}
           </span>
@@ -162,33 +170,37 @@ const ProductsList = () => {
           </thead>
 
           <tbody>
-            {filteredProducts.map((product, index) => (
-              <tr
-                key={`${product.product_id || product.id || product.codigo}-${index}`}
-                ref={index === selectedRowIndex ? selectedRowRef : null}
-                className={[
-                  styles.productRow,
-                  index === selectedRowIndex ? styles.selectedRow : ""
-                ].filter(Boolean).join(" ")}
-                onClick={() => handleRowClick(index)}
-              >
-                <td>{product.codigo}</td>
-                <td className={styles.descriptionCell}>
-                  <span className={styles.scrollText}>
-                    {product.descripcion}
-                  </span>
-                </td>
-                <td className={styles.departmentCell}>
-                  {product.departamento}
-                </td>
-                <td className={styles.priceCell}>
-                  {formatMoney(product.costo)}
-                </td>
-                <td className={styles.priceCell}>
-                  {formatMoney(product.precio)}
-                </td>
-              </tr>
-            ))}
+            {paginatedProducts.map((product, rowIndex) => {
+              const index = pageStart + rowIndex;
+
+              return (
+                <tr
+                  key={`${product.product_id || product.id || product.codigo}-${index}`}
+                  ref={index === selectedRowIndex ? selectedRowRef : null}
+                  className={[
+                    styles.productRow,
+                    index === selectedRowIndex ? styles.selectedRow : ""
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => handleRowClick(index)}
+                >
+                  <td>{product.codigo}</td>
+                  <td className={styles.descriptionCell}>
+                    <span className={styles.scrollText}>
+                      {product.descripcion}
+                    </span>
+                  </td>
+                  <td className={styles.departmentCell}>
+                    {product.departamento}
+                  </td>
+                  <td className={styles.priceCell}>
+                    {formatMoney(product.costo)}
+                  </td>
+                  <td className={styles.priceCell}>
+                    {formatMoney(product.precio)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
@@ -199,6 +211,48 @@ const ProductsList = () => {
           </div>
         )}
       </div>
+
+      {filteredProducts.length > 0 && (
+        <div className={styles.paginationWrapper}>
+          <div className={styles.paginationInfo}>
+            <span>
+              Página {currentPage} de {totalPages} ({filteredProducts.length}{" "}
+              productos)
+            </span>
+            <label className={styles.pageSizeLabel}>
+              Mostrar:
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                className={styles.pageSizeSelect}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </label>
+          </div>
+          <div className={styles.paginationControls}>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </button>
+            <span className={styles.pageIndicator}>{currentPage}</span>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

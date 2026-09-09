@@ -170,6 +170,25 @@ en `PERMISSIONS.md`. Sigue sin confirmarse si el sistema local de SQLite (`src/b
 sincroniza de alguna forma con este sistema remoto, o si son completamente independientes — ver
 también el punto 13 de este documento.
 
+### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
+**Estado:** abierto — nueva, detectada el 9 de septiembre de 2026.
+
+El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) está
+duplicado en ~10 componentes del módulo de reportes (`CashMovementsTable`, `ReorderSuggestionsTable`,
+`InventoryDepartmentSummary`, `CashiersCommissionSummaryTable`, `CommissionsAuditTable`,
+`ProductsCommissionSummaryTable`, `TopProductsTable`, `DeadStockTable`, modales de detalle, entre
+otros), cada uno con su propio `useState` de `pageSize`/`currentPage` y derivaciones de `totalPages`
+y slice.
+
+Se creó el hook global `src/hooks/usePagination.js` cubriendo ambas variantes — client-side con
+`pageItems(items)` y server-side con `startIndex`/`endIndex` — y ya se adoptó en la lista de
+productos (`useProductsList`). Falta migrar las tablas de reportes.
+
+**Impacto:** duplicación de código y riesgo de divergencias futuras de comportamiento entre vistas.
+
+**Recomendación:** migrar incrementalmente cada tabla de reportes a `usePagination`, respetando la
+variante (client-side vs server-side) de cada una. No requiere reescritura de golpe.
+
 ---
 
 ## Bajo

@@ -23,6 +23,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [ ] Unit tests para utilidades puras (`importUtils.js`, servicios de import/kits) — ver `KNOWN_ISSUES.md` #9
 * [ ] Migraciones SQL versionadas para el schema de Supabase — ver `KNOWN_ISSUES.md` #6
 * [ ] Revisión de roles y permisos entre Supabase y SQLite local — ver `KNOWN_ISSUES.md` #10
+* [ ] Migrar tablas de reportes al hook global `usePagination` — ver `KNOWN_ISSUES.md` #15
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
