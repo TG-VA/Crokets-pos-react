@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./PageCashReport.module.css";
 import { useCashReport } from "./hooks/useCashReport";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 import CashReportFilters from "./components/CashReportFilters";
 import CashKpiCards from "./components/CashKpiCards";
@@ -62,6 +63,7 @@ const PageCashReport = () => {
     // Estados
     loading,
     error,
+    syncedAt,
     isExporting,
     handleExportExcel,
 
@@ -85,6 +87,12 @@ const PageCashReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button
             type="button"
             className={styles.exportBtn}

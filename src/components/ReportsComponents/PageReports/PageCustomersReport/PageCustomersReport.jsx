@@ -20,6 +20,7 @@ import { useCustomersReport } from "./hooks/useCustomersReport";
 import { useCustomerDetail } from "./hooks/useCustomerDetail";
 import { fetchBranchesList } from "./services/customersReportService";
 import { exportCustomersReportToExcel } from "./utils/customersReportExportUtils";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 // Iconos SVG
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
@@ -55,6 +56,7 @@ const PageCustomersReport = () => {
     kpis,
     isLoading,
     error,
+    syncedAt,
     refresh,
   } = useCustomersReport(branch?.id || "ALL");
 
@@ -120,6 +122,12 @@ const PageCustomersReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button
             type="button"
             onClick={handleExport}

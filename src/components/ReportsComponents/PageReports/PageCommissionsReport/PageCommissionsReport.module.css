@@ -53,6 +53,13 @@
   gap: 10px;
 }
 
+.lastUpdate {
+  color: #7b878d;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .exportBtn {
   display: inline-flex;
   align-items: center;

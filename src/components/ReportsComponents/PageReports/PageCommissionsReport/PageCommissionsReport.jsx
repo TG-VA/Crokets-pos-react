@@ -9,6 +9,7 @@ import { ProductsCommissionSummaryTable } from "./components/ProductsCommissionS
 import { CommissionsAuditTable } from "./components/CommissionsAuditTable";
 import { CashierCommissionDetailModal } from "./components/CashierCommissionDetailModal";
 import exportIcon from "../../../../assets/icons/file-import-solid-full.svg";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 export const PageCommissionsReport = () => {
   const {
@@ -38,6 +39,7 @@ export const PageCommissionsReport = () => {
     kpis,
     isLoading,
     error,
+    syncedAt,
     isExporting,
     hasActiveFilters,
     activeFiltersCount,
@@ -65,6 +67,12 @@ export const PageCommissionsReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button
             type="button"
             className={styles.exportBtn}

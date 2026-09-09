@@ -39,6 +39,7 @@ export const useSalesReport = () => {
   const [loading, setLoading] = useState(false);
   const [paginatedSales, setPaginatedSales] = useState([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalTickets: 0, averageTicket: 0, totalDiscounts: 0 });
+  const [syncedAt, setSyncedAt] = useState(null);
 
   useEffect(() => {
     let isActive = true;
@@ -105,6 +106,7 @@ export const useSalesReport = () => {
           ? (kpisRes.totalIncome / kpisRes.totalTickets) 
           : 0,
       });
+      setSyncedAt(new Date().toISOString());
     } catch (error) {
       if (!options.isActive) return;
       console.error("Error cargando reporte de ventas:", error);
@@ -264,7 +266,7 @@ export const useSalesReport = () => {
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
     branchesList, cashiersList, currentPage, setCurrentPage, totalPages,
     paginatedSales, isTicketModalOpen, selectedTicket, ticketDetails,
-    loadingModal, loading, summary, hasActiveFilters, handleClearFilters,
+    loadingModal, loading, summary, syncedAt, hasActiveFilters, handleClearFilters,
     handleRowClick, handleCloseModal, handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary
   };
 };

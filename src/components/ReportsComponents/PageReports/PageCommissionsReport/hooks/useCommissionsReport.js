@@ -45,6 +45,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [syncedAt, setSyncedAt] = useState(null);
 
   // Modal de Detalle de Cajero
   const [selectedCashierForModal, setSelectedCashierForModal] = useState(null);
@@ -165,6 +166,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
       });
 
       setRawData(result.detailedRows || []);
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar comisiones:", err);
       setError("No se pudieron cargar los datos de comisiones. Intenta de nuevo.");
@@ -306,6 +308,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     kpis,
     isLoading,
     error,
+    syncedAt,
     isExporting,
     hasActiveFilters,
     activeFiltersCount,

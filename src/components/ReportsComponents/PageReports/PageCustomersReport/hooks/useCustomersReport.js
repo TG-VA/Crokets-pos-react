@@ -36,6 +36,7 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncedAt, setSyncedAt] = useState(null);
 
   // Sincronizar branchId si cambia desde fuera
   useEffect(() => {
@@ -55,6 +56,7 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
       });
 
       setReportData(data);
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar reporte de clientes:", err);
       setError("No se pudieron cargar los datos del reporte de clientes.");
@@ -202,6 +204,7 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
     kpis: reportData.kpis,
     isLoading,
     error,
+    syncedAt,
     refresh: loadData,
   };
 };

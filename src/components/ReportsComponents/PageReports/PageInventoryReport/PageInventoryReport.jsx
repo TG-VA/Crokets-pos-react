@@ -3,6 +3,7 @@ import { useSearchParams, useLocation } from "react-router-dom";
 import styles from "./PageInventoryReport.module.css";
 import subStyles from "./components/InventoryComponents.module.css";
 import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
+import { formatSyncTime } from "../../../../utils/formatters";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { supabase } from "../../../../lib/supabaseClient";
 
@@ -82,6 +83,7 @@ const PageInventoryReport = () => {
     byDepartment,
     isLoading,
     error,
+    syncedAt,
     selectedDepartment,
     setSelectedDepartment,
     selectedStockStatus,
@@ -120,6 +122,12 @@ const PageInventoryReport = () => {
         </div>
 
         <div className={styles.headerActions}>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
           <button
             type="button"
             className={styles.exportBtn}
