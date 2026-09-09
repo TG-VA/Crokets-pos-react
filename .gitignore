@@ -57,3 +57,9 @@ temp_catalogs/
 # Scripts locales de importación (si algún día generas respaldos)
 *.bak
 *.tmp
+
+# ===== Archivos temporales de depuración =====
+# Carpeta de debug local del agente Trae/debugger server. Nunca se commitear al repo.
+.dbg/
+# Markdowns temporales de debug (ej. debug-movements-week-month.md)
+debug-*.md
