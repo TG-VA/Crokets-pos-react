@@ -11,6 +11,7 @@ import {
   formatNumber,
   formatPercent,
 } from "../utils/profitabilityReportFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 import tagIcon from "../../../../../assets/icons/tag-solid-full.svg";
 
@@ -37,20 +38,8 @@ const SORT_GETTERS = {
 };
 
 const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState("profit");
   const [sortDirection, setSortDirection] = useState("desc");
-
-  const handleSort = (key) => {
-    if (sortBy === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(key);
-      setSortDirection("desc");
-    }
-    setCurrentPage(1);
-  };
 
   const sortedDepartments = useMemo(() => {
     const getter = SORT_GETTERS[sortBy] || SORT_GETTERS.profit;
@@ -82,14 +71,34 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
   const totalWeightedMargin =
     totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0;
 
-  const totalItems = sortedDepartments.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex: pageStart,
+    endIndex: pageEnd,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: sortedDepartments.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 20],
+  });
 
-  const paginatedData = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return sortedDepartments.slice(start, start + pageSize);
-  }, [sortedDepartments, safePage, pageSize]);
+  const totalItems = sortedDepartments.length;
+  const paginatedData = pageItems(sortedDepartments);
+
+  const handleSort = (key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDirection("desc");
+    }
+    resetPagination();
+  };
 
   const renderSortIndicator = (key) => (
     <span className={styles.sortIndicator}>
@@ -276,18 +285,14 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
           <div className={styles.paginationWrapper}>
             <div className={styles.paginationInfo}>
               <span>
-                Mostrando {Math.min((safePage - 1) * pageSize + 1, totalItems)} a{" "}
-                {Math.min(safePage * pageSize, totalItems)} de {totalItems} departamentos
+                Mostrando {pageStart + 1} a {pageEnd} de {totalItems} departamentos
               </span>
               <span>|</span>
               <label className={styles.paginationLabel}>
                 Por página:
                 <select
                   value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   className={styles.pageSizeSelect}
                 >
                   <option value={5}>5</option>
@@ -301,19 +306,19 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
               <button
                 type="button"
                 className={styles.pageBtn}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safePage <= 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
               >
                 Anterior
               </button>
               <span className={styles.pageIndicator}>
-                Página {safePage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
               <button
                 type="button"
                 className={styles.pageBtn}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage >= totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
               >
                 Siguiente
               </button>

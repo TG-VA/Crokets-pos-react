@@ -3,7 +3,7 @@
  * Tabla interactiva de rentabilidad por producto con ordenamiento y paginación.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import styles from "./ProfitabilityComponents.module.css";
 import {
   formatCurrency,
@@ -12,6 +12,7 @@ import {
 } from "../utils/profitabilityReportFormatters";
 import KitComponentsDetailModal from "./KitComponentsDetailModal";
 import ProfitabilityTablePagination from "./ProfitabilityTablePagination";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
@@ -21,18 +22,21 @@ const ProfitabilityProductsTable = ({
   sortDirection = "desc",
   onSort,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [selectedKitProduct, setSelectedKitProduct] = useState(null);
 
-  const totalItems = products.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
+  const {
+    currentPage,
+    pageSize,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: products.length,
+    defaultPageSize: 10,
+  });
 
-  const paginatedData = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return products.slice(start, start + pageSize);
-  }, [products, safePage, pageSize]);
+  const totalItems = products.length;
+  const paginatedData = pageItems(products);
 
   const renderSortIndicator = (key) => {
     return (
@@ -240,14 +244,11 @@ const ProfitabilityProductsTable = ({
           </div>
 
           <ProfitabilityTablePagination
-            currentPage={safePage}
+            currentPage={currentPage}
             pageSize={pageSize}
             totalItems={totalItems}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
           />
 
           <KitComponentsDetailModal

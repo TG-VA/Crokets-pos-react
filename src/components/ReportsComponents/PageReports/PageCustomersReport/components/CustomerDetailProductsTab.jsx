@@ -3,22 +3,29 @@
  * Pestaña con la lista de productos más consumidos por el cliente y su paginación.
  */
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: favoriteProducts.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 20],
+  });
 
   const totalProducts = favoriteProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
-  const safePage = Math.min(page, totalPages);
-
-  const paginatedProducts = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return favoriteProducts.slice(start, start + pageSize);
-  }, [favoriteProducts, safePage, pageSize]);
+  const paginatedProducts = pageItems(favoriteProducts);
 
   return (
     <div className={styles.tabPanel}>
@@ -75,18 +82,14 @@ const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
             <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
               <div className={styles.paginationInfo}>
                 <span>
-                  Mostrando {Math.min((safePage - 1) * pageSize + 1, totalProducts)} a{" "}
-                  {Math.min(safePage * pageSize, totalProducts)} de {totalProducts} productos
+                  Mostrando {startIndex + 1} a {endIndex} de {totalProducts} productos
                 </span>
                 <span>|</span>
                 <label className={styles.paginationLabel}>
                   Por página:
                   <select
                     value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className={styles.pageSizeSelect}
                   >
                     <option value={5}>5</option>
@@ -100,19 +103,19 @@ const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
                 >
                   Anterior
                 </button>
                 <span className={styles.pageIndicator}>
-                  Página {safePage} de {totalPages}
+                  Página {currentPage} de {totalPages}
                 </span>
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
                 >
                   Siguiente
                 </button>

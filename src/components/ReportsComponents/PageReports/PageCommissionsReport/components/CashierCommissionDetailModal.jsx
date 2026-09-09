@@ -19,11 +19,13 @@ export const CashierCommissionDetailModal = ({
   const {
     currentTickets,
     currentPage,
-    setCurrentPage,
     pageSize,
-    setPageSize,
     totalPages,
+    startIndex,
+    endIndex,
     totalTickets,
+    handlePageChange,
+    handlePageSizeChange,
     isExportingStatement,
     handleExportStatement,
   } = useCashierCommissionDetail({
@@ -173,9 +175,7 @@ export const CashierCommissionDetailModal = ({
             <div className={styles.paginationBar}>
               <div className={styles.paginationInfo}>
                 <span>
-                  Mostrando{" "}
-                  {Math.min((currentPage - 1) * pageSize + 1, totalTickets)} a{" "}
-                  {Math.min(currentPage * pageSize, totalTickets)} de {totalTickets}{" "}
+                  Mostrando {startIndex + 1} a {endIndex} de {totalTickets}{" "}
                   tickets
                 </span>
                 <span className={styles.paginationDivider}>|</span>
@@ -183,7 +183,9 @@ export const CashierCommissionDetailModal = ({
                   Mostrar:
                   <select
                     value={pageSize}
-                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    onChange={(e) =>
+                      handlePageSizeChange(Number(e.target.value))
+                    }
                     className={styles.pageSizeSelect}
                   >
                     <option value={5}>5</option>
@@ -198,7 +200,7 @@ export const CashierCommissionDetailModal = ({
                   type="button"
                   className={styles.btnPagination}
                   disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() => handlePageChange(currentPage - 1)}
                 >
                   Anterior
                 </button>
@@ -209,9 +211,7 @@ export const CashierCommissionDetailModal = ({
                   type="button"
                   className={styles.btnPagination}
                   disabled={currentPage >= totalPages}
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
+                  onClick={() => handlePageChange(currentPage + 1)}
                 >
                   Siguiente
                 </button>

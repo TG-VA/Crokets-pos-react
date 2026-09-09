@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
 import { getStatusBadge } from "../utils/inventoryReportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 const InventoryValuationTable = ({
   items = [],
@@ -9,21 +10,28 @@ const InventoryValuationTable = ({
   title = "Existencias y Valorización",
   subtitle,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const totalPages = Math.ceil(items.length / pageSize) || 1;
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: items.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
   // Resetear a página 1 cuando la longitud o el filtrado de items cambie
   useEffect(() => {
-    setCurrentPage(1);
-  }, [items.length]);
+    resetPagination();
+  }, [items.length, resetPagination]);
 
-  const currentItems = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * pageSize;
-    return items.slice(startIndex, startIndex + pageSize);
-  }, [items, safeCurrentPage, pageSize]);
+  const currentItems = useMemo(() => pageItems(items), [pageItems, items]);
 
   if (isLoading) {
     return (
@@ -99,18 +107,14 @@ const InventoryValuationTable = ({
         <div className={styles.paginationBar}>
           <div className={styles.paginationInfo}>
             <span>
-              Mostrando {Math.min((safeCurrentPage - 1) * pageSize + 1, items.length)} a{" "}
-              {Math.min(safeCurrentPage * pageSize, items.length)} de {items.length} productos
+              Mostrando {startIndex + 1} a {endIndex} de {items.length} productos
             </span>
             <span className={styles.paginationDivider}>|</span>
             <label className={styles.pageSizeLabel}>
               Por página:
               <select
                 value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 className={styles.pageSizeSelect}
               >
                 <option value={10}>10</option>
@@ -124,19 +128,19 @@ const InventoryValuationTable = ({
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={safeCurrentPage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage <= 1}
+              onClick={() => handlePageChange(currentPage - 1)}
             >
               Anterior
             </button>
             <span className={styles.pageIndicator}>
-              Página {safeCurrentPage} de {totalPages}
+              Página {currentPage} de {totalPages}
             </span>
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={safeCurrentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage >= totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
             >
               Siguiente
             </button>

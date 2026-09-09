@@ -5,25 +5,37 @@ import {
   formatInteger,
   formatCommissionRule,
 } from "../utils/commissionsReportFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 export const ProductsCommissionSummaryTable = ({
   productSummaries = [],
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
   const totalItems = productSummaries.length;
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [totalItems]);
+    resetPagination();
+  }, [totalItems, resetPagination]);
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * pageSize;
-    return productSummaries.slice(startIndex, startIndex + pageSize);
-  }, [productSummaries, safeCurrentPage, pageSize]);
+  const paginatedProducts = useMemo(() => pageItems(productSummaries), [
+    pageItems,
+    productSummaries,
+  ]);
 
   const totals = useMemo(() => {
     return productSummaries.reduce(
@@ -174,9 +186,7 @@ export const ProductsCommissionSummaryTable = ({
         <div className={styles.paginationBar}>
           <div className={styles.paginationInfo}>
             <span>
-              Mostrando{" "}
-              {Math.min((safeCurrentPage - 1) * pageSize + 1, totalItems)} a{" "}
-              {Math.min(safeCurrentPage * pageSize, totalItems)} de {totalItems}{" "}
+              Mostrando {startIndex + 1} a {endIndex} de {totalItems}{" "}
               productos
             </span>
             <span className={styles.paginationDivider}>|</span>
@@ -184,7 +194,7 @@ export const ProductsCommissionSummaryTable = ({
               Mostrar:
               <select
                 value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 className={styles.pageSizeSelect}
               >
                 <option value={10}>10</option>
@@ -198,21 +208,19 @@ export const ProductsCommissionSummaryTable = ({
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={safeCurrentPage <= 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage <= 1}
+              onClick={() => handlePageChange(currentPage - 1)}
             >
               Anterior
             </button>
             <span className={styles.pageIndicator}>
-              Pág. {safeCurrentPage} de {totalPages}
+              Pág. {currentPage} de {totalPages}
             </span>
             <button
               type="button"
               className={styles.btnPagination}
-              disabled={safeCurrentPage >= totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              disabled={currentPage >= totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
             >
               Siguiente
             </button>

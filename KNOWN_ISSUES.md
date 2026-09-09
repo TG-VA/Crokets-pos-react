@@ -171,23 +171,40 @@ sincroniza de alguna forma con este sistema remoto, o si son completamente indep
 también el punto 13 de este documento.
 
 ### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
-**Estado:** abierto — nueva, detectada el 9 de septiembre de 2026.
+**Estado:** en progreso — migración de tablas client-side completada el 9 de septiembre de 2026.
 
-El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) está
-duplicado en ~10 componentes del módulo de reportes (`CashMovementsTable`, `ReorderSuggestionsTable`,
-`InventoryDepartmentSummary`, `CashiersCommissionSummaryTable`, `CommissionsAuditTable`,
-`ProductsCommissionSummaryTable`, `TopProductsTable`, `DeadStockTable`, modales de detalle, entre
-otros), cada uno con su propio `useState` de `pageSize`/`currentPage` y derivaciones de `totalPages`
-y slice.
+El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) estaba
+duplicado en ~20 componentes del módulo de reportes, cada uno con su propio `useState` de
+`pageSize`/`currentPage` y derivaciones de `totalPages` y slice.
 
 Se creó el hook global `src/hooks/usePagination.js` cubriendo ambas variantes — client-side con
-`pageItems(items)` y server-side con `startIndex`/`endIndex` — y ya se adoptó en la lista de
-productos (`useProductsList`). Falta migrar las tablas de reportes.
+`pageItems(items)` y server-side con `startIndex`/`endIndex` — y se adoptó en la lista de
+productos (`useProductsList`).
 
-**Impacto:** duplicación de código y riesgo de divergencias futuras de comportamiento entre vistas.
+**Migrado a `usePagination` (variant client-side, rama `feature/products-pagination`):**
+- Rentabilidad: `ProfitabilityDepartmentsTable`, `ProfitabilityProductsTable`,
+  `ProfitabilityCriticalTable` (selector [5,10,20] en departamentos).
+- Inventario: `ReorderSuggestionsTable`, `InventoryValuationTable`, `InventoryDepartmentSummary`.
+- Comisiones: `CommissionsAuditTable`, `CashiersCommissionSummaryTable`,
+  `ProductsCommissionSummaryTable` y `useCashierCommissionDetail` + `CashierCommissionDetailModal`
+  (independientemente del modo [5,10,20] del modal).
+- Clientes: `CustomersRankingTable`, `CustomersProductsSummaryTable`, `CustomersRewardsSummaryTable`,
+  `ProductBuyersModal`, `CustomerDetailProductsTab`, `CustomerDetailPointsTab`,
+  `CustomerDetailSalesTab`.
+- Productos: `TopProductsTable`, `DeadStockTable` (paginación fija de 50/ítem, sin selector).
 
-**Recomendación:** migrar incrementalmente cada tabla de reportes a `usePagination`, respetando la
-variante (client-side vs server-side) de cada una. No requiere reescritura de golpe.
+**Pendiente (requiere refactor más profundo, no sujeto a esta iteración):**
+- `PageSalesReport` + `useSalesReport`: variante **server-side** (`ITEMS_PER_PAGE` const +
+  `totalCount`, query con `range`). Migraría derivando `startIndex`/`endIndex` del hook.
+- Cash: `useCashReport` híbrido (paginación centralizada en el hook para sessions/movements) +
+  `CashMovementsTable`/`CashSettingsTable` y `DetailMovementsSection`/`DetailDiscountsSection`
+  (tamaño fijo 5).
+
+**Impacto:** reducido — desaparece la duplicación en los client-side; el patrón unifica el
+reseteo a página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de comisiones).
+
+**Recomendación:** completar la migración del par server-side (Sales) y del híbrido (Cash) en una
+iteración dedicada, verificando el flujo de datos/queries de cada uno.
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
 **Estado:** abierto — documentado el 9 de septiembre de 2026.

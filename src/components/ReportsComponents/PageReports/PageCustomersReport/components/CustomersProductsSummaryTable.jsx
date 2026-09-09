@@ -9,24 +9,33 @@ import { formatCurrency, formatNumber } from "../utils/customersReportFormatters
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import ProductBuyersModal from "./ProductBuyersModal";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 const CustomersProductsSummaryTable = ({ products = [] }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [selectedProductForBuyers, setSelectedProductForBuyers] = useState(null);
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: products.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
+
   useEffect(() => {
-    setCurrentPage(1);
-  }, [products.length]);
+    resetPagination();
+  }, [products.length, resetPagination]);
 
   const totalItems = products.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * pageSize;
-    return products.slice(startIndex, startIndex + pageSize);
-  }, [products, safeCurrentPage, pageSize]);
+  const paginatedProducts = pageItems(products);
 
   return (
     <div className={styles.tableCard}>
@@ -140,18 +149,14 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
         <div className={styles.paginationWrapper}>
           <div className={styles.paginationInfo}>
             <span>
-              Mostrando {Math.min((safeCurrentPage - 1) * pageSize + 1, totalItems)} a{" "}
-              {Math.min(safeCurrentPage * pageSize, totalItems)} de {totalItems} productos
+              Mostrando {startIndex + 1} a {endIndex} de {totalItems} productos
             </span>
             <span>|</span>
             <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               Por página:
               <select
                 value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 className={styles.pageSizeSelect}
               >
                 <option value={10}>10</option>
@@ -165,19 +170,19 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
             <button
               type="button"
               className={styles.pageBtn}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={safeCurrentPage <= 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
             >
               Anterior
             </button>
             <span className={styles.pageIndicator}>
-              Página {safeCurrentPage} de {totalPages}
+              Página {currentPage} de {totalPages}
             </span>
             <button
               type="button"
               className={styles.pageBtn}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safeCurrentPage >= totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
             >
               Siguiente
             </button>

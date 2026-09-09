@@ -6,6 +6,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { groupCashierSalesByTicket } from "../services/cashierCommissionDetailService";
 import { exportCashierStatementToExcel } from "../utils/commissionsReportExportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 export const useCashierCommissionDetail = ({
   cashier,
@@ -13,8 +14,6 @@ export const useCashierCommissionDetail = ({
   startDate,
   endDate,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [isExportingStatement, setIsExportingStatement] = useState(false);
 
   // Filtrar partidas del cajero seleccionado
@@ -30,17 +29,29 @@ export const useCashierCommissionDetail = ({
     return groupCashierSalesByTicket(cashierRows);
   }, [cashierRows]);
 
-  const totalPages = Math.ceil(ticketGroups.length / pageSize) || 1;
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const totalTickets = ticketGroups.length;
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: totalTickets,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 20],
+  });
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [ticketGroups.length]);
+    resetPagination();
+  }, [totalTickets, resetPagination]);
 
-  const currentTickets = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * pageSize;
-    return ticketGroups.slice(startIndex, startIndex + pageSize);
-  }, [ticketGroups, safeCurrentPage, pageSize]);
+  const currentTickets = pageItems(ticketGroups);
 
   const handleExportStatement = useCallback(async () => {
     if (!cashier?.cashierName || ticketGroups.length === 0) return;
@@ -64,12 +75,14 @@ export const useCashierCommissionDetail = ({
     cashierRows,
     ticketGroups,
     currentTickets,
-    currentPage: safeCurrentPage,
-    setCurrentPage,
+    currentPage,
     pageSize,
-    setPageSize,
     totalPages,
-    totalTickets: ticketGroups.length,
+    startIndex,
+    endIndex,
+    totalTickets,
+    handlePageChange,
+    handlePageSizeChange,
     isExportingStatement,
     handleExportStatement,
   };

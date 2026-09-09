@@ -3,24 +3,32 @@
  * Pestaña con el historial de compras/tickets del cliente, desglose de artículos y paginación.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatCurrency, formatDynamicDate } from "../utils/customersReportFormatters";
 import chevronDownIcon from "../../../../../assets/icons/chevron-down-solid-full.svg";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 const CustomerDetailSalesTab = ({ sales = [] }) => {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
   const [expandedTicketId, setExpandedTicketId] = useState(null);
 
-  const totalTickets = sales.length;
-  const totalPages = Math.max(1, Math.ceil(totalTickets / pageSize));
-  const safePage = Math.min(page, totalPages);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: sales.length,
+    defaultPageSize: 8,
+    pageSizeOptions: [5, 8, 15],
+  });
 
-  const paginatedTickets = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return sales.slice(start, start + pageSize);
-  }, [sales, safePage, pageSize]);
+  const totalTickets = sales.length;
+  const paginatedTickets = pageItems(sales);
 
   const toggleTicket = (ticketId) => {
     setExpandedTicketId((prev) => (prev === ticketId ? null : ticketId));
@@ -125,18 +133,14 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
             <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
               <div className={styles.paginationInfo}>
                 <span>
-                  Mostrando {Math.min((safePage - 1) * pageSize + 1, totalTickets)} a{" "}
-                  {Math.min(safePage * pageSize, totalTickets)} de {totalTickets} tickets
+                  Mostrando {startIndex + 1} a {endIndex} de {totalTickets} tickets
                 </span>
                 <span>|</span>
                 <label className={styles.paginationLabel}>
                   Por página:
                   <select
                     value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                     className={styles.pageSizeSelect}
                   >
                     <option value={5}>5</option>
@@ -150,19 +154,19 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
                 >
                   Anterior
                 </button>
                 <span className={styles.pageIndicator}>
-                  Página {safePage} de {totalPages}
+                  Página {currentPage} de {totalPages}
                 </span>
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
                 >
                   Siguiente
                 </button>
