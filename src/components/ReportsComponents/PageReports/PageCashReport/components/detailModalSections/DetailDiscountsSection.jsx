@@ -1,17 +1,23 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "../CashComponents.module.css";
 import { formatCurrency, formatDynamicDate } from "../../utils/cashReportFormatters";
+import { usePagination } from "../../../../../../hooks/usePagination";
 
 const ITEMS_PER_PAGE = 5;
 
 const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz }) => {
-  const [discountsPage, setDiscountsPage] = useState(1);
+  const {
+    currentPage,
+    totalPages,
+    pageItems,
+    handlePageChange,
+  } = usePagination({
+    totalItems: discountsList.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
 
-  const totalDiscountsPages = Math.ceil(discountsList.length / ITEMS_PER_PAGE) || 1;
-  const paginatedDiscounts = discountsList.slice(
-    (discountsPage - 1) * ITEMS_PER_PAGE,
-    discountsPage * ITEMS_PER_PAGE
-  );
+  const paginatedDiscounts = pageItems(discountsList);
 
   return (
     <div className={styles.modalSection}>
@@ -113,26 +119,26 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           </table>
 
           {/* Paginador de Descuentos (de 5 en 5) */}
-          {totalDiscountsPages > 1 && (
+          {totalPages > 1 && (
             <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`}>
               <p className={styles.paginationInfo}>
-                Página {discountsPage} de {totalDiscountsPages} ({discountsList.length} productos)
+                Página {currentPage} de {totalPages} ({discountsList.length} productos)
               </p>
               <div className={styles.paginationControls}>
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setDiscountsPage((p) => Math.max(p - 1, 1))}
-                  disabled={discountsPage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
                 >
                   Anterior
                 </button>
-                <span className={styles.pageIndicator}>{discountsPage}</span>
+                <span className={styles.pageIndicator}>{currentPage}</span>
                 <button
                   type="button"
                   className={styles.pageBtn}
-                  onClick={() => setDiscountsPage((p) => Math.min(p + 1, totalDiscountsPages))}
-                  disabled={discountsPage >= totalDiscountsPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
                 >
                   Siguiente
                 </button>

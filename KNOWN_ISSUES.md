@@ -171,7 +171,7 @@ sincroniza de alguna forma con este sistema remoto, o si son completamente indep
 también el punto 13 de este documento.
 
 ### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
-**Estado:** en progreso — migración de tablas client-side completada el 9 de septiembre de 2026.
+**Estado:** completado — migración de client-side, server-side (Sales) e híbrido (Cash) terminada el 9 de septiembre de 2026 (rama `feature/products-pagination`).
 
 El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) estaba
 duplicado en ~20 componentes del módulo de reportes, cada uno con su propio `useState` de
@@ -181,7 +181,7 @@ Se creó el hook global `src/hooks/usePagination.js` cubriendo ambas variantes �
 `pageItems(items)` y server-side con `startIndex`/`endIndex` — y se adoptó en la lista de
 productos (`useProductsList`).
 
-**Migrado a `usePagination` (variant client-side, rama `feature/products-pagination`):**
+**Migrado a `usePagination` (client-side, commit `04cd71f`):**
 - Rentabilidad: `ProfitabilityDepartmentsTable`, `ProfitabilityProductsTable`,
   `ProfitabilityCriticalTable` (selector [5,10,20] en departamentos).
 - Inventario: `ReorderSuggestionsTable`, `InventoryValuationTable`, `InventoryDepartmentSummary`.
@@ -193,18 +193,20 @@ productos (`useProductsList`).
   `CustomerDetailSalesTab`.
 - Productos: `TopProductsTable`, `DeadStockTable` (paginación fija de 50/ítem, sin selector).
 
-**Pendiente (requiere refactor más profundo, no sujeto a esta iteración):**
-- `PageSalesReport` + `useSalesReport`: variante **server-side** (`ITEMS_PER_PAGE` const +
-  `totalCount`, query con `range`). Migraría derivando `startIndex`/`endIndex` del hook.
-- Cash: `useCashReport` híbrido (paginación centralizada en el hook para sessions/movements) +
-  `CashMovementsTable`/`CashSettingsTable` y `DetailMovementsSection`/`DetailDiscountsSection`
-  (tamaño fijo 5).
+**Migrado a `usePagination` (server-side):**
+- `PageSalesReport` + `useSalesReport`: el hook centraliza `currentPage`/`totalPages`/`pageSize`
+  derivando de `totalCount` que llega de `getPaginatedSales` (query con `range`); guarda en estado
+  `totalCount` en lugar de `totalPages` y usa `pageSize` dinámico ([10,25,50]) en la query. El
+  `export default` de `ITEMS_PER_PAGE` se mantiene como `defaultPageSize`.
 
-**Impacto:** reducido — desaparece la duplicación en los client-side; el patrón unifica el
-reseteo a página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de comisiones).
+**Migrado a `usePagination` (híbrido):**
+- `useCashReport`: dos instancias `usePagination` (sesiones y movimientos) con `pageSizeOptions`
+  fijo de 5, compartidas con `CashSessionsTable`/`CashMovementsTable` (UI de paginación por props,
+  sin estado propio) y reseteo en `loadReportData` al cambiar filtros.
+- `DetailMovementsSection`/`DetailDiscountsSection` (tamaño fijo 5) del modal de detalle de sesión.
 
-**Recomendación:** completar la migración del par server-side (Sales) y del híbrido (Cash) en una
-iteración dedicada, verificando el flujo de datos/queries de cada uno.
+**Impacto:** desapareció la duplicación en todos los reportes; el patrón unifica el reseteo a
+página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de comisiones).
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
 **Estado:** abierto — documentado el 9 de septiembre de 2026.

@@ -23,8 +23,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [ ] Unit tests para utilidades puras (`importUtils.js`, servicios de import/kits) — ver `KNOWN_ISSUES.md` #9
 * [ ] Migraciones SQL versionadas para el schema de Supabase — ver `KNOWN_ISSUES.md` #6
 * [ ] Revisión de roles y permisos entre Supabase y SQLite local — ver `KNOWN_ISSUES.md` #10
-* [x] Migrar tablas de reportes al hook global `usePagination` (client-side completo) — ver `KNOWN_ISSUES.md` #15
-* [ ] Migrar `PageSalesReport` (server-side) y Cash (híbrido) al hook `usePagination` — ver `KNOWN_ISSUES.md` #15
+* [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15
 * [ ] Migrar lista de productos a paginación server-side si el catálogo supera ~2000 SKUs — ver `KNOWN_ISSUES.md` #16
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)

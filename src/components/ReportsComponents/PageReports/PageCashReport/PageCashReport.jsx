@@ -47,14 +47,14 @@ const PageCashReport = () => {
     sessions,
     paginatedSessions,
     currentSessionsPage,
-    setCurrentSessionsPage,
     totalSessionsPages,
+    handleSessionsPageChange,
 
     movements,
     paginatedMovements,
     currentMovementsPage,
-    setCurrentMovementsPage,
     totalMovementsPages,
+    handleMovementsPageChange,
 
     paymentMethodsSummary,
     cashierAudit,
@@ -188,7 +188,7 @@ const PageCashReport = () => {
             currentPage={currentSessionsPage}
             totalPages={totalSessionsPages}
             totalItems={sessions.length}
-            onPageChange={setCurrentSessionsPage}
+            onPageChange={handleSessionsPageChange}
             onOpenDetail={handleOpenDetailModal}
           />
         )}
@@ -200,7 +200,7 @@ const PageCashReport = () => {
             currentPage={currentMovementsPage}
             totalPages={totalMovementsPages}
             totalItems={movements.length}
-            onPageChange={setCurrentMovementsPage}
+            onPageChange={handleMovementsPageChange}
           />
         )}
 

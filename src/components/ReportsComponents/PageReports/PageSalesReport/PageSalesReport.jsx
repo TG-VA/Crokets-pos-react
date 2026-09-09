@@ -2,7 +2,7 @@ import React from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-import { useSalesReport, ITEMS_PER_PAGE } from "./hooks/useSalesReport";
+import { useSalesReport } from "./hooks/useSalesReport";
 import { formatCurrency, formatSyncTime } from "../../../../utils/formatters";
 import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
 import AppModal from "../../../AppModal/AppModal";
@@ -18,7 +18,7 @@ const PageSalesReport = () => {
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
     discountFilter, setDiscountFilter, branchesList, cashiersList,
-    currentPage, setCurrentPage, totalPages, paginatedSales, 
+currentPage, totalPages, pageSize, handlePageChange, paginatedSales, 
     loading, summary, syncedAt, hasActiveFilters, handleClearFilters, handleRowClick,
     handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary,
     isTicketModalOpen, selectedTicket, ticketDetails,
@@ -293,12 +293,12 @@ const PageSalesReport = () => {
         {startDate && endDate && !loading && summary.totalTickets > 0 && (
           <div className={styles.paginationContainer}>
             <span className={styles.paginationInfo}>
-              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, summary.totalTickets)} de {summary.totalTickets} resultados
+              Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, summary.totalTickets)} de {summary.totalTickets} resultados
             </span>
             <div className={styles.paginationControls}>
               <button 
                 className={styles.pageBtn} 
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
                 Anterior
@@ -308,7 +308,7 @@ const PageSalesReport = () => {
               </span>
               <button 
                 className={styles.pageBtn} 
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
                 Siguiente

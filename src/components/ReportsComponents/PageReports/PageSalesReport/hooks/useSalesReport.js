@@ -6,6 +6,7 @@ import {
 } from "../services/salesReportService";
 import { generateSummaryExcel, generateDetailedExcel } from "../services/excelExportService";
 import { getTimezoneOffset, formatYMD } from "../utils/dateUtils"; // <-- IMPORTACIÓN PURA
+import { usePagination } from "../../../../../hooks/usePagination";
 
 export const ITEMS_PER_PAGE = 10; 
 
@@ -25,8 +26,7 @@ export const useSalesReport = () => {
   const [branchesList, setBranchesList] = useState([{ id: "Todas", name: "Cargando..." }]);
   const [cashiersList, setCashiersList] = useState([{ id: "Todos", name: "Cargando..." }]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   
@@ -40,6 +40,19 @@ export const useSalesReport = () => {
   const [paginatedSales, setPaginatedSales] = useState([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalTickets: 0, averageTicket: 0, totalDiscounts: 0 });
   const [syncedAt, setSyncedAt] = useState(null);
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    handlePageChange,
+    handlePageSizeChange,
+    resetPagination,
+  } = usePagination({
+    totalItems: totalCount,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [10, 25, 50],
+  });
 
   useEffect(() => {
     let isActive = true;
@@ -89,14 +102,14 @@ export const useSalesReport = () => {
     setLoading(true);
     try {
       const [salesRes, kpisRes] = await Promise.all([
-        getPaginatedSales(filters, currentPage, ITEMS_PER_PAGE),
+        getPaginatedSales(filters, currentPage, pageSize),
         getSalesKPIs(filters)
       ]);
 
       if (!options.isActive) return;
 
       setPaginatedSales(salesRes.data);
-      setTotalPages(Math.ceil(salesRes.totalCount / ITEMS_PER_PAGE) || 1);
+      setTotalCount(salesRes.totalCount);
       
       setSummary({
         totalIncome: kpisRes.totalIncome,
@@ -117,7 +130,7 @@ export const useSalesReport = () => {
         setLoading(false);
       }
     }
-  }, [getCurrentFilters, currentPage]);
+  }, [getCurrentFilters, currentPage, pageSize]);
 
   useEffect(() => {
     const state = { isActive: true };
@@ -126,8 +139,8 @@ export const useSalesReport = () => {
   }, [fetchSalesReport]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter]);
+    resetPagination();
+  }, [startDate, endDate, selectedBranch, selectedCashier, saleStatus, paymentMethod, discountFilter, resetPagination]);
 
   const setQuickDatePreset = (preset) => {
     setActiveDatePreset(preset);
@@ -264,7 +277,8 @@ export const useSalesReport = () => {
     activeDatePreset, setQuickDatePreset,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
-    branchesList, cashiersList, currentPage, setCurrentPage, totalPages,
+    branchesList, cashiersList, currentPage, totalPages, pageSize,
+    handlePageChange, handlePageSizeChange,
     paginatedSales, isTicketModalOpen, selectedTicket, ticketDetails,
     loadingModal, loading, summary, syncedAt, hasActiveFilters, handleClearFilters,
     handleRowClick, handleCloseModal, handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary
