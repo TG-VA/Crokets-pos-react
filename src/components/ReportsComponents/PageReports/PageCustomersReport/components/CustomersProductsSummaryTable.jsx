@@ -3,13 +3,14 @@
  * Tabla de análisis de productos más consumidos por clientes identificados con paginación.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import ProductBuyersModal from "./ProductBuyersModal";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomersProductsSummaryTable = ({ products = [] }) => {
   const [selectedProductForBuyers, setSelectedProductForBuyers] = useState(null);
@@ -146,48 +147,18 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
 
       {/* Barra de Paginación */}
       {totalItems > 0 && (
-        <div className={styles.paginationWrapper}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Mostrando {startIndex + 1} a {endIndex} de {totalItems} productos
-            </span>
-            <span>|</span>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              Por página:
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="productos"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
 
       {/* Modal para ver qué clientes compran este producto */}

@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
+import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
 
 const ProductsList = () => {
   const {
@@ -213,45 +214,18 @@ const ProductsList = () => {
       </div>
 
       {filteredProducts.length > 0 && (
-        <div className={styles.paginationWrapper}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Página {currentPage} de {totalPages} ({filteredProducts.length}{" "}
-              productos)
-            </span>
-            <label className={styles.pageSizeLabel}>
-              Mostrar:
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>{currentPage}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          itemsNoun="productos"
+          labelMode="pageCount"
+          selectorLabel="Mostrar:"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

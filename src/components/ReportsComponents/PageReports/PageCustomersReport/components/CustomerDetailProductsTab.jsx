@@ -7,6 +7,7 @@ import React from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
   const {
@@ -79,48 +80,19 @@ const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
           </table>
 
           {totalProducts > 0 && (
-            <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {startIndex + 1} a {endIndex} de {totalProducts} productos
-                </span>
-                <span>|</span>
-                <label className={styles.paginationLabel}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalProducts}
+              pageSize={pageSize}
+              pageSizeOptions={[5, 10, 20]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="productos"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </>
       )}

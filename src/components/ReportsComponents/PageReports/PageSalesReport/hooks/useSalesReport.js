@@ -45,13 +45,13 @@ export const useSalesReport = () => {
     currentPage,
     totalPages,
     pageSize,
+    startIndex,
+    endIndex,
     handlePageChange,
-    handlePageSizeChange,
     resetPagination,
   } = usePagination({
     totalItems: totalCount,
     defaultPageSize: ITEMS_PER_PAGE,
-    pageSizeOptions: [10, 25, 50],
   });
 
   useEffect(() => {
@@ -277,8 +277,8 @@ export const useSalesReport = () => {
     activeDatePreset, setQuickDatePreset,
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod, discountFilter, setDiscountFilter,
-    branchesList, cashiersList, currentPage, totalPages, pageSize,
-    handlePageChange, handlePageSizeChange,
+    branchesList, cashiersList, currentPage, totalPages, startIndex, endIndex,
+    handlePageChange,
     paginatedSales, isTicketModalOpen, selectedTicket, ticketDetails,
     loadingModal, loading, summary, syncedAt, hasActiveFilters, handleClearFilters,
     handleRowClick, handleCloseModal, handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary

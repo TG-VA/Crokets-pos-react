@@ -12,6 +12,7 @@ import {
   formatPercent,
 } from "../utils/profitabilityReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 import tagIcon from "../../../../../assets/icons/tag-solid-full.svg";
 
@@ -282,48 +283,18 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
           </div>
 
           {/* Paginación */}
-          <div className={styles.paginationWrapper}>
-            <div className={styles.paginationInfo}>
-              <span>
-                Mostrando {pageStart + 1} a {pageEnd} de {totalItems} departamentos
-              </span>
-              <span>|</span>
-              <label className={styles.paginationLabel}>
-                Por página:
-                <select
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className={styles.pageSizeSelect}
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                </select>
-              </label>
-            </div>
-
-            <div className={styles.paginationControls}>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage <= 1}
-              >
-                Anterior
-              </button>
-              <span className={styles.pageIndicator}>
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[5, 10, 20]}
+            startIndex={pageStart}
+            endIndex={pageEnd}
+            itemsNoun="departamentos"
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </>
       )}
     </div>

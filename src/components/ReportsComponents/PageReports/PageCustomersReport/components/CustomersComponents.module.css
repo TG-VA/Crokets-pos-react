@@ -368,77 +368,6 @@
 }
 
 /* =========================================================
-   PAGINACIÓN
-   ========================================================= */
-
-.paginationWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-top: 1px solid #f1f5f9;
-  background-color: #ffffff;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.paginationInfo {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pageSizeSelect {
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 3px 6px;
-  font-size: 0.775rem;
-  color: #1e293b;
-  font-weight: 600;
-  outline: none;
-  cursor: pointer;
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pageBtn {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background-color: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-.pageBtn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.pageIndicator {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #1e293b;
-  padding: 0 4px;
-}
-
-/* =========================================================
    ETIQUETAS Y BADGES
    ========================================================= */
 
@@ -1168,19 +1097,8 @@
 }
 
 /* =========================================================
-   CLASES COMPARTIDAS DE PAGINACIÓN Y TABLAS EN MODALES
+   CLASES COMPARTIDAS PARA MODALES
    ========================================================= */
-
-.modalPaginationWrapper {
-  margin-top: auto;
-  padding-top: 14px;
-}
-
-.paginationLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
 .monospaceCell {
   font-family: monospace;

@@ -18,6 +18,7 @@ import userIcon from "../../../../../assets/icons/user-solid.svg";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const ProductBuyersModal = ({
   isOpen = false,
@@ -267,48 +268,19 @@ const ProductBuyersModal = ({
 
           {/* Paginación de compradores del producto */}
           {totalBuyers > 0 && (
-            <div className={styles.paginationWrapper} style={{ margin: "auto 18px 16px 18px" }}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {startIndex + 1} a {endIndex} de {totalBuyers} compradores
-                </span>
-                <span>|</span>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalBuyers}
+              pageSize={pageSize}
+              pageSizeOptions={[5, 10, 25]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="compradores"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </div>
       </div>

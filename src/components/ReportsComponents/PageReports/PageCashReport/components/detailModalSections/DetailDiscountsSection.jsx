@@ -2,6 +2,7 @@ import React from "react";
 import styles from "../CashComponents.module.css";
 import { formatCurrency, formatDynamicDate } from "../../utils/cashReportFormatters";
 import { usePagination } from "../../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../../components/PaginationBar/PaginationBar";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -120,30 +121,15 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
 
           {/* Paginador de Descuentos (de 5 en 5) */}
           {totalPages > 1 && (
-            <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`}>
-              <p className={styles.paginationInfo}>
-                Página {currentPage} de {totalPages} ({discountsList.length} productos)
-              </p>
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>{currentPage}</span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={discountsList.length}
+              itemsNoun="productos"
+              labelMode="pageCount"
+              modal
+              onPageChange={handlePageChange}
+            />
           )}
         </div>
       )}

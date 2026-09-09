@@ -8,6 +8,7 @@ import styles from "./CustomersComponents.module.css";
 import { formatCurrency, formatDynamicDate } from "../utils/customersReportFormatters";
 import chevronDownIcon from "../../../../../assets/icons/chevron-down-solid-full.svg";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomerDetailSalesTab = ({ sales = [] }) => {
   const [expandedTicketId, setExpandedTicketId] = useState(null);
@@ -130,48 +131,19 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
           </div>
 
           {totalTickets > 0 && (
-            <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {startIndex + 1} a {endIndex} de {totalTickets} tickets
-                </span>
-                <span>|</span>
-                <label className={styles.paginationLabel}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={5}>5</option>
-                    <option value={8}>8</option>
-                    <option value={15}>15</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalTickets}
+              pageSize={pageSize}
+              pageSizeOptions={[5, 8, 15]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="tickets"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </>
       )}

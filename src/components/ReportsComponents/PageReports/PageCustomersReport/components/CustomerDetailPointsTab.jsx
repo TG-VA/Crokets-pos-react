@@ -7,6 +7,7 @@ import React from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatNumber, formatDynamicDate } from "../utils/customersReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomerDetailPointsTab = ({ pointsLedger = [] }) => {
   const {
@@ -118,48 +119,19 @@ const CustomerDetailPointsTab = ({ pointsLedger = [] }) => {
           </div>
 
           {totalPoints > 0 && (
-            <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {startIndex + 1} a {endIndex} de {totalPoints} movimientos
-                </span>
-                <span>|</span>
-                <label className={styles.paginationLabel}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalPoints}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 25, 50]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="movimientos"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </>
       )}

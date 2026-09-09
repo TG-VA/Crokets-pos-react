@@ -194,10 +194,9 @@ productos (`useProductsList`).
 - Productos: `TopProductsTable`, `DeadStockTable` (paginación fija de 50/ítem, sin selector).
 
 **Migrado a `usePagination` (server-side):**
-- `PageSalesReport` + `useSalesReport`: el hook centraliza `currentPage`/`totalPages`/`pageSize`
-  derivando de `totalCount` que llega de `getPaginatedSales` (query con `range`); guarda en estado
-  `totalCount` en lugar de `totalPages` y usa `pageSize` dinámico ([10,25,50]) en la query. El
-  `export default` de `ITEMS_PER_PAGE` se mantiene como `defaultPageSize`.
+- `PageSalesReport` + `useSalesReport`: el hook centraliza `currentPage`/`totalPages`/`startIndex`/
+  `endIndex` derivando de `totalCount` que llega de `getPaginatedSales` (query con `range`); el
+  `export default` de `ITEMS_PER_PAGE` se mantiene fijo (sin selector de tamaño de página).
 
 **Migrado a `usePagination` (híbrido):**
 - `useCashReport`: dos instancias `usePagination` (sesiones y movimientos) con `pageSizeOptions`
@@ -205,8 +204,19 @@ productos (`useProductsList`).
   sin estado propio) y reseteo en `loadReportData` al cambiar filtros.
 - `DetailMovementsSection`/`DetailDiscountsSection` (tamaño fijo 5) del modal de detalle de sesión.
 
+**Unificación visual con `PaginationBar` (extraído):**
+- Nuevo `components/PaginationBar/PaginationBar.jsx` (+ `.module.css`) compartido por los ~24
+  consumers: cash, comisiones, clientes (incl. modales), inventario, productos (reporte y
+  `ProductsList`), rentabilidad (3 tablas) y ventas (server-side). Admite selector de páginas
+  opcional (`pageSizeOptions`), modo de modal y `labelMode` (rango / página), exponiendo
+  `currentPage`/`totalPages`/`startIndex`/`endIndex` de `usePagination`.
+- Se eliminó el componente duplicado `ProfitabilityTablePagination.jsx` y las clases de paginación
+  huérfanas de los `*.module.css` de cash, comisiones (inventario/commissions mantienen las del
+  modal `CashierCommissionDetailModal`), clientes, inventario, producto y ventas.
+
 **Impacto:** desapareció la duplicación en todos los reportes; el patrón unifica el reseteo a
-página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de comisiones).
+página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de comisiones) y centraliza
+el estilo y el marcado del footer de paginación en un único componente.
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
 **Estado:** abierto — documentado el 9 de septiembre de 2026.

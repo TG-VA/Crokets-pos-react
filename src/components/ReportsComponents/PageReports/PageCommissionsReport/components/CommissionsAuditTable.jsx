@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import styles from "./CommissionsComponents.module.css";
 import {
   formatCurrency,
@@ -7,6 +7,7 @@ import {
   formatCommissionRule,
 } from "../utils/commissionsReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 export const CommissionsAuditTable = ({ detailedRows = [] }) => {
   // Considerar solo partidas con comisión activa para la auditoría de incentivos
@@ -36,10 +37,7 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
     resetPagination();
   }, [totalItems, resetPagination]);
 
-  const paginatedRows = useMemo(() => pageItems(commissionableRows), [
-    pageItems,
-    commissionableRows,
-  ]);
+  const paginatedRows = pageItems(commissionableRows);
 
   const totals = useMemo(() => {
     return commissionableRows.reduce(
@@ -245,49 +243,19 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
       </div>
 
       {totalItems > 0 && (
-        <div className={styles.paginationBar}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Mostrando {startIndex + 1} a {endIndex} de {totalItems}{" "}
-              registros
-            </span>
-            <span className={styles.paginationDivider}>|</span>
-            <label className={styles.pageSizeLabel}>
-              Mostrar:
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationActions}>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage <= 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>
-              Pág. {currentPage} de {totalPages}
-            </span>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage >= totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="registros"
+          selectorLabel="Mostrar:"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

@@ -13,8 +13,8 @@ import {
 } from "../utils/profitabilityReportFormatters";
 import KitComponentsDetailModal from "./KitComponentsDetailModal";
 import CriticalAuditBanner from "./CriticalAuditBanner";
-import ProfitabilityTablePagination from "./ProfitabilityTablePagination";
 import ProfitabilityCriticalRow from "./ProfitabilityCriticalRow";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
@@ -63,7 +63,10 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
 
   const {
     currentPage,
+    totalPages,
     pageSize,
+    startIndex,
+    endIndex,
     pageItems,
     resetPagination,
     handlePageChange,
@@ -309,10 +312,15 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             </table>
           </div>
 
-          <ProfitabilityTablePagination
+          <PaginationBar
             currentPage={currentPage}
-            pageSize={pageSize}
+            totalPages={totalPages}
             totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50]}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="productos"
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />

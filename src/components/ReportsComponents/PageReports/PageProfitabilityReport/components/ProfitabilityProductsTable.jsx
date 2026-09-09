@@ -11,7 +11,7 @@ import {
   formatPercent,
 } from "../utils/profitabilityReportFormatters";
 import KitComponentsDetailModal from "./KitComponentsDetailModal";
-import ProfitabilityTablePagination from "./ProfitabilityTablePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
@@ -26,7 +26,10 @@ const ProfitabilityProductsTable = ({
 
   const {
     currentPage,
+    totalPages,
     pageSize,
+    startIndex,
+    endIndex,
     pageItems,
     handlePageChange,
     handlePageSizeChange,
@@ -243,10 +246,15 @@ const ProfitabilityProductsTable = ({
             </table>
           </div>
 
-          <ProfitabilityTablePagination
+          <PaginationBar
             currentPage={currentPage}
-            pageSize={pageSize}
+            totalPages={totalPages}
             totalItems={totalItems}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50]}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="productos"
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />

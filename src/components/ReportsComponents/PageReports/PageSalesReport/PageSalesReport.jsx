@@ -7,6 +7,7 @@ import { formatCurrency, formatSyncTime } from "../../../../utils/formatters";
 import { TicketDetailModal } from "./components/TicketDetailModal/TicketDetailModal";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./PageSalesReport.module.css";
+import PaginationBar from "../../../PaginationBar/PaginationBar";
 import rotateLeftIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
 
@@ -18,7 +19,7 @@ const PageSalesReport = () => {
     selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
     saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
     discountFilter, setDiscountFilter, branchesList, cashiersList,
-currentPage, totalPages, pageSize, handlePageChange, paginatedSales, 
+currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales, 
     loading, summary, syncedAt, hasActiveFilters, handleClearFilters, handleRowClick,
     handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary,
     isTicketModalOpen, selectedTicket, ticketDetails,
@@ -291,30 +292,15 @@ currentPage, totalPages, pageSize, handlePageChange, paginatedSales,
         </div>
 
         {startDate && endDate && !loading && summary.totalTickets > 0 && (
-          <div className={styles.paginationContainer}>
-            <span className={styles.paginationInfo}>
-              Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, summary.totalTickets)} de {summary.totalTickets} resultados
-            </span>
-            <div className={styles.paginationControls}>
-              <button 
-                className={styles.pageBtn} 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <span className={styles.pageNumber}>
-                Página {currentPage} de {totalPages}
-              </span>
-              <button 
-                className={styles.pageBtn} 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={summary.totalTickets}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="resultados"
+            onPageChange={handlePageChange}
+          />
         )}
       </div>
 

@@ -3,7 +3,7 @@
  * Tabla de canjes de recompensas y uso de puntos por clientes con paginación.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import styles from "./CustomersComponents.module.css";
 import {
   formatCurrency,
@@ -13,6 +13,7 @@ import {
 } from "../utils/customersReportFormatters";
 import giftsIcon from "../../../../../assets/icons/gifts-solid-full.svg";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomersRewardsSummaryTable = ({
   redemptions = [],
@@ -164,48 +165,18 @@ const CustomersRewardsSummaryTable = ({
 
       {/* Barra de Paginación */}
       {totalItems > 0 && (
-        <div className={styles.paginationWrapper}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Mostrando {startIndex + 1} a {endIndex} de {totalItems} canjes
-            </span>
-            <span>|</span>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              Por página:
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="canjes"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

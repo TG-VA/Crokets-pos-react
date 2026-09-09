@@ -441,57 +441,6 @@
   font-weight: 900;
 }
 
-.paginationContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.paginationInfo {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pageNumber {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #334155;
-}
-
-.pageBtn {
-  background-color: #ffffff;
-  border: 1px solid #d0d5dd;
-  color: #344054;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background-color: #f8fafc;
-  border-color: #1092b1;
-  color: #1092b1;
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #f1f5f9;
-}
-
 .loadingState, .emptyState {
   text-align: center;
   padding: 40px;

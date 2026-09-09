@@ -2,6 +2,7 @@ import React from "react";
 import styles from "../CashComponents.module.css";
 import { formatCurrency, formatDynamicDate, formatMovementType } from "../../utils/cashReportFormatters";
 import { usePagination } from "../../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../../components/PaginationBar/PaginationBar";
 
 import EntryIcon from "../../../../../../assets/icons/entryIcon.svg";
 import ExitIcon from "../../../../../../assets/icons/exitIcon.svg";
@@ -95,30 +96,15 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
 
       {/* Paginación de Movimientos si hay más de 5 */}
       {totalPages > 1 && (
-        <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`}>
-          <p className={styles.paginationInfo}>
-            Página {currentPage} de {totalPages} ({movements.length} movimientos)
-          </p>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>{currentPage}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={movements.length}
+          itemsNoun="movimientos"
+          labelMode="pageCount"
+          modal
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );

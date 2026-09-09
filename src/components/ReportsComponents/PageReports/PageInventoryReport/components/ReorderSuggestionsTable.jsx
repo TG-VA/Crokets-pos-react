@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
 import { getStatusBadge } from "../utils/inventoryReportUtils";
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
   const {
@@ -26,7 +27,7 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
     resetPagination();
   }, [items.length, resetPagination]);
 
-  const currentItems = useMemo(() => pageItems(items), [pageItems, items]);
+  const currentItems = pageItems(items);
 
   const totalEstimatedInvestment = useMemo(() => {
     return items.reduce((acc, item) => acc + (item.estimatedInvestment || 0), 0);
@@ -119,48 +120,18 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
       </div>
 
       {items.length > 0 && (
-        <div className={styles.paginationBar}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Mostrando {startIndex + 1} a {endIndex} de {items.length} sugerencias
-            </span>
-            <span className={styles.paginationDivider}>|</span>
-            <label className={styles.pageSizeLabel}>
-              Por página:
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationActions}>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage <= 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage >= totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={items.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="sugerencias"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

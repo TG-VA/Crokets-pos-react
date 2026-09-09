@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styles from '../PageProductsReport.module.css';
 import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const DeadStockTable = ({ data, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,6 +19,8 @@ const DeadStockTable = ({ data, isLoading }) => {
   const {
     currentPage,
     totalPages,
+    startIndex,
+    endIndex,
     pageItems,
     resetPagination,
     handlePageChange,
@@ -84,33 +87,17 @@ const DeadStockTable = ({ data, isLoading }) => {
         </table>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '0.875rem' }}>
-        <span style={{ color: '#64748b' }}>
-          Mostrando {paginatedData.length} de {filteredData.length} productos
-        </span>
-        
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#ffffff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: '#334155' }}
-            >
-              Anterior
-            </button>
-            <span style={{ color: '#475569', fontWeight: '500' }}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#ffffff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: '#334155' }}
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
-      </div>
+      {filteredData.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredData.length}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="productos"
+          onPageChange={handlePageChange}
+        />
+      )}
     </>
   );
 };
