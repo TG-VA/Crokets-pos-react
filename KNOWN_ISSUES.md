@@ -189,6 +189,23 @@ productos (`useProductsList`). Falta migrar las tablas de reportes.
 **Recomendación:** migrar incrementalmente cada tabla de reportes a `usePagination`, respetando la
 variante (client-side vs server-side) de cada una. No requiere reescritura de golpe.
 
+### 16. Umbral de escalabilidad del catálogo de productos en memoria
+**Estado:** abierto — documentado el 9 de septiembre de 2026.
+
+`ProductsContext.loadProducts` carga el catálogo global completo (productos + inventario de la
+sucursal) en memoria y lo comparte con 9 hooks de los módulos de productos e inventario. Con un
+catálogo de ~1000 SKUs y creciendo, se aplicó `.limit(10000)` explícito
+(`MAX_CATALOG_ROWS_TO_LOAD`) en las 3 queries de `loadProducts` para evitar el truncamiento
+silencioso del límite por defecto de Supabase (1000 filas por query).
+
+**Impacto:** mientras el catálogo activo se mida en miles, la carga completa en memoria es viable
+(la lista de productos ya paga el render en frontend con `usePagination`). Superado un umbral de
+~2000-5000 SKUs, el payload de red y memoria degradará la experiencia de carga.
+
+**Recomendación:** migrar `ProductsList` a paginación server-side (`.range()`/`.ilike()` a Supabase),
+desacoplándola de `ProductsContext`, cuando el catálogo activo supere ~2000 SKUs o el tiempo de
+carga se degrade.
+
 ---
 
 ## Bajo
