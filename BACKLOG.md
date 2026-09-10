@@ -16,6 +16,8 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [ ] Componentes "dios" pendientes de refactor (`CashCut.jsx`, `ticketBuilder.js`, `RewardModal.jsx`) — ver `KNOWN_ISSUES.md` #3
 * [ ] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
 * [ ] Transacciones atómicas (RPC) faltantes en Supabase para Importación y Kits — ver `KNOWN_ISSUES.md` #5
+* [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
+* [ ] Verificar con datos reales la base de la comisión % (bruta `unit_price*qty` vs neta `total_price`) y normalizar bordes (precedencia value/percent, `has_commission` en 0, tipo `percentage`) — ver `KNOWN_ISSUES.md` #19 y #20
 
 ## Prioridad Media (Infraestructura y Testing)
 
@@ -28,12 +30,17 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Extraer componente compartido `PaginationBar` y eliminar los footers de paginación duplicados — ver `KNOWN_ISSUES.md` #15
 * [x] Migrar lista de productos a paginación server-side (RPC `get_branch_products_paginated`; `useProductsList` desacoplado de `ProductsContext`) — ver `KNOWN_ISSUES.md` #16
 * [x] Refactor de `ProductsContext`: extraer lógica de datos/CRUD a `src/services/products/` y optimizar realtime — ver `KNOWN_ISSUES.md` #16
+* [ ] Acotar el CTE `session_payments` por rango de fechas + índice compuesto en `sale_payments` para el reporte de caja — ver `KNOWN_ISSUES.md` #21
+* [ ] Concurrencia acotada en el procesamiento de partidas de rentabilidad (chunks paralelos o RPC) — ver `KNOWN_ISSUES.md` #22
+* [ ] Extraer `inventoryReportCalculationService.js` puro (agregaciones del reporte de inventario) — ver `KNOWN_ISSUES.md` #25
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
 * [ ] Vistas pendientes: `/inventory`, `/invoices`, `/cashout`, `/settings` — ver `TEMPLATE_NUEVA_PAGINA.md` y `KNOWN_ISSUES.md` #12
 * [ ] Simplificar condicional muerto de ícono en `electron/main.js` — ver `KNOWN_ISSUES.md` #11
 * [ ] Normalizar EOF newline en archivos preexistentes de `src/` (decenas de archivos) — ver `KNOWN_ISSUES.md` #17
+* [x] Squash de migraciones de comisiones — no procede (ya aplicadas al remoto; se sigue por migración correctiva) — ver `KNOWN_ISSUES.md` #23
+* [ ] QA visual del nuevo formato `ruleLabel` en el reporte de comisiones — ver `KNOWN_ISSUES.md` #24
 
 ---
 

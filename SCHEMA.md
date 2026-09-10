@@ -10,6 +10,11 @@ las queries usadas.
 **Pendiente:** no hay migraciones SQL versionadas en `supabase/migrations/` (ver `KNOWN_ISSUES.md`
 punto 6). Este documento es actualmente la única referencia de schema versionada en Git.
 
+**Actualización (10 sep 2026):** existe la carpeta `supabase/migrations/` con migraciones
+funcionales para RPCs de reportes (paginación de productos, caja, comisiones, inventario, índices de
+performance) y correcciones (filtro de estados en comisiones); sigue pendiente un baseline completo
+del schema existente (`KNOWN_ISSUES.md` #6).
+
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 
 ---
@@ -27,7 +32,7 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 | subtotal | numeric | NN |
 | tax | numeric | default 16.00 |
 | total | numeric | NN |
-| status | varchar | default 'completed' |
+| status | varchar | default 'completed' — valores vigentes en la app: `completed`, `pending`, `refunded`, `cancelled`/`cancelada`, `partial_refund` (ver `ticketBuilder.js`, `reportsDashboardUtils.js`, `cashCut.jsx`, `salesHistoryService.js`, `salesCashService.js`) |
 | client_sale_token | uuid | idempotencia del cliente (POS) |
 | discount_total | numeric | default 0 |
 | notes | text | |

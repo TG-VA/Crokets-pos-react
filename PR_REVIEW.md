@@ -78,3 +78,61 @@ Lista de verificación completa para la revisión de PRs (humana y mediante agen
 - [ ] **Imágenes decorativas:** ¿Los iconos/imágenes dentro de botones con `title`/texto tienen `alt=""` para evitar redundancia en lectores de pantalla?
 - [ ] **Comentarios:** ¿Los comentarios son claros, explican el propósito actual y no contienen historial de refactorizaciones?
 - [ ] **Cobertura de casos críticos:** para lógica de cálculo nueva y no trivial (KPIs, valorizaciones, sugerencias de compra), ¿existe al menos una prueba o verificación manual documentada de los casos borde mencionados en la sección 2?
+
+---
+
+## Informe de Auditoría — RAMA `perf/report-optimization` (10 de septiembre de 2026)
+
+**Alcance:** migración de los reportes de Comisiones, Inventario, Caja y Rentabilidad de fetching
+cliente→RPC con agregación server-side + eliminación del truncamiento de `MAX_SALES`.
+Commits revisados: `1ef4acc`, `612b68a`, `96a622d`, `30328a1` y `20260910120500` (corrección de
+estado, trabajo actual). Base: `b0c1d621`.
+
+### Veredicto por sección
+
+**§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+- Comisiones: se revirtió el doble-fetch completo y se movió todo a un único RPC
+  (`get_commissions_report_data`, `commissionsReportService.js:63-73` → `supabase.rpc(...).limit(100000)`).
+- Caja: movimientos con `.limit(100000)` (`cashReportService.js`); inventario: export habilitado con
+  dataset completo.
+- `MAX_SALES = 600` eliminado; la única cota es `.limit(100000)` por query/RPC y `CHUNK_SIZE = 100`
+  por chunk de `sale_details` en rentabilidad.
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- SRP: RPCs de datos de reporting (SQL) + servicios delgados que solo mapean y encadenan
+  `.limit(100000)` + hooks de estado sin lógica de persistencia (DIP respetado: los componentes no
+  importan `supabase`). Evidencia: `commissionsReportService.js`, `cashReportService.js`,
+  `inventoryReportService.js`, `profitabilityReportService.js` y rama 6 (Escala) — la RPC elimina
+  el N+1 de `sales`+`sale_details` en chunks (`20260910120200.sql`).
+- OCP/ISP/KISS: sin bloques JSX duplicados; las agregaciones se mueven al servidor en un solo place.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO con 1 hallazgo resuelto y 2 riesgos abiertos:**
+- Hallazgo resuelto (F1): filtro de ventas canceladas `!= 'canceled'` no matcheaba el enum canónico
+  `'cancelled'`/`'cancelada'` → pagaba comisión por tickets cancelados. Corregido en
+  `20260910120500_fix_commissions_status_filter.sql` (`NOT IN ('cancelled','cancelada')`). Ver
+  `KNOWN_ISSUES.md` #18.
+- Riesgos abiertos (requieren data real, no bloqueantes del PR): base de la comisión % bruta vs
+  neta y precedencia `value/percent` + bordes de `has_commission`/`percentage` — ver
+  `KNOWN_ISSUES.md` #19 y #20.
+- `ticket_number`: el RPC devuelve `upper(substring(id::text,1,8))`, idéntico a
+  `id.substring(0,8).toUpperCase()` del app — consistente.
+- Caso límite de la fuente de verdad (multi-sucursal en inventario): los costos se agregan por
+  sucursal y el RPC devuelve la fila de cada sucursal; el consolidado lo deriva el service — sin
+  dependencia de orden de filas para el valor unitario de una sucursal concreta.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** los reportes no mutan contextos compartidos; la
+paginación visual sigue sobre `usePagination` (client-side).
+
+**§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff.** Nota: `rule_label` cambió de formato vs
+legacy (`percent: 10%` vs `10.00%`) — QA visual pendiente, ver `KNOWN_ISSUES.md` #24.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+- Emojis: búsqueda de rango Unicode sobre el diff sin resultados.
+- `console.log`/`console.warn`: sin resultados en archivos nuevos/modificados; `console.error` en
+  `catch` preservados sin emojis.
+
+**§6 Documentación — CUMPLIDO:** este informe + `KNOWN_ISSUES.md` (#18-25), `BACKLOG.md` y
+`SCHEMA.md` (valores de `sales.status`) actualizados.
+
+**§7 Calidad/testing — CUMPLIDO:** suite `npx vitest run` pasa 119/119 (118 previos + contrato de
+filtro de estados); `npx vite build` OK (warning de chunk preexistente).

@@ -119,6 +119,27 @@ de permisos deseada por rol y implementarla en `role_permissions`, y extender el
 `has_permission()` en las políticas RLS de los módulos sensibles (facturación, cancelaciones,
 catálogo de productos). Ver detalle completo en `PERMISSIONS.md`.
 
+### 18. RPC de comisiones pagaba comisión por ventas canceladas (filtro `'canceled'`)
+**Estado:** resuelto — migración `supabase/migrations/20260910120500_fix_commissions_status_filter.sql`,
+rama `perf/report-optimization`, 10 de septiembre de 2026.
+
+Las funciones `get_commissions_report_data` (migraciones `20260910120200` y `20260910120400`)
+filtrarían `s.status != 'canceled'` (una sola "L"). El enum canónico de ventas canceladas en la app
+es `'cancelled'` (`src/utils/ticketBuilder.js:941`, `reportsDashboardUtils.js:149`,
+`salesHistoryService.js:13`) con `'cancelada'` en importaciones legacy, por lo que la exclusión
+nunca matcheaba y las ventas canceladas devengaban comisión.
+
+**Origen:** deuda preexistente replicada del client legacy (el `fetchCommissionsData` previo al RPC
+usaba `.neq("status", "canceled")`); identificada durante la auditoría del PR de optimización de
+reportes.
+
+**Impacto:** montos de comisión sobreliquidados si existían tickets cancelados en el periodo.
+
+**Recomendación:** al aplicar la migración, verificar que los totales del reporte excluyen los
+tickets `'cancelled'`/`'cancelada'`. El test contract en
+`commissionsReportService.test.js` cubre que el filtro de canceladas queda delegado al RPC (sin
+`p_status` en cliente).
+
 ---
 
 ## Medio
@@ -283,6 +304,75 @@ página es limitado y filtrado en el servidor.
 **Recomendación:** si otras vistas (Kardex, altas, inventario) superan el umbral, migrar sus
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
+### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
+**Estado:** abierto — requiere verificación con datos reales antes de tocar código (10 sep 2026).
+
+La RPC calcula la comisión porcentual sobre `unit_price * quantity` (monto bruto), mientras el
+client legacy (`commissionsCalculationService.js:45`) la calculaba sobre `total_price` (neto de
+línea). Cuando una partida tiene descuento (`discount_amount`/`ln`), las bases difieren. Además la
+RPC no replica la inferencia de descuentos implícitos del legacy (diferencia `sale_price` vs
+`unit_price`; `unit_price*qty` vs `total_price`) para la bandera `has_discount`.
+
+**Impacto:** posible divergencia en montos de comisión y en el filtro "con descuento" del reporte
+respecto a los resultados previos del RPC.
+
+**Recomendación:** validar con una muestra real de ventas con descuento si `sale_details.total_price`
+es el neto post-descuento y decidir la base canónica (neto) para alinear la RPC. Vinculado a
+`BACKLOG.md`.
+
+### 20. Precedencia commission_value/percent y bordes de has_commission y tipo `'percentage'`
+**Estado:** abierto — bordes de bajo impacto (10 sep 2026).
+
+En la RPC de comisiones: la comisión % usa `COALESCE(commission_percent, commission_value, 0)`
+mientras el legacy usaba `commission_value || commission_percent` (precedencia opuesta,
+`commissionsCalculationService.js:18`); `has_commission` es `true` aunque el valor sea 0 (el legacy
+devolvía `false` cuando `commVal <= 0`, `:27`); y el tipo `'percentage'` (sinónimo aceptado por el
+legacy, `:44`) ya no se interpreta — se calcula como flat.
+
+**Impacto:** bordes: filas marcadas comisionables con montos 0, productos con ambos campos seteados
+distintos, o configurados con tipo `percentage`.
+
+**Recomendación:** al tocar la base de comisión (punto 19), normalizar la precedencia,
+`has_commission` y el alias `percentage`.
+
+### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
+**Estado:** abierto — escalabilidad (10 sep 2026).
+
+`get_cash_report_sessions` (migración `20260910120100`) agrega `sale_payments` completos en el CTE
+`session_payments` y solo acota por ventana de sesión en el JOIN final; no hay pushdown del rango de
+fechas dentro del CTE y falta un índice acotado para el join por ventana.
+
+**Impacto:** a medida que crece el histórico de pagos, el reporte de caja puede degradarse.
+
+**Recomendación:** acotar el CTE por rango de fechas (o filtrar por `sale_id IN (...)` del periodo) y
+evaluar un índice compuesto, p. ej. `sale_payments (branch_id, created_at)`.
+
+### 22. Rentabilidad: procesamiento de partidas secuencial por chunks sin concurrencia
+**Estado:** abierto — escalabilidad (10 sep 2026).
+
+`profitabilityReportService.js` recorre `sale_details` en chunks de `CHUNK_SIZE = 100` con un bucle
+`for await` totalmente secuencial; con periodos grandes (decenas de miles de tickets) eso puede
+implicar hasta ~1000 requests encadenados.
+
+**Impacto:** latencia del reporte de rentabilidad en periodos largos.
+
+**Recomendación:** introducir concurrencia acotada (batches paralelos de tamaño fijo con
+`Promise.all` limitado) o mover la agregación a un RPC, siguiendo el patrón de comisiones/caja.
+
+### 25. Agregación del reporte de inventario inline en el service sin CalculationService puro
+**Estado:** abierto — consistencia con `CODE_STANDARDS.md` (10 sep 2026).
+
+`inventoryReportService.fetchInventoryReportData` agrupa filas, calcula KPIs/reorder/sugerencias y
+construye resúmenes por departamento inline, sin `*CalculationService` puro (a diferencia de
+comisiones, que sí separa `commissionsCalculationService.js`). La lógica queda dividida entre SQL
+(estados/umbrales por fila en `get_inventory_report_data`) y JS (agregación), lo que complica el
+testeo y reuso (SRP).
+
+**Impacto:** mantenibilidad y cifras sujetas a duplicar criterios si el RPC cambia umbrales.
+
+**Recomendación:** extraer las agregaciones a un `inventoryReportCalculationService.js` puro
+(patrón del repo) manteniendo el contrato actual.
+
 ---
 
 ## Bajo
@@ -327,6 +417,33 @@ del árbol sigue pendiente.
 
 **Recomendación:** normalizar con un script masivo (recorrer los archivos rastreados por git y
 añadir `\n` a los que falten) en una tarea dedicada de limpieza.
+
+### 23. Migraciones de comisiones re-definidas en cascada (CREATE OR REPLACE correctivo)
+**Estado:** no procede (cerrado) — las migraciones ya fueron aplicadas al remoto
+(`supabase db push`, 10 sep 2026), por lo que no se pueden aplastar sin resetear proyectos
+externos.
+
+`20260910120400_commissions_rpc_unlimited_default.sql` re-define íntegramente la función ya creada
+en `20260910120200` (mismo body salvo el default de `p_page_size`), y
+`20260910120500_fix_commissions_status_filter.sql` vuelve a re-definirla. Es un flujo válido de
+migraciones, pero añade ruido mientras el RPC no haya llegado a producción — observación que quedó
+sin efecto porque las tres ya están aplicadas al proyecto remoto.
+
+**Impacto:** historial de migraciones con funciones re-definidas en cascada (aceptado; corrección
+por migración propia a partir de aquí).
+
+### 24. ruleLabel de comisiones cambió de formato vs legacy
+**Estado:** abierto — QA visual pendiente (10 sep 2026).
+
+La RPC genera `rule_label` como `percent: 10%` / `<tipo>: <valor>` (migración `20260910120200`),
+mientras el legacy mostraba `10.00%` y `$5.00 / pz` (`commissionsCalculationService.js:46,50`). El
+cambio es intencional y está cubierto por el test contract, pero la UI del reporte mostrará
+etiquetas distintas a las previas.
+
+**Impacto:** cosmético — requiere confirmación visual del formato deseado en la tabla de detalle.
+
+**Recomendación:** QA manual del reporte y, si se prefiere el formato legacy, ajustar `rule_label`
+en la RPC (y su test).
 
 ---
 
