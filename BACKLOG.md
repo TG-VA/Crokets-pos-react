@@ -32,6 +32,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 * [ ] Vistas pendientes: `/inventory`, `/invoices`, `/cashout`, `/settings` — ver `TEMPLATE_NUEVA_PAGINA.md` y `KNOWN_ISSUES.md` #12
 * [ ] Simplificar condicional muerto de ícono en `electron/main.js` — ver `KNOWN_ISSUES.md` #11
+* [ ] Normalizar EOF newline en archivos preexistentes de `src/` (decenas de archivos) — ver `KNOWN_ISSUES.md` #17
 
 ---
 

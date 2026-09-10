@@ -27,6 +27,8 @@ import {
   upsertProductDiscount as upsertProductDiscountService,
 } from "../services/products/productDiscountService";
 
+const REALTIME_SUPPRESS_MS = 1500;
+
 const ProductsContext = createContext(null);
 
 export const useProducts = () => {
@@ -50,6 +52,16 @@ export const ProductsProvider = ({ children }) => {
 
   const productsChannelRef = useRef(null);
   const reloadTimeoutRef = useRef(null);
+  const suppressReloadUntilRef = useRef(0);
+
+  const markLocalMutation = useCallback(() => {
+    if (reloadTimeoutRef.current) {
+      clearTimeout(reloadTimeoutRef.current);
+      reloadTimeoutRef.current = null;
+    }
+
+    suppressReloadUntilRef.current = Date.now() + REALTIME_SUPPRESS_MS;
+  }, []);
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -134,13 +146,17 @@ export const ProductsProvider = ({ children }) => {
       const updated = await updateDepartmentService(id, data);
 
       if (updated) {
+        if (data?.propagateToProducts) {
+          markLocalMutation();
+        }
+
         await loadDepartments();
         await loadProducts();
       }
 
       return updated;
     },
-    [loadDepartments, loadProducts]
+    [loadDepartments, loadProducts, markLocalMutation]
   );
 
   const addProduct = useCallback(
@@ -148,12 +164,13 @@ export const ProductsProvider = ({ children }) => {
       const result = await createProduct(branch?.id, departments, payload);
 
       if (result.success) {
+        markLocalMutation();
         await loadProducts();
       }
 
       return result;
     },
-    [branch?.id, departments, loadProducts]
+    [branch?.id, departments, loadProducts, markLocalMutation]
   );
 
   const updateProductByCodigo = useCallback(
@@ -166,12 +183,13 @@ export const ProductsProvider = ({ children }) => {
       );
 
       if (result.success) {
+        markLocalMutation();
         await loadProducts();
       }
 
       return result;
     },
-    [branch?.id, departments, loadProducts]
+    [branch?.id, departments, loadProducts, markLocalMutation]
   );
 
   const deleteProductByCodigo = useCallback(
@@ -179,12 +197,13 @@ export const ProductsProvider = ({ children }) => {
       const result = await deleteProductByCodigoService(codigo);
 
       if (result.success) {
+        markLocalMutation();
         await loadProducts();
       }
 
       return result;
     },
-    [loadProducts]
+    [loadProducts, markLocalMutation]
   );
 
   const upsertProductDiscount = useCallback(
@@ -192,15 +211,18 @@ export const ProductsProvider = ({ children }) => {
       const result = await upsertProductDiscountService(productId, payload);
 
       if (result.success) {
+        markLocalMutation();
         await loadProducts();
       }
 
       return result;
     },
-    [loadProducts]
+    [loadProducts, markLocalMutation]
   );
 
   const scheduleProductsReload = useCallback(() => {
+    if (Date.now() < suppressReloadUntilRef.current) return;
+
     if (reloadTimeoutRef.current) {
       clearTimeout(reloadTimeoutRef.current);
     }

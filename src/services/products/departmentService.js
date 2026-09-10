@@ -107,25 +107,3 @@ export const updateDepartment = async (id, data) => {
     return false;
   }
 };
-
-export const deactivateDepartment = async (id) => {
-  if (!id) return false;
-
-  try {
-    const { error } = await supabase
-      .from("departments")
-      .update({
-        status: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-
-    if (error) throw error;
-
-    return true;
-  } catch (error) {
-    console.error("Error desactivando departamento:", error);
-
-    return false;
-  }
-};

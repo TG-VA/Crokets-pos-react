@@ -274,6 +274,21 @@ que es una cuenta de prueba.
 **Recomendación:** confirmar con el equipo si es una cuenta de prueba y, de ser así, desactivarla
 (`status = false`) o eliminarla antes de distribuir el sistema a un negocio real.
 
+### 17. Archivos sin salto de línea final (EOF newline)
+**Estado:** abierto — detectado el 9 de septiembre de 2026 durante el refactor de `ProductsContext`.
+
+`AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
+(EOF newline), pero decenas de archivos preexistentes en `src/` no lo cumplen (p. ej.
+`src/main.jsx`, `src/App.jsx`, `src/contexts/BranchContext.jsx`, `src/hooks/useEscapeKey.js`,
+`src/backend/server.js`, `src/utils/ticketBuilder.js`). Durante el refactor se corrigió en los
+archivos nuevos de `src/services/products/` y en `src/contexts/ProductsContext.jsx`, pero el resto
+del árbol sigue pendiente.
+
+**Impacto:** diffs con ruido y advertencias de herramientas; va contra el estándar del propio repo.
+
+**Recomendación:** normalizar con un script masivo (recorrer los archivos rastreados por git y
+añadir `\n` a los que falten) en una tarea dedicada de limpieza.
+
 ---
 
 ## Cómo usar este documento
