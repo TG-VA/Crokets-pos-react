@@ -943,11 +943,7 @@ export const ProductsProvider = ({ children }) => {
           await loadProducts();
         }
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime de productos activo");
-        }
-      });
+      .subscribe();
 
     productsChannelRef.current = channel;
 
