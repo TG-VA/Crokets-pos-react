@@ -4,11 +4,10 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { supabase } from "../lib/supabaseClient";
 import { useBranch } from "./BranchContext";
+import { useProductsRealtime } from "../hooks/useProductsRealtime";
 import {
   fetchDepartments,
   fetchBranchCatalog,
@@ -26,8 +25,6 @@ import {
   fetchProductDiscount,
   upsertProductDiscount as upsertProductDiscountService,
 } from "../services/products/productDiscountService";
-
-const REALTIME_SUPPRESS_MS = 1500;
 
 const ProductsContext = createContext(null);
 
@@ -50,27 +47,16 @@ export const ProductsProvider = ({ children }) => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState(null);
 
-  const productsChannelRef = useRef(null);
-  const reloadTimeoutRef = useRef(null);
-  const suppressReloadUntilRef = useRef(0);
-
-  const markLocalMutation = useCallback(() => {
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-      reloadTimeoutRef.current = null;
-    }
-
-    suppressReloadUntilRef.current = Date.now() + REALTIME_SUPPRESS_MS;
-  }, []);
-
   const loadDepartments = useCallback(async () => {
-    try {
-      const data = await fetchDepartments();
-      setDepartments(data);
-    } catch (error) {
-      console.error("Error cargando departamentos:", error);
-      setDepartments([]);
+    const result = await fetchDepartments();
+
+    if (result.success) {
+      setDepartments(result.data);
+      return;
     }
+
+    console.error("Error cargando departamentos:", result.error);
+    setDepartments([]);
   }, []);
 
   const loadProducts = useCallback(async () => {
@@ -84,10 +70,18 @@ export const ProductsProvider = ({ children }) => {
       setLoadingProducts(true);
       setProductsError(null);
 
-      const catalog = await fetchBranchCatalog(branch.id);
+      const result = await fetchBranchCatalog(branch.id);
 
-      setKardexProducts(catalog.kardexProducts);
-      setProducts(catalog.products);
+      if (result.success) {
+        setKardexProducts(result.data.kardexProducts);
+        setProducts(result.data.products);
+        return;
+      }
+
+      console.error("Error cargando productos:", result.error);
+      setProducts([]);
+      setKardexProducts([]);
+      setProductsError(result.error || "Error al cargar productos");
     } catch (error) {
       console.error("Error cargando productos:", error);
       setProducts([]);
@@ -97,6 +91,8 @@ export const ProductsProvider = ({ children }) => {
       setLoadingProducts(false);
     }
   }, [branch?.id]);
+
+  const { markLocalMutation } = useProductsRealtime(branch?.id, loadProducts);
 
   useEffect(() => {
     loadDepartments();
@@ -130,22 +126,22 @@ export const ProductsProvider = ({ children }) => {
 
   const addDepartment = useCallback(
     async (name, commissionData = {}) => {
-      const created = await createDepartmentService(name, commissionData);
+      const result = await createDepartmentService(name, commissionData);
 
-      if (created) {
+      if (result.success) {
         await loadDepartments();
       }
 
-      return created;
+      return result;
     },
     [loadDepartments]
   );
 
   const updateDepartment = useCallback(
     async (id, data) => {
-      const updated = await updateDepartmentService(id, data);
+      const result = await updateDepartmentService(id, data);
 
-      if (updated) {
+      if (result.success) {
         if (data?.propagateToProducts) {
           markLocalMutation();
         }
@@ -154,7 +150,7 @@ export const ProductsProvider = ({ children }) => {
         await loadProducts();
       }
 
-      return updated;
+      return result;
     },
     [loadDepartments, loadProducts, markLocalMutation]
   );
@@ -219,73 +215,6 @@ export const ProductsProvider = ({ children }) => {
     },
     [loadProducts, markLocalMutation]
   );
-
-  const scheduleProductsReload = useCallback(() => {
-    if (Date.now() < suppressReloadUntilRef.current) return;
-
-    if (reloadTimeoutRef.current) {
-      clearTimeout(reloadTimeoutRef.current);
-    }
-
-    reloadTimeoutRef.current = setTimeout(() => {
-      loadProducts();
-    }, 500);
-  }, [loadProducts]);
-
-  useEffect(() => {
-    if (!branch?.id) return;
-
-    if (productsChannelRef.current) {
-      supabase.removeChannel(productsChannelRef.current);
-      productsChannelRef.current = null;
-    }
-
-    const channel = supabase
-      .channel(`products-realtime-${branch.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "products",
-        },
-        scheduleProductsReload
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "branch_inventory",
-          filter: `branch_id=eq.${branch.id}`,
-        },
-        scheduleProductsReload
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "product_discounts",
-        },
-        scheduleProductsReload
-      )
-      .subscribe();
-
-    productsChannelRef.current = channel;
-
-    return () => {
-      if (reloadTimeoutRef.current) {
-        clearTimeout(reloadTimeoutRef.current);
-        reloadTimeoutRef.current = null;
-      }
-
-      if (productsChannelRef.current) {
-        supabase.removeChannel(productsChannelRef.current);
-        productsChannelRef.current = null;
-      }
-    };
-  }, [branch?.id, scheduleProductsReload]);
 
   const value = useMemo(
     () => ({

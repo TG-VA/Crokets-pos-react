@@ -3,7 +3,14 @@ import { supabase } from "../../lib/supabaseClient";
 export const createDepartment = async (name, commissionData = {}) => {
   const cleanName = (name || "").trim();
 
-  if (!cleanName) return false;
+  if (!cleanName) {
+    return {
+      success: false,
+      data: null,
+      error: "El nombre del departamento es obligatorio.",
+      partial: false,
+    };
+  }
 
   try {
     const { error } = await supabase.from("departments").insert({
@@ -16,16 +23,33 @@ export const createDepartment = async (name, commissionData = {}) => {
 
     if (error) throw error;
 
-    return true;
+    return {
+      success: true,
+      data: null,
+      error: null,
+      partial: false,
+    };
   } catch (error) {
     console.error("Error agregando departamento:", error);
 
-    return false;
+    return {
+      success: false,
+      data: null,
+      error: error.message || "Error al agregar departamento.",
+      partial: false,
+    };
   }
 };
 
 export const updateDepartment = async (id, data) => {
-  if (!id || !data) return false;
+  if (!id || !data) {
+    return {
+      success: false,
+      data: null,
+      error: "Datos inválidos para actualizar el departamento.",
+      partial: false,
+    };
+  }
 
   try {
     const { data: oldDept, error: oldDeptError } = await supabase
@@ -100,10 +124,20 @@ export const updateDepartment = async (id, data) => {
       if (productsUpdateError) throw productsUpdateError;
     }
 
-    return true;
+    return {
+      success: true,
+      data: null,
+      error: null,
+      partial: false,
+    };
   } catch (error) {
     console.error("Error actualizando departamento:", error);
 
-    return false;
+    return {
+      success: false,
+      data: null,
+      error: error.message || "Error al actualizar departamento.",
+      partial: false,
+    };
   }
 };

@@ -4,6 +4,7 @@ export const createProduct = async (branchId, departments, payload) => {
   if (!branchId) {
     return {
       success: false,
+      data: null,
       error: "No hay sucursal activa.",
       partial: false,
     };
@@ -17,6 +18,7 @@ export const createProduct = async (branchId, departments, payload) => {
     if (!cleanCodigo || !cleanDescripcion) {
       return {
         success: false,
+        data: null,
         error: "Código y descripción son obligatorios.",
         partial: false,
       };
@@ -65,6 +67,7 @@ export const createProduct = async (branchId, departments, payload) => {
       if (isDuplicateBarcode) {
         return {
           success: false,
+          data: null,
           error:
             "Ya existe un producto registrado con ese código de barras. Puede estar activo o eliminado del catálogo.",
           partial: false,
@@ -99,6 +102,7 @@ export const createProduct = async (branchId, departments, payload) => {
 
         return {
           success: false,
+          data: null,
           error:
             inventoryError.message ||
             "El producto se creó, pero no se pudo crear su inventario en la sucursal.",
@@ -109,6 +113,7 @@ export const createProduct = async (branchId, departments, payload) => {
 
     return {
       success: true,
+      data: { id: productInserted.id },
       error: null,
       partial: false,
     };
@@ -117,6 +122,7 @@ export const createProduct = async (branchId, departments, payload) => {
 
     return {
       success: false,
+      data: null,
       error: error.message || "Error al crear producto.",
       partial: false,
     };
@@ -132,7 +138,9 @@ export const updateProductByCodigo = async (
   if (!branchId) {
     return {
       success: false,
+      data: null,
       error: "No hay sucursal activa.",
+      partial: false,
     };
   }
 
@@ -145,14 +153,18 @@ export const updateProductByCodigo = async (
     if (!cleanCodigoOriginal) {
       return {
         success: false,
+        data: null,
         error: "No se recibió el código original del producto.",
+        partial: false,
       };
     }
 
     if (!cleanCodigo || !cleanDescripcion) {
       return {
         success: false,
+        data: null,
         error: "Código y descripción son obligatorios.",
+        partial: false,
       };
     }
 
@@ -168,7 +180,9 @@ export const updateProductByCodigo = async (
     if (!currentProduct) {
       return {
         success: false,
+        data: null,
         error: "Producto no encontrado.",
+        partial: false,
       };
     }
 
@@ -186,7 +200,9 @@ export const updateProductByCodigo = async (
       if (duplicatedProduct) {
         return {
           success: false,
+          data: null,
           error: "Ya existe otro producto con ese código de barras.",
+          partial: false,
         };
       }
     }
@@ -287,14 +303,18 @@ export const updateProductByCodigo = async (
 
     return {
       success: true,
+      data: { id: currentProduct.id },
       error: null,
+      partial: false,
     };
   } catch (error) {
     console.error("Error actualizando producto:", error);
 
     return {
       success: false,
+      data: null,
       error: error.message || "Error al actualizar producto.",
+      partial: false,
     };
   }
 };
@@ -303,7 +323,9 @@ export const deleteProductByCodigo = async (codigo) => {
   if (!codigo) {
     return {
       success: false,
+      data: null,
       error: "No se recibió el código del producto.",
+      partial: false,
     };
   }
 
@@ -321,7 +343,9 @@ export const deleteProductByCodigo = async (codigo) => {
     if (!product) {
       return {
         success: false,
+        data: null,
         error: "Producto no encontrado.",
+        partial: false,
       };
     }
 
@@ -359,14 +383,18 @@ export const deleteProductByCodigo = async (codigo) => {
 
     return {
       success: true,
+      data: { id: product.id },
       error: null,
+      partial: false,
     };
   } catch (error) {
     console.error("Error eliminando producto:", error);
 
     return {
       success: false,
+      data: null,
       error: error.message || "Error al eliminar producto.",
+      partial: false,
     };
   }
 };
