@@ -87,7 +87,7 @@ export const fetchCashSessions = async ({
         p_cashier_id: cashierId !== "ALL" ? cashierId : null,
         p_session_status: sessionStatus !== "ALL" ? sessionStatus : null,
       }
-    );
+    ).limit(100000);
 
     if (rpcError) throw rpcError;
 

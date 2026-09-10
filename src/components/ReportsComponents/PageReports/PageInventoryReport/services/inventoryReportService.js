@@ -30,7 +30,7 @@ export const fetchInventoryReportData = async (branchId = "ALL") => {
       {
         p_branch_id: branchId !== "ALL" ? branchId : null,
       }
-    );
+    ).limit(100000);
 
     if (rpcError) throw rpcError;
 

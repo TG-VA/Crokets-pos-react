@@ -75,7 +75,7 @@ export const fetchCommissionsData = async ({
       p_cashier_id: cashierId !== "ALL" ? cashierId : null,
       p_department_id: departmentId !== "ALL" ? departmentId : null,
     }
-  );
+  ).limit(100000);
 
   if (rpcError) {
     console.error("Error al consultar comisiones via RPC:", rpcError);

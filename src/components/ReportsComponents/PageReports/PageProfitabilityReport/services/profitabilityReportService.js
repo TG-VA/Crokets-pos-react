@@ -128,6 +128,8 @@ export const fetchProfitabilityReportData = async ({
       salesQuery = salesQuery.lte("sale_date", endIso.toISOString());
     }
 
+    salesQuery = salesQuery.limit(100000);
+
     const [branchInvResult, salesResult] = await Promise.all([
       branchInvQuery,
       salesQuery,
@@ -161,11 +163,9 @@ export const fetchProfitabilityReportData = async ({
     let saleDetailsList = [];
     if (saleIds.length > 0) {
       const CHUNK_SIZE = 100;
-      const MAX_SALES = 600;
-      const limitedSaleIds = saleIds.slice(0, MAX_SALES);
 
-      for (let i = 0; i < limitedSaleIds.length; i += CHUNK_SIZE) {
-        const chunk = limitedSaleIds.slice(i, i + CHUNK_SIZE);
+      for (let i = 0; i < saleIds.length; i += CHUNK_SIZE) {
+        const chunk = saleIds.slice(i, i + CHUNK_SIZE);
         const { data: chunkDetails, error: chunkErr } = await supabase
           .from("sale_details")
           .select(`
@@ -184,7 +184,8 @@ export const fetchProfitabilityReportData = async ({
               cost_price
             )
           `)
-          .in("sale_id", chunk);
+          .in("sale_id", chunk)
+          .limit(100000);
 
         if (!chunkErr && chunkDetails) {
           saleDetailsList = saleDetailsList.concat(chunkDetails);

@@ -29,6 +29,10 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
+const rpcBuilder = (resolve = { data: null, error: null }) => ({
+  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+});
+
 describe("commissionsReportService", () => {
   const startDateIso = "2026-09-01T00:00:00.000Z";
   const endDateIso = "2026-09-10T23:59:59.999Z";
@@ -40,7 +44,7 @@ describe("commissionsReportService", () => {
 
   describe("fetchCommissionsData", () => {
     it("invoca la RPC con filtros ALL a null y sin parametros de paginacion", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       await fetchCommissionsData({ startDateIso, endDateIso });
 
@@ -55,10 +59,11 @@ describe("commissionsReportService", () => {
       const params = supabase.rpc.mock.calls[0][1];
       expect(params).not.toHaveProperty("p_page");
       expect(params).not.toHaveProperty("p_page_size");
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       await fetchCommissionsData({
         startDateIso,
@@ -103,7 +108,7 @@ describe("commissionsReportService", () => {
         commission_value: "10",
         rule_label: "percent: 10%",
       };
-      supabase.rpc.mockResolvedValue({ data: [row], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [row], error: null }));
 
       const { detailedRows } = await fetchCommissionsData({
         startDateIso,
@@ -150,7 +155,7 @@ describe("commissionsReportService", () => {
         unit_price: null,
         total_price: null,
       };
-      supabase.rpc.mockResolvedValue({ data: [row], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [row], error: null }));
 
       const { detailedRows } = await fetchCommissionsData({
         startDateIso,
@@ -180,7 +185,7 @@ describe("commissionsReportService", () => {
     });
 
     it("retorna unicamente { detailedRows } sin total_count", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       const result = await fetchCommissionsData({ startDateIso, endDateIso });
 
@@ -190,10 +195,12 @@ describe("commissionsReportService", () => {
 
     it("lanza error con mensaje de usuario si la RPC falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockResolvedValue({
-        data: null,
-        error: { message: "boom" },
-      });
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: null,
+          error: { message: "boom" },
+        })
+      );
 
       await expect(
         fetchCommissionsData({ startDateIso, endDateIso })

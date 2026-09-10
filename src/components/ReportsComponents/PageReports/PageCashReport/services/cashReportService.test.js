@@ -46,6 +46,10 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
+const rpcBuilder = (resolve = { data: null, error: null }) => ({
+  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+});
+
 const sessionRow = {
   session_id: "s1",
   user_id: "u1",
@@ -100,7 +104,7 @@ describe("cashReportService", () => {
 
   describe("fetchCashSessions", () => {
     it("invoca la RPC con filtros ALL a null y rango ISO", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       const startInput = new Date("2026-09-01T10:00:00.000Z");
       const endInput = new Date("2026-09-10T10:00:00.000Z");
@@ -118,10 +122,11 @@ describe("cashReportService", () => {
       expect(params.p_session_status).toBe(null);
       expect(params.p_start_date).toBe(localMidnightIso(startInput));
       expect(params.p_end_date).toBe(localEndOfDayIso(endInput));
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       await fetchCashSessions({
         branchId: "b1",
@@ -137,7 +142,7 @@ describe("cashReportService", () => {
     });
 
     it("devuelve [] cuando la RPC no devuelve sesiones", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       const result = await fetchCashSessions({});
 
@@ -146,7 +151,7 @@ describe("cashReportService", () => {
     });
 
     it("consulta movimientos en lote con los id de sesion y sin cap bajo", async () => {
-      supabase.rpc.mockResolvedValue({ data: [sessionRow], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
       const movQ = thenableQuery({ data: [], error: null });
       supabase.from.mockReturnValue(movQ);
 
@@ -161,7 +166,7 @@ describe("cashReportService", () => {
     });
 
     it("mapea cada sesion al shape del hook con expectedCash", async () => {
-      supabase.rpc.mockResolvedValue({ data: [sessionRow], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
       const movQ = thenableQuery({
         data: [
           { session_id: "s1", movement_type: "ENTRADA", amount: "50" },
@@ -202,7 +207,7 @@ describe("cashReportService", () => {
     });
 
     it("clasifica movimientos por alias de entrada/salida", async () => {
-      supabase.rpc.mockResolvedValue({ data: [sessionRow], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
       const movQ = thenableQuery({
         data: [
           { session_id: "s1", movement_type: "ingreso de capital", amount: "10" },
@@ -222,7 +227,7 @@ describe("cashReportService", () => {
 
     it("mantiene sesiones con movimiento 0 si la consulta de movimientos falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockResolvedValue({ data: [sessionRow], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
       supabase.from.mockReturnValue(
         thenableQuery({ data: null, error: { message: "boom" } })
       );
@@ -238,10 +243,9 @@ describe("cashReportService", () => {
 
     it("relanza el error si la RPC de sesiones falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockResolvedValue({
-        data: null,
-        error: { message: "boom" },
-      });
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: null, error: { message: "boom" } })
+      );
 
       await expect(fetchCashSessions({})).rejects.toMatchObject({
         message: "boom",

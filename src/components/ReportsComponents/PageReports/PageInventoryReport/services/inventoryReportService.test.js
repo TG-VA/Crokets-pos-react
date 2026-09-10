@@ -23,6 +23,10 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
+const rpcBuilder = (resolve = { data: null, error: null }) => ({
+  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+});
+
 const inventoryRow = (overrides = {}) => ({
   product_id: "p1",
   barcode: "7501",
@@ -83,13 +87,14 @@ describe("inventoryReportService", () => {
 
   describe("fetchInventoryReportData", () => {
     it("invoca la RPC con p_branch_id null para ALL", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       const result = await fetchInventoryReportData("ALL");
 
       expect(supabase.rpc).toHaveBeenCalledWith("get_inventory_report_data", {
         p_branch_id: null,
       });
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
       expect(result.items).toEqual([]);
       expect(result.kpis).toMatchObject({
         totalCostValuation: 0,
@@ -98,7 +103,7 @@ describe("inventoryReportService", () => {
     });
 
     it("envia el id de sucursal cuando no es ALL", async () => {
-      supabase.rpc.mockResolvedValue({ data: [], error: null });
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       await fetchInventoryReportData("b1");
 
@@ -106,7 +111,7 @@ describe("inventoryReportService", () => {
     });
 
     it("mapea filas a items con estimatedInvestment calculado en cliente", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({ product_id: "p1" }),
           inventoryRow({
@@ -120,7 +125,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -149,7 +154,7 @@ describe("inventoryReportService", () => {
     });
 
     it("aplica defaults para campos ausentes", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({
             barcode: null,
@@ -161,7 +166,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const [item] = (await fetchInventoryReportData("ALL")).items;
 
@@ -175,7 +180,7 @@ describe("inventoryReportService", () => {
     });
 
     it("consolida KPIs excluyendo inventario no controlado y sin stock", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({
             product_id: "p-optimal",
@@ -212,7 +217,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -231,7 +236,7 @@ describe("inventoryReportService", () => {
     });
 
     it("agrupa por departamento y ordena por valor al costo", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({
             product_id: "p1",
@@ -251,7 +256,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -262,7 +267,7 @@ describe("inventoryReportService", () => {
     });
 
     it("separa reorderSugerencias y productos agotados", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({
             product_id: "p-optimal",
@@ -291,7 +296,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -305,7 +310,7 @@ describe("inventoryReportService", () => {
     });
 
     it("genera departamentos unicos para el filtro", async () => {
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: [
           inventoryRow({
             product_id: "p1",
@@ -324,7 +329,7 @@ describe("inventoryReportService", () => {
           }),
         ],
         error: null,
-      });
+      }));
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -336,10 +341,10 @@ describe("inventoryReportService", () => {
 
     it("relanza el error si la RPC falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockResolvedValue({
+      supabase.rpc.mockReturnValue(rpcBuilder({
         data: null,
         error: { message: "boom" },
-      });
+      }));
 
       await expect(fetchInventoryReportData("ALL")).rejects.toMatchObject({
         message: "boom",
