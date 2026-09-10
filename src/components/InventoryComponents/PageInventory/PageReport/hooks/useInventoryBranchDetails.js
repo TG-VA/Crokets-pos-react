@@ -84,13 +84,15 @@ const useInventoryBranchDetails = (selectedBranchId) => {
       let lastError = null;
 
       for (const selectClause of selectCandidates) {
-        const result = await supabase
+        const baseQuery = supabase
           .from("branch_inventory")
           .select(selectClause)
           .eq("product_id", productId)
           .neq("branch_id", selectedBranchId)
-          .eq("is_active", true)
+          .or("is_active.eq.true,has_been_stocked.eq.true,stock.gt.0")
           .order("created_at", { ascending: false });
+
+        const result = await baseQuery;
 
         if (result.error) {
           lastError = result.error;

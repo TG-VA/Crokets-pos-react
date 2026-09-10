@@ -1,6 +1,22 @@
+import { useMemo, useState } from 'react';
 import styles from './UserList.module.css';
+import RoleEditor from './RoleEditor';
 
-const UserList = ({ users, loading, error, onReload }) => {
+const UserList = ({
+  users,
+  loading,
+  error,
+  onReload,
+  roles,
+  onSaveRole,
+}) => {
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const availableRolesCount = useMemo(
+    () => roles?.length || 0,
+    [roles]
+  );
+
   const formatDate = (dateString) => {
     try {
       return new Date(dateString).toLocaleDateString('es-ES', {
@@ -32,6 +48,9 @@ const UserList = ({ users, loading, error, onReload }) => {
           <span className={styles.userCount}>
             {users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}
           </span>
+          <span className={styles.permissionsHint}>
+            {availableRolesCount} roles disponibles para gestion
+          </span>
         </div>
         <button className={styles.createButton} onClick={onReload}>
           Recargar
@@ -52,7 +71,9 @@ const UserList = ({ users, loading, error, onReload }) => {
             <div className={styles.headerCell}>Usuario</div>
             <div className={styles.headerCell}>Correo</div>
             <div className={styles.headerCell}>Rol / Estado</div>
+            <div className={styles.headerCell}>Acceso por rol</div>
             <div className={styles.headerCell}>Fecha de Creación</div>
+            <div className={styles.headerCell}>Acciones</div>
           </div>
           
           <div className={styles.tableBody}>
@@ -90,15 +111,42 @@ const UserList = ({ users, loading, error, onReload }) => {
                         : 'SIN ESTADO'}
                   </span>
                 </div>
+
+                <div className={styles.permissionsCell}>
+                  <div className={styles.permissionsList}>
+                    {(user.effectivePermissions || []).map((permission) => (
+                      <span key={`${user.id}-${permission}`} className={styles.permissionChip}>
+                        {permission}
+                      </span>
+                    ))}
+                  </div>
+                </div>
                 
                 <div className={styles.dateCell}>
                   {user.createdAt ? formatDate(user.createdAt) : 'N/A'}
+                </div>
+
+                <div className={styles.actionsCell}>
+                  <button
+                    type="button"
+                    className={styles.manageButton}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    Cambiar rol
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      <RoleEditor
+        user={selectedUser}
+        roles={roles}
+        onSave={onSaveRole}
+        onClose={() => setSelectedUser(null)}
+      />
     </div>
   );
 };

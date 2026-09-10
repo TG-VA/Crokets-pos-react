@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
+import { usePendingTransfers } from "../../contexts/PendingTransfersContext";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import AppModal from "../AppModal/AppModal";
 
@@ -36,8 +37,8 @@ const Navbar = () => {
   const location = useLocation();
   const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
+  const { pendingReceiptsCount } = usePendingTransfers();
 
-  // Inyectamos la lógica separada para atajos (F1, F2, etc.)
   useKeyboardShortcuts(NAV_ITEMS);
 
   const [appModal, setAppModal] = useState({
@@ -114,17 +115,31 @@ const Navbar = () => {
         </div>
 
         <div className={styles.navbarMenu}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
-              onClick={() => navigate(item.path)}
-            >
-              <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const badgeCount = item.id === "btnInventario"
+              ? pendingReceiptsCount
+              : 0;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
+                onClick={() => navigate(item.path)}
+              >
+                <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
+                {item.label}
+                {badgeCount > 0 ? (
+                  <span
+                    className={styles.navBadgePendientes}
+                    title={`${badgeCount} recepción(es) pendiente(s) de inventario`}
+                  >
+                    {badgeCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         <div className={styles.navbarUser}>

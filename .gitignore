@@ -58,10 +58,8 @@ temp_catalogs/
 *.bak
 *.tmp
 
-# Archivos duplicados y temporales accidentales (macOS Finder, Windows, editores)
-* copy.*
-* copy*.*
-* copia.*
-* copia*.*
-* (1).*
-*~
+# ===== Archivos temporales de depuración =====
+# Carpeta de debug local del agente Trae/debugger server. Nunca se commitear al repo.
+.dbg/
+# Markdowns temporales de debug (ej. debug-movements-week-month.md)
+debug-*.md
