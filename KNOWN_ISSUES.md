@@ -157,14 +157,20 @@ correctamente en `AGENTS.md` y `docs/SCHEMA.md`.
 No había ESLint/Prettier ni framework de testing configurado en `package.json`. Se configuró
 **Vitest 5** (`vitest.config.js` con globals y jsdom, script `npm test`) y quedó habilitada la
 suite inicial de 19 tests (funciones puras de `productFormatters` y el archivo preexistente de
-`useSalesTotals`, que requería `@testing-library/react` y `jsdom` como devDependencies). El lint
-(ESLint/Prettier) sigue sin configurarse: no es bloqueante inmediato, pero vale la pena introducir
-al menos un linter para mantener consistencia de estilo conforme el equipo crece.
+`useSalesTotals`, que requería `@testing-library/react` y `jsdom` como devDependencies).
+
+**Actualización (9 sep 2026):** la suite creció a **44 tests** al incorporar `usePagination`
+(10 tests: defaults, clamps de página, cambio de tamaño, persistencia en `localStorage`,
+ajuste de página al reducir el total) y `productCrudService` (15 tests que verifican los
+contratos `{success, data, error, partial}` de create/update/delete, barcode duplicado `23505`,
+`partial:true` cuando el inventario falla tras crear el producto y errores inesperados).
+El lint (ESLint/Prettier) sigue sin configurarse: no es bloqueante inmediato, pero vale la pena
+introducir al menos un linter para mantener consistencia de estilo conforme el equipo crece.
 
 ### 9. Falta de Unit Tests para Utilidades Puras
 **Estado:** parcialmente resuelto — 9 de septiembre de 2026.
 
-Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`) y la suite preexistente de `useSalesTotals`.
+Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`), la suite preexistente de `useSalesTotals`, el hook global `usePagination` (10 tests) y los contratos de CRUD de productos en `productCrudService` (15 tests).
 
 **Recomendación:** continuar con `importUtils.js`, validaciones de `productsImportService.js` y `productKitsService.js` como siguiente lote de pruebas.
 
@@ -255,6 +261,16 @@ por `tracks_inventory` y nombre) y devuelve `total_count` en cada fila para alim
 (usa `useBranch`, `usePagination`, `useProductsRealtime` y `fetchPaginatedBranchProducts`). El
 catálogo completo en memoria sigue cargándose en el Context para las demás vistas (Kardex, altas,
 modificaciones, bajas e inventario).
+
+**Actualización final 2 (9 sep 2026):** la migración de `ProductsList` a paginación server-side
+provocó que dos instancias de `useProductsRealtime` (ProductsContext y `useProductsList`) intentaran
+suscribirse al mismo canal `products-realtime-<branchId>` con el mismo cliente, lo que rompía la app
+con `Uncaught Error: cannot add 'postgres_changes' callbacks ... after subscribe()` (pantalla blanca
+al entrar a Productos). Se corrigió (`e7f457b`) con un **registry global compartido por sucursal**:
+un solo canal por `branchId`, creado con sus callbacks `.on(...)` antes del `subscribe()` y nunca
+después; cada instancia registra su propio `onInvalidate` con debounce (500 ms) y supresión local
+(1500 ms tras `markLocalMutation`), y el canal se elimina con `supabase.removeChannel` solo cuando
+la última instancia que lo usa se desmonta.
 
 **Impacto:** la lista de productos ya no depende del payload completo del catálogo; el payload por
 página es limitado y filtrado en el servidor.
