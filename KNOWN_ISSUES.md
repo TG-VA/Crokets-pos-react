@@ -373,6 +373,24 @@ testeo y reuso (SRP).
 **Recomendación:** extraer las agregaciones a un `inventoryReportCalculationService.js` puro
 (patrón del repo) manteniendo el contrato actual.
 
+### 26. RPCs de reportes concedían EXECUTE a `anon` (exposición de datos sin sesión)
+**Estado:** resuelto — migración `20260910120600_restrict_report_rpc_grants.sql`, 10 sep 2026.
+Detectado en el micro-pase de seguridad (skill `security-best-practices`).
+
+Los RPCs de reportes concedían `GRANT EXECUTE ... TO anon, authenticated`:
+`20260910120100:93` (caja), `20260910120200:122` y `20260910120400:123` y `20260910120500:125`
+(comisiones), `20260910120300:127` (inventario). Al ser funciones `LANGUAGE sql` invoker y existir
+tablas de datos con RLS `USING(true)` (ver punto 13), un llamador **sin sesión** podía invocar los
+reportes con la anon key pública.
+
+**Fix:** la migración `20260910120600` revoca `EXECUTE ... FROM anon` de los 3 RPCs conservando
+`authenticated`. La app solo los llama con sesión (`AuthContext`, `src/App.jsx:22`), sin impacto
+funcional.
+
+**Follow-up pendiente:** la migración base `20260909123000_get_branch_products_paginated.sql`
+(también en `main`) comparte el mismo grant `anon`; evaluar revocarlo igualmente en una pasada de
+hardening de permisos/roles (relacionado con #13).
+
 ---
 
 ## Bajo

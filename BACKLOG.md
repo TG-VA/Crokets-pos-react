@@ -33,6 +33,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [ ] Acotar el CTE `session_payments` por rango de fechas + índice compuesto en `sale_payments` para el reporte de caja — ver `KNOWN_ISSUES.md` #21
 * [ ] Concurrencia acotada en el procesamiento de partidas de rentabilidad (chunks paralelos o RPC) — ver `KNOWN_ISSUES.md` #22
 * [ ] Extraer `inventoryReportCalculationService.js` puro (agregaciones del reporte de inventario) — ver `KNOWN_ISSUES.md` #25
+* [ ] Revocar `EXECUTE` a `anon` en el RPC base `get_branch_products_paginated` (hardening de grants; reports ya corregidos) — ver `KNOWN_ISSUES.md` #26
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
