@@ -184,6 +184,17 @@ describe("commissionsReportService", () => {
       });
     });
 
+    it("delega el filtro de ventas canceladas al RPC sin p_status en cliente", async () => {
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: [], error: null })
+      );
+
+      await fetchCommissionsData({ startDateIso, endDateIso });
+
+      const params = supabase.rpc.mock.calls[0][1];
+      expect(params).not.toHaveProperty("p_status");
+    });
+
     it("retorna unicamente { detailedRows } sin total_count", async () => {
       supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
