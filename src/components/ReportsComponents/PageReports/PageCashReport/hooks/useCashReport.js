@@ -11,6 +11,7 @@ import {
   calculateCashierDiscrepancies,
 } from "../services/cashReportService";
 import { exportCashReportToExcel } from "../utils/cashReportExportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 export const ITEMS_PER_PAGE = 5;
 
@@ -45,9 +46,33 @@ export const useCashReport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
 
-  // Paginación
-  const [currentSessionsPage, setCurrentSessionsPage] = useState(1);
-  const [currentMovementsPage, setCurrentMovementsPage] = useState(1);
+  // Paginación de sesiones y movimientos (estado centralizado compartido con las tablas)
+  const {
+    currentPage: currentSessionsPage,
+    totalPages: totalSessionsPages,
+    pageItems: pageSessions,
+    resetPagination: resetSessionsPagination,
+    handlePageChange: handleSessionsPageChange,
+  } = usePagination({
+    totalItems: sessions.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
+
+  const {
+    currentPage: currentMovementsPage,
+    totalPages: totalMovementsPages,
+    pageItems: pageMovements,
+    resetPagination: resetMovementsPagination,
+    handlePageChange: handleMovementsPageChange,
+  } = usePagination({
+    totalItems: movements.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
+
+  const paginatedSessions = pageSessions(sessions);
+  const paginatedMovements = pageMovements(movements);
 
   // Modal de detalle de sesión
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -119,8 +144,8 @@ export const useCashReport = () => {
       setSessions(sessionsData);
       setMovements(movementsData);
       setPaymentMethodsSummary(paymentsData);
-      setCurrentSessionsPage(1);
-      setCurrentMovementsPage(1);
+      resetSessionsPagination();
+      resetMovementsPagination();
       setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar datos del reporte de caja:", err);
@@ -128,7 +153,7 @@ export const useCashReport = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType]);
+  }, [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType, resetSessionsPagination, resetMovementsPagination]);
 
   // Recargar al cambiar filtros clave
   useEffect(() => {
@@ -203,20 +228,6 @@ export const useCashReport = () => {
   const cashierAudit = useMemo(() => {
     return calculateCashierDiscrepancies(sessions);
   }, [sessions]);
-
-  // Paginación de sesiones
-  const totalSessionsPages = Math.ceil(sessions.length / ITEMS_PER_PAGE) || 1;
-  const paginatedSessions = useMemo(() => {
-    const startIdx = (currentSessionsPage - 1) * ITEMS_PER_PAGE;
-    return sessions.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-  }, [sessions, currentSessionsPage]);
-
-  // Paginación de movimientos
-  const totalMovementsPages = Math.ceil(movements.length / ITEMS_PER_PAGE) || 1;
-  const paginatedMovements = useMemo(() => {
-    const startIdx = (currentMovementsPage - 1) * ITEMS_PER_PAGE;
-    return movements.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-  }, [movements, currentMovementsPage]);
 
   // Abrir modal de detalle de sesión
   const handleOpenDetailModal = async (sessionId) => {
@@ -310,14 +321,14 @@ export const useCashReport = () => {
     sessions,
     paginatedSessions,
     currentSessionsPage,
-    setCurrentSessionsPage,
     totalSessionsPages,
+    handleSessionsPageChange,
 
     movements,
     paginatedMovements,
     currentMovementsPage,
-    setCurrentMovementsPage,
     totalMovementsPages,
+    handleMovementsPageChange,
 
     paymentMethodsSummary,
     cashierAudit,

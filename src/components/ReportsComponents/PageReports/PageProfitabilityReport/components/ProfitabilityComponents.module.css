@@ -735,29 +735,6 @@
   font-weight: 600;
 }
 
-/* =========================================================
-   PAGINACIÓN
-   ========================================================= */
-
-.paginationWrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 18px;
-  background-color: #ffffff;
-  border-top: 1px solid #edf2f7;
-  font-size: 0.8rem;
-  color: #64748b;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.paginationInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 /* Banner de auditoría para Margen Crítico */
 .criticalBanner {
   display: flex;
@@ -805,62 +782,6 @@
   color: #78350f;
   margin: 0;
   line-height: 1.45;
-}
-
-.pageSizeWrapper {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pageSizeLabel {
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-.pageSizeSelect {
-  border: 1px solid #d0d5dd;
-  border-radius: 6px;
-  padding: 3px 6px;
-  font-size: 0.775rem;
-  color: #334155;
-  background-color: #ffffff;
-  outline: none;
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pageBtn {
-  background-color: #ffffff;
-  border: 1px solid #d0d5dd;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 0.775rem;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background-color: #f8fafc;
-  border-color: #0284c7;
-  color: #0284c7;
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageIndicator {
-  font-size: 0.775rem;
-  font-weight: 600;
-  color: #475569;
 }
 
 /* =========================================================

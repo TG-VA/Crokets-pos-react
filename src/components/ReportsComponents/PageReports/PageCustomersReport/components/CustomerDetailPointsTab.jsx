@@ -3,22 +3,30 @@
  * Pestaña con la bitácora de puntos de lealtad del cliente y su paginación.
  */
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import styles from "./CustomersComponents.module.css";
 import { formatNumber, formatDynamicDate } from "../utils/customersReportFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomerDetailPointsTab = ({ pointsLedger = [] }) => {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: pointsLedger.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
   const totalPoints = pointsLedger.length;
-  const totalPages = Math.max(1, Math.ceil(totalPoints / pageSize));
-  const safePage = Math.min(page, totalPages);
-
-  const paginatedPoints = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return pointsLedger.slice(start, start + pageSize);
-  }, [pointsLedger, safePage, pageSize]);
+  const paginatedPoints = pageItems(pointsLedger);
 
   // Obtener título descriptivo y en español para el movimiento
   const getMovementTitle = (row, rawPts, mType) => {
@@ -111,52 +119,19 @@ const CustomerDetailPointsTab = ({ pointsLedger = [] }) => {
           </div>
 
           {totalPoints > 0 && (
-            <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`.trim()}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {Math.min((safePage - 1) * pageSize + 1, totalPoints)} a{" "}
-                  {Math.min(safePage * pageSize, totalPoints)} de {totalPoints} movimientos
-                </span>
-                <span>|</span>
-                <label className={styles.paginationLabel}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {safePage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalPoints}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 25, 50]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="movimientos"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </>
       )}

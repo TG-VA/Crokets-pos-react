@@ -17,6 +17,8 @@ import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const ProductBuyersModal = ({
   isOpen = false,
@@ -44,21 +46,28 @@ const ProductBuyersModal = ({
     });
   }, [buyers, searchTerm]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredBuyers.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 25],
+  });
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, product?.productId]);
+    resetPagination();
+  }, [searchTerm, product?.productId, resetPagination]);
 
   const totalBuyers = filteredBuyers.length;
-  const totalPages = Math.max(1, Math.ceil(totalBuyers / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedBuyers = useMemo(() => {
-    const start = (safeCurrentPage - 1) * pageSize;
-    return filteredBuyers.slice(start, start + pageSize);
-  }, [filteredBuyers, safeCurrentPage, pageSize]);
+  const paginatedBuyers = pageItems(filteredBuyers);
 
   if (!isOpen || !product) return null;
 
@@ -259,52 +268,19 @@ const ProductBuyersModal = ({
 
           {/* Paginación de compradores del producto */}
           {totalBuyers > 0 && (
-            <div className={styles.paginationWrapper} style={{ margin: "auto 18px 16px 18px" }}>
-              <div className={styles.paginationInfo}>
-                <span>
-                  Mostrando {Math.min((safeCurrentPage - 1) * pageSize + 1, totalBuyers)} a{" "}
-                  {Math.min(safeCurrentPage * pageSize, totalBuyers)} de {totalBuyers} compradores
-                </span>
-                <span>|</span>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  Por página:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className={styles.pageSizeSelect}
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.paginationControls}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={safeCurrentPage <= 1}
-                >
-                  Anterior
-                </button>
-                <span className={styles.pageIndicator}>
-                  Página {safeCurrentPage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safeCurrentPage >= totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalBuyers}
+              pageSize={pageSize}
+              pageSizeOptions={[5, 10, 25]}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="compradores"
+              modal
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
         </div>
       </div>

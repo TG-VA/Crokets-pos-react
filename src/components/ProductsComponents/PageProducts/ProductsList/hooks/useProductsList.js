@@ -1,5 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import { usePagination } from "../../../../../hooks/usePagination";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const PAGE_SIZE_STORAGE_KEY = "crokets.productsList.pageSize";
 
 export const useProductsList = () => {
   const { products, loadingProducts, productsError } = useProducts();
@@ -70,10 +74,37 @@ export const useProductsList = () => {
       });
   }, [products, searchTerm, selectedDepartment]);
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex: pageStart,
+    endIndex: pageEnd,
+    pageItems,
+    resetPagination,
+    handlePageChange: changePage,
+    handlePageSizeChange: changePageSize,
+  } = usePagination({
+    totalItems: filteredProducts.length,
+    defaultPageSize: 10,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    storageKey: PAGE_SIZE_STORAGE_KEY,
+  });
+
+  const paginatedProducts = pageItems(filteredProducts);
+
+  useEffect(() => {
+    const page = Math.floor(selectedRowIndex / pageSize) + 1;
+    if (page !== currentPage && page <= totalPages) {
+      changePage(page);
+    }
+  }, [selectedRowIndex, currentPage, totalPages, pageSize, changePage]);
+
   useEffect(() => {
     setSelectedRowIndex(0);
+    resetPagination();
     document.body.scrollTop = 0;
-  }, [searchTerm, selectedDepartment, products?.length]);
+  }, [searchTerm, selectedDepartment, products?.length, resetPagination]);
 
   useEffect(() => {
     const row = selectedRowRef.current;
@@ -115,6 +146,28 @@ export const useProductsList = () => {
         setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : 0));
       }
 
+      if (e.key === "PageDown") {
+        e.preventDefault();
+        setSelectedRowIndex((prev) =>
+          Math.min(prev + pageSize, filteredProducts.length - 1)
+        );
+      }
+
+      if (e.key === "PageUp") {
+        e.preventDefault();
+        setSelectedRowIndex((prev) => Math.max(prev - pageSize, 0));
+      }
+
+      if (e.key === "Home") {
+        e.preventDefault();
+        setSelectedRowIndex(0);
+      }
+
+      if (e.key === "End") {
+        e.preventDefault();
+        setSelectedRowIndex(filteredProducts.length - 1);
+      }
+
       if (e.key === "Escape") {
         setShowDepartmentFilter(false);
       }
@@ -122,7 +175,7 @@ export const useProductsList = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [filteredProducts.length]);
+  }, [filteredProducts.length, pageSize]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -138,6 +191,7 @@ export const useProductsList = () => {
   const handleDepartmentSelect = (department) => {
     setSelectedDepartment(department);
     setShowDepartmentFilter(false);
+    resetPagination();
     setSelectedRowIndex(0);
   };
 
@@ -145,9 +199,29 @@ export const useProductsList = () => {
     setSelectedRowIndex(index);
   };
 
+  const handlePageChange = (page) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+    changePage(nextPage);
+    setSelectedRowIndex((nextPage - 1) * pageSize);
+    document.body.scrollTop = 0;
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
+  };
+
+  const handlePageSizeChange = (size) => {
+    changePageSize(size);
+    setSelectedRowIndex(0);
+    document.body.scrollTop = 0;
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedDepartment("");
+    resetPagination();
     setSelectedRowIndex(0);
     setShowDepartmentFilter(false);
   };
@@ -172,6 +246,14 @@ export const useProductsList = () => {
     selectedRowRef,
     departments,
     filteredProducts,
+    paginatedProducts,
+    currentPage,
+    totalPages,
+    pageSize,
+    pageStart,
+    pageEnd,
+    handlePageChange,
+    handlePageSizeChange,
     formatDept,
     handleDepartmentSelect,
     handleRowClick,

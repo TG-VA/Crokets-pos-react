@@ -3,7 +3,7 @@
  * Tabla interactiva de clientes con métricas de gasto, visitas, puntos y estado de riesgo.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import styles from "./CustomersComponents.module.css";
 import {
   formatCurrency,
@@ -14,6 +14,8 @@ import {
 import eyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import chevronDownIcon from "../../../../../assets/icons/chevron-down-solid-full.svg";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomersRankingTable = ({
   customers = [],
@@ -22,22 +24,29 @@ const CustomersRankingTable = ({
   onSort,
   onSelectCustomer,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: customers.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
   // Reiniciar a la primera página si cambia la cantidad de clientes o el ordenamiento
   useEffect(() => {
-    setCurrentPage(1);
-  }, [customers.length, sortBy, sortDirection]);
+    resetPagination();
+  }, [customers.length, sortBy, sortDirection, resetPagination]);
 
   const totalItems = customers.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedCustomers = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * pageSize;
-    return customers.slice(startIndex, startIndex + pageSize);
-  }, [customers, safeCurrentPage, pageSize]);
+  const paginatedCustomers = pageItems(customers);
 
   const renderSortIndicator = (key) => {
     if (sortBy !== key) return null;
@@ -235,52 +244,18 @@ const CustomersRankingTable = ({
 
       {/* Barra de Paginación */}
       {totalItems > 0 && (
-        <div className={styles.paginationWrapper}>
-          <div className={styles.paginationInfo}>
-            <span>
-              Mostrando {Math.min((safeCurrentPage - 1) * pageSize + 1, totalItems)} a{" "}
-              {Math.min(safeCurrentPage * pageSize, totalItems)} de {totalItems} clientes
-            </span>
-            <span>|</span>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              Por página:
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className={styles.pageSizeSelect}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={safeCurrentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>
-              Página {safeCurrentPage} de {totalPages}
-            </span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safeCurrentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="clientes"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

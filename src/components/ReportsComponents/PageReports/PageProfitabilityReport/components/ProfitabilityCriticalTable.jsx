@@ -13,8 +13,9 @@ import {
 } from "../utils/profitabilityReportFormatters";
 import KitComponentsDetailModal from "./KitComponentsDetailModal";
 import CriticalAuditBanner from "./CriticalAuditBanner";
-import ProfitabilityTablePagination from "./ProfitabilityTablePagination";
 import ProfitabilityCriticalRow from "./ProfitabilityCriticalRow";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
@@ -32,8 +33,6 @@ const CRITICAL_COLUMNS = [
 ];
 
 const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [selectedKitProduct, setSelectedKitProduct] = useState(null);
   const [sortBy, setSortBy] = useState("margin");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -62,6 +61,21 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
     return criticalProducts;
   }, [criticalProducts, filterCause]);
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredProducts.length,
+    defaultPageSize: 10,
+  });
+
   const handleSort = (key) => {
     if (sortBy === key) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -69,7 +83,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
       setSortBy(key);
       setSortDirection("asc");
     }
-    setCurrentPage(1);
+    resetPagination();
   };
 
   const sortedProducts = useMemo(() => {
@@ -103,13 +117,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
     totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0;
 
   const totalItems = sortedProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
-
-  const paginatedData = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return sortedProducts.slice(start, start + pageSize);
-  }, [sortedProducts, safePage, pageSize]);
+  const paginatedData = pageItems(sortedProducts);
 
   const renderSortIndicator = (key) => (
     <span className={styles.sortIndicator}>
@@ -143,7 +151,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             }`.trim()}
             onClick={() => {
               setFilterCause("all");
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             Todos ({counts.all})
@@ -155,7 +163,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             }`.trim()}
             onClick={() => {
               setFilterCause("pricing");
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             Revisar Precios ({counts.pricing})
@@ -167,7 +175,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             }`.trim()}
             onClick={() => {
               setFilterCause("rewards");
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             Promociones y Regalos ({counts.rewards})
@@ -205,7 +213,7 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             className={`${styles.causeFilterBtn} ${styles.causeFilterBtnActive}`.trim()}
             onClick={() => {
               setFilterCause("all");
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             Mostrar Todos ({counts.all})
@@ -304,15 +312,17 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             </table>
           </div>
 
-          <ProfitabilityTablePagination
-            currentPage={safePage}
-            pageSize={pageSize}
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
             totalItems={totalItems}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50]}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="productos"
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
           />
 
           <KitComponentsDetailModal
