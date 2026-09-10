@@ -5,7 +5,6 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
-import { calculateItemCommission } from "./commissionsCalculationService";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
@@ -57,7 +56,8 @@ export const getDepartmentsList = async () => {
 };
 
 /**
- * Consulta las ventas completadas y sus partidas comisionables en el rango de fechas.
+ * Consulta las ventas completadas y sus partidas comisionables via RPC.
+ * Reemplaza el fetch secuencial de sales + sale_details en chunks.
  */
 export const fetchCommissionsData = async ({
   startDateIso,
@@ -66,122 +66,51 @@ export const fetchCommissionsData = async ({
   cashierId = "ALL",
   departmentId = "ALL",
 }) => {
-  let salesQuery = supabase
-    .from("sales")
-    .select("id, branch_id, user_id, created_at, status, branches(name), users(username)")
-    .gte("created_at", startDateIso)
-    .lte("created_at", endDateIso)
-    .neq("status", "canceled");
+  const { data: rpcRows, error: rpcError } = await supabase.rpc(
+    "get_commissions_report_data",
+    {
+      p_start_date: startDateIso,
+      p_end_date: endDateIso,
+      p_branch_id: branchId !== "ALL" ? branchId : null,
+      p_cashier_id: cashierId !== "ALL" ? cashierId : null,
+      p_department_id: departmentId !== "ALL" ? departmentId : null,
+    }
+  );
 
-  if (branchId !== "ALL") {
-    salesQuery = salesQuery.eq("branch_id", branchId);
-  }
-  if (cashierId !== "ALL") {
-    salesQuery = salesQuery.eq("user_id", cashierId);
-  }
-
-  const { data: sales, error: salesError } = await salesQuery;
-  if (salesError) {
-    console.error("Error al consultar ventas para comisiones:", salesError);
+  if (rpcError) {
+    console.error("Error al consultar comisiones via RPC:", rpcError);
     throw new Error("Error al consultar las ventas en el periodo.");
   }
 
-  if (!sales || sales.length === 0) {
-    return { detailedRows: [] };
-  }
+  const rows = rpcRows || [];
 
-  const salesMap = new Map(sales.map((s) => [s.id, s]));
-  const saleIds = Array.from(salesMap.keys());
-
-  // Consulta por lotes de partidas para optimizar rendimiento en Supabase
-  const chunkSize = 150;
-  const detailedRows = [];
-
-  for (let i = 0; i < saleIds.length; i += chunkSize) {
-    const chunk = saleIds.slice(i, i + chunkSize);
-
-    const { data: details, error: detailsError } = await supabase
-      .from("sale_details")
-      .select(
-        `id, sale_id, product_id, quantity, unit_price, discount_amount, discount_type, total_price,
-         products (
-           id, barcode, name, sale_price, department_id,
-           commission_enabled, commission_type, commission_value, commission_percent,
-           departments ( id, name, commission_enabled, commission_type, commission_value )
-         )`
-      )
-      .in("sale_id", chunk);
-
-    if (detailsError) {
-      console.error("Error al consultar partidas de ventas para comisiones:", detailsError);
-      throw new Error("Error al consultar el detalle de productos vendidos.");
-    }
-
-    if (!details) continue;
-
-    details.forEach((item) => {
-      const parentSale = salesMap.get(item.sale_id);
-      if (!parentSale) return;
-
-      const product = item.products || {};
-      const department = product.departments || {};
-
-      // Filtro opcional por departamento
-      if (departmentId !== "ALL" && product.department_id !== departmentId) {
-        return;
-      }
-
-      const commissionCalc = calculateItemCommission(item);
-
-      const qty = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unit_price) || 0;
-      const totalPrice = Number(item.total_price) || 0;
-      const baseCatalogPrice = Number(product.sale_price || unitPrice || 0);
-
-      let itemDiscountAmount = Number(item.discount_amount || 0);
-
-      // Si no hay discount_amount explícito en la partida pero el unit_price fue menor al precio de catálogo:
-      if (itemDiscountAmount <= 0 && baseCatalogPrice > 0 && unitPrice < baseCatalogPrice) {
-        itemDiscountAmount = (baseCatalogPrice - unitPrice) * (qty || 1);
-      }
-
-      // O si el total_price registrado fue menor que quantity * unit_price:
-      const expectedTotal = unitPrice * (qty || 1);
-      if (itemDiscountAmount <= 0 && expectedTotal > totalPrice + 0.01) {
-        itemDiscountAmount = expectedTotal - totalPrice;
-      }
-
-      const hasDiscount = itemDiscountAmount > 0;
-
-      detailedRows.push({
-        detailId: item.id,
-        saleId: parentSale.id,
-        ticketNumber: parentSale.id ? parentSale.id.substring(0, 8).toUpperCase() : "S/N",
-        createdAt: parentSale.created_at,
-        branchId: parentSale.branch_id,
-        branchName: parentSale.branches?.name || "General",
-        cashierId: parentSale.user_id,
-        cashierName: parentSale.users?.username ? toUpper(parentSale.users.username) : "SISTEMA",
-        productId: product.id || item.product_id,
-        barcode: product.barcode || "---",
-        productName: product.name || "Producto sin nombre",
-        departmentId: product.department_id,
-        departmentName: department.name || "Sin Departamento",
-        quantity: qty,
-        unitPrice,
-        catalogPrice: baseCatalogPrice,
-        discountAmount: Math.max(0, itemDiscountAmount),
-        discountType: item.discount_type || null,
-        hasDiscount,
-        totalPrice,
-        hasCommission: commissionCalc.hasCommission,
-        commissionAmount: commissionCalc.commissionAmount,
-        commissionType: commissionCalc.commissionType,
-        commissionValue: commissionCalc.commissionValue,
-        ruleLabel: commissionCalc.ruleLabel,
-      });
-    });
-  }
+  const detailedRows = rows.map((row) => ({
+    detailId: row.detail_id,
+    saleId: row.sale_id,
+    ticketNumber: row.ticket_number || "S/N",
+    createdAt: row.created_at,
+    branchId: row.branch_id,
+    branchName: row.branch_name || "General",
+    cashierId: row.cashier_id,
+    cashierName: row.cashier_name ? row.cashier_name.toUpperCase() : "SISTEMA",
+    productId: row.product_id,
+    barcode: row.barcode || "---",
+    productName: row.product_name || "Producto sin nombre",
+    departmentId: row.department_id,
+    departmentName: row.department_name || "Sin Departamento",
+    quantity: Number(row.quantity) || 0,
+    unitPrice: Number(row.unit_price) || 0,
+    catalogPrice: Number(row.catalog_price) || 0,
+    discountAmount: Number(row.discount_amount) || 0,
+    discountType: row.discount_type || null,
+    hasDiscount: Boolean(row.has_discount),
+    totalPrice: Number(row.total_price) || 0,
+    hasCommission: Boolean(row.has_commission),
+    commissionAmount: Number(row.commission_amount) || 0,
+    commissionType: row.commission_type || null,
+    commissionValue: Number(row.commission_value) || 0,
+    ruleLabel: row.rule_label || "Sin comision",
+  }));
 
   return { detailedRows };
 };
