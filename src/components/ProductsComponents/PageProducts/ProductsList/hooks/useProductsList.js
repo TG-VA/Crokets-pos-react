@@ -135,6 +135,32 @@ export const useProductsList = () => {
 
   useProductsRealtime(branch?.id, reload);
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex: pageStart,
+    endIndex: pageEnd,
+    pageItems,
+    resetPagination,
+    handlePageChange: changePage,
+    handlePageSizeChange: changePageSize,
+  } = usePagination({
+    totalItems: filteredProducts.length,
+    defaultPageSize: 10,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    storageKey: PAGE_SIZE_STORAGE_KEY,
+  });
+
+  const paginatedProducts = pageItems(filteredProducts);
+
+  useEffect(() => {
+    const page = Math.floor(selectedRowIndex / pageSize) + 1;
+    if (page !== currentPage && page <= totalPages) {
+      changePage(page);
+    }
+  }, [selectedRowIndex, currentPage, totalPages, pageSize, changePage]);
+
   useEffect(() => {
     setSelectedRowIndex(0);
     resetPagination();
