@@ -1,15 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styles from '../PageProductsReport.module.css';
 import { formatCurrency } from "../../../../../utils/formatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const TopProductsTable = ({ data, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -19,11 +16,25 @@ const TopProductsTable = ({ data, isLoading }) => {
     );
   }, [data, searchTerm]);
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const {
+    currentPage,
+    totalPages,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+  } = usePagination({
+    totalItems: filteredData.length,
+    defaultPageSize: itemsPerPage,
+    pageSizeOptions: [itemsPerPage],
+  });
+
+  useEffect(() => {
+    resetPagination();
+  }, [searchTerm, resetPagination]);
+
+  const paginatedData = pageItems(filteredData);
 
   if (isLoading) return <div className={styles.placeholderArea}>Cargando productos...</div>;
   if (!data || data.length === 0) return <div className={styles.placeholderArea}>No hay registros.</div>;
@@ -78,33 +89,17 @@ const TopProductsTable = ({ data, isLoading }) => {
         </table>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '0.875rem' }}>
-        <span style={{ color: '#64748b' }}>
-          Mostrando {paginatedData.length} de {filteredData.length} productos
-        </span>
-        
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#ffffff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: '#334155' }}
-            >
-              Anterior
-            </button>
-            <span style={{ color: '#475569', fontWeight: '500' }}>
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              style={{ padding: '4px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#ffffff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: '#334155' }}
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
-      </div>
+      {filteredData.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredData.length}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="productos"
+          onPageChange={handlePageChange}
+        />
+      )}
     </>
   );
 };

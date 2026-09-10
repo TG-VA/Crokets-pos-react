@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "../CashComponents.module.css";
 import { formatCurrency, formatDynamicDate, formatMovementType } from "../../utils/cashReportFormatters";
+import { usePagination } from "../../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../../components/PaginationBar/PaginationBar";
 
 import EntryIcon from "../../../../../../assets/icons/entryIcon.svg";
 import ExitIcon from "../../../../../../assets/icons/exitIcon.svg";
@@ -8,15 +10,20 @@ import ExitIcon from "../../../../../../assets/icons/exitIcon.svg";
 const ITEMS_PER_PAGE = 5;
 
 const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, totalManualOut = 0 }) => {
-  const [movementsPage, setMovementsPage] = useState(1);
+  const {
+    currentPage,
+    totalPages,
+    pageItems,
+    handlePageChange,
+  } = usePagination({
+    totalItems: movements.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
 
   if (!movements || movements.length === 0) return null;
 
-  const totalMovementsPages = Math.ceil(movements.length / ITEMS_PER_PAGE) || 1;
-  const paginatedMovements = movements.slice(
-    (movementsPage - 1) * ITEMS_PER_PAGE,
-    movementsPage * ITEMS_PER_PAGE
-  );
+  const paginatedMovements = pageItems(movements);
 
   const netBalance = Number(totalManualIn) - Number(totalManualOut);
 
@@ -88,31 +95,16 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
       </div>
 
       {/* Paginación de Movimientos si hay más de 5 */}
-      {totalMovementsPages > 1 && (
-        <div className={`${styles.paginationWrapper} ${styles.modalPaginationWrapper}`}>
-          <p className={styles.paginationInfo}>
-            Página {movementsPage} de {totalMovementsPages} ({movements.length} movimientos)
-          </p>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => setMovementsPage((p) => Math.max(p - 1, 1))}
-              disabled={movementsPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>{movementsPage}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => setMovementsPage((p) => Math.min(p + 1, totalMovementsPages))}
-              disabled={movementsPage >= totalMovementsPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+      {totalPages > 1 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={movements.length}
+          itemsNoun="movimientos"
+          labelMode="pageCount"
+          modal
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );

@@ -83,6 +83,8 @@
   min-width: 0;
 
   flex: 1;
+  display: flex;
+  flex-direction: column;
 
   overflow-x: auto;
   overflow-y: visible;
@@ -91,14 +93,15 @@
 .chart {
   width: 100%;
   min-width: 600px;
-  height: 270px;
+  flex: 1;
+  min-height: 270px;
 
   display: grid;
   grid-template-columns: repeat(7, minmax(58px, 1fr));
   align-items: stretch;
   gap: 16px;
 
-  padding: 22px 8px 0;
+  padding: 34px 8px 0;
 
   box-sizing: border-box;
 }
@@ -132,6 +135,7 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
+  cursor: pointer;
 
   transition: height 0.3s ease;
 }
@@ -159,13 +163,41 @@
   box-shadow: 0 6px 14px rgba(16, 146, 177, 0.24);
 }
 
+.zeroGroup {
+  position: relative;
+
+  width: 100%;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.zeroGroup:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 .zeroMarker {
   width: 8px;
   height: 8px;
-  margin-bottom: 2px;
 
   background: #d6dee2;
   border-radius: 50%;
+
+  transition:
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.zeroGroup:hover .zeroMarker {
+  background: #1092b1;
+  transform: scale(1.3);
 }
 
 .tooltip {
@@ -240,6 +272,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
 
   border-top: 1px solid #e1e6e9;
 
@@ -249,6 +282,27 @@
   line-height: 1;
   text-transform: capitalize;
   white-space: nowrap;
+}
+
+.todayLabel {
+  color: #1092b1;
+  font-weight: 800;
+  border-top-color: #1092b1;
+}
+
+.todayBadge {
+  padding: 2px 5px;
+
+  background: rgba(16, 146, 177, 0.12);
+  color: #1092b1;
+
+  border-radius: 4px;
+
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .emptyState {
@@ -281,14 +335,15 @@
 .loadingChart {
   width: 100%;
   min-width: 600px;
-  height: 270px;
+  flex: 1;
+  min-height: 270px;
 
   display: grid;
   grid-template-columns: repeat(7, minmax(58px, 1fr));
   align-items: stretch;
   gap: 16px;
 
-  padding: 22px 8px 0;
+  padding: 34px 8px 0;
 
   box-sizing: border-box;
 }

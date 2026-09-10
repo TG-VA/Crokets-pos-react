@@ -29,3 +29,16 @@ export const formatDynamicDate = (isoDate, timeZone = "America/Cancun") => {
     timeStyle: "short",
   }).format(date);
 };
+
+/**
+ * Formatea solo la hora (HH:MM) de una fecha ISO, para labels de sincronización de reportes
+ */
+export const formatSyncTime = (isoDate, timeZone = "America/Cancun") => {
+  if (!isoDate) return "";
+
+  return new Intl.DateTimeFormat("es-MX", {
+    timeZone: timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoDate));
+};

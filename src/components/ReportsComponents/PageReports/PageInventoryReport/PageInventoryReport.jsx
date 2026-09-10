@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import styles from "./PageInventoryReport.module.css";
 import subStyles from "./components/InventoryComponents.module.css";
 import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
+import { formatSyncTime } from "../../../../utils/formatters";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { supabase } from "../../../../lib/supabaseClient";
+
+import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
 
 import InventoryKpiCards from "./components/InventoryKpiCards";
 import InventoryReportFilters from "./components/InventoryReportFilters";
@@ -15,17 +19,25 @@ import { useInventoryReport } from "./hooks/useInventoryReport";
 
 const PageInventoryReport = () => {
   const { branch, setBranch } = useBranch();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const branchParam = searchParams.get("branchId") || location.state?.branchId;
 
   const [branchesList, setBranchesList] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
-  const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
+  const [selectedBranchId, setSelectedBranchId] = useState(
+    branchParam || branch?.id || "ALL"
+  );
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    if (branch?.id) {
+    if (branchParam) {
+      setSelectedBranchId(branchParam);
+    } else if (branch?.id) {
       setSelectedBranchId(branch.id);
     }
-  }, [branch?.id]);
+  }, [branch?.id, branchParam]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -51,6 +63,7 @@ const PageInventoryReport = () => {
   const handleBranchChange = (e) => {
     const newBranchId = e.target.value;
     setSelectedBranchId(newBranchId);
+    setSearchParams(newBranchId ? { branchId: newBranchId } : {});
 
     if (newBranchId !== "ALL") {
       const selectedObj = branchesList.find((b) => b.id === newBranchId);
@@ -70,6 +83,7 @@ const PageInventoryReport = () => {
     byDepartment,
     isLoading,
     error,
+    syncedAt,
     selectedDepartment,
     setSelectedDepartment,
     selectedStockStatus,
@@ -98,7 +112,7 @@ const PageInventoryReport = () => {
 
   return (
     <div className={styles.pageContainer}>
-      {/* Cabecera */}
+      {/* Cabecera Principal */}
       <header className={styles.headerCard}>
         <div className={styles.headerTitleGroup}>
           <h1 className={styles.title}>Reporte de Inventario</h1>
@@ -108,22 +122,22 @@ const PageInventoryReport = () => {
         </div>
 
         <div className={styles.headerActions}>
-          <div className={styles.branchSelectContainer}>
-            <label className={styles.branchSelectLabel}>SUCURSAL:</label>
-            <select
-              value={selectedBranchId}
-              onChange={handleBranchChange}
-              disabled={loadingBranches}
-              className={styles.branchSelectInput}
-            >
-              <option value="ALL">Todas las sucursales</option>
-              {branchesList.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.exportBtn}
+            onClick={handleExport}
+            disabled={isLoading || isExporting || (!reportData || reportData.length === 0)}
+            title="Descargar reporte de inventario en Excel"
+          >
+            <img src={fileImportIcon} alt="" className={styles.btnIcon} />
+            {isExporting ? "Exportando..." : "Exportar Excel"}
+          </button>
         </div>
       </header>
 
@@ -135,6 +149,10 @@ const PageInventoryReport = () => {
 
       {/* Barra de Filtros */}
       <InventoryReportFilters
+        branchesList={branchesList}
+        selectedBranchId={selectedBranchId}
+        onSelectBranch={handleBranchChange}
+        loadingBranches={loadingBranches}
         departments={departments}
         selectedDepartment={selectedDepartment}
         onSelectDepartment={setSelectedDepartment}
@@ -142,8 +160,12 @@ const PageInventoryReport = () => {
         onSelectStockStatus={setSelectedStockStatus}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onExportExcel={handleExport}
-        isExporting={isExporting}
+        onClear={() => {
+          setSelectedDepartment("ALL");
+          setSelectedStockStatus("ALL");
+          setSearchTerm("");
+          setSelectedBranchId(branch?.id || "ALL");
+        }}
         isLoading={isLoading}
       />
 
@@ -256,7 +278,12 @@ const PageInventoryReport = () => {
       )}
 
       {activeTab === "exhausted" && (
-        <InventoryValuationTable items={filteredExhausted} isLoading={isLoading} />
+        <InventoryValuationTable
+          items={filteredExhausted}
+          isLoading={isLoading}
+          title="Productos Agotados"
+          subtitle={`Mostrando ${filteredExhausted.length} producto(s) con stock en cero`}
+        />
       )}
     </div>
   );

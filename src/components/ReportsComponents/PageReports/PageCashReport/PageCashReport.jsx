@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./PageCashReport.module.css";
 import { useCashReport } from "./hooks/useCashReport";
+import { formatSyncTime } from "../../../../utils/formatters";
 
 import CashReportFilters from "./components/CashReportFilters";
 import CashKpiCards from "./components/CashKpiCards";
@@ -15,7 +16,6 @@ import EntryIcon from "../../../../assets/icons/entryIcon.svg";
 import CreditCardIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import UserIcon from "../../../../assets/icons/user-solid.svg";
 import TableListIcon from "../../../../assets/icons/table-list-solid-full.svg";
-import RotateLeftIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
 
 const PageCashReport = () => {
   const {
@@ -34,6 +34,7 @@ const PageCashReport = () => {
     setDateRange,
     startDate,
     endDate,
+    activeDatePreset,
     setQuickDatePreset,
     handleClearFilters,
     hasActiveFilters,
@@ -46,14 +47,14 @@ const PageCashReport = () => {
     sessions,
     paginatedSessions,
     currentSessionsPage,
-    setCurrentSessionsPage,
     totalSessionsPages,
+    handleSessionsPageChange,
 
     movements,
     paginatedMovements,
     currentMovementsPage,
-    setCurrentMovementsPage,
     totalMovementsPages,
+    handleMovementsPageChange,
 
     paymentMethodsSummary,
     cashierAudit,
@@ -62,6 +63,7 @@ const PageCashReport = () => {
     // Estados
     loading,
     error,
+    syncedAt,
     isExporting,
     handleExportExcel,
 
@@ -75,7 +77,7 @@ const PageCashReport = () => {
 
   return (
     <div className={styles.pageContainer}>
-      {/* Encabezado Principal con Título y Botones de Acción */}
+      {/* Cabecera Principal */}
       <header className={styles.header}>
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Caja y Arqueos</h1>
@@ -85,17 +87,11 @@ const PageCashReport = () => {
         </div>
 
         <div className={styles.actionButtons}>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              className={styles.clearFiltersBtn}
-              onClick={handleClearFilters}
-              title="Restablecer filtros"
-            >
-              <img src={RotateLeftIcon} alt="" className={styles.btnIcon} />
-              Limpiar
-            </button>
-          )}
+          {syncedAt ? (
+            <span className={styles.lastUpdate}>
+              Sincronizado {formatSyncTime(syncedAt)}
+            </span>
+          ) : null}
 
           <button
             type="button"
@@ -126,7 +122,10 @@ const PageCashReport = () => {
         setDateRange={setDateRange}
         startDate={startDate}
         endDate={endDate}
+        activeDatePreset={activeDatePreset}
         setQuickDatePreset={setQuickDatePreset}
+        onClear={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
         activeTab={activeTab}
       />
 
@@ -189,7 +188,7 @@ const PageCashReport = () => {
             currentPage={currentSessionsPage}
             totalPages={totalSessionsPages}
             totalItems={sessions.length}
-            onPageChange={setCurrentSessionsPage}
+            onPageChange={handleSessionsPageChange}
             onOpenDetail={handleOpenDetailModal}
           />
         )}
@@ -201,7 +200,7 @@ const PageCashReport = () => {
             currentPage={currentMovementsPage}
             totalPages={totalMovementsPages}
             totalItems={movements.length}
-            onPageChange={setCurrentMovementsPage}
+            onPageChange={handleMovementsPageChange}
           />
         )}
 

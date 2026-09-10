@@ -12,6 +12,8 @@ import { useBranch } from "./BranchContext";
 
 const ProductsContext = createContext(null);
 
+const MAX_CATALOG_ROWS_TO_LOAD = 10000;
+
 export const useProducts = () => {
   const context = useContext(ProductsContext);
 
@@ -69,7 +71,10 @@ export const ProductsProvider = ({ children }) => {
       setProductsError(null);
 
       const { data: departmentsData, error: departmentsFetchError } =
-        await supabase.from("departments").select("id, name");
+        await supabase
+          .from("departments")
+          .select("id, name")
+          .limit(MAX_CATALOG_ROWS_TO_LOAD);
 
       if (departmentsFetchError) throw departmentsFetchError;
 
@@ -114,7 +119,8 @@ export const ProductsProvider = ({ children }) => {
           )
         `)
         .eq("branch_id", branch.id)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(MAX_CATALOG_ROWS_TO_LOAD);
 
       if (inventoryError) throw inventoryError;
 
@@ -142,7 +148,8 @@ export const ProductsProvider = ({ children }) => {
         `)
         .eq("is_global", true)
         .eq("status", true)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(MAX_CATALOG_ROWS_TO_LOAD);
 
       if (globalProductsError) throw globalProductsError;
 
@@ -901,11 +908,7 @@ export const ProductsProvider = ({ children }) => {
           await loadProducts();
         }
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime de productos activo");
-        }
-      });
+      .subscribe();
 
     productsChannelRef.current = channel;
 

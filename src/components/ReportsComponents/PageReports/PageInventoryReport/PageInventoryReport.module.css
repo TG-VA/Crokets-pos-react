@@ -45,6 +45,51 @@
   gap: 12px;
 }
 
+.lastUpdate {
+  color: #7b878d;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #20b15a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(32, 177, 90, 0.2);
+  height: 38px;
+  white-space: nowrap;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background-color: #1a9c4e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(32, 177, 90, 0.3);
+}
+
+.exportBtn:disabled {
+  background-color: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btnIcon {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+}
+
 .branchSelectContainer {
   display: flex;
   align-items: center;
