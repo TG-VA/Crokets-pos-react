@@ -21,7 +21,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 * [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 * [ ] Configurar linter (ESLint/Prettier) — ver `KNOWN_ISSUES.md` #8
-* [ ] Unit tests para utilidades puras restantes — `importUtils.js`, servicios de import/kits (ya cubiertos: `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
+* [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
 * [ ] Migraciones SQL versionadas para el schema de Supabase (baseline del schema existente; ya existe la primera migración funcional) — ver `KNOWN_ISSUES.md` #6
 * [ ] Revisión de roles y permisos entre Supabase y SQLite local — ver `KNOWN_ISSUES.md` #10
 * [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15

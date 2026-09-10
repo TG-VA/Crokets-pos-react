@@ -172,7 +172,12 @@ introducir al menos un linter para mantener consistencia de estilo conforme el e
 
 Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`), la suite preexistente de `useSalesTotals`, el hook global `usePagination` (10 tests) y los contratos de CRUD de productos en `productCrudService` (15 tests).
 
-**Recomendación:** continuar con `importUtils.js`, validaciones de `productsImportService.js` y `productKitsService.js` como siguiente lote de pruebas.
+**Actualización 2 (9 sep 2026):** se agregó la cobertura de Importación y Kits con la suite en **83 tests**:
+- `importUtils` (14 tests de funciones puras: `normalizeText`, `normalizeHeader`, `parseBoolean`, `parseNumber`, `formatCurrency` y catálogos de columnas).
+- `productsImportService` (11 tests con `supabase` y `validateSatClaves` mockeados: validación de datos, sucursales/departamentos, creación de departamentos faltantes y `processImportTransaction` con inventario por sucursal, productos globales y rollback cuando falla la inserción de inventario).
+- `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
+
+**Recomendación:** con los servicios de import/kits cubiertos, la siguiente capa de valor sería automatizar los RPC de ventas (`create_sale_transaction`, `create_transfer_order`) y las funciones de `verifierService` / `salesCalculationService` si se quiere supervisión unitaria de las transacciones atómicas.
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
 **Estado:** abierto — parcialmente documentado.
