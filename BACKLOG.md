@@ -26,6 +26,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15
 * [x] Extraer componente compartido `PaginationBar` y eliminar los footers de paginación duplicados — ver `KNOWN_ISSUES.md` #15
 * [ ] Migrar lista de productos a paginación server-side si el catálogo supera ~2000 SKUs — ver `KNOWN_ISSUES.md` #16
+* [x] Refactor de `ProductsContext`: extraer lógica de datos/CRUD a `src/services/products/` y optimizar realtime — ver `KNOWN_ISSUES.md` #16
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 

@@ -227,6 +227,15 @@ catálogo de ~1000 SKUs y creciendo, se aplicó `.limit(10000)` explícito
 (`MAX_CATALOG_ROWS_TO_LOAD`) en las 3 queries de `loadProducts` para evitar el truncamiento
 silencioso del límite por defecto de Supabase (1000 filas por query).
 
+**Actualización (9 sep 2026):** `ProductsContext` fue refactorizado (rama
+`refactor/products-context`). La lógica de datos y CRUD se extrajo a `src/services/products/`
+(`productCatalogService`, `productFormatters`, `productCrudService`, `departmentService`,
+`productDiscountService`) y el Context quedó como capa delgada de estado sin cambiar las props
+consumidas (se removieron solo las muertas: `loadingDepartments`, `departmentsError`,
+`deleteDepartment`). La suscripción realtime ahora agrupa eventos con debounce (500 ms) y filtra
+`branch_inventory` por sucursal activa para no recargar el catálogo con cambios de otras
+sucursales. La migración de `ProductsList` a paginación server-side sigue pendiente.
+
 **Impacto:** mientras el catálogo activo se mida en miles, la carga completa en memoria es viable
 (la lista de productos ya paga el render en frontend con `usePagination`). Superado un umbral de
 ~2000-5000 SKUs, el payload de red y memoria degradará la experiencia de carga.
