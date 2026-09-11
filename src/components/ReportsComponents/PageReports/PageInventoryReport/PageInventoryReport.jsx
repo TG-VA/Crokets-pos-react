@@ -5,7 +5,7 @@ import subStyles from "./components/InventoryComponents.module.css";
 import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
 import { formatSyncTime } from "../../../../utils/formatters";
 import { useBranch } from "../../../../contexts/BranchContext";
-import { supabase } from "../../../../lib/supabaseClient";
+import { fetchBranchesList } from "./services/inventoryReportService";
 
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
 
@@ -40,16 +40,11 @@ const PageInventoryReport = () => {
   }, [branch?.id, branchParam]);
 
   useEffect(() => {
-    const fetchBranches = async () => {
+    const loadBranches = async () => {
       try {
         setLoadingBranches(true);
-        const { data, error } = await supabase
-          .from("branches")
-          .select("id, name")
-          .order("name", { ascending: true });
-
-        if (error) throw error;
-        if (data) setBranchesList(data);
+        const data = await fetchBranchesList();
+        setBranchesList(data);
       } catch (err) {
         console.error("Error al cargar sucursales:", err);
       } finally {
@@ -57,7 +52,7 @@ const PageInventoryReport = () => {
       }
     };
 
-    fetchBranches();
+    loadBranches();
   }, []);
 
   const handleBranchChange = (e) => {
@@ -132,7 +127,12 @@ const PageInventoryReport = () => {
             type="button"
             className={styles.exportBtn}
             onClick={handleExport}
-            disabled={isLoading || isExporting || (!reportData || reportData.length === 0)}
+            disabled={
+              isLoading ||
+              isExporting ||
+              !reportData ||
+              reportData.items.length === 0
+            }
             title="Descargar reporte de inventario en Excel"
           >
             <img src={fileImportIcon} alt="" className={styles.btnIcon} />

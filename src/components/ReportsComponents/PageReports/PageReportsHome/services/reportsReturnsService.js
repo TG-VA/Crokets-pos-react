@@ -186,7 +186,7 @@ export const getTodayReturns = async ({
   }
 
   const returnIds = uniqueValues(
-    branchReturns.map(
+    applicableReturns.map(
       (row) => row.id
     )
   );
@@ -194,7 +194,7 @@ export const getTodayReturns = async ({
   const returnItems =
     await getReturnItems(returnIds);
 
-  const amount = branchReturns.reduce(
+  const amount = applicableReturns.reduce(
     (sum, row) =>
       sum + toNumber(row.total_refund),
     0
@@ -207,10 +207,10 @@ export const getTodayReturns = async ({
   );
 
   return {
-    count: branchReturns.length,
+    count: applicableReturns.length,
     amount,
     units,
-    rows: branchReturns,
+    rows: applicableReturns,
     items: returnItems,
   };
 };

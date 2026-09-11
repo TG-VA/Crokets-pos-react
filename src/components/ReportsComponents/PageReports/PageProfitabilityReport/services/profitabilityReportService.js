@@ -56,50 +56,49 @@ export const fetchProfitabilityReportData = async ({
   endDate = null,
 }) => {
   try {
-    // 1. Cargar catálogo de departamentos
-    const departmentsList = await fetchDepartmentsList();
+    // 1-3. Cargar catalogos en paralelo (departments, products, kits no dependen entre si)
+    const [departmentsList, productsRes, kitsRes] = await Promise.all([
+      fetchDepartmentsList(),
+      supabase
+        .from("products")
+        .select("id, name, barcode, department_id, cost_price, sale_price, status, is_kit"),
+      supabase
+        .from("product_kits")
+        .select(`
+          id,
+          kit_product_id,
+          is_active,
+          product_kit_items (
+            component_product_id,
+            quantity
+          )
+        `),
+    ]);
+
+    if (productsRes.error) throw productsRes.error;
+
     const departmentsMap = {};
     for (const d of departmentsList) {
       departmentsMap[d.id] = d;
     }
 
-    // 2. Cargar catálogo de productos con costo, departamento y bandera de kit
-    const { data: productsData, error: prodErr } = await supabase
-      .from("products")
-      .select("id, name, barcode, department_id, cost_price, sale_price, status, is_kit");
-
-    if (prodErr) throw prodErr;
-
     const productsMap = {};
-    for (const p of productsData || []) {
+    for (const p of productsRes.data || []) {
       productsMap[p.id] = p;
     }
 
-    // 3. Cargar configuración de Kits (product_kits y product_kit_items)
-    const { data: kitsData, error: kitsErr } = await supabase
-      .from("product_kits")
-      .select(`
-        id,
-        kit_product_id,
-        is_active,
-        product_kit_items (
-          component_product_id,
-          quantity
-        )
-      `);
-
-    if (kitsErr) {
-      console.error("Error al consultar kits de productos en profitabilityReportService:", kitsErr);
+    if (kitsRes.error) {
+      console.error("Error al consultar kits de productos en profitabilityReportService:", kitsRes.error);
     }
 
     const kitsMap = {};
-    for (const kit of kitsData || []) {
+    for (const kit of kitsRes.data || []) {
       if (kit.kit_product_id) {
         kitsMap[kit.kit_product_id] = kit;
       }
     }
 
-    // 4. Cargar costos específicos de sucursal (branch_inventory)
+    // 4. Cargar inventario por sucursal y ventas del periodo en paralelo
     let branchInvQuery = supabase
       .from("branch_inventory")
       .select("branch_id, product_id, cost_price, sale_price, stock");
@@ -108,18 +107,6 @@ export const fetchProfitabilityReportData = async ({
       branchInvQuery = branchInvQuery.eq("branch_id", branchId);
     }
 
-    const { data: branchInvData, error: bInvErr } = await branchInvQuery;
-    if (bInvErr) {
-      console.error("Error al consultar inventario por sucursal para costos:", bInvErr);
-    }
-
-    const branchInventoryMap = {};
-    for (const row of branchInvData || []) {
-      const key = `${row.branch_id}_${row.product_id}`;
-      branchInventoryMap[key] = row;
-    }
-
-    // 4. Cargar ventas del periodo excluyendo canceladas
     let salesQuery = supabase
       .from("sales")
       .select("id, sale_date, total, discount_total, status, branch_id")
@@ -141,10 +128,29 @@ export const fetchProfitabilityReportData = async ({
       salesQuery = salesQuery.lte("sale_date", endIso.toISOString());
     }
 
-    const { data: salesData, error: salesErr } = await salesQuery;
-    if (salesErr) throw salesErr;
+    salesQuery = salesQuery.limit(100000);
 
-    const salesList = salesData || [];
+    const [branchInvResult, salesResult] = await Promise.all([
+      branchInvQuery,
+      salesQuery,
+    ]);
+
+    if (branchInvResult.error) {
+      console.error("Error al consultar inventario por sucursal para costos:", branchInvResult.error);
+    }
+
+    const branchInvData = branchInvResult.data || [];
+
+    const branchInventoryMap = {};
+    for (const row of branchInvData) {
+      const key = `${row.branch_id}_${row.product_id}`;
+      branchInventoryMap[key] = row;
+    }
+
+    // 5. Procesar ventas del periodo
+    const salesData = salesResult.data || [];
+
+    const salesList = salesData;
     const salesMap = {};
     const saleIds = [];
 
@@ -157,11 +163,9 @@ export const fetchProfitabilityReportData = async ({
     let saleDetailsList = [];
     if (saleIds.length > 0) {
       const CHUNK_SIZE = 100;
-      const MAX_SALES = 600;
-      const limitedSaleIds = saleIds.slice(0, MAX_SALES);
 
-      for (let i = 0; i < limitedSaleIds.length; i += CHUNK_SIZE) {
-        const chunk = limitedSaleIds.slice(i, i + CHUNK_SIZE);
+      for (let i = 0; i < saleIds.length; i += CHUNK_SIZE) {
+        const chunk = saleIds.slice(i, i + CHUNK_SIZE);
         const { data: chunkDetails, error: chunkErr } = await supabase
           .from("sale_details")
           .select(`
@@ -180,7 +184,8 @@ export const fetchProfitabilityReportData = async ({
               cost_price
             )
           `)
-          .in("sale_id", chunk);
+          .in("sale_id", chunk)
+          .limit(100000);
 
         if (!chunkErr && chunkDetails) {
           saleDetailsList = saleDetailsList.concat(chunkDetails);
