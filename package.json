@@ -12,7 +12,8 @@
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
-    "rebuild": "electron-rebuild -f -w sqlite3"
+    "rebuild": "electron-rebuild -f -w sqlite3",
+    "test": "vitest run"
   },
   "keywords": [
     "electron",
@@ -40,6 +41,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/sqlite3": "^5.1.0",
@@ -49,9 +51,11 @@
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
+    "jsdom": "^30.0.1",
     "node-gyp": "^11.3.0",
     "nodemon": "^3.1.10",
     "vite": "^7.1.0",
+    "vitest": "^5.0.0",
     "wait-on": "^8.0.4"
   },
   "build": {

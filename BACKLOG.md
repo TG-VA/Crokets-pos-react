@@ -19,18 +19,21 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 ## Prioridad Media (Infraestructura y Testing)
 
-* [ ] Configurar entorno de testing y linter (Vitest/Jest, ESLint) — ver `KNOWN_ISSUES.md` #8
-* [ ] Unit tests para utilidades puras (`importUtils.js`, servicios de import/kits) — ver `KNOWN_ISSUES.md` #9
-* [ ] Migraciones SQL versionadas para el schema de Supabase — ver `KNOWN_ISSUES.md` #6
+* [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
+* [ ] Configurar linter (ESLint/Prettier) — ver `KNOWN_ISSUES.md` #8
+* [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
+* [ ] Migraciones SQL versionadas para el schema de Supabase (baseline del schema existente; ya existe la primera migración funcional) — ver `KNOWN_ISSUES.md` #6
 * [ ] Revisión de roles y permisos entre Supabase y SQLite local — ver `KNOWN_ISSUES.md` #10
 * [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15
 * [x] Extraer componente compartido `PaginationBar` y eliminar los footers de paginación duplicados — ver `KNOWN_ISSUES.md` #15
-* [ ] Migrar lista de productos a paginación server-side si el catálogo supera ~2000 SKUs — ver `KNOWN_ISSUES.md` #16
+* [x] Migrar lista de productos a paginación server-side (RPC `get_branch_products_paginated`; `useProductsList` desacoplado de `ProductsContext`) — ver `KNOWN_ISSUES.md` #16
+* [x] Refactor de `ProductsContext`: extraer lógica de datos/CRUD a `src/services/products/` y optimizar realtime — ver `KNOWN_ISSUES.md` #16
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
 * [ ] Vistas pendientes: `/inventory`, `/invoices`, `/cashout`, `/settings` — ver `TEMPLATE_NUEVA_PAGINA.md` y `KNOWN_ISSUES.md` #12
 * [ ] Simplificar condicional muerto de ícono en `electron/main.js` — ver `KNOWN_ISSUES.md` #11
+* [ ] Normalizar EOF newline en archivos preexistentes de `src/` (decenas de archivos) — ver `KNOWN_ISSUES.md` #17
 
 ---
 

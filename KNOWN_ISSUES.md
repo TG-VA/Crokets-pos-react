@@ -124,19 +124,25 @@ catálogo de productos). Ver detalle completo en `PERMISSIONS.md`.
 ## Medio
 
 ### 6. Sin migraciones SQL versionadas para Supabase
-**Estado:** abierto.
+**Estado:** parcialmente resuelto — 9 de septiembre de 2026.
 
 El schema completo de las tablas remotas (ver `docs/SCHEMA.md`) vive únicamente en el proyecto de
-Supabase (dashboard remoto). No hay carpeta `supabase/migrations/` en el repo, por lo que no hay
-forma de recrear el schema desde cero solo con este repositorio, ni de rastrear cambios de
+Supabase (dashboard remoto). No había carpeta `supabase/migrations/` en el repo, por lo que no
+había forma de recrear el schema desde cero solo con este repositorio, ni de rastrear cambios de
 estructura en el historial de git.
 
 **Actualización (24 ago 2026):** se generó un inventario manual completo del schema por
 introspección directa — ver `SCHEMA.md`. Esto mitiga parcialmente el problema (ya hay una
 referencia versionada en Git), pero no sustituye migraciones reales ejecutables.
 
-**Recomendación:** adoptar `supabase db dump` / migraciones versionadas si el equipo crece o si se
-necesita reproducir el ambiente en otra cuenta de Supabase.
+**Actualización (9 sep 2026):** se creó la carpeta `supabase/migrations/` con la primera migración
+versionada (`20260909123000_get_branch_products_paginated.sql`, RPC de paginación server-side para
+la lista de productos), aplicada al remoto con `supabase db push`. El resto del schema sigue sin
+snapshot ejecutable.
+
+**Recomendación:** generar un baseline de las tablas existentes (ej. `supabase db dump` a una
+migración inicial) y adoptar el flujo de migraciones versionadas para los próximos cambios.
+Ver `PERMISSIONS.md` / `SCHEMA.md` para el estado actual detallado.
 
 ### 7. Discrepancia README vs. dependencias reales (SQLite)
 **Estado:** corregido en la documentación nueva, pendiente en el README original si aplica.
@@ -146,18 +152,32 @@ El `README.MD` original mencionaba `better-sqlite3` como ORM, pero `package.json
 correctamente en `AGENTS.md` y `docs/SCHEMA.md`.
 
 ### 8. Sin `lint` ni `test` configurados
-**Estado:** abierto, aceptado como decisión consciente por ahora (ver `AGENTS.md`).
+**Estado:** parcialmente resuelto — 9 de septiembre de 2026 (test listo; lint pendiente).
 
-No hay ESLint/Prettier ni ningún framework de testing configurado en `package.json`. No es un
-bloqueante inmediato, pero si el equipo crece más allá de un desarrollador, vale la pena introducir
-al menos un linter para mantener consistencia de estilo.
+No había ESLint/Prettier ni framework de testing configurado en `package.json`. Se configuró
+**Vitest 5** (`vitest.config.js` con globals y jsdom, script `npm test`) y quedó habilitada la
+suite inicial de 19 tests (funciones puras de `productFormatters` y el archivo preexistente de
+`useSalesTotals`, que requería `@testing-library/react` y `jsdom` como devDependencies).
+
+**Actualización (9 sep 2026):** la suite creció a **44 tests** al incorporar `usePagination`
+(10 tests: defaults, clamps de página, cambio de tamaño, persistencia en `localStorage`,
+ajuste de página al reducir el total) y `productCrudService` (15 tests que verifican los
+contratos `{success, data, error, partial}` de create/update/delete, barcode duplicado `23505`,
+`partial:true` cuando el inventario falla tras crear el producto y errores inesperados).
+El lint (ESLint/Prettier) sigue sin configurarse: no es bloqueante inmediato, pero vale la pena
+introducir al menos un linter para mantener consistencia de estilo conforme el equipo crece.
 
 ### 9. Falta de Unit Tests para Utilidades Puras
-**Estado:** abierto (depende del punto 8).
+**Estado:** parcialmente resuelto — 9 de septiembre de 2026.
 
-Se ha aislado con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existen pruebas unitarias que garanticen su funcionamiento ante futuros cambios.
+Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`), la suite preexistente de `useSalesTotals`, el hook global `usePagination` (10 tests) y los contratos de CRUD de productos en `productCrudService` (15 tests).
 
-**Recomendación:** Una vez configurado el entorno de testing (Vitest/Jest), redactar pruebas para estos módulos como prioridad.
+**Actualización 2 (9 sep 2026):** se agregó la cobertura de Importación y Kits con la suite en **83 tests**:
+- `importUtils` (14 tests de funciones puras: `normalizeText`, `normalizeHeader`, `parseBoolean`, `parseNumber`, `formatCurrency` y catálogos de columnas).
+- `productsImportService` (11 tests con `supabase` y `validateSatClaves` mockeados: validación de datos, sucursales/departamentos, creación de departamentos faltantes y `processImportTransaction` con inventario por sucursal, productos globales y rollback cuando falla la inserción de inventario).
+- `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
+
+**Recomendación:** con los servicios de import/kits cubiertos, la siguiente capa de valor sería automatizar los RPC de ventas (`create_sale_transaction`, `create_transfer_order`) y las funciones de `verifierService` / `salesCalculationService` si se quiere supervisión unitaria de las transacciones atómicas.
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
 **Estado:** abierto — parcialmente documentado.
@@ -219,21 +239,49 @@ página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de c
 el estilo y el marcado del footer de paginación en un único componente.
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
-**Estado:** abierto — documentado el 9 de septiembre de 2026.
+**Estado:** resuelto — 9 de septiembre de 2026.
 
-`ProductsContext.loadProducts` carga el catálogo global completo (productos + inventario de la
-sucursal) en memoria y lo comparte con 9 hooks de los módulos de productos e inventario. Con un
+`ProductsContext.loadProducts` cargaba el catálogo global completo (productos + inventario de la
+sucursal) en memoria y lo compartía con 9 hooks de los módulos de productos e inventario. Con un
 catálogo de ~1000 SKUs y creciendo, se aplicó `.limit(10000)` explícito
 (`MAX_CATALOG_ROWS_TO_LOAD`) en las 3 queries de `loadProducts` para evitar el truncamiento
 silencioso del límite por defecto de Supabase (1000 filas por query).
 
-**Impacto:** mientras el catálogo activo se mida en miles, la carga completa en memoria es viable
-(la lista de productos ya paga el render en frontend con `usePagination`). Superado un umbral de
-~2000-5000 SKUs, el payload de red y memoria degradará la experiencia de carga.
+**Actualización (9 sep 2026):** `ProductsContext` fue refactorizado (rama
+`refactor/products-context`). La lógica de datos y CRUD se extrajo a `src/services/products/`
+(`productCatalogService`, `productFormatters`, `productCrudService`, `departmentService`,
+`productDiscountService`) y el Context quedó como capa delgada de estado sin cambiar las props
+consumidas (se removieron solo las muertas: `loadingDepartments`, `departmentsError`,
+`deleteDepartment`). La suscripción realtime quedó extraída a `src/hooks/useProductsRealtime.js`
+(debounce 500 ms, supresión 1500 ms tras mutación local y filtro de `branch_inventory` por
+sucursal activa).
 
-**Recomendación:** migrar `ProductsList` a paginación server-side (`.range()`/`.ilike()` a Supabase),
-desacoplándola de `ProductsContext`, cuando el catálogo activo supere ~2000 SKUs o el tiempo de
-carga se degrade.
+**Actualización final (9 sep 2026):** `ProductsList` quedó migrada a paginación server-side a
+través del RPC `get_branch_products_paginated` (migración
+`supabase/migrations/20260909123000_get_branch_products_paginated.sql`, ya aplicada con
+`supabase db push`). El RPC replica exactamente el conjunto y orden del catálogo anterior
+(inventario de la sucursal + productos globales activos sin inventario en esa sucursal, ordenados
+por `tracks_inventory` y nombre) y devuelve `total_count` en cada fila para alimentar
+`usePagination` sin consultas extra. `useProductsList` quedó desacoplado de `ProductsContext`
+(usa `useBranch`, `usePagination`, `useProductsRealtime` y `fetchPaginatedBranchProducts`). El
+catálogo completo en memoria sigue cargándose en el Context para las demás vistas (Kardex, altas,
+modificaciones, bajas e inventario).
+
+**Actualización final 2 (9 sep 2026):** la migración de `ProductsList` a paginación server-side
+provocó que dos instancias de `useProductsRealtime` (ProductsContext y `useProductsList`) intentaran
+suscribirse al mismo canal `products-realtime-<branchId>` con el mismo cliente, lo que rompía la app
+con `Uncaught Error: cannot add 'postgres_changes' callbacks ... after subscribe()` (pantalla blanca
+al entrar a Productos). Se corrigió (`e7f457b`) con un **registry global compartido por sucursal**:
+un solo canal por `branchId`, creado con sus callbacks `.on(...)` antes del `subscribe()` y nunca
+después; cada instancia registra su propio `onInvalidate` con debounce (500 ms) y supresión local
+(1500 ms tras `markLocalMutation`), y el canal se elimina con `supabase.removeChannel` solo cuando
+la última instancia que lo usa se desmonta.
+
+**Impacto:** la lista de productos ya no depende del payload completo del catálogo; el payload por
+página es limitado y filtrado en el servidor.
+
+**Recomendación:** si otras vistas (Kardex, altas, inventario) superan el umbral, migrar sus
+consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
 ---
 
@@ -264,6 +312,21 @@ que es una cuenta de prueba.
 
 **Recomendación:** confirmar con el equipo si es una cuenta de prueba y, de ser así, desactivarla
 (`status = false`) o eliminarla antes de distribuir el sistema a un negocio real.
+
+### 17. Archivos sin salto de línea final (EOF newline)
+**Estado:** abierto — detectado el 9 de septiembre de 2026 durante el refactor de `ProductsContext`.
+
+`AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
+(EOF newline), pero decenas de archivos preexistentes en `src/` no lo cumplen (p. ej.
+`src/main.jsx`, `src/App.jsx`, `src/contexts/BranchContext.jsx`, `src/hooks/useEscapeKey.js`,
+`src/backend/server.js`, `src/utils/ticketBuilder.js`). Durante el refactor se corrigió en los
+archivos nuevos de `src/services/products/` y en `src/contexts/ProductsContext.jsx`, pero el resto
+del árbol sigue pendiente.
+
+**Impacto:** diffs con ruido y advertencias de herramientas; va contra el estándar del propio repo.
+
+**Recomendación:** normalizar con un script masivo (recorrer los archivos rastreados por git y
+añadir `\n` a los que falten) en una tarea dedicada de limpieza.
 
 ---
 

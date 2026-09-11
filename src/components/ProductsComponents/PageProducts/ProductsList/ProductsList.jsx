@@ -17,7 +17,7 @@ const ProductsList = () => {
     filterRef,
     selectedRowRef,
     departments,
-    filteredProducts,
+    totalCount,
     paginatedProducts,
     currentPage,
     totalPages,
@@ -117,14 +117,14 @@ const ProductsList = () => {
                 </div>
                 {departments.map((dept) => (
                   <div
-                    key={dept}
+                    key={dept.id}
                     className={[
                       styles.filterOption,
-                      selectedDepartment === dept ? styles.filterOptionSelected : ""
+                      selectedDepartment === dept.name ? styles.filterOptionSelected : ""
                     ].filter(Boolean).join(" ")}
-                    onClick={() => handleDepartmentSelect(dept)}
+                    onClick={() => handleDepartmentSelect(dept.name)}
                   >
-                    {formatDept(dept)}
+                    {formatDept(dept.name)}
                   </div>
                 ))}
               </div>
@@ -144,13 +144,13 @@ const ProductsList = () => {
       </div>
 
       <div className={styles.resultsInfo}>
-        {filteredProducts.length === 0 ? (
+        {totalCount === 0 ? (
           <span className={styles.noResultsText}>
             No se encontraron productos
           </span>
         ) : (
           <span className={styles.resultsCount}>
-            Mostrando {pageStart + 1} a {pageEnd} de {filteredProducts.length}{" "}
+            Mostrando {pageStart + 1} a {pageEnd} de {totalCount}{" "}
             productos
             {selectedDepartment &&
               ` en ${formatDept(selectedDepartment).toUpperCase()}`}
@@ -205,7 +205,7 @@ const ProductsList = () => {
           </tbody>
         </table>
 
-        {filteredProducts.length === 0 && (
+        {totalCount === 0 && !loadingProducts && (
           <div className={styles.noResults}>
             No se encontraron productos que coincidan con los criterios de
             búsqueda.
@@ -213,11 +213,11 @@ const ProductsList = () => {
         )}
       </div>
 
-      {filteredProducts.length > 0 && (
+      {totalCount > 0 && (
         <PaginationBar
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filteredProducts.length}
+          totalItems={totalCount}
           pageSize={pageSize}
           pageSizeOptions={[10, 25, 50]}
           itemsNoun="productos"
