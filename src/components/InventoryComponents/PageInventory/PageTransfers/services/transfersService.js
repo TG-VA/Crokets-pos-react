@@ -86,6 +86,12 @@ const TRANSFER_SELECT = `
     product_id,
     quantity,
     cost_price,
+    origin_stock_before,
+    origin_stock_after,
+    destination_stock_before,
+    destination_stock_after,
+    received_qty,
+    returned_qty,
     product:products!inventory_transfer_items_product_id_fkey (
       id,
       name,
