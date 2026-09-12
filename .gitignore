@@ -63,3 +63,8 @@ temp_catalogs/
 .dbg/
 # Markdowns temporales de debug (ej. debug-movements-week-month.md)
 debug-*.md
+
+# ===== Archivos temporales generales (desde main, NO reemplazar los de debug)
+* copy.*
+* (1).*
+*~
