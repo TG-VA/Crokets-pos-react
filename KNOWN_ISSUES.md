@@ -502,6 +502,18 @@ navbar global no se intercepta: solo expone hubs públicos, ninguna sub-sección
 **Impacto:** UX correcta (el modal aparece sobre la página actual sin cambiar la URL) y sin
 duplicar el guard ni el vocabulario de permisos.
 
+**Actualización 2 (13 sep 2026):** se corrigió un bloqueante detectado en la auditoría del PR #105:
+la autorización otorgada desde el navbar no llegaba al guard recién montado (el `ProtectedRoute`
+consolidado había perdido el registro `authorizedRoutes` del legacy), por lo que un usuario no-admin
+autorizaba y, al navegar, `ProtectedRoute` volvía a negar el acceso y a abrir el modal sobre la
+página destino. Se reintrodujo el registro `authorizedRoutes` (Set por montaje de módulo, dueño: la
+página de Reports/Products/Invoices) compartido entre navbar y guard: `useProtectedNavigation`
+notifica `onProtectedAccessAuthorized(routePath)` al autorizar y `ProtectedRoute` consulta ese Set
+antes de `checkUserIsAdmin`. Alcance por montaje (igual que el legacy): al salir del módulo y volver
+se re-solicita autorización. Además, las páginas ahora derivan sus rutas protegidas de
+`adminProtectedSections.js`, eliminando la copia de strings que quedaba en `Reports.jsx`. Cobertura:
+tests de `withProtectedMetadata`, `useProtectedNavigation` y `ProtectedRoute`.
+
 ---
 
 ## Cómo usar este documento
