@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from "react";
-import AdminAuthorizationModal from "../../AdminAuthorizationModal/AdminAuthorizationModal";
-import { checkUserIsAdmin } from "../../../lib/permissionsService";
-import { useAuth } from "../../../contexts/AuthContext";
-import { useBranch } from "../../../contexts/BranchContext";
-import styles from "./ProtectedProductRoute.module.css";
+import AdminAuthorizationModal from "../AdminAuthorizationModal/AdminAuthorizationModal";
+import { checkUserIsAdmin } from "../../lib/permissionsService";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBranch } from "../../contexts/BranchContext";
+import styles from "./ProtectedRoute.module.css";
 
-const ProtectedProductRoute = ({
-  children,
-  routePath,
-  routeLabel,
-  action,
-  authorizedRoutes,
-  onAuthorizedRoute,
-}) => {
+const ProtectedRoute = ({ children, routePath, routeLabel, action }) => {
   const { user } = useAuth();
   const { branch } = useBranch();
 
@@ -27,14 +20,6 @@ const ProtectedProductRoute = ({
       setCheckingAccess(true);
       setIsAllowed(false);
       setAdminAuthOpen(false);
-
-      if (authorizedRoutes.has(routePath)) {
-        if (!isMounted) return;
-
-        setIsAllowed(true);
-        setCheckingAccess(false);
-        return;
-      }
 
       const isAdmin = await checkUserIsAdmin(user?.id);
 
@@ -56,10 +41,9 @@ const ProtectedProductRoute = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.id, routePath, authorizedRoutes]);
+  }, [user?.id, routePath]);
 
   const handleAdminAuthorized = () => {
-    onAuthorizedRoute(routePath);
     setAdminAuthOpen(false);
     setIsAllowed(true);
     setCheckingAccess(false);
@@ -99,4 +83,4 @@ const ProtectedProductRoute = ({
   return children;
 };
 
-export default ProtectedProductRoute;
+export default ProtectedRoute;

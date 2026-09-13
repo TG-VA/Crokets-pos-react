@@ -463,6 +463,18 @@ etiquetas distintas a las previas.
 **Recomendación:** QA manual del reporte y, si se prefiere el formato legacy, ajustar `rule_label`
 en la RPC (y su test).
 
+### 25. Guard de autorización de administrador duplicado en módulos (ProtectedRoute)
+**Estado:** resuelto (10 sep 2026).
+
+Cada módulo (Productos, Reportes, y originalmente Facturas) mantenía su propia copia del guard:
+`ProtectedProductRoute`, `ProtectedReportRoute` y el hook `useProtectedNavigation` (que además
+bloqueaba la navbar del módulo). Esto generaba duplicación de lógica, estilos y mantenimiento.
+
+**Corrección:** se consolidó un componente compartido `src/components/ProtectedRoute/` y se
+eliminaron las copias por módulo. El hook `useProtectedNavigation` (bloqueo de navbar) se retiró
+porque el guard re-renderiza a los hijos sin navegación real; la navbar del módulo ya no necesita
+interceptar clicks. Ver `BACKLOG.md` para el ítem de backlog asociado.
+
 ---
 
 ## Cómo usar este documento
