@@ -20,8 +20,13 @@ import { checkUserIsAdmin } from "../lib/permissionsService";
  * Uso (SRP): un navbar renderiza UNA instancia del modal compartido y delega el click en
  * `handleNavigation(option, event)`, pasando a cada item protegido los mismos campos que ya
  * usa ProtectedRoute (`action`, `routeLabel`, `routePath`/`targetId`, `branchId`).
+ *
+ * La página del módulo es dueña del registro `authorizedRoutes` (Set por montaje, igual que
+ * antes de consolidar el guard): al autorizar, este hook notifica `onProtectedAccessAuthorized`
+ * con el `routePath` para que el guard compartido reconozca la ruta como autorizada y no vuelva
+ * a pedir credenciales al montarse tras la navegación.
  */
-const useProtectedNavigation = () => {
+const useProtectedNavigation = (onProtectedAccessAuthorized) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -50,6 +55,7 @@ const useProtectedNavigation = () => {
   const handleAuthorized = () => {
     setAdminAuthOpen(false);
     if (pendingNavigation) {
+      onProtectedAccessAuthorized?.(pendingNavigation.routePath);
       navigate(pendingNavigation.path);
     }
     clearPending();

@@ -65,7 +65,7 @@ const NAVBAR_OPTIONS = [
   },
 ];
 
-const NavbarProducts = () => {
+const NavbarProducts = ({ onProtectedAccessAuthorized }) => {
   const { branch } = useBranch();
   const {
     handleNavigation,
@@ -73,7 +73,7 @@ const NavbarProducts = () => {
     onCloseAdminAuth,
     onAuthorizedAdminAuth,
     pendingNavigation,
-  } = useProtectedNavigation();
+  } = useProtectedNavigation(onProtectedAccessAuthorized);
 
   const options = withProtectedMetadata(
     NAVBAR_OPTIONS,

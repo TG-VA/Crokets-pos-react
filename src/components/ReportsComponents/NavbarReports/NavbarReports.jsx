@@ -79,7 +79,7 @@ const REPORT_OPTIONS = [
   },
 ];
 
-const NavbarReports = () => {
+const NavbarReports = ({ onProtectedAccessAuthorized }) => {
   const { branch } = useBranch();
   const {
     handleNavigation,
@@ -87,7 +87,7 @@ const NavbarReports = () => {
     onCloseAdminAuth,
     onAuthorizedAdminAuth,
     pendingNavigation,
-  } = useProtectedNavigation();
+  } = useProtectedNavigation(onProtectedAccessAuthorized);
 
   const options = withProtectedMetadata(REPORT_OPTIONS, PROTECTED_REPORT_SECTIONS);
 

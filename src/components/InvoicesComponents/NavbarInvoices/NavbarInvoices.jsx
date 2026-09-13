@@ -43,7 +43,7 @@ const NAVBAR_OPTIONS = [
   },
 ];
 
-const NavbarInvoices = () => {
+const NavbarInvoices = ({ onProtectedAccessAuthorized }) => {
   const { branch } = useBranch();
   const {
     handleNavigation,
@@ -51,7 +51,7 @@ const NavbarInvoices = () => {
     onCloseAdminAuth,
     onAuthorizedAdminAuth,
     pendingNavigation,
-  } = useProtectedNavigation();
+  } = useProtectedNavigation(onProtectedAccessAuthorized);
 
   const options = withProtectedMetadata(
     NAVBAR_OPTIONS,

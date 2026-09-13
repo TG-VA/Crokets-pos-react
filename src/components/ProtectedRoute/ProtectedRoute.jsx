@@ -5,7 +5,14 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
 import styles from "./ProtectedRoute.module.css";
 
-const ProtectedRoute = ({ children, routePath, routeLabel, action }) => {
+const ProtectedRoute = ({
+  children,
+  routePath,
+  routeLabel,
+  action,
+  authorizedRoutes,
+  onAuthorizedRoute,
+}) => {
   const { user } = useAuth();
   const { branch } = useBranch();
 
@@ -20,6 +27,12 @@ const ProtectedRoute = ({ children, routePath, routeLabel, action }) => {
       setCheckingAccess(true);
       setIsAllowed(false);
       setAdminAuthOpen(false);
+
+      if (authorizedRoutes?.has(routePath)) {
+        setIsAllowed(true);
+        setCheckingAccess(false);
+        return;
+      }
 
       const isAdmin = await checkUserIsAdmin(user?.id);
 
@@ -44,6 +57,7 @@ const ProtectedRoute = ({ children, routePath, routeLabel, action }) => {
   }, [user?.id, routePath]);
 
   const handleAdminAuthorized = () => {
+    onAuthorizedRoute?.(routePath);
     setAdminAuthOpen(false);
     setIsAllowed(true);
     setCheckingAccess(false);
