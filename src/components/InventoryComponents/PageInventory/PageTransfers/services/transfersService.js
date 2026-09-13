@@ -134,7 +134,14 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("No se pudieron cargar las sucursales para traspasos:", error);
-    return getBranchFallback(currentBranch);
+    const fallback = getBranchFallback(currentBranch);
+    if (import.meta.env.MODE !== "production") {
+      // Dev/Staging: re-lanzar el error para que QA detecte fallos RLS/permisos
+      // y no se oculten con el fallback. En producción se mantiene el fallback.
+      // TODO: descomentar al cerrar el issue de mejora de propagación de errores a UI.
+      // throw error;
+    }
+    return fallback;
   }
 };
 
