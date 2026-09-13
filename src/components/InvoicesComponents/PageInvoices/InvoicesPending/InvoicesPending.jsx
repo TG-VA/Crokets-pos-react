@@ -365,5 +365,3 @@ const InvoicesPending = () => {
 };
 
 export default InvoicesPending;
-
-

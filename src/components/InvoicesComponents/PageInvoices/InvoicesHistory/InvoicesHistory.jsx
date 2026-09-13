@@ -611,5 +611,3 @@ const InvoiceHistory = () => {
 };
 
 export default InvoiceHistory;
-
-
