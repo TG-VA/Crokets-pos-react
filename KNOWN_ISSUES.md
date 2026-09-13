@@ -484,7 +484,7 @@ que la navbar debe bloquear la navegación ANTES de que ocurra. Ver punto #27.
 
 Tras consolidar el guard en `ProtectedRoute` (ver #25), la navbar del módulo dejó de interceptar
 clicks. Como consecuencia, un usuario no-admin que hacía clic en una sección protegida (p. ej.
-Reportes → Ventas) **navegaba** a la URL protegida y `ProtectedRoute` mostraba el modal sobre la
+Reportes a Ventas) **navegaba** a la URL protegida y `ProtectedRoute` mostraba el modal sobre la
 página destino; al cerrar sin autorizar quedaba en la URL protegida con el mensaje "Se requiere
 autorización de administrador...".
 

@@ -44,9 +44,9 @@ const Products = () => {
 
       <div className={styles.pageContent}>
         <Routes>
-          <Route path="/" element={<ProductsList />} />
+          <Route index element={<ProductsList />} />
 
-          <Route path="/modificar" element={<ProductsModify />} />
+          <Route path="modificar" element={<ProductsModify />} />
 
           {PROTECTED_PRODUCT_SECTIONS.map(
             ({ routePath, routeLabel, action }) => {

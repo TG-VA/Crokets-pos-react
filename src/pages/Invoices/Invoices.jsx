@@ -37,9 +37,9 @@ const Invoices = () => {
 
       <div className={styles.pageContent}>
         <Routes>
-          <Route path="/" element={<InvoicesPending />} />
-          <Route path="/historial" element={<InvoicesHistory />} />
-          <Route path="/clientes" element={<InvoiceCustomers />} />
+          <Route index element={<InvoicesPending />} />
+          <Route path="historial" element={<InvoicesHistory />} />
+          <Route path="clientes" element={<InvoiceCustomers />} />
 
           {PROTECTED_INVOICE_SECTIONS.map(
             ({ routePath, routeLabel, action }) => {
