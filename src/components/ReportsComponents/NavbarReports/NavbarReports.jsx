@@ -3,6 +3,14 @@ import { NavLink } from "react-router-dom";
 
 import styles from "./NavbarReports.module.css";
 
+import { useBranch } from "../../../contexts/BranchContext";
+import useProtectedNavigation from "../../../hooks/useProtectedNavigation";
+import AdminAuthorizationModal from "../../AdminAuthorizationModal/AdminAuthorizationModal";
+import {
+  PROTECTED_REPORT_SECTIONS,
+  withProtectedMetadata,
+} from "../../../config/adminProtectedSections";
+
 import SummaryIcon from "../../../assets/icons/table-list-solid-full.svg";
 import SalesIcon from "../../../assets/icons/basket-shopping-solid-full.svg";
 import ProductsIcon from "../../../assets/icons/tag-solid-full.svg";
@@ -72,14 +80,26 @@ const REPORT_OPTIONS = [
 ];
 
 const NavbarReports = () => {
+  const { branch } = useBranch();
+  const {
+    handleNavigation,
+    adminAuthOpen,
+    onCloseAdminAuth,
+    onAuthorizedAdminAuth,
+    pendingNavigation,
+  } = useProtectedNavigation();
+
+  const options = withProtectedMetadata(REPORT_OPTIONS, PROTECTED_REPORT_SECTIONS);
+
   return (
     <div className={styles.navbarReports}>
       <div className={styles.buttonsContainer}>
-        {REPORT_OPTIONS.map((option) => (
+        {options.map((option) => (
           <NavLink
             key={option.id}
             to={option.path}
             end={option.end}
+            onClick={(event) => handleNavigation(option, event)}
             className={({ isActive }) =>
               `${styles.navButton} ${isActive ? styles.active : ""}`
             }
@@ -90,11 +110,25 @@ const NavbarReports = () => {
               aria-hidden="true"
               className={styles.icon}
             />
-
             <span>{option.label}</span>
           </NavLink>
         ))}
       </div>
+
+      <AdminAuthorizationModal
+        isOpen={adminAuthOpen}
+        onClose={onCloseAdminAuth}
+        onAuthorized={onAuthorizedAdminAuth}
+        action={pendingNavigation?.action}
+        title="Acceso restringido"
+        message={
+          pendingNavigation
+            ? `Para entrar a la sección "${pendingNavigation.routeLabel}", se requiere autorización de un administrador.`
+            : undefined
+        }
+        targetId={pendingNavigation?.routePath}
+        branchId={branch?.id}
+      />
     </div>
   );
 };

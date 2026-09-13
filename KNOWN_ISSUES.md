@@ -475,6 +475,33 @@ eliminaron las copias por módulo. El hook `useProtectedNavigation` (bloqueo de 
 porque el guard re-renderiza a los hijos sin navegación real; la navbar del módulo ya no necesita
 interceptar clicks. Ver `BACKLOG.md` para el ítem de backlog asociado.
 
+**Actualización (13 sep 2026):** el hook se **reintrodujo** como intercepción a nivel navbar (no como
+duplicación del guard): el guard `ProtectedRoute` cambia la URL antes de mostrar el modal, mientras
+que la navbar debe bloquear la navegación ANTES de que ocurra. Ver punto #27.
+
+### 27. Intercepción de navegación protegida en navbars de módulo (`useProtectedNavigation`)
+**Estado:** resuelto (13 sep 2026).
+
+Tras consolidar el guard en `ProtectedRoute` (ver #25), la navbar del módulo dejó de interceptar
+clicks. Como consecuencia, un usuario no-admin que hacía clic en una sección protegida (p. ej.
+Reportes → Ventas) **navegaba** a la URL protegida y `ProtectedRoute` mostraba el modal sobre la
+página destino; al cerrar sin autorizar quedaba en la URL protegida con el mensaje "Se requiere
+autorización de administrador...".
+
+**Corrección:** se reintrodujo el hook compartido `src/hooks/useProtectedNavigation.js` para
+interceptar el click ANTES de que React Router navegue: si el item lleva `action` y el usuario no es
+admin, la navegación NO ocurre (el usuario se queda exactamente en la página actual) y se abre el
+`AdminAuthorizationModal` compartido encima; al autorizar con credenciales válidas recién navega.
+`ProtectedRoute` se conserva como fallback de deep-link (entrar por URL directa).
+
+**Fuente única:** el vocabulario protegido por módulo (`routePath`/`routeLabel`/`action`) se
+centralizó en `src/config/adminProtectedSections.js` (helper puro `withProtectedMetadata`),
+consumido por los 3 navbars de módulo (Reports, Products, Invoices) para no duplicar strings. La
+navbar global no se intercepta: solo expone hubs públicos, ninguna sub-sección protegida.
+
+**Impacto:** UX correcta (el modal aparece sobre la página actual sin cambiar la URL) y sin
+duplicar el guard ni el vocabulario de permisos.
+
 ---
 
 ## Cómo usar este documento
