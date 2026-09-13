@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarReports from "../../components/ReportsComponents/NavbarReports/NavbarReports";
 import ProtectedRoute from "../../components/ProtectedRoute/ProtectedRoute";
+import { PROTECTED_REPORT_SECTIONS } from "../../config/adminProtectedSections";
 
 import PageReportsHome from "../../components/ReportsComponents/PageReports/PageReportsHome/PageReportsHome";
 import PageSalesReport from "../../components/ReportsComponents/PageReports/PageSalesReport/PageSalesReport";
@@ -18,85 +19,59 @@ import PageCommissionsReport from "../../components/ReportsComponents/PageReport
 
 import styles from "./Reports.module.css";
 
-const PROTECTED_REPORT_PAGES = [
-  {
-    path: "ventas",
-    routePath: "/reports/ventas",
-    label: "Ventas",
-    action: "reports_sales_access",
-    Component: PageSalesReport,
-  },
-  {
-    path: "productos",
-    routePath: "/reports/productos",
-    label: "Productos",
-    action: "reports_products_access",
-    Component: PageProductsReport,
-  },
-  {
-    path: "inventario",
-    routePath: "/reports/inventario",
-    label: "Inventario",
-    action: "reports_inventory_access",
-    Component: PageInventoryReport,
-  },
-  {
-    path: "caja",
-    routePath: "/reports/caja",
-    label: "Caja",
-    action: "reports_cash_access",
-    Component: PageCashReport,
-  },
-  {
-    path: "facturacion",
-    routePath: "/reports/facturacion",
-    label: "Facturación",
-    action: "reports_invoicing_access",
-    Component: PageInvoicesReport,
-  },
-  {
-    path: "rentabilidad",
-    routePath: "/reports/rentabilidad",
-    label: "Rentabilidad",
-    action: "reports_profitability_access",
-    Component: PageProfitabilityReport,
-  },
-  {
-    path: "comisiones",
-    routePath: "/reports/comisiones",
-    label: "Comisiones",
-    action: "reports_commissions_access",
-    Component: PageCommissionsReport,
-  },
-];
+const PROTECTED_REPORT_COMPONENTS = {
+  "/reports/ventas": PageSalesReport,
+  "/reports/productos": PageProductsReport,
+  "/reports/inventario": PageInventoryReport,
+  "/reports/caja": PageCashReport,
+  "/reports/facturacion": PageInvoicesReport,
+  "/reports/rentabilidad": PageProfitabilityReport,
+  "/reports/comisiones": PageCommissionsReport,
+};
 
 const Reports = () => {
+  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => new Set());
+
+  const handleAuthorizedRoute = (routePath) => {
+    setAuthorizedRoutes((prev) => {
+      const next = new Set(prev);
+      next.add(routePath);
+      return next;
+    });
+  };
+
   return (
     <div className={styles.container}>
       <Navbar />
 
-      <NavbarReports />
+      <NavbarReports onProtectedAccessAuthorized={handleAuthorizedRoute} />
 
       <main className={styles.pageContent}>
         <Routes>
           <Route index element={<PageReportsHome />} />
 
-          {PROTECTED_REPORT_PAGES.map(
-            ({ path, routePath, label, action, Component }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <ProtectedRoute
-                    routePath={routePath}
-                    routeLabel={label}
-                    action={action}
-                  >
-                    <Component />
-                  </ProtectedRoute>
-                }
-              />
-            )
+          {PROTECTED_REPORT_SECTIONS.map(
+            ({ routePath, routeLabel, action }) => {
+              const Component = PROTECTED_REPORT_COMPONENTS[routePath];
+
+              return (
+                <Route
+                  key={routePath}
+                  path={routePath.replace("/reports/", "")}
+                  element={
+                    <ProtectedRoute
+                      routePath={routePath}
+                      routeLabel={routeLabel}
+                      action={action}
+                      authorizedRoutes={authorizedRoutes}
+                      onAuthorizedRoute={handleAuthorizedRoute}
+                    >
+                      <Component />
+                    </ProtectedRoute>
+                  }
+                />
+              );
+            }
           )}
 
           <Route path="clientes" element={<PageCustomersReport />} />

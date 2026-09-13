@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarProducts from "../../components/ProductsComponents/NavbarProducts/NavbarProducts";
 import ProtectedRoute from "../../components/ProtectedRoute/ProtectedRoute";
+import { PROTECTED_PRODUCT_SECTIONS } from "../../config/adminProtectedSections";
 
 import ProductsList from "../../components/ProductsComponents/PageProducts/ProductsList/ProductsList";
 import ProductsNew from "../../components/ProductsComponents/PageProducts/ProductsNew/ProductsNew";
@@ -16,83 +17,60 @@ import Departments from "../../components/ProductsComponents/PageProducts/Depart
 
 import styles from "./Products.module.css";
 
+const PROTECTED_PRODUCT_COMPONENTS = {
+  "/products/nuevo": ProductsNew,
+  "/products/eliminar": ProductsDelete,
+  "/products/promociones": ProductsPromotions,
+  "/products/importar": ProductsImports,
+  "/products/departamentos": Departments,
+};
+
 const Products = () => {
+  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => new Set());
+
+  const handleAuthorizedRoute = (routePath) => {
+    setAuthorizedRoutes((prev) => {
+      const next = new Set(prev);
+      next.add(routePath);
+      return next;
+    });
+  };
+
   return (
     <div className={styles.container}>
       <Navbar />
 
-      <NavbarProducts />
+      <NavbarProducts onProtectedAccessAuthorized={handleAuthorizedRoute} />
 
       <div className={styles.pageContent}>
         <Routes>
           <Route path="/" element={<ProductsList />} />
 
-          <Route
-            path="/nuevo"
-            element={
-              <ProtectedRoute
-                routePath="/products/nuevo"
-                routeLabel="Nuevo"
-                action="products_new_access"
-              >
-                <ProductsNew />
-              </ProtectedRoute>
-            }
-          />
-
           <Route path="/modificar" element={<ProductsModify />} />
 
-          <Route
-            path="/eliminar"
-            element={
-              <ProtectedRoute
-                routePath="/products/eliminar"
-                routeLabel="Eliminar"
-                action="products_delete_access"
-              >
-                <ProductsDelete />
-              </ProtectedRoute>
-            }
-          />
+          {PROTECTED_PRODUCT_SECTIONS.map(
+            ({ routePath, routeLabel, action }) => {
+              const Component = PROTECTED_PRODUCT_COMPONENTS[routePath];
 
-          <Route
-            path="/promociones"
-            element={
-              <ProtectedRoute
-                routePath="/products/promociones"
-                routeLabel="Promociones y Kits"
-                action="products_promotions_access"
-              >
-                <ProductsPromotions />
-              </ProtectedRoute>
+              return (
+                <Route
+                  key={routePath}
+                  path={routePath.replace("/products/", "")}
+                  element={
+                    <ProtectedRoute
+                      routePath={routePath}
+                      routeLabel={routeLabel}
+                      action={action}
+                      authorizedRoutes={authorizedRoutes}
+                      onAuthorizedRoute={handleAuthorizedRoute}
+                    >
+                      <Component />
+                    </ProtectedRoute>
+                  }
+                />
+              );
             }
-          />
-
-          <Route
-            path="/importar"
-            element={
-              <ProtectedRoute
-                routePath="/products/importar"
-                routeLabel="Importar"
-                action="products_import_access"
-              >
-                <ProductsImports />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/departamentos"
-            element={
-              <ProtectedRoute
-                routePath="/products/departamentos"
-                routeLabel="Departamentos"
-                action="products_departments_access"
-              >
-                <Departments />
-              </ProtectedRoute>
-            }
-          />
+          )}
 
           <Route path="*" element={<Navigate to="/products" replace />} />
         </Routes>
