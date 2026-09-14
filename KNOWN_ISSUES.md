@@ -403,13 +403,15 @@ ambos casos resuelven a la misma ruta (`../icon.ico`) — el condicional no tien
 un bug funcional, pero es código muerto que se puede simplificar.
 
 ### 12. Desarrollo de Vistas Pendientes
-**Estado:** abierto.
+**Estado:** resuelto (14 sep 2026).
 
-Faltan implementar las vistas base de la arquitectura:
-- `/inventory` (Inventario)
-- `/invoices` (Facturas)
-- `/cashout` (Corte de caja)
-- `/settings` (Configuración)
+Las vistas base de la arquitectura ya están implementadas y enrutadas. Evidencia: `src/App.jsx:52-63`
+registra `/dashboard`, `/products/*`, `/cashcut/*`, `/inventory/*`, `/invoices/*`, `/customers/*`,
+`/reports/*`, `/settings` y `/profiles`, con sus páginas correspondientes en `src/pages/`
+(`Inventory`, `Invoices`, `CashCut`, `Settings`, `Reports`, `Customers`, `Profiles`).
+
+Nota: la ruta de corte de caja es `/cashcut/*` (no `/cashout`, como figuraba en este punto y en
+`TEMPLATE_NUEVA_PAGINA.md`). Ver también `TEMPLATE_NUEVA_PAGINA.md`, actualizado en la misma fecha.
 
 ### 14. Usuario con dominio de correo distinto a la convención interna
 **Estado:** abierto — nuevo, detectado el 24 de agosto de 2026.
@@ -463,7 +465,7 @@ etiquetas distintas a las previas.
 **Recomendación:** QA manual del reporte y, si se prefiere el formato legacy, ajustar `rule_label`
 en la RPC (y su test).
 
-### 25. Guard de autorización de administrador duplicado en módulos (ProtectedRoute)
+### 28. Guard de autorización de administrador duplicado en módulos (ProtectedRoute)
 **Estado:** resuelto (10 sep 2026).
 
 Cada módulo (Productos, Reportes, y originalmente Facturas) mantenía su propia copia del guard:
@@ -482,7 +484,7 @@ que la navbar debe bloquear la navegación ANTES de que ocurra. Ver punto #27.
 ### 27. Intercepción de navegación protegida en navbars de módulo (`useProtectedNavigation`)
 **Estado:** resuelto (13 sep 2026).
 
-Tras consolidar el guard en `ProtectedRoute` (ver #25), la navbar del módulo dejó de interceptar
+Tras consolidar el guard en `ProtectedRoute` (ver #28), la navbar del módulo dejó de interceptar
 clicks. Como consecuencia, un usuario no-admin que hacía clic en una sección protegida (p. ej.
 Reportes a Ventas) **navegaba** a la URL protegida y `ProtectedRoute` mostraba el modal sobre la
 página destino; al cerrar sin autorizar quedaba en la URL protegida con el mensaje "Se requiere

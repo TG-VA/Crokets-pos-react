@@ -68,22 +68,30 @@ Estas se instalarán automáticamente con `npm install`:
 
 ```
 POS-CROKETS-REACT/
-├── electron/                # Archivos relacionados con la configuración de Electron
-├── node_modules/            # Dependencias instaladas con npm
+├── docs/                    # Documentación técnica (env, testing, migraciones, edge functions)
+├── electron/                # Proceso principal y preload de Electron
+├── scripts/                 # Scripts de importación (ej. códigos postales SEPOMEX)
 ├── src/                     # Código fuente de la aplicación
 │   ├── assets/              # Recursos estáticos
-│   │   ├── icons/           # Iconos de la aplicación
+│   │   ├── icons/           # Iconos SVG de la aplicación (ver ICONS.md)
 │   │   └── images/          # Imágenes
-│   ├── backend/             # Lógica de backend integrada en el proyecto
-│   ├── components/          # Componentes reutilizables
+│   ├── backend/             # Backend Express + SQLite local (login; solo dev)
+│   ├── components/          # Componentes por subdominio (Sales, Products, Reports, etc.)
+│   ├── config/              # Configuración transversal (ej. secciones protegidas)
+│   ├── contexts/            # Contextos globales (Auth, Branch, Products)
+│   ├── hooks/               # Hooks globales reutilizables
+│   ├── lib/                 # Clientes y servicios base (Supabase, permisos)
 │   ├── pages/               # Páginas principales de la app
-│   ├── App.jsx              # Componente raíz de React
-│   └── main.jsx              # Punto de entrada de la app React
-├── .gitignore                # Archivos y carpetas ignorados por Git
-├── index.html                 # HTML principal usado por Vite
-├── package-lock.json          # Versión exacta de dependencias instaladas
-├── package.json               # Configuración del proyecto y scripts
-└── README.md                  # Documentación del proyecto
+│   ├── services/            # Servicios de datos por dominio
+│   ├── utils/               # Utilidades puras (ticket, corte, formatters)
+│   ├── App.jsx              # Componente raíz de React (rutas)
+│   └── main.jsx             # Punto de entrada de la app React
+├── supabase/                # Migraciones, edge functions y config del proyecto remoto
+├── .gitignore               # Archivos y carpetas ignorados por Git
+├── index.html               # HTML principal usado por Vite
+├── package-lock.json        # Versión exacta de dependencias instaladas
+├── package.json             # Configuración del proyecto y scripts
+└── README.MD                # Documentación del proyecto
 ```
 
 #### Proceso de Instalación
@@ -107,15 +115,28 @@ npm run dev
 #### Comandos Disponibles
 | Comando | Descripción |
 |---------|-------------|
-| `npm run dev` | Inicia Vite + Electron en modo desarrollo |
+| `npm run dev` | Inicia Vite + Electron + backend Express local en modo desarrollo |
 | `npm run build` | Genera el instalador de escritorio (NSIS, Windows). Ver `DEPLOYMENT.md` antes de usarlo con clientes reales |
+| `npm run build:frontend` | Solo compila el frontend con Vite |
+| `npm run build:electron` | Solo empaqueta con electron-builder |
+| `npm run start` | Inicia Electron sobre el build existente (sin Vite ni backend local) |
+| `npm run watch` | Compila el frontend en modo watch |
+| `npm run preview` | Sirve localmente el build de Vite |
+| `npm test` | Ejecuta la suite de tests (Vitest). Ver `docs/TESTING.md` |
 | `npm run rebuild` | Reconstruye módulos nativos (necesario tras cambios relacionados con `sqlite3`) |
 
-> **Nota:** completar esta tabla si existen otros scripts definidos en `package.json` (por ejemplo, lint o test una vez se configuren — ver `KNOWN_ISSUES.md` punto 8).
+> El linter (ESLint/Prettier) todavía no está configurado — ver `KNOWN_ISSUES.md` punto 8.
 
 #### Documentación relacionada
 - `AGENTS.md` — convenciones para agentes de IA y desarrolladores
 - `CODE_STANDARDS.md` — estándares de código del proyecto
 - `KNOWN_ISSUES.md` — problemas conocidos y su severidad
+- `BACKLOG.md` — roadmap priorizado de pendientes
+- `PR_REVIEW.md` — checklist de revisión de PRs
 - `DEPLOYMENT.md` — build y distribución
 - `PERMISSIONS.md` / `SCHEMA.md` — roles, permisos y datos
+- `ICONS.md` / `TEMPLATE_NUEVA_PAGINA.md` — catálogo de iconos y plantilla de páginas
+- `docs/ENV_VARIABLES.md` — variables de entorno requeridas
+- `docs/TESTING.md` — cómo correr y escribir tests
+- `docs/SUPABASE_MIGRATIONS.md` — flujo de migraciones y edge functions
+- `docs/EDGE_FUNCTIONS.md` — contrato de las funciones edge
