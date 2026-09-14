@@ -664,6 +664,63 @@ exista un gateway/Edge Function que lo permita. Revisar al endurecer auth.
 `did-fail-load` ni errores de consola. Queda pendiente ejecutar el instalador empaquetado real en
 Windows (ítem del checklist de `DEPLOYMENT.md`) antes de distribuir.
 
+### 37. Ausencia de Content-Security-Policy en el renderer (SEC-1)
+**Estado:** Resuelto — 14 sep 2026.
+
+`index.html` no definía CSP, por lo que el renderer no tenía una segunda barrera contra inyección de
+scripts (defensa en profundidad; relevante junto con #35, sesión en `localStorage`).
+
+**Impacto:** sin CSP, un eventual sink XSS tendría vía libre para ejecutar script y exfiltrar la
+sesión. No había sinks XSS en el código (barrido sin `dangerouslySetInnerHTML`/`innerHTML`/`eval`).
+
+**Resolución:** `vite.config.mjs` inyecta una `Content-Security-Policy` estricta por `<meta>` solo en
+el build de producción (`default-src 'self'`, `script-src 'self'`, `connect-src` limitado a
+Supabase, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`). En dev no aplica para no
+romper el HMR. Verificado en `dist/index.html`. Ver `DEPLOYMENT.md`.
+
+### 38. Autorización de administrador gateada solo en el cliente (SEC-3)
+**Estado:** Abierto — requiere verificación del lado servidor (14 sep 2026).
+
+Las secciones administrativas se protegen en el renderer (`ProtectedRoute` +
+`adminProtectedSections`, ver #27/#28) y el modal `AdminAuthorizationModal` re-autentica al admin vía
+la Edge Function `authorize-admin-action` (`docs/EDGE_FUNCTIONS.md`). Falta confirmar que **toda**
+acción administrativa sensible tenga además un control server-side (RLS/`has_permission()` en las
+RPC/edge functions) y no dependa únicamente del gateo visual del cliente.
+
+**Impacto:** un usuario con sesión que invoque directamente una RPC/edge function administrativa
+saltándose la UI podría ejecutarla si el backend no la valida. Ligado a #13 (roles sin
+diferenciación real) y #29.
+
+**Recomendación:** auditar cada RPC/edge function administrativa y confirmar `is_admin()` /
+`has_permission()` server-side; registrar el resultado por endpoint.
+
+### 39. Endurecimiento de Electron incompleto (SEC-4)
+**Estado:** Resuelto — 14 sep 2026.
+
+`electron/main.js` no denegaba ventanas emergentes ni bloqueaba la navegación fuera del origen, y
+`electron/preload.js` exponía canales IPC sin handler en el proceso principal (`log-message`,
+`window-action`, `update-available`, `print-request`) además de `send`/`on`.
+
+**Impacto:** una inyección en el renderer podía abrir ventanas o navegar a contenido externo, y el
+allowlist de preload era más amplio que la superficie real.
+
+**Resolución:** `setWindowOpenHandler` deniega ventanas, `will-navigate` bloquea la navegación fuera
+del origen, se eliminaron los `console.log` de debug y el preload solo expone `invoke` con los canales
+realmente registrados (`get-device-code`, `close-app`, `set-zoom-factor`, `configure-zoom`,
+`reset-zoom`, `get-zoom-debug`).
+
+### 40. Bundle único de ~3.2 MB sin code-splitting (PERF-1)
+**Estado:** Resuelto — 14 sep 2026.
+
+El build generaba un solo chunk (~3.2 MB, ~907 KB gzip) porque `App.jsx` importaba las 11 páginas de
+forma eager y no había `manualChunks`.
+
+**Impacto:** arranque más lento y mayor trabajo de parseo en cada carga del POS.
+
+**Resolución:** `App.jsx` usa `lazy()` por ruta con `<Suspense>`; `vite.config.mjs` define
+`manualChunks` (`react`, `supabase`, `spreadsheets`). El bundle inicial bajó a ~0.47 MB (~137 KB
+gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
+
 ---
 
 ## Cómo usar este documento
