@@ -69,36 +69,38 @@ const Login = () => {
       setRecoverableSession(null);
 
       /*
-        1. Obtener email por username
+        1-3. Datos base en paralelo: email, usuario y código del dispositivo.
+        Solo dependen del username ingresado / datos locales, así que no hay
+        razón para esperarlos en serie.
       */
-      const { data: email, error: rpcError } = await supabase.rpc(
-        'get_email_by_username',
-        { p_username: cleanUsername }
-      );
+      const [emailResult, userResult, deviceResult] = await Promise.all([
+        supabase.rpc('get_email_by_username', { p_username: cleanUsername }),
+        supabase
+          .from('users')
+          .select('id, username')
+          .ilike('username', cleanUsername)
+          .maybeSingle(),
+        window.electronAPI.invoke('get-device-code'),
+      ]);
 
-      if (rpcError || !email) {
+      if (emailResult.error || !emailResult.data) {
         setError('Credenciales incorrectas');
         return;
       }
 
-      /*
-        2. Obtener usuario ANTES del login
-      */
-      const { data: dbUser, error: userLookupError } = await supabase
-        .from('users')
-        .select('id, username')
-        .ilike('username', cleanUsername)
-        .maybeSingle();
+      const email = emailResult.data;
 
-      if (userLookupError || !dbUser) {
+      if (userResult.error || !userResult.data) {
         setError('Usuario no encontrado');
         return;
       }
 
+      const dbUser = userResult.data;
+
       /*
-        3. Resolver sucursal por device
+        4. Resolver sucursal por device
       */
-      const { deviceCode } = await window.electronAPI.invoke('get-device-code');
+      const { deviceCode } = deviceResult;
 
       const branchResult = await resolveBranchByDevice(deviceCode);
 
@@ -110,24 +112,36 @@ const Login = () => {
       const resolvedBranchId = branchResult.data.id;
 
       /*
-        4. Obtener sucursal completa
+        5-6. Sucursal completa y sesión activa en paralelo: ambas dependen solo
+        de la sucursal ya resuelta.
       */
-      const { data: fullBranch, error: fullBranchError } = await supabase
-        .from('branches')
-        .select(`
-          id,
-          code,
-          name,
-          phone,
-          email,
-          address,
-          city,
-          state,
-          created_at,
-          updated_at
-        `)
-        .eq('id', resolvedBranchId)
-        .single();
+      const [fullBranchResult, activeSessionResult] = await Promise.all([
+        supabase
+          .from('branches')
+          .select(`
+            id,
+            code,
+            name,
+            phone,
+            email,
+            address,
+            city,
+            state,
+            created_at,
+            updated_at
+          `)
+          .eq('id', resolvedBranchId)
+          .single(),
+        supabase
+          .from('user_sessions')
+          .select('id, user_id, status, ended_at')
+          .eq('branch_id', resolvedBranchId)
+          .eq('status', 'active')
+          .is('ended_at', null)
+          .maybeSingle(),
+      ]);
+
+      const { data: fullBranch, error: fullBranchError } = fullBranchResult;
 
       if (fullBranchError || !fullBranch) {
         console.error(fullBranchError);
@@ -138,16 +152,7 @@ const Login = () => {
       const currentBranch = fullBranch;
       setBranch(currentBranch);
 
-      /*
-        5. Revisar sesiones activas EN ESA SUCURSAL
-      */
-      const { data: activeSession, error: activeSessionError } = await supabase
-        .from('user_sessions')
-        .select('id, user_id, status, ended_at')
-        .eq('branch_id', currentBranch.id)
-        .eq('status', 'active')
-        .is('ended_at', null)
-        .maybeSingle();
+      const { data: activeSession, error: activeSessionError } = activeSessionResult;
 
       if (activeSessionError) {
         console.error(activeSessionError);
