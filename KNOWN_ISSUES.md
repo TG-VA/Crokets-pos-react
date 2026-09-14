@@ -721,6 +721,22 @@ forma eager y no había `manualChunks`.
 `manualChunks` (`react`, `supabase`, `spreadsheets`). El bundle inicial bajó a ~0.47 MB (~137 KB
 gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
+### 41. `get_email_by_username` sin definición en migraciones versionadas
+**Estado:** Abierto — detectado el 14 sep 2026 durante la optimización del login.
+
+La RPC `get_email_by_username` la usa el login (`src/pages/Login/Login.jsx`) y está documentada en
+`SCHEMA.md`, pero **no existe ningún `CREATE FUNCTION` para ella en `supabase/migrations/`**: solo
+vive en el proyecto remoto (creada ad-hoc). Es una inconsistencia con #6 (migraciones versionadas
+como fuente de verdad) y un riesgo para recrear el esquema desde cero.
+
+**Impacto:** un entorno nuevo (o un `supabase db reset`) no tendría esta función y el login fallaría
+al resolver el email; el esquema versionado no refleja el remoto.
+
+**Recomendación:** capturar la definición actual (con `pg_get_functiondef`) en una migración nueva y
+verificar sus grants. Se llama antes de autenticar, por lo que requiere `EXECUTE` para `anon` (misma
+excepción pre-auth que #30); conviene confirmar que solo devuelve el email y nada más.
+No se corrige en el PR de login para no ampliar su alcance.
+
 ---
 
 ## Cómo usar este documento
