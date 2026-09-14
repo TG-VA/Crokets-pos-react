@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBranch } from '../../contexts/BranchContext';
 import styles from './Login.module.css';
 import { supabase } from '../../lib/supabaseClient';
+import { resolveBranchByDevice } from '../../services/deviceBranchService';
 
 // Recursos gráficos
 import logo from '../../assets/images/LOGOCROKETS.png';
@@ -99,18 +100,14 @@ const Login = () => {
       */
       const { deviceCode } = await window.electronAPI.invoke('get-device-code');
 
-      const branchRes = await fetch('http://localhost:3000/device/branch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceCode }),
-      });
+      const branchResult = await resolveBranchByDevice(deviceCode);
 
-      const branchData = await branchRes.json();
-
-      if (!branchData.success || !branchData.branch?.id) {
-        setError(branchData.message || 'Este POS no está asignado a ninguna sucursal');
+      if (!branchResult.success || !branchResult.data?.id) {
+        setError(branchResult.error || 'Este POS no está asignado a ninguna sucursal');
         return;
       }
+
+      const resolvedBranchId = branchResult.data.id;
 
       /*
         4. Obtener sucursal completa
@@ -129,7 +126,7 @@ const Login = () => {
           created_at,
           updated_at
         `)
-        .eq('id', branchData.branch.id)
+        .eq('id', resolvedBranchId)
         .single();
 
       if (fullBranchError || !fullBranch) {

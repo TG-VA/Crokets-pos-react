@@ -496,6 +496,23 @@ del schema existente (`KNOWN_ISSUES.md` #6).
 
 ---
 
+## Configuración
+
+### app_settings
+| Columna | Tipo | Notas |
+|---|---|---|
+| key | text | PK (ej. `cash_register.max_opening_amount`) |
+| value | jsonb | NN |
+| description | text | |
+| updated_at | timestamptz | default now() |
+| updated_by | uuid | → users.id |
+
+Creada en la migración `20260914130000`. RLS activa y sin grants para `anon`/`authenticated`: solo
+la leen/escriben las RPC `SECURITY DEFINER` (owner) o `service_role`. El panel de configuración que
+escribirá estos valores queda pendiente (ver `KNOWN_ISSUES.md` #33).
+
+---
+
 ## Funciones (RPC) relevantes
 
 Detectadas en `information_schema.routines`, útiles como referencia antes de crear nuevas RPC (ver
@@ -512,6 +529,12 @@ Detectadas en `information_schema.routines`, útiles como referencia antes de cr
 | `get_sales_report_kpis` | record | KPIs para reportes |
 | `has_permission` / `is_admin` | boolean | Ver `PERMISSIONS.md` |
 | `get_email_by_username` | text | Traduce username local a email para login contra Supabase Auth |
+| `get_branch_by_device` | jsonb | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30) |
+| `get_cash_register_session` | jsonb | Sesión de caja abierta de la sucursal + nombre del dueño (o `null`) |
+| `open_cash_register` | jsonb | Abre la caja derivando el usuario de `auth.uid()`; códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT` (tope desde `app_settings`) |
+| `_cash_session_payload` | jsonb | Helper interno de las RPC de caja (prefijo `_`, sin grants) |
+| `_cash_already_open_response` | jsonb | Helper interno: respuesta uniforme de "caja ya abierta" (prefijo `_`, sin grants) |
+| `_cash_max_opening_amount` | numeric | Helper interno: tope de apertura desde `app_settings` con fallback (prefijo `_`, sin grants) |
 | `_apply_inventory_delta` / `_build_transfer_notes` | record / text | Helpers internos (prefijo `_`) |
 | `enforce_sale_branch_consistency` / `prevent_edit_if_sale_not_open` / `set_updated_at` | trigger | Triggers de integridad |
 

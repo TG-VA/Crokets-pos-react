@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (14 sep 2026)
 
-13 archivos de test (~119 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+16 archivos de test (~155 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
@@ -30,6 +30,9 @@ componentes). No hay carpeta central de tests.
 | Navegación protegida | `src/hooks/useProtectedNavigation.test.js` |
 | Secciones protegidas | `src/config/adminProtectedSections.test.js` |
 | Guard de rutas | `src/components/ProtectedRoute/ProtectedRoute.test.jsx` |
+| Criptografía de contraseñas locales | `src/backend/password.test.js` |
+| Sucursal por dispositivo (RPC) | `src/services/deviceBranchService.test.js` |
+| Caja: sesión y apertura (RPC) | `src/services/cashRegisterService.test.js` |
 
 ## Patrones y convenciones
 
