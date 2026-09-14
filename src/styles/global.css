@@ -1,0 +1,31 @@
+/* Estilos y variables globales que deben cargar al arrancar la app, sin depender
+   de la ruta. Antes vivían dentro de CSS modules de páginas (CashRegister,
+   Profiles, ProductsList) y, al pasar las páginas a lazy(), dejaban de aplicarse
+   hasta visitar esas rutas (el login perdía margin:0 y Dashboard se quedaba sin
+   --lightGray, etc.). */
+
+:root {
+  --croketsOrange: #fc8913;
+  --croketsOrangeDark: #e07a0d;
+  --croketsBlue: #1092b1;
+  --croketsBlueDark: #0d7a94;
+  --lightGray: #f2f2f2;
+  --mediumGray: #e0e0e0;
+  --darkGray: #333333;
+  --textColor: #333333;
+  --white: #ffffff;
+  --errorColor: #e74c3c;
+  --successColor: #27ae60;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
