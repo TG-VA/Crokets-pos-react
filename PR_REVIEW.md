@@ -144,7 +144,7 @@ Escaneo del alcance del PR contra las referencias React/JS de la skill (audit or
 network layer, sinks, authz). Alcance: migraciones SQL (RPCs) + services JS + tests. Sin cambios de
 JSX/UI en el diff (sin superficie DOM/redirect/postMessage nueva).
 
-- **SEC-GRANT-001 — 🟡 Medio → CORREGIDO.** Los RPCs de reportes concedían `EXECUTE` a `anon`
+- **SEC-GRANT-001 — Medio → CORREGIDO.** Los RPCs de reportes concedían `EXECUTE` a `anon`
   (`20260910120100:93`, `20260910120200:122`, `20260910120300:127`, `20260910120400:123`,
   `20260910120500:125`). Con funciones invoker y RLS `USING(true)` en varias tablas de datos
   (`KNOWN_ISSUES.md` #13), un llamador sin sesión podía invocar reportes de caja/comisiones/

@@ -46,6 +46,24 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 - **Utilidades especializadas:**
   - Separar funciones puras de formateo visual (`*Formatters.js`) de generadores pesados de archivos externos (`*ExportUtils.js`).
 
+## Testing
+
+- El proyecto usa **Vitest**; correr **`npm test`** antes de commitear.
+- Agregar tests para lógica nueva no trivial (cálculos, contratos de servicios, hooks). Ver
+  `docs/TESTING.md` para el runner, patrones de mock y huecos de cobertura.
+- Aún no hay linter configurado (ver `KNOWN_ISSUES.md` #8).
+
+## Secretos y credenciales
+
+- No commitear `.env`, claves de Supabase, ni archivos `.sqlite`/`.sqlite3` (en `.gitignore`).
+- `SUPABASE_SERVICE_ROLE_KEY` es una credencial **privilegiada** (omite RLS): solo puede vivir en el
+  backend Node (`src/backend/`) y en las edge functions. Nunca exponerla con prefijo `VITE_`, en
+  `dist/` ni en el instalador.
+- Las credenciales del PAC de facturación (`cfdi_settings.api_username` / `api_password` /
+  `api_token`) son secretos; no exponerlas en el frontend ni en logs.
+- No imprimir valores de secretos en logs, commits, docs ni en respuestas al usuario. Los nombres de
+  las variables están documentados en `docs/ENV_VARIABLES.md`.
+
 ## Qué evitar
 
 - No commitear `.env`, claves de Supabase, ni archivos `.sqlite`/`.sqlite3` (en `.gitignore`).

@@ -3,9 +3,10 @@
 Este documento es un **inventario de tablas y columnas** del schema `public` de Supabase, generado
 por introspección directa (`information_schema`) el 24 de agosto de 2026. No sustituye el detalle
 completo del Dashboard de Supabase, pero permite entender la estructura del proyecto sin salir del
-repositorio. Si el schema cambia, este documento debe regenerarse — ver
-`supabase_schema_introspection.sql` en la raíz del repo (o donde el equipo decida guardarlo) para
-las queries usadas.
+repositorio. Si el schema cambia, este documento debe regenerarse. Las queries de introspección
+(`information_schema`) se ejecutaron de forma ad-hoc contra el proyecto remoto y **no están
+versionadas en el repo** (no existe `supabase_schema_introspection.sql`); si se vuelve a regenerar,
+conviene versionar el script de introspección.
 
 **Pendiente:** no hay migraciones SQL versionadas en `supabase/migrations/` (ver `KNOWN_ISSUES.md`
 punto 6). Este documento es actualmente la única referencia de schema versionada en Git.

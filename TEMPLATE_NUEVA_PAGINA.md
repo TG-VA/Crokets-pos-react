@@ -19,7 +19,7 @@ const [NombrePagina] = () => {
           <h1>Título de la Página</h1>
           <p>Descripción de la funcionalidad</p>
         </div>
-        
+
         <div className={styles.content}>
           {/* Contenido específico de la página */}
         </div>
@@ -69,37 +69,47 @@ import [NombrePagina] from './pages/[NombrePagina]/[NombrePagina]';
 
 ### 4. Agregar ruta en App.jsx
 ```jsx
-<Route 
-  path="/[ruta-url]" 
-  element={
-    cashRegistered ? 
-      <[NombrePagina] /> : 
-      <Navigate to="/cash-register" replace />
-  } 
-/>
+<Route path="/[ruta-url]/*" element={<AuthGuard><[NombrePagina] /></AuthGuard>} />
 ```
+Las rutas operativas (requieren sesión y caja abierta) usan `AuthGuard`; las administrativas
+(`/settings`, `/profiles`) usan `<AuthGuard requireCashRegister={false}>`. El guard resuelve la
+redirección a `/cash-register` o `/login` según corresponda, sin repetir la lógica en cada ruta.
 
 ### 5. El botón del navbar ya está configurado
 El botón ya existe en el array `navItems` del `Navbar.jsx`, solo necesita que exista la página correspondiente.
 
-## PÁGINAS PENDIENTES POR CREAR:
-- ✅ `/products` - Productos (CREADA)
-- ⏳ `/inventory` - Inventario
-- ⏳ `/invoices` - Facturas  
-- ⏳ `/cashout` - Corte de caja
-- ⏳ `/reports` - Reportes
-- ⏳ `/settings` - Configuración
+## ESTADO DE LAS VISTAS (14 sep 2026)
 
-## ESTRUCTURA DE CARPETAS RECOMENDADA:
+Todas las vistas base están implementadas y enrutadas en `src/App.jsx:52-63`:
+
+| Ruta | Vista | Estado |
+|---|---|---|
+| `/login` | Login | Implementada |
+| `/cash-register` | Apertura de caja | Implementada |
+| `/dashboard` | Dashboard | Implementada |
+| `/products/*` | Productos | Implementada |
+| `/cashcut/*` | Corte de caja | Implementada |
+| `/inventory/*` | Inventario | Implementada |
+| `/invoices/*` | Facturas | Implementada |
+| `/customers/*` | Clientes | Implementada |
+| `/reports/*` | Reportes | Implementada |
+| `/settings` | Configuración | Implementada |
+| `/profiles` | Perfiles de usuario | Implementada |
+
+Nota: la ruta de corte de caja es `/cashcut/*` (no `/cashout`). Ver `KNOWN_ISSUES.md` #12.
+
+## ESTRUCTURA DE CARPETAS
 ```
 src/pages/
-├── Dashboard/
-├── Login/  
+├── CashCut/
 ├── CashRegister/
-├── Products/ ✅
+├── Customers/
+├── Dashboard/
 ├── Inventory/
 ├── Invoices/
-├── Cashout/
+├── Login/
+├── Products/
+├── Profiles/
 ├── Reports/
 └── Settings/
 ```

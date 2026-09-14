@@ -57,8 +57,8 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 
 | | `can_manage_inventory` | `can_view_branch` |
 |---|---|---|
-| **admin** | ✔ | ✔ |
-| **cajero** | ✔ | ✔ |
+| **admin** | Sí | Sí |
+| **cajero** | Sí | Sí |
 
 > **Hallazgo relevante:** actualmente `admin` y `cajero` tienen exactamente los mismos permisos.
 > El sistema de roles está montado a nivel de base de datos, pero **todavía no diferencia nada
@@ -115,6 +115,7 @@ manualmente.
 - Al agregar un permiso nuevo, documentarlo aquí en la tabla de "Permisos existentes" y actualizar
   la matriz rol × permiso.
 - Si se crea un rol nuevo (ej. `gerente`), documentarlo aquí junto con su matriz de permisos.
-- Este documento debe regenerarse periódicamente contra la base real — ver
-  `supabase_followup_2.sql` / `supabase_followup_3.sql` para las queries usadas para levantarlo la
-  primera vez.
+- Este documento debe regenerarse periódicamente contra la base real. Las queries de introspección
+  con las que se levantó la primera vez se ejecutaron de forma ad-hoc contra el proyecto remoto y
+  **no están versionadas en el repo** (no existe `supabase_followup_*.sql`); si se vuelve a
+  regenerar, conviene versionar el script de introspección junto a este documento.
