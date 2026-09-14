@@ -28,6 +28,8 @@ import {
 
 const ProductsContext = createContext(null);
 
+const MAX_CATALOG_ROWS_TO_LOAD = 10000;
+
 export const useProducts = () => {
   const context = useContext(ProductsContext);
 
