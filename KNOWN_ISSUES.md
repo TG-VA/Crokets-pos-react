@@ -89,7 +89,7 @@ en un solo componente:
 
 | Archivo | Líneas | Nota |
 |---|---|---|
-| `src/pages/CashCut/CashCut.jsx` | ~1747 | 34 `useState`/`useEffect` en un solo componente |
+| `src/pages/CashCut/CashCut.jsx` | ~855 | 34 `useState`/`useEffect` en un solo componente |
 | `src/utils/ticketBuilder.js` | ~1500 | mezcla formato y lógica de negocio |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
@@ -109,6 +109,22 @@ consultas y escrituras de Supabase a `cashCutReportService.js` (datasets del tur
 del corte) y `cashCutDetailService.js` (corte histórico bajo demanda), con 28 tests de contrato.
 `CashCut.jsx` bajó a ~1747 líneas y solo conserva `supabase` para las suscripciones realtime
 (que se moverán en la Fase 3 de hooks). Faltan las fases de hooks y vistas por sección.
+
+**Actualización (15 sep 2026) — Fase 3:** rama `refactor/cashcut-hooks`. El estado, los efectos y
+la suscripción realtime se movieron a `useCashCutReport.js` (página principal: carga, historial,
+datasets, derivados y realtime) y `useCashCutDetail.js` (subflujos con modal: confirmar corte y
+cerrar turno), con 19 tests de hook y 5 de formateadores. Los formateadores puros se extrajeron a
+`utils/cashCutFormatters.js`. `CashCut.jsx` bajó a ~855 líneas y ya no importa `supabase`; queda
+como composición de hooks + `AppModal` + `handlePrint` + JSX. Falta la Fase 4 (vistas por sección).
+
+**Pendiente de la Fase 3 (no bloqueante):** `useCashCutReport.js` (~840 líneas) concentra carga,
+realtime y derivados; si crece más, conviene subdividirlo (p. ej. `useCashCutRealtime`). El callback
+de refresh realtime con debounce no está cubierto por tests (ver `docs/TESTING.md`). La auditoría de
+la Fase 3 también dejó documentados (preexistentes, sin cambio de comportamiento): estado "stale" de
+los totales cuando fallan los fetches secundarios de ventas, la re-escritura repetida de
+`localStorage`/`shift-cut-status-changed` en cada refresh realtime con corte existente, y el
+acoplamiento por `setErrorMsg` crudo entre `useCashCutReport` y `useCashCutDetail`. La duplicación de
+rutas de recarga se registró aparte en #47.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
@@ -856,6 +872,20 @@ que dificulta leer el flujo y buscar referencias.
 **Recomendación:** al convertir el wrapper en hook (Fase 3 del refactor), renombrar la función del
 componente (p. ej. `loadCutsHistory`) o la del servicio (p. ej. `fetchShiftCutsHistory`) para que
 cada capa tenga un nombre inequívoco.
+
+---
+
+### 47. Flujos de recarga duplicados en `useCashCutReport`
+**Estado:** abierto (15 sep 2026) — hallazgo de la auditoría de la Fase 3 del refactor de `CashCut.jsx`.
+
+`useCashCutReport.js` implementa tres variantes de "recargar la vista actual": `changeSelectedCut("current")`
+(líneas ~246-259), `refreshAfterCut` (~541-548) y el `refreshRealtimeData` interno del efecto realtime
+(~560-596). Las tres encadenan `fetchSession` + `loadCurrentSession`, pero divergen: `refreshAfterCut`
+y el realtime además refrescan el historial, mientras que `changeSelectedCut("current")` no. Es una
+duplicación con riesgo de drift (una corrección en una ruta puede no aplicarse a las otras).
+
+**Recomendación:** extraer un helper `reloadCurrentView({ refreshHistory })` y que las tres rutas lo
+consuman, en la Fase 4 (vistas por sección) o en una pasada dedicada del hook.
 
 ---
 
