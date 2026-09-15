@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (15 sep 2026)
 
-19 archivos de test (~219 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+22 archivos de test (~243 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
@@ -26,6 +26,9 @@ componentes). No hay carpeta central de tests.
 | Corte de cajero (cálculos) | `src/pages/CashCut/services/cashCutCalculationService.test.js` |
 | Corte de cajero (servicios de datos) | `src/pages/CashCut/services/cashCutReportService.test.js` |
 | Corte de cajero (detalle histórico) | `src/pages/CashCut/services/cashCutDetailService.test.js` |
+| Corte de cajero (hook principal) | `src/pages/CashCut/hooks/useCashCutReport.test.js` |
+| Corte de cajero (hook de modales) | `src/pages/CashCut/hooks/useCashCutDetail.test.js` |
+| Corte de cajero (formateadores) | `src/pages/CashCut/utils/cashCutFormatters.test.js` |
 | Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
 | Reporte de inventario | `.../PageInventoryReport/services/inventoryReportService.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
@@ -59,6 +62,10 @@ No hay todavía:
 - Tests del backend Express/SQLite (`src/backend/`).
 - Tests a nivel SQL de los RPC (se prueban los contratos del service, no la función SQL).
 - Tests E2E.
+- El callback de refresh realtime con debounce de `useCashCutReport` (se prueba el registro y la
+  limpieza del canal, no la recarga de datos que dispara).
+- Los mapeos de pagos por método, departamentos y dólares en `useCashCutReport`: los fetches
+  secundarios se mockean vacíos y no se asertan sus resultados agrupados.
 
 **Siguiente capa de valor recomendada:** los RPC de ventas (`create_sale_transaction`,
 `create_transfer_order`), la lógica de `cashCutBuilder.js` / `ticketBuilder.js` y el proceso
