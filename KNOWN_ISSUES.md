@@ -89,7 +89,7 @@ en un solo componente:
 
 | Archivo | Líneas | Nota |
 |---|---|---|
-| `src/pages/CashCut/CashCut.jsx` | ~2020 | 34 `useState`/`useEffect` en un solo componente |
+| `src/pages/CashCut/CashCut.jsx` | ~1747 | 34 `useState`/`useEffect` en un solo componente |
 | `src/utils/ticketBuilder.js` | ~1500 | mezcla formato y lógica de negocio |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
@@ -103,6 +103,12 @@ dividir un componente grande"). No requiere reescritura de golpe.
 a `src/pages/CashCut/services/cashCutCalculationService.js` (puro, con tests que fijan los totales
 actuales) y el componente quedó sin `reduce` inline. Faltan las fases de servicios de datos, hooks
 y vistas por sección.
+
+**Actualización (15 sep 2026) — Fase 2:** rama `refactor/cashcut-services`. Se extrajeron todas las
+consultas y escrituras de Supabase a `cashCutReportService.js` (datasets del turno + ciclo de vida
+del corte) y `cashCutDetailService.js` (corte histórico bajo demanda), con 28 tests de contrato.
+`CashCut.jsx` bajó a ~1747 líneas y solo conserva `supabase` para las suscripciones realtime
+(que se moverán en la Fase 3 de hooks). Faltan las fases de hooks y vistas por sección.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
@@ -837,6 +843,19 @@ aparte y no en el de login.
 el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles.scrollText`
 (`ProductsList.jsx:189`). Eran código muerto y la animación ya estaba retirada de facto. Se
 eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
+
+### 46. Colisión de nombres `fetchCutsHistory` entre componente y servicio
+**Estado:** abierto (15 sep 2026) — hallazgo de la Fase 2 del refactor de `CashCut.jsx`.
+
+Tras extraer las consultas a `src/pages/CashCut/services/cashCutReportService.js`, el componente
+`CashCut.jsx` conserva un wrapper local `fetchCutsHistory` (orquesta estado y etiquetas) con el
+mismo nombre que la función del servicio, resuelto por alias (`fetchCutsHistory as
+fetchCutsHistoryService`). Funciona, pero dos capas distintas comparten el mismo identificador, lo
+que dificulta leer el flujo y buscar referencias.
+
+**Recomendación:** al convertir el wrapper en hook (Fase 3 del refactor), renombrar la función del
+componente (p. ej. `loadCutsHistory`) o la del servicio (p. ej. `fetchShiftCutsHistory`) para que
+cada capa tenga un nombre inequívoco.
 
 ---
 

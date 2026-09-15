@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (14 sep 2026)
+## Cobertura actual (15 sep 2026)
 
-16 archivos de test (~155 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+19 archivos de test (~219 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
@@ -24,6 +24,8 @@ componentes). No hay carpeta central de tests.
 | Kits / promociones | `.../ProductsPromotions/services/productKitsService.test.js` |
 | Reporte de caja | `.../PageCashReport/services/cashReportService.test.js` |
 | Corte de cajero (cálculos) | `src/pages/CashCut/services/cashCutCalculationService.test.js` |
+| Corte de cajero (servicios de datos) | `src/pages/CashCut/services/cashCutReportService.test.js` |
+| Corte de cajero (detalle histórico) | `src/pages/CashCut/services/cashCutDetailService.test.js` |
 | Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
 | Reporte de inventario | `.../PageInventoryReport/services/inventoryReportService.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
