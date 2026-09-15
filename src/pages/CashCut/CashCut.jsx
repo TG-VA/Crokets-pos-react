@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,25 @@ import AppModal from "../../components/AppModal/AppModal";
 
 import { buildCashCutText } from "../../utils/cashCutBuilder";
 import { printTicket } from "../../utils/ticketPrinter";
+import {
+  calculateSalesTotals,
+  calculateCancellations,
+  calculatePartialReturns,
+  calculateRewardSummary,
+  groupPaymentsByMethod,
+  calculateDollarTotals,
+  groupSalesByDepartment,
+  calculateDepartmentsTotal,
+  splitCashMovements,
+  buildNetPaymentMethodDetails,
+  calculateMethodTotals,
+  calculateRefundsByMethod,
+  calculateMethodNetTotals,
+  calculateDiscountTotal,
+  calculateNetSales,
+  calculateCashInRegister,
+  resolveCutDisplay,
+} from "./services/cashCutCalculationService";
 
 import styles from "./CashCut.module.css";
 
@@ -834,13 +853,11 @@ const CashCut = () => {
       const saleIds = salesData.map((s) => s.id);
       saleIdsForTotals = saleIds;
 
-      setVentasTotales(
-        salesData.reduce((acc, s) => acc + Number(s.total || 0), 0)
-      );
-      setSubtotal(
-        salesData.reduce((acc, s) => acc + Number(s.subtotal || 0), 0)
-      );
-      setTax(salesData.reduce((acc, s) => acc + Number(s.tax || 0), 0));
+      const totals = calculateSalesTotals(salesData);
+
+      setVentasTotales(totals.ventasTotales);
+      setSubtotal(totals.subtotal);
+      setTax(totals.tax);
 
       await fetchVentasPorMetodo(saleIds, branchId);
       await fetchVentasPorDepartamento(saleIds);
@@ -889,31 +906,15 @@ const CashCut = () => {
       setDevolucionesAfectanCaja(0);
       setCancelaciones([]);
     } else {
-      const totalRefunds = (refundRows || []).reduce(
-        (acc, row) => acc + Number(row.refund_amount || 0),
-        0
-      );
+      const {
+        devolucionesTotales,
+        devolucionesAfectanCaja,
+        cancelaciones: cancelacionesRows,
+      } = calculateCancellations(refundRows || []);
 
-      const totalRefundsCashImpact = (refundRows || []).reduce((acc, row) => {
-        const affectsCash = row.payment_methods?.affects_cash ?? false;
-        return affectsCash ? acc + Number(row.refund_amount || 0) : acc;
-      }, 0);
-
-      setDevolucionesTotales(totalRefunds);
-      setDevolucionesAfectanCaja(totalRefundsCashImpact);
-
-      setCancelaciones(
-        (refundRows || []).map((row) => ({
-          id: row.id,
-          sale_id: row.sale_id,
-          cancel_reason: row.cancel_reason,
-          refund_amount: Number(row.refund_amount || 0),
-          canceled_at: row.canceled_at,
-          refund_method_id: row.refund_method_id,
-          refund_method_name: row.payment_methods?.name || "Sin método",
-          affects_cash: row.payment_methods?.affects_cash ?? false,
-        }))
-      );
+      setDevolucionesTotales(devolucionesTotales);
+      setDevolucionesAfectanCaja(devolucionesAfectanCaja);
+      setCancelaciones(cancelacionesRows);
     }
 
     let partialReturnQuery = supabase
@@ -956,34 +957,15 @@ const CashCut = () => {
       return;
     }
 
-    const totalPartialReturns = (partialReturnRows || []).reduce(
-      (acc, row) => acc + Number(row.total_refund || 0),
-      0
-    );
+    const {
+      devolucionesParcialesTotales,
+      devolucionesParcialesAfectanCaja,
+      devolucionesParciales: devolucionesParcialesRows,
+    } = calculatePartialReturns(partialReturnRows || []);
 
-    const totalPartialReturnsCashImpact = (partialReturnRows || []).reduce(
-      (acc, row) => {
-        const affectsCash = row.payment_methods?.affects_cash ?? false;
-        return affectsCash ? acc + Number(row.total_refund || 0) : acc;
-      },
-      0
-    );
-
-    setDevolucionesParcialesTotales(totalPartialReturns);
-    setDevolucionesParcialesAfectanCaja(totalPartialReturnsCashImpact);
-
-    setDevolucionesParciales(
-      (partialReturnRows || []).map((row) => ({
-        id: row.id,
-        sale_id: row.sale_id,
-        return_reason: row.return_reason,
-        total_refund: Number(row.total_refund || 0),
-        created_at: row.created_at,
-        refund_method_id: row.refund_method_id,
-        refund_method_name: row.payment_methods?.name || "Sin método",
-        affects_cash: row.payment_methods?.affects_cash ?? false,
-      }))
-    );
+    setDevolucionesParcialesTotales(devolucionesParcialesTotales);
+    setDevolucionesParcialesAfectanCaja(devolucionesParcialesAfectanCaja);
+    setDevolucionesParciales(devolucionesParcialesRows);
 
     const rewardSaleIds = [
       ...saleIdsForTotals,
@@ -998,12 +980,7 @@ const CashCut = () => {
     const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
 
     if (cleanSaleIds.length === 0) {
-      setRewardSummary({
-        canjesAplicados: 0,
-        puntosUsados: 0,
-        canjesRevertidos: 0,
-        puntosDevueltos: 0,
-      });
+      setRewardSummary(calculateRewardSummary([]));
       return;
     }
 
@@ -1014,40 +991,11 @@ const CashCut = () => {
 
     if (error) {
       console.error("Error obteniendo recompensas del corte:", error.message);
-      setRewardSummary({
-        canjesAplicados: 0,
-        puntosUsados: 0,
-        canjesRevertidos: 0,
-        puntosDevueltos: 0,
-      });
+      setRewardSummary(calculateRewardSummary([]));
       return;
     }
 
-    const summary = (data || []).reduce(
-      (acc, row) => {
-        const quantity = Number(row.quantity || 1);
-        const points = Math.abs(Number(row.total_points || 0));
-        const isReverted = Boolean(row.reversed_at);
-
-        if (isReverted) {
-          acc.canjesRevertidos += quantity;
-          acc.puntosDevueltos += points;
-        } else {
-          acc.canjesAplicados += quantity;
-          acc.puntosUsados += points;
-        }
-
-        return acc;
-      },
-      {
-        canjesAplicados: 0,
-        puntosUsados: 0,
-        canjesRevertidos: 0,
-        puntosDevueltos: 0,
-      }
-    );
-
-    setRewardSummary(summary);
+    setRewardSummary(calculateRewardSummary(data || []));
   };
 
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
@@ -1062,32 +1010,7 @@ const CashCut = () => {
       return;
     }
 
-    const grouped = {};
-
-    data?.forEach((p) => {
-      const name = p.payment_methods?.name || "Otro";
-      const id = p.payment_methods?.id || null;
-      const affectsCash = p.payment_methods?.affects_cash ?? false;
-
-      if (!grouped[name]) {
-        grouped[name] = {
-          id,
-          total: 0,
-          affects_cash: affectsCash,
-        };
-      }
-
-      grouped[name].total += Number(p.amount || 0);
-    });
-
-    setVentasPorMetodo(
-      Object.entries(grouped).map(([name, val]) => ({
-        id: val.id,
-        name,
-        total: val.total,
-        affects_cash: val.affects_cash,
-      }))
-    );
+    setVentasPorMetodo(groupPaymentsByMethod(data || []));
   };
 
   const fetchVentasDolares = async (saleIds, branchId) => {
@@ -1105,19 +1028,10 @@ const CashCut = () => {
       return;
     }
 
-    const totalUsd = (data || []).reduce(
-      (acc, row) => acc + Number(row.amount || 0),
-      0
-    );
+    const dollarTotals = calculateDollarTotals(data || []);
 
-    const totalMxn = (data || []).reduce((acc, row) => {
-      const amount = Number(row.amount || 0);
-      const exchangeRate = Number(row.exchange_rate || 0);
-      return acc + amount * exchangeRate;
-    }, 0);
-
-    setVentasDolaresUsd(totalUsd);
-    setVentasDolaresMxn(totalMxn);
+    setVentasDolaresUsd(dollarTotals.ventasDolaresUsd);
+    setVentasDolaresMxn(dollarTotals.ventasDolaresMxn);
   };
 
   const fetchVentasPorDepartamento = async (saleIds) => {
@@ -1131,19 +1045,7 @@ const CashCut = () => {
       return;
     }
 
-    const grouped = {};
-
-    data?.forEach((item) => {
-      const deptName = item.products?.departments?.name || "Sin departamento";
-      if (!grouped[deptName]) grouped[deptName] = 0;
-      grouped[deptName] += Number(item.total_price || 0);
-    });
-
-    setVentasPorDepartamento(
-      Object.entries(grouped)
-        .map(([name, total]) => ({ name, total }))
-        .sort((a, b) => b.total - a.total)
-    );
+    setVentasPorDepartamento(groupSalesByDepartment(data || []));
   };
 
   const fetchCashMovements = async (sessionId, endAt = null) => {
@@ -1176,44 +1078,20 @@ const CashCut = () => {
       return;
     }
 
-    const entradas = (data || []).filter((m) => m.movement_type === "entrada");
-    const salidas = (data || []).filter((m) => m.movement_type === "salida");
+    const movements = splitCashMovements(data || []);
 
-    setEntradasEfectivo(entradas);
-    setSalidasEfectivo(salidas);
-
-    setTotalEntradas(
-      entradas.reduce((acc, mov) => acc + Number(mov.amount || 0), 0)
-    );
-
-    setTotalSalidas(
-      salidas.reduce((acc, mov) => acc + Number(mov.amount || 0), 0)
-    );
+    setEntradasEfectivo(movements.entradas);
+    setSalidasEfectivo(movements.salidas);
+    setTotalEntradas(movements.totalEntradas);
+    setTotalSalidas(movements.totalSalidas);
   };
 
-  const getNetPaymentMethodDetails = () => {
-    return ventasPorMetodo
-      .filter((method) => !!method.id)
-      .map((method) => {
-        const cancelacionesMetodo = cancelaciones
-          .filter((item) => item.refund_method_id === method.id)
-          .reduce((acc, item) => acc + Number(item.refund_amount || 0), 0);
-
-        const devolucionesMetodo = devolucionesParciales
-          .filter((item) => item.refund_method_id === method.id)
-          .reduce((acc, item) => acc + Number(item.total_refund || 0), 0);
-
-        const expectedNetAmount =
-          Number(method.total || 0) - cancelacionesMetodo - devolucionesMetodo;
-
-        return {
-          payment_method_id: method.id,
-          expected_amount: Math.max(expectedNetAmount, 0),
-          counted_amount: Math.max(expectedNetAmount, 0),
-          difference: 0,
-        };
-      });
-  };
+  const getNetPaymentMethodDetails = () =>
+    buildNetPaymentMethodDetails({
+      ventasPorMetodo,
+      cancelaciones,
+      devolucionesParciales,
+    });
 
   const handleConfirmCorte = async ({ counted, notes, expected }) => {
     setErrorMsg("");
@@ -1365,98 +1243,93 @@ const CashCut = () => {
 
   const openingAmount = Number(session?.opening_amount || 0);
 
-  const ventasEfectivo = ventasPorMetodo
-    .filter((m) => m.name?.toLowerCase() === "efectivo")
-    .reduce((acc, m) => acc + Number(m.total || 0), 0);
-
-  const ventasTerminal = ventasPorMetodo
-    .filter((m) => {
-      const name = m.name?.toLowerCase() || "";
-      return name.includes("terminal") || name.includes("tarjeta");
-    })
-    .reduce((acc, m) => acc + Number(m.total || 0), 0);
-
-  const ventasTransferencia = ventasPorMetodo
-    .filter((m) => {
-      const name = m.name?.toLowerCase() || "";
-      return name.includes("transferencia");
-    })
-    .reduce((acc, m) => acc + Number(m.total || 0), 0);
-
-  const descuentoTotal = subtotal + tax - ventasTotales;
-
-  const ventasNetas =
-    Number(ventasTotales || 0) -
-    Number(devolucionesTotales || 0) -
-    Number(devolucionesParcialesTotales || 0);
-
-  const getRefundsByMethodName = (matchesMethod) => {
-    const totalCancelacionesMetodo = cancelaciones
-      .filter((item) => matchesMethod(item.refund_method_name || ""))
-      .reduce((acc, item) => acc + Number(item.refund_amount || 0), 0);
-
-    const totalDevolucionesMetodo = devolucionesParciales
-      .filter((item) => matchesMethod(item.refund_method_name || ""))
-      .reduce((acc, item) => acc + Number(item.total_refund || 0), 0);
-
-    return totalCancelacionesMetodo + totalDevolucionesMetodo;
-  };
-
-  const devolucionesEfectivoMetodo = getRefundsByMethodName((methodName) => {
-    const name = String(methodName || "").toLowerCase();
-    return name.includes("efectivo");
-  });
-
-  const devolucionesTerminalMetodo = getRefundsByMethodName((methodName) => {
-    const name = String(methodName || "").toLowerCase();
-    return name.includes("terminal") || name.includes("tarjeta");
-  });
-
-  const devolucionesTransferenciaMetodo = getRefundsByMethodName((methodName) => {
-    const name = String(methodName || "").toLowerCase();
-    return name.includes("transferencia");
-  });
-
-  const ventasEfectivoNeto = Math.max(
-    Number(ventasEfectivo || 0) - Number(devolucionesEfectivoMetodo || 0),
-    0
+  const { ventasEfectivo, ventasTerminal, ventasTransferencia } = useMemo(
+    () => calculateMethodTotals(ventasPorMetodo),
+    [ventasPorMetodo]
   );
 
-  const ventasTerminalNeto = Math.max(
-    Number(ventasTerminal || 0) - Number(devolucionesTerminalMetodo || 0),
-    0
+  const {
+    devolucionesEfectivoMetodo,
+    devolucionesTerminalMetodo,
+    devolucionesTransferenciaMetodo,
+  } = useMemo(
+    () => calculateRefundsByMethod(cancelaciones, devolucionesParciales),
+    [cancelaciones, devolucionesParciales]
   );
 
-  const ventasTransferenciaNeto = Math.max(
-    Number(ventasTransferencia || 0) -
-      Number(devolucionesTransferenciaMetodo || 0),
-    0
+  const { ventasEfectivoNeto, ventasTerminalNeto, ventasTransferenciaNeto } =
+    useMemo(
+      () =>
+        calculateMethodNetTotals({
+          ventasEfectivo,
+          ventasTerminal,
+          ventasTransferencia,
+          devolucionesEfectivoMetodo,
+          devolucionesTerminalMetodo,
+          devolucionesTransferenciaMetodo,
+        }),
+      [
+        ventasEfectivo,
+        ventasTerminal,
+        ventasTransferencia,
+        devolucionesEfectivoMetodo,
+        devolucionesTerminalMetodo,
+        devolucionesTransferenciaMetodo,
+      ]
+    );
+
+  const descuentoTotal = useMemo(
+    () => calculateDiscountTotal({ subtotal, tax, ventasTotales }),
+    [subtotal, tax, ventasTotales]
   );
 
-  const dineroCaja =
-    openingAmount +
-    totalEntradas +
-    ventasEfectivo +
-    ventasDolaresMxn -
-    totalSalidas -
-    devolucionesAfectanCaja -
-    devolucionesParcialesAfectanCaja;
+  const ventasNetas = useMemo(
+    () =>
+      calculateNetSales({
+        ventasTotales,
+        devolucionesTotales,
+        devolucionesParcialesTotales,
+      }),
+    [ventasTotales, devolucionesTotales, devolucionesParcialesTotales]
+  );
 
-  const expectedDisplay = isHistoricalView
-    ? Number(historicalCut?.expected_amount || 0)
-    : dineroCaja;
+  const departamentosTotal = useMemo(
+    () => calculateDepartmentsTotal(ventasPorDepartamento),
+    [ventasPorDepartamento]
+  );
 
-  const countedDisplay = isHistoricalView
-    ? Number(historicalCut?.counted_amount || 0)
-    : currentShiftCut
-    ? Number(currentShiftCut.counted_amount || 0)
-    : null;
+  const dineroCaja = useMemo(
+    () =>
+      calculateCashInRegister({
+        openingAmount,
+        totalEntradas,
+        ventasEfectivo,
+        ventasDolaresMxn,
+        totalSalidas,
+        devolucionesAfectanCaja,
+        devolucionesParcialesAfectanCaja,
+      }),
+    [
+      openingAmount,
+      totalEntradas,
+      ventasEfectivo,
+      ventasDolaresMxn,
+      totalSalidas,
+      devolucionesAfectanCaja,
+      devolucionesParcialesAfectanCaja,
+    ]
+  );
 
-  const differenceDisplay = isHistoricalView
-    ? Number(historicalCut?.difference || 0)
-    : currentShiftCut
-    ? Number(currentShiftCut.difference || 0)
-    : null;
+  const { expectedDisplay, countedDisplay, differenceDisplay } = useMemo(
+    () =>
+      resolveCutDisplay({
+        isHistoricalView,
+        historicalCut,
+        currentShiftCut,
+        dineroCaja,
+      }),
+    [isHistoricalView, historicalCut, currentShiftCut, dineroCaja]
+  );
 
   const now = new Date();
 
@@ -1872,9 +1745,7 @@ const CashCut = () => {
                     ))}
                     <DataRow
                       label="Total"
-                      value={fmt(
-                        ventasPorDepartamento.reduce((a, d) => a + d.total, 0)
-                      )}
+                      value={fmt(departamentosTotal)}
                       bold
                       borderTop
                     />
