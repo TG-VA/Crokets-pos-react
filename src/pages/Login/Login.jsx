@@ -13,6 +13,18 @@ import lockIcon from '../../assets/icons/lock-solid.svg';
 import eyeIcon from '../../assets/icons/eye-solid-full.svg';
 import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
 
+/*
+  Precarga de los chunks posteriores al login. Al dispararlos junto a las
+  llamadas de red, Vite ya resolvió los módulos cuando el usuario navega a
+  /cash-register o /dashboard y no aparece la pantalla en blanco del Suspense.
+  import() cachea el módulo, así que repetir la llamada es inocuo.
+*/
+const prefetchPostLoginRoutes = () => {
+  import('../CashRegister/CashRegister').catch(() => {});
+  import('../Dashboard/Dashboard').catch(() => {});
+};
+
+
 const Login = () => {
   const { login, unlockScreen } = useAuth();
   const { setBranch } = useBranch();
@@ -67,6 +79,8 @@ const Login = () => {
       setLoading(true);
       setError('');
       setRecoverableSession(null);
+
+      prefetchPostLoginRoutes();
 
       /*
         1-3. Datos base en paralelo: email, usuario y código del dispositivo.
@@ -261,6 +275,8 @@ const Login = () => {
     try {
       setLoading(true);
       setError('');
+
+      prefetchPostLoginRoutes();
 
       const { authUser, resolvedUsername, branch } = recoverableSession;
 
