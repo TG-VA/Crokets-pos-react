@@ -17,17 +17,18 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
+import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 
 function AppRoutes() {
   const { isAuthenticated, cashRegistered, setCashRegistered, loading, isLocked } = useAuth();
 
   if (loading) {
-    return <div>Iniciando punto de venta...</div>;
+    return <LoadingScreen />;
   }
 
   return (
     <Router>
-      <Suspense fallback={<div>Iniciando punto de venta...</div>}>
+      <Suspense fallback={<LoadingScreen />}>
         <Routes>
           {/* RUTA PÚBLICA / LOGIN */}
           <Route

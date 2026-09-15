@@ -721,6 +721,38 @@ forma eager y no había `manualChunks`.
 `manualChunks` (`react`, `supabase`, `spreadsheets`). El bundle inicial bajó a ~0.47 MB (~137 KB
 gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
+### 41. `get_email_by_username` sin definición en migraciones versionadas
+**Estado:** Abierto — detectado el 14 sep 2026 durante la optimización del login.
+
+La RPC `get_email_by_username` la usa el login (`src/pages/Login/Login.jsx`) y está documentada en
+`SCHEMA.md`, pero **no existe ningún `CREATE FUNCTION` para ella en `supabase/migrations/`**: solo
+vive en el proyecto remoto (creada ad-hoc). Es una inconsistencia con #6 (migraciones versionadas
+como fuente de verdad) y un riesgo para recrear el esquema desde cero.
+
+**Impacto:** un entorno nuevo (o un `supabase db reset`) no tendría esta función y el login fallaría
+al resolver el email; el esquema versionado no refleja el remoto.
+
+**Recomendación:** capturar la definición actual (con `pg_get_functiondef`) en una migración nueva y
+verificar sus grants. Se llama antes de autenticar, por lo que requiere `EXECUTE` para `anon` (misma
+excepción pre-auth que #30); conviene confirmar que solo devuelve el email y nada más.
+No se corrige en el PR de login para no ampliar su alcance.
+
+### 42. `--scroll-distance` usada pero nunca definida (marquee de productos inerte)
+**Estado:** Abierto — detectado el 14 sep 2026 durante la auditoría del PR de login.
+
+`src/components/ProductsComponents/PageProducts/ProductsList/ProductsList.module.css:355` usa
+`transform: translateX(calc(-1 * var(--scroll-distance)))` dentro de `@keyframes marqueeScroll`, pero
+`--scroll-distance` **no se define en ningún CSS ni se setea inline** desde JS. Al no resolverse, el
+keyframe del 50 % es inválido y la animación no traslada: el marquee del listado de productos queda
+inerte (solo se ve el estado estático).
+
+**Impacto:** visual menor — la animación de desplazamiento del marquee nunca ocurre.
+
+**Recomendación:** definir la variable (p. ej. `--scroll-distance: 100px` en el propio módulo/global)
+o setearla inline desde el componente según el ancho real del contenido; alternativamente, retirar la
+animación si ya no se desea. Es un cambio de comportamiento de UI, por lo que se atiende en un PR
+aparte y no en el de login.
+
 ---
 
 ## Cómo usar este documento
