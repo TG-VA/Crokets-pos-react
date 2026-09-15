@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "./CashCutModal.module.css";
 import AppModal from "../../AppModal/AppModal";
+import receiptIcon from "../../../assets/icons/receipt-solid-full.svg";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
@@ -131,7 +132,10 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.modalTitle}>🧾 Corte de Cajero</h2>
+        <h2 className={styles.modalTitle}>
+          <img src={receiptIcon} alt="" className={styles.modalTitleIcon} />
+          Corte de Cajero
+        </h2>
 
         <p className={styles.modalSubtitle}>
           Confirma el monto contado en caja

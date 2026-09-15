@@ -15,7 +15,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('Error al abrir la base de datos:', err.message);
     process.exit(1); // Termina la aplicación si no puede conectarse a la DB
   } else {
-    console.log('✅ Base de datos conectada correctamente en:', dbPath);
+    console.log('Base de datos conectada correctamente en:', dbPath);
 
     // Crear tabla si no existe
     db.run(`

@@ -58,7 +58,7 @@ export const printSaleTicket = async ({
   try {
     const rewardItemsForPrint = getRewardCartItems(cartItems);
 
-    // 🟡 OPTIMIZACIÓN: Las 3 consultas pesadas se disparan en paralelo al mismo tiempo
+    // OPTIMIZACIÓN: Las 3 consultas pesadas se disparan en paralelo al mismo tiempo
     const [detailsRes, kitItemsRes, rewardRedemptions] = await Promise.all([
       supabase
         .from("sale_details")

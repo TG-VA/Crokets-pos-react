@@ -45,7 +45,7 @@ const useSalesProductSearch = ({
 
       await addProductToCart(product);
     } catch (error) {
-      // ⚠️ Eliminamos el console.error() para no ensuciar la consola con falsos "bugs".
+      // Eliminamos el console.error() para no ensuciar la consola con falsos "bugs".
       // Simplemente atrapamos la regla de negocio y se la mostramos al cajero.
       showAppWarning(error?.message || "El producto no se pudo agregar a la venta.");
     } finally {

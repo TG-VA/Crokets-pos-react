@@ -96,9 +96,9 @@
 }
 
 .uploadPrompt .icon {
-  font-size: 4rem;
+  width: 64px;
+  height: 64px;
   margin-bottom: 20px;
-  color: var(--croketsBlue);
 }
 
 .uploadPrompt h3 {
@@ -121,7 +121,8 @@
 }
 
 .fileInfo .icon {
-  font-size: 3rem;
+  width: 48px;
+  height: 48px;
 }
 
 .fileName {

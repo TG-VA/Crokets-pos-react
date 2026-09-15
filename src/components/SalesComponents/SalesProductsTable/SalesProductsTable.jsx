@@ -76,7 +76,7 @@ const SalesProductsTable = memo(({
               <span className={`${styles.tableCell} ${styles.productCell}`}>
                 <span className={styles.productNameText}>{producto.nombre || producto.codigo}</span>
                 
-                {/* 🟠 CASO 1: HAY STOCK PERO YA METISTE TODO AL CARRITO */}
+                {/* CASO 1: HAY STOCK PERO YA METISTE TODO AL CARRITO */}
                 {isLimitReached && (
                   <span style={{ 
                     backgroundColor: '#fffbeb', 
@@ -93,7 +93,7 @@ const SalesProductsTable = memo(({
                   </span>
                 )}
 
-                {/* 🔴 CASO 2: EL INVENTARIO ESTÁ EN CERO ABSOLUTO */}
+                {/* CASO 2: EL INVENTARIO ESTÁ EN CERO ABSOLUTO */}
                 {isCompletelyEmpty && (
                   <span style={{ 
                     backgroundColor: '#fee2e2', 

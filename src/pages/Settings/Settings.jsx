@@ -3,6 +3,20 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import styles from "./Settings.module.css";
+import userIcon from "../../assets/icons/user-solid.svg";
+import brushIcon from "../../assets/icons/brush-solid-full.svg";
+import receiptIcon from "../../assets/icons/receipt-solid-full.svg";
+import creditCardIcon from "../../assets/icons/credit-card-solid-full.svg";
+import percentIcon from "../../assets/icons/percent-solid-full.svg";
+import rulerIcon from "../../assets/icons/ruler-solid-full.svg";
+import printIcon from "../../assets/icons/print-solid-full.svg";
+import barcodeIcon from "../../assets/icons/barcode-solid-full.svg";
+import moneyIcon from "../../assets/icons/money-bill-wave-solid-full.svg";
+import displayIcon from "../../assets/icons/display-solid-full.svg";
+import databaseIcon from "../../assets/icons/database-solid-full.svg";
+import rotateIcon from "../../assets/icons/rotate-solid-full.svg";
+import broomIcon from "../../assets/icons/broom-solid-full.svg";
+import chartIcon from "../../assets/icons/chart-line-solid-full.svg";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -40,7 +54,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Perfiles")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>👤</span>
+                    <img src={userIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Perfiles</h3>
@@ -59,7 +73,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Logotipo del programa")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>🎨</span>
+                    <img src={brushIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Logotipo del programa</h3>
@@ -71,7 +85,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Tickets")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>🎫</span>
+                    <img src={receiptIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Tickets</h3>
@@ -83,7 +97,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Formas de pago")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>💳</span>
+                    <img src={creditCardIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Formas de pago</h3>
@@ -95,7 +109,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Impuestos")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>📊</span>
+                    <img src={percentIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Impuestos</h3>
@@ -107,7 +121,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Unidades de medida")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>📏</span>
+                    <img src={rulerIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Unidades de medida</h3>
@@ -126,7 +140,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Impresora de tickets")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>🖨️</span>
+                    <img src={printIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Impresora de tickets</h3>
@@ -138,7 +152,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Lector de códigos")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>📷</span>
+                    <img src={barcodeIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Lector de códigos</h3>
@@ -150,7 +164,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Cajón de dinero")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>💰</span>
+                    <img src={moneyIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Cajón de dinero</h3>
@@ -162,7 +176,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Terminal TPV")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>💻</span>
+                    <img src={displayIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Terminal TPV</h3>
@@ -181,7 +195,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Respaldos automáticos")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>💾</span>
+                    <img src={databaseIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Respaldos automáticos</h3>
@@ -193,7 +207,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Actualizaciones")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>🔄</span>
+                    <img src={rotateIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Actualizaciones</h3>
@@ -205,7 +219,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Limpieza de datos")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>🧹</span>
+                    <img src={broomIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Limpieza de datos</h3>
@@ -217,7 +231,7 @@ const Settings = () => {
                   onClick={() => handleOptionClick("Logs del sistema")}
                 >
                   <div className={styles.iconContainer}>
-                    <span className={styles.icon}>📈</span>
+                    <img src={chartIcon} alt="" className={styles.icon} />
                   </div>
                   <div className={styles.optionInfo}>
                     <h3>Logs del sistema</h3>

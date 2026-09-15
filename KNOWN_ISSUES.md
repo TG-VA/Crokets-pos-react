@@ -60,6 +60,23 @@ devuelve `needsUpgrade` y el servidor re-hashea). Cubierto por `src/backend/pass
 **Pendiente:** la recomendación de forzar el cambio de contraseña del admin en el primer inicio de
 sesión no se implementó (queda como mejora futura).
 
+### 43. `useProductsList` con doble declaración rompía el build de producción
+**Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
+
+`src/components/.../ProductsList/hooks/useProductsList.js` contenía **dos** bloques de
+`usePagination` que declaraban `currentPage`, `totalPages` y `pageSize` en el mismo scope
+(líneas 42-56 y 138-153), además de un `const paginatedProducts = pageItems(filteredProducts)`
+donde `filteredProducts` **no estaba definido**. Era el residuo de un merge que combinó la versión
+client-side con la migración a paginación server-side (#16). El primer bloque (server-side, con
+`totalItems: totalCount`) es el vigente; el `return` ya exponía `paginatedProducts: products`.
+
+**Impacto:** `npm run build:frontend` fallaba con
+`Identifier "currentPage" has already been declared` (rollup), por lo que no se podía generar el
+instalador. Detectado al verificar esta rama.
+
+**Resolución (15 sep 2026):** se eliminó el bloque duplicado y la línea muerta con
+`filteredProducts`. `npm run build:frontend` completa correctamente (282 módulos).
+
 ---
 
 ## Alto
@@ -82,7 +99,7 @@ en un solo componente:
 dividir un componente grande"). No requiere reescritura de golpe.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
-**Estado:** abierto — la documentación (`.md`) ya está limpia; el código de `src/` no.
+**Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 Más de 20 archivos `.jsx`/`.js` contienen emojis o símbolos Unicode usados como iconos o en logs
 de consola. Ejemplos notables:
@@ -94,6 +111,14 @@ de consola. Ejemplos notables:
 **Regla del proyecto:** prohibido el uso de emojis en cualquier parte (ver `CODE_STANDARDS.md`,
 punto 7). Reemplazar por texto plano o por un icono del catálogo propio en `ICONS.md`
 (`src/assets/icons/`) — si no existe uno adecuado, preguntar antes de agregar uno nuevo.
+
+**Resolución (15 sep 2026):** barrido completo de `src/`. Los emojis en comentarios/logs se
+reemplazaron por texto plano (`SalesProductsTable.jsx`, `salesProductService.js`,
+`salesTicketService.js`, `useSalesProductSearch.js`, `bd.js:18`). Los emojis de UI se sustituyeron
+por `<img>` del catálogo `src/assets/icons/` en `Settings.jsx` (14), `ProductsImports.jsx` (2),
+`UserList.jsx` (1) y `CashCutModal.jsx` (1). Se agregaron 8 iconos nuevos de Font Awesome Free
+solid — `brush`, `ruler`, `barcode`, `display`, `database`, `rotate`, `broom`, `folder` — y se
+registraron en `ICONS.md`. Verificado: `rg` no encuentra emojis en `src/`.
 
 ### 5. Transacciones Atómicas (RPC) faltantes en Supabase
 **Estado:** abierto — parcialmente resuelto.
@@ -442,16 +467,35 @@ podría sondear `device_code` (no enumerable) o abusar del endpoint.
 limiting o a un intercambio one-time; mientras tanto, mantener el retorno mínimo y monitorear. Ver
 excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
 
+### 44. `supabase/.temp/` registrado en git (estado local del CLI)
+**Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
+
+`supabase/.temp/` contiene el estado local del Supabase CLI (`cli-latest`, `gotrue-version`,
+`linked-project.json`, `pooler-url`, `postgres-version`, `project-ref`, `rest-version`,
+`storage-migration`, `storage-version`) y sus 9 archivos estaban trackeados en git. Son archivos de
+caché del CLI que cambian en cada corrida o actualización (p. ej. `cli-latest` se actualiza con cada
+`db push`), por lo que generaban ruido constante en `git status` y diffs accidentales.
+
+**Nota de seguridad:** se verificó el contenido de `pooler-url` — es una URL de conexión **sin
+contraseña** (`postgresql://postgres.<project-ref>@...`), por lo que no había credenciales
+expuestas. Aun así, versionar estado local del CLI no es deseable.
+
+**Resolución (15 sep 2026):** se agregó `supabase/.temp/` a `.gitignore` y se retiraron los 9
+archivos del índice con `git rm --cached -r supabase/.temp/` (se conservan en disco).
+
 ---
 
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod
-**Estado:** cosmético.
+**Estado:** resuelto (15 sep 2026) — verificado en el barrido de limpieza.
 
-En `electron/main.js`, `getMainWindow()` calcula `iconPath` con una rama `isDev ? X : X` donde
-ambos casos resuelven a la misma ruta (`../icon.ico`) — el condicional no tiene efecto real. No es
-un bug funcional, pero es código muerto que se puede simplificar.
+En `electron/main.js`, `getMainWindow()` calculaba `iconPath` con una rama `isDev ? X : X` donde
+ambos casos resolvían a la misma ruta (`../icon.ico`) — el condicional no tenía efecto real. No era
+un bug funcional, pero era código muerto que se podía simplificar.
+
+**Resolución (15 sep 2026):** el condicional ya no existe; `electron/main.js:27` calcula
+`iconPath` de forma directa (`path.join(__dirname, '../icon.ico')`). No requiere cambios de código.
 
 ### 12. Desarrollo de Vistas Pendientes
 **Estado:** resuelto (14 sep 2026).
@@ -465,7 +509,7 @@ Nota: la ruta de corte de caja es `/cashcut/*` (no `/cashout`, como figuraba en 
 `TEMPLATE_NUEVA_PAGINA.md`). Ver también `TEMPLATE_NUEVA_PAGINA.md`, actualizado en la misma fecha.
 
 ### 14. Usuario con dominio de correo distinto a la convención interna
-**Estado:** abierto — nuevo, detectado el 24 de agosto de 2026.
+**Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 El usuario `alexander@example.com` (rol `cajero`, activo) no sigue la convención
 `@internal.crokets` que usan los otros 3 usuarios reales (`carlos`, `tristan`, `kari`). Todo indica
@@ -474,20 +518,30 @@ que es una cuenta de prueba.
 **Recomendación:** confirmar con el equipo si es una cuenta de prueba y, de ser así, desactivarla
 (`status = false`) o eliminarla antes de distribuir el sistema a un negocio real.
 
+**Resolución (15 sep 2026):** se agregó la migración
+`supabase/migrations/20260915120000_deactivate_test_user.sql` (idempotente) que pone
+`status = false` a `alexander@example.com` solo si existe y sigue activa, y se aplicó al remoto con
+`supabase db push` (verificado con `supabase migration list`).
+
 ### 17. Archivos sin salto de línea final (EOF newline)
-**Estado:** abierto — detectado el 9 de septiembre de 2026 durante el refactor de `ProductsContext`.
+**Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
-(EOF newline), pero decenas de archivos preexistentes en `src/` no lo cumplen (p. ej.
+(EOF newline), pero decenas de archivos preexistentes en `src/` no lo cumplían (p. ej.
 `src/main.jsx`, `src/App.jsx`, `src/contexts/BranchContext.jsx`, `src/hooks/useEscapeKey.js`,
-`src/backend/server.js`, `src/utils/ticketBuilder.js`). Durante el refactor se corrigió en los
-archivos nuevos de `src/services/products/` y en `src/contexts/ProductsContext.jsx`, pero el resto
-del árbol sigue pendiente.
+`src/backend/server.js`, `src/utils/ticketBuilder.js`). Durante el refactor de `ProductsContext` se
+corrigió en los archivos nuevos de `src/services/products/` y en `src/contexts/ProductsContext.jsx`.
 
 **Impacto:** diffs con ruido y advertencias de herramientas; va contra el estándar del propio repo.
 
 **Recomendación:** normalizar con un script masivo (recorrer los archivos rastreados por git y
 añadir `\n` a los que falten) en una tarea dedicada de limpieza.
+
+**Resolución (15 sep 2026):** se normalizaron con un script masivo **279 archivos** rastreados por
+git (`js/jsx/css/mjs/ts/tsx/html/json/sql/svg`, excluyendo `supabase/.temp/`) que no terminaban en
+salto de línea. Verificación posterior por byte hexadecimal (`tail -c 1 | od`): **0 archivos** sin
+EOF newline. Nota: una verificación previa con `tail | wc -l` había reportado falsamente 0
+pendientes; la comprobación correcta es por byte final.
 
 ### 23. Migraciones de comisiones re-definidas en cascada (CREATE OR REPLACE correctivo)
 **Estado:** no procede (cerrado) — las migraciones ya fueron aplicadas al remoto
@@ -619,7 +673,7 @@ desde la app.
 (usar `is_admin()` / `has_permission()`) y exponer el valor vía RPC o Edge Function.
 
 ### 34. Deuda menor de la pasada de producción (no bloqueante)
-**Estado:** abierto — cosmético/robustez (14 sep 2026).
+**Estado:** parcialmente resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 Hallazgos menores de la auditoría que no se corrigieron en el cluster de producción:
 
@@ -632,6 +686,12 @@ Hallazgos menores de la auditoría que no se corrigieron en el cluster de produc
   limpiar junto con el login legacy.
 - Mezcla de comillas dobles en `src/services/*` y tests nuevos frente a comillas simples en el resto
   del repo; unificar cuando se toque cada archivo.
+
+**Resolución parcial (15 sep 2026):** se limpió el emoji `✅` de `src/backend/bd.js:18` (barrido de
+#4). Además se corrigió el apunte de comillas: el estilo dominante del repo **sí es comillas
+dobles** (157 archivos con imports `"` frente a 11 con `'`), por lo que no hay tal desviación en
+`src/services/*`; se descarta la unificación a comillas simples. Siguen abiertos los puntos del
+`INSERT` muerto de `server.js` y el bcrypt síncrono, ligados a la decisión de #10/#31.
 
 ### 35. Sesión de Supabase persistida en `localStorage`
 **Estado:** abierto — aceptado con riesgo residual bajo (14 sep 2026).
@@ -738,7 +798,7 @@ excepción pre-auth que #30); conviene confirmar que solo devuelve el email y na
 No se corrige en el PR de login para no ampliar su alcance.
 
 ### 42. `--scroll-distance` usada pero nunca definida (marquee de productos inerte)
-**Estado:** Abierto — detectado el 14 sep 2026 durante la auditoría del PR de login.
+**Estado:** Resuelto — 15 sep 2026, rama `cleanup/quick-win-debt`.
 
 `src/components/ProductsComponents/PageProducts/ProductsList/ProductsList.module.css:355` usa
 `transform: translateX(calc(-1 * var(--scroll-distance)))` dentro de `@keyframes marqueeScroll`, pero
@@ -752,6 +812,11 @@ inerte (solo se ve el estado estático).
 o setearla inline desde el componente según el ancho real del contenido; alternativamente, retirar la
 animación si ya no se desea. Es un cambio de comportamiento de UI, por lo que se atiende en un PR
 aparte y no en el de login.
+
+**Resolución (15 sep 2026):** al inspeccionar el componente se confirmó que la clase `.marquee` y
+el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles.scrollText`
+(`ProductsList.jsx:189`). Eran código muerto y la animación ya estaba retirada de facto. Se
+eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
 
 ---
 

@@ -1,4 +1,5 @@
 import styles from './UserList.module.css';
+import userIcon from '../../assets/icons/user-solid.svg';
 
 const UserList = ({ users, loading, error, onReload }) => {
   const formatDate = (dateString) => {
@@ -42,7 +43,7 @@ const UserList = ({ users, loading, error, onReload }) => {
 
       {users.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>👤</div>
+          <img src={userIcon} alt="" className={styles.emptyIcon} />
           <h3>No hay usuarios registrados</h3>
           <p>No se encontraron registros en la tabla `users`.</p>
         </div>

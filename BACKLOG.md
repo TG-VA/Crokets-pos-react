@@ -10,11 +10,12 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 * [x] Backend embebido no arranca en producción — ver `KNOWN_ISSUES.md` #1
 * [x] Contraseña de admin local en texto plano — ver `KNOWN_ISSUES.md` #2
+* [x] `useProductsList` con doble declaración de `usePagination` rompía `npm run build:frontend` — ver `KNOWN_ISSUES.md` #43
 
 ## Prioridad Alta (Arquitectura y Backend)
 
 * [ ] Componentes "dios" pendientes de refactor (`CashCut.jsx`, `ticketBuilder.js`, `RewardModal.jsx`) — ver `KNOWN_ISSUES.md` #3
-* [ ] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
+* [x] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
 * [ ] Transacciones atómicas (RPC) faltantes en Supabase para Importación y Kits — ver `KNOWN_ISSUES.md` #5
 * [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
 * [ ] Verificar con datos reales la base de la comisión % (bruta `unit_price*qty` vs neta `total_price`) y normalizar bordes (precedencia value/percent, `has_commission` en 0, tipo `percentage`) — ver `KNOWN_ISSUES.md` #19 y #20
@@ -41,8 +42,10 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
 * [x] Vistas base implementadas y enrutadas (`/inventory`, `/invoices`, `/cashcut`, `/settings`) — ver `KNOWN_ISSUES.md` #12
-* [ ] Simplificar condicional muerto de ícono en `electron/main.js` — ver `KNOWN_ISSUES.md` #11
-* [ ] Normalizar EOF newline en archivos preexistentes de `src/` (decenas de archivos) — ver `KNOWN_ISSUES.md` #17
+* [x] Simplificar condicional muerto de ícono en `electron/main.js` — ver `KNOWN_ISSUES.md` #11
+* [x] Normalizar EOF newline en archivos preexistentes de `src/` (279 archivos normalizados; verificado: 0 pendientes) — ver `KNOWN_ISSUES.md` #17
+* [x] Retirar marquee muerto (`--scroll-distance` sin definir) del listado de productos — ver `KNOWN_ISSUES.md` #42
+* [x] Desactivar usuario de prueba `alexander@example.com` (migración `20260915120000`) — ver `KNOWN_ISSUES.md` #14
 * [x] Squash de migraciones de comisiones — no procede (ya aplicadas al remoto; se sigue por migración correctiva) — ver `KNOWN_ISSUES.md` #23
 * [ ] QA visual del nuevo formato `ruleLabel` en el reporte de comisiones — ver `KNOWN_ISSUES.md` #24
 

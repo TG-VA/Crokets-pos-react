@@ -84,7 +84,7 @@ export const getSellableProductByBarcode = async ({ barcode, branchId }) => {
     return getProductWithDiscount(product);
   }
 
-  // 🟡 OPTIMIZACIÓN: Consultas en paralelo para reducir latencia
+  // OPTIMIZACIÓN: Consultas en paralelo para reducir latencia
   const [inventoryRow, discountedProduct] = await Promise.all([
     getProductBranchInventory({ branchId, productId: product.id }),
     getProductWithDiscount(product),
