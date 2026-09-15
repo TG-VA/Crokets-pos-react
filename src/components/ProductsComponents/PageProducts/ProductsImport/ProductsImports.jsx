@@ -2,6 +2,8 @@ import React from "react";
 import styles from "./ProductsImports.module.css";
 import { formatCurrency } from "./utils/importUtils";
 import { useProductsImport } from "./hooks/useProductsImport";
+import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
+import folderIcon from "../../../../assets/icons/folder-solid-full.svg";
 
 const ProductsImports = () => {
   const {
@@ -42,7 +44,7 @@ const ProductsImports = () => {
 
             {file ? (
               <div className={styles.fileInfo}>
-                <div className={styles.icon}>📄</div>
+                <img src={fileImportIcon} alt="" className={styles.icon} />
                 <div className={styles.fileName}>{file.name}</div>
                 <div className={styles.fileSize}>{(file.size / 1024).toFixed(2)} KB</div>
 
@@ -57,7 +59,7 @@ const ProductsImports = () => {
               </div>
             ) : (
               <div className={styles.uploadPrompt}>
-                <div className={styles.icon}>📁</div>
+                <img src={folderIcon} alt="" className={styles.icon} />
                 <h3>Arrastra tu archivo aquí o haz clic para buscar</h3>
                 <p>Soporta archivos Excel (.xlsx) y CSV</p>
               </div>

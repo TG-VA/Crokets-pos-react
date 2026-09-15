@@ -104,8 +104,9 @@
 }
 
 .icon {
-  font-size: 1rem;
-  filter: grayscale(0);
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
 }
 
 .optionInfo {
@@ -163,7 +164,8 @@
   }
 
   .icon {
-    font-size: 0.8rem;
+    width: 15px;
+    height: 15px;
   }
 
   .optionInfo h3 {

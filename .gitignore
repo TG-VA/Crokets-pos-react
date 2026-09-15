@@ -39,6 +39,9 @@ app-update.yml
 # Vite cache
 .cache/
 
+# Estado local del Supabase CLI
+supabase/.temp/
+
 # SQLite
 *.sqlite
 *.sqlite3
