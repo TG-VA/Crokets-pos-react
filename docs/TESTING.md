@@ -57,7 +57,8 @@ componentes). No hay carpeta central de tests.
 
 No hay todavía:
 
-- Tests de componentes/UI ni de flujos de integración.
+- Tests de componentes/UI ni de flujos de integración. Las vistas presentacionales del corte
+  (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas.
 - Tests del proceso principal de Electron (`electron/main.js`).
 - Tests del backend Express/SQLite (`src/backend/`).
 - Tests a nivel SQL de los RPC (se prueban los contratos del service, no la función SQL).

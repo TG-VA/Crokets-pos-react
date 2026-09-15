@@ -16,30 +16,6 @@
   flex: 1;
 }
 
-.sessionHeader {
-  padding: 14px 0 10px;
-  margin: 0;
-  border-bottom: 1px solid #e0e5ec;
-}
-
-.pageTitle {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 900;
-  color: #1a2332;
-  letter-spacing: -0.5px;
-}
-
-.sessionInfo {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #888888;
-}
-
-.userName {
-  color: #1976d2;
-}
-
 .fullLoading {
   display: flex;
   flex-direction: column;
@@ -146,10 +122,6 @@
   color: #ffffff;
   font-size: 18px;
   font-weight: 800;
-}
-
-.negative {
-  color: #ff6b6b !important;
 }
 
 .grid {
