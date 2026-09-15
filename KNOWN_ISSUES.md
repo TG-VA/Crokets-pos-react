@@ -89,7 +89,7 @@ en un solo componente:
 
 | Archivo | Líneas | Nota |
 |---|---|---|
-| `src/pages/CashCut/CashCut.jsx` | ~855 | 34 `useState`/`useEffect` en un solo componente |
+| `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
 | `src/utils/ticketBuilder.js` | ~1500 | mezcla formato y lógica de negocio |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
@@ -116,6 +116,25 @@ datasets, derivados y realtime) y `useCashCutDetail.js` (subflujos con modal: co
 cerrar turno), con 19 tests de hook y 5 de formateadores. Los formateadores puros se extrajeron a
 `utils/cashCutFormatters.js`. `CashCut.jsx` bajó a ~855 líneas y ya no importa `supabase`; queda
 como composición de hooks + `AppModal` + `handlePrint` + JSX. Falta la Fase 4 (vistas por sección).
+
+**Actualización (15 sep 2026) — Fase 4:** rama `refactor/cashcut-views`. Las secciones JSX se
+extrajeron a componentes presentacionales en `src/pages/CashCut/components/` (`CutHero`,
+`CutInfoSection`, `CutCashSummarySection`, `PaymentMethodsSection`, `CashInflowsSection`,
+`CashOutflowsSection`, `DepartmentsSection`, `SalesSummarySection`, `RewardsSection`,
+`CancellationsSection`, `PartialReturnsSection`, más `primitives.jsx` con `IconImg`/`SectionCard`/
+`DataRow`/`EmptyState`). La auditoría unificó los items de cancelación y devolución parcial (casi
+idénticos) en un `RefundItem` compartido. La página quedó como orquestador y reutiliza el hook
+compartido `src/hooks/useAppModal.js` (antes duplicado inline). `CashCut.jsx` bajó a ~372 líneas.
+Como mejora opcional futura, `CashCut.module.css` sigue siendo un único módulo compartido por las
+vistas (se podría segregar por sección). Con esto se completan las fases 1-4 del refactor de
+`CashCut.jsx`; quedan como seguimiento #46 (renombrar `fetchCutsHistory`) y #47 (unificar flujos de
+recarga del hook).
+
+**Pendiente de la Fase 4 (no bloqueante):** `CutHero` recibe 11 props (se podrían agrupar las de
+sesión si crece); `CashInflowsSection`/`CashOutflowsSection` comparten el patrón de filas + total
+(candidato a un `CashMovementCard` común, bajo valor con solo 2 usos); y las vistas presentacionales
+no tienen tests (coherente con el stance del proyecto de no testear UI, ver `docs/TESTING.md`). El
+módulo `CashCut.module.css` ya no tiene clases muertas, pero conserva `!important` heredados (#48).
 
 **Pendiente de la Fase 3 (no bloqueante):** `useCashCutReport.js` (~840 líneas) concentra carga,
 realtime y derivados; si crece más, conviene subdividirlo (p. ej. `useCashCutRealtime`). El callback
@@ -886,6 +905,20 @@ duplicación con riesgo de drift (una corrección en una ruta puede no aplicarse
 
 **Recomendación:** extraer un helper `reloadCurrentView({ refreshHistory })` y que las tres rutas lo
 consuman, en la Fase 4 (vistas por sección) o en una pasada dedicada del hook.
+
+---
+
+### 48. `!important` en módulos CSS (deuda de estilo transversal)
+**Estado:** abierto (15 sep 2026) — hallazgo de la auditoría de la Fase 4 del refactor de `CashCut.jsx`.
+
+`AGENTS.md` prohíbe `!important` en los módulos CSS, pero persiste deuda heredada en varios archivos
+(no introducida por el refactor de `CashCut`). Al cierre de la Fase 4 el módulo de la página conserva
+12 ocurrencias (`src/pages/CashCut/CashCut.module.css`), y hay más repartidas por el proyecto
+(`SalesHistoryModal`, `ProductsSearchModal`, `Sales`, `ProductsList`, `FiscalCustomerModal`,
+`NavbarCashCut`, etc.). La mayoría provienen de overrides de tamaño/color sobre librerías de iconos.
+
+**Recomendación:** pasada transversal de limpieza, resolviendo la especificidad con selectores más
+específicos u orden de carga en lugar de `!important`. Fuera del alcance del refactor de `CashCut.jsx`.
 
 ---
 
