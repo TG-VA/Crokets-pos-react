@@ -127,8 +127,8 @@ idénticos) en un `RefundItem` compartido. La página quedó como orquestador y 
 compartido `src/hooks/useAppModal.js` (antes duplicado inline). `CashCut.jsx` bajó a ~372 líneas.
 Como mejora opcional futura, `CashCut.module.css` sigue siendo un único módulo compartido por las
 vistas (se podría segregar por sección). Con esto se completan las fases 1-4 del refactor de
-`CashCut.jsx`; quedan como seguimiento #46 (renombrar `fetchCutsHistory`) y #47 (unificar flujos de
-recarga del hook).
+`CashCut.jsx`; quedaron como seguimiento #46 (renombrar `fetchCutsHistory`) y #47 (unificar flujos de
+recarga del hook), ambos resueltos en el cierre de la Fase 3 (ver más abajo).
 
 **Pendiente de la Fase 4 (no bloqueante):** `CutHero` recibe 11 props (se podrían agrupar las de
 sesión si crece); `CashInflowsSection`/`CashOutflowsSection` comparten el patrón de filas + total
@@ -137,13 +137,20 @@ no tienen tests (coherente con el stance del proyecto de no testear UI, ver `doc
 módulo `CashCut.module.css` ya no tiene clases muertas, pero conserva `!important` heredados (#48).
 
 **Pendiente de la Fase 3 (no bloqueante):** `useCashCutReport.js` (~840 líneas) concentra carga,
-realtime y derivados; si crece más, conviene subdividirlo (p. ej. `useCashCutRealtime`). El callback
-de refresh realtime con debounce no está cubierto por tests (ver `docs/TESTING.md`). La auditoría de
-la Fase 3 también dejó documentados (preexistentes, sin cambio de comportamiento): estado "stale" de
-los totales cuando fallan los fetches secundarios de ventas, la re-escritura repetida de
+realtime y derivados; si crece más, conviene subdividirlo (p. ej. `useCashCutRealtime`). La auditoría
+de la Fase 3 también dejó documentados (preexistentes, sin cambio de comportamiento): estado "stale"
+de los totales cuando fallan los fetches secundarios de ventas, la re-escritura repetida de
 `localStorage`/`shift-cut-status-changed` en cada refresh realtime con corte existente, y el
 acoplamiento por `setErrorMsg` crudo entre `useCashCutReport` y `useCashCutDetail`. La duplicación de
-rutas de recarga se registró aparte en #47.
+rutas de recarga se registró aparte en #47 (resuelto, ver más abajo).
+
+**Actualización (15 sep 2026) — cierre de la Fase 3:** se resolvieron los seguimientos del hook
+(rama `refactor/cashcut-views`): #46 (wrapper local renombrado a `loadCutsHistory`, servicio
+`fetchCutsHistory` importado directo) y #47 (helper `reloadCurrentView({ refreshHistory })` consumido
+por mount, `refreshAfterCut`, `changeSelectedCut("current")` con `refreshHistory: false` y el
+realtime; la auditoría posterior eliminó el doble `fetchSession` del realtime y preservó el
+no-flicker same-session vía `resetSalesOnSessionChange`, ver #47). Sigue abierto #45 (llave de
+agrupación de pagos por método en el cálculo del corte — requiere decisión de negocio).
 
 ### 4. Emojis pendientes de limpiar en el código fuente
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
@@ -880,7 +887,7 @@ el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles
 eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
 
 ### 46. Colisión de nombres `fetchCutsHistory` entre componente y servicio
-**Estado:** abierto (15 sep 2026) — hallazgo de la Fase 2 del refactor de `CashCut.jsx`.
+**Estado:** resuelto (15 sep 2026) — rama `refactor/cashcut-views`.
 
 Tras extraer las consultas a `src/pages/CashCut/services/cashCutReportService.js`, el componente
 `CashCut.jsx` conserva un wrapper local `fetchCutsHistory` (orquesta estado y etiquetas) con el
@@ -892,10 +899,14 @@ que dificulta leer el flujo y buscar referencias.
 componente (p. ej. `loadCutsHistory`) o la del servicio (p. ej. `fetchShiftCutsHistory`) para que
 cada capa tenga un nombre inequívoco.
 
+**Resolución (15 sep 2026):** en `useCashCutReport.js` el wrapper local se renombró a
+`loadCutsHistory` y el servicio se importa directo (`fetchCutsHistory` sin alias), eliminando la
+colisión. Cobertura intacta: los tests siguen asertando `fetchCutsHistory` con `{ branchId }`.
+
 ---
 
 ### 47. Flujos de recarga duplicados en `useCashCutReport`
-**Estado:** abierto (15 sep 2026) — hallazgo de la auditoría de la Fase 3 del refactor de `CashCut.jsx`.
+**Estado:** resuelto (15 sep 2026) — rama `refactor/cashcut-views`.
 
 `useCashCutReport.js` implementa tres variantes de "recargar la vista actual": `changeSelectedCut("current")`
 (líneas ~246-259), `refreshAfterCut` (~541-548) y el `refreshRealtimeData` interno del efecto realtime
@@ -905,6 +916,32 @@ duplicación con riesgo de drift (una corrección en una ruta puede no aplicarse
 
 **Recomendación:** extraer un helper `reloadCurrentView({ refreshHistory })` y que las tres rutas lo
 consuman, en la Fase 4 (vistas por sección) o en una pasada dedicada del hook.
+
+**Resolución (15 sep 2026):** se agregó el helper `reloadCurrentView({ refreshHistory = false })` y
+las cuatro rutas de recarga lo consumen: `fetchAllData` (mount, `refreshHistory: true`),
+`refreshAfterCut` (`refreshHistory: true`), `changeSelectedCut("current")` (`refreshHistory: false`,
+preservando que hoy no recarga historial) y `refreshRealtimeData` (que quedó en una llamada única al
+helper, ver la Actualización de abajo). El callback realtime con debounce quedó cubierto por test en
+`useCashCutReport.test.js`.
+
+**Actualización (15 sep 2026) — hallazgos de la auditoría post-refactor, atendidos en la misma
+rama:** el primer borrador del realtime llamaba `fetchSession()` y luego `reloadCurrentView()`
+(que vuelve a llamar `fetchSession()`), un doble fetch por evento realtime (2 queries de sesión + 2
+de sucursal), y el guard `if (activeSession?.id)` anulaba la rama sin-sesión del helper (quedaba dato
+obsoleto si el turno se cerraba en otro dispositivo). Además, encaminar el realtime por
+`loadCurrentSession` agregaba un `resetSalesState()` previo que el flujo same-session de antes no
+tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashCutReport.js`:
+- El realtime ahora colapsa a una llamada única `reloadCurrentView({ refreshHistory: true,
+  resetSalesOnSessionChange: true })`, sin `fetchSession` duplicado y con la rama sin-sesión del
+  helper de vuelta.
+- `loadCurrentSession(sessionData, { resetSales = true })` y
+  `reloadCurrentView({ refreshHistory, resetSales, resetSalesOnSessionChange })`: el realtime solo
+  resetea ventas cuando cambia el `id` de sesión (restaura el no-flicker de la rama same-session),
+  mientras mount/`refreshAfterCut`/`changeSelectedCut("current")` conservan el reset siempre.
+- Cobertura nueva en `useCashCutReport.test.js`: el test realtime fija debounce (sin refresh antes de
+  700 ms), un solo `fetchActiveSession` por refresh y el reset + recarga al cambiar de sesión
+  (`resetSalesOnSessionChange` en el caso id distinto); se agregan los casos "realtime sin turno
+  activo" y "`changeSelectedCut("current")` sin turno activo" (reset de la vista).
 
 ---
 

@@ -39,7 +39,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Interceptar la navegación protegida en los navbars de módulo (hook `useProtectedNavigation` + config `adminProtectedSections`) para no cambiar de URL antes de autorizar — ver `KNOWN_ISSUES.md` #27
 * [x] Compartir la autorización entre navbar y guard vía el Set `authorizedRoutes` por montaje de módulo (una sola autorización; las páginas derivan sus rutas de `adminProtectedSections`) — ver `KNOWN_ISSUES.md` #27
 * [ ] Definir la llave de agrupación de pagos por método (por `id`, no solo por nombre) en el corte de caja — ver `KNOWN_ISSUES.md` #45
-* [ ] Unificar los flujos de recarga de la vista actual de `useCashCutReport` (`changeSelectedCut("current")`, `refreshAfterCut` y realtime) en un helper común — ver `KNOWN_ISSUES.md` #47
+* [x] Unificar los flujos de recarga de la vista actual de `useCashCutReport` (`changeSelectedCut("current")`, `refreshAfterCut` y realtime) en un helper común — ver `KNOWN_ISSUES.md` #47
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
@@ -50,7 +50,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Desactivar usuario de prueba `alexander@example.com` (migración `20260915120000`) — ver `KNOWN_ISSUES.md` #14
 * [x] Squash de migraciones de comisiones — no procede (ya aplicadas al remoto; se sigue por migración correctiva) — ver `KNOWN_ISSUES.md` #23
 * [ ] QA visual del nuevo formato `ruleLabel` en el reporte de comisiones — ver `KNOWN_ISSUES.md` #24
-* [ ] Renombrar el wrapper local `fetchCutsHistory` del corte para desambiguarlo del servicio — ver `KNOWN_ISSUES.md` #46
+* [x] Renombrar el wrapper local `fetchCutsHistory` del corte para desambiguarlo del servicio — ver `KNOWN_ISSUES.md` #46
 * [ ] Pasada transversal para retirar `!important` de los módulos CSS — ver `KNOWN_ISSUES.md` #48
 
 ---
