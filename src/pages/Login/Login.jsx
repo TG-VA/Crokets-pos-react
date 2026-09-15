@@ -82,18 +82,28 @@ const Login = () => {
       prefetchPostLoginRoutes();
 
       /*
-        1-3. Datos base en paralelo: email, usuario y código del dispositivo.
-        Solo dependen del username ingresado / datos locales, así que no hay
-        razón para esperarlos en serie.
+        El código del dispositivo se dispara en paralelo con email y usuario,
+        pero se resuelve después de sus chequeos para preservar la precedencia
+        de errores original (credenciales → usuario → dispositivo). La promesa
+        diferida evita además que un fallo síncrono del IPC se adelante al
+        error de credenciales, y el catch evita un rechazo sin manejar cuando
+        se retorna antes de esperarla.
       */
-      const [emailResult, userResult, deviceResult] = await Promise.all([
+      const deviceCodePromise = Promise.resolve()
+        .then(() => window.electronAPI.invoke('get-device-code'))
+        .catch(() => null);
+
+      /*
+        1-2. Datos base en paralelo: email y usuario. Solo dependen del
+        username ingresado, así que no hay razón para esperarlos en serie.
+      */
+      const [emailResult, userResult] = await Promise.all([
         supabase.rpc('get_email_by_username', { p_username: cleanUsername }),
         supabase
           .from('users')
           .select('id, username')
           .ilike('username', cleanUsername)
           .maybeSingle(),
-        window.electronAPI.invoke('get-device-code'),
       ]);
 
       if (emailResult.error || !emailResult.data) {
@@ -111,8 +121,16 @@ const Login = () => {
       const dbUser = userResult.data;
 
       /*
-        4. Resolver sucursal por device
+        3. Resolver sucursal por device
       */
+      const deviceResult = await deviceCodePromise;
+
+      if (!deviceResult) {
+        console.error('No se pudo obtener el código del dispositivo');
+        setError('Error al conectar con el servidor');
+        return;
+      }
+
       const { deviceCode } = deviceResult;
 
       const branchResult = await resolveBranchByDevice(deviceCode);
@@ -125,7 +143,7 @@ const Login = () => {
       const resolvedBranchId = branchResult.data.id;
 
       /*
-        5-6. Sucursal completa y sesión activa en paralelo: ambas dependen solo
+        4-5. Sucursal completa y sesión activa en paralelo: ambas dependen solo
         de la sucursal ya resuelta.
       */
       const [fullBranchResult, activeSessionResult] = await Promise.all([
@@ -174,7 +192,7 @@ const Login = () => {
       }
 
       /*
-        6. Si ya existe sesión activa
+        5. Si ya existe sesión activa
       */
       if (activeSession) {
         // mismo usuario → recuperar
@@ -217,7 +235,7 @@ const Login = () => {
       }
 
       /*
-        7. NO hay sesión activa → login normal
+        6. NO hay sesión activa → login normal
       */
       const { data: authData, error: signInError } =
         await supabase.auth.signInWithPassword({
