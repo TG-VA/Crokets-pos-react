@@ -98,6 +98,12 @@ en un solo componente:
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
 dividir un componente grande"). No requiere reescritura de golpe.
 
+**Actualización (15 sep 2026):** refactor incremental de `CashCut.jsx` en curso (rama
+`refactor/cashcut-calculation`). Fase 1 completada: se extrajeron todas las agregaciones y totales
+a `src/pages/CashCut/services/cashCutCalculationService.js` (puro, con tests que fijan los totales
+actuales) y el componente quedó sin `reduce` inline. Faltan las fases de servicios de datos, hooks
+y vistas por sección.
+
 ### 4. Emojis pendientes de limpiar en el código fuente
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
@@ -482,6 +488,20 @@ expuestas. Aun así, versionar estado local del CLI no es deseable.
 
 **Resolución (15 sep 2026):** se agregó `supabase/.temp/` a `.gitignore` y se retiraron los 9
 archivos del índice con `git rm --cached -r supabase/.temp/` (se conservan en disco).
+
+### 45. Agrupación de pagos por nombre en el cálculo del corte
+**Estado:** abierto (15 sep 2026) — hallazgo del refactor de `CashCut.jsx`.
+
+`groupPaymentsByMethod` (extraído en la Fase 1 del refactor a
+`src/pages/CashCut/services/cashCutCalculationService.js`) agrupa los pagos por el **nombre** del
+método, conservando el `id` y `affects_cash` de la primera aparición. Si existen dos métodos
+distintos con el mismo nombre (p. ej. catálogos por sucursal), sus montos se fusionan en una sola
+fila y el `id` usado para el detalle del corte (`cash_cut_details`) puede no corresponder al método
+real.
+
+El comportamiento es preexistente y se congeló tal cual durante el refactor (que no debe cambiar
+totales). **Recomendación:** definir la llave de agrupación (`id` cuando exista, con `name` solo como
+fallback para pagos sin método) y validar con datos reales si hay nombres duplicados.
 
 ---
 

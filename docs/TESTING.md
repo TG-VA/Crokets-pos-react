@@ -23,6 +23,7 @@ componentes). No hay carpeta central de tests.
 | Utilidades de importación | `.../ProductsImport/utils/importUtils.test.js` |
 | Kits / promociones | `.../ProductsPromotions/services/productKitsService.test.js` |
 | Reporte de caja | `.../PageCashReport/services/cashReportService.test.js` |
+| Corte de cajero (cálculos) | `src/pages/CashCut/services/cashCutCalculationService.test.js` |
 | Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
 | Reporte de inventario | `.../PageInventoryReport/services/inventoryReportService.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
