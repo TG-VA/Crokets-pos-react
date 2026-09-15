@@ -887,7 +887,7 @@ el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles
 eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
 
 ### 46. Colisión de nombres `fetchCutsHistory` entre componente y servicio
-**Estado:** resuelto (15 sep 2026) — rama `refactor/cashcut-views`.
+**Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-views`.
 
 Tras extraer las consultas a `src/pages/CashCut/services/cashCutReportService.js`, el componente
 `CashCut.jsx` conserva un wrapper local `fetchCutsHistory` (orquesta estado y etiquetas) con el
@@ -906,7 +906,7 @@ colisión. Cobertura intacta: los tests siguen asertando `fetchCutsHistory` con 
 ---
 
 ### 47. Flujos de recarga duplicados en `useCashCutReport`
-**Estado:** resuelto (15 sep 2026) — rama `refactor/cashcut-views`.
+**Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-views`.
 
 `useCashCutReport.js` implementa tres variantes de "recargar la vista actual": `changeSelectedCut("current")`
 (líneas ~246-259), `refreshAfterCut` (~541-548) y el `refreshRealtimeData` interno del efecto realtime
