@@ -26,7 +26,7 @@
 | Base de datos local | SQLite (`sqlite3`) |
 | Backend remoto | Supabase (auth, funciones edge, base de datos) |
 
-> **Nota:** el backend local Express (`src/backend/server.js`) actualmente solo se inicia en modo desarrollo. Ver `KNOWN_ISSUES.md` (punto 1) y `DEPLOYMENT.md` antes de generar cualquier build de distribución.
+> **Nota:** el backend local Express (`src/backend/server.js`) solo se inicia en modo desarrollo y el frontend no lo consume (login y caja usan RPCs de Supabase; ver `KNOWN_ISSUES.md` #1, resuelto). Los endpoints de dispositivo/caja y los handlers IPC legacy ya se eliminaron; el backend queda solo como login legacy por SQLite (ver `KNOWN_ISSUES.md` #31 y `DEPLOYMENT.md`).
 
 #### Prerrequisitos
 

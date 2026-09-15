@@ -95,10 +95,15 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 ## 2. Sistema local — SQLite embebido (`src/backend/bd.js`)
 
 Este es el sistema que usa el backend Express local para el login, **independiente de Supabase
-Auth**. Ver `KNOWN_ISSUES.md` puntos 1 y 2 para el estado de este backend (no arranca en producción
-empaquetada; el usuario admin se crea con contraseña en texto plano).
+Auth**. Tras resolver `KNOWN_ISSUES.md` #1, el renderer ya no consume este backend (los flujos de
+dispositivo y caja se migraron a RPCs de Supabase y sus endpoints Express se eliminaron); queda solo
+como login legacy por SQLite para desarrollo local, sin acceso a Supabase. Ver #31 para el residuo y
+#10 para el futuro de este backend.
 
 - El usuario `admin` local se crea con permisos hardcodeados en `src/backend/bd.js`.
+- Las contraseñas locales se guardan y comparan con bcrypt (`bcryptjs` + `src/backend/password.js`);
+  las filas legacy en texto plano se migran de forma transparente en el primer login exitoso
+  (`KNOWN_ISSUES.md` #2, resuelto el 14 sep 2026).
 - No está confirmado si estos permisos locales se sincronizan de alguna forma con los roles/permisos
   de Supabase descritos arriba, o si son dos fuentes de verdad completamente independientes.
 

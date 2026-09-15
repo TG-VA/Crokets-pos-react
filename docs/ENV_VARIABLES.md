@@ -18,21 +18,17 @@ privilegiadas.
 
 ## Backend Node (Express local)
 
-Se cargan con `dotenv` al arrancar `src/backend/server.js` y **solo existen en el proceso Node**;
-no llegan al bundle del frontend. Este backend es el del login local y hoy solo arranca en
-desarrollo (ver `KNOWN_ISSUES.md` #1).
-
-| Variable | Requerida | Uso | Referencia |
-|---|---|---|---|
-| `SUPABASE_URL` | Sí | URL del proyecto Supabase para el backend local | `src/backend/server.js:12` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Sí | Clave **privilegiada** (bypassa RLS) para operaciones del backend local | `src/backend/server.js:13` |
+Tras migrar los flujos de dispositivo y caja a RPCs de Supabase (14 sep 2026), `src/backend/server.js`
+quedó como login/usuario legacy sobre SQLite y **ya no lee ninguna variable de entorno** (tampoco
+`SUPABASE_URL` ni la service-role key). Solo arranca en desarrollo (ver `KNOWN_ISSUES.md` #1 y #31).
 
 ## Reglas de seguridad
 
 - **Nunca commitear** el archivo `.env` ni valores de estas variables en código, docs, commits o logs.
 - **`SUPABASE_SERVICE_ROLE_KEY` es la credencial más sensible del proyecto**: omite RLS por completo.
-  Debe vivir solo en el proceso Node del backend (y en el entorno de Supabase Edge Functions). No
-  debe exponerse con prefijo `VITE_`, ni incluirse en `dist/` ni en el instalador de Electron.
+  Tras eliminar las rutas de dispositivo/caja del backend local (14 sep 2026), solo la usan las Edge
+  Functions (la inyecta el runtime de Supabase). No debe exponerse con prefijo `VITE_`, ni incluirse
+  en `dist/` ni en el instalador de Electron.
 - La `anon key` (`VITE_SUPABASE_ANON_KEY`) es pública por diseño; la protección real de los datos
   depende de RLS (ver `PERMISSIONS.md` y `KNOWN_ISSUES.md` #13).
 - Las credenciales del PAC de facturación (`cfdi_settings.api_username` / `api_password` /

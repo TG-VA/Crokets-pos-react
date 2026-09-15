@@ -4,6 +4,7 @@ import styles from './CashRegister.module.css';
 
 import { useBranch } from '../../contexts/BranchContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchActiveCashSession, openCashRegister } from '../../services/cashRegisterService';
 
 const CashRegister = ({ setCashRegistered }) => {
   const [initialCash, setInitialCash] = useState('');
@@ -52,17 +53,15 @@ const CashRegister = ({ setCashRegistered }) => {
       try {
         setError('');
 
-        const res = await fetch('http://localhost:3000/cash/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ branchId: branch.id }),
-        });
+        const result = await fetchActiveCashSession(branch.id);
 
-        const data = await res.json();
-
-        if (data?.success && data?.session) {
-          handleExistingSession(data.session);
+        if (result.success && result.data) {
+          handleExistingSession(result.data);
           return;
+        }
+
+        if (!result.success) {
+          setError('No se pudo verificar el estado de la caja.');
         }
       } catch (err) {
         console.error('Error verificando caja:', err);
@@ -138,59 +137,34 @@ const CashRegister = ({ setCashRegistered }) => {
       setError('');
 
       // 1) Verificación preventiva antes de abrir.
-      const checkRes = await fetch('http://localhost:3000/cash/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ branchId: branch.id }),
-      });
+      const checkResult = await fetchActiveCashSession(branch.id);
 
-      const checkData = await checkRes.json();
-
-      if (checkData?.success && checkData?.session) {
-        handleExistingSession(checkData.session);
+      if (checkResult.success && checkResult.data) {
+        handleExistingSession(checkResult.data);
         return;
       }
 
       // 2) Intentar abrir caja.
-      const res = await fetch('http://localhost:3000/cash/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          branchId: branch.id,
-          userId: user.id,
-          openingAmount: value,
-        }),
-      });
+      const openResult = await openCashRegister(branch.id, value);
 
-      const data = await res.json();
-
-      if (data?.success) {
+      if (openResult.success) {
         setCashRegistered(true);
         navigate('/dashboard', { replace: true });
         return;
       }
 
       // 3) Mensajes claros de error.
-      if (data?.session?.user_id && data.session.user_id !== user.id) {
-        setError(getOwnerMessage(data.session));
+      if (openResult.data?.user_id && openResult.data.user_id !== user.id) {
+        setError(getOwnerMessage(openResult.data));
         return;
       }
 
-      const backendMessage = (data?.message || '').toLowerCase();
-
-      if (
-        backendMessage.includes('already open') ||
-        backendMessage.includes('ya existe') ||
-        backendMessage.includes('ya hay') ||
-        backendMessage.includes('open per branch') ||
-        backendMessage.includes('duplicate') ||
-        backendMessage.includes('23505')
-      ) {
-        setError(data?.message || 'Ya existe una caja abierta en esta sucursal.');
+      if (openResult.code) {
+        setError(openResult.message || 'Ya existe una caja abierta en esta sucursal.');
         return;
       }
 
-      setError(data?.message || 'Error al abrir caja.');
+      setError(openResult.message || openResult.error || 'Error al abrir caja.');
     } catch (err) {
       console.error('Error abriendo caja:', err);
       setError('Error al conectar con el servidor.');

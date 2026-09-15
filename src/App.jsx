@@ -1,17 +1,17 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-import Login from "./pages/Login/Login";
-import CashRegister from "./pages/CashRegister/CashRegister";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import Products from "./pages/Products/Products";
-import Inventory from "./pages/Inventory/Inventory";
-import Settings from "./pages/Settings/Settings";
-import Profiles from "./pages/Profiles/Profiles";
-import CashCut from "./pages/CashCut/CashCut";
-import Invoices from "./pages/Invoices/Invoices";
-import Customers from "./pages/Customers/Customers";
-import Reports from "./pages/Reports/Reports";
+const Login = lazy(() => import("./pages/Login/Login"));
+const CashRegister = lazy(() => import("./pages/CashRegister/CashRegister"));
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
+const Products = lazy(() => import("./pages/Products/Products"));
+const Inventory = lazy(() => import("./pages/Inventory/Inventory"));
+const Settings = lazy(() => import("./pages/Settings/Settings"));
+const Profiles = lazy(() => import("./pages/Profiles/Profiles"));
+const CashCut = lazy(() => import("./pages/CashCut/CashCut"));
+const Invoices = lazy(() => import("./pages/Invoices/Invoices"));
+const Customers = lazy(() => import("./pages/Customers/Customers"));
+const Reports = lazy(() => import("./pages/Reports/Reports"));
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
@@ -27,49 +27,51 @@ function AppRoutes() {
 
   return (
     <Router>
-      <Routes>
-        {/* RUTA PÚBLICA / LOGIN */}
-        <Route 
-          path="/login" 
-          element={ 
-            !isAuthenticated || isLocked 
-              ? <Login /> 
-              : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
-          } 
-        />
+      <Suspense fallback={<div>Iniciando punto de venta...</div>}>
+        <Routes>
+          {/* RUTA PÚBLICA / LOGIN */}
+          <Route
+            path="/login"
+            element={
+              !isAuthenticated || isLocked
+                ? <Login />
+                : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
+            }
+          />
 
-        {/* APERTURA DE CAJA (No debe tener caja abierta) */}
-        <Route 
-          path="/cash-register" 
-          element={
-            <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
-              <CashRegister setCashRegistered={setCashRegistered} />
-            </AuthGuard>
-          } 
-        />
+          {/* APERTURA DE CAJA (No debe tener caja abierta) */}
+          <Route
+            path="/cash-register"
+            element={
+              <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
+                <CashRegister setCashRegistered={setCashRegistered} />
+              </AuthGuard>
+            }
+          />
 
-        {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
-        <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
-        <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
-        <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
-        <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
-        <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
-        <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
-        <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
+          {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
+          <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
+          <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
+          <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
+          <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
+          <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
+          <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
+          <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
 
-        {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
-        <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
-        <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
+          {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
+          <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
+          <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
 
-        {/* FALLBACK ROOT */}
-        <Route 
-          path="/" 
-          element={
-            <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
-          } 
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* FALLBACK ROOT */}
+          <Route
+            path="/"
+            element={
+              <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

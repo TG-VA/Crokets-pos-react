@@ -12,7 +12,7 @@ Severidad: **Crítico** (bloquea funcionalidad o expone datos) / **Alto** (riesg
 ## Crítico
 
 ### 1. El backend local no arranca en producción
-**Estado:** abierto — sin confirmar si ya se resolvió de otra forma no documentada.
+**Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 `electron/main.js` llama a `http://localhost:3000/login` (y presumiblemente otros endpoints) para
 autenticación local, pero ese servidor (`src/backend/server.js`) **solo se inicia en modo
@@ -30,8 +30,18 @@ detalle y opciones de solución.
 
 **Antes de distribuir cualquier instalador a un negocio real, esto debe verificarse y corregirse.**
 
+**Resolución (14 sep 2026):** se eliminó la dependencia del servidor Express local en el frontend.
+Los tres endpoints que el renderer consumía en rutas de producción —`POST /device/branch`
+(`Login.jsx`) y `POST /cash/check` + `POST /cash/open` (`CashRegister.jsx`)— se migraron a RPCs de
+Supabase (`get_branch_by_device`, `get_cash_register_session`, `open_cash_register`; migraciones
+`20260914120000` y `20260914120100`, aplicadas con `supabase db push`). El login legacy por SQLite
+(`/login`) y `/cash/close` no los invoca el frontend. Con esto el instalador ya no necesita iniciar
+`src/backend/server.js`, ni empaquetar la `SUPABASE_SERVICE_ROLE_KEY` (que `AGENTS.md` prohíbe
+exponer en el instalador), ni resolver el ABI de `sqlite3` contra el runtime de Electron.
+`electron/main.js` y el script `npm run dev` se conservan sin cambios para desarrollo local.
+
 ### 2. Contraseña del usuario admin en texto plano
-**Estado:** abierto.
+**Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 En `src/backend/bd.js`, el usuario `admin` local se crea con contraseña `'1234'` sin hash
 (`bcrypt` o similar), y se compara presumiblemente en texto plano en el login. Si el archivo
@@ -40,6 +50,15 @@ archivo.
 
 **Recomendación:** hashear contraseñas con `bcrypt` antes de guardar/comparar, y forzar cambio de
 contraseña del admin en el primer inicio de sesión.
+
+**Resolución (14 sep 2026):** se agregó `bcryptjs` (JS puro, sin ABI nativo) y el helper
+`src/backend/password.js` (`hashPassword` / `verifyPassword` / `isBcryptHash`). La siembra del admin
+(`bd.js`) y las rutas de alta y edición de usuarios (`POST` / `PUT /api/users`) guardan hash bcrypt;
+`/login` compara con `bcrypt.compare` y ya no consulta por contraseña en el `WHERE`. Las filas
+legacy en texto plano se migran de forma transparente en el primer login exitoso (`verifyPassword`
+devuelve `needsUpgrade` y el servidor re-hashea). Cubierto por `src/backend/password.test.js`.
+**Pendiente:** la recomendación de forzar el cambio de contraseña del admin en el primer inicio de
+sesión no se implementó (queda como mejora futura).
 
 ---
 
@@ -387,9 +406,41 @@ reportes con la anon key pública.
 `authenticated`. La app solo los llama con sesión (`AuthContext`, `src/App.jsx:22`), sin impacto
 funcional.
 
-**Follow-up pendiente:** la migración base `20260909123000_get_branch_products_paginated.sql`
-(también en `main`) comparte el mismo grant `anon`; evaluar revocarlo igualmente en una pasada de
-hardening de permisos/roles (relacionado con #13).
+**Follow-up resuelto (14 sep 2026):** la migración
+`20260914120200_revoke_anon_get_branch_products_paginated.sql` revoca `EXECUTE ... FROM anon` del
+RPC base `get_branch_products_paginated` (aplicada con `supabase db push`). `authenticated` lo
+conserva y `useProductsList` solo lo llama con sesión, sin impacto funcional.
+
+### 29. RPCs de caja no validan membresía de sucursal (`user_branches`)
+**Estado:** abierto — detectado en la auditoría del cluster #1 (14 sep 2026).
+
+`get_cash_register_session` y `open_cash_register` (migración `20260914120100`) son `SECURITY
+DEFINER` y reciben `p_branch_id` del cliente sin verificar que el usuario autenticado pertenezca a
+esa sucursal en `user_branches`. Cualquier usuario con sesión puede consultar o abrir la caja de
+cualquier sucursal. Es paridad con el backend Express anterior (usaba service role y confiaba en el
+`branchId` del cliente) y con la postura actual "todo autenticado es de confianza" (punto #13), pero
+no escala a multi-sucursal con roles diferenciados.
+
+**Impacto:** un cajero de la sucursal A podría abrir/consultar la caja de la sucursal B con la anon
+key pública y su propia sesión.
+
+**Recomendación:** validar membresía en `user_branches` (o `is_admin()`) dentro de las RPC, y/o
+alinear con la decisión de #10/#13. Ver excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
+
+### 30. `get_branch_by_device` es anon + `SECURITY DEFINER` (excepción de login pre-auth)
+**Estado:** abierto — decisión consciente documentada (14 sep 2026).
+
+El login debe resolver la sucursal del equipo **antes** de autenticar, por lo que la RPC
+`get_branch_by_device` (migración `20260914120000`) se concede a `anon` y es `SECURITY DEFINER`
+(rompe RLS). Devuelve solo `{ id, name, code }` de la sucursal activa asociada a un `device_code`,
+que se genera con `crypto.randomUUID()` (`electron/main.js:20`) y por tanto no es enumerable.
+
+**Impacto:** es la única función anon-executable que rompe RLS; con la anon key pública alguien
+podría sondear `device_code` (no enumerable) o abusar del endpoint.
+
+**Recomendación:** cuando el volumen de POS crezca, mover la resolución a una edge function con rate
+limiting o a un intercambio one-time; mientras tanto, mantener el retorno mínimo y monitorear. Ver
+excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
 
 ---
 
@@ -515,6 +566,160 @@ antes de `checkUserIsAdmin`. Alcance por montaje (igual que el legacy): al salir
 se re-solicita autorización. Además, las páginas ahora derivan sus rutas protegidas de
 `adminProtectedSections.js`, eliminando la copia de strings que quedaba en `Reports.jsx`. Cobertura:
 tests de `withProtectedMetadata`, `useProtectedNavigation` y `ProtectedRoute`.
+
+### 31. Residuo legacy del backend local tras el fix de producción (#1)
+**Estado:** resuelto parcialmente (14 sep 2026) — queda solo el login legacy de SQLite (ver #10).
+
+Con #1 resuelto, el frontend ya no consumía el backend Express local. En una segunda pasada se
+eliminó todo el residuo muerto por definición:
+
+- `electron/main.js` — handlers IPC `login`, `set-initial-cash`, `check-cash-register` y
+  `close-cash-register` (y la variable `cashRegisterState`), junto con sus entradas en la whitelist
+  de `electron/preload.js`. El renderer solo invoca `get-device-code`, `close-app` y los canales de
+  zoom.
+- `src/backend/server.js` — endpoints `/device/branch`, `/cash/check`, `/cash/open` y `/cash/close`,
+  el helper `getActiveCashSessionWithUser` y el cliente `createClient(SUPABASE_SERVICE_ROLE_KEY)`.
+  El backend local ya no usa Supabase ni lee variables de entorno (ver `docs/ENV_VARIABLES.md`).
+
+**Pendiente:** `src/backend/bd.js`, las rutas `/login` y `/api/users` de `server.js` y
+`password.js` se conservan como login legacy por SQLite; su eliminación o razón de ser (login
+offline) es la decisión de #10. La dependencia `node-fetch` quedó sin uso al eliminar el handler
+`login`; retirarla cuando se resuelva #10.
+
+**Impacto:** el riesgo de recablear el renderer a `localhost:3000` y la última referencia en runtime
+a la service-role key quedaron eliminados.
+
+### 32. Verificar índice único de sesión de caja abierta por sucursal
+**Estado:** resuelto (14 sep 2026).
+
+`open_cash_register` (migración `20260914120100`) traduce un `unique_violation` en la respuesta de
+negocio `CASH_ALREADY_OPEN_*`, lo que presupone un índice único parcial (una sesión abierta por
+`branch_id`) en `cash_register_sessions`. Verificado el 14 sep 2026: el remoto **ya tenía** el índice
+`ux_cash_register_sessions_one_open_per_branch` (visible en `supabase inspect db index-stats`). La
+migración `20260914130000` lo detecta y no crea un duplicado; si en otro entorno faltara, verifica que
+no haya sucursales con más de una caja abierta y crea
+`cash_register_sessions_one_open_per_branch_idx` (`unique` sobre `branch_id` `where status = 'open'`).
+Si el `db push` falla por duplicados, el mensaje indica cuántas sucursales hay que sanear primero.
+
+**Impacto (antes):** si el índice no existía, dos aperturas concurrentes podían crear dos sesiones
+abiertas (paridad con el backend anterior, que tenía la misma carrera).
+
+### 33. Tope de apertura de caja sin panel de configuración
+**Estado:** abierto — mejora pendiente (14 sep 2026).
+
+El tope de efectivo inicial al abrir caja vive en `app_settings`
+(`cash_register.max_opening_amount`, seed `1000000`) y `open_cash_register` lo lee con fallback
+seguro (migración `20260914130000`). Hoy solo se puede cambiar por SQL: falta la pantalla de
+configuración (y sus grants/policies de escritura, que hoy no existen a propósito) para editarlo
+desde la app.
+
+**Impacto:** el tope es configurable a nivel dato, pero requiere acceso a la DB para modificarlo.
+
+**Recomendación:** al construir el panel de ajustes, agregar policy de escritura para rol admin
+(usar `is_admin()` / `has_permission()`) y exponer el valor vía RPC o Edge Function.
+
+### 34. Deuda menor de la pasada de producción (no bloqueante)
+**Estado:** abierto — cosmético/robustez (14 sep 2026).
+
+Hallazgos menores de la auditoría que no se corrigieron en el cluster de producción:
+
+- `src/backend/server.js` — el `INSERT INTO users (username, password)` de respaldo (dentro del
+  handler de alta) omite `name`, que es `NOT NULL`; ese camino siempre falla y es código muerto.
+  Eliminar en el barrido de #10/#31.
+- `src/backend/password.js` — bcryptjs se usa en su API síncrona (`hashSync`/`compareSync`), que
+  bloquea el event loop por request; migrar a la API async si el backend local crece.
+- `src/backend/bd.js:18` usa un emoji `✅` en `console.log` (preexistente, fuera del estilo del repo);
+  limpiar junto con el login legacy.
+- Mezcla de comillas dobles en `src/services/*` y tests nuevos frente a comillas simples en el resto
+  del repo; unificar cuando se toque cada archivo.
+
+### 35. Sesión de Supabase persistida en `localStorage`
+**Estado:** abierto — aceptado con riesgo residual bajo (14 sep 2026).
+
+`src/lib/supabaseClient.js` usa el `createClient` por defecto de `@supabase/supabase-js`, que guarda
+`access_token` y `refresh_token` en `localStorage` (REACT-AUTH-001). Un XSS podría exfiltrar la
+sesión. Hoy el riesgo es bajo porque no hay sinks XSS en el renderer (barrido sin
+`dangerouslySetInnerHTML`/`innerHTML`/`eval`), y la CSP de producción (migración de frontend en
+`vite.config.mjs`) reduce la superficie.
+
+**Impacto:** sin sink ni CSP saltada no es explotable; es deuda de defensa en profundidad.
+
+**Recomendación:** evaluar `storage` en memoria + PKCE, o mover la sesión a cookie `HttpOnly` cuando
+exista un gateway/Edge Function que lo permita. Revisar al endurecer auth.
+
+### 36. Assets con ruta absoluta bajo `file://` en el build empaquetado
+**Estado:** Resuelto — 14 sep 2026 (validar instalador NSIS en Windows antes de distribuir).
+
+`vite.config.mjs` no define `base`, por lo que Vite emite rutas absolutas
+(`<script src="/assets/index-*.js">`). En producción Electron carga
+`file://.../dist/index.html` (`electron/main.js`), y `/assets/...` resuelve a `file:///assets/...`
+(raíz del sistema de archivos), no al directorio de `dist/`. Confirmado con
+`new URL('/assets/index.js','file:///opt/app/dist/index.html').href` → `file:///assets/index.js`.
+
+**Impacto:** el instalador NSIS podría abrir en blanco al no cargar JS/CSS.
+
+**Resolución:** se agregó `base: './'` en `vite.config.mjs`; el build ahora emite
+`./assets/index-*.js`. Verificado con un smoke test de Electron cargando
+`file://.../dist/index.html` en un `BrowserWindow` oculto: React renderiza (`#root` con hijos), sin
+`did-fail-load` ni errores de consola. Queda pendiente ejecutar el instalador empaquetado real en
+Windows (ítem del checklist de `DEPLOYMENT.md`) antes de distribuir.
+
+### 37. Ausencia de Content-Security-Policy en el renderer (SEC-1)
+**Estado:** Resuelto — 14 sep 2026.
+
+`index.html` no definía CSP, por lo que el renderer no tenía una segunda barrera contra inyección de
+scripts (defensa en profundidad; relevante junto con #35, sesión en `localStorage`).
+
+**Impacto:** sin CSP, un eventual sink XSS tendría vía libre para ejecutar script y exfiltrar la
+sesión. No había sinks XSS en el código (barrido sin `dangerouslySetInnerHTML`/`innerHTML`/`eval`).
+
+**Resolución:** `vite.config.mjs` inyecta una `Content-Security-Policy` estricta por `<meta>` solo en
+el build de producción (`default-src 'self'`, `script-src 'self'`, `connect-src` limitado a
+Supabase, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`). En dev no aplica para no
+romper el HMR. Verificado en `dist/index.html`. Ver `DEPLOYMENT.md`.
+
+### 38. Autorización de administrador gateada solo en el cliente (SEC-3)
+**Estado:** Abierto — requiere verificación del lado servidor (14 sep 2026).
+
+Las secciones administrativas se protegen en el renderer (`ProtectedRoute` +
+`adminProtectedSections`, ver #27/#28) y el modal `AdminAuthorizationModal` re-autentica al admin vía
+la Edge Function `authorize-admin-action` (`docs/EDGE_FUNCTIONS.md`). Falta confirmar que **toda**
+acción administrativa sensible tenga además un control server-side (RLS/`has_permission()` en las
+RPC/edge functions) y no dependa únicamente del gateo visual del cliente.
+
+**Impacto:** un usuario con sesión que invoque directamente una RPC/edge function administrativa
+saltándose la UI podría ejecutarla si el backend no la valida. Ligado a #13 (roles sin
+diferenciación real) y #29.
+
+**Recomendación:** auditar cada RPC/edge function administrativa y confirmar `is_admin()` /
+`has_permission()` server-side; registrar el resultado por endpoint.
+
+### 39. Endurecimiento de Electron incompleto (SEC-4)
+**Estado:** Resuelto — 14 sep 2026.
+
+`electron/main.js` no denegaba ventanas emergentes ni bloqueaba la navegación fuera del origen, y
+`electron/preload.js` exponía canales IPC sin handler en el proceso principal (`log-message`,
+`window-action`, `update-available`, `print-request`) además de `send`/`on`.
+
+**Impacto:** una inyección en el renderer podía abrir ventanas o navegar a contenido externo, y el
+allowlist de preload era más amplio que la superficie real.
+
+**Resolución:** `setWindowOpenHandler` deniega ventanas, `will-navigate` bloquea la navegación fuera
+del origen, se eliminaron los `console.log` de debug y el preload solo expone `invoke` con los canales
+realmente registrados (`get-device-code`, `close-app`, `set-zoom-factor`, `configure-zoom`,
+`reset-zoom`, `get-zoom-debug`).
+
+### 40. Bundle único de ~3.2 MB sin code-splitting (PERF-1)
+**Estado:** Resuelto — 14 sep 2026.
+
+El build generaba un solo chunk (~3.2 MB, ~907 KB gzip) porque `App.jsx` importaba las 11 páginas de
+forma eager y no había `manualChunks`.
+
+**Impacto:** arranque más lento y mayor trabajo de parseo en cada carga del POS.
+
+**Resolución:** `App.jsx` usa `lazy()` por ruta con `<Suspense>`; `vite.config.mjs` define
+`manualChunks` (`react`, `supabase`, `spreadsheets`). El bundle inicial bajó a ~0.47 MB (~137 KB
+gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
 ---
 

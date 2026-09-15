@@ -3,13 +3,17 @@
 Cómo generar el instalador de escritorio de Crokets-POS y qué falta resolver antes de distribuirlo
 a un negocio real.
 
-## Bloqueante conocido
+## Estado del backend local
 
-**Leer primero `KNOWN_ISSUES.md`, punto 1.** El backend Express local (`src/backend/server.js`,
-usado para login) no se inicia automáticamente cuando la app corre empaquetada, y el archivo ni
-siquiera está incluido en el build. Hasta que esto se resuelva, un instalador generado con
-`npm run build` probablemente **no permite iniciar sesión**. Verificarlo antes de distribuir
-cualquier build a un cliente.
+**Resuelto el 14 sep 2026** (`KNOWN_ISSUES.md` #1, rama `fix/production-backend`). El frontend ya
+no depende del servidor Express local: la resolución de sucursal por dispositivo y las operaciones
+de caja se ejecutan con RPCs de Supabase (`get_branch_by_device`, `get_cash_register_session`,
+`open_cash_register`). El instalador no necesita iniciar `src/backend/server.js`, ni empaquetar la
+`SUPABASE_SERVICE_ROLE_KEY`, ni resolver el ABI de `sqlite3` contra Electron. En la misma fecha se
+eliminaron además los endpoints `/device/branch` y `/cash/*` del backend local, su helper y el
+cliente con service-role key, junto con los handlers IPC legacy (`login`, `set-initial-cash`,
+`check-cash-register`, `close-cash-register`). `src/backend/` se conserva solo como login legacy por
+SQLite (ya no consumido por el frontend) para desarrollo local.
 
 ## Configuración del build
 
@@ -40,7 +44,10 @@ Electron/Node, hay que reconstruir el binario contra el runtime de Electron:
 npm run rebuild   # electron-rebuild -f -w sqlite3
 ```
 
-Si no se hace, el login local (que depende de SQLite) fallará al abrir la app empaquetada.
+Si no se hace, el login local (que depende de SQLite) fallará al abrir la app empaquetada. Desde el
+14 sep 2026 el instalador ya no carga `sqlite3` (el login de producción usa Supabase Auth), por lo
+que `npm run rebuild` no es necesario para distribuir; solo aplica al backend de desarrollo
+(`npm run dev` corre bajo el Node del sistema).
 
 ## Flujo de build
 
@@ -63,14 +70,28 @@ Para iterar solo el frontend o solo el empaquetado existen `npm run build:fronte
 
 ## Checklist antes de distribuir a un cliente
 
-- [ ] El bloqueante de login (#1) está verificado/resuelto en un build empaquetado.
-- [ ] La contraseña del admin local ya no está en texto plano (#2) o se aceptó el riesgo de forma explícita.
+- [x] El bloqueante de login (#1) está verificado/resuelto (frontend sin dependencia del server local).
+- [x] La contraseña del admin local ya no está en texto plano (#2: `bcryptjs` + migración en login).
+- [x] CSP estricta inyectada en el build de producción y Electron endurecido (ventanas/navegación), 14 sep 2026.
 - [ ] `npm test` pasa.
 - [ ] `npm run rebuild` ejecutado si cambió Electron/Node.
 - [ ] Versión (`package.json`) incrementada.
 - [ ] Cuenta de prueba `alexander@example.com` desactivada/eliminada (#14).
 - [ ] RLS/roles revisados (#13) o riesgo aceptado.
+- [ ] Instalador empaquetado probado en Windows: carga de assets bajo `file://` (KNOWN_ISSUES #36).
 - [ ] Respaldo de la base de datos Supabase vigente (ver abajo).
+
+## Endurecimiento del cliente (14 sep 2026)
+
+- **CSP** (`vite.config.mjs`): se inyecta una `Content-Security-Policy` por `<meta>` solo en el build
+  de producción (`default-src 'self'`, `script-src 'self'`, `connect-src` limitado a Supabase). En
+  desarrollo no aplica para no romper el HMR.
+- **Rutas de assets** (`vite.config.mjs`): `base: './'` para que el build cargue bajo `file://`
+  (KNOWN_ISSUES #36).
+- **Electron** (`electron/main.js`): `setWindowOpenHandler` deniega ventanas emergentes y
+  `will-navigate` bloquea la navegación fuera del origen de la app.
+- **Preload** (`electron/preload.js`): solo expone `invoke` con los canales realmente registrados en
+  el proceso principal; se eliminaron `send`/`on` y canales sin handler.
 
 ## Datos y respaldo
 

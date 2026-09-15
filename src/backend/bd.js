@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { hashPassword } = require('./password');
 
 /**
  * Configuración de la base de datos SQLite.
@@ -92,9 +93,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             'corte', 'reportes', 'configuracion'
           ]);
           db.run(`INSERT INTO users (username, name, password, permissions) VALUES (?, ?, ?, ?)`, 
-            ['admin', 'Administrador', '1234', adminPermissions], (err) => {
+            ['admin', 'Administrador', hashPassword('1234'), adminPermissions], (err) => {
             if (err) return console.error('Error al insertar usuario inicial:', err.message);
-            console.log('Usuario inicial "admin" creado con contraseña "1234".');
+            console.log('Usuario inicial "admin" creado con contraseña por defecto.');
           });
         } else {
           console.log('Usuario "admin" ya existe.');

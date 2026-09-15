@@ -22,6 +22,10 @@ Migraciones existentes (al 14 sep 2026):
 | `20260910120400_commissions_rpc_unlimited_default.sql` | Corrección de default de `p_page_size` |
 | `20260910120500_fix_commissions_status_filter.sql` | Exclusión de ventas canceladas en comisiones |
 | `20260910120600_restrict_report_rpc_grants.sql` | Revoca `EXECUTE` a `anon` en RPCs de reportes |
+| `20260914120000_get_branch_by_device.sql` | RPC anon `get_branch_by_device` (traduce `device_code` a sucursal en login pre-auth) |
+| `20260914120100_cash_register_rpcs.sql` | RPCs `get_cash_register_session` y `open_cash_register` + helper `_cash_session_payload` |
+| `20260914120200_revoke_anon_get_branch_products_paginated.sql` | Revoca `EXECUTE` a `anon` del RPC base de paginación de productos |
+| `20260914130000_cash_register_hardening.sql` | Tabla `app_settings` (tope de apertura configurable), tope en `open_cash_register` (`CASH_INVALID_AMOUNT`), payload con columnas explícitas, helper `_cash_already_open_response` e índice único parcial de caja abierta por sucursal (#32) |
 
 ## Convención de nombres
 
@@ -54,6 +58,13 @@ supabase db push
 - Preferir cambios idempotentes y RPCs `LANGUAGE sql` invoker (sin `SECURITY DEFINER`) para que RLS
   siga aplicando al llamador.
 - Revocar `EXECUTE ... FROM anon` en RPCs nuevos; la app siempre llama con sesión (`authenticated`).
+- **Excepciones documentadas (14 sep 2026):**
+  - `get_branch_by_device` es `SECURITY DEFINER` y se concede a `anon` porque el login lo invoca
+    **antes** de tener sesión. Devuelve solo `id/name/code` de la sucursal y se apoya en que
+    `device_code` es un UUID no enumerable. Ver `KNOWN_ISSUES.md` #30.
+  - `get_cash_register_session` y `open_cash_register` son `SECURITY DEFINER` porque deben leer la
+    sesión de caja abierta de **cualquier** usuario de la sucursal (el RLS por fila lo impediría);
+    exigen `authenticated` y no devuelven más que la sesión de caja. Ver `KNOWN_ISSUES.md` #29.
 
 ## Edge functions
 
