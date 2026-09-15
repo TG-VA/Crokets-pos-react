@@ -29,7 +29,23 @@ import {
   calculateNetSales,
   calculateCashInRegister,
   resolveCutDisplay,
-} from "./services/cashCutCalculationService";
+  fetchActiveSession,
+  fetchBranchName,
+  fetchCutsHistory as fetchCutsHistoryService,
+  fetchExistingShiftCut,
+  fetchSalesByShift,
+  fetchCancellationsByShift,
+  fetchPartialReturnsByShift,
+  fetchRewardRedemptions,
+  fetchPaymentsByMethod,
+  fetchUsdPayments,
+  fetchDepartmentSales,
+  fetchCashMovementsBySession,
+  createCashCut,
+  insertCashCutDetails,
+  closeCashRegisterSession,
+  fetchHistoricalCutDetail,
+} from "./services/cashCutReportService";
 
 import styles from "./CashCut.module.css";
 
@@ -565,17 +581,12 @@ const CashCut = () => {
   const fetchSession = async () => {
     setUsername(getDisplayUsername());
 
-    const { data: sessionData, error } = await supabase
-      .from("cash_register_sessions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "open")
-      .order("opened_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: sessionData, error } = await fetchActiveSession({
+      userId: user.id,
+    });
 
     if (error) {
-      console.warn("Error obteniendo sesión activa:", error.message);
+      console.error("Error obteniendo sesión activa:", error.message);
       setSession(null);
       setBranchName("");
       return null;
@@ -590,11 +601,9 @@ const CashCut = () => {
     setSession(sessionData);
 
     if (sessionData.branch_id) {
-      const { data: branchData, error: branchErr } = await supabase
-        .from("branches")
-        .select("name")
-        .eq("id", sessionData.branch_id)
-        .maybeSingle();
+      const { data: branchData, error: branchErr } = await fetchBranchName({
+        branchId: sessionData.branch_id,
+      });
 
       setBranchName(!branchErr && branchData?.name ? branchData.name : "");
     } else {
@@ -605,44 +614,7 @@ const CashCut = () => {
   };
 
   const fetchCutsHistory = async (branchId) => {
-    if (!branchId) {
-      setCutsHistory([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("cash_cuts")
-      .select(`
-        id,
-        branch_id,
-        user_id,
-        cash_register_session_id,
-        cut_type,
-        expected_amount,
-        counted_amount,
-        difference,
-        notes,
-        cut_date,
-        created_at,
-        users (
-          username
-        ),
-        cash_register_sessions (
-          id,
-          branch_id,
-          user_id,
-          opened_at,
-          closed_at,
-          opening_amount,
-          closing_amount,
-          difference,
-          status
-        )
-      `)
-      .eq("branch_id", branchId)
-      .eq("cut_type", "shift")
-      .order("created_at", { ascending: false })
-      .limit(300);
+    const { data, error } = await fetchCutsHistoryService({ branchId });
 
     if (error) {
       console.error("Error obteniendo historial de cortes:", error.message);
@@ -699,37 +671,7 @@ const CashCut = () => {
       let cutData = found;
 
       if (!cutData) {
-        const { data, error } = await supabase
-          .from("cash_cuts")
-          .select(`
-            id,
-            branch_id,
-            user_id,
-            cash_register_session_id,
-            cut_type,
-            expected_amount,
-            counted_amount,
-            difference,
-            notes,
-            cut_date,
-            created_at,
-            users (
-              username
-            ),
-            cash_register_sessions (
-              id,
-              branch_id,
-              user_id,
-              opened_at,
-              closed_at,
-              opening_amount,
-              closing_amount,
-              difference,
-              status
-            )
-          `)
-          .eq("id", cutId)
-          .maybeSingle();
+        const { data, error } = await fetchHistoricalCutDetail({ cutId });
 
         if (error) throw error;
         cutData = data;
@@ -761,11 +703,9 @@ const CashCut = () => {
       );
 
       if (cutData.branch_id) {
-        const { data: branchData } = await supabase
-          .from("branches")
-          .select("name")
-          .eq("id", cutData.branch_id)
-          .maybeSingle();
+        const { data: branchData } = await fetchBranchName({
+          branchId: cutData.branch_id,
+        });
 
         setBranchName(branchData?.name || branchName || "");
       }
@@ -793,14 +733,7 @@ const CashCut = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("cash_cuts")
-      .select("*")
-      .eq("cash_register_session_id", sessionId)
-      .eq("cut_type", "shift")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data, error } = await fetchExistingShiftCut({ sessionId });
 
     if (error) {
       console.error("Error obteniendo corte existente:", error.message);
@@ -829,19 +762,12 @@ const CashCut = () => {
 
     let saleIdsForTotals = [];
 
-    let salesQuery = supabase
-      .from("sales")
-      .select("id, subtotal, tax, total, created_at, status")
-      .eq("branch_id", branchId)
-      .eq("user_id", userId)
-      .in("status", ["completed", "cancelled", "refunded"])
-      .gte("created_at", turnoStart);
-
-    if (endAt) {
-      salesQuery = salesQuery.lte("created_at", endAt);
-    }
-
-    const { data: salesData, error: salesError } = await salesQuery;
+    const { data: salesData, error: salesError } = await fetchSalesByShift({
+      branchId,
+      userId,
+      startAt: turnoStart,
+      endAt,
+    });
 
     if (salesError) {
       console.error("Error obteniendo ventas:", salesError.message);
@@ -872,33 +798,13 @@ const CashCut = () => {
       setVentasDolaresMxn(0);
     }
 
-    let refundQuery = supabase
-      .from("canceled_sales")
-      .select(`
-        id,
-        sale_id,
-        cancel_reason,
-        refund_amount,
-        refund_method_id,
-        canceled_at,
-        user_id,
-        branch_id,
-        payment_methods (
-          id,
-          name,
-          affects_cash
-        )
-      `)
-      .eq("branch_id", branchId)
-      .eq("user_id", userId)
-      .gte("canceled_at", turnoStart)
-      .order("canceled_at", { ascending: false });
-
-    if (endAt) {
-      refundQuery = refundQuery.lte("canceled_at", endAt);
-    }
-
-    const { data: refundRows, error: refundErr } = await refundQuery;
+    const { data: refundRows, error: refundErr } =
+      await fetchCancellationsByShift({
+        branchId,
+        userId,
+        startAt: turnoStart,
+        endAt,
+      });
 
     if (refundErr) {
       console.error("Error obteniendo cancelaciones:", refundErr.message);
@@ -917,34 +823,13 @@ const CashCut = () => {
       setCancelaciones(cancelacionesRows);
     }
 
-    let partialReturnQuery = supabase
-      .from("sale_returns")
-      .select(`
-        id,
-        sale_id,
-        return_reason,
-        total_refund,
-        refund_method_id,
-        created_at,
-        user_id,
-        branch_id,
-        payment_methods (
-          id,
-          name,
-          affects_cash
-        )
-      `)
-      .eq("branch_id", branchId)
-      .eq("user_id", userId)
-      .gte("created_at", turnoStart)
-      .order("created_at", { ascending: false });
-
-    if (endAt) {
-      partialReturnQuery = partialReturnQuery.lte("created_at", endAt);
-    }
-
     const { data: partialReturnRows, error: partialReturnErr } =
-      await partialReturnQuery;
+      await fetchPartialReturnsByShift({
+        branchId,
+        userId,
+        startAt: turnoStart,
+        endAt,
+      });
 
     if (partialReturnErr) {
       console.error(
@@ -977,17 +862,7 @@ const CashCut = () => {
   };
 
   const fetchRewardSummary = async (saleIds = []) => {
-    const cleanSaleIds = [...new Set((saleIds || []).filter(Boolean))];
-
-    if (cleanSaleIds.length === 0) {
-      setRewardSummary(calculateRewardSummary([]));
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("sale_reward_redemptions")
-      .select("id, sale_id, quantity, total_points, reversed_at")
-      .in("sale_id", cleanSaleIds);
+    const { data, error } = await fetchRewardRedemptions({ saleIds });
 
     if (error) {
       console.error("Error obteniendo recompensas del corte:", error.message);
@@ -999,11 +874,7 @@ const CashCut = () => {
   };
 
   const fetchVentasPorMetodo = async (saleIds, branchId) => {
-    const { data, error } = await supabase
-      .from("sale_payments")
-      .select("amount, payment_method_id, payment_methods(id, name, affects_cash)")
-      .in("sale_id", saleIds)
-      .eq("branch_id", branchId);
+    const { data, error } = await fetchPaymentsByMethod({ saleIds, branchId });
 
     if (error) {
       console.error("Error obteniendo pagos:", error.message);
@@ -1014,12 +885,7 @@ const CashCut = () => {
   };
 
   const fetchVentasDolares = async (saleIds, branchId) => {
-    const { data, error } = await supabase
-      .from("sale_payments")
-      .select("amount, currency, exchange_rate")
-      .in("sale_id", saleIds)
-      .eq("branch_id", branchId)
-      .eq("currency", "USD");
+    const { data, error } = await fetchUsdPayments({ saleIds, branchId });
 
     if (error) {
       console.error("Error obteniendo ventas en dólares:", error.message);
@@ -1035,10 +901,7 @@ const CashCut = () => {
   };
 
   const fetchVentasPorDepartamento = async (saleIds) => {
-    const { data, error } = await supabase
-      .from("sale_details")
-      .select("total_price, products(department_id, departments(name))")
-      .in("sale_id", saleIds);
+    const { data, error } = await fetchDepartmentSales({ saleIds });
 
     if (error) {
       console.error("Error obteniendo departamentos:", error.message);
@@ -1057,17 +920,10 @@ const CashCut = () => {
       return;
     }
 
-    let query = supabase
-      .from("cash_movements")
-      .select("id, movement_type, amount, description, created_at")
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: false });
-
-    if (endAt) {
-      query = query.lte("created_at", endAt);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await fetchCashMovementsBySession({
+      sessionId,
+      endAt,
+    });
 
     if (error) {
       console.error("Error obteniendo movimientos de caja:", error.message);
@@ -1109,21 +965,17 @@ const CashCut = () => {
     const diferencia = Number(counted || 0) - Number(expected || 0);
 
     try {
-      const { data: cutData, error: cutError } = await supabase
-        .from("cash_cuts")
-        .insert({
-          branch_id: session.branch_id,
-          user_id: user.id,
-          cash_register_session_id: session.id,
-          cut_type: "shift",
-          expected_amount: Number(expected || 0),
-          counted_amount: Number(counted || 0),
-          difference: diferencia,
-          notes: notes || null,
-          cut_date: getCancunDateValue(),
-        })
-        .select()
-        .single();
+      const { data: cutData, error: cutError } = await createCashCut({
+        branch_id: session.branch_id,
+        user_id: user.id,
+        cash_register_session_id: session.id,
+        cut_type: "shift",
+        expected_amount: Number(expected || 0),
+        counted_amount: Number(counted || 0),
+        difference: diferencia,
+        notes: notes || null,
+        cut_date: getCancunDateValue(),
+      });
 
       if (cutError) {
         if (cutError.code === "23505") {
@@ -1143,9 +995,7 @@ const CashCut = () => {
         }));
 
         if (details.length > 0) {
-          const { error: detErr } = await supabase
-            .from("cash_cut_details")
-            .insert(details);
+          const { error: detErr } = await insertCashCutDetails(details);
 
           if (detErr) throw detErr;
         }
@@ -1186,8 +1036,8 @@ const CashCut = () => {
     try {
       setClosingShift(true);
 
-      const { data, error } = await supabase.rpc("close_cash_register_session", {
-        p_session_id: session.id,
+      const { data, error } = await closeCashRegisterSession({
+        sessionId: session.id,
       });
 
       if (error) throw error;

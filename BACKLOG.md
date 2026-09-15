@@ -49,6 +49,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Desactivar usuario de prueba `alexander@example.com` (migración `20260915120000`) — ver `KNOWN_ISSUES.md` #14
 * [x] Squash de migraciones de comisiones — no procede (ya aplicadas al remoto; se sigue por migración correctiva) — ver `KNOWN_ISSUES.md` #23
 * [ ] QA visual del nuevo formato `ruleLabel` en el reporte de comisiones — ver `KNOWN_ISSUES.md` #24
+* [ ] Renombrar el wrapper local `fetchCutsHistory` del corte para desambiguarlo del servicio — ver `KNOWN_ISSUES.md` #46
 
 ---
 
