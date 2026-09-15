@@ -142,7 +142,7 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
       // throw error;
     }
     return fallback;
-  }
+  } 
 };
 
 export const loadTransferOrders = async () => {
@@ -274,6 +274,12 @@ export const receiveTransferOrder = async ({
     {
       p_transfer_id: transferOrderId,
       p_destination_branch: currentBranch.id,
+      // SEGURIDAD DE AUDITORÍA:
+      // p_user_id y p_username se envían SOLO por compatibilidad histórica/logging.
+      // La fuente de verdad de received_by y auditoría la resuelve EXCLUSIVAMENTE
+      // el RPC server-side via auth.uid() + SELECT COALESCE(username, email, 'SISTEMA')
+      // en public.users. El cliente NO puede spoofear quién recibió la orden.
+      // Ver backup/dump del RPC receive_transfer_order en el enlace privado del PR.
       p_user_id: user?.id || null,
       p_username: user?.username || user?.email || "SISTEMA",
       p_received_qty_map: normalizedReceivedMap,
@@ -326,6 +332,12 @@ export const cancelTransferOrder = async ({
     {
       p_transfer_id: transferOrderId,
       p_current_branch: currentBranch.id,
+      // SEGURIDAD DE AUDITORÍA (mismo patrón que receive_transfer_order):
+      // p_user_id y p_username se envían SOLO por compatibilidad histórica/logging.
+      // La fuente de verdad de cancelled_by y auditoría la resuelve EXCLUSIVAMENTE
+      // el RPC server-side via auth.uid() + SELECT COALESCE(username, email, 'SISTEMA')
+      // en public.users. El cliente NO puede spoofear quién canceló la orden.
+      // Ver backup/dump del RPC cancel_transfer_order en el enlace privado del PR.
       p_user_id: user?.id || null,
       p_username: user?.username || user?.email || "SISTEMA",
     }
