@@ -24,7 +24,6 @@ const prefetchPostLoginRoutes = () => {
   import('../Dashboard/Dashboard').catch(() => {});
 };
 
-
 const Login = () => {
   const { login, unlockScreen } = useAuth();
   const { setBranch } = useBranch();
