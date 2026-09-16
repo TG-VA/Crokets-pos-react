@@ -63,29 +63,31 @@ export const getPartialReturnPointsFromMovements = (sale = {}) => {
   }, 0);
 };
 
+export const getReturnPointsFromReturn = (ret = {}) => {
+  return Math.abs(
+    toNumber(
+      ret.points_returned ??
+        ret.pointsReturned ??
+        ret.points_deducted ??
+        ret.pointsDeducted ??
+        ret.returned_points ??
+        ret.returnedPoints ??
+        ret.partial_return_points ??
+        ret.partialReturnPoints ??
+        ret.customer_points_returned ??
+        ret.customerPointsReturned ??
+        0
+    )
+  );
+};
+
 export const getPartialReturnPointsFromReturns = (sale = {}) => {
   const partialReturns = sale.returns || sale.partial_returns || [];
 
   if (!Array.isArray(partialReturns)) return 0;
 
   return partialReturns.reduce((acc, ret) => {
-    const points = Math.abs(
-      toNumber(
-        ret.points_returned ??
-          ret.pointsReturned ??
-          ret.points_deducted ??
-          ret.pointsDeducted ??
-          ret.returned_points ??
-          ret.returnedPoints ??
-          ret.partial_return_points ??
-          ret.partialReturnPoints ??
-          ret.customer_points_returned ??
-          ret.customerPointsReturned ??
-          0
-      )
-    );
-
-    return acc + points;
+    return acc + getReturnPointsFromReturn(ret);
   }, 0);
 };
 

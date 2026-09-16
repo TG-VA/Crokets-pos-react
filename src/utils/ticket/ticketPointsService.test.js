@@ -6,6 +6,7 @@ import {
   getEarnedPoints,
   getPartialReturnPointsFromMovements,
   getPartialReturnPointsFromReturns,
+  getReturnPointsFromReturn,
   getReturnedPoints,
   getCustomerPointsBalance,
 } from "./ticketPointsService";
@@ -55,6 +56,17 @@ describe("ticketPointsService", () => {
       };
 
       expect(getPartialReturnPointsFromMovements(sale)).toBe(30);
+    });
+  });
+
+  describe("getReturnPointsFromReturn", () => {
+    it("resuelve los alias de una devolucion y normaliza a valor absoluto", () => {
+      expect(getReturnPointsFromReturn({ points_returned: 15 })).toBe(15);
+      expect(getReturnPointsFromReturn({ customerPointsReturned: "20" })).toBe(
+        20
+      );
+      expect(getReturnPointsFromReturn({ returned_points: -10 })).toBe(10);
+      expect(getReturnPointsFromReturn({})).toBe(0);
     });
   });
 

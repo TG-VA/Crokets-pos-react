@@ -12,7 +12,6 @@ import {
 } from "./ticketLayout";
 import { formatDate, formatTime, formatDateTime } from "./ticketDateFormatters";
 import {
-  toNumber,
   getItemDescription,
   getItemQuantity,
   getItemLineTotal,
@@ -22,6 +21,7 @@ import {
 } from "./ticketItemFormatters";
 import { getRewardVisualTypeForItem } from "./ticketRewardService";
 import { formatBranchAddressLines } from "./ticketBranchFormatters";
+import { getReturnPointsFromReturn } from "./ticketPointsService";
 
 export const buildHeaderSection = (branch = {}) => {
   const lines = [];
@@ -539,21 +539,7 @@ export const buildPartialReturnsSection = (
         formatTotalLine("Monto devuelto:", money(ret.total_refund || 0))
       );
 
-      const returnPoints = Math.abs(
-        toNumber(
-          ret.points_returned ??
-            ret.pointsReturned ??
-            ret.points_deducted ??
-            ret.pointsDeducted ??
-            ret.returned_points ??
-            ret.returnedPoints ??
-            ret.partial_return_points ??
-            ret.partialReturnPoints ??
-            ret.customer_points_returned ??
-            ret.customerPointsReturned ??
-            0
-        )
-      );
+      const returnPoints = getReturnPointsFromReturn(ret);
 
       if (returnPoints > 0) {
         lines.push(formatTotalLine("Puntos desc.:", `-${returnPoints}`));
