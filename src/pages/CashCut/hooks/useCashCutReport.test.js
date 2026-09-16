@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 
 vi.mock("../../../lib/supabaseClient", () => ({
@@ -142,6 +142,10 @@ describe("useCashCutReport", () => {
     fetchCutsHistory.mockResolvedValue({ data: [], error: null });
     fetchExistingShiftCut.mockResolvedValue({ data: null, error: null });
     configureEmptyShift();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("sin turno activo termina la carga y limpia el estado", async () => {
@@ -306,5 +310,227 @@ describe("useCashCutReport", () => {
     unmount();
 
     expect(supabase.removeChannel).toHaveBeenCalledWith(channelMock);
+  });
+
+  it("refreshAfterCut recarga historial y la vista actual", async () => {
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    fetchCutsHistory.mockClear();
+
+    await act(async () => {
+      await result.current.refreshAfterCut();
+    });
+
+    expect(fetchCutsHistory).toHaveBeenCalledWith({ branchId: "b1" });
+    expect(fetchSalesByShift).toHaveBeenCalled();
+    expect(fetchCashMovementsBySession).toHaveBeenCalled();
+    expect(result.current.isHistoricalView).toBe(false);
+  });
+
+  it("changeSelectedCut a current no vuelve a recargar el historial", async () => {
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.changeSelectedCut("c1");
+    });
+    await waitFor(() => expect(result.current.isHistoricalView).toBe(true));
+
+    await act(async () => {
+      await result.current.changeSelectedCut("current");
+    });
+
+    await waitFor(() => expect(result.current.isHistoricalView).toBe(false));
+    expect(result.current.historicalCut).toBeNull();
+    expect(fetchCutsHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("recarga la vista actual tras el debounce del callback realtime", async () => {
+    vi.useFakeTimers();
+
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(result.current.session?.id).toBe("s1");
+
+    const realtimeCallback = channelMock.on.mock.calls
+      .map((call) => call[2])
+      .find((cb) => typeof cb === "function");
+
+    expect(realtimeCallback).toBeDefined();
+
+    const sessionCallsBefore = fetchActiveSession.mock.calls.length;
+    const historyCallsBefore = fetchCutsHistory.mock.calls.length;
+    const salesCallsBefore = fetchSalesByShift.mock.calls.length;
+
+    await act(async () => {
+      realtimeCallback();
+    });
+
+    expect(fetchActiveSession.mock.calls.length).toBe(sessionCallsBefore);
+
+    await act(async () => {
+      vi.advanceTimersByTime(700);
+    });
+    await act(async () => {});
+
+    expect(fetchActiveSession.mock.calls.length).toBe(sessionCallsBefore + 1);
+    expect(fetchCutsHistory.mock.calls.length).toBeGreaterThan(
+      historyCallsBefore
+    );
+    expect(fetchSalesByShift.mock.calls.length).toBeGreaterThan(
+      salesCallsBefore
+    );
+  });
+
+  it("callback realtime sin turno activo limpia la vista actual", async () => {
+    vi.useFakeTimers();
+
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(result.current.session?.id).toBe("s1");
+
+    const realtimeCallback = channelMock.on.mock.calls
+      .map((call) => call[2])
+      .find((cb) => typeof cb === "function");
+
+    fetchActiveSession.mockResolvedValue({ data: null, error: null });
+
+    const salesCallsBefore = fetchSalesByShift.mock.calls.length;
+
+    await act(async () => {
+      realtimeCallback();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(700);
+    });
+    await act(async () => {});
+
+    expect(fetchSalesByShift.mock.calls.length).toBe(salesCallsBefore);
+    expect(result.current.session).toBeNull();
+    expect(result.current.hasShiftCut).toBe(false);
+    expect(result.current.currentShiftCut).toBeNull();
+  });
+
+  it("changeSelectedCut a current sin turno activo resetea la vista", async () => {
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.session?.id).toBe("s1");
+
+    fetchActiveSession.mockResolvedValue({ data: null, error: null });
+
+    const salesCallsBefore = fetchSalesByShift.mock.calls.length;
+
+    await act(async () => {
+      await result.current.changeSelectedCut("current");
+    });
+
+    expect(fetchSalesByShift.mock.calls.length).toBe(salesCallsBefore);
+    expect(result.current.session).toBeNull();
+    expect(result.current.hasShiftCut).toBe(false);
+    expect(result.current.currentShiftCut).toBeNull();
+    expect(fetchCutsHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("callback realtime con sesión distinta recarga y resetea la vista", async () => {
+    vi.useFakeTimers();
+
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(result.current.session?.id).toBe("s1");
+
+    const realtimeCallback = channelMock.on.mock.calls
+      .map((call) => call[2])
+      .find((cb) => typeof cb === "function");
+
+    const nextSession = {
+      id: "s2",
+      branch_id: "b2",
+      opened_at: "2026-09-02T09:00:00.000Z",
+      opening_amount: "50",
+    };
+
+    fetchActiveSession.mockResolvedValue({ data: nextSession, error: null });
+
+    const sessionCallsBefore = fetchActiveSession.mock.calls.length;
+    const historyCallsBefore = fetchCutsHistory.mock.calls.length;
+    const salesCallsBefore = fetchSalesByShift.mock.calls.length;
+
+    await act(async () => {
+      realtimeCallback();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(700);
+    });
+    await act(async () => {});
+
+    expect(fetchActiveSession.mock.calls.length).toBe(sessionCallsBefore + 1);
+    expect(result.current.session?.id).toBe("s2");
+    expect(fetchCutsHistory).toHaveBeenCalledWith({ branchId: "b2" });
+    expect(fetchCutsHistory.mock.calls.length).toBeGreaterThan(
+      historyCallsBefore
+    );
+    expect(fetchSalesByShift.mock.calls.length).toBeGreaterThan(
+      salesCallsBefore
+    );
+  });
+
+  it("refreshAfterCut sin turno activo limpia la vista actual", async () => {
+    fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
+    fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
+    fetchCutsHistory.mockResolvedValue({ data: [historyCut], error: null });
+
+    const { result } = renderHook(() => useCashCutReport({ user }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.session?.id).toBe("s1");
+
+    fetchActiveSession.mockResolvedValue({ data: null, error: null });
+
+    const salesCallsBefore = fetchSalesByShift.mock.calls.length;
+
+    await act(async () => {
+      await result.current.refreshAfterCut();
+    });
+
+    expect(fetchSalesByShift.mock.calls.length).toBe(salesCallsBefore);
+    expect(result.current.session).toBeNull();
+    expect(result.current.hasShiftCut).toBe(false);
+    expect(result.current.currentShiftCut).toBeNull();
+    expect(fetchCutsHistory).toHaveBeenCalledTimes(1);
   });
 });

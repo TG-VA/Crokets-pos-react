@@ -22,7 +22,7 @@ import {
   splitCashMovements,
   fetchActiveSession,
   fetchBranchName,
-  fetchCutsHistory as fetchCutsHistoryService,
+  fetchCutsHistory,
   fetchExistingShiftCut,
   fetchSalesByShift,
   fetchCancellationsByShift,
@@ -156,16 +156,7 @@ export const useCashCutReport = ({ user }) => {
     setErrorMsg("");
 
     try {
-      const sessionData = await fetchSession();
-
-      if (sessionData) {
-        await fetchCutsHistory(sessionData.branch_id);
-        await loadCurrentSession(sessionData);
-      } else {
-        resetSalesState();
-        setHasShiftCut(false);
-        setCurrentShiftCut(null);
-      }
+      await reloadCurrentView({ refreshHistory: true });
     } catch (err) {
       console.error("Error cargando datos del corte:", err);
       setErrorMsg("No se pudieron cargar los datos del turno.");
@@ -209,8 +200,8 @@ export const useCashCutReport = ({ user }) => {
     return sessionData;
   };
 
-  const fetchCutsHistory = async (branchId) => {
-    const { data, error } = await fetchCutsHistoryService({ branchId });
+  const loadCutsHistory = async (branchId) => {
+    const { data, error } = await fetchCutsHistory({ branchId });
 
     if (error) {
       console.error("Error obteniendo historial de cortes:", error.message);
@@ -226,12 +217,12 @@ export const useCashCutReport = ({ user }) => {
     );
   };
 
-  const loadCurrentSession = async (sessionData) => {
+  const loadCurrentSession = async (sessionData, { resetSales = true } = {}) => {
     setSelectedCutId("current");
     setHistoricalCut(null);
     setUsername(getDisplayUsername());
     setSession(sessionData);
-    resetSalesState();
+    if (resetSales) resetSalesState();
 
     await fetchSalesData({
       sessionData,
@@ -243,15 +234,35 @@ export const useCashCutReport = ({ user }) => {
     await fetchExistingCuts(sessionData.id);
   };
 
+  const reloadCurrentView = async ({
+    refreshHistory = false,
+    resetSales = true,
+    resetSalesOnSessionChange = false,
+  } = {}) => {
+    const activeSession = await fetchSession();
+
+    if (!activeSession) {
+      resetSalesState();
+      setHasShiftCut(false);
+      setCurrentShiftCut(null);
+      return;
+    }
+
+    if (refreshHistory) await loadCutsHistory(activeSession.branch_id);
+
+    const shouldResetSales = resetSalesOnSessionChange
+      ? activeSession.id !== session?.id
+      : resetSales;
+
+    await loadCurrentSession(activeSession, { resetSales: shouldResetSales });
+  };
+
   const changeSelectedCut = async (cutId) => {
     setErrorMsg("");
     setSelectedCutId(cutId);
 
     if (cutId === "current") {
-      const activeSession = await fetchSession();
-      if (activeSession) {
-        await loadCurrentSession(activeSession);
-      }
+      await reloadCurrentView({ refreshHistory: false });
       return;
     }
 
@@ -538,14 +549,7 @@ export const useCashCutReport = ({ user }) => {
     setTotalSalidas(movements.totalSalidas);
   };
 
-  const refreshAfterCut = async () => {
-    const activeSession = await fetchSession();
-
-    if (activeSession) {
-      await fetchCutsHistory(activeSession.branch_id);
-      await loadCurrentSession(activeSession);
-    }
-  };
+  const refreshAfterCut = () => reloadCurrentView({ refreshHistory: true });
 
   useEffect(() => {
     if (user?.id) fetchAllData();
@@ -564,31 +568,10 @@ export const useCashCutReport = ({ user }) => {
 
       realtimeTimerRef.current = setTimeout(async () => {
         try {
-          const activeSession = await fetchSession();
-
-          if (!activeSession?.id) {
-            resetSalesState();
-            setHasShiftCut(false);
-            setCurrentShiftCut(null);
-            return;
-          }
-
-          if (activeSession.id !== session.id) {
-            await loadCurrentSession(activeSession);
-            await fetchCutsHistory(activeSession.branch_id);
-            return;
-          }
-
-          await fetchCutsHistory(activeSession.branch_id);
-
-          await fetchSalesData({
-            sessionData: activeSession,
-            userId: user.id,
-            endAt: null,
+          await reloadCurrentView({
+            refreshHistory: true,
+            resetSalesOnSessionChange: true,
           });
-
-          await fetchCashMovements(activeSession.id);
-          await fetchExistingCuts(activeSession.id);
         } catch (err) {
           console.error("Error actualizando corte en tiempo real:", err);
         }
