@@ -66,6 +66,17 @@ describe("ticketSections", () => {
       expect(lines).toContain("Cliente: PÚBLICO EN GENERAL");
       expect(lines).toContain("Operación: CANJE DE RECOMPENSA");
     });
+
+    it("senala canje cancelado cuando la venta solo-canje esta cancelada", () => {
+      const lines = buildSaleInfoSection({
+        sale: { folio: "F-2" },
+        saleDate: "2026-09-16T18:00:00.000Z",
+        isRewardOnlySale: true,
+        isCancelled: true,
+      });
+
+      expect(lines).toContain("Operación: CANJE CANCELADO");
+    });
   });
 
   describe("buildItemsSection", () => {
@@ -146,6 +157,39 @@ describe("ticketSections", () => {
 
       expect(buildCustomerPointsSection({})).toEqual([]);
     });
+
+    it("imprime devolucion, canje y neto en venta activa", () => {
+      const lines = buildCustomerPointsSection({
+        customerName: "LUZ",
+        earnedPoints: 50,
+        returnedPoints: 20,
+        rewardPointsUsed: 120,
+        hasPartialReturns: true,
+        netPoints: 30,
+        customerPointsBalance: 800,
+      });
+
+      expect(lines).toContain(formatTotalLine("Puntos devolución:", "-20"));
+      expect(lines).toContain(formatTotalLine("Puntos canjeados:", "-120"));
+      expect(lines).toContain(formatTotalLine("Puntos netos:", "+30"));
+    });
+
+    it("invierte etiquetas cuando la venta esta cancelada", () => {
+      const lines = buildCustomerPointsSection({
+        customerName: "LUZ",
+        earnedPoints: 50,
+        returnedPoints: 20,
+        rewardPointsUsed: 120,
+        hasPartialReturns: true,
+        netPoints: 30,
+        customerPointsBalance: 800,
+        isCancelled: true,
+      });
+
+      expect(lines).toContain(formatTotalLine("Puntos descontados:", "-50"));
+      expect(lines).toContain(formatTotalLine("Puntos devueltos:", "+120"));
+      expect(lines).toContain(formatTotalLine("Puntos netos:", "+30"));
+    });
   });
 
   describe("buildRewardsSection", () => {
@@ -192,6 +236,20 @@ describe("ticketSections", () => {
       expect(lines).toContain("Fecha cancelación: 16/9/2026");
       expect(lines).toContain("Motivo:");
     });
+
+    it("omite fecha/hora de cancelación cuando falta cancelledAt", () => {
+      const lines = buildCancellationSection(
+        { cancellation_reason: "ERROR DE CAJA" },
+        { isCancelled: true, cancelledAt: null }
+      );
+
+      expect(lines).toContain(centerText("*** VENTA CANCELADA ***"));
+      expect(lines).toContain("Motivo:");
+      expect(lines).toContain("Método reembolso: N/A");
+      expect(lines.some((line) => line.includes("Fecha cancelación"))).toBe(
+        false
+      );
+    });
   });
 
   describe("buildPartialReturnsSection", () => {
@@ -214,6 +272,21 @@ describe("ticketSections", () => {
       expect(lines).toContain(formatTotalLine("Puntos devolución:", "-10"));
       expect(lines).toContain(formatTotalLine("Puntos desc.:", "-10"));
       expect(lines).toContain(formatTotalLine("Monto devuelto:", "$40.00"));
+    });
+
+    it("omite fecha, items y puntos cuando no existen", () => {
+      const lines = buildPartialReturnsSection(
+        [{ refund_method: "tarjeta", total_refund: 40, return_reason: "DAÑO" }],
+        { sale: { total: 160 }, returnedPoints: 0 }
+      );
+
+      expect(lines).toContain("Devolución #1");
+      expect(lines).toContain("Método: TARJETA");
+      expect(lines.some((line) => line.startsWith("Fecha:"))).toBe(false);
+      expect(lines.some((line) => line.includes("Puntos"))).toBe(false);
+      expect(lines).not.toContain(
+        formatItemLine("Cant", "Devuelto", "Importe")
+      );
     });
   });
 

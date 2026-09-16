@@ -42,4 +42,14 @@ describe("ticketDateFormatters", () => {
       expect(formatDateTime("no-una-fecha")).toBe("");
     });
   });
+
+  describe("entradas de produccion", () => {
+    it("acepta instancias de Date (ruta de reimpresion)", () => {
+      const date = new Date("2026-09-16T18:00:00.000Z");
+
+      expect(formatDate(date)).toBe("16/9/2026");
+      expect(formatTime(date)).toBe("01:00 p.m.");
+      expect(formatDateTime(date)).toBe("16/9/2026 01:00 p.m.");
+    });
+  });
 });

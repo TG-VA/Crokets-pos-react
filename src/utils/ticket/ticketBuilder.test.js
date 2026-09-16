@@ -1001,7 +1001,7 @@ describe("buildTicketText (golden)", () => {
     ].join("\n"));
   });
 
-  it("14. cliente con puntos (ganados/devueltos/canjeados/saldo)", () => {
+  it("14. cliente con puntos (ganados y saldo)", () => {
     const input = {
       branch: BASE_BRANCH,
       sale: {
