@@ -1,5 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
-import { buildTicketText } from "../../../utils/ticketBuilder";
+import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
 import { printTicket } from "../../../utils/ticketPrinter";
 import { getRewardCartItems, getRewardItemPointsPerUnit, getRewardItemTotalPoints } from "./salesRewardsService";
 

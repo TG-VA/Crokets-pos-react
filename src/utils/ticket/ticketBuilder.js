@@ -1,137 +1,18 @@
-const TICKET_WIDTH = 32;
-const TIME_ZONE = "America/Cancun";
-
-const separator = (char = "-") => char.repeat(TICKET_WIDTH);
-const strongSeparator = (char = "=") => char.repeat(TICKET_WIDTH);
-
-const centerText = (text = "", width = TICKET_WIDTH) => {
-  const clean = String(text ?? "");
-  if (clean.length >= width) return clean;
-  const left = Math.floor((width - clean.length) / 2);
-  const right = width - clean.length - left;
-  return " ".repeat(left) + clean + " ".repeat(right);
-};
-
-const money = (value) => {
-  const number = Number(value || 0);
-  return `$${number.toFixed(2)}`;
-};
-
-const normalizeSpaces = (text = "") =>
-  String(text ?? "").replace(/\s+/g, " ").trim();
-
-const normalizeUpper = (text = "") => normalizeSpaces(text).toUpperCase();
-
-const formatDate = (dateValue) => {
-  if (!dateValue) return "";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return date.toLocaleDateString("es-MX", {
-    timeZone: TIME_ZONE,
-  });
-};
-
-const formatTime = (dateValue) => {
-  if (!dateValue) return "";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return date.toLocaleTimeString("es-MX", {
-    timeZone: TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
-const formatDateTime = (dateValue) => {
-  if (!dateValue) return "";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${formatDate(dateValue)} ${formatTime(dateValue)}`;
-};
-
-const wrapText = (text = "", width = TICKET_WIDTH) => {
-  const clean = normalizeSpaces(text);
-  if (!clean) return [""];
-
-  const words = clean.split(" ");
-  const lines = [];
-  let current = "";
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-
-    if (test.length <= width) {
-      current = test;
-      continue;
-    }
-
-    if (current) {
-      lines.push(current);
-    }
-
-    if (word.length > width) {
-      let remaining = word;
-
-      while (remaining.length > width) {
-        lines.push(remaining.slice(0, width));
-        remaining = remaining.slice(width);
-      }
-
-      current = remaining;
-    } else {
-      current = word;
-    }
-  }
-
-  if (current) {
-    lines.push(current);
-  }
-
-  return lines;
-};
-
-const padRight = (text = "", width = 0) => {
-  const clean = String(text ?? "");
-  if (clean.length >= width) return clean.slice(0, width);
-  return clean + " ".repeat(width - clean.length);
-};
-
-const padLeft = (text = "", width = 0) => {
-  const clean = String(text ?? "");
-  if (clean.length >= width) return clean.slice(0, width);
-  return " ".repeat(width - clean.length) + clean;
-};
-
-const formatItemLine = (qty = "", description = "", amount = "") => {
-  const qtyWidth = 5;
-  const gapWidth = 1;
-  const amountWidth = 9;
-  const descWidth = TICKET_WIDTH - qtyWidth - gapWidth - amountWidth;
-
-  const qtyText = padRight(qty, qtyWidth);
-  const descText = padRight(description, descWidth);
-  const amountText = padLeft(amount, amountWidth);
-
-  return `${qtyText}${descText}${" ".repeat(gapWidth)}${amountText}`;
-};
-
-const formatTotalLine = (label = "", value = "") => {
-  const valueText = String(value ?? "");
-  const labelWidth = TICKET_WIDTH - valueText.length;
-  return padRight(label, labelWidth) + valueText;
-};
-
-const pushItemDetailLines = (lines, text = "") => {
-  const indent = "     ";
-  const width = TICKET_WIDTH - indent.length;
-
-  wrapText(text, width).forEach((line) => {
-    lines.push(`${indent}${line}`);
-  });
-};
+import {
+  TICKET_WIDTH,
+  separator,
+  strongSeparator,
+  centerText,
+  money,
+  normalizeSpaces,
+  normalizeUpper,
+  wrapText,
+  formatItemLine,
+  formatTotalLine,
+  pushItemDetailLines,
+  pushWrappedLeft,
+} from "./ticketLayout";
+import { formatDate, formatTime, formatDateTime } from "./ticketDateFormatters";
 
 const toNumber = (value) => {
   const numberValue = Number(value || 0);
@@ -638,12 +519,6 @@ const shouldShowReceivedAndChange = (payments = [], fallbackMethod = "") => {
   );
 
   return hasCash || hasUsd || normalizedMethods.length > 1;
-};
-
-const pushWrappedLeft = (lines, text = "", width = TICKET_WIDTH) => {
-  wrapText(text, width).forEach((line) => {
-    lines.push(line);
-  });
 };
 
 const formatStateShort = (state = "") => {
