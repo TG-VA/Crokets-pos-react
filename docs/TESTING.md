@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (15 sep 2026)
+## Cobertura actual (16 sep 2026)
 
-22 archivos de test (~250 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+31 archivos de test (~352 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
@@ -39,6 +39,15 @@ componentes). No hay carpeta central de tests.
 | Criptografía de contraseñas locales | `src/backend/password.test.js` |
 | Sucursal por dispositivo (RPC) | `src/services/deviceBranchService.test.js` |
 | Caja: sesión y apertura (RPC) | `src/services/cashRegisterService.test.js` |
+| Ticket: golden de salida | `src/utils/ticket/ticketBuilder.test.js` |
+| Ticket: primitivas de layout | `src/utils/ticket/ticketLayout.test.js` |
+| Ticket: formateadores de fecha | `src/utils/ticket/ticketDateFormatters.test.js` |
+| Ticket: extracción de items | `src/utils/ticket/ticketItemFormatters.test.js` |
+| Ticket: servicios de recompensas | `src/utils/ticket/ticketRewardService.test.js` |
+| Ticket: servicios de pagos | `src/utils/ticket/ticketPaymentService.test.js` |
+| Ticket: formateadores de sucursal | `src/utils/ticket/ticketBranchFormatters.test.js` |
+| Ticket: servicios de puntos | `src/utils/ticket/ticketPointsService.test.js` |
+| Ticket: secciones | `src/utils/ticket/ticketSections.test.js` |
 
 ## Patrones y convenciones
 
@@ -67,5 +76,5 @@ No hay todavía:
   secundarios se mockean vacíos y no se asertan sus resultados agrupados.
 
 **Siguiente capa de valor recomendada:** los RPC de ventas (`create_sale_transaction`,
-`create_transfer_order`), la lógica de `cashCutBuilder.js` / `ticketBuilder.js` y el proceso
+`create_transfer_order`), la lógica de `cashCutBuilder.js` / `ticketPrinter.js` y el proceso
 principal de Electron. Ver `KNOWN_ISSUES.md` #8 y #9.
