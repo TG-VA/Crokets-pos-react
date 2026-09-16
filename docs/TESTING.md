@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (16 sep 2026)
 
-31 archivos de test (~358 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+31 archivos de test (~359 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
@@ -40,7 +40,7 @@ componentes). No hay carpeta central de tests.
 | Sucursal por dispositivo (RPC) | `src/services/deviceBranchService.test.js` |
 | Caja: sesión y apertura (RPC) | `src/services/cashRegisterService.test.js` |
 | Ticket: golden de salida | `src/utils/ticket/ticketBuilder.test.js` |
-| Ticket: primitivas de layout | `src/utils/ticket/ticketLayout.test.js` |
+| Ticket: primitivas de layout | `src/utils/ticket/ticketLayoutFormatters.test.js` |
 | Ticket: formateadores de fecha | `src/utils/ticket/ticketDateFormatters.test.js` |
 | Ticket: extracción de items | `src/utils/ticket/ticketItemFormatters.test.js` |
 | Ticket: servicios de recompensas | `src/utils/ticket/ticketRewardService.test.js` |

@@ -90,7 +90,7 @@ en un solo componente:
 | Archivo | Líneas | Nota |
 |---|---|---|
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
-| `src/utils/ticket/` | ~1720 | `ticketBuilder` descompuesto en 9 módulos puros + orquestador |
+| `src/utils/ticket/` | ~1720 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
 | `src/components/.../RewardModal/RewardModal.jsx` | ~1065 | idem |
@@ -132,12 +132,12 @@ recarga del hook), ambos resueltos en el cierre de la Fase 3 (ver más abajo).
 
 **Actualización (16 sep 2026) — refactor de `ticketBuilder.js`:** el generador de tickets se
 descompuso en `src/utils/ticket/` (rama `refactor/ticket-builder`, salida byte-idéntica): primitivas
-de layout (`ticketLayout.js`), formateadores de fecha (`ticketDateFormatters.js`), extracción de
+de layout (`ticketLayoutFormatters.js`), formateadores de fecha (`ticketDateFormatters.js`), extracción de
 items (`ticketItemFormatters.js`), servicios puros de recompensas/pagos/sucursal/puntos
 (`ticketRewardService.js`, `ticketPaymentService.js`, `ticketBranchFormatters.js`,
 `ticketPointsService.js`), secciones (`ticketSections.js`) y `ticketBuilder.js` quedó como
 orquestador que compone secciones. La salida se congeló con 14 golden tests y cada módulo tiene su
-suite unitaria (102 casos en total). Los dos importadores solo cambiaron la ruta.
+suite unitaria (109 casos en total). Los dos importadores solo cambiaron la ruta.
 
 **Pendiente de la Fase 4 (no bloqueante):** `CutHero` recibe 11 props (se podrían agrupar las de
 sesión si crece); `CashInflowsSection`/`CashOutflowsSection` comparten el patrón de filas + total
@@ -306,13 +306,13 @@ Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `import
 - `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
 
 **Actualización 3 (16 sep 2026):** se cubrió el generador de tickets durante su refactor
-(`src/utils/ticket/`, rama `refactor/ticket-builder`) con **108 tests** en 9 suites: 14 golden tests
+(`src/utils/ticket/`, rama `refactor/ticket-builder`) con **109 tests** en 9 suites: 14 golden tests
 de `buildTicketText` que congelan la salida completa del ticket (incluye reimpresión, cancelación,
-devoluciones parciales, kits y canjes), más unitarios por módulo: `ticketLayout` (15, primitivas de
+devoluciones parciales, kits y canjes), más unitarios por módulo: `ticketLayoutFormatters` (15, primitivas de
 ancho, centrado, wrap y líneas de columnas), `ticketDateFormatters` (8, zona `America/Cancun`),
 `ticketItemFormatters` (10, extracción por alias), `ticketRewardService` (16, detección/agrupación de
 canjes), `ticketPaymentService` (9, método, USD y recibido/cambio), `ticketBranchFormatters` (7,
-dirección y CP), `ticketPointsService` (7, saldo y devoluciones) y `ticketSections` (22, rangos de
+dirección y CP), `ticketPointsService` (8, saldo y devoluciones) y `ticketSections` (22, rangos de
 sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo toca I/O.
 
 **Recomendación:** con los servicios de import/kits cubiertos, la siguiente capa de valor sería automatizar los RPC de ventas (`create_sale_transaction`, `create_transfer_order`) y las funciones de `verifierService` / `salesCalculationService` si se quiere supervisión unitaria de las transacciones atómicas.
