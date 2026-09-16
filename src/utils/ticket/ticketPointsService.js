@@ -1,4 +1,4 @@
-import { normalizeSpaces, normalizeUpper } from "./ticketLayout";
+import { normalizeSpaces, normalizeUpper } from "./ticketLayoutFormatters";
 import { toNumber } from "./ticketItemFormatters";
 
 export const getCustomerName = (sale = {}) => {

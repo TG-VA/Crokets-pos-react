@@ -14,9 +14,9 @@ import {
   formatItemLine,
   formatTotalLine,
   pushItemDetailLines,
-} from "./ticketLayout";
+} from "./ticketLayoutFormatters";
 
-describe("ticketLayout", () => {
+describe("ticketLayoutFormatters", () => {
   describe("separator", () => {
     it("repite el ancho del ticket", () => {
       expect(separator()).toBe("-".repeat(TICKET_WIDTH));

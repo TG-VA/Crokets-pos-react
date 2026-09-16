@@ -1,4 +1,4 @@
-import { normalizeUpper } from "./ticketLayout";
+import { normalizeUpper } from "./ticketLayoutFormatters";
 
 export const toNumber = (value) => {
   const numberValue = Number(value || 0);

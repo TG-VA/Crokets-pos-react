@@ -3,7 +3,7 @@ import {
   normalizeSpaces,
   normalizeUpper,
   wrapText,
-} from "./ticketLayout";
+} from "./ticketLayoutFormatters";
 
 export const formatStateShort = (state = "") => {
   const clean = normalizeUpper(state);

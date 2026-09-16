@@ -9,7 +9,7 @@ import {
   formatTotalLine,
   pushItemDetailLines,
   pushWrappedLeft,
-} from "./ticketLayout";
+} from "./ticketLayoutFormatters";
 import { formatDate, formatTime, formatDateTime } from "./ticketDateFormatters";
 import {
   getItemDescription,

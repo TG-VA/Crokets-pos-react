@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { centerText, strongSeparator, separator, formatItemLine, formatTotalLine } from "./ticketLayout";
+import { centerText, strongSeparator, separator, formatItemLine, formatTotalLine } from "./ticketLayoutFormatters";
 import {
   buildHeaderSection,
   buildSaleInfoSection,
