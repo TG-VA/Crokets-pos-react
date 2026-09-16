@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (16 sep 2026)
 
-31 archivos de test (~352 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+31 archivos de test (~358 casos) concentrados en utilidades puras, contratos de servicios y hooks:
 
 | Área | Archivo |
 |---|---|
