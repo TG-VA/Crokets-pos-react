@@ -87,8 +87,9 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
   reglas `recommended` (`@eslint/js`) + `eslint-plugin-react` (jsx-runtime) +
   `eslint-plugin-react-hooks` (recommended). `no-console` con `allow: ["error"]` para preservar los
   `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`.
-- **Prettier 3** con `.prettierrc.json` (2 espacios, `singleQuote`, `trailingComma: es5`, `lf`) y
-  `.prettierignore` (`dist/`, `node_modules/`, `supabase/.temp/`, `supabase/functions/`).
+- **Prettier 3** con `.prettierrc.json` (2 espacios, comillas dobles —estilo dominante del repo—,
+  `trailingComma: es5`, `lf`) y `.prettierignore` (`dist/`, `node_modules/`, `supabase/.temp/`,
+  `supabase/functions/`).
 - Scripts en `package.json`:
   - `npm run lint` — corre ESLint sobre el repo completo (la base de violaciones legacy es
     conocida y **no** se corrige en esta fase; solo archivos nuevos/modificados).
@@ -98,3 +99,7 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
   sobre los archivos del diff** (`git diff --diff-filter=ACM` contra la base del PR/push). Así los
   archivos legacy sin formatear no rompen el pipeline; cualquier archivo nuevo o modificado queda
   obligado a cumplir el estándar. No hay husky ni lint-staged (decisión Fase 0).
+- **Node requerido: `>=22.22.2`** (declarado en `engines` de `package.json` y usado por el CI).
+  `jsdom@30`/`undici@8` exigen Node 22.22.2+ y `vitest@5` 22.12+; **Node 20 no funciona** (el
+  worker de Vitest falla al cargar jsdom con `webidl.util.markAsUncloneable is not a function`).
+  Alinear la versión local con el CI evita discrepancias.
