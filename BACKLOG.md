@@ -18,7 +18,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
 * [ ] Transacciones atómicas (RPC) faltantes en Supabase para Importación y Kits — ver `KNOWN_ISSUES.md` #5
 * [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
-* [ ] Verificar con datos reales la base de la comisión % (bruta `unit_price*qty` vs neta `total_price`) y normalizar bordes (precedencia value/percent, `has_commission` en 0, tipo `percentage`) — ver `KNOWN_ISSUES.md` #19 y #20
+* [x] Verificar con datos reales la base de la comisión % — resuelto: RPC y client ya coinciden en el neto `unit_price*qty` (`= total_price`) y los bordes de #20 no ocurren en datos (YAGNI); ver `KNOWN_ISSUES.md` #19 y #20
 
 ## Prioridad Media (Infraestructura y Testing)
 

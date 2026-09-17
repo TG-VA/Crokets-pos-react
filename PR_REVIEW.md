@@ -107,14 +107,15 @@ Commits revisados: `1ef4acc`, `612b68a`, `96a622d`, `30328a1`, `8123f72` (estado
   el N+1 de `sales`+`sale_details` en chunks (`20260910120200.sql`).
 - OCP/ISP/KISS: sin bloques JSX duplicados; las agregaciones se mueven al servidor en un solo place.
 
-**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO con 1 hallazgo resuelto y 2 riesgos abiertos:**
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO con 1 hallazgo resuelto y 2 riesgos verificados con datos reales (sin cambio de código):**
 - Hallazgo resuelto (F1): filtro de ventas canceladas `!= 'canceled'` no matcheaba el enum canónico
   `'cancelled'`/`'cancelada'` → pagaba comisión por tickets cancelados. Corregido en
   `20260910120500_fix_commissions_status_filter.sql` (`NOT IN ('cancelled','cancelada')`). Ver
   `KNOWN_ISSUES.md` #18.
-- Riesgos abiertos (requieren data real, no bloqueantes del PR): base de la comisión % bruta vs
-  neta y precedencia `value/percent` + bordes de `has_commission`/`percentage` — ver
-  `KNOWN_ISSUES.md` #19 y #20.
+- Riesgos verificados con datos reales (17 sep 2026, rama `fix/security-hardening`): la RPC y el
+  client ya coinciden en la base neta (`unit_price*qty = total_price` en las 239 filas de
+  `sale_details`) y los bordes de precedencia `value/percent`, `has_commission` y tipo `percentage`
+  no ocurren en los 44 productos (YAGNI, sin migración) — ver `KNOWN_ISSUES.md` #19 y #20.
 - `ticket_number`: el RPC devuelve `upper(substring(id::text,1,8))`, idéntico a
   `id.substring(0,8).toUpperCase()` del app — consistente.
 - Caso límite de la fuente de verdad (multi-sucursal en inventario): los costos se agregan por

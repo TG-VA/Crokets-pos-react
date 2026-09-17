@@ -422,7 +422,7 @@ página es limitado y filtrado en el servidor.
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
 ### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
-**Estado:** abierto — requiere verificación con datos reales antes de tocar código (10 sep 2026).
+**Estado:** Resuelto — 17 sep 2026, verificado con datos reales de Supabase; decisión: mantener base neta (sin cambio de código).
 
 La RPC calcula la comisión porcentual sobre `unit_price * quantity` (monto bruto), mientras el
 client legacy (`commissionsCalculationService.js:45`) la calculaba sobre `total_price` (neto de
@@ -433,12 +433,18 @@ RPC no replica la inferencia de descuentos implícitos del legacy (diferencia `s
 **Impacto:** posible divergencia en montos de comisión y en el filtro "con descuento" del reporte
 respecto a los resultados previos del RPC.
 
-**Recomendación:** validar con una muestra real de ventas con descuento si `sale_details.total_price`
-es el neto post-descuento y decidir la base canónica (neto) para alinear la RPC. Vinculado a
+**Resolución:** verificado con datos reales (239 filas de `sale_details`): `unit_price * quantity`
+coincide con `total_price` en **las 239 filas**, por lo que la RPC (`unit_price*qty`) y el client
+(`commissionsCalculationService.js:45`, `total_price`) ya calculan la misma base neta. No hay
+descuentos implícitos (`discount_amount = 0` junto con `unit_price*qty <> total_price` = 0 filas).
+`unit_price` ya es el precio final (igual a `final_unit_price` en las filas con descuento) y
+`original_unit_price` es el precio de lista, que nadie usa como base. Se decide mantener la base
+neta actual; no requiere migración. La premisa original de diferencia bruta/neta (`sale_price` vs
+`unit_price`) no existe en los datos: `sale_details` no tiene columna `sale_price`. Vinculado a
 `BACKLOG.md`.
 
 ### 20. Precedencia commission_value/percent y bordes de has_commission y tipo `'percentage'`
-**Estado:** abierto — bordes de bajo impacto (10 sep 2026).
+**Estado:** Resuelto — 17 sep 2026, decisión YAGNI: no se normaliza (los bordes no ocurren en datos; sin cambio de código).
 
 En la RPC de comisiones: la comisión % usa `COALESCE(commission_percent, commission_value, 0)`
 mientras el legacy usaba `commission_value || commission_percent` (precedencia opuesta,
@@ -449,8 +455,14 @@ legacy, `:44`) ya no se interpreta — se calcula como flat.
 **Impacto:** bordes: filas marcadas comisionables con montos 0, productos con ambos campos seteados
 distintos, o configurados con tipo `percentage`.
 
-**Recomendación:** al tocar la base de comisión (punto 19), normalizar la precedencia,
-`has_commission` y el alias `percentage`.
+**Resolución:** verificado con datos reales (44 productos): todos tienen
+`commission_type = 'percent'` y `commission_percent = commission_value`, por lo que la precedencia
+opuesta resulta indistinta; no hay filas con tipo `'percentage'` ni con `commission_enabled = true`
+y valor 0. `has_commission` se mantiene ligado a la configuración
+(`commission_enabled OR dept_commission_enabled`), que es la semántica vigente de la RPC y coincide
+con los datos. Se decide no normalizar (YAGNI) y no migrar; queda documentado como riesgo latente
+para el caso de que aparezca el tipo `'percentage'`, productos con ambos campos distintos, o
+`commission_enabled = true` con valor 0.
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
 **Estado:** abierto — escalabilidad (10 sep 2026).
