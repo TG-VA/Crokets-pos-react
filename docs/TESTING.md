@@ -78,3 +78,23 @@ No hay todavía:
 **Siguiente capa de valor recomendada:** los RPC de ventas (`create_sale_transaction`,
 `create_transfer_order`), la lógica de `cashCutBuilder.js` / `ticketPrinter.js` y el proceso
 principal de Electron. Ver `KNOWN_ISSUES.md` #8 y #9.
+
+## Linter y formateo (ESLint 9 + Prettier, incremental)
+
+Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` #8):
+
+- **ESLint 9 flat config** en `eslint.config.mjs` (package.json es CommonJS, por eso `.mjs`):
+  reglas `recommended` (`@eslint/js`) + `eslint-plugin-react` (jsx-runtime) +
+  `eslint-plugin-react-hooks` (recommended). `no-console` con `allow: ["error"]` para preservar los
+  `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`.
+- **Prettier 3** con `.prettierrc.json` (2 espacios, `singleQuote`, `trailingComma: es5`, `lf`) y
+  `.prettierignore` (`dist/`, `node_modules/`, `supabase/.temp/`, `supabase/functions/`).
+- Scripts en `package.json`:
+  - `npm run lint` — corre ESLint sobre el repo completo (la base de violaciones legacy es
+    conocida y **no** se corrige en esta fase; solo archivos nuevos/modificados).
+  - `npm run format` — `prettier --write .` (normalización opt-in).
+  - `npm run format:check` — `prettier --check .`.
+- **CI incremental:** el workflow `.github/workflows/ci.yml` corre ESLint y Prettier **únicamente
+  sobre los archivos del diff** (`git diff --diff-filter=ACM` contra la base del PR/push). Así los
+  archivos legacy sin formatear no rompen el pipeline; cualquier archivo nuevo o modificado queda
+  obligado a cumplir el estándar. No hay husky ni lint-staged (decisión Fase 0).
