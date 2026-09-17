@@ -90,7 +90,7 @@ en un solo componente:
 | Archivo | Líneas | Nota |
 |---|---|---|
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
-| `src/utils/ticketBuilder.js` | ~1500 | mezcla formato y lógica de negocio |
+| `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
 | `src/components/.../RewardModal/RewardModal.jsx` | ~1065 | idem |
@@ -129,6 +129,15 @@ Como mejora opcional futura, `CashCut.module.css` sigue siendo un único módulo
 vistas (se podría segregar por sección). Con esto se completan las fases 1-4 del refactor de
 `CashCut.jsx`; quedaron como seguimiento #46 (renombrar `fetchCutsHistory`) y #47 (unificar flujos de
 recarga del hook), ambos resueltos en el cierre de la Fase 3 (ver más abajo).
+
+**Actualización (16 sep 2026) — refactor de `ticketBuilder.js`:** el generador de tickets se
+descompuso en `src/utils/ticket/` (rama `refactor/ticket-builder`, salida byte-idéntica): primitivas
+de layout (`ticketLayoutFormatters.js`), formateadores de fecha (`ticketDateFormatters.js`), extracción de
+items (`ticketItemFormatters.js`), servicios puros de recompensas/pagos/sucursal/puntos
+(`ticketRewardService.js`, `ticketPaymentService.js`, `ticketBranchFormatters.js`,
+`ticketPointsService.js`), secciones (`ticketSections.js`) y `ticketBuilder.js` quedó como
+orquestador que compone secciones. La salida se congeló con 14 golden tests y cada módulo tiene su
+suite unitaria (109 casos en total). Los dos importadores solo cambiaron la ruta.
 
 **Pendiente de la Fase 4 (no bloqueante):** `CutHero` recibe 11 props (se podrían agrupar las de
 sesión si crece); `CashInflowsSection`/`CashOutflowsSection` comparten el patrón de filas + total
@@ -223,7 +232,7 @@ rama `perf/report-optimization`, 10 de septiembre de 2026.
 
 Las funciones `get_commissions_report_data` (migraciones `20260910120200` y `20260910120400`)
 filtrarían `s.status != 'canceled'` (una sola "L"). El enum canónico de ventas canceladas en la app
-es `'cancelled'` (`src/utils/ticketBuilder.js:941`, `reportsDashboardUtils.js:149`,
+es `'cancelled'` (`src/utils/ticket/ticketBuilder.js`, `reportsDashboardUtils.js:149`,
 `salesHistoryService.js:13`) con `'cancelada'` en importaciones legacy, por lo que la exclusión
 nunca matcheaba y las ventas canceladas devengaban comisión.
 
@@ -295,6 +304,16 @@ Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `import
 - `importUtils` (14 tests de funciones puras: `normalizeText`, `normalizeHeader`, `parseBoolean`, `parseNumber`, `formatCurrency` y catálogos de columnas).
 - `productsImportService` (11 tests con `supabase` y `validateSatClaves` mockeados: validación de datos, sucursales/departamentos, creación de departamentos faltantes y `processImportTransaction` con inventario por sucursal, productos globales y rollback cuando falla la inserción de inventario).
 - `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
+
+**Actualización 3 (16 sep 2026):** se cubrió el generador de tickets durante su refactor
+(`src/utils/ticket/`, rama `refactor/ticket-builder`) con **109 tests** en 9 suites: 14 golden tests
+de `buildTicketText` que congelan la salida completa del ticket (incluye reimpresión, cancelación,
+devoluciones parciales, kits y canjes), más unitarios por módulo: `ticketLayoutFormatters` (15, primitivas de
+ancho, centrado, wrap y líneas de columnas), `ticketDateFormatters` (8, zona `America/Cancun`),
+`ticketItemFormatters` (10, extracción por alias), `ticketRewardService` (16, detección/agrupación de
+canjes), `ticketPaymentService` (9, método, USD y recibido/cambio), `ticketBranchFormatters` (7,
+dirección y CP), `ticketPointsService` (8, saldo y devoluciones) y `ticketSections` (22, rangos de
+sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo toca I/O.
 
 **Recomendación:** con los servicios de import/kits cubiertos, la siguiente capa de valor sería automatizar los RPC de ventas (`create_sale_transaction`, `create_transfer_order`) y las funciones de `verifierService` / `salesCalculationService` si se quiere supervisión unitaria de las transacciones atómicas.
 
@@ -597,7 +616,7 @@ que es una cuenta de prueba.
 `AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
 (EOF newline), pero decenas de archivos preexistentes en `src/` no lo cumplían (p. ej.
 `src/main.jsx`, `src/App.jsx`, `src/contexts/BranchContext.jsx`, `src/hooks/useEscapeKey.js`,
-`src/backend/server.js`, `src/utils/ticketBuilder.js`). Durante el refactor de `ProductsContext` se
+`src/backend/server.js`, `src/utils/ticket/ticketBuilder.js`). Durante el refactor de `ProductsContext` se
 corrigió en los archivos nuevos de `src/services/products/` y en `src/contexts/ProductsContext.jsx`.
 
 **Impacto:** diffs con ruido y advertencias de herramientas; va contra el estándar del propio repo.

@@ -8,7 +8,7 @@ import {
 
 // IMPORTAMOS LAS UTILIDADES DE IMPRESIÓN AQUÍ
 import { printTicket } from "../../../../utils/ticketPrinter";
-import { buildTicketText } from "../../../../utils/ticketBuilder";
+import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 
 export const useSalesHistory = ({ isOpen, branchId, user, branch, onSaleCancelled }) => {
   const [searchFolio, setSearchFolio] = useState("");
