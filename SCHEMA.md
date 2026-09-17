@@ -3,18 +3,21 @@
 Este documento es un **inventario de tablas y columnas** del schema `public` de Supabase, generado
 por introspección directa (`information_schema`) el 24 de agosto de 2026. No sustituye el detalle
 completo del Dashboard de Supabase, pero permite entender la estructura del proyecto sin salir del
-repositorio. Si el schema cambia, este documento debe regenerarse. Las queries de introspección
-(`information_schema`) se ejecutaron de forma ad-hoc contra el proyecto remoto y **no están
-versionadas en el repo** (no existe `supabase_schema_introspection.sql`); si se vuelve a regenerar,
-conviene versionar el script de introspección.
+repositorio. Si el schema cambia, este documento debe regenerarse ejecutando el script versionado
+`supabase/scripts/schema_introspection.sql` (solo lectura) y actualizando las tablas de abajo.
 
-**Pendiente:** no hay migraciones SQL versionadas en `supabase/migrations/` (ver `KNOWN_ISSUES.md`
-punto 6). Este documento es actualmente la única referencia de schema versionada en Git.
+**Actualización (17 sep 2026) — rama `chore/tech-debt-foundations`:** el schema completo quedó
+versionado como baseline ejecutable en
+`supabase/migrations/00000000000000_remote_schema_baseline.sql` (`pg_dump` schema-only: 50 tablas,
+30 funciones, 31 políticas RLS), marcado como aplicado en el remoto con `supabase migration repair`.
+El script de introspección que antes se corría ad-hoc ya está versionado en
+`supabase/scripts/schema_introspection.sql`. Con esto este documento deja de ser la única referencia
+de schema en Git (ver `KNOWN_ISSUES.md` #6 y `docs/SUPABASE_MIGRATIONS.md`). `get_email_by_username`,
+que se documenta más abajo en la tabla de RPCs, también quedó capturada en una migración
+(`20260917180000`, ver `KNOWN_ISSUES.md` #41).
 
-**Actualización (10 sep 2026):** existe la carpeta `supabase/migrations/` con migraciones
-funcionales para RPCs de reportes (paginación de productos, caja, comisiones, inventario, índices de
-performance) y correcciones (filtro de estados en comisiones); sigue pendiente un baseline completo
-del schema existente (`KNOWN_ISSUES.md` #6).
+**Pendiente:** regenerar las tablas de inventario con el script versionado — este documento es del
+24 ago 2026 y no refleja aún las migraciones posteriores (`app_settings`, RPCs de caja y login).
 
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 

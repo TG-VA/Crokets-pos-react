@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild native sqlite3
+        run: npm rebuild sqlite3
+
+      - name: Compute diff base
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            git fetch origin main
+            BASE="$(git rev-parse origin/main)"
+          fi
+          echo "BASE=${BASE}" >> "$GITHUB_OUTPUT"
+
+      - name: ESLint (incremental sobre el diff)
+        run: |
+          git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \
+            | { rg '\.(js|jsx|mjs)$' || true; } \
+            | xargs -r npx eslint
+
+      - name: Prettier (incremental sobre el diff)
+        run: |
+          git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \
+            | { rg '\.(js|jsx|mjs|json|html|css)$' || true; } \
+            | xargs -r npx prettier --check
+
+      - name: Test
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build:frontend

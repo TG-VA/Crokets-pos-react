@@ -91,12 +91,22 @@ en un solo componente:
 |---|---|---|
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
 | `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
-| `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
-| `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
-| `src/components/.../RewardModal/RewardModal.jsx` | ~1065 | idem |
+| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 1055 | objetivo del refactor (Fase 3) |
+| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 640 | formulario + validación + datos; PR posterior `refactor/products-modify` |
+| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345 | no requiere refactor; fuera de alcance |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
 dividir un componente grande"). No requiere reescritura de golpe.
+
+**Re-baseline (17 sep 2026) — rama `chore/tech-debt-foundations`:** se verificaron los conteos
+reales de los componentes pendientes (`wc -l`): `RewardModal.jsx` = **1055** (no 1065),
+`ProductsModify.jsx` = **640** (no 1330) y `ProductsPromotions.jsx` = **345** (no 1265). La ruta de
+`ProductsModify`/`ProductsPromotions` se corrigió a
+`src/components/ProductsComponents/PageProducts/` y la de `RewardModal` a
+`src/components/CustomersComponents/Modals/RewardModal/`. Decisión de alcance (Fase 0): el refactor
+de la Fase 3 será **solo `RewardModal.jsx`**; `ProductsModify.jsx` queda para un PR posterior y
+`ProductsPromotions.jsx` (345 líneas) se marca como **no requiere refactor** (queda fuera de
+alcance).
 
 **Actualización (15 sep 2026):** refactor incremental de `CashCut.jsx` en curso (rama
 `refactor/cashcut-calculation`). Fase 1 completada: se extrajeron todas las agregaciones y totales
@@ -252,7 +262,7 @@ tickets `'cancelled'`/`'cancelada'`. El test contract en
 ## Medio
 
 ### 6. Sin migraciones SQL versionadas para Supabase
-**Estado:** parcialmente resuelto — 9 de septiembre de 2026.
+**Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations`.
 
 El schema completo de las tablas remotas (ver `docs/SCHEMA.md`) vive únicamente en el proyecto de
 Supabase (dashboard remoto). No había carpeta `supabase/migrations/` en el repo, por lo que no
@@ -272,6 +282,20 @@ snapshot ejecutable.
 migración inicial) y adoptar el flujo de migraciones versionadas para los próximos cambios.
 Ver `PERMISSIONS.md` / `SCHEMA.md` para el estado actual detallado.
 
+**Resolución (17 sep 2026):** se generó el baseline completo del schema `public` con
+`supabase db dump --linked --schema public` (PostgreSQL 17.6 del remoto, `pg_dump` 18.6) y se
+versionó como `supabase/migrations/00000000000000_remote_schema_baseline.sql` (50 tablas, 30
+funciones, 31 políticas RLS; schema-only, sin datos). El version `00000000000000` es el más antiguo
+a propósito: en un entorno nuevo el baseline se aplica **primero** y crea las tablas base antes de
+que corran las migraciones de RPC (los cuerpos `plpgsql`/`sql` referencian esas tablas). En el
+proyecto remoto ya existente se marcó como aplicado con
+`supabase migration repair --status applied 00000000000000`, de modo que `supabase db push` no
+intenta recrear objetos presentes y la historia local/remota queda alineada (verificado con
+`supabase migration list`: 15 versiones en ambos lados). Además se versionó el script de
+introspección `supabase/scripts/schema_introspection.sql` (antes ad-hoc, ver `SCHEMA.md`) y se movió
+el SQL legacy de la raíz a `supabase/legacy/` para no confundirlo con las migraciones. Ver
+`docs/SUPABASE_MIGRATIONS.md`.
+
 ### 7. Discrepancia README vs. dependencias reales (SQLite)
 **Estado:** corregido en la documentación nueva, pendiente en el README original si aplica.
 
@@ -280,7 +304,8 @@ El `README.MD` original mencionaba `better-sqlite3` como ORM, pero `package.json
 correctamente en `AGENTS.md` y `docs/SCHEMA.md`.
 
 ### 8. Sin `lint` ni `test` configurados
-**Estado:** parcialmente resuelto — 9 de septiembre de 2026 (test listo; lint pendiente).
+**Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations` (test desde el 9 sep; lint
+completado).
 
 No había ESLint/Prettier ni framework de testing configurado en `package.json`. Se configuró
 **Vitest 5** (`vitest.config.js` con globals y jsdom, script `npm test`) y quedó habilitada la
@@ -294,6 +319,16 @@ contratos `{success, data, error, partial}` de create/update/delete, barcode dup
 `partial:true` cuando el inventario falla tras crear el producto y errores inesperados).
 El lint (ESLint/Prettier) sigue sin configurarse: no es bloqueante inmediato, pero vale la pena
 introducir al menos un linter para mantener consistencia de estilo conforme el equipo crece.
+
+**Resolución (17 sep 2026):** se configuró ESLint 9 (flat config `eslint.config.mjs`:
+`js.configs.recommended`, `react`, `react-hooks`, `no-console` permitiendo solo `console.error`,
+`no-unused-vars` como warning) y Prettier (`.prettierrc.json` con tabWidth 2, comillas dobles —
+el estilo dominante del repo —, `trailingComma: es5`, fin de línea LF; `.prettierignore`), con los
+scripts `npm run lint` / `npm run format` / `npm run format:check`. Para no bloquear por la deuda
+heredada, el **CI** (`.github/workflows/ci.yml`, Node 20) corre ESLint y Prettier solo sobre las
+líneas agregadas/modificadas del diff, además de `npm test` y `npm run build:frontend`. El repo
+preexistente arrastra 684 problemas de lint (140 errores, 544 warnings) que **no** se corrigen en
+esta fase; se saldan incrementalmente conforme se tocan los archivos. Ver `docs/TESTING.md`.
 
 ### 9. Falta de Unit Tests para Utilidades Puras
 **Estado:** parcialmente resuelto — 9 de septiembre de 2026.
@@ -869,7 +904,7 @@ forma eager y no había `manualChunks`.
 gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
 ### 41. `get_email_by_username` sin definición en migraciones versionadas
-**Estado:** Abierto — detectado el 14 sep 2026 durante la optimización del login.
+**Estado:** Resuelto — 17 sep 2026, rama `chore/tech-debt-foundations`.
 
 La RPC `get_email_by_username` la usa el login (`src/pages/Login/Login.jsx`) y está documentada en
 `SCHEMA.md`, pero **no existe ningún `CREATE FUNCTION` para ella en `supabase/migrations/`**: solo
@@ -883,6 +918,16 @@ al resolver el email; el esquema versionado no refleja el remoto.
 verificar sus grants. Se llama antes de autenticar, por lo que requiere `EXECUTE` para `anon` (misma
 excepción pre-auth que #30); conviene confirmar que solo devuelve el email y nada más.
 No se corrige en el PR de login para no ampliar su alcance.
+
+**Resolución (17 sep 2026):** se capturó la definición exacta del remoto con `pg_get_functiondef`
+(vía Management API) y se versionó como
+`supabase/migrations/20260917180000_get_email_by_username.sql`: `SECURITY DEFINER`, `STABLE`,
+`search_path = public` fijo, retorna solo el email de un usuario `status = true`. Se normalizaron los
+grants según la convención del repo: `REVOKE ALL ... FROM public` + `GRANT EXECUTE` a `anon` (login
+pre-auth, excepción de #30), `authenticated` y `service_role`. Aplicada al remoto con
+`supabase db push`; verificado por introspección que la ACL resultante es
+`anon/authenticated/service_role` (sin el grant implícito a `public`) y que el cuerpo coincide.
+Con esto el login puede recrearse en un entorno nuevo solo con las migraciones versionadas.
 
 ### 42. `--scroll-distance` usada pero nunca definida (marquee de productos inerte)
 **Estado:** Resuelto — 15 sep 2026, rama `cleanup/quick-win-debt`.
