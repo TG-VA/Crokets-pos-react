@@ -183,15 +183,17 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
   orquestador (`src/utils/ticket/ticketBuilder.js:1-127`). Fuera del paquete solo se consume el
   export nombrado `buildTicketText`.
 - OCP/ISP/KISS: los builders reciben únicamente lo que consumen; sin barrel/index ni config futura.
-- Límite de líneas: `ticketSections.js` (654) y `ticketRewardService.js` (430) superan el umbral de
+- Límite de líneas: `ticketSections.js` (640) y `ticketRewardService.js` (430) superan el umbral de
   300-400 de esta guía, pero son módulos puros sin UI/DB/estado (no "god components") y
   `CODE_STANDARDS.md` (KISS) desaconseja fragmentarlos; se dejan documentados. Origen: 1501 líneas
-  → máximo actual 654.
+  → máximo actual 640.
 - Pruebas en desarrollo: la impresión física del ticket **no** se probó manualmente; la
   equivalencia se garantiza con golden tests byte-idénticos. **QA manual pendiente.**
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
-- Equivalencia verificada contra `origin/main`: 54/54 helpers token-idénticos; secuencia de
+- Equivalencia verificada contra `origin/main`: 53/54 helpers token-idénticos y
+  `getPartialReturnPointsFromReturns` refactorizado a delegar en `getReturnPointsFromReturn`
+  (cadena de alias idéntica, ver re-auditoría al final); secuencia de
   `lines.push` de `buildTicketText` 104 = 104 idéntica (cubre ramas no asertadas); setup del
   orquestador y orden de composición idénticos; `buildTicketText` difiere solo por la descomposición
   esperada. Golden creado en el commit 1 (antes de extraer) → autoritativo.
@@ -204,7 +206,7 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
 - Emojis: rango Unicode sobre líneas agregadas del diff sin resultados; `git log` sin emojis.
 - `console.log`/`console.warn`: sin resultados en líneas agregadas; `src/utils/ticket/` sin bloques
   `catch` (no requiere `console.error`).
-- EOF newline: 24/24 archivos del diff y todos los `src/utils/ticket/*` terminan en `0a`.
+- EOF newline: 25/25 archivos del diff y todos los `src/utils/ticket/*` terminan en `0a`.
 
 **§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` (#3 y #9 con conteos y desglose corregidos),
 `docs/TESTING.md` (31 archivos / ~359 casos), `BACKLOG.md:17` y esta sección actualizados.
@@ -218,6 +220,32 @@ parciales sin `created_at`/`items` cubiertas en `fefdcc5`.
 - MINOR — resueltos: self-referencias y conteos de `KNOWN_ISSUES.md`; naming
   `ticketLayout.js` → `ticketLayoutFormatters.js` (`91c7087`); duplicación DRY → `getReturnPointsFromReturn`
   (`6322c9b`).
-- SUGERENCIA: `ticketSections.js` (654 líneas) podría dividirse en `sections/` si crece (hoy
+- SUGERENCIA: `ticketSections.js` (640 líneas) podría dividirse en `sections/` si crece (hoy
   choca con KISS/YAGNI).
 - QA manual pendiente del revisor: imprimir un ticket real con `npm run dev`.
+
+### Re-auditoría (16 de septiembre de 2026)
+
+Paso de la rama completo (commits `e47468b` → el presente) contra `origin/main` y contra los
+estándares del repo, con el objetivo de quedar sin hallazgos. Hallazgos y estado:
+
+1. **CORREGIDO — "54/54 helpers token-idénticos" (línea §2).** Tras `6322c9b` (DRY) son 53/54;
+   `getPartialReturnPointsFromReturns` ahora delega en `getReturnPointsFromReturn`. Se verificó que
+   la cadena de alias de puntos es idéntica a la del original y que la región de devoluciones
+   parciales de `buildPartialReturnsSection` es idéntica salvo el wrapper `return lines`.
+2. **CORREGIDO — "24/24 archivos del diff" (§5).** El diff actual vs `origin/main` son 25 archivos
+   (este propio informe entró al diff); se ajustó a 25/25 con EOF verificado en todos.
+3. **CORREGIDO — "ticketSections.js (654)" (§1 y SUGERENCIA).** Tras el DRY el archivo quedó en 640
+   líneas; se actualizaron las tres menciones.
+4. **CORREGIDO — `KNOWN_ISSUES.md` #3 (filas ~1720).** El total real de fuente en `src/utils/ticket/`
+   es 1711; se ajustó a `~1710`.
+5. **INFORMATIVO (sin cambio de código) — default de `getReturnPointsFromReturn(ret = {})`.** Con un
+   elemento `undefined` en el arreglo de devoluciones devolvería 0 donde el original lanzaba
+   TypeError; con `null` ambos lanzan. No es alcanzable en producción (los datos provienen de
+   JSON/Supabase, donde `undefined` no existe), así que es un endurecimiento intencional y no una
+   regresión.
+
+Verificación final de la re-auditoría: 109 tests en el paquete ticket (9 suites), `npm test`
+359/359, `npm run build:frontend` OK, sin emojis ni `console.log`/`console.warn` en líneas
+agregadas del diff, sin referencias a `ticketLayout` ni a `src/utils/ticketBuilder.js`, grafo de
+imports acíclico.

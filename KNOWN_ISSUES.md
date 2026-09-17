@@ -90,7 +90,7 @@ en un solo componente:
 | Archivo | Líneas | Nota |
 |---|---|---|
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
-| `src/utils/ticket/` | ~1720 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
+| `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
 | `src/components/.../ProductsModify/ProductsModify.jsx` | ~1330 | formulario + validación + datos |
 | `src/components/.../ProductsPromotions/ProductsPromotions.jsx` | ~1265 | idem |
 | `src/components/.../RewardModal/RewardModal.jsx` | ~1065 | idem |
