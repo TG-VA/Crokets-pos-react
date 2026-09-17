@@ -250,3 +250,64 @@ Verificación final de la re-auditoría: 109 tests en el paquete ticket (9 suite
 359/359, `npm run build:frontend` OK, sin emojis ni `console.log`/`console.warn` en líneas
 agregadas del diff, sin referencias a `ticketLayout` ni a `src/utils/ticketBuilder.js`, grafo de
 imports acíclico.
+
+---
+
+## Informe de seguridad — Fase 1 (rama `fix/security-hardening`, 17 sep 2026)
+
+Alcance: cierre de #19/#20 (ya commiteado) y hardening SEC de #29, #38, #30, #13 y #10.
+
+### Cambios aplicados
+
+| Ítem | Tipo | Archivo | Estado |
+|---|---|---|---|
+| #29 validación de sucursal en caja | Migración SQL | `supabase/migrations/20260917190000_cash_register_branch_validation.sql` | Creada, **no aplicada al remoto** (pendiente `supabase db push`) |
+| #30 excepción `get_branch_by_device` | Docs | `docs/SUPABASE_MIGRATIONS.md`, `PERMISSIONS.md` | Documentada |
+| #38 auditoría SEC-3 | Migración SQL + Docs | `supabase/migrations/20260917200000_harden_transactional_rpcs.sql`, `docs/EDGE_FUNCTIONS.md`, este informe | Mitigado parcialmente; riesgo aceptado en mutaciones admin |
+| #13/#10 matriz RLS/roles | Docs | `PERMISSIONS.md` | Decidido: "hardening sin habilitar RLS", riesgo aceptado |
+
+La migración #29 agrega `_user_can_access_branch(p_branch_id)` (`SECURITY DEFINER`, exento
+`is_admin()`) y exige membresía activa en `user_branches` a `get_cash_register_session` y
+`open_cash_register`, lanzando `42501` (`insufficient_privilege`) si no pertenece. No se tocaron las
+migraciones ya aplicadas.
+
+### Auditoría #38 — acciones administrativas por endpoint
+
+| Acción UI | Mutación server-side | Control actual | ¿Exige admin? |
+|---|---|---|---|
+| `cash_exit_access` | `INSERT cash_movements` | RLS por dueño (`user_id = auth.uid()`) + sesión abierta | No |
+| `customers_deactivate` | `UPDATE customers` | RLS deshabilitado (solo `GRANT` de tabla) | No |
+| `deactivate_fiscal_customer` | `UPDATE customers` | RLS deshabilitado | No |
+| `products_delete_access` | `DELETE products` | RLS deshabilitado | No |
+| `invoice_settings_access` | `UPDATE cfdi_settings` | RLS activo sin políticas (deny-all salvo RPC/owner) | Parcial |
+| `reports_*`/`products_*_access` | Navegación (sin mutación) | No aplica | No aplica |
+
+Las RPC transaccionales (`create_sale_transaction` ×3, `cancel_sale_transaction`,
+`create_partial_return_transaction`, `create_transfer_order`, `cancel_transfer_order`,
+`receive_transfer_order`, `cancel_sale`, `complete_sale`) eran `SECURITY DEFINER` con `EXECUTE` para
+`anon`/`PUBLIC` y recibían `p_user_id` del cliente en vez de derivarlo de `auth.uid()`.
+
+**Decisión y mitigación aplicada (17 sep 2026):** se eligió el modelo "hardening sin habilitar RLS"
+(no se activan políticas sobre las ~37 tablas sin RLS). La migración
+`20260917200000_harden_transactional_rpcs.sql` (a) revoca `EXECUTE` a `anon` y `PUBLIC` en esas RPCs
+(solo `authenticated`/`service_role`) y (b) fija `p_user_id := coalesce(auth.uid(), p_user_id)`, de
+modo que un usuario autenticado no puede suplantar a otro; el valor entrante solo se conserva sin
+sesión (`service_role`). `is_admin()` resuelve `users.id = auth.uid()`, así que el uid coincide con
+`public.users.id`.
+
+**Conclusión #38:** mitigado lo mitigable sin la matriz de roles. Persisten como **riesgo aceptado**:
+las mutaciones administrativas vía PostgREST (`cash_movements`, `customers`, `products`) que cualquier
+usuario autenticado puede invocar saltándose el modal; y la falta de validación/auditoría de
+`reason`/`action`/`targetId` en `authorize-admin-action`. Se resolverían con RLS por módulo +
+`has_permission()`, o con un token de un solo uso desde `authorize-admin-action` (ver
+`docs/EDGE_FUNCTIONS.md`).
+
+### Verificación
+
+- `npm test`: 359/359 en 31 archivos. `npm run build:frontend`: OK (4.29 s).
+- Migraciones #29 y #38/SEC-3: sin build de DB local (Docker no disponible). Ambas se **validaron
+  ejecutándolas contra el remoto dentro de `BEGIN; … ROLLBACK;`** (HTTP 201) y confirmando después que
+  no persistió nada (helper ausente / ACL intacta). Aplicación remota pendiente de `supabase db push`.
+- La migración de hardening se generó desde `pg_get_functiondef` del remoto (sin transcripción manual)
+  para eliminar riesgo de divergencia de cuerpos; solo se insertó la línea de `auth.uid()` al inicio de
+  cada cuerpo y se añadieron los `REVOKE`.
