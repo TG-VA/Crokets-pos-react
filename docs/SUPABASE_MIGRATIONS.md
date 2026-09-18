@@ -32,6 +32,8 @@ Migraciones existentes (al 17 sep 2026):
 | `20260914130000_cash_register_hardening.sql` | Tabla `app_settings` (tope de apertura configurable), tope en `open_cash_register` (`CASH_INVALID_AMOUNT`), payload con columnas explícitas, helper `_cash_already_open_response` e índice único parcial de caja abierta por sucursal (#32) |
 | `20260915120000_deactivate_test_user.sql` | Desactiva el usuario de prueba `alexander@example.com` de forma idempotente (#14) |
 | `20260917180000_get_email_by_username.sql` | Versiona la RPC `get_email_by_username` (login pre-auth): `SECURITY DEFINER`, `STABLE`, `search_path=public`, grants a `anon`/`authenticated`/`service_role` (#41) |
+| `20260917190000_cash_register_branch_validation.sql` | Validación de membresía de sucursal en `get_cash_register_session` y `open_cash_register` (helper `_user_can_access_branch`, excepción `42501` si no pertenece; exento `is_admin()`) (#29) |
+| `20260917200000_harden_transactional_rpcs.sql` | Revoca `EXECUTE` a `anon`/`PUBLIC` en las RPCs transaccionales y fija `p_user_id := coalesce(auth.uid(), p_user_id)` para impedir suplantación entre usuarios autenticados (#10/#13/#38) |
 
 ## Convención de nombres
 
@@ -63,14 +65,29 @@ supabase db push
   las correcciones se hacen con una migración nueva (`CREATE OR REPLACE`, `ALTER`, etc.).
 - Preferir cambios idempotentes y RPCs `LANGUAGE sql` invoker (sin `SECURITY DEFINER`) para que RLS
   siga aplicando al llamador.
-- Revocar `EXECUTE ... FROM anon` en RPCs nuevos; la app siempre llama con sesión (`authenticated`).
-- **Excepciones documentadas (14 sep 2026):**
+- Revocar `EXECUTE ... FROM anon` **y** `... FROM public` en RPCs nuevos; la app siempre llama con
+  sesión (`authenticated`). Revocar solo de `anon` deja el grant implícito de `PUBLIC` (`=X/postgres`),
+  que concede ejecución a cualquier rol.
+- **RPCs transaccionales (17 sep 2026):** `create_sale_transaction` (3 sobrecargas),
+  `cancel_sale_transaction`, `create_partial_return_transaction`, `create_transfer_order`,
+  `cancel_transfer_order`, `receive_transfer_order`, `cancel_sale` y `complete_sale` exigen
+  `authenticated` (sin `anon`/`PUBLIC`) y derivan el actor de `auth.uid()`; solo se conserva el
+  `p_user_id` entrante cuando no hay sesión (`service_role`/jobs internos). Defensa en profundidad:
+  `is_admin()` resuelve `users.id = auth.uid()`, por lo que el uid coincide con `public.users.id`.
+  El RLS se mantiene sin cambios (modelo `authenticated` de confianza) — ver `KNOWN_ISSUES.md`
+  #10/#13/#38.
+- **Excepciones documentadas (17 sep 2026):**
   - `get_branch_by_device` es `SECURITY DEFINER` y se concede a `anon` porque el login lo invoca
-    **antes** de tener sesión. Devuelve solo `id/name/code` de la sucursal y se apoya en que
-    `device_code` es un UUID no enumerable. Ver `KNOWN_ISSUES.md` #30.
+    **antes** de tener sesión (login pre-auth por `device_code`); rompe RLS a propósito. Devuelve
+    solo `id/name/code` de la sucursal activa y se apoya en que `device_code` es un UUID generado con
+    `crypto.randomUUID()` (`electron/main.js`), por lo que no es enumerable. Mitigación futura: mover
+    la resolución a una edge function con rate limiting o a un intercambio one-time cuando el volumen
+    de POS crezca. Ver `KNOWN_ISSUES.md` #30 y `PERMISSIONS.md`.
   - `get_cash_register_session` y `open_cash_register` son `SECURITY DEFINER` porque deben leer la
     sesión de caja abierta de **cualquier** usuario de la sucursal (el RLS por fila lo impediría);
-    exigen `authenticated` y no devuelven más que la sesión de caja. Ver `KNOWN_ISSUES.md` #29.
+    exigen `authenticated` y, desde `20260917190000`, validan que el usuario autenticado tenga
+    membresía activa en `user_branches` para esa sucursal o sea `is_admin()`. No devuelven más que la
+    sesión de caja. Ver `KNOWN_ISSUES.md` #29.
 
 ## Edge functions
 
