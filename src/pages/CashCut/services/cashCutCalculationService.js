@@ -120,29 +120,27 @@ export const calculateRewardSummary = (redemptionRows = []) => {
 };
 
 /**
- * Agrupa pagos por nombre de metodo de pago conservando id y affects_cash
+ * Agrupa pagos por id de metodo de pago (name solo como fallback para pagos sin
+ * metodo), conservando id y affects_cash. Evita fusionar metodos distintos que
+ * comparten nombre (p. ej. catalogos por sucursal).
  */
 export const groupPaymentsByMethod = (paymentRows = []) => {
-  const grouped = {};
+  const grouped = new Map();
 
   paymentRows.forEach((payment) => {
-    const name = payment.payment_methods?.name || "Otro";
     const id = payment.payment_methods?.id || null;
+    const name = payment.payment_methods?.name || "Otro";
     const affectsCash = payment.payment_methods?.affects_cash ?? false;
+    const key = id || name;
 
-    if (!grouped[name]) {
-      grouped[name] = { id, total: 0, affects_cash: affectsCash };
+    if (!grouped.has(key)) {
+      grouped.set(key, { id, name, total: 0, affects_cash: affectsCash });
     }
 
-    grouped[name].total += toNumber(payment.amount);
+    grouped.get(key).total += toNumber(payment.amount);
   });
 
-  return Object.entries(grouped).map(([name, value]) => ({
-    id: value.id,
-    name,
-    total: value.total,
-    affects_cash: value.affects_cash,
-  }));
+  return Array.from(grouped.values());
 };
 
 /**
@@ -184,10 +182,7 @@ export const groupSalesByDepartment = (saleDetailRows = []) => {
  * Suma total de las ventas por departamento
  */
 export const calculateDepartmentsTotal = (departments = []) =>
-  departments.reduce(
-    (acc, department) => acc + toNumber(department.total),
-    0
-  );
+  departments.reduce((acc, department) => acc + toNumber(department.total), 0);
 
 /**
  * Separa movimientos de caja en entradas y salidas y totaliza cada grupo
@@ -249,9 +244,7 @@ export const calculateMethodTotals = (ventasPorMetodo = []) => {
       .filter((method) => matches(method.name))
       .reduce((acc, method) => acc + toNumber(method.total), 0);
 
-  const ventasEfectivo = sumBy(
-    (name) => name?.toLowerCase() === "efectivo"
-  );
+  const ventasEfectivo = sumBy((name) => name?.toLowerCase() === "efectivo");
 
   const ventasTerminal = sumBy((name) => {
     const normalized = name?.toLowerCase() || "";
@@ -286,7 +279,9 @@ export const calculateRefundsByMethod = (
   };
 
   const devolucionesEfectivoMetodo = getRefundsByMethodName((methodName) =>
-    String(methodName || "").toLowerCase().includes("efectivo")
+    String(methodName || "")
+      .toLowerCase()
+      .includes("efectivo")
   );
 
   const devolucionesTerminalMetodo = getRefundsByMethodName((methodName) => {
@@ -294,9 +289,10 @@ export const calculateRefundsByMethod = (
     return normalized.includes("terminal") || normalized.includes("tarjeta");
   });
 
-  const devolucionesTransferenciaMetodo = getRefundsByMethodName(
-    (methodName) =>
-      String(methodName || "").toLowerCase().includes("transferencia")
+  const devolucionesTransferenciaMetodo = getRefundsByMethodName((methodName) =>
+    String(methodName || "")
+      .toLowerCase()
+      .includes("transferencia")
   );
 
   return {
@@ -404,14 +400,14 @@ export const resolveCutDisplay = ({
   const countedDisplay = isHistoricalView
     ? toNumber(historicalCut?.counted_amount)
     : currentShiftCut
-    ? toNumber(currentShiftCut.counted_amount)
-    : null;
+      ? toNumber(currentShiftCut.counted_amount)
+      : null;
 
   const differenceDisplay = isHistoricalView
     ? toNumber(historicalCut?.difference)
     : currentShiftCut
-    ? toNumber(currentShiftCut.difference)
-    : null;
+      ? toNumber(currentShiftCut.difference)
+      : null;
 
   return { expectedDisplay, countedDisplay, differenceDisplay };
 };
