@@ -91,7 +91,7 @@ en un solo componente:
 |---|---|---|
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
 | `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
-| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 1055 | objetivo del refactor (Fase 3) |
+| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 280 | refactor Fase 3 completado (servicios + hook + vistas) |
 | `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 640 | formulario + validación + datos; PR posterior `refactor/products-modify` |
 | `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345 | no requiere refactor; fuera de alcance |
 
@@ -148,6 +148,17 @@ items (`ticketItemFormatters.js`), servicios puros de recompensas/pagos/sucursal
 `ticketPointsService.js`), secciones (`ticketSections.js`) y `ticketBuilder.js` quedó como
 orquestador que compone secciones. La salida se congeló con 14 golden tests y cada módulo tiene su
 suite unitaria (109 casos en total). Los dos importadores solo cambiaron la ruta.
+
+**Actualización (17 sep 2026) — refactor de `RewardModal.jsx`:** rama `refactor/reward-modal`. El
+modal de recompensas se descompuso en `rewardModalCalculationService.js` (normalización, validación,
+payloads y diffs puros), `rewardModalService.js` (consultas/mutaciones de Supabase) y
+`useRewardModal.js` (estado, efectos y handlers), más dos vistas presentacionales
+(`RewardDiscountFields.jsx`, `RewardProductSelector.jsx`). `RewardModal.jsx` bajó de **1055 a 280
+líneas** (< 350) y ya no importa `supabase` (DIP). Tests de caracterización: 53 casos
+(`rewardModalCalculationService.test.js` con 33 y `useRewardModal.test.js` con 20). La suite atrapó un
+bug latente: `validateValues` dependía del estado `selectedProductIds` como default; en el servicio
+puro el argumento se pasa explícito para conservar el comportamiento (exigir producto en
+`free_product`).
 
 **Pendiente de la Fase 4 (no bloqueante):** `CutHero` recibe 11 props (se podrían agrupar las de
 sesión si crece); `CashInflowsSection`/`CashOutflowsSection` comparten el patrón de filas + total
