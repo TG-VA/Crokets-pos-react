@@ -140,6 +140,7 @@ const useSendForm = ({
         ? Math.floor(parsedQuantity)
         : 0;
       const availableStock = Number(product?.existencia ?? 0) || 0;
+      const productName = product?.descripcion || "PRODUCTO";
 
       if (!productId) {
         setError("No se detectó el producto a traspasar.");
@@ -151,43 +152,50 @@ const useSendForm = ({
         return;
       }
 
+      // Cálculo FUERA del updater (puro y sin side-effects en el updater):
+      // Resolvemos la cantidad acumulada y validamos stock antes de tocar el estado.
+      // Strict Mode puede re-ejecutar el updater; con este orden el updater es puro
+      // y el setError se dispara como máximo 1 vez (antes de actualizar draftItems).
+      const existingItem = draftItems.find(
+        (item) => item.productId === productId
+      );
+      const existingQuantity =
+        Number(existingItem?.quantity ?? 0) || 0;
+      const nextQuantity = existingQuantity + quantity;
+
+      if (nextQuantity > availableStock) {
+        setError(
+          `No puedes enviar más de ${availableStock} piezas de ${productName}.`
+        );
+        return;
+      }
+
+      const nextItem = {
+        productId,
+        barcode: product.codigo || "",
+        name: productName,
+        availableStock,
+        quantity: nextQuantity,
+        costPrice: Number(product?.costo ?? 0) || 0,
+        salePrice: Number(product?.precio ?? 0) || 0,
+      };
+
       setDraftItems((currentItems) => {
-        const existingItem = currentItems.find(
+        const alreadyPresent = currentItems.some(
           (item) => item.productId === productId
         );
-        const existingQuantity =
-          Number(existingItem?.quantity ?? 0) || 0;
-        const nextQuantity = existingQuantity + quantity;
-
-        if (nextQuantity > availableStock) {
-          setError(
-            `No puedes enviar más de ${availableStock} piezas de ${product.descripcion}.`
-          );
-          return currentItems;
-        }
-
-        const nextItem = {
-          productId,
-          barcode: product.codigo || "",
-          name: product.descripcion || "PRODUCTO",
-          availableStock,
-          quantity: nextQuantity,
-          costPrice: Number(product?.costo ?? 0) || 0,
-          salePrice: Number(product?.precio ?? 0) || 0,
-        };
-
-        if (existingItem) {
+        if (alreadyPresent) {
           return currentItems.map((item) =>
             item.productId === productId ? nextItem : item
           );
         }
-
         return [...currentItems, nextItem];
       });
+
       setProductSearch("");
       setSearchModalOpen(false);
     },
-    [clearFeedback, setError]
+    [clearFeedback, draftItems, setError]
   );
 
   const handleLookupProduct = useCallback(() => {
@@ -281,53 +289,79 @@ const useSendForm = ({
     (productId, value) => {
       clearFeedback();
 
+      // ==== PARTE 1: CÁLCULOS FUERA DEL UPDATER (hacemos setError AQUÍ si clamped) ====
+      // Buscamos el item actual y los límites ANTES de setDraftItems, para NO meter
+      // side-effects (setError) dentro del updater de React (Strict Mode safe).
+      const currentItem = draftItems.find((item) => item.productId === productId);
+      if (!currentItem) {
+        return;
+      }
+
+      const availableStock = Number(currentItem?.availableStock ?? 0) || 0;
+      const itemName = currentItem?.name || "PRODUCTO";
+
+      if (value === "" || value === null || value === undefined) {
+        setDraftItems((currentItems) =>
+          currentItems.map((item) =>
+            item.productId === productId
+              ? { ...item, quantity: "" }
+              : item
+          )
+        );
+        return;
+      }
+
+      const rawNumeric = String(value).replace(/[^0-9]/g, "");
+      if (rawNumeric === "") {
+        setDraftItems((currentItems) =>
+          currentItems.map((item) =>
+            item.productId === productId
+              ? { ...item, quantity: "" }
+              : item
+          )
+        );
+        return;
+      }
+
+      const parsedQuantity = Number(rawNumeric);
+      const floored = Number.isFinite(parsedQuantity)
+        ? Math.floor(parsedQuantity)
+        : NaN;
+
+      if (!Number.isFinite(floored)) {
+        return;
+      }
+
+      if (floored === 0) {
+        return;
+      }
+
+      // Clamp calculado FUERA: si se pasa de stock, limitamos y avisamos.
+      // Unifica patrón con handleAddDraftItem (si stock excede → setError).
+      let clamped;
+      if (floored > availableStock) {
+        clamped = availableStock;
+        setError(
+          `No puedes enviar más de ${availableStock} piezas de ${itemName}. Cantidad ajustada a ${availableStock}.`
+        );
+      } else {
+        clamped = floored;
+      }
+
+      // ==== PARTE 2: UPDATER PURO (solo devuelve nuevo estado, sin side-effects) ====
       setDraftItems((currentItems) =>
         currentItems.map((item) => {
           if (item.productId !== productId) {
             return item;
           }
-
-          if (value === "" || value === null || value === undefined) {
-            return {
-              ...item,
-              quantity: "",
-            };
-          }
-
-          const rawNumeric = String(value).replace(/[^0-9]/g, "");
-          if (rawNumeric === "") {
-            return {
-              ...item,
-              quantity: "",
-            };
-          }
-
-          const parsedQuantity = Number(rawNumeric);
-          const floored = Number.isFinite(parsedQuantity)
-            ? Math.floor(parsedQuantity)
-            : NaN;
-
-          if (!Number.isFinite(floored)) {
-            return item;
-          }
-
-          if (floored === 0) {
-            return item;
-          }
-
-          const limited =
-            floored > item.availableStock
-              ? item.availableStock
-              : floored;
-
           return {
             ...item,
-            quantity: limited,
+            quantity: clamped,
           };
         })
       );
     },
-    [clearFeedback]
+    [clearFeedback, draftItems, setError]
   );
 
   const handleRemoveDraftItem = useCallback(
