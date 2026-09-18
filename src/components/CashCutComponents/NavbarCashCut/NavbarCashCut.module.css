@@ -196,8 +196,9 @@
   background: #eef9fb;
 }
 
-.optionActive {
-  background: #e6f7fb !important;
+.currentOption.optionActive,
+.cutOption.optionActive {
+  background: #e6f7fb;
   border-left: 4px solid #1092b1;
 }
 

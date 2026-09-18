@@ -155,12 +155,12 @@
   font-weight: 900;
 }
 
-.positive {
-  color: #166534 !important;
+.pointsBox .positive {
+  color: #166534;
 }
 
-.negative {
-  color: #b00020 !important;
+.pointsBox .negative {
+  color: #b00020;
 }
 
 .notesBox p {

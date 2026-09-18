@@ -124,13 +124,13 @@
   box-shadow: 0 0 0 3px rgba(252, 137, 19, 0.12);
 }
 
-.validInput {
-  border-color: #22c55e !important;
+.input.validInput {
+  border-color: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
 }
 
-.invalidInput {
-  border-color: #ef4444 !important;
+.input.invalidInput {
+  border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
 }
 

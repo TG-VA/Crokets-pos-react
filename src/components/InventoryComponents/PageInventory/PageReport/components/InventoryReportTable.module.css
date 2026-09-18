@@ -54,19 +54,33 @@
   border-top-right-radius: 9px;
 }
 
-.codeColumn { width: 12%; }
+.codeColumn {
+  width: 12%;
+}
 
-.nameColumn { width: 34%; }
+.nameColumn {
+  width: 34%;
+}
 
-.departmentColumn { width: 16%; }
+.departmentColumn {
+  width: 16%;
+}
 
-.existenceColumn { width: 14%; }
+.existenceColumn {
+  width: 14%;
+}
 
-.minimumColumn { width: 6%; }
+.minimumColumn {
+  width: 6%;
+}
 
-.maximumColumn { width: 6%; }
+.maximumColumn {
+  width: 6%;
+}
 
-.detailColumn { width: 12%; }
+.detailColumn {
+  width: 12%;
+}
 
 .table td {
   font-size: 0.84rem;
@@ -100,15 +114,15 @@
   min-width: 0;
 }
 
-.empty {
+.table td.empty {
   text-align: center;
   font-weight: 700;
   color: #666666;
-  padding: 28px 16px !important;
+  padding: 28px 16px;
 }
 
 @media (max-width: 700px) {
-.table th {
+  .table th {
     position: static;
     top: auto;
   }

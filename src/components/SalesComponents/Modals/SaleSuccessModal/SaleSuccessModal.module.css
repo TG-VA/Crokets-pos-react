@@ -120,8 +120,8 @@
   font-weight: 900;
 }
 
-.pointsUsedValue {
-  color: #c2410c !important;
+.pointsBox .pointsUsedValue {
+  color: #c2410c;
 }
 
 .rewardBox {
@@ -289,7 +289,10 @@
   font-size: 0.95rem;
   font-weight: 900;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    opacity 0.12s ease;
 }
 
 .primaryButton {
@@ -352,7 +355,7 @@
   background-color: #cbd5e1;
   border-radius: 10px;
   /* El borde simula un margen invisible contra la pared derecha del modal blanco (#ffffff) */
-  border: 4px solid #ffffff; 
+  border: 4px solid #ffffff;
   background-clip: padding-box;
 }
 .modal::-webkit-scrollbar-thumb:hover {
@@ -370,7 +373,7 @@
   background-color: #93c5fd; /* Un azul un poco más oscuro que el fondo del rewardBox */
   border-radius: 10px;
   /* El borde simula un margen invisible contra el fondo azul pastel de rewardBox (#f0f9ff) */
-  border: 4px solid #f0f9ff; 
+  border: 4px solid #f0f9ff;
   background-clip: padding-box;
 }
 .rewardList::-webkit-scrollbar-thumb:hover {

@@ -228,10 +228,10 @@
   box-shadow: 0 3px 10px rgba(16, 146, 177, 0.1);
 }
 
-.selectedResult {
-  border-color: #1092b1 !important;
-  background: rgba(16, 146, 177, 0.06) !important;
-  box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.1) !important;
+.resultItem.selectedResult {
+  border-color: #1092b1;
+  background: rgba(16, 146, 177, 0.06);
+  box-shadow: 0 0 0 2px rgba(16, 146, 177, 0.1);
 }
 
 .unavailableResult {

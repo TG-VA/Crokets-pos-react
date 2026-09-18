@@ -153,9 +153,9 @@
   text-align: right;
 }
 
-.textCenter {
-  text-align: center !important;
-  padding: 24px !important;
+.itemsTable td.textCenter {
+  text-align: center;
+  padding: 24px;
   color: #666666;
 }
 
@@ -184,8 +184,8 @@
   color: #333333;
 }
 
-.totalBox {
-  background: #1092b1 !important;
+.summary .totalBox {
+  background: #1092b1;
   color: #ffffff;
 }
 

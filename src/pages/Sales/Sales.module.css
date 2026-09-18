@@ -584,8 +584,8 @@
   filter: grayscale(0.2);
 }
 
-.selectedRow {
-  background-color: rgba(16, 146, 177, 0.1) !important;
+.tableRow.selectedRow {
+  background-color: rgba(16, 146, 177, 0.1);
   border-left: 3px solid #1092b1;
   cursor: pointer;
 }
@@ -734,7 +734,9 @@
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .recoveredDraftActions button:hover {
@@ -745,12 +747,6 @@
 .recoveredDraftContinue {
   background: #f59e0b;
   color: #ffffff;
-}
-
-.recoveredDraftDiscard {
-  background: #ffffff;
-  color: #b45309;
-  border: 1px solid #f59e0b !important;
 }
 
 .productCell {
@@ -796,7 +792,7 @@
 }
 
 .rewardRow.selectedRow {
-  background: rgba(34, 197, 94, 0.18) !important;
+  background: rgba(34, 197, 94, 0.18);
   border-left: 4px solid #16a34a;
 }
 
@@ -831,7 +827,7 @@
 }
 
 .rewardDiscountRow.selectedRow {
-  background: rgba(249, 115, 22, 0.18) !important;
+  background: rgba(249, 115, 22, 0.18);
   border-left: 4px solid #ea580c;
 }
 
@@ -845,7 +841,7 @@
 }
 
 .discountAppliedRow.selectedRow {
-  background: rgba(16, 146, 177, 0.14) !important;
+  background: rgba(16, 146, 177, 0.14);
   border-left: 4px solid #1092b1;
 }
 

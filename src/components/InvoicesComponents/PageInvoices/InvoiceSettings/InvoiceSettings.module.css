@@ -165,16 +165,16 @@
   font-size: 1rem;
 }
 
-.statusConnected {
-  color: #166534 !important;
+.infoCard .statusConnected {
+  color: #166534;
 }
 
-.statusError {
-  color: #991b1b !important;
+.infoCard .statusError {
+  color: #991b1b;
 }
 
-.statusPending {
-  color: #92400e !important;
+.infoCard .statusPending {
+  color: #92400e;
 }
 
 .actionCard {
@@ -277,10 +277,10 @@
   transform: none;
 }
 
-.fieldError {
+.field .fieldError {
   display: block;
   margin-top: 6px;
-  color: #b91c1c !important;
+  color: #b91c1c;
   font-size: 0.78rem;
   font-weight: 800;
 }

@@ -5,7 +5,10 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: #1e293b;
 }
 
@@ -178,7 +181,7 @@
 
 @media print {
   .headerActions {
-    display: none !important;
+    display: none;
   }
   .pageContainer {
     padding: 0;
