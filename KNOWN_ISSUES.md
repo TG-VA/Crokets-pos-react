@@ -378,7 +378,28 @@ canjes), `ticketPaymentService` (9, método, USD y recibido/cambio), `ticketBran
 dirección y CP), `ticketPointsService` (8, saldo y devoluciones) y `ticketSections` (22, rangos de
 sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo toca I/O.
 
-**Recomendación:** con los servicios de import/kits cubiertos, la siguiente capa de valor sería automatizar los RPC de ventas (`create_sale_transaction`, `create_transfer_order`) y las funciones de `verifierService` / `salesCalculationService` si se quiere supervisión unitaria de las transacciones atómicas.
+**Actualización 4 (17 sep 2026) — Fase 4, rama `test/coverage-gaps`:** la suite pasó a **41 archivos /
+524 casos** (+94) cerrando los huecos priorizados:
+- **RPC de ventas:** `salesTransactionService.test.js` (13 tests: guardas, mapeo snake_case, coerción
+  numérica, notas, fecha por defecto, propagación de error y falta de id) y
+  `supabase/migrations/transactionalRpcsContract.test.js` (8 tests: firma, retorno y grants de
+  `create_sale_transaction` y `create_transfer_order` contra la migración, más cross-check
+  cliente↔BD de nombres de parámetros).
+- **Impresión y corte:** `cashCutBuilder.test.js` (38 tests: encabezado, resultado, resumen neto,
+  dinero en caja, métodos, entradas/salidas, recompensas, cancelaciones/dev parciales, firmas e
+  invariante de ancho fijo de 32 columnas) y `ticketPrinter.test.js` (4 tests del contrato
+  éxito/fallo).
+- **Proceso principal de Electron:** se extrajo `electron/mainProcess.js` (inyección de dependencias,
+  sin `require('electron')`) y `main.js` quedó como wiring; `mainProcess.test.js` (31 tests) cubre
+  los seis canales IPC, el zoom por `webContents` y el ciclo de vida de la ventana.
+- `create_transfer_order` no tiene caller JS (la vista de traspasos es el stub de #12), por lo que su
+  contrato se fija a nivel SQL.
+- Hallazgo de seguridad derivado al fijar el contrato SQL: #49 (`create_sale_transaction` sin
+  `search_path` fijado).
+
+**Recomendación:** con esta capa cubierta, la siguiente deuda de testing es el backend Express/SQLite
+(`src/backend/server.js` y `bd.js` requieren un desacople previo) y un smoke test de render del
+renderer.
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
 **Estado:** abierto — parcialmente documentado.
@@ -669,6 +690,25 @@ real.
 `Map`, conservando `name`/`affects_cash` de la primera aparición. Tests actualizados y 2 casos nuevos
 en `cashCutCalculationService.test.js` (mismo nombre con `id` distinto no se fusiona; sin `id` se
 agrupa por `name`).
+
+### 49. `create_sale_transaction` es `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
+**Estado:** abierto — 17 sep 2026 (detectado en la Fase 4, rama `test/coverage-gaps`).
+
+La migración de endurecimiento `20260917200000_harden_transactional_rpcs.sql` fija
+`SET search_path TO 'public'` en las funciones que reescribe (`create_transfer_order`,
+`receive_transfer_order`, `cancel_transfer_order`, `get_email_by_username`), pero las tres
+sobrecargas de `create_sale_transaction` quedan `SECURITY DEFINER` **sin** `search_path` fijado.
+
+**Impacto:** en una función `SECURITY DEFINER`, un `search_path` no fijado permite que objetos creados
+por un usuario en un esquema presente en el path sombreen referencias no calificadas y se ejecuten con
+los privilegios del definer (vector clásico de escalada de privilegios). El test de contrato
+`supabase/migrations/transactionalRpcsContract.test.js` fija la firma y los grants de la sobrecarga
+efectiva y deja constancia de que `create_transfer_order` sí fija el `search_path`.
+
+**Recomendación:** crear una migración correctiva que haga `CREATE OR REPLACE` de las tres
+sobrecargas de `create_sale_transaction` añadiendo `SET search_path TO 'public'`, y extender el test
+de contrato para exigir el `search_path` también en `create_sale_transaction`. No se corrige en la
+Fase 4 por ser una fase de testing.
 
 ---
 

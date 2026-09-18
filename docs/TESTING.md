@@ -11,9 +11,10 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (16 sep 2026)
+## Cobertura actual (17 sep 2026)
 
-31 archivos de test (~359 casos) concentrados en utilidades puras, contratos de servicios y hooks:
+41 archivos de test (**524 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+y el proceso principal de Electron:
 
 | Área | Archivo |
 |---|---|
@@ -23,15 +24,25 @@ componentes). No hay carpeta central de tests.
 | Utilidades de importación | `.../ProductsImport/utils/importUtils.test.js` |
 | Kits / promociones | `.../ProductsPromotions/services/productKitsService.test.js` |
 | Reporte de caja | `.../PageCashReport/services/cashReportService.test.js` |
+| Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
+| Reporte de rentabilidad | `.../PageProfitabilityReport/services/profitabilityReportService.test.js` |
+| Reporte de inventario (datos) | `.../PageInventoryReport/services/inventoryReportService.test.js` |
+| Reporte de inventario (cálculos) | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js` |
 | Corte de cajero (cálculos) | `src/pages/CashCut/services/cashCutCalculationService.test.js` |
 | Corte de cajero (servicios de datos) | `src/pages/CashCut/services/cashCutReportService.test.js` |
 | Corte de cajero (detalle histórico) | `src/pages/CashCut/services/cashCutDetailService.test.js` |
 | Corte de cajero (hook principal) | `src/pages/CashCut/hooks/useCashCutReport.test.js` |
 | Corte de cajero (hook de modales) | `src/pages/CashCut/hooks/useCashCutDetail.test.js` |
 | Corte de cajero (formateadores) | `src/pages/CashCut/utils/cashCutFormatters.test.js` |
-| Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
-| Reporte de inventario | `.../PageInventoryReport/services/inventoryReportService.test.js` |
+| Corte impreso (builder de ancho fijo) | `src/utils/cashCutBuilder.test.js` |
+| Impresión de ticket (fallback) | `src/utils/ticketPrinter.test.js` |
+| Modal de recompensas (cálculos) | `.../RewardModal/rewardModalCalculationService.test.js` |
+| Modal de recompensas (hook) | `.../RewardModal/useRewardModal.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
+| Venta transaccional (RPC) | `.../SalesComponents/services/salesTransactionService.test.js` |
+| Contrato SQL de RPCs transaccionales | `supabase/migrations/transactionalRpcsContract.test.js` |
+| Proceso principal de Electron | `electron/mainProcess.test.js` |
+| Utilidades async | `src/utils/asyncUtils.test.js` |
 | Paginación global | `src/hooks/usePagination.test.js` |
 | Navegación protegida | `src/hooks/useProtectedNavigation.test.js` |
 | Secciones protegidas | `src/config/adminProtectedSections.test.js` |
@@ -64,20 +75,36 @@ componentes). No hay carpeta central de tests.
 
 ## Huecos de cobertura
 
+Cubierto en la Fase 4 (rama `test/coverage-gaps`):
+
+- **RPC de ventas:** contrato mock de `create_sale_transaction`
+  (`salesTransactionService.test.js`) y contrato SQL de `create_sale_transaction` /
+  `create_transfer_order` contra la migración `20260917200000`
+  (`transactionalRpcsContract.test.js`), incluido el cross-check cliente↔BD de nombres de
+  parámetros. `create_transfer_order` aún no tiene caller JS (la vista de traspasos es el stub de
+  #12), por eso se fija su interfaz SQL.
+- **Lógica de impresión y corte:** `cashCutBuilder.js` (secciones, totales, wrapping e invariante de
+  32 columnas) y `ticketPrinter.js` (contrato de éxito/fallo).
+- **Proceso principal de Electron:** `mainProcess.test.js` cubre los seis canales IPC, el zoom por
+  `webContents` y el ciclo de vida de la ventana. `electron/main.js` se redujo a wiring y la lógica
+  se movió a `electron/mainProcess.js` (inyección de dependencias, sin `require('electron')`).
+
 No hay todavía:
 
 - Tests de componentes/UI ni de flujos de integración. Las vistas presentacionales del corte
   (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas.
-- Tests del proceso principal de Electron (`electron/main.js`).
-- Tests del backend Express/SQLite (`src/backend/`).
-- Tests a nivel SQL de los RPC (se prueban los contratos del service, no la función SQL).
+- Tests del backend Express/SQLite (`src/backend/server.js` y `bd.js`): `app.listen()` y la apertura
+  de SQLite ocurren al importar el módulo, por lo que requieren un desacople previo. La
+  inicialización de Express/SQLite **no** vive en `electron/main.js`.
+- Tests a nivel de ejecución de los RPC: se fija la firma SQL (parámetros, retorno, grants), no se
+  ejecuta la función en Postgres.
 - Tests E2E.
 - Los mapeos de pagos por método, departamentos y dólares en `useCashCutReport`: los fetches
   secundarios se mockean vacíos y no se asertan sus resultados agrupados.
 
-**Siguiente capa de valor recomendada:** los RPC de ventas (`create_sale_transaction`,
-`create_transfer_order`), la lógica de `cashCutBuilder.js` / `ticketPrinter.js` y el proceso
-principal de Electron. Ver `KNOWN_ISSUES.md` #8 y #9.
+**Siguiente capa de valor recomendada:** desacoplar `src/backend/server.js` (factory de Express) y
+`bd.js` (inyección de la conexión SQLite) para poder cubrir el backend local, y agregar un smoke test
+de render del renderer. Ver `KNOWN_ISSUES.md` #8 y #9.
 
 ## Linter y formateo (ESLint 9 + Prettier, incremental)
 
