@@ -43,6 +43,9 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Compartir la autorización entre navbar y guard vía el Set `authorizedRoutes` por montaje de módulo (una sola autorización; las páginas derivan sus rutas de `adminProtectedSections`) — ver `KNOWN_ISSUES.md` #27
 * [x] Definir la llave de agrupación de pagos por método (por `id`, no solo por nombre) en el corte de caja — ver `KNOWN_ISSUES.md` #45
 * [x] Unificar los flujos de recarga de la vista actual de `useCashCutReport` (`changeSelectedCut("current")`, `refreshAfterCut` y realtime) en un helper común — ver `KNOWN_ISSUES.md` #47
+* [x] Eliminar el backend local SQLite legacy por completo (server Express + `password.js` + `users.db` trackeado) — cierre de #10; ver `KNOWN_ISSUES.md` #31/#34
+* [x] Panel de configuración del tope de apertura de caja con RPCs admin (`get_cash_max_opening_amount` / `update_cash_max_opening_amount`, migración `20260918120000`, pendiente `supabase db push`) — ver `KNOWN_ISSUES.md` #33
+* [ ] Endurecer la persistencia de sesión de Supabase (storage en memoria / cookie HttpOnly) cuando exista gateway o Edge Function — ver `KNOWN_ISSUES.md` #35
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 
@@ -54,7 +57,8 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Squash de migraciones de comisiones — no procede (ya aplicadas al remoto; se sigue por migración correctiva) — ver `KNOWN_ISSUES.md` #23
 * [ ] QA visual del nuevo formato `ruleLabel` en el reporte de comisiones — ver `KNOWN_ISSUES.md` #24
 * [x] Renombrar el wrapper local `fetchCutsHistory` del corte para desambiguarlo del servicio — ver `KNOWN_ISSUES.md` #46
-* [ ] Pasada transversal para retirar `!important` de los módulos CSS — ver `KNOWN_ISSUES.md` #48
+* [x] Pasada transversal para retirar `!important` de los módulos CSS (128 ocurrencias en 30 archivos resueltas a 0) — ver `KNOWN_ISSUES.md` #48
+* [x] Alinear README, AGENTS.md y DEPLOYMENT.md al stack sin backend local (stack, prerrequisitos, dependencias, estructura, comandos) — ver `KNOWN_ISSUES.md` #7/#31
 
 ---
 

@@ -411,3 +411,79 @@ informe.
   `20260917210000` y RPC con el filtro `filtered_sessions`).
 - **Tests de UI:** el proyecto no testea JSX (ver `docs/TESTING.md`); la caracterización se centró en
   el servicio puro y el hook.
+
+---
+
+## Informe de Auditoría — RAMA `cleanup/ui-and-docs` (borrador, 18 sep 2026)
+
+**Alcance:** cosmética y cierre: #48 (barrido de `!important` en módulos CSS, 128 ocurrencias en 30
+archivos), #33 (panel del tope de apertura de caja + RPCs admin), #7 (README), #31/#34 (eliminación
+completa del backend local SQLite) y #35 (opciones explícitas de persistencia de sesión en
+`supabaseClient`). Implica 30 `*.module.css`, `primitives.jsx` (CashCut), `cashSettingsService.js` +
+tests, `Settings.jsx`/`Settings.module.css`, la migración
+`20260918120000_app_settings_cash_rpcs.sql`, `src/lib/supabaseClient.js`, `package.json`/
+`package-lock.json` (sin Express/SQLite/Nodemon/bcryptjs/cors/node-fetch/electron-rebuild) y la
+documentación (`KNOWN_ISSUES.md`, `BACKLOG.md`, `AGENTS.md`, `DEPLOYMENT.md`, `README.MD`). Estado:
+**trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- #33 con SRP/DIP: `cashSettingsService.js` aísla las RPCs (`getCashMaxOpeningAmount` /
+  `updateCashMaxOpeningAmount`) y `Settings.jsx` no importa `supabase`; el panel se gatea con
+  `checkUserIsAdmin(user.id)` solo como UX porque la RPC revalida `is_admin()` en el servidor.
+- #48: el refactor de `IconImg` (CashCut) a variables CSS (`--icon-size`, `--icon-filter`) elimina
+  overrides inline de iconos dentro del propio componente (DIP visual).
+- #31/#34: sin backend local, `electron/main.js` y `preload.js` no requieren cambios (los handlers IPC
+  legacy ya no existían); el diff no toca runtime de Electron/Vite.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+- #33 se sigue el patrón de `open_cash_register`: `SECURITY DEFINER` con `set search_path = public`,
+  guard `is_admin()`, validación de monto no negativo (`raise exception` msj consistente) y
+  `to_jsonb(v_amount::text)` replicando el formato de seed de `app_settings`. Prueba del contrato:
+  `cashSettingsService.test.js` (7 casos) verifica lectura, escritura y propagación de error/mensaje.
+- #48/#7/#31/#34/#35: sin cambio de datos; #35 solo fija opciones de auth explícitas en
+  `createClient` (ver §3).
+
+**§3 Estado y Contexto Global — CON EFECTO CONTROLADO:** `#35` cambia `storageKey` de
+`'sb-<ref>-auth-token'` (default) a `'sb-crokets-pos-auth-token'`; las sesiones existentes en
+`localStorage` dejan de ser válidas → **un re-login esperado tras el deploy**. `detectSessionInUrl:
+false` y `flowType: 'pkce'` son inocuos con `signInWithPassword` (único flujo usado). No se mutan otros
+contextos compartidos.
+
+**§4 Estilos y UI — CUMPLIDO (con nota Prettier):**
+- Especificidad sin `!important`: selectores anclados por prefijo de tabla/estado
+  (`.tableRow.selectedRow`, `.itemsTable td.textCenter`, `.infoCard .statusConnected`,
+  `.field .fieldError`, `table tbody tr.outOfStockRow:hover > td`) o doble clase solo cuando compite
+  un hover del padre portaleado (`td.detailCell.detailCell`, `.datePickerPopper.datePickerPopper`).
+- `rg "!important" --glob "*.module.css" src` → **0** resultados (0 archivos).
+- El `.recoveredDraftDiscard` de Sales se eliminó (selector muerto) y el hover de fila reescribe
+  colores por pares clase-componente en lugar de `transition` forzado.
+- **Nota:** Prettier reformateó hunks ajenos en 6 CSS/JSX que ya incumplían el formato en `main`
+  (p. ej. `transition:` multilínea en Sales.module.css, `EmptyState` en primitives.jsx); se aceptó
+  como higiene acotada a archivos ya tocados.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis en líneas
+agregadas; sin `console.log`/`console.warn` nuevos (`cashSettingsService.js` usa `console.error` solo
+en `catch`); comillas dobles y EOF newline en archivos JS/CSS tocados.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #7/#31/#33/#34/#35/#48 con estado **Resuelto** y
+fecha; `BACKLOG.md` con checkboxes actualizados (+ítem de endurecimiento #35 abierto);
+`AGENTS.md`/`DEPLOYMENT.md`/`README.MD` sin referencias a Express/SQLite/Nodemon/`npm run rebuild`
+(línea "sin linter" de AGENTS.md queda como inexactitud preexistente de #8 en esta rama). Pendiente
+operativo: aplicar la migración `20260918120000` al remoto con `supabase db push`.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 430/430 (36 archivos; +7 de `cashSettingsService.test.js`
+sobre los 430 del paso previo); `npm run build:frontend` OK; ESLint incremental sobre el diff sin
+errores nuevos (solo warnings preexistentes de `no-unused-vars`). Nota de conteo: la proyección
+anterior de "35 archivos tras borrar `password.test.js`" era incorrecta — `password.test.js` nunca lo
+recogía Vitest, y el conteo subió de 35 a 36 archivos solo por la suite nueva de #33.
+
+### Hallazgos y límites conscientes
+- **Migración remota pendiente:** las RPCs #33 se validan contra el archivo de migración, pero aún no
+  se aplicaron (`supabase db push`) — el panel mostrará error hasta aplicarlas.
+- **Re-login de sesiones existentes por `storageKey` (#35)** — efecto controlado, documentado en
+  `KNOWN_ISSUES.md` #35; el token sigue en `localStorage` (riesgo residual aceptado).
+- **`AGENTS.md` línea de linter** queda obsoleta respecto a #8 en main; se deja fuera de alcance de
+  este borrador (ver `KNOWN_ISSUES.md` #8).
+- **QA visual pendiente:** tamaños de icono de CashCut con las nuevas variables `--icon-size` y los
+  estados de fila reescritos (reporte de inventario) deben verificarse en la UI con `npm run dev`.
