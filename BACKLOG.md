@@ -28,6 +28,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 * [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
 * [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
+* [x] Cerrar huecos de testing: contrato de RPCs de ventas (`create_sale_transaction` mock + firma SQL de `create_transfer_order`), `cashCutBuilder.js`, `ticketPrinter.js` y proceso principal de Electron (`electron/mainProcess.js`) — suite en 41 archivos / 524 tests; ver `KNOWN_ISSUES.md` #9
 * [x] Migraciones SQL versionadas para el schema de Supabase (baseline `00000000000000_remote_schema_baseline.sql` marcado como aplicado; SQL legacy movido a `supabase/legacy/`; script de introspección versionado) — ver `KNOWN_ISSUES.md` #6
 * [x] Revisar roles y permisos Supabase vs SQLite local — decisión: "hardening sin habilitar RLS" (sin diferenciación admin vs cajero; riesgo aceptado). Queda pendiente decidir el futuro del backend SQLite legacy; ver `KNOWN_ISSUES.md` #10 y #13, `PERMISSIONS.md`
 * [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15
@@ -43,6 +44,8 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Compartir la autorización entre navbar y guard vía el Set `authorizedRoutes` por montaje de módulo (una sola autorización; las páginas derivan sus rutas de `adminProtectedSections`) — ver `KNOWN_ISSUES.md` #27
 * [x] Definir la llave de agrupación de pagos por método (por `id`, no solo por nombre) en el corte de caja — ver `KNOWN_ISSUES.md` #45
 * [x] Unificar los flujos de recarga de la vista actual de `useCashCutReport` (`changeSelectedCut("current")`, `refreshAfterCut` y realtime) en un helper común — ver `KNOWN_ISSUES.md` #47
+* [ ] Fijar `search_path` en las sobrecargas de `create_sale_transaction` (`SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #49
+* [ ] Desacoplar `src/backend/server.js` (factory de Express) y `bd.js` (conexión SQLite inyectable) para poder testear el backend local — ver `KNOWN_ISSUES.md` #9
 
 ## Prioridad Baja (Nuevas Vistas y Cosmética)
 

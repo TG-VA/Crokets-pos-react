@@ -411,3 +411,69 @@ informe.
   `20260917210000` y RPC con el filtro `filtered_sessions`).
 - **Tests de UI:** el proyecto no testea JSX (ver `docs/TESTING.md`); la caracterización se centró en
   el servicio puro y el hook.
+
+---
+
+## Informe de Auditoría — RAMA `test/coverage-gaps` (17 de septiembre de 2026)
+
+**Alcance:** Fase 4 — testing faltante (#9). Cobertura de los RPC de ventas, la lógica de impresión y
+corte de caja y el proceso principal de Electron, siguiendo el checklist de este documento.
+Restricción: sin cambios de lógica de producción salvo el desacople necesario para testear
+`electron/main.js`; Vitest + jsdom.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- RPC de ventas: `salesTransactionService.test.js` (contrato mock de `create_sale_transaction`) y
+  `supabase/migrations/transactionalRpcsContract.test.js` (firma, retorno y grants de
+  `create_sale_transaction` y `create_transfer_order`, más cross-check cliente↔BD de nombres de
+  parámetros). `create_transfer_order` no tiene caller JS (la vista de traspasos es el stub de #12),
+  por lo que su contrato se ancla al SQL.
+- Corte/impresión: `cashCutBuilder.test.js` y `ticketPrinter.test.js`.
+- Electron: se extrajo `electron/mainProcess.js` (inyección de dependencias, sin `require('electron')`)
+  y `main.js` quedó como wiring. `mainProcess.test.js` cubre los seis canales IPC, el zoom y el ciclo
+  de vida.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:** los tests fijan comportamiento observable
+(no implementación). El contrato SQL verifica parámetros, retorno y `REVOKE` de `anon`/`public`. No
+hay cambios en la lógica de producción; la extracción de `mainProcess.js` preserva el comportamiento
+(ventana, hardening de navegación, zoom y eventos de app).
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** `main.js` mantiene el estado en un objeto
+`windowState`, un `Map` y un `WeakSet` inyectados; no cambia el contrato con el renderer ni el
+preload.
+
+**§4 Estilos y UI — SIN CAMBIO:** no se tocó UI ni CSS.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO:** sin emojis; sin `console.log`/`console.warn` nuevos
+(los tests espían `console` para silenciar o forzar fallos); `console.error` conservado; comillas
+dobles y EOF newline; Prettier/ESLint sobre el diff con `EXIT=0`.
+
+**§6 Documentación — CUMPLIDO:** `docs/TESTING.md` (tabla y huecos), `KNOWN_ISSUES.md` #9 y nuevo
+#49, `BACKLOG.md` y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` **524/524** (41 archivos; +94 sobre los 430 previos) y
+`npm run build:frontend` `EXIT=0`.
+
+### Hallazgos de la revisión
+- **[MEDIO][#49] `create_sale_transaction` sin `search_path` fijado:** sus tres sobrecargas son
+  `SECURITY DEFINER` sin `SET search_path`, a diferencia de `create_transfer_order`,
+  `receive_transfer_order`, `cancel_transfer_order` y `get_email_by_username`, que la migración de
+  endurecimiento sí fija. Documentado como #49 y evidenciado por el test de contrato; requiere una
+  migración correctiva (fuera del alcance de testing).
+- **[BAJO] `create_transfer_order` sin caller:** el RPC existe en la migración pero la vista de
+  traspasos es un stub (#12). El test fija su interfaz SQL; cuando exista el service JS conviene un
+  test de contrato mock (como `create_sale_transaction`) con cross-check cliente↔BD.
+- **[BAJO] `ticketPrinter.js` usa `console.log`:** la función "imprime" por consola (placeholder). No
+  se modificó (fuera de alcance) y el test espía `console`; si se conecta a una impresora real, el
+  contrato `{ success, message, error }` ya queda fijado.
+
+### Notas y límites conscientes
+- **Backend Express/SQLite fuera de alcance:** `electron/main.js` **no** inicializa Express ni SQLite
+  (viven en `src/backend/server.js` y `bd.js`, que hacen `app.listen()`/abren SQLite al importar). Se
+  documenta como el siguiente desacople en `docs/TESTING.md` y `BACKLOG.md`.
+- **Cadena de `require` en Electron:** `vi.mock('electron')` no intercepta los `require` CJS; por eso
+  se optó por la extracción con inyección de dependencias en lugar de mockear el módulo `electron`.
+- **Contrato SQL por parsing de migración:** `transactionalRpcsContract.test.js` lee el archivo de
+  migración con `fs`; fija la firma efectiva, pero no ejecuta la función en Postgres.
+- **Prettier/ESLint incrementales:** se formatearon `electron/main.js` (reescrito) y los archivos
+  nuevos; sin churn en el resto.
