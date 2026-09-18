@@ -213,8 +213,7 @@ registros huérfanos en Importación o Kits, a pesar de los bloques `try/catch`.
 `create_transfer_order`.
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
-**Estado:** abierto — nuevo, detectado el 24 de agosto de 2026 por introspección directa de RLS y
-la tabla `role_permissions`.
+**Estado:** decidido (17 sep 2026) — no se habilita RLS ni se diferencia admin vs cajero; riesgo aceptado y documentado en `PERMISSIONS.md`.
 
 El sistema de roles en Supabase (`users → roles → role_permissions → permissions`) existe y está
 activo en producción, pero actualmente **los roles `admin` y `cajero` tienen exactamente los mismos
@@ -235,6 +234,19 @@ se lo oculte).
 de permisos deseada por rol y implementarla en `role_permissions`, y extender el uso de
 `has_permission()` en las políticas RLS de los módulos sensibles (facturación, cancelaciones,
 catálogo de productos). Ver detalle completo en `PERMISSIONS.md`.
+
+**Actualización (17 sep 2026):** introspección completa en `PERMISSIONS.md` — 13 tablas con RLS
+activo y ~37 con RLS **deshabilitado** (incluye `products`, `customers`, `invoices`, `roles`,
+`permissions`, `role_permissions`, `users`, `branches`), no solo `USING (true)`. La diferencia real
+admin vs cajero hoy es inexistente salvo `user_branches`/`is_admin()`.
+
+**Decisión (17 sep 2026):** se adopta el modelo "hardening sin habilitar RLS" (elegido con el
+responsable): **no** se habilitan políticas RLS ni se exige `is_admin()` en las mutaciones
+administrativas, porque activar RLS sobre ~37 tablas sin políticas rompería el acceso y el modelo
+vigente es `authenticated` de confianza. Se documenta como **riesgo aceptado** en `PERMISSIONS.md`.
+Como mitigación acotada, la migración `20260917200000_harden_transactional_rpcs.sql` revoca `EXECUTE`
+a `anon`/`PUBLIC` en las RPCs transaccionales y fija el actor desde `auth.uid()`. Cierra #13 como
+decisión (no como cambio de permisos); ver #38 y #10.
 
 ### 18. RPC de comisiones pagaba comisión por ventas canceladas (filtro `'canceled'`)
 **Estado:** resuelto — migración `supabase/migrations/20260910120500_fix_commissions_status_filter.sql`,
@@ -363,6 +375,12 @@ en `PERMISSIONS.md`. Sigue sin confirmarse si el sistema local de SQLite (`src/b
 sincroniza de alguna forma con este sistema remoto, o si son completamente independientes — ver
 también el punto 13 de este documento.
 
+**Actualización (17 sep 2026):** `PERMISSIONS.md` incorpora la matriz RLS revisada por introspección
+(13 tablas con RLS activo, ~37 deshabilitadas) y la excepción pre-auth documentada. Sigue pendiente
+la decisión del equipo sobre (a) la matriz objetivo `admin` vs `cajero` y (b) si el backend local de
+SQLite se elimina en favor de Supabase Auth + RLS o se sincroniza. El detalle del gateo client-side y
+sus límites está en #38.
+
 ### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
 **Estado:** completado — migración de client-side, server-side (Sales) e híbrido (Cash) terminada el 9 de septiembre de 2026 (rama `feature/products-pagination`).
 
@@ -457,7 +475,7 @@ página es limitado y filtrado en el servidor.
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
 ### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
-**Estado:** abierto — requiere verificación con datos reales antes de tocar código (10 sep 2026).
+**Estado:** Resuelto — 17 sep 2026, verificado con datos reales de Supabase; decisión: mantener base neta (sin cambio de código).
 
 La RPC calcula la comisión porcentual sobre `unit_price * quantity` (monto bruto), mientras el
 client legacy (`commissionsCalculationService.js:45`) la calculaba sobre `total_price` (neto de
@@ -468,12 +486,18 @@ RPC no replica la inferencia de descuentos implícitos del legacy (diferencia `s
 **Impacto:** posible divergencia en montos de comisión y en el filtro "con descuento" del reporte
 respecto a los resultados previos del RPC.
 
-**Recomendación:** validar con una muestra real de ventas con descuento si `sale_details.total_price`
-es el neto post-descuento y decidir la base canónica (neto) para alinear la RPC. Vinculado a
+**Resolución:** verificado con datos reales (239 filas de `sale_details`): `unit_price * quantity`
+coincide con `total_price` en **las 239 filas**, por lo que la RPC (`unit_price*qty`) y el client
+(`commissionsCalculationService.js:45`, `total_price`) ya calculan la misma base neta. No hay
+descuentos implícitos (`discount_amount = 0` junto con `unit_price*qty <> total_price` = 0 filas).
+`unit_price` ya es el precio final (igual a `final_unit_price` en las filas con descuento) y
+`original_unit_price` es el precio de lista, que nadie usa como base. Se decide mantener la base
+neta actual; no requiere migración. La premisa original de diferencia bruta/neta (`sale_price` vs
+`unit_price`) no existe en los datos: `sale_details` no tiene columna `sale_price`. Vinculado a
 `BACKLOG.md`.
 
 ### 20. Precedencia commission_value/percent y bordes de has_commission y tipo `'percentage'`
-**Estado:** abierto — bordes de bajo impacto (10 sep 2026).
+**Estado:** Resuelto — 17 sep 2026, decisión YAGNI: no se normaliza (los bordes no ocurren en datos; sin cambio de código).
 
 En la RPC de comisiones: la comisión % usa `COALESCE(commission_percent, commission_value, 0)`
 mientras el legacy usaba `commission_value || commission_percent` (precedencia opuesta,
@@ -484,8 +508,14 @@ legacy, `:44`) ya no se interpreta — se calcula como flat.
 **Impacto:** bordes: filas marcadas comisionables con montos 0, productos con ambos campos seteados
 distintos, o configurados con tipo `percentage`.
 
-**Recomendación:** al tocar la base de comisión (punto 19), normalizar la precedencia,
-`has_commission` y el alias `percentage`.
+**Resolución:** verificado con datos reales (44 productos): todos tienen
+`commission_type = 'percent'` y `commission_percent = commission_value`, por lo que la precedencia
+opuesta resulta indistinta; no hay filas con tipo `'percentage'` ni con `commission_enabled = true`
+y valor 0. `has_commission` se mantiene ligado a la configuración
+(`commission_enabled OR dept_commission_enabled`), que es la semántica vigente de la RPC y coincide
+con los datos. Se decide no normalizar (YAGNI) y no migrar; queda documentado como riesgo latente
+para el caso de que aparezca el tipo `'percentage'`, productos con ambos campos distintos, o
+`commission_enabled = true` con valor 0.
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
 **Estado:** resuelto en código — rama `perf/reports-scalability` (17 sep 2026); migración pendiente de
@@ -559,7 +589,7 @@ RPC base `get_branch_products_paginated` (aplicada con `supabase db push`). `aut
 conserva y `useProductsList` solo lo llama con sesión, sin impacto funcional.
 
 ### 29. RPCs de caja no validan membresía de sucursal (`user_branches`)
-**Estado:** abierto — detectado en la auditoría del cluster #1 (14 sep 2026).
+**Estado:** Resuelto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; pendiente `supabase db push`).
 
 `get_cash_register_session` y `open_cash_register` (migración `20260914120100`) son `SECURITY
 DEFINER` y reciben `p_branch_id` del cliente sin verificar que el usuario autenticado pertenezca a
@@ -571,11 +601,14 @@ no escala a multi-sucursal con roles diferenciados.
 **Impacto:** un cajero de la sucursal A podría abrir/consultar la caja de la sucursal B con la anon
 key pública y su propia sesión.
 
-**Recomendación:** validar membresía en `user_branches` (o `is_admin()`) dentro de las RPC, y/o
-alinear con la decisión de #10/#13. Ver excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
+**Resolución:** la migración `20260917190000` agrega el helper `_user_can_access_branch(p_branch_id)`
+(`SECURITY DEFINER`, exento vía `is_admin()`) y lo aplica en `get_cash_register_session` y
+`open_cash_register`, que ahora lanzan `42501` (`insufficient_privilege`) si el usuario autenticado no
+tiene membresía activa en `user_branches` para esa sucursal. La excepción `SECURITY DEFINER` queda
+documentada en `docs/SUPABASE_MIGRATIONS.md`; pendiente `supabase db push` para aplicarla al remoto.
 
 ### 30. `get_branch_by_device` es anon + `SECURITY DEFINER` (excepción de login pre-auth)
-**Estado:** abierto — decisión consciente documentada (14 sep 2026).
+**Estado:** Aceptado y documentado — 17 sep 2026 (excepción de login pre-auth; ver `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`).
 
 El login debe resolver la sucursal del equipo **antes** de autenticar, por lo que la RPC
 `get_branch_by_device` (migración `20260914120000`) se concede a `anon` y es `SECURITY DEFINER`
@@ -877,7 +910,7 @@ Supabase, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`). En dev 
 romper el HMR. Verificado en `dist/index.html`. Ver `DEPLOYMENT.md`.
 
 ### 38. Autorización de administrador gateada solo en el cliente (SEC-3)
-**Estado:** Abierto — requiere verificación del lado servidor (14 sep 2026).
+**Estado:** Mitigado parcialmente — 17 sep 2026. RPCs transaccionales endurecidas; el gateo en el cliente de las mutaciones administrativas se mantiene como **riesgo aceptado** por decisión #10/#13 (ver `PR_REVIEW.md`, `docs/EDGE_FUNCTIONS.md` y `PERMISSIONS.md`).
 
 Las secciones administrativas se protegen en el renderer (`ProtectedRoute` +
 `adminProtectedSections`, ver #27/#28) y el modal `AdminAuthorizationModal` re-autentica al admin vía
@@ -891,6 +924,24 @@ diferenciación real) y #29.
 
 **Recomendación:** auditar cada RPC/edge function administrativa y confirmar `is_admin()` /
 `has_permission()` server-side; registrar el resultado por endpoint.
+
+**Auditoría (17 sep 2026):** el resultado por endpoint está en `PR_REVIEW.md`. Hallazgos: (1) la
+autorización de `authorize-admin-action` no está ligada a la mutación — la acción la ejecuta la
+sesión del operador, y las mutaciones gateadas (`cash_exit_access` → `cash_movements`,
+`customers_deactivate`/`deactivate_fiscal_customer` → `customers`, `products_delete_access` →
+`products`) no exigen `is_admin()` y en su mayoría corren sobre tablas con RLS deshabilitado;
+(2) `reason` se descarta (el modal lo envía, pero el contrato y la función no lo reciben);
+(3) `action` no se valida contra allowlist. El cierre depende de la matriz #10/#13.
+
+**Mitigación (17 sep 2026):** decisión #10/#13 = "hardening sin habilitar RLS". Migración
+`20260917200000_harden_transactional_rpcs.sql`: revoca `EXECUTE` a `anon`/`PUBLIC` en las RPCs
+transaccionales (`create_sale_transaction` ×3, `cancel_sale_transaction`,
+`create_partial_return_transaction`, `create_transfer_order`, `cancel_transfer_order`,
+`receive_transfer_order`, `cancel_sale`, `complete_sale`) y fija `p_user_id := coalesce(auth.uid(),
+p_user_id)`, eliminando el acceso anónimo y la suplantación de actor. Quedan como riesgo aceptado las
+mutaciones administrativas sobre PostgREST (`cash_movements`, `customers`, `products`) y la falta de
+validación/auditoría de `reason`/`action`/`targetId`; se resolverían con RLS + `has_permission()` o con
+un token de autorización de un solo uso desde la edge function (ver `docs/EDGE_FUNCTIONS.md`).
 
 ### 39. Endurecimiento de Electron incompleto (SEC-4)
 **Estado:** Resuelto — 14 sep 2026.

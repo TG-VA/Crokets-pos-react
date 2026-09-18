@@ -63,3 +63,38 @@ método no es `POST`).
   rol admin — revisar si se quiere endurecer contra enumeración.
 - No confundir este flujo con el login normal de la app (`AuthContext` + Supabase Auth) ni con el
   login del backend Express local (ver `KNOWN_ISSUES.md` #1 y #2).
+
+### Auditoría SEC-3 (KNOWN_ISSUES #38, 17 sep 2026)
+
+Hallazgos de la revisión de que el gateo administrativo no viva solo en el cliente:
+
+1. **La autorización no está ligada a la mutación.** `authorize-admin-action` solo re-autentica al
+   admin y devuelve `ok`; no emite token ni ejecuta la acción. La operación posterior la realiza la
+   **sesión del usuario que está operando** (p. ej. el cajero) contra RLS/RPC, que hoy no exigen
+   `is_admin()` para las acciones gateadas (`cash_exit_access` → `cash_movements`; `customers_deactivate`
+   → `customers`; `deactivate_fiscal_customer` → `customers`). Un usuario autenticado puede saltarse
+   el modal e invocar la RPC/PostgREST directamente.
+2. **`reason` no existe en el contrato.** `AdminAuthorizationModal` envía `reason`
+   (`AdminAuthorizationModal.jsx:72`) pero `adminAuthorizationService.authorizeAdminAction` no lo
+   acepta y la función `index.ts` no lo lee ni lo persiste. El motivo requerido se descarta.
+3. **`action`/`targetId`/`branchId` no se validan.** El servidor autoriza cualquier string de
+   `action`; no hay allowlist contra `adminProtectedSections.js` ni registro de auditoría de la
+   autorización.
+4. **`action` de navegación ≠ acción sensible.** Las acciones `*_access` (reports/products/invoices)
+   solo protegen la navegación de UI; no corresponden a una mutación de datos específica, por lo que
+   no hay un "endpoint" server-side que validar en esos casos.
+
+**Mitigación aplicada (17 sep 2026, `20260917200000_harden_transactional_rpcs.sql`):** se endurecieron
+las RPCs transaccionales revocando `EXECUTE` a `anon`/`PUBLIC` y fijando `p_user_id := coalesce(auth.uid(),
+p_user_id)`, lo que cierra el acceso anónimo y la suplantación de actor en ventas, cancelaciones,
+traspasos y devoluciones.
+
+**Decisión #10/#13 (17 sep 2026, opción "hardening sin habilitar RLS"):** **no** se habilita RLS ni se
+exige `is_admin()` server-side en las mutaciones administrativas (catálogo, bajas de clientes, retiros de
+caja) porque el modelo actual es `authenticated` de confianza y activar RLS sobre ~37 tablas sin
+políticas rompería el acceso. Se documenta como **riesgo aceptado** en `PERMISSIONS.md`. `reason`,
+`action` y `targetId` siguen sin validarse ni auditarse en la edge function.
+
+**Recomendación futura:** si se requiere separación real admin vs cajero, emitir desde la edge function
+un token de un solo uso/registro de auditoría ligado a `authorizedBy` + `action` + `targetId` que la
+mutación consuma, y habilitar RLS por módulo con `has_permission()`. Ver el informe en `PR_REVIEW.md`.

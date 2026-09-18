@@ -18,7 +18,10 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
 * [ ] Transacciones atómicas (RPC) faltantes en Supabase para Importación y Kits — ver `KNOWN_ISSUES.md` #5
 * [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
-* [ ] Verificar con datos reales la base de la comisión % (bruta `unit_price*qty` vs neta `total_price`) y normalizar bordes (precedencia value/percent, `has_commission` en 0, tipo `percentage`) — ver `KNOWN_ISSUES.md` #19 y #20
+* [x] Verificar con datos reales la base de la comisión % — resuelto: RPC y client ya coinciden en el neto `unit_price*qty` (`= total_price`) y los bordes de #20 no ocurren en datos (YAGNI); ver `KNOWN_ISSUES.md` #19 y #20
+* [x] Validación de membresía de sucursal en las RPCs de caja (`get_cash_register_session`/`open_cash_register`) — migración `20260917190000`, pendiente `supabase db push`; ver `KNOWN_ISSUES.md` #29
+* [x] Documentar la excepción pre-auth de `get_branch_by_device` (anon + `SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #30, `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`
+* [x] Endurecer RPCs transaccionales (SEC-3): revocar `EXECUTE` a `anon`/`PUBLIC` y derivar `p_user_id` de `auth.uid()` — migración `20260917200000`, pendiente `supabase db push`; el gateo de mutaciones admin en el cliente queda como riesgo aceptado por decisión #10/#13; ver `KNOWN_ISSUES.md` #38, `PR_REVIEW.md` y `docs/EDGE_FUNCTIONS.md`
 
 ## Prioridad Media (Infraestructura y Testing)
 
@@ -26,7 +29,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
 * [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
 * [x] Migraciones SQL versionadas para el schema de Supabase (baseline `00000000000000_remote_schema_baseline.sql` marcado como aplicado; SQL legacy movido a `supabase/legacy/`; script de introspección versionado) — ver `KNOWN_ISSUES.md` #6
-* [ ] Revisión de roles y permisos entre Supabase y SQLite local — ver `KNOWN_ISSUES.md` #10
+* [x] Revisar roles y permisos Supabase vs SQLite local — decisión: "hardening sin habilitar RLS" (sin diferenciación admin vs cajero; riesgo aceptado). Queda pendiente decidir el futuro del backend SQLite legacy; ver `KNOWN_ISSUES.md` #10 y #13, `PERMISSIONS.md`
 * [x] Migrar tablas de reportes al hook global `usePagination` (client-side, server-side Sales e híbrido Cash completo) — ver `KNOWN_ISSUES.md` #15
 * [x] Extraer componente compartido `PaginationBar` y eliminar los footers de paginación duplicados — ver `KNOWN_ISSUES.md` #15
 * [x] Migrar lista de productos a paginación server-side (RPC `get_branch_products_paginated`; `useProductsList` desacoplado de `ProductsContext`) — ver `KNOWN_ISSUES.md` #16
