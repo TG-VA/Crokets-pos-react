@@ -4,11 +4,51 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { mapWithConcurrency } from "../../../../../utils/asyncUtils";
 import {
   aggregateProductsProfitability,
   aggregateDepartmentsProfitability,
   calculateProfitabilityKpis,
 } from "./profitabilityReportCalculationService";
+
+const SALE_DETAILS_CHUNK_SIZE = 100;
+const SALE_DETAILS_CONCURRENCY = 4;
+
+/**
+ * Carga un lote de detalles de venta. Aisla el fallo de un lote devolviendo []
+ * para no tumbar el reporte completo.
+ */
+const fetchSaleDetailsChunk = async (chunk) => {
+  const { data, error } = await supabase
+    .from("sale_details")
+    .select(
+      `
+      id,
+      sale_id,
+      product_id,
+      quantity,
+      unit_price,
+      discount_amount,
+      total_price,
+      products:product_id (
+        id,
+        name,
+        barcode,
+        department_id,
+        cost_price
+      )
+    `
+    )
+    .in("sale_id", chunk)
+    .limit(100000);
+
+  if (error) {
+    console.error("Error al cargar lote de detalles de venta:", error);
+    return [];
+  }
+
+  return data || [];
+};
 
 /**
  * Consulta la lista de sucursales activas
@@ -23,7 +63,10 @@ export const fetchBranchesList = async () => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error("Error al consultar sucursales en profitabilityReportService:", err);
+    console.error(
+      "Error al consultar sucursales en profitabilityReportService:",
+      err
+    );
     return [];
   }
 };
@@ -41,7 +84,10 @@ export const fetchDepartmentsList = async () => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error("Error al consultar departamentos en profitabilityReportService:", err);
+    console.error(
+      "Error al consultar departamentos en profitabilityReportService:",
+      err
+    );
     return [];
   }
 };
@@ -61,10 +107,10 @@ export const fetchProfitabilityReportData = async ({
       fetchDepartmentsList(),
       supabase
         .from("products")
-        .select("id, name, barcode, department_id, cost_price, sale_price, status, is_kit"),
-      supabase
-        .from("product_kits")
-        .select(`
+        .select(
+          "id, name, barcode, department_id, cost_price, sale_price, status, is_kit"
+        ),
+      supabase.from("product_kits").select(`
           id,
           kit_product_id,
           is_active,
@@ -88,7 +134,10 @@ export const fetchProfitabilityReportData = async ({
     }
 
     if (kitsRes.error) {
-      console.error("Error al consultar kits de productos en profitabilityReportService:", kitsRes.error);
+      console.error(
+        "Error al consultar kits de productos en profitabilityReportService:",
+        kitsRes.error
+      );
     }
 
     const kitsMap = {};
@@ -136,7 +185,10 @@ export const fetchProfitabilityReportData = async ({
     ]);
 
     if (branchInvResult.error) {
-      console.error("Error al consultar inventario por sucursal para costos:", branchInvResult.error);
+      console.error(
+        "Error al consultar inventario por sucursal para costos:",
+        branchInvResult.error
+      );
     }
 
     const branchInvData = branchInvResult.data || [];
@@ -159,40 +211,22 @@ export const fetchProfitabilityReportData = async ({
       saleIds.push(s.id);
     }
 
-    // 5. Cargar detalles de venta (sale_details) por lotes de seguridad (chunks de 100)
+    // 5. Cargar detalles de venta (sale_details) en chunks de 100 con
+    //    concurrencia acotada (SALE_DETAILS_CONCURRENCY lotes en vuelo)
     let saleDetailsList = [];
     if (saleIds.length > 0) {
-      const CHUNK_SIZE = 100;
-
-      for (let i = 0; i < saleIds.length; i += CHUNK_SIZE) {
-        const chunk = saleIds.slice(i, i + CHUNK_SIZE);
-        const { data: chunkDetails, error: chunkErr } = await supabase
-          .from("sale_details")
-          .select(`
-            id,
-            sale_id,
-            product_id,
-            quantity,
-            unit_price,
-            discount_amount,
-            total_price,
-            products:product_id (
-              id,
-              name,
-              barcode,
-              department_id,
-              cost_price
-            )
-          `)
-          .in("sale_id", chunk)
-          .limit(100000);
-
-        if (!chunkErr && chunkDetails) {
-          saleDetailsList = saleDetailsList.concat(chunkDetails);
-        } else if (chunkErr) {
-          console.error("Error al cargar lote de detalles de venta:", chunkErr);
-        }
+      const chunks = [];
+      for (let i = 0; i < saleIds.length; i += SALE_DETAILS_CHUNK_SIZE) {
+        chunks.push(saleIds.slice(i, i + SALE_DETAILS_CHUNK_SIZE));
       }
+
+      const chunkResults = await mapWithConcurrency(
+        chunks,
+        SALE_DETAILS_CONCURRENCY,
+        fetchSaleDetailsChunk
+      );
+
+      saleDetailsList = chunkResults.flat();
     }
 
     // 6. Filtrar por departamento si está seleccionado en los filtros
@@ -202,7 +236,10 @@ export const fetchProfitabilityReportData = async ({
         const prod = productsMap[d.product_id] || d.products;
         const isKit = prod?.is_kit || !!kitsMap[d.product_id];
         if (departmentId === "KIT_PROMO") {
-          return isKit && (!prod?.department_id || String(prod.department_id) === "KIT_PROMO");
+          return (
+            isKit &&
+            (!prod?.department_id || String(prod.department_id) === "KIT_PROMO")
+          );
         }
         return prod && String(prod.department_id) === String(departmentId);
       });
