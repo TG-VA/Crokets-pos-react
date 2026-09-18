@@ -42,6 +42,10 @@ const NavbarInventory = () => {
               {option.id === "traspasos" && badgeCount > 0 ? (
                 <span
                   className={styles.badgePendientes}
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label={`${badgeCount} recepciones pendientes de inventario`}
                   title={`${badgeCount} recepción(es) pendiente(s)`}
                 >
                   {badgeCount}
