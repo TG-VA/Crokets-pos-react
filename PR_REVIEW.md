@@ -357,3 +357,57 @@ nuevos; `console.error` conservado en los `catch` de los services; comillas dobl
 - **Prettier sobre archivos legacy:** 6 archivos tocados ya incumplían el formato en `main`; se
   formatearon completos porque el CI incremental verifica el archivo íntegro (churn de formato
   acotado a esos archivos).
+
+---
+
+## Informe de Auditoría — RAMA `refactor/reward-modal` (17 de septiembre de 2026)
+
+**Alcance:** descomposición del god component
+`src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` (#3). Alcance estricto: no se
+tocan `ProductsModify.jsx` ni `ProductsPromotions.jsx`. Paso previo: aplicación al remoto de la
+migración pendiente de Fase 2 (`supabase db push` de `20260917210000`).
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `ticketBuilder`):**
+- `rewardModalCalculationService.js` (puro): constantes, normalización de campos, validación,
+  construcción de formulario/payload, diff de productos y helpers de UI (estado de campo, filtro).
+- `rewardModalService.js` (DIP): catálogo de productos, productos vinculados, búsqueda de duplicados,
+  persistencia de `rewards` y sincronización de `reward_products`.
+- `useRewardModal.js`: estado, efectos de inicialización, derivados y handlers.
+- Vistas presentacionales `RewardDiscountFields.jsx` y `RewardProductSelector.jsx`.
+- `RewardModal.jsx`: orquestador de **280 líneas** (< 350); ya no importa `supabase`.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:** se portó la lógica sin cambios
+(validaciones, mensajes de error, defaults, orden de operaciones y textos de los avisos). La suite
+caracterizó y detectó un bug latente (ver Hallazgos).
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** el modal no muta contextos compartidos; expone los
+mismos props (`isOpen`, `onClose`, `onSaved`, `rewardToEdit`) a `RewardsSettings.jsx`.
+
+**§4 Estilos y UI — SIN CAMBIO:** mismo módulo CSS, misma estructura de nodos y clases; no se agregan
+`!important`.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis; sin
+`console.log`/`console.warn`; `console.error` conservado en los `catch`; comillas dobles y EOF newline.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #3 (tabla y bitácora), `BACKLOG.md` y este
+informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 430/430 (36 archivos; +53 sobre los 377 previos),
+`npm run build:frontend` OK, ESLint y Prettier incrementales sobre el diff contra `origin/main` con
+`EXIT=0` (solo warnings preexistentes de `no-unused-vars` por la config `jsx-runtime`).
+
+### Hallazgos de la revisión
+- **Bug latente corregido (validación de productos):** el `validateValues` original resolvía el
+  argumento `selectedIds` por default a partir del estado `selectedProductIds`. Al extraerlo como
+  función pura a `rewardModalCalculationService.js`, ese default se perdió; el test de caracterización
+  de `handleSubmit` lo detectó (un `free_product` con producto seleccionado no se guardaba). Se
+  corrigió pasando `selectedProductIds` explícito en `handleSubmit`, `currentErrors`, `handleChange`,
+  `handleBlur` y `handleRewardTypeChange`, conservando el comportamiento original.
+
+### Notas y límites conscientes
+- **#21 aplicado durante el setup:** la migración de Fase 2 se aplicó al remoto con
+  `supabase db push` (verificado: índice `idx_sale_payments_branch_created_at`, historial
+  `20260917210000` y RPC con el filtro `filtered_sessions`).
+- **Tests de UI:** el proyecto no testea JSX (ver `docs/TESTING.md`); la caracterización se centró en
+  el servicio puro y el hook.
