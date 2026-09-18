@@ -312,61 +312,48 @@ los marcaba).
 
 ---
 
-## Informe de seguridad — Fase 1 (rama `fix/security-hardening`, 17 sep 2026)
+## Informe de Auditoría — RAMA `perf/reports-scalability` (17 de septiembre de 2026)
 
-Alcance: cierre de #19/#20 (ya commiteado) y hardening SEC de #29, #38, #30, #13 y #10.
+**Alcance:** escalabilidad de reportes y SRP: #21 (pushdown del CTE `session_payments` + índice),
+#22 (concurrencia acotada en rentabilidad), #25 (extraer `inventoryReportCalculationService.js`) y
+#45 (llave de agrupación de pagos por `id`). No hay cambios de UI ni de contratos de datos; la
+salida de los reportes se mantiene idéntica.
 
-### Cambios aplicados
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- #22: nuevo helper `mapWithConcurrency` en `src/utils/asyncUtils.js` (DIP: el service no cambia su
+  dependencia de Supabase, solo el patrón de carga); `profitabilityReportService.js` pasa de un
+  `for await` secuencial a lotes de 100 con concurrencia 4, aislando el fallo por lote (`[]`).
+- #25: `inventoryReportCalculationService.js` puro (sin I/O) con las agregaciones y
+  `inventoryReportService.fetchInventoryReportData` reducido a RPC + delegación, conservando el
+  contrato `{ items, kpis, byDepartment, reorderSuggestions, exhaustedProducts, departments }`.
+- #45: `groupPaymentsByMethod` agrupa por `id` (`name` solo como fallback) con `Map`.
 
-| Ítem | Tipo | Archivo | Estado |
-|---|---|---|---|
-| #29 validación de sucursal en caja | Migración SQL | `supabase/migrations/20260917190000_cash_register_branch_validation.sql` | Creada, **no aplicada al remoto** (pendiente `supabase db push`) |
-| #30 excepción `get_branch_by_device` | Docs | `docs/SUPABASE_MIGRATIONS.md`, `PERMISSIONS.md` | Documentada |
-| #38 auditoría SEC-3 | Migración SQL + Docs | `supabase/migrations/20260917200000_harden_transactional_rpcs.sql`, `docs/EDGE_FUNCTIONS.md`, este informe | Mitigado parcialmente; riesgo aceptado en mutaciones admin |
-| #13/#10 matriz RLS/roles | Docs | `PERMISSIONS.md` | Decidido: "hardening sin habilitar RLS", riesgo aceptado |
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:** #21 reescribe únicamente el acotamiento del
+CTE; validado contra el remoto con `BEGIN/ROLLBACK` (34 filas, salida idéntica a la versión previa).
+#45 no altera totales (`total` sigue sumando `amount`); los tests cubren el caso de mismo nombre con
+`id` distinto.
 
-La migración #29 agrega `_user_can_access_branch(p_branch_id)` (`SECURITY DEFINER`, exento
-`is_admin()`) y exige membresía activa en `user_branches` a `get_cash_register_session` y
-`open_cash_register`, lanzando `42501` (`insufficient_privilege`) si no pertenece. No se tocaron las
-migraciones ya aplicadas.
+**§3 Estado y Contexto Global — SIN CAMBIO:** los calculation services son puros y no mutan arreglos
+de entrada (los mapas/filtros crean nuevas estructuras).
 
-### Auditoría #38 — acciones administrativas por endpoint
+**§4 Estilos y UI — SIN CAMBIO:** el diff no toca JSX ni CSS.
 
-| Acción UI | Mutación server-side | Control actual | ¿Exige admin? |
-|---|---|---|---|
-| `cash_exit_access` | `INSERT cash_movements` | RLS por dueño (`user_id = auth.uid()`) + sesión abierta | No |
-| `customers_deactivate` | `UPDATE customers` | RLS deshabilitado (solo `GRANT` de tabla) | No |
-| `deactivate_fiscal_customer` | `UPDATE customers` | RLS deshabilitado | No |
-| `products_delete_access` | `DELETE products` | RLS deshabilitado | No |
-| `invoice_settings_access` | `UPDATE cfdi_settings` | RLS activo sin políticas (deny-all salvo RPC/owner) | Parcial |
-| `reports_*`/`products_*_access` | Navegación (sin mutación) | No aplica | No aplica |
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis; sin `console.log`
+nuevos; `console.error` conservado en los `catch` de los services; comillas dobles y EOF newline.
 
-Las RPC transaccionales (`create_sale_transaction` ×3, `cancel_sale_transaction`,
-`create_partial_return_transaction`, `create_transfer_order`, `cancel_transfer_order`,
-`receive_transfer_order`, `cancel_sale`, `complete_sale`) eran `SECURITY DEFINER` con `EXECUTE` para
-`anon`/`PUBLIC` y recibían `p_user_id` del cliente en vez de derivarlo de `auth.uid()`.
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #21/#22/#25/#45 con estado y resolución,
+`BACKLOG.md` actualizado y este informe.
 
-**Decisión y mitigación aplicada (17 sep 2026):** se eligió el modelo "hardening sin habilitar RLS"
-(no se activan políticas sobre las ~37 tablas sin RLS). La migración
-`20260917200000_harden_transactional_rpcs.sql` (a) revoca `EXECUTE` a `anon` y `PUBLIC` en esas RPCs
-(solo `authenticated`/`service_role`) y (b) fija `p_user_id := coalesce(auth.uid(), p_user_id)`, de
-modo que un usuario autenticado no puede suplantar a otro; el valor entrante solo se conserva sin
-sesión (`service_role`). `is_admin()` resuelve `users.id = auth.uid()`, así que el uid coincide con
-`public.users.id`.
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 377/377 (34 archivos; +18 sobre los 359 previos),
+`npm run build:frontend` OK, ESLint y Prettier incrementales sobre el diff contra `origin/main` con
+`EXIT=0`. Nuevos tests: `inventoryReportCalculationService.test.js`, `asyncUtils.test.js` y
+`profitabilityReportService.test.js` (concurrencia: 5 lotes / máximo 4 en vuelo para 450 ventas).
 
-**Conclusión #38:** mitigado lo mitigable sin la matriz de roles. Persisten como **riesgo aceptado**:
-las mutaciones administrativas vía PostgREST (`cash_movements`, `customers`, `products`) que cualquier
-usuario autenticado puede invocar saltándose el modal; y la falta de validación/auditoría de
-`reason`/`action`/`targetId` en `authorize-admin-action`. Se resolverían con RLS por módulo +
-`has_permission()`, o con un token de un solo uso desde `authorize-admin-action` (ver
-`docs/EDGE_FUNCTIONS.md`).
-
-### Verificación
-
-- `npm test`: 359/359 en 31 archivos. `npm run build:frontend`: OK (4.29 s).
-- Migraciones #29 y #38/SEC-3: sin build de DB local (Docker no disponible). Ambas se **validaron
-  ejecutándolas contra el remoto dentro de `BEGIN; … ROLLBACK;`** (HTTP 201) y confirmando después que
-  no persistió nada (helper ausente / ACL intacta). Aplicación remota pendiente de `supabase db push`.
-- La migración de hardening se generó desde `pg_get_functiondef` del remoto (sin transcripción manual)
-  para eliminar riesgo de divergencia de cuerpos; solo se insertó la línea de `auth.uid()` al inicio de
-  cada cuerpo y se añadieron los `REVOKE`.
+### Notas y límites conscientes
+- **#21 sin aplicar:** la migración `20260917210000_cash_report_session_payments_pushdown.sql` está
+  creada y validada, pero no aplicada al remoto; requiere `supabase db push` (se solicita
+  confirmación al usuario). El `CTE` nuevo ya está en el archivo de migración.
+- **Prettier sobre archivos legacy:** 6 archivos tocados ya incumplían el formato en `main`; se
+  formatearon completos porque el CI incremental verifica el archivo íntegro (churn de formato
+  acotado a esos archivos).

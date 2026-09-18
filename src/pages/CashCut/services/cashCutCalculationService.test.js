@@ -160,7 +160,11 @@ describe("cashCutCalculationService", () => {
           total_refund: "20",
           created_at: "2026-09-01T11:00:00.000Z",
           refund_method_id: "pm2",
-          payment_methods: { id: "pm2", name: "Transferencia", affects_cash: false },
+          payment_methods: {
+            id: "pm2",
+            name: "Transferencia",
+            affects_cash: false,
+          },
         },
       ];
 
@@ -198,7 +202,11 @@ describe("cashCutCalculationService", () => {
     it("separa canjes aplicados de revertidos", () => {
       const rows = [
         { quantity: 2, total_points: 100, reversed_at: null },
-        { quantity: 1, total_points: 50, reversed_at: "2026-09-01T10:00:00.000Z" },
+        {
+          quantity: 1,
+          total_points: 50,
+          reversed_at: "2026-09-01T10:00:00.000Z",
+        },
         { total_points: -30, reversed_at: null },
       ];
 
@@ -222,11 +230,20 @@ describe("cashCutCalculationService", () => {
       expect(groupPaymentsByMethod([])).toEqual([]);
     });
 
-    it("agrupa por nombre de metodo conservando su id y affects_cash", () => {
+    it("agrupa por id de metodo conservando su id y affects_cash", () => {
       const rows = [
-        { amount: "100", payment_methods: { id: "pm1", name: "Efectivo", affects_cash: true } },
-        { amount: "50", payment_methods: { id: "pm1", name: "Efectivo", affects_cash: true } },
-        { amount: "30", payment_methods: { id: "pm2", name: "Tarjeta", affects_cash: false } },
+        {
+          amount: "100",
+          payment_methods: { id: "pm1", name: "Efectivo", affects_cash: true },
+        },
+        {
+          amount: "50",
+          payment_methods: { id: "pm1", name: "Efectivo", affects_cash: true },
+        },
+        {
+          amount: "30",
+          payment_methods: { id: "pm2", name: "Tarjeta", affects_cash: false },
+        },
         { amount: "10", payment_methods: null },
       ];
 
@@ -234,6 +251,49 @@ describe("cashCutCalculationService", () => {
         { id: "pm1", name: "Efectivo", total: 150, affects_cash: true },
         { id: "pm2", name: "Tarjeta", total: 30, affects_cash: false },
         { id: null, name: "Otro", total: 10, affects_cash: false },
+      ]);
+    });
+
+    it("no fusiona metodos distintos con el mismo nombre", () => {
+      const rows = [
+        {
+          amount: "100",
+          payment_methods: { id: "pm1", name: "Efectivo", affects_cash: true },
+        },
+        {
+          amount: "40",
+          payment_methods: { id: "pm9", name: "Efectivo", affects_cash: true },
+        },
+      ];
+
+      expect(groupPaymentsByMethod(rows)).toEqual([
+        { id: "pm1", name: "Efectivo", total: 100, affects_cash: true },
+        { id: "pm9", name: "Efectivo", total: 40, affects_cash: true },
+      ]);
+    });
+
+    it("usa el nombre como fallback cuando el pago no trae metodo", () => {
+      const rows = [
+        {
+          amount: "10",
+          payment_methods: {
+            id: null,
+            name: "Sin metodo",
+            affects_cash: false,
+          },
+        },
+        {
+          amount: "5",
+          payment_methods: {
+            id: null,
+            name: "Sin metodo",
+            affects_cash: false,
+          },
+        },
+      ];
+
+      expect(groupPaymentsByMethod(rows)).toEqual([
+        { id: null, name: "Sin metodo", total: 15, affects_cash: false },
       ]);
     });
   });
@@ -413,7 +473,9 @@ describe("cashCutCalculationService", () => {
         { refund_method_name: "Efectivo", total_refund: 20 },
       ];
 
-      expect(calculateRefundsByMethod(cancelaciones, devolucionesParciales)).toEqual({
+      expect(
+        calculateRefundsByMethod(cancelaciones, devolucionesParciales)
+      ).toEqual({
         devolucionesEfectivoMetodo: 120,
         devolucionesTerminalMetodo: 50,
         devolucionesTransferenciaMetodo: 30,
@@ -533,7 +595,11 @@ describe("cashCutCalculationService", () => {
       expect(
         resolveCutDisplay({
           isHistoricalView: true,
-          historicalCut: { expected_amount: "300", counted_amount: "290", difference: -10 },
+          historicalCut: {
+            expected_amount: "300",
+            counted_amount: "290",
+            difference: -10,
+          },
           currentShiftCut: { counted_amount: "450", difference: 10 },
           dineroCaja: 440,
         })
