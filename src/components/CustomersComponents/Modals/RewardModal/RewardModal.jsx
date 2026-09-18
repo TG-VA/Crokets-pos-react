@@ -4,6 +4,8 @@ import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import {
   DESCRIPTION_MAX_LENGTH,
   NAME_MAX_LENGTH,
+  POINTS_MAX_LENGTH,
+  QUANTITY_MAX_LENGTH,
   getRewardFieldState,
 } from "./rewardModalCalculationService";
 import { useRewardModal } from "./useRewardModal";
@@ -108,7 +110,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
             <input
               type="text"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={POINTS_MAX_LENGTH}
               value={formData.points_required}
               onChange={(event) =>
                 handleChange("points_required", event.target.value)
@@ -154,7 +156,7 @@ const RewardModal = ({ isOpen, onClose, onSaved, rewardToEdit }) => {
             <input
               type="text"
               inputMode="numeric"
-              maxLength={3}
+              maxLength={QUANTITY_MAX_LENGTH}
               value={formData.reward_quantity}
               onChange={(event) =>
                 handleChange("reward_quantity", event.target.value)

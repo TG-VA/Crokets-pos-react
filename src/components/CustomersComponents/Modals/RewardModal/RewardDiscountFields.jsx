@@ -1,4 +1,5 @@
 import styles from "./RewardModal.module.css";
+import { DISCOUNT_VALUE_MAX_LENGTH } from "./rewardModalCalculationService";
 
 const RewardDiscountFields = ({
   formData,
@@ -41,7 +42,7 @@ const RewardDiscountFields = ({
         <input
           type="text"
           inputMode="decimal"
-          maxLength={8}
+          maxLength={DISCOUNT_VALUE_MAX_LENGTH}
           value={formData.discount_value}
           onChange={(event) =>
             handleChange("discount_value", event.target.value)
