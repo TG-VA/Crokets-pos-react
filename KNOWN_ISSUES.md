@@ -488,42 +488,56 @@ distintos, o configurados con tipo `percentage`.
 `has_commission` y el alias `percentage`.
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
-**Estado:** abierto — escalabilidad (10 sep 2026).
+**Estado:** resuelto en código — rama `perf/reports-scalability` (17 sep 2026); migración pendiente de
+aplicar al remoto.
 
-`get_cash_report_sessions` (migración `20260910120100`) agrega `sale_payments` completos en el CTE
-`session_payments` y solo acota por ventana de sesión en el JOIN final; no hay pushdown del rango de
-fechas dentro del CTE y falta un índice acotado para el join por ventana.
+`get_cash_report_sessions` (migración `20260910120100`) agregaba `sale_payments` completos en el CTE
+`session_payments` y solo acotaba por ventana de sesión en el JOIN final; no había pushdown del rango
+de fechas dentro del CTE ni un índice acotado para el join por ventana.
 
 **Impacto:** a medida que crece el histórico de pagos, el reporte de caja puede degradarse.
 
-**Recomendación:** acotar el CTE por rango de fechas (o filtrar por `sale_id IN (...)` del periodo) y
-evaluar un índice compuesto, p. ej. `sale_payments (branch_id, created_at)`.
+**Resolución (17 sep 2026) — rama `perf/reports-scalability`:** migración
+`20260917210000_cash_report_session_payments_pushdown.sql` que (1) crea el índice compuesto
+`idx_sale_payments_branch_created_at (branch_id, created_at)` y (2) reescribe el CTE `session_payments`
+para acotar por `sp.branch_id IN (SELECT branch_id FROM filtered_sessions)` y por el rango
+`MIN(opened_at)`–`MAX(COALESCE(closed_at, now()))` de las sesiones filtradas. Validado contra el remoto
+con `BEGIN/ROLLBACK`: 34 filas, salida idéntica a la versión previa; `sale_payments` sin `branch_id`
+ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Pendiente:** aplicar la
+migración con `supabase db push`.
 
 ### 22. Rentabilidad: procesamiento de partidas secuencial por chunks sin concurrencia
-**Estado:** abierto — escalabilidad (10 sep 2026).
+**Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
-`profitabilityReportService.js` recorre `sale_details` en chunks de `CHUNK_SIZE = 100` con un bucle
-`for await` totalmente secuencial; con periodos grandes (decenas de miles de tickets) eso puede
+`profitabilityReportService.js` recorría `sale_details` en chunks de `CHUNK_SIZE = 100` con un bucle
+`for await` totalmente secuencial; con periodos grandes (decenas de miles de tickets) eso podía
 implicar hasta ~1000 requests encadenados.
 
 **Impacto:** latencia del reporte de rentabilidad en periodos largos.
 
-**Recomendación:** introducir concurrencia acotada (batches paralelos de tamaño fijo con
-`Promise.all` limitado) o mover la agregación a un RPC, siguiendo el patrón de comisiones/caja.
+**Resolución (17 sep 2026) — rama `perf/reports-scalability`:** se agregó el helper puro
+`mapWithConcurrency(items, limit, mapper)` en `src/utils/asyncUtils.js` y `profitabilityReportService.js`
+ahora carga `sale_details` en lotes de `SALE_DETAILS_CHUNK_SIZE = 100` con
+`SALE_DETAILS_CONCURRENCY = 4` vía `fetchSaleDetailsChunk` (que aísla el fallo de un lote devolviendo
+`[]`). Tests: `src/utils/asyncUtils.test.js` (límite de concurrencia y orden) y
+`profitabilityReportService.test.js` (verifica 5 lotes para 450 ventas con máximo 4 en vuelo).
 
 ### 25. Agregación del reporte de inventario inline en el service sin CalculationService puro
-**Estado:** abierto — consistencia con `CODE_STANDARDS.md` (10 sep 2026).
+**Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
-`inventoryReportService.fetchInventoryReportData` agrupa filas, calcula KPIs/reorder/sugerencias y
-construye resúmenes por departamento inline, sin `*CalculationService` puro (a diferencia de
-comisiones, que sí separa `commissionsCalculationService.js`). La lógica queda dividida entre SQL
-(estados/umbrales por fila en `get_inventory_report_data`) y JS (agregación), lo que complica el
+`inventoryReportService.fetchInventoryReportData` agrupaba filas, calculaba KPIs/reorder/sugerencias y
+construía resúmenes por departamento inline, sin `*CalculationService` puro (a diferencia de
+comisiones, que sí separa `commissionsCalculationService.js`). La lógica quedaba dividida entre SQL
+(estados/umbrales por fila en `get_inventory_report_data`) y JS (agregación), lo que complicaba el
 testeo y reuso (SRP).
 
 **Impacto:** mantenibilidad y cifras sujetas a duplicar criterios si el RPC cambia umbrales.
 
-**Recomendación:** extraer las agregaciones a un `inventoryReportCalculationService.js` puro
-(patrón del repo) manteniendo el contrato actual.
+**Resolución (17 sep 2026) — rama `perf/reports-scalability`:** nuevo
+`inventoryReportCalculationService.js` puro (`mapInventoryRowsToItems`, `calculateInventoryKpis`,
+`buildDepartmentBreakdown`, `buildReorderSuggestions`, `buildExhaustedProducts`, `buildDepartments`)
+consumido por `fetchInventoryReportData`, que conserva idéntico el contrato de retorno. Tests en
+`inventoryReportCalculationService.test.js`.
 
 ### 26. RPCs de reportes concedían EXECUTE a `anon` (exposición de datos sin sesión)
 **Estado:** resuelto — migración `20260910120600_restrict_report_rpc_grants.sql`, 10 sep 2026.
@@ -592,18 +606,20 @@ expuestas. Aun así, versionar estado local del CLI no es deseable.
 archivos del índice con `git rm --cached -r supabase/.temp/` (se conservan en disco).
 
 ### 45. Agrupación de pagos por nombre en el cálculo del corte
-**Estado:** abierto (15 sep 2026) — hallazgo del refactor de `CashCut.jsx`.
+**Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `groupPaymentsByMethod` (extraído en la Fase 1 del refactor a
-`src/pages/CashCut/services/cashCutCalculationService.js`) agrupa los pagos por el **nombre** del
+`src/pages/CashCut/services/cashCutCalculationService.js`) agrupaba los pagos por el **nombre** del
 método, conservando el `id` y `affects_cash` de la primera aparición. Si existen dos métodos
-distintos con el mismo nombre (p. ej. catálogos por sucursal), sus montos se fusionan en una sola
-fila y el `id` usado para el detalle del corte (`cash_cut_details`) puede no corresponder al método
+distintos con el mismo nombre (p. ej. catálogos por sucursal), sus montos se fusionaban en una sola
+fila y el `id` usado para el detalle del corte (`cash_cut_details`) podía no corresponder al método
 real.
 
-El comportamiento es preexistente y se congeló tal cual durante el refactor (que no debe cambiar
-totales). **Recomendación:** definir la llave de agrupación (`id` cuando exista, con `name` solo como
-fallback para pagos sin método) y validar con datos reales si hay nombres duplicados.
+**Resolución (17 sep 2026) — rama `perf/reports-scalability`:** la llave de agrupación ahora es
+`payment.payment_methods?.id || name` (con `name` solo como fallback para pagos sin método), vía
+`Map`, conservando `name`/`affects_cash` de la primera aparición. Tests actualizados y 2 casos nuevos
+en `cashCutCalculationService.test.js` (mismo nombre con `id` distinto no se fusiona; sin `id` se
+agrupa por `name`).
 
 ---
 

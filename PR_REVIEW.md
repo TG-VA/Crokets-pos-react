@@ -308,3 +308,51 @@ los marcaba).
   con `xargs -r`; el exit 0/1 se maneja con `|| true` para el caso sin archivos.
 - **Pendiente de Fase 0:** confirmar que el workflow CI se dispara correctamente en el primer push
   del PR (no se puede validar localmente el runner de GitHub).
+
+---
+
+## Informe de Auditoría — RAMA `perf/reports-scalability` (17 de septiembre de 2026)
+
+**Alcance:** escalabilidad de reportes y SRP: #21 (pushdown del CTE `session_payments` + índice),
+#22 (concurrencia acotada en rentabilidad), #25 (extraer `inventoryReportCalculationService.js`) y
+#45 (llave de agrupación de pagos por `id`). No hay cambios de UI ni de contratos de datos; la
+salida de los reportes se mantiene idéntica.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- #22: nuevo helper `mapWithConcurrency` en `src/utils/asyncUtils.js` (DIP: el service no cambia su
+  dependencia de Supabase, solo el patrón de carga); `profitabilityReportService.js` pasa de un
+  `for await` secuencial a lotes de 100 con concurrencia 4, aislando el fallo por lote (`[]`).
+- #25: `inventoryReportCalculationService.js` puro (sin I/O) con las agregaciones y
+  `inventoryReportService.fetchInventoryReportData` reducido a RPC + delegación, conservando el
+  contrato `{ items, kpis, byDepartment, reorderSuggestions, exhaustedProducts, departments }`.
+- #45: `groupPaymentsByMethod` agrupa por `id` (`name` solo como fallback) con `Map`.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:** #21 reescribe únicamente el acotamiento del
+CTE; validado contra el remoto con `BEGIN/ROLLBACK` (34 filas, salida idéntica a la versión previa).
+#45 no altera totales (`total` sigue sumando `amount`); los tests cubren el caso de mismo nombre con
+`id` distinto.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** los calculation services son puros y no mutan arreglos
+de entrada (los mapas/filtros crean nuevas estructuras).
+
+**§4 Estilos y UI — SIN CAMBIO:** el diff no toca JSX ni CSS.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis; sin `console.log`
+nuevos; `console.error` conservado en los `catch` de los services; comillas dobles y EOF newline.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #21/#22/#25/#45 con estado y resolución,
+`BACKLOG.md` actualizado y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 377/377 (34 archivos; +18 sobre los 359 previos),
+`npm run build:frontend` OK, ESLint y Prettier incrementales sobre el diff contra `origin/main` con
+`EXIT=0`. Nuevos tests: `inventoryReportCalculationService.test.js`, `asyncUtils.test.js` y
+`profitabilityReportService.test.js` (concurrencia: 5 lotes / máximo 4 en vuelo para 450 ventas).
+
+### Notas y límites conscientes
+- **#21 sin aplicar:** la migración `20260917210000_cash_report_session_payments_pushdown.sql` está
+  creada y validada, pero no aplicada al remoto; requiere `supabase db push` (se solicita
+  confirmación al usuario). El `CTE` nuevo ya está en el archivo de migración.
+- **Prettier sobre archivos legacy:** 6 archivos tocados ya incumplían el formato en `main`; se
+  formatearon completos porque el CI incremental verifica el archivo íntegro (churn de formato
+  acotado a esos archivos).
