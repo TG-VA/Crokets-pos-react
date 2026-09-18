@@ -251,6 +251,65 @@ Verificación final de la re-auditoría: 109 tests en el paquete ticket (9 suite
 agregadas del diff, sin referencias a `ticketLayout` ni a `src/utils/ticketBuilder.js`, grafo de
 imports acíclico.
 
+## Informe de Auditoría — RAMA `chore/tech-debt-foundations` (17 de septiembre de 2026)
+
+Fase 0 de deuda técnica: guardarraíles (ESLint/Prettier/CI), baseline de migraciones de Supabase y
+re-baseline documental. **No modifica código de producción**: `src/` no aparece en el diff. El
+cambio son archivos de configuración, CI, migraciones SQL y documentación.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — N/A (sin cambios de runtime).** El diff no toca componentes,
+hooks ni servicios. El build pasa (`npm run build:frontend` OK, 4.33 s) con el code-splitting
+existente intacto (`spreadsheets` 1.36 MB bajo demanda). La configuración de ESLint respeta los
+estándares del repo (`no-console` solo permite `console.error`).
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (migraciones idempotentes).**
+`migrations/20260917180000_get_email_by_username.sql` reproduce el cuerpo exacto del remoto
+capturado con `pg_get_functiondef` (`SECURITY DEFINER`, `STABLE`, `search_path=public` fijo, retorna
+solo el email de usuarios `status = true`) y normaliza grants (`REVOKE ALL FROM public` + `anon`,
+`authenticated`, `service_role`). Tras `db push` se verificó por introspección que la ACL es
+`anon/authenticated/service_role` (sin el grant implícito a `public`).
+`00000000000000_remote_schema_baseline.sql` es **schema-only**: 0 `INSERT`/`COPY`; 50 tablas, 30
+funciones, 31 policies. Se marcó como aplicada con `migration repair` (no re-ejecuta DDL) y
+`supabase migration list` muestra las **15 versiones alineadas** local/remoto.
+
+**§3 Estado y Contexto Global — N/A:** no se tocan contextos compartidos.
+
+**§4 Estilos y UI — N/A:** el diff no toca JSX ni CSS. La única regla CSS es la configuración de
+Prettier (`tabWidth 2`, comillas dobles, `trailingComma es5`, LF), alineada con el estilo dominante
+del repo.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+- Emojis en líneas agregadas del diff: sin resultados (las dos apariciones de `✅` en
+  `KNOWN_ISSUES.md` son texto preexistente de #34, no líneas nuevas).
+- `console.log`/`console.warn`: sin resultados en los archivos nuevos.
+- EOF newline: 0 archivos del diff sin salto final (verificado por byte con `od`).
+- Sin `!important`, emojis ni estilos inline introducidos.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` (#6, #8 y #41 con estado y fecha),
+`BACKLOG.md` (checkboxes de lint y migraciones), `docs/SUPABASE_MIGRATIONS.md` (baseline, tabla de
+migraciones, `legacy/`, `scripts/` y flujo de `migration repair`), `SCHEMA.md` (script versionado y
+baseline) y `docs/TESTING.md` (sección de lint/format). El SQL legacy se movió de la raíz a
+`supabase/legacy/` con `git mv` (historial preservado).
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 359/359 (31 archivos); `npm run build:frontend` OK;
+ESLint y Prettier incrementales sobre el diff contra `origin/main` (`3491a90`) con `EXIT=0` en
+ambos. Se corrigió el formato de `eslint.config.mjs` y `.prettierrc.json` antes de cerrar (Prettier
+los marcaba).
+
+### Notas y límites conscientes
+- **Lint incremental:** el repo arrastra 684 problemas legacy (140 errores, 544 warnings) que no se
+  corrigen en esta fase; el CI solo bloquea por el diff para no congelar el proyecto. Queda como
+  deuda a saldar conforme se tocan archivos (documentado en #8).
+- **Baseline marcado con `migration repair`:** es una operación de historial, no de schema; no se
+  ejecutó DDL sobre el remoto (se verificó que `db push --dry-run` solo listaba la migración nueva).
+- **`SCHEMA.md`** no se regeneró con las últimas migraciones (`app_settings`, RPCs de caja/login);
+  se documentó como pendiente con el script versionado listo para regenerarlo.
+- **`rg` en el CI:** el workflow usa ripgrep (preinstalado en los runners `ubuntu-latest` de GitHub)
+  con `xargs -r`; el exit 0/1 se maneja con `|| true` para el caso sin archivos.
+- **Pendiente de Fase 0:** confirmar que el workflow CI se dispara correctamente en el primer push
+  del PR (no se puede validar localmente el runner de GitHub).
+
 ---
 
 ## Informe de seguridad — Fase 1 (rama `fix/security-hardening`, 17 sep 2026)
