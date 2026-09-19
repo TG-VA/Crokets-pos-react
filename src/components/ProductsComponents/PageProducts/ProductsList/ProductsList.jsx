@@ -1,10 +1,10 @@
 import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
+import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
 
 const ProductsList = () => {
   const {
-    products,
     loadingProducts,
     productsError,
     searchTerm,
@@ -17,7 +17,15 @@ const ProductsList = () => {
     filterRef,
     selectedRowRef,
     departments,
-    filteredProducts,
+    totalCount,
+    paginatedProducts,
+    currentPage,
+    totalPages,
+    pageSize,
+    pageStart,
+    pageEnd,
+    handlePageChange,
+    handlePageSizeChange,
     formatDept,
     handleDepartmentSelect,
     handleRowClick,
@@ -109,14 +117,14 @@ const ProductsList = () => {
                 </div>
                 {departments.map((dept) => (
                   <div
-                    key={dept}
+                    key={dept.id}
                     className={[
                       styles.filterOption,
-                      selectedDepartment === dept ? styles.filterOptionSelected : ""
+                      selectedDepartment === dept.name ? styles.filterOptionSelected : ""
                     ].filter(Boolean).join(" ")}
-                    onClick={() => handleDepartmentSelect(dept)}
+                    onClick={() => handleDepartmentSelect(dept.name)}
                   >
-                    {formatDept(dept)}
+                    {formatDept(dept.name)}
                   </div>
                 ))}
               </div>
@@ -136,13 +144,14 @@ const ProductsList = () => {
       </div>
 
       <div className={styles.resultsInfo}>
-        {filteredProducts.length === 0 ? (
+        {totalCount === 0 ? (
           <span className={styles.noResultsText}>
             No se encontraron productos
           </span>
         ) : (
           <span className={styles.resultsCount}>
-            Mostrando {filteredProducts.length} de {products.length} productos
+            Mostrando {pageStart + 1} a {pageEnd} de {totalCount}{" "}
+            productos
             {selectedDepartment &&
               ` en ${formatDept(selectedDepartment).toUpperCase()}`}
           </span>
@@ -162,43 +171,62 @@ const ProductsList = () => {
           </thead>
 
           <tbody>
-            {filteredProducts.map((product, index) => (
-              <tr
-                key={`${product.product_id || product.id || product.codigo}-${index}`}
-                ref={index === selectedRowIndex ? selectedRowRef : null}
-                className={[
-                  styles.productRow,
-                  index === selectedRowIndex ? styles.selectedRow : ""
-                ].filter(Boolean).join(" ")}
-                onClick={() => handleRowClick(index)}
-              >
-                <td>{product.codigo}</td>
-                <td className={styles.descriptionCell}>
-                  <span className={styles.scrollText}>
-                    {product.descripcion}
-                  </span>
-                </td>
-                <td className={styles.departmentCell}>
-                  {product.departamento}
-                </td>
-                <td className={styles.priceCell}>
-                  {formatMoney(product.costo)}
-                </td>
-                <td className={styles.priceCell}>
-                  {formatMoney(product.precio)}
-                </td>
-              </tr>
-            ))}
+            {paginatedProducts.map((product, rowIndex) => {
+              const index = pageStart + rowIndex;
+
+              return (
+                <tr
+                  key={`${product.product_id || product.id || product.codigo}-${index}`}
+                  ref={index === selectedRowIndex ? selectedRowRef : null}
+                  className={[
+                    styles.productRow,
+                    index === selectedRowIndex ? styles.selectedRow : ""
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => handleRowClick(index)}
+                >
+                  <td>{product.codigo}</td>
+                  <td className={styles.descriptionCell}>
+                    <span className={styles.scrollText}>
+                      {product.descripcion}
+                    </span>
+                  </td>
+                  <td className={styles.departmentCell}>
+                    {product.departamento}
+                  </td>
+                  <td className={styles.priceCell}>
+                    {formatMoney(product.costo)}
+                  </td>
+                  <td className={styles.priceCell}>
+                    {formatMoney(product.precio)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
-        {filteredProducts.length === 0 && (
+        {totalCount === 0 && !loadingProducts && (
           <div className={styles.noResults}>
             No se encontraron productos que coincidan con los criterios de
             búsqueda.
           </div>
         )}
       </div>
+
+      {totalCount > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalCount}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          itemsNoun="productos"
+          labelMode="pageCount"
+          selectorLabel="Mostrar:"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
     </div>
   );
 };

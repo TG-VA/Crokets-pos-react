@@ -16,30 +16,6 @@
   flex: 1;
 }
 
-.sessionHeader {
-  padding: 14px 0 10px;
-  margin: 0;
-  border-bottom: 1px solid #e0e5ec;
-}
-
-.pageTitle {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 900;
-  color: #1a2332;
-  letter-spacing: -0.5px;
-}
-
-.sessionInfo {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #888888;
-}
-
-.userName {
-  color: #1976d2;
-}
-
 .fullLoading {
   display: flex;
   flex-direction: column;
@@ -136,9 +112,8 @@
 }
 
 .heroStatLabel img {
-  width: 12px !important;
-  height: 12px !important;
-  filter: brightness(0) invert(1) !important;
+  --icon-size: 12px;
+  --icon-filter: brightness(0) invert(1);
   opacity: 0.9;
 }
 
@@ -146,10 +121,6 @@
   color: #ffffff;
   font-size: 18px;
   font-weight: 800;
-}
-
-.negative {
-  color: #ff6b6b !important;
 }
 
 .grid {
@@ -188,13 +159,12 @@
 }
 
 .cardIcon img {
-  width: 15px !important;
-  height: 15px !important;
+  --icon-size: 15px;
+  --icon-filter: invert(39%) sepia(92%) saturate(982%) hue-rotate(167deg)
+    brightness(87%) contrast(91%);
   display: block;
   object-fit: contain;
-  filter: invert(39%) sepia(92%) saturate(982%) hue-rotate(167deg)
-    brightness(87%) contrast(91%) !important;
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 .cardTitle {
@@ -237,8 +207,8 @@
 }
 
 .bold {
-  color: #1a2332 !important;
-  font-weight: 800 !important;
+  color: #1a2332;
+  font-weight: 800;
 }
 
 .emptyState {
@@ -397,10 +367,9 @@
 }
 
 .cutDoneAlert img {
-  width: 15px !important;
-  height: 15px !important;
-  filter: invert(37%) sepia(92%) saturate(632%) hue-rotate(95deg)
-    brightness(87%) contrast(89%) !important;
+  --icon-size: 15px;
+  --icon-filter: invert(37%) sepia(92%) saturate(632%) hue-rotate(95deg)
+    brightness(87%) contrast(89%);
 }
 
 @media (max-width: 900px) {

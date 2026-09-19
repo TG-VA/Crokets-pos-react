@@ -3,12 +3,21 @@
 Este documento es un **inventario de tablas y columnas** del schema `public` de Supabase, generado
 por introspección directa (`information_schema`) el 24 de agosto de 2026. No sustituye el detalle
 completo del Dashboard de Supabase, pero permite entender la estructura del proyecto sin salir del
-repositorio. Si el schema cambia, este documento debe regenerarse — ver
-`supabase_schema_introspection.sql` en la raíz del repo (o donde el equipo decida guardarlo) para
-las queries usadas.
+repositorio. Si el schema cambia, este documento debe regenerarse ejecutando el script versionado
+`supabase/scripts/schema_introspection.sql` (solo lectura) y actualizando las tablas de abajo.
 
-**Pendiente:** no hay migraciones SQL versionadas en `supabase/migrations/` (ver `KNOWN_ISSUES.md`
-punto 6). Este documento es actualmente la única referencia de schema versionada en Git.
+**Actualización (17 sep 2026) — rama `chore/tech-debt-foundations`:** el schema completo quedó
+versionado como baseline ejecutable en
+`supabase/migrations/00000000000000_remote_schema_baseline.sql` (`pg_dump` schema-only: 50 tablas,
+30 funciones, 31 políticas RLS), marcado como aplicado en el remoto con `supabase migration repair`.
+El script de introspección que antes se corría ad-hoc ya está versionado en
+`supabase/scripts/schema_introspection.sql`. Con esto este documento deja de ser la única referencia
+de schema en Git (ver `KNOWN_ISSUES.md` #6 y `docs/SUPABASE_MIGRATIONS.md`). `get_email_by_username`,
+que se documenta más abajo en la tabla de RPCs, también quedó capturada en una migración
+(`20260917180000`, ver `KNOWN_ISSUES.md` #41).
+
+**Pendiente:** regenerar las tablas de inventario con el script versionado — este documento es del
+24 ago 2026 y no refleja aún las migraciones posteriores (`app_settings`, RPCs de caja y login).
 
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 
@@ -27,7 +36,7 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 | subtotal | numeric | NN |
 | tax | numeric | default 16.00 |
 | total | numeric | NN |
-| status | varchar | default 'completed' |
+| status | varchar | default 'completed' — valores vigentes en la app: `completed`, `pending`, `refunded`, `cancelled`/`cancelada`, `partial_refund` (ver `ticketBuilder.js`, `reportsDashboardUtils.js`, `cashCut.jsx`, `salesHistoryService.js`, `salesCashService.js`) |
 | client_sale_token | uuid | idempotencia del cliente (POS) |
 | discount_total | numeric | default 0 |
 | notes | text | |
@@ -490,6 +499,23 @@ punto 6). Este documento es actualmente la única referencia de schema versionad
 
 ---
 
+## Configuración
+
+### app_settings
+| Columna | Tipo | Notas |
+|---|---|---|
+| key | text | PK (ej. `cash_register.max_opening_amount`) |
+| value | jsonb | NN |
+| description | text | |
+| updated_at | timestamptz | default now() |
+| updated_by | uuid | → users.id |
+
+Creada en la migración `20260914130000`. RLS activa y sin grants para `anon`/`authenticated`: solo
+la leen/escriben las RPC `SECURITY DEFINER` (owner) o `service_role`. El panel de configuración que
+escribirá estos valores queda pendiente (ver `KNOWN_ISSUES.md` #33).
+
+---
+
 ## Funciones (RPC) relevantes
 
 Detectadas en `information_schema.routines`, útiles como referencia antes de crear nuevas RPC (ver
@@ -506,6 +532,12 @@ Detectadas en `information_schema.routines`, útiles como referencia antes de cr
 | `get_sales_report_kpis` | record | KPIs para reportes |
 | `has_permission` / `is_admin` | boolean | Ver `PERMISSIONS.md` |
 | `get_email_by_username` | text | Traduce username local a email para login contra Supabase Auth |
+| `get_branch_by_device` | jsonb | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30) |
+| `get_cash_register_session` | jsonb | Sesión de caja abierta de la sucursal + nombre del dueño (o `null`) |
+| `open_cash_register` | jsonb | Abre la caja derivando el usuario de `auth.uid()`; códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT` (tope desde `app_settings`) |
+| `_cash_session_payload` | jsonb | Helper interno de las RPC de caja (prefijo `_`, sin grants) |
+| `_cash_already_open_response` | jsonb | Helper interno: respuesta uniforme de "caja ya abierta" (prefijo `_`, sin grants) |
+| `_cash_max_opening_amount` | numeric | Helper interno: tope de apertura desde `app_settings` con fallback (prefijo `_`, sin grants) |
 | `_apply_inventory_delta` / `_build_transfer_notes` | record / text | Helpers internos (prefijo `_`) |
 | `enforce_sale_branch_consistency` / `prevent_edit_if_sale_not_open` / `set_updated_at` | trigger | Triggers de integridad |
 

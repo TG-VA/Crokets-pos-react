@@ -5,14 +5,17 @@
   "main": "electron/main.js",
   "private": true,
   "scripts": {
-    "dev": "concurrently -k \"cross-env NODE_ENV=development vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\" \"nodemon src/backend/server.js\"",
+    "dev": "concurrently -k \"cross-env NODE_ENV=development vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build && electron-builder",
     "build:frontend": "vite build",
     "build:electron": "electron-builder",
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
-    "rebuild": "electron-rebuild -f -w sqlite3"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "electron",
@@ -22,36 +25,41 @@
   ],
   "author": "Tu Nombre",
   "license": "ISC",
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
-    "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "electron-is-dev": "^2.0.0",
     "electron-store": "^11.0.2",
     "exceljs": "^4.4.0",
-    "express": "^5.1.0",
-    "node-fetch": "^2.7.0",
     "react": "^19.1.1",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.0",
-    "sqlite3": "^5.1.7",
     "uuid": "^13.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/sqlite3": "^5.1.0",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.0",
     "cross-env": "^10.0.0",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
-    "electron-rebuild": "^3.2.9",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^30.0.1",
     "node-gyp": "^11.3.0",
-    "nodemon": "^3.1.10",
+    "prettier": "^3.9.8",
     "vite": "^7.1.0",
+    "vitest": "^5.0.0",
     "wait-on": "^8.0.4"
   },
   "build": {

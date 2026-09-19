@@ -1,17 +1,38 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
-import { ITEMS_PER_PAGE, getStatusBadge } from "../utils/inventoryReportUtils";
+import { getStatusBadge } from "../utils/inventoryReportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
-const InventoryValuationTable = ({ items = [], isLoading = false }) => {
-  const [currentPage, setCurrentPage] = useState(1);
+const InventoryValuationTable = ({
+  items = [],
+  isLoading = false,
+  title = "Existencias y Valorización",
+  subtitle,
+}) => {
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: items.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+  // Resetear a página 1 cuando la longitud o el filtrado de items cambie
+  useEffect(() => {
+    resetPagination();
+  }, [items.length, resetPagination]);
 
-  const currentItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [items, currentPage]);
+  const currentItems = pageItems(items);
 
   if (isLoading) {
     return (
@@ -25,9 +46,9 @@ const InventoryValuationTable = ({ items = [], isLoading = false }) => {
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Existencias y Valorización</h3>
+          <h3 className={styles.tableTitle}>{title}</h3>
           <span className={styles.tableSubtitle}>
-            Mostrando {items.length} producto(s) encontrado(s)
+            {subtitle || `Mostrando ${items.length} producto(s) encontrado(s)`}
           </span>
         </div>
       </div>
@@ -83,30 +104,19 @@ const InventoryValuationTable = ({ items = [], isLoading = false }) => {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className={styles.paginationBar}>
-          <span>
-            Página {currentPage} de {totalPages} ({items.length} registros)
-          </span>
-          <div className={styles.paginationActions}>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+      {items.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={items.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="productos"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

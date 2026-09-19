@@ -262,10 +262,10 @@
   transform: translateX(4px);
 }
 
-.selectedTicket {
-  border-color: #d93025 !important;
-  background-color: #fff5f5 !important;
-  box-shadow: 0 2px 8px rgba(217, 48, 37, 0.3) !important;
+.ticketItem.selectedTicket {
+  border-color: #d93025;
+  background-color: #fff5f5;
+  box-shadow: 0 2px 8px rgba(217, 48, 37, 0.3);
 }
 
 .ticketInfo {

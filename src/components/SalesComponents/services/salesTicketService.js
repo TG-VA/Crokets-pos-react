@@ -1,5 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
-import { buildTicketText } from "../../../utils/ticketBuilder";
+import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
 import { printTicket } from "../../../utils/ticketPrinter";
 import { getRewardCartItems, getRewardItemPointsPerUnit, getRewardItemTotalPoints } from "./salesRewardsService";
 
@@ -58,7 +58,7 @@ export const printSaleTicket = async ({
   try {
     const rewardItemsForPrint = getRewardCartItems(cartItems);
 
-    // 🟡 OPTIMIZACIÓN: Las 3 consultas pesadas se disparan en paralelo al mismo tiempo
+    // OPTIMIZACIÓN: Las 3 consultas pesadas se disparan en paralelo al mismo tiempo
     const [detailsRes, kitItemsRes, rewardRedemptions] = await Promise.all([
       supabase
         .from("sale_details")

@@ -163,8 +163,8 @@
   cursor: not-allowed;
 }
 
-.paymentMethodSelected {
-  border-color: #fc8913 !important;
+.paymentMethod.paymentMethodSelected {
+  border-color: #fc8913;
   background-color: #fff7ed;
   box-shadow: 0 0 10px rgba(252, 137, 19, 0.28);
 }

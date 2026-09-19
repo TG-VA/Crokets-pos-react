@@ -1,8 +1,33 @@
-import React from "react";
+import React, { useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) => {
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: departmentData.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
+
+  // Resetear a página 1 cuando la cantidad de departamentos cambie
+  useEffect(() => {
+    resetPagination();
+  }, [departmentData.length, resetPagination]);
+
+  const currentDepts = pageItems(departmentData);
+
   if (isLoading) {
     return (
       <div className={styles.tableCard}>
@@ -35,14 +60,14 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
             </tr>
           </thead>
           <tbody>
-            {departmentData.length === 0 ? (
+            {currentDepts.length === 0 ? (
               <tr>
                 <td colSpan={6} className={styles.emptyState}>
                   No hay datos por departamento disponibles.
                 </td>
               </tr>
             ) : (
-              departmentData.map((dept) => (
+              currentDepts.map((dept) => (
                 <tr key={dept.name}>
                   <td className={styles.fontBold}>{dept.name}</td>
                   <td className={styles.textRight}>{dept.productCount.toLocaleString()}</td>
@@ -62,6 +87,21 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
           </tbody>
         </table>
       </div>
+
+      {departmentData.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={departmentData.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="departamentos"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
     </div>
   );
 };

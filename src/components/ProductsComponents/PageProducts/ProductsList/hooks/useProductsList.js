@@ -1,13 +1,30 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { useProducts } from "../../../../../contexts/ProductsContext";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useBranch } from "../../../../../contexts/BranchContext";
+import { usePagination } from "../../../../../hooks/usePagination";
+import { useProductsRealtime } from "../../../../../hooks/useProductsRealtime";
+import {
+  fetchDepartments,
+  fetchPaginatedBranchProducts,
+} from "../../../../../services/products/productCatalogService";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const PAGE_SIZE_STORAGE_KEY = "crokets.productsList.pageSize";
+const SEARCH_DEBOUNCE_MS = 400;
 
 export const useProductsList = () => {
-  const { products, loadingProducts, productsError } = useProducts();
+  const { branch } = useBranch();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [showDepartmentFilter, setShowDepartmentFilter] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(0);
+
+  const [products, setProducts] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productsError, setProductsError] = useState(null);
+  const [departmentOptions, setDepartmentOptions] = useState([]);
 
   const tableContainerRef = useRef(null);
   const filterRef = useRef(null);
@@ -22,58 +39,114 @@ export const useProductsList = () => {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
 
-  const departments = useMemo(() => {
-    const uniqueDepartments = new Set(
-      (products || [])
-        .map((product) => normalizeDept(product.departamento))
-        .filter(Boolean)
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex: pageStart,
+    endIndex: pageEnd,
+    resetPagination,
+    handlePageChange: changePage,
+    handlePageSizeChange: changePageSize,
+  } = usePagination({
+    totalItems: totalCount,
+    defaultPageSize: 10,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    storageKey: PAGE_SIZE_STORAGE_KEY,
+  });
+
+  useEffect(() => {
+    let isActive = true;
+    const loadDepartmentOptions = async () => {
+      const result = await fetchDepartments();
+
+      if (!isActive) return;
+
+      if (result.success) {
+        const options = [...(result.data || [])].sort((a, b) =>
+          String(a.name || "").localeCompare(String(b.name || ""), "es", {
+            sensitivity: "base",
+            numeric: true,
+          })
+        );
+        setDepartmentOptions(options);
+        return;
+      }
+
+      console.error("Error cargando departamentos:", result.error);
+      setDepartmentOptions([]);
+    };
+    loadDepartmentOptions();
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(
+      () => setDebouncedSearch(searchTerm.trim()),
+      SEARCH_DEBOUNCE_MS
     );
-    return Array.from(uniqueDepartments).sort();
-  }, [products]);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-  const productUsesInventory = (product) => {
-    return product.use_inventory === true || product.tracks_inventory === true;
-  };
+  const selectedDepartmentId = useMemo(() => {
+    if (!selectedDepartment) return null;
+    const found = departmentOptions.find(
+      (dept) => normalizeDept(dept.name) === normalizeDept(selectedDepartment)
+    );
+    return found?.id || null;
+  }, [selectedDepartment, departmentOptions, normalizeDept]);
 
-  const filteredProducts = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
+  const reload = useCallback(async () => {
+    if (!branch?.id) {
+      setProducts([]);
+      setTotalCount(0);
+      return;
+    }
 
-    return [...(products || [])]
-      .filter((product) => {
-        const matchesSearch =
-          !search ||
-          (product.descripcion || "").toLowerCase().includes(search) ||
-          (product.codigo || "").toLowerCase().includes(search);
+    setLoadingProducts(true);
+    setProductsError(null);
 
-        const matchesDepartment =
-          !selectedDepartment ||
-          normalizeDept(product.departamento) ===
-            selectedDepartment.toLowerCase();
+    const result = await fetchPaginatedBranchProducts({
+      branchId: branch.id,
+      searchTerm: debouncedSearch,
+      departmentId: selectedDepartmentId,
+      page: currentPage,
+      pageSize,
+    });
 
-        return matchesSearch && matchesDepartment;
-      })
-      .sort((a, b) => {
-        const aUsesInventory = productUsesInventory(a);
-        const bUsesInventory = productUsesInventory(b);
+    if (result.success) {
+      setProducts(result.data.products);
+      setTotalCount(result.data.totalCount);
+    } else {
+      console.error("Error cargando productos:", result.error);
+      setProducts([]);
+      setTotalCount(0);
+      setProductsError(result.error || "Error al cargar productos");
+    }
 
-        if (aUsesInventory !== bUsesInventory) {
-          return aUsesInventory ? -1 : 1;
-        }
+    setLoadingProducts(false);
+  }, [branch?.id, debouncedSearch, selectedDepartmentId, currentPage, pageSize]);
 
-        const descriptionA = String(a.descripcion || "");
-        const descriptionB = String(b.descripcion || "");
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
-        return descriptionA.localeCompare(descriptionB, "es", {
-          sensitivity: "base",
-          numeric: true,
-        });
-      });
-  }, [products, searchTerm, selectedDepartment]);
+  useProductsRealtime(branch?.id, reload);
+
+  useEffect(() => {
+    const page = Math.floor(selectedRowIndex / pageSize) + 1;
+    if (page !== currentPage && page <= totalPages) {
+      changePage(page);
+    }
+  }, [selectedRowIndex, currentPage, totalPages, pageSize, changePage]);
 
   useEffect(() => {
     setSelectedRowIndex(0);
+    resetPagination();
     document.body.scrollTop = 0;
-  }, [searchTerm, selectedDepartment, products?.length]);
+  }, [debouncedSearch, selectedDepartment, resetPagination]);
 
   useEffect(() => {
     const row = selectedRowRef.current;
@@ -93,7 +166,7 @@ export const useProductsList = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!filteredProducts.length) return;
+      if (!products.length) return;
 
       if (
         document.activeElement?.tagName === "INPUT" ||
@@ -106,13 +179,35 @@ export const useProductsList = () => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedRowIndex((prev) =>
-          prev < filteredProducts.length - 1 ? prev + 1 : prev
+          prev < products.length - 1 ? prev + 1 : prev
         );
       }
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : 0));
+      }
+
+      if (e.key === "PageDown") {
+        e.preventDefault();
+        setSelectedRowIndex((prev) =>
+          Math.min(prev + pageSize, products.length - 1)
+        );
+      }
+
+      if (e.key === "PageUp") {
+        e.preventDefault();
+        setSelectedRowIndex((prev) => Math.max(prev - pageSize, 0));
+      }
+
+      if (e.key === "Home") {
+        e.preventDefault();
+        setSelectedRowIndex(0);
+      }
+
+      if (e.key === "End") {
+        e.preventDefault();
+        setSelectedRowIndex(products.length - 1);
       }
 
       if (e.key === "Escape") {
@@ -122,7 +217,7 @@ export const useProductsList = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [filteredProducts.length]);
+  }, [products.length, pageSize]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -138,6 +233,7 @@ export const useProductsList = () => {
   const handleDepartmentSelect = (department) => {
     setSelectedDepartment(department);
     setShowDepartmentFilter(false);
+    resetPagination();
     setSelectedRowIndex(0);
   };
 
@@ -145,9 +241,29 @@ export const useProductsList = () => {
     setSelectedRowIndex(index);
   };
 
+  const handlePageChange = (page) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+    changePage(nextPage);
+    setSelectedRowIndex(0);
+    document.body.scrollTop = 0;
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
+  };
+
+  const handlePageSizeChange = (size) => {
+    changePageSize(size);
+    setSelectedRowIndex(0);
+    document.body.scrollTop = 0;
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedDepartment("");
+    resetPagination();
     setSelectedRowIndex(0);
     setShowDepartmentFilter(false);
   };
@@ -158,7 +274,7 @@ export const useProductsList = () => {
   };
 
   return {
-    products,
+    departments: departmentOptions,
     loadingProducts,
     productsError,
     searchTerm,
@@ -170,8 +286,15 @@ export const useProductsList = () => {
     tableContainerRef,
     filterRef,
     selectedRowRef,
-    departments,
-    filteredProducts,
+    totalCount,
+    paginatedProducts: products,
+    currentPage,
+    totalPages,
+    pageSize,
+    pageStart,
+    pageEnd,
+    handlePageChange,
+    handlePageSizeChange,
     formatDept,
     handleDepartmentSelect,
     handleRowClick,

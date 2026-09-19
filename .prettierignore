@@ -1,0 +1,7 @@
+dist/
+out/
+release-builds/
+node_modules/
+supabase/.temp/
+supabase/functions/
+package-lock.json

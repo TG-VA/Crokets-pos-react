@@ -11,6 +11,7 @@ import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import CircleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import TriangleAlertIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CashSessionsTable = ({
   sessions = [],
@@ -300,30 +301,14 @@ const CashSessionsTable = ({
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className={styles.paginationWrapper}>
-          <p className={styles.paginationInfo}>
-            Página {currentPage} de {totalPages} ({totalItems} turnos)
-          </p>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>{currentPage}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsNoun="turnos"
+          labelMode="pageCount"
+          onPageChange={onPageChange}
+        />
       )}
     </div>
   );

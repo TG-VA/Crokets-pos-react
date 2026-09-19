@@ -12,8 +12,9 @@ import {
 } from "./reportsDashboardCalculations";
 
 import {
+  getBranchesCatalog,
+  getProductById,
   getPaymentMethodsByIds,
-  getProductsByIds,
   getSaleDetails,
   getSalePayments,
   getSalesRows,
@@ -22,7 +23,8 @@ import {
 import {
   buildMainPaymentMethod,
   buildSalesChart,
-  buildTopProduct,
+  formatTopProduct,
+  getTopProductStats,
 } from "./reportsSalesCalculations";
 
 import {
@@ -43,16 +45,15 @@ import {
   getBranchInventory,
 } from "./reportsInventoryService";
 
-export { getEmptyReportsDashboard };
+export { getEmptyReportsDashboard, getBranchesCatalog };
 
 export const getReportsDashboard = async (
-  branchId
+  branchId = "ALL"
 ) => {
-  if (!branchId) {
-    throw new Error(
-      "No se detectó la sucursal activa."
-    );
-  }
+  const isConsolidated =
+    !branchId ||
+    branchId === "ALL" ||
+    branchId === "Todas";
 
   const {
     todayInput,
@@ -127,40 +128,6 @@ export const getReportsDashboard = async (
   const returnItems =
     await getReturnItems(returnIds);
 
-  const productIds = uniqueValues([
-    ...detailRows.map(
-      (detail) => detail.product_id
-    ),
-
-    ...returnItems.map(
-      (item) => item.product_id
-    ),
-  ]);
-
-  const paymentMethodIds =
-    uniqueValues(
-      paymentRows.map(
-        (payment) =>
-          payment.payment_method_id
-      )
-    );
-
-  /*
-   * Tercera carga:
-   * catálogos necesarios para presentar los
-   * nombres de productos y métodos de pago.
-   */
-  const [
-    productRows,
-    paymentMethodRows,
-  ] = await Promise.all([
-    getProductsByIds(productIds),
-
-    getPaymentMethodsByIds(
-      paymentMethodIds
-    ),
-  ]);
-
   /*
    * Las ventas canceladas y pendientes quedan
    * excluidas de los cálculos económicos.
@@ -207,6 +174,42 @@ export const getReportsDashboard = async (
     });
 
   /*
+   * Identificar el producto más vendido en memoria primero
+   * para consultar únicamente ese producto específico a Supabase.
+   */
+  const topProductStats = getTopProductStats({
+    detailRows,
+    validSaleIds: completedSaleIds,
+    returnedQuantityByProduct,
+    returnedAmountByProduct,
+  });
+
+  const paymentMethodIds =
+    uniqueValues(
+      paymentRows.map(
+        (payment) =>
+          payment.payment_method_id
+      )
+    );
+
+  /*
+   * Tercera carga:
+   * Solo el producto ganador del periodo y los métodos de pago.
+   */
+  const [
+    topProductRecord,
+    paymentMethodRows,
+  ] = await Promise.all([
+    topProductStats?.productId
+      ? getProductById(topProductStats.productId)
+      : Promise.resolve(null),
+
+    getPaymentMethodsByIds(
+      paymentMethodIds
+    ),
+  ]);
+
+  /*
    * KPI correspondientes al día actual.
    */
   const kpis =
@@ -221,7 +224,8 @@ export const getReportsDashboard = async (
 
   const inventoryAlerts =
     buildInventoryAlerts(
-      inventoryRows
+      inventoryRows,
+      isConsolidated
     );
 
   return {
@@ -235,14 +239,10 @@ export const getReportsDashboard = async (
     }),
 
     highlights: {
-      topProduct: buildTopProduct({
-        detailRows,
-        validSaleIds:
-          completedSaleIds,
-        returnedQuantityByProduct,
-        returnedAmountByProduct,
-        productRows,
-      }),
+      topProduct: formatTopProduct(
+        topProductStats,
+        topProductRecord
+      ),
 
       mainPaymentMethod:
         buildMainPaymentMethod({
@@ -267,17 +267,22 @@ export const getReportsDashboard = async (
       returnedUnitsToday:
         todayReturns.units,
 
+      outOfStockCount:
+        inventoryAlerts.outOfStockCount,
+
+      lowStockCount:
+        inventoryAlerts.lowStockCount,
+
       outOfStockProducts:
-        inventoryAlerts
-          .outOfStockProducts,
+        inventoryAlerts.outOfStockProducts,
 
       lowStockProducts:
-        inventoryAlerts
-          .lowStockProducts,
+        inventoryAlerts.lowStockProducts,
     },
 
     meta: {
-      branchId,
+      branchId: isConsolidated ? "ALL" : branchId,
+      isConsolidated,
 
       generatedAt:
         new Date().toISOString(),

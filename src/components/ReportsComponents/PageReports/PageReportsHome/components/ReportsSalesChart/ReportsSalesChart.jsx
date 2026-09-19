@@ -1,17 +1,10 @@
 import React, { useMemo } from "react";
 
 import styles from "./ReportsSalesChart.module.css";
+import { formatCurrency } from "../../../../../../utils/formatters";
 
-const MAX_BAR_HEIGHT_PERCENTAGE = 84;
+const MAX_BAR_HEIGHT_PERCENTAGE = 74;
 const MIN_BAR_HEIGHT_PERCENTAGE = 7;
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
-  }).format(Number(value || 0));
-};
 
 const ReportsSalesChart = ({
   data = [],
@@ -172,14 +165,30 @@ const ReportsSalesChart = ({
                       </div>
                     ) : (
                       <div
-                        className={styles.zeroMarker}
+                        className={styles.zeroGroup}
                         aria-label={`${item.label}: sin ventas`}
-                      />
+                      >
+                        <span className={styles.tooltip}>
+                          <strong>Sin ventas</strong>
+                          <small>0 tickets</small>
+                        </span>
+
+                        <div className={styles.zeroMarker} />
+                      </div>
                     )}
                   </div>
 
-                  <span className={styles.dayLabel}>
-                    {item.label}
+                  <span
+                    className={`${styles.dayLabel} ${
+                      item.isToday ? styles.todayLabel : ""
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {item.isToday ? (
+                      <span className={styles.todayBadge}>
+                        Hoy
+                      </span>
+                    ) : null}
                   </span>
                 </div>
               );

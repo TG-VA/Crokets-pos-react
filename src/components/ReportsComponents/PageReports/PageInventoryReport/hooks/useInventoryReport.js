@@ -5,6 +5,7 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncedAt, setSyncedAt] = useState(null);
 
   // Filtros
   const [selectedDepartment, setSelectedDepartment] = useState("ALL");
@@ -18,6 +19,7 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
       setError(null);
       const data = await fetchInventoryReportData(selectedBranchId);
       setReportData(data);
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error en useInventoryReport:", err);
       setError("No se pudo cargar el reporte de inventario. Intenta nuevamente.");
@@ -114,6 +116,7 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
     byDepartment: reportData?.byDepartment || [],
     isLoading,
     error,
+    syncedAt,
     selectedDepartment,
     setSelectedDepartment,
     selectedStockStatus,

@@ -2,6 +2,7 @@ import React from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import styles from "./CashComponents.module.css";
+import rotateLeftIcon from "../../../../../assets/icons/rotate-left-solid-full.svg";
 
 const CashReportFilters = ({
   branchesList = [],
@@ -18,7 +19,10 @@ const CashReportFilters = ({
   setDateRange,
   startDate,
   endDate,
+  activeDatePreset = "today",
   setQuickDatePreset,
+  onClear,
+  hasActiveFilters = false,
   activeTab = "sessions",
 }) => {
   return (
@@ -45,28 +49,50 @@ const CashReportFilters = ({
         <div className={styles.presetsInlineGroup}>
           <button
             type="button"
-            className={styles.presetPill}
+            className={`${styles.presetPill} ${
+              activeDatePreset === "today" ? styles.presetPillActive : ""
+            }`.trim()}
             onClick={() => setQuickDatePreset("today")}
           >
             Hoy
           </button>
           <button
             type="button"
-            className={styles.presetPill}
+            className={`${styles.presetPill} ${
+              activeDatePreset === "yesterday" ? styles.presetPillActive : ""
+            }`.trim()}
+            onClick={() => setQuickDatePreset("yesterday")}
+          >
+            Ayer
+          </button>
+          <button
+            type="button"
+            className={`${styles.presetPill} ${
+              activeDatePreset === "this_week" ? styles.presetPillActive : ""
+            }`.trim()}
             onClick={() => setQuickDatePreset("this_week")}
           >
             Esta semana
           </button>
           <button
             type="button"
-            className={styles.presetPill}
+            className={`${styles.presetPill} ${
+              activeDatePreset === "this_month" ? styles.presetPillActive : ""
+            }`.trim()}
             onClick={() => setQuickDatePreset("this_month")}
           >
             Este mes
           </button>
+          <button
+            type="button"
+            className={`${styles.presetPill} ${
+              activeDatePreset === "last_month" ? styles.presetPillActive : ""
+            }`.trim()}
+            onClick={() => setQuickDatePreset("last_month")}
+          >
+            Mes pasado
+          </button>
         </div>
-
-        <div className={styles.verticalDivider} />
 
         {/* Sucursal */}
         <div className={styles.filterField}>
@@ -133,6 +159,24 @@ const CashReportFilters = ({
             </select>
           </div>
         )}
+
+        {/* Botón Limpiar con indicador dinámico */}
+        <button
+          type="button"
+          onClick={onClear}
+          className={`${styles.clearBtn} ${
+            hasActiveFilters ? styles.clearBtnActive : ""
+          }`.trim()}
+          title={
+            hasActiveFilters
+              ? "Restablecer filtros activos"
+              : "Filtros en estado predeterminado"
+          }
+        >
+          <img src={rotateLeftIcon} alt="" className={styles.clearBtnIcon} />
+          Limpiar
+          {hasActiveFilters && <span className={styles.activeFilterDot} />}
+        </button>
       </div>
     </div>
   );

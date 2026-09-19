@@ -113,14 +113,14 @@ export const useDepartments = () => {
       if (selectedId === "new") {
         try {
           setSaving(true);
-          const success = await addDepartment(cleanName, {
+          const result = await addDepartment(cleanName, {
             commission_enabled: !!formData.commission_enabled,
             commission_type: formData.commission_type || "percent",
             commission_value: parseFloat(formData.commission_value) || 0,
           });
 
-          if (!success) {
-            console.error("Error al crear el departamento.");
+          if (!result?.success) {
+            console.error("Error al crear el departamento:", result?.error);
             showAppAlert({
               type: "danger",
               title: "No se pudo crear",
@@ -152,7 +152,7 @@ export const useDepartments = () => {
       const saveData = async (propagateToProducts = false) => {
         try {
           setSaving(true);
-          const success = await updateDepartment(selectedId, {
+          const result = await updateDepartment(selectedId, {
             name: cleanName,
             status: formData.status,
             commission_enabled: !!formData.commission_enabled,
@@ -161,8 +161,8 @@ export const useDepartments = () => {
             propagateToProducts,
           });
 
-          if (!success) {
-            console.error("Error al actualizar el departamento.");
+          if (!result?.success) {
+            console.error("Error al actualizar el departamento:", result?.error);
             showAppAlert({
               type: "danger",
               title: "No se pudo actualizar",
@@ -219,13 +219,13 @@ export const useDepartments = () => {
 
     try {
       setSaving(true);
-      const success = await updateDepartment(selectedDept.id, {
+      const result = await updateDepartment(selectedDept.id, {
         name: selectedDept.name,
         status: nextStatus,
       });
 
-      if (!success) {
-        console.error("Error al cambiar el estatus del departamento.");
+      if (!result?.success) {
+        console.error("Error al cambiar el estatus del departamento:", result?.error);
         showAppAlert({
           type: "danger",
           title: "No se pudo cambiar el estatus",

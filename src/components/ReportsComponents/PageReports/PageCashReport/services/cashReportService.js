@@ -64,7 +64,9 @@ export const fetchCashiersList = async () => {
 };
 
 /**
- * Consulta de sesiones de caja con sus respectivos cortes y enriquecimiento en lote
+ * Consulta de sesiones de caja via RPC (elimina el patron N+1).
+ * La RPC get_cash_report_sessions calcula los totales de ventas (efectivo/tarjeta)
+ * en el servidor. Solo falta obtener los movimientos de caja por separado.
  */
 export const fetchCashSessions = async ({
   branchId = "ALL",
@@ -74,169 +76,87 @@ export const fetchCashSessions = async ({
   sessionStatus = "ALL",
 }) => {
   try {
-    let query = supabase
-      .from("cash_register_sessions")
-      .select(`
-        id,
-        user_id,
-        branch_id,
-        opening_amount,
-        closing_amount,
-        opened_at,
-        closed_at,
-        status,
-        difference,
-        users (
-          id,
-          username
-        ),
-        branches (
-          id,
-          name,
-          timezone
-        ),
-        cash_cuts (
-          id,
-          cut_type,
-          expected_amount,
-          counted_amount,
-          difference,
-          notes,
-          created_at
-        )
-      `)
-      .order("opened_at", { ascending: false });
-
-    // Filtro por sucursal
-    if (branchId && branchId !== "ALL") {
-      query = query.eq("branch_id", branchId);
-    }
-
-    // Filtro por cajero
-    if (cashierId && cashierId !== "ALL") {
-      query = query.eq("user_id", cashierId);
-    }
-
-    // Filtro por estado
-    if (sessionStatus && sessionStatus !== "ALL") {
-      query = query.eq("status", sessionStatus);
-    }
-
-    // Filtro por rango de fechas
     const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
-    if (startIso && endIso) {
-      query = query.gte("opened_at", startIso).lte("opened_at", endIso);
-    }
 
-    const { data: rawSessions, error } = await query.limit(5000);
-    if (error) throw error;
+    const { data: rpcRows, error: rpcError } = await supabase.rpc(
+      "get_cash_report_sessions",
+      {
+        p_branch_id: branchId !== "ALL" ? branchId : null,
+        p_start_date: startIso || null,
+        p_end_date: endIso || null,
+        p_cashier_id: cashierId !== "ALL" ? cashierId : null,
+        p_session_status: sessionStatus !== "ALL" ? sessionStatus : null,
+      }
+    ).limit(100000);
 
-    if (!rawSessions || rawSessions.length === 0) {
+    if (rpcError) throw rpcError;
+
+    const rawSessions = rpcRows || [];
+    if (rawSessions.length === 0) {
       return [];
     }
 
-    // Obtener IDs de sesiones
-    const sessionIds = rawSessions.map((s) => s.id);
+    const sessionIds = rawSessions.map((s) => s.session_id);
 
-    // Consultar movimientos de las sesiones
+    // Consultar movimientos de caja en lote (1 query, no N)
     let movementsBySession = {};
     try {
-      const { data: movsRes } = await supabase
+      const { data: movsRes, error: movsError } = await supabase
         .from("cash_movements")
         .select("id, session_id, movement_type, amount")
         .in("session_id", sessionIds)
-        .limit(10000);
+        .limit(100000);
 
-      (movsRes || []).forEach((m) => {
-        if (!movementsBySession[m.session_id]) {
-          movementsBySession[m.session_id] = { manualIn: 0, manualOut: 0 };
-        }
-        const type = String(m.movement_type || "").toLowerCase();
-        const amt = Number(m.amount || 0);
-        if (type.includes("entry") || type.includes("in") || type.includes("ingreso") || type.includes("entrada")) {
-          movementsBySession[m.session_id].manualIn += amt;
-        } else {
-          movementsBySession[m.session_id].manualOut += amt;
-        }
-      });
+      if (movsError) {
+        console.error(
+          "Error al consultar movimientos por sesion en cashReportService:",
+          movsError
+        );
+      } else {
+        (movsRes || []).forEach((m) => {
+          if (!movementsBySession[m.session_id]) {
+            movementsBySession[m.session_id] = { manualIn: 0, manualOut: 0 };
+          }
+          const type = String(m.movement_type || "").toLowerCase();
+          const amt = Number(m.amount || 0);
+          if (
+            type.includes("entry") ||
+            type.includes("in") ||
+            type.includes("ingreso") ||
+            type.includes("entrada")
+          ) {
+            movementsBySession[m.session_id].manualIn += amt;
+          } else {
+            movementsBySession[m.session_id].manualOut += amt;
+          }
+        });
+      }
     } catch (movErr) {
-      console.error("Error al consultar movimientos por sesión:", movErr);
+      console.error("Error al consultar movimientos por sesion:", movErr);
     }
 
-    // Consultar pagos y ventas EXACTAS para cada sesión en paralelo (idéntico al modal)
-    const sessionTotalsList = await Promise.all(
-      rawSessions.map(async (sess) => {
-        try {
-          const sStart = sess.opened_at;
-          const sEnd = sess.closed_at || new Date().toISOString();
-
-          const { data: salesPayments, error: pErr } = await supabase
-            .from("sale_payments")
-            .select(`
-              id,
-              amount,
-              payment_method_id,
-              payment_methods (id, name, affects_cash),
-              sales!inner (
-                id,
-                user_id,
-                branch_id,
-                status,
-                created_at
-              )
-            `)
-            .eq("sales.branch_id", sess.branch_id)
-            .eq("sales.user_id", sess.user_id)
-            .gte("sales.created_at", sStart)
-            .lte("sales.created_at", sEnd)
-            .in("sales.status", ["completed", "partial_refund"])
-            .limit(5000);
-
-          if (pErr || !salesPayments) {
-            return { cashSales: 0, cardSales: 0, totalSales: 0 };
-          }
-
-          let cashSales = 0;
-          let cardSales = 0;
-
-          salesPayments.forEach((p) => {
-            const amt = Number(p.amount || 0);
-            const affectsCash = Boolean(
-              p.payment_methods?.affects_cash ||
-              String(p.payment_methods?.name || "").toLowerCase().includes("efectivo")
-            );
-
-            if (affectsCash) {
-              cashSales += amt;
-            } else {
-              cardSales += amt;
-            }
-          });
-
-          return {
-            cashSales,
-            cardSales,
-            totalSales: cashSales + cardSales,
-          };
-        } catch (calcErr) {
-          console.error("Error calculando ventas de sesión:", calcErr);
-          return { cashSales: 0, cardSales: 0, totalSales: 0 };
-        }
-      })
-    );
-
-    // Enriquecer cada sesión con sus métricas calculadas idénticas al modal
-    return rawSessions.map((sess, idx) => {
-      const pm = sessionTotalsList[idx] || { cashSales: 0, cardSales: 0, totalSales: 0 };
-      const mov = movementsBySession[sess.id] || { manualIn: 0, manualOut: 0 };
-      const opening = Number(sess.opening_amount || 0);
-      const expectedCash = opening + pm.cashSales + mov.manualIn - mov.manualOut;
+    return rawSessions.map((row) => {
+      const mov = movementsBySession[row.session_id] || { manualIn: 0, manualOut: 0 };
+      const opening = Number(row.opening_amount || 0);
+      const cashSales = Number(row.cash_sales || 0);
+      const expectedCash = opening + cashSales + mov.manualIn - mov.manualOut;
 
       return {
-        ...sess,
-        cashSales: pm.cashSales,
-        cardSales: pm.cardSales,
-        totalSales: pm.totalSales,
+        id: row.session_id,
+        user_id: row.user_id,
+        branch_id: row.branch_id,
+        opening_amount: row.opening_amount,
+        closing_amount: row.closing_amount,
+        opened_at: row.opened_at,
+        closed_at: row.closed_at,
+        status: row.session_status,
+        difference: row.difference,
+        users: { id: row.user_id, username: row.username },
+        branches: { id: row.branch_id, name: row.branch_name, timezone: row.branch_timezone },
+        cash_cuts: row.cash_cuts || [],
+        cashSales,
+        cardSales: Number(row.card_sales || 0),
+        totalSales: Number(row.total_sales || 0),
         manualIn: mov.manualIn,
         manualOut: mov.manualOut,
         expectedCash,

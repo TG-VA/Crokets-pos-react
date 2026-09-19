@@ -155,7 +155,13 @@
 
 .textCenter {
   text-align: center;
-  padding: 24px !important;
+  padding: 24px;
+}
+
+.invoicesTable td.textCenter,
+.itemsTable td.textCenter {
+  text-align: center;
+  padding: 24px;
 }
 
 .statusBadge {

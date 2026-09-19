@@ -1,15 +1,3 @@
-:root {
-  --croketsOrange: #fc8913;
-  --croketsOrangeDark: #e07a0d;
-  --croketsBlue: #1092b1;
-  --croketsBlueDark: #0d7a94;
-  --lightGray: #f2f2f2;
-  --mediumGray: #e0e0e0;
-  --darkGray: #333333;
-  --textColor: #333333;
-  --white: #ffffff;
-}
-
 .content {
   background-color: var(--white);
   border-radius: 8px;
@@ -62,7 +50,9 @@
   border: 2px solid var(--mediumGray);
   border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
   background-color: var(--white);
   color: var(--darkGray);
 }
@@ -111,7 +101,10 @@
   gap: 12px;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(16, 146, 177, 0.22);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease,
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
     background 0.2s ease;
 }
 
@@ -170,7 +163,9 @@
 .filterOption {
   padding: 0.8rem 0.95rem;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
   border-radius: 8px;
   text-transform: uppercase;
   font-weight: 500;
@@ -196,7 +191,9 @@
   color: #1e293b;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease,
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
     transform 0.18s ease;
   white-space: nowrap;
 }
@@ -332,13 +329,13 @@
   background-color: var(--lightGray);
 }
 
-.selectedRow {
-  background-color: #e3f2fd !important;
+.productRow.selectedRow {
+  background-color: #e3f2fd;
   border-left: 4px solid var(--croketsOrange);
 }
 
-.selectedRow:hover {
-  background-color: #e3f2fd !important;
+.productRow.selectedRow:hover {
+  background-color: #e3f2fd;
 }
 
 .descriptionCell {
@@ -351,25 +348,6 @@
 .scrollText {
   display: inline-block;
   white-space: nowrap;
-  will-change: transform;
-}
-
-.marquee {
-  animation: marqueeScroll 6s ease-in-out 0.2s 1;
-}
-
-@keyframes marqueeScroll {
-  0% {
-    transform: translateX(0);
-  }
-
-  50% {
-    transform: translateX(calc(-1 * var(--scroll-distance)));
-  }
-
-  100% {
-    transform: translateX(0);
-  }
 }
 
 .departmentCell {

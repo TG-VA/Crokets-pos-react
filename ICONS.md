@@ -80,6 +80,18 @@ Los iconos son archivos `.svg` sueltos en `src/assets/icons/`. Se importan como 
 | `chart-line-solid-full.svg` | Gráfica / reporte de tendencia |
 | `calendar-days-solid-full.svg` | Fecha / calendario |
 
+##### Configuración, dispositivos y mantenimiento
+| Archivo | Uso sugerido |
+| ------ | ------ |
+| `brush-solid-full.svg` | Logotipo / personalización de marca |
+| `ruler-solid-full.svg` | Unidades de medida |
+| `barcode-solid-full.svg` | Lector de códigos / código de barras |
+| `display-solid-full.svg` | Terminal / pantalla (TPV) |
+| `database-solid-full.svg` | Respaldos / base de datos |
+| `rotate-solid-full.svg` | Actualizaciones / refrescar |
+| `broom-solid-full.svg` | Limpieza de datos |
+| `folder-solid-full.svg` | Carpeta / seleccionar archivo |
+
 ##### Otros (no usar como ícono de UI)
 | Archivo | Nota |
 | ------ | ------ |

@@ -1,17 +1,33 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import styles from "./InventoryComponents.module.css";
 import { formatCurrency } from "../../../../../utils/formatters";
-import { ITEMS_PER_PAGE, getStatusBadge } from "../utils/inventoryReportUtils";
+import { getStatusBadge } from "../utils/inventoryReportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: items.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+  });
 
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE) || 1;
+  // Resetear a página 1 cuando la longitud o el filtrado de items cambie
+  useEffect(() => {
+    resetPagination();
+  }, [items.length, resetPagination]);
 
-  const currentItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [items, currentPage]);
+  const currentItems = pageItems(items);
 
   const totalEstimatedInvestment = useMemo(() => {
     return items.reduce((acc, item) => acc + (item.estimatedInvestment || 0), 0);
@@ -103,30 +119,19 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className={styles.paginationBar}>
-          <span>
-            Página {currentPage} de {totalPages} ({items.length} sugerencias)
-          </span>
-          <div className={styles.paginationActions}>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              className={styles.btnPagination}
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+      {items.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={items.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50]}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemsNoun="sugerencias"
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       )}
     </div>
   );

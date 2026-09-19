@@ -70,18 +70,17 @@
 
 .presetPill {
   background-color: #f1f5f9;
-  color: #475569;
   border: 1px solid #e2e8f0;
-  padding: 5px 10px;
-  border-radius: 9999px;
-  font-size: 0.775rem;
+  color: #475569;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-  height: 30px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .presetPill:hover {
@@ -90,11 +89,63 @@
   border-color: #cbd5e1;
 }
 
-.verticalDivider {
-  width: 1px;
-  height: 30px;
+.presetPillActive {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+}
+
+.presetPillActive:hover {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  color: #ffffff;
+}
+
+.clearBtn {
+  background-color: #f1f5f9;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #475467;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clearBtn:hover {
   background-color: #e2e8f0;
-  margin: 0 4px 3px 4px;
+  color: #1f2d3d;
+}
+
+.clearBtnActive {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+.clearBtnActive:hover {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.clearBtnIcon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+.activeFilterDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #0284c7;
+  display: inline-block;
 }
 
 /* =========================================================
@@ -364,59 +415,6 @@
   background-color: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
-}
-
-/* =========================================================
-   PAGINACIÓN
-   ========================================================= */
-
-.paginationWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-top: 1px solid #f1f5f9;
-  background-color: #ffffff;
-}
-
-.paginationInfo {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin: 0;
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pageBtn {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background-color: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageIndicator {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #1e293b;
 }
 
 /* =========================================================
@@ -755,11 +753,6 @@
   font-size: 0.775rem;
   color: #64748b;
   margin: -2px 0 6px 0;
-}
-
-.modalPaginationWrapper {
-  padding: 8px 12px;
-  border: none;
 }
 
 .modalTableTopMargin {

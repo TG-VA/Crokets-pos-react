@@ -174,16 +174,16 @@
 }
 
 .positive {
-  color: var(--successColor) !important;
+  color: var(--successColor);
 }
 
 .negative {
-  color: var(--errorColor) !important;
+  color: var(--errorColor);
 }
 
 .lowStock {
-  color: var(--croketsOrange) !important;
-  font-weight: 900 !important;
+  color: var(--croketsOrange);
+  font-weight: 900;
 }
 
 @media (max-width: 1250px) {

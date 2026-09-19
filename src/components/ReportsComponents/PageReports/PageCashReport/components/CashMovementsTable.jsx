@@ -9,6 +9,7 @@ import {
 
 import EntryIcon from "../../../../../assets/icons/entryIcon.svg";
 import ExitIcon from "../../../../../assets/icons/exitIcon.svg";
+import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CashMovementsTable = ({
   movements = [],
@@ -154,30 +155,14 @@ const CashMovementsTable = ({
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className={styles.paginationWrapper}>
-          <p className={styles.paginationInfo}>
-            Página {currentPage} de {totalPages} ({totalItems} movimientos)
-          </p>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Anterior
-            </button>
-            <span className={styles.pageIndicator}>{currentPage}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsNoun="movimientos"
+          labelMode="pageCount"
+          onPageChange={onPageChange}
+        />
       )}
     </div>
   );

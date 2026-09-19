@@ -11,6 +11,7 @@ import {
   calculateCashierDiscrepancies,
 } from "../services/cashReportService";
 import { exportCashReportToExcel } from "../utils/cashReportExportUtils";
+import { usePagination } from "../../../../../hooks/usePagination";
 
 export const ITEMS_PER_PAGE = 5;
 
@@ -28,6 +29,7 @@ export const useCashReport = () => {
   // Rango de fechas (Por defecto: Hoy)
   const today = new Date();
   const [dateRange, setDateRange] = useState([today, today]);
+  const [activeDatePreset, setActiveDatePreset] = useState("today");
   const [startDate, endDate] = dateRange;
 
   // Pestaña activa
@@ -42,10 +44,35 @@ export const useCashReport = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [syncedAt, setSyncedAt] = useState(null);
 
-  // Paginación
-  const [currentSessionsPage, setCurrentSessionsPage] = useState(1);
-  const [currentMovementsPage, setCurrentMovementsPage] = useState(1);
+  // Paginación de sesiones y movimientos (estado centralizado compartido con las tablas)
+  const {
+    currentPage: currentSessionsPage,
+    totalPages: totalSessionsPages,
+    pageItems: pageSessions,
+    resetPagination: resetSessionsPagination,
+    handlePageChange: handleSessionsPageChange,
+  } = usePagination({
+    totalItems: sessions.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
+
+  const {
+    currentPage: currentMovementsPage,
+    totalPages: totalMovementsPages,
+    pageItems: pageMovements,
+    resetPagination: resetMovementsPagination,
+    handlePageChange: handleMovementsPageChange,
+  } = usePagination({
+    totalItems: movements.length,
+    defaultPageSize: ITEMS_PER_PAGE,
+    pageSizeOptions: [ITEMS_PER_PAGE],
+  });
+
+  const paginatedSessions = pageSessions(sessions);
+  const paginatedMovements = pageMovements(movements);
 
   // Modal de detalle de sesión
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -117,15 +144,16 @@ export const useCashReport = () => {
       setSessions(sessionsData);
       setMovements(movementsData);
       setPaymentMethodsSummary(paymentsData);
-      setCurrentSessionsPage(1);
-      setCurrentMovementsPage(1);
+      resetSessionsPagination();
+      resetMovementsPagination();
+      setSyncedAt(new Date().toISOString());
     } catch (err) {
       console.error("Error al cargar datos del reporte de caja:", err);
       setError("No se pudieron cargar los datos del reporte de caja. Intente nuevamente.");
     } finally {
       setLoading(false);
     }
-  }, [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType]);
+  }, [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType, resetSessionsPagination, resetMovementsPagination]);
 
   // Recargar al cambiar filtros clave
   useEffect(() => {
@@ -134,6 +162,7 @@ export const useCashReport = () => {
 
   // Presets rápidos de fechas
   const setQuickDatePreset = (preset) => {
+    setActiveDatePreset(preset);
     const now = new Date();
     let start = new Date();
     let end = new Date();
@@ -143,14 +172,19 @@ export const useCashReport = () => {
         start = new Date(now);
         end = new Date(now);
         break;
-      case "yesterday":
-        start = new Date(now.setDate(now.getDate() - 1));
-        end = new Date(start);
+      case "yesterday": {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = y;
+        end = new Date(y);
         break;
+      }
       case "this_week": {
         const day = now.getDay();
         const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes
-        start = new Date(now.setDate(diff));
+        const mon = new Date(now);
+        mon.setDate(diff);
+        start = mon;
         end = new Date();
         break;
       }
@@ -169,9 +203,15 @@ export const useCashReport = () => {
     setDateRange([start, end]);
   };
 
+  const handleDateRangeChange = (update) => {
+    setActiveDatePreset("custom");
+    setDateRange(update);
+  };
+
   // Limpiar filtros a valores por defecto
   const handleClearFilters = () => {
     const now = new Date();
+    setActiveDatePreset("today");
     setDateRange([now, now]);
     setSelectedBranchId(branch?.id || "ALL");
     setSelectedCashierId("ALL");
@@ -188,20 +228,6 @@ export const useCashReport = () => {
   const cashierAudit = useMemo(() => {
     return calculateCashierDiscrepancies(sessions);
   }, [sessions]);
-
-  // Paginación de sesiones
-  const totalSessionsPages = Math.ceil(sessions.length / ITEMS_PER_PAGE) || 1;
-  const paginatedSessions = useMemo(() => {
-    const startIdx = (currentSessionsPage - 1) * ITEMS_PER_PAGE;
-    return sessions.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-  }, [sessions, currentSessionsPage]);
-
-  // Paginación de movimientos
-  const totalMovementsPages = Math.ceil(movements.length / ITEMS_PER_PAGE) || 1;
-  const paginatedMovements = useMemo(() => {
-    const startIdx = (currentMovementsPage - 1) * ITEMS_PER_PAGE;
-    return movements.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-  }, [movements, currentMovementsPage]);
 
   // Abrir modal de detalle de sesión
   const handleOpenDetailModal = async (sessionId) => {
@@ -261,9 +287,10 @@ export const useCashReport = () => {
       (selectedBranchId !== "ALL" && selectedBranchId !== branch?.id) ||
       selectedCashierId !== "ALL" ||
       sessionStatus !== "ALL" ||
-      movementType !== "ALL"
+      movementType !== "ALL" ||
+      activeDatePreset !== "today"
     );
-  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType]);
+  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType, activeDatePreset]);
 
   return {
     // Filtros
@@ -278,9 +305,10 @@ export const useCashReport = () => {
     movementType,
     setMovementType,
     dateRange,
-    setDateRange,
+    setDateRange: handleDateRangeChange,
     startDate,
     endDate,
+    activeDatePreset,
     setQuickDatePreset,
     handleClearFilters,
     hasActiveFilters,
@@ -293,14 +321,14 @@ export const useCashReport = () => {
     sessions,
     paginatedSessions,
     currentSessionsPage,
-    setCurrentSessionsPage,
     totalSessionsPages,
+    handleSessionsPageChange,
 
     movements,
     paginatedMovements,
     currentMovementsPage,
-    setCurrentMovementsPage,
     totalMovementsPages,
+    handleMovementsPageChange,
 
     paymentMethodsSummary,
     cashierAudit,
@@ -309,6 +337,7 @@ export const useCashReport = () => {
     // Estados de carga
     loading,
     error,
+    syncedAt,
     isExporting,
     loadReportData,
     handleExportExcel,

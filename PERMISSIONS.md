@@ -57,8 +57,8 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 
 | | `can_manage_inventory` | `can_view_branch` |
 |---|---|---|
-| **admin** | ✔ | ✔ |
-| **cajero** | ✔ | ✔ |
+| **admin** | Sí | Sí |
+| **cajero** | Sí | Sí |
 
 > **Hallazgo relevante:** actualmente `admin` y `cajero` tienen exactamente los mismos permisos.
 > El sistema de roles está montado a nivel de base de datos, pero **todavía no diferencia nada
@@ -90,15 +90,64 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
   (`user_branches_admin_write`, que usa `is_admin()` directamente en vez de `has_permission()`).
   Esto es un segundo nivel de control: rol (qué puede hacer) + sucursal (dónde puede hacerlo).
 
+### Matriz RLS revisada (17 sep 2026)
+
+Introspección directa de `pg_policies` + `pg_class.relrowsecurity` sobre el proyecto remoto. El
+control real por tabla queda así:
+
+| Estado | Tablas (ejemplos) | Control real |
+|---|---|---|
+| RLS + `is_admin()` | `user_branches` (escritura) | solo `admin` escribe; cada usuario ve sus filas |
+| RLS + `has_permission()` | `branch_inventory` | único módulo con permiso granular |
+| RLS + `USING (true)` | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions` | cualquier `authenticated`, sin importar el rol |
+| RLS + dueño de fila | `cash_register_sessions`, `cash_movements` | cada usuario su propia sesión/movimientos |
+| RLS + lectura `anon` | `postal_codes`, `tax_regimes` | catálogos de lectura pre/post login |
+| RLS sin políticas | `app_settings`, `cfdi_settings` | deny-all salvo owner/RPC |
+| RLS deshabilitado | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, `roles`, `permissions`, `role_permissions`, `user_roles`, `users`, `branches`, etc. (~37) | acceso por `GRANT` de tabla, sin filtrado de filas |
+
+**Hallazgo (KNOWN_ISSUES #13):** `admin` y `cajero` tienen exactamente los mismos permisos
+(`can_manage_inventory`, `can_view_branch`). No existe hoy ninguna diferencia de autorización a
+nivel de base de datos entre ambos roles, salvo `user_branches` + `is_admin()`.
+
+**Decisión (17 sep 2026, KNOWN_ISSUES #10/#13):** se adopta el modelo "hardening sin habilitar RLS".
+No se habilita RLS ni se exige `is_admin()` en las mutaciones administrativas (catálogo, bajas de
+clientes, retiros de caja) porque activar RLS sobre ~37 tablas sin políticas rompería el acceso y el
+modelo vigente es `authenticated` de confianza. Se documenta como **riesgo aceptado**: el gateo de
+acciones administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
+autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.
+
+### Endurecimiento de RPCs transaccionales (`20260917200000`, 17 sep 2026)
+
+Las RPCs que mueven dinero o inventario (`create_sale_transaction` ×3, `cancel_sale_transaction`,
+`create_partial_return_transaction`, `create_transfer_order`, `cancel_transfer_order`,
+`receive_transfer_order`, `cancel_sale`, `complete_sale`) ya no conceden `EXECUTE` a `anon` ni a
+`PUBLIC` (solo `authenticated`/`service_role`) y fijan el actor con `p_user_id := coalesce(auth.uid(),
+p_user_id)`, de modo que un usuario autenticado no puede suplantar a otro pasando un `p_user_id`
+ajeno. `auth.uid()` es el mismo valor que `public.users.id` (así lo resuelve `is_admin()`). Cierra el
+acceso anónimo y la suplantación, no la ausencia de RLS. Ver `docs/SUPABASE_MIGRATIONS.md`.
+
+### Excepción de autorización pre-auth (`get_branch_by_device`)
+
+`get_branch_by_device` (migración `20260914120000`) es la única función `anon`-ejecutable que rompe
+RLS (`SECURITY DEFINER`). Es necesaria porque el login resuelve la sucursal del equipo por
+`device_code` **antes** de autenticar. Devuelve solo `{ id, name, code }` de la sucursal activa y se
+apoya en que `device_code` es un UUID (`crypto.randomUUID()`, `electron/main.js`) no enumerable.
+Riesgo aceptado y monitoreado; ver `KNOWN_ISSUES.md` #30 y `docs/SUPABASE_MIGRATIONS.md`.
+
 ---
 
 ## 2. Sistema local — SQLite embebido (`src/backend/bd.js`)
 
 Este es el sistema que usa el backend Express local para el login, **independiente de Supabase
-Auth**. Ver `KNOWN_ISSUES.md` puntos 1 y 2 para el estado de este backend (no arranca en producción
-empaquetada; el usuario admin se crea con contraseña en texto plano).
+Auth**. Tras resolver `KNOWN_ISSUES.md` #1, el renderer ya no consume este backend (los flujos de
+dispositivo y caja se migraron a RPCs de Supabase y sus endpoints Express se eliminaron); queda solo
+como login legacy por SQLite para desarrollo local, sin acceso a Supabase. Ver #31 para el residuo y
+#10 para el futuro de este backend.
 
 - El usuario `admin` local se crea con permisos hardcodeados en `src/backend/bd.js`.
+- Las contraseñas locales se guardan y comparan con bcrypt (`bcryptjs` + `src/backend/password.js`);
+  las filas legacy en texto plano se migran de forma transparente en el primer login exitoso
+  (`KNOWN_ISSUES.md` #2, resuelto el 14 sep 2026).
 - No está confirmado si estos permisos locales se sincronizan de alguna forma con los roles/permisos
   de Supabase descritos arriba, o si son dos fuentes de verdad completamente independientes.
 
@@ -115,6 +164,7 @@ manualmente.
 - Al agregar un permiso nuevo, documentarlo aquí en la tabla de "Permisos existentes" y actualizar
   la matriz rol × permiso.
 - Si se crea un rol nuevo (ej. `gerente`), documentarlo aquí junto con su matriz de permisos.
-- Este documento debe regenerarse periódicamente contra la base real — ver
-  `supabase_followup_2.sql` / `supabase_followup_3.sql` para las queries usadas para levantarlo la
-  primera vez.
+- Este documento debe regenerarse periódicamente contra la base real. Las queries de introspección
+  con las que se levantó la primera vez se ejecutaron de forma ad-hoc contra el proyecto remoto y
+  **no están versionadas en el repo** (no existe `supabase_followup_*.sql`); si se vuelve a
+  regenerar, conviene versionar el script de introspección junto a este documento.

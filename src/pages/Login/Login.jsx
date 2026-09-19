@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBranch } from '../../contexts/BranchContext';
 import styles from './Login.module.css';
 import { supabase } from '../../lib/supabaseClient';
+import { resolveBranchByDevice } from '../../services/deviceBranchService';
 
 // Recursos gráficos
 import logo from '../../assets/images/LOGOCROKETS.png';
@@ -11,6 +12,17 @@ import userIcon from '../../assets/icons/user-solid.svg';
 import lockIcon from '../../assets/icons/lock-solid.svg';
 import eyeIcon from '../../assets/icons/eye-solid-full.svg';
 import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
+
+/*
+  Precarga de los chunks posteriores al login. Al dispararlos junto a las
+  llamadas de red, Vite ya resolvió los módulos cuando el usuario navega a
+  /cash-register o /dashboard y no aparece la pantalla en blanco del Suspense.
+  import() cachea el módulo, así que repetir la llamada es inocuo.
+*/
+const prefetchPostLoginRoutes = () => {
+  import('../CashRegister/CashRegister').catch(() => {});
+  import('../Dashboard/Dashboard').catch(() => {});
+};
 
 const Login = () => {
   const { login, unlockScreen } = useAuth();
@@ -67,70 +79,100 @@ const Login = () => {
       setError('');
       setRecoverableSession(null);
 
-      /*
-        1. Obtener email por username
-      */
-      const { data: email, error: rpcError } = await supabase.rpc(
-        'get_email_by_username',
-        { p_username: cleanUsername }
-      );
+      prefetchPostLoginRoutes();
 
-      if (rpcError || !email) {
+      /*
+        El código del dispositivo se dispara en paralelo con email y usuario,
+        pero se resuelve después de sus chequeos para preservar la precedencia
+        de errores original (credenciales → usuario → dispositivo). La promesa
+        diferida evita además que un fallo síncrono del IPC se adelante al
+        error de credenciales, y el catch evita un rechazo sin manejar cuando
+        se retorna antes de esperarla.
+      */
+      const deviceCodePromise = Promise.resolve()
+        .then(() => window.electronAPI.invoke('get-device-code'))
+        .catch(() => null);
+
+      /*
+        1-2. Datos base en paralelo: email y usuario. Solo dependen del
+        username ingresado, así que no hay razón para esperarlos en serie.
+      */
+      const [emailResult, userResult] = await Promise.all([
+        supabase.rpc('get_email_by_username', { p_username: cleanUsername }),
+        supabase
+          .from('users')
+          .select('id, username')
+          .ilike('username', cleanUsername)
+          .maybeSingle(),
+      ]);
+
+      if (emailResult.error || !emailResult.data) {
         setError('Credenciales incorrectas');
         return;
       }
 
-      /*
-        2. Obtener usuario ANTES del login
-      */
-      const { data: dbUser, error: userLookupError } = await supabase
-        .from('users')
-        .select('id, username')
-        .ilike('username', cleanUsername)
-        .maybeSingle();
+      const email = emailResult.data;
 
-      if (userLookupError || !dbUser) {
+      if (userResult.error || !userResult.data) {
         setError('Usuario no encontrado');
         return;
       }
 
+      const dbUser = userResult.data;
+
       /*
         3. Resolver sucursal por device
       */
-      const { deviceCode } = await window.electronAPI.invoke('get-device-code');
+      const deviceResult = await deviceCodePromise;
 
-      const branchRes = await fetch('http://localhost:3000/device/branch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceCode }),
-      });
-
-      const branchData = await branchRes.json();
-
-      if (!branchData.success || !branchData.branch?.id) {
-        setError(branchData.message || 'Este POS no está asignado a ninguna sucursal');
+      if (!deviceResult) {
+        console.error('No se pudo obtener el código del dispositivo');
+        setError('Error al conectar con el servidor');
         return;
       }
 
+      const { deviceCode } = deviceResult;
+
+      const branchResult = await resolveBranchByDevice(deviceCode);
+
+      if (!branchResult.success || !branchResult.data?.id) {
+        setError(branchResult.error || 'Este POS no está asignado a ninguna sucursal');
+        return;
+      }
+
+      const resolvedBranchId = branchResult.data.id;
+
       /*
-        4. Obtener sucursal completa
+        4-5. Sucursal completa y sesión activa en paralelo: ambas dependen solo
+        de la sucursal ya resuelta.
       */
-      const { data: fullBranch, error: fullBranchError } = await supabase
-        .from('branches')
-        .select(`
-          id,
-          code,
-          name,
-          phone,
-          email,
-          address,
-          city,
-          state,
-          created_at,
-          updated_at
-        `)
-        .eq('id', branchData.branch.id)
-        .single();
+      const [fullBranchResult, activeSessionResult] = await Promise.all([
+        supabase
+          .from('branches')
+          .select(`
+            id,
+            code,
+            name,
+            phone,
+            email,
+            address,
+            city,
+            state,
+            created_at,
+            updated_at
+          `)
+          .eq('id', resolvedBranchId)
+          .single(),
+        supabase
+          .from('user_sessions')
+          .select('id, user_id, status, ended_at')
+          .eq('branch_id', resolvedBranchId)
+          .eq('status', 'active')
+          .is('ended_at', null)
+          .maybeSingle(),
+      ]);
+
+      const { data: fullBranch, error: fullBranchError } = fullBranchResult;
 
       if (fullBranchError || !fullBranch) {
         console.error(fullBranchError);
@@ -141,16 +183,7 @@ const Login = () => {
       const currentBranch = fullBranch;
       setBranch(currentBranch);
 
-      /*
-        5. Revisar sesiones activas EN ESA SUCURSAL
-      */
-      const { data: activeSession, error: activeSessionError } = await supabase
-        .from('user_sessions')
-        .select('id, user_id, status, ended_at')
-        .eq('branch_id', currentBranch.id)
-        .eq('status', 'active')
-        .is('ended_at', null)
-        .maybeSingle();
+      const { data: activeSession, error: activeSessionError } = activeSessionResult;
 
       if (activeSessionError) {
         console.error(activeSessionError);
@@ -159,7 +192,7 @@ const Login = () => {
       }
 
       /*
-        6. Si ya existe sesión activa
+        5. Si ya existe sesión activa
       */
       if (activeSession) {
         // mismo usuario → recuperar
@@ -202,7 +235,7 @@ const Login = () => {
       }
 
       /*
-        7. NO hay sesión activa → login normal
+        6. NO hay sesión activa → login normal
       */
       const { data: authData, error: signInError } =
         await supabase.auth.signInWithPassword({
@@ -259,6 +292,8 @@ const Login = () => {
     try {
       setLoading(true);
       setError('');
+
+      prefetchPostLoginRoutes();
 
       const { authUser, resolvedUsername, branch } = recoverableSession;
 
