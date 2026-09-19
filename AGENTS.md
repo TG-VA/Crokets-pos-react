@@ -4,14 +4,12 @@ Guía para agentes de IA (Claude Code, Cursor, Copilot, Gemini, etc.) y desarrol
 
 ## Descripción del proyecto
 
-Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimientos de alimentos para mascotas, construido con Electron + React (Vite) en el frontend y un servidor Express embebido como backend, con SQLite local y Supabase como base de datos/servicios remotos (auth, funciones edge).
+Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimientos de alimentos para mascotas, construido con Electron + React (Vite), con Supabase como backend remoto (auth, RPCs, base de datos PostgreSQL) y Edge Functions.
 
 ## Stack técnico
 
 - **Frontend:** React 19, React Router 7, Vite 7, CSS Modules
 - **Escritorio:** Electron 37 (proceso principal en `electron/main.js`, `electron/preload.js`)
-- **Backend local:** Express 5, corre en `src/backend/server.js` con Nodemon en dev
-- **Base de datos local:** SQLite (`sqlite3`) — archivo en `src/backend/db/`
 - **Backend remoto:** Supabase (`@supabase/supabase-js`), funciones edge en `supabase/functions/`
 - **Otros:** `exceljs` / `xlsx` para reportes, `react-datepicker`, `electron-store`, `dotenv`
 
@@ -24,7 +22,7 @@ Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimi
 - **Sin emojis en código ni UI:** Cero emojis en archivos de código, UI, comentarios, mensajes de error o logs. Usar iconos SVG de `src/assets/icons/` según `ICONS.md`.
 - **Manejo estricto de Logs y Errores:**
   - Eliminar todos los `console.log` y `console.warn` de depuración antes de commitear.
-  - **MANTENER `console.error`:** Los `console.error` dentro de bloques `catch` o manejadores de fallos de Supabase/SQLite **DEBEN MANTENERSE** para trazabilidad en producción (retirando emojis si los tuvieran).
+  - **MANTENER `console.error`:** Los `console.error` dentro de bloques `catch` o manejadores de fallos de Supabase **DEBEN MANTENERSE** para trazabilidad en producción (retirando emojis si los tuvieran).
 - **Formato de archivos:** Todos los archivos deben finalizar con un salto de línea en blanco (EOF newline).
 - **Autenticación y permisos:** Manejados vía `AuthContext`, `permissionsService.js` y `adminAuthorizationService.js`. Respetar este flujo sin reinventar checks de rol.
 - **Principios SOLID en React:**
@@ -32,7 +30,7 @@ Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimi
   - **OCP (Open/Closed):** Favorecer componentes extensibles mediante descriptores/configuración (ej. mapeo de arrays de KPIs, columnas) en lugar de bloques JSX duplicados.
   - **LSP (Liskov Substitution):** Mantener contratos predecibles y retornos de tipo seguro en formateadores y utilidades, evitando excepciones no controladas.
   - **ISP (Interface Segregation):** Evitar props monolíticas ("fat props"); pasar a los subcomponentes únicamente los datos y callbacks que realmente consumen.
-  - **DIP (Dependency Inversion):** Los componentes de UI nunca deben importar directamente clientes de base de datos (`supabase`, `sqlite3`). Toda interacción con la persistencia debe abstraerse en hooks o servicios.
+  - **DIP (Dependency Inversion):** Los componentes de UI nunca deben importar directamente clientes de base de datos (`supabase`). Toda interacción con la persistencia debe abstraerse en hooks o servicios.
 
 ## Arquitectura Modular y Escalabilidad (Servicios, Hooks y Utils)
 
@@ -56,9 +54,9 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 ## Secretos y credenciales
 
 - No commitear `.env`, claves de Supabase, ni archivos `.sqlite`/`.sqlite3` (en `.gitignore`).
-- `SUPABASE_SERVICE_ROLE_KEY` es una credencial **privilegiada** (omite RLS): solo puede vivir en el
-  backend Node (`src/backend/`) y en las edge functions. Nunca exponerla con prefijo `VITE_`, en
-  `dist/` ni en el instalador.
+- `SUPABASE_SERVICE_ROLE_KEY` es una credencial **privilegiada** (omite RLS): solo puede vivir en las
+  edge functions (y en el proceso de Electron únicamente si existiera una necesidad real y acotada).
+  Nunca exponerla con prefijo `VITE_`, en `dist/` ni en el instalador.
 - Las credenciales del PAC de facturación (`cfdi_settings.api_username` / `api_password` /
   `api_token`) son secretos; no exponerlas en el frontend ni en logs.
 - No imprimir valores de secretos en logs, commits, docs ni en respuestas al usuario. Los nombres de
@@ -67,5 +65,4 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 ## Qué evitar
 
 - No commitear `.env`, claves de Supabase, ni archivos `.sqlite`/`.sqlite3` (en `.gitignore`).
-- No reemplazar `sqlite3` por otro driver sin ajustar `npm run rebuild`.
 - No mezclar convenciones de estilos ni agregar frameworks/librerías de UI no usados en el proyecto.

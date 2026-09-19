@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import { useAuth } from "../../contexts/AuthContext";
+import { checkUserIsAdmin } from "../../lib/permissionsService";
+import {
+  getCashMaxOpeningAmount,
+  updateCashMaxOpeningAmount,
+} from "./services/cashSettingsService";
 import styles from "./Settings.module.css";
 import userIcon from "../../assets/icons/user-solid.svg";
 import brushIcon from "../../assets/icons/brush-solid-full.svg";
@@ -20,6 +26,61 @@ import chartIcon from "../../assets/icons/chart-line-solid-full.svg";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [cashMax, setCashMax] = useState("");
+  const [cashLoading, setCashLoading] = useState(false);
+  const [cashError, setCashError] = useState("");
+  const [cashSaved, setCashSaved] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAdminState = async (userId) => {
+      const admin = userId ? await checkUserIsAdmin(userId) : false;
+
+      if (!mounted) return;
+
+      setIsAdmin(admin);
+      setAdminLoading(false);
+
+      if (admin) {
+        const res = await getCashMaxOpeningAmount();
+
+        if (!mounted) return;
+
+        if (res.success) {
+          setCashMax(res.amount == null ? "" : String(res.amount));
+        }
+      }
+    };
+
+    loadAdminState(user?.id);
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  const handleSaveCashMax = async () => {
+    setCashError("");
+    setCashSaved("");
+    setCashLoading(true);
+
+    const res = await updateCashMaxOpeningAmount(cashMax);
+
+    setCashLoading(false);
+
+    if (!res.success) {
+      setCashError(res.error || "No se pudo actualizar el tope de apertura.");
+      return;
+    }
+
+    setCashMax(String(res.amount));
+    setCashSaved("Tope de apertura de caja actualizado.");
+  };
 
   const handleOptionClick = (optionName) => {
     if (optionName === "Perfiles") {
@@ -242,6 +303,53 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {isAdmin && !adminLoading && (
+          <div className={styles.adminSection}>
+            <div className={styles.section}>
+              <h2 className={styles.sectionTitle}>Caja</h2>
+              <div className={styles.adminCard}>
+                <div className={styles.adminCardHeader}>
+                  <h3>Tope de apertura de caja</h3>
+                  <p>
+                    Monto máximo de efectivo inicial permitido al abrir la caja
+                    registradora.
+                  </p>
+                </div>
+                <div className={styles.adminRow}>
+                  <label
+                    className={styles.adminLabel}
+                    htmlFor="cash-max-amount"
+                  >
+                    Monto máximo
+                  </label>
+                  <input
+                    id="cash-max-amount"
+                    type="number"
+                    min="0"
+                    step="1"
+                    className={styles.adminInput}
+                    value={cashMax}
+                    onChange={(e) => setCashMax(e.target.value)}
+                    placeholder="Ej. 1000000"
+                  />
+                  <button
+                    type="button"
+                    className={styles.adminButton}
+                    onClick={handleSaveCashMax}
+                    disabled={cashLoading}
+                  >
+                    {cashLoading ? "Guardando..." : "Guardar"}
+                  </button>
+                </div>
+                {cashError && <p className={styles.adminError}>{cashError}</p>}
+                {cashSaved && (
+                  <p className={styles.adminSuccess}>{cashSaved}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

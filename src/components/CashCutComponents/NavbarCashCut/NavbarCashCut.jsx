@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import styles from "./NavbarCashCut.module.css";
 
 import ReceiptIcon from "../../../assets/icons/receipt-solid-full.svg";
@@ -77,17 +77,25 @@ const NavbarCashCut = ({
     return cutsHistory.filter((cut) => getCutDateValue(cut) === selectedDate);
   }, [cutsHistory, selectedDate]);
 
-  useEffect(() => {
-    if (selectedCut?.cut_date || selectedCut?.created_at) {
-      setSelectedDate(getCutDateValue(selectedCut));
-    }
-  }, [selectedCut]);
+  const [prevSelectedCutId, setPrevSelectedCutId] = useState(selectedCutId);
 
-  useEffect(() => {
+  if (selectedCutId !== prevSelectedCutId) {
+    setPrevSelectedCutId(selectedCutId);
+
     if (selectedCutId === "current") {
       setSelectedDate(today);
     }
-  }, [selectedCutId, today]);
+  }
+
+  const [prevCut, setPrevCut] = useState(selectedCut);
+
+  if (selectedCut !== prevCut) {
+    setPrevCut(selectedCut);
+
+    if (selectedCut?.cut_date || selectedCut?.created_at) {
+      setSelectedDate(getCutDateValue(selectedCut));
+    }
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -185,9 +193,12 @@ const NavbarCashCut = ({
 
               <button
                 type="button"
-                className={`${styles.currentOption} ${
-                  selectedCutId === "current" ? styles.optionActive : ""
-                }`}
+                className={[
+                  styles.currentOption,
+                  selectedCutId === "current" ? styles.optionActive : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={handleSelectCurrent}
               >
                 <span className={styles.optionTitle}>Turno actual</span>
@@ -218,9 +229,12 @@ const NavbarCashCut = ({
                     <button
                       type="button"
                       key={cut.id}
-                      className={`${styles.cutOption} ${
-                        selectedCutId === cut.id ? styles.optionActive : ""
-                      }`}
+                      className={[
+                        styles.cutOption,
+                        selectedCutId === cut.id ? styles.optionActive : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => handleSelectCut(cut.id)}
                     >
                       <span className={styles.optionTitle}>{cut.label}</span>

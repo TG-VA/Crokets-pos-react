@@ -22,11 +22,12 @@
 ##### Backend
 | Componente | Tecnología |
 |------------|-----------|
-| Runtime | Node.js (Express) |
-| Base de datos local | SQLite (`sqlite3`) |
-| Backend remoto | Supabase (auth, funciones edge, base de datos) |
+| Runtime | Node.js (proceso main de Electron) |
+| Backend remoto | Supabase (auth, RPCs, base de datos PostgreSQL) |
 
-> **Nota:** el backend local Express (`src/backend/server.js`) solo se inicia en modo desarrollo y el frontend no lo consume (login y caja usan RPCs de Supabase; ver `KNOWN_ISSUES.md` #1, resuelto). Los endpoints de dispositivo/caja y los handlers IPC legacy ya se eliminaron; el backend queda solo como login legacy por SQLite (ver `KNOWN_ISSUES.md` #31 y `DEPLOYMENT.md`).
+> **Nota:** el backend local Express con SQLite (`src/backend`) se eliminó por completo — ya no se usa en
+> desarrollo ni en producción (ver `KNOWN_ISSUES.md` #31 y #34, resueltos). El frontend consumía sus
+> endpoints legacy, pero ese flujo migró a RPCs de Supabase. `npm run dev` solo levanta Vite + Electron.
 
 #### Prerrequisitos
 
@@ -36,7 +37,6 @@ Antes de comenzar, asegúrate de tener instalados los siguientes programas y her
 - [NVM (Node Version Manager)](https://github.com/nvm-sh/nvm) para gestionar versiones de Node.js
 - [npm](https://www.npmjs.com/) (incluido con Node.js)
 - [Git](https://git-scm.com/) para clonar el repositorio
-- [SQLite3](https://www.sqlite.org/) para la base de datos local
 - Un archivo `.env` con las credenciales del proyecto de Supabase (no se commitea — ver `.gitignore` y `AGENTS.md`)
 
 ##### Dependencias principales
@@ -47,22 +47,17 @@ Estas se instalarán automáticamente con `npm install`:
 - [React DOM](https://www.npmjs.com/package/react-dom) — Renderizado de componentes en el DOM
 - [React Router DOM](https://reactrouter.com/) — Ruteo entre páginas
 - [Electron.js](https://www.electronjs.org/) — Entorno para crear aplicaciones de escritorio
-- [Express](https://expressjs.com/) — Servidor backend local
-- [SQLite3](https://www.npmjs.com/package/sqlite3) — Base de datos local
 - [@supabase/supabase-js](https://supabase.com/docs/reference/javascript) — Cliente del backend remoto (auth, base de datos)
-- [CORS](https://www.npmjs.com/package/cors) — Permitir peticiones entre orígenes
 
 ##### Dependencias de desarrollo
 
 - [Vite](https://vitejs.dev/) — Herramienta de construcción y servidor de desarrollo
 - [Electron Builder](https://www.electron.build/) — Empaquetar y generar instaladores
-- [Electron Rebuild](https://github.com/electron/electron-rebuild) — Reconstruir módulos nativos
 - [Concurrently](https://www.npmjs.com/package/concurrently) — Ejecutar varios comandos en paralelo
 - [Cross Env](https://www.npmjs.com/package/cross-env) — Configuración de variables de entorno multiplataforma
 - [Wait On](https://www.npmjs.com/package/wait-on) — Esperar a que recursos estén listos
-- [Nodemon](https://nodemon.io/) — Reinicio automático del servidor backend
 - [Node Gyp](https://github.com/nodejs/node-gyp) — Compilación de módulos nativos
-- Tipos para TypeScript: `@types/react`, `@types/react-dom`, `@types/sqlite3`
+- Tipos para TypeScript: `@types/react`, `@types/react-dom`
 
 #### Estructura del Proyecto
 
@@ -75,7 +70,6 @@ POS-CROKETS-REACT/
 │   ├── assets/              # Recursos estáticos
 │   │   ├── icons/           # Iconos SVG de la aplicación (ver ICONS.md)
 │   │   └── images/          # Imágenes
-│   ├── backend/             # Backend Express + SQLite local (login; solo dev)
 │   ├── components/          # Componentes por subdominio (Sales, Products, Reports, etc.)
 │   ├── config/              # Configuración transversal (ej. secciones protegidas)
 │   ├── contexts/            # Contextos globales (Auth, Branch, Products)
@@ -115,15 +109,14 @@ npm run dev
 #### Comandos Disponibles
 | Comando | Descripción |
 |---------|-------------|
-| `npm run dev` | Inicia Vite + Electron + backend Express local en modo desarrollo |
+| `npm run dev` | Inicia Vite + Electron en modo desarrollo |
 | `npm run build` | Genera el instalador de escritorio (NSIS, Windows). Ver `DEPLOYMENT.md` antes de usarlo con clientes reales |
 | `npm run build:frontend` | Solo compila el frontend con Vite |
 | `npm run build:electron` | Solo empaqueta con electron-builder |
-| `npm run start` | Inicia Electron sobre el build existente (sin Vite ni backend local) |
+| `npm run start` | Inicia Electron sobre el build existente (sin Vite) |
 | `npm run watch` | Compila el frontend en modo watch |
 | `npm run preview` | Sirve localmente el build de Vite |
 | `npm test` | Ejecuta la suite de tests (Vitest). Ver `docs/TESTING.md` |
-| `npm run rebuild` | Reconstruye módulos nativos (necesario tras cambios relacionados con `sqlite3`) |
 
 > El linter (ESLint/Prettier) todavía no está configurado — ver `KNOWN_ISSUES.md` punto 8.
 

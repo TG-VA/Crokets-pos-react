@@ -320,11 +320,16 @@ el SQL legacy de la raíz a `supabase/legacy/` para no confundirlo con las migra
 `docs/SUPABASE_MIGRATIONS.md`.
 
 ### 7. Discrepancia README vs. dependencias reales (SQLite)
-**Estado:** corregido en la documentación nueva, pendiente en el README original si aplica.
+**Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
-El `README.MD` original mencionaba `better-sqlite3` como ORM, pero `package.json` usa el paquete
+El `README.MD` mencionaba `better-sqlite3` como ORM, pero `package.json` usa el paquete
 `sqlite3` directamente (callback-based, no el driver síncrono `better-sqlite3`). Ya reflejado
 correctamente en `AGENTS.md` y `docs/SCHEMA.md`.
+
+**Resolución (18 sep 2026):** tras la eliminación del backend local SQLite (#31/#34), el README se
+actualizó por completo: se retiraron `sqlite3`, Express y CORS del stack, de los prerrequisitos y de
+las dependencias; se quitó `src/backend` de la estructura del proyecto; `npm run dev` ya solo levanta
+Vite + Electron y se eliminaron la fila `npm run rebuild` y la opción SQLite3 como prerrequisito.
 
 ### 8. Sin `lint` ni `test` configurados
 **Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations` (test desde el 9 sep; lint
@@ -844,7 +849,7 @@ se re-solicita autorización. Además, las páginas ahora derivan sus rutas prot
 tests de `withProtectedMetadata`, `useProtectedNavigation` y `ProtectedRoute`.
 
 ### 31. Residuo legacy del backend local tras el fix de producción (#1)
-**Estado:** resuelto parcialmente (14 sep 2026) — queda solo el login legacy de SQLite (ver #10).
+**Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (cierre de #10/#34).
 
 Con #1 resuelto, el frontend ya no consumía el backend Express local. En una segunda pasada se
 eliminó todo el residuo muerto por definición:
@@ -865,6 +870,15 @@ offline) es la decisión de #10. La dependencia `node-fetch` quedó sin uso al e
 **Impacto:** el riesgo de recablear el renderer a `localhost:3000` y la última referencia en runtime
 a la service-role key quedaron eliminados.
 
+**Resolución (18 sep 2026):** se eliminó por completo el login legacy que quedaba. Se borraron
+`src/backend/server.js`, `src/backend/bd.js`, `src/backend/password.js`, `src/backend/password.test.js`
+y el archivo trackeado `src/backend/db/users.db` (un `.sqlite` en el historial, lo que además cierra
+la recomendación de `AGENTS.md` de no commitear archivos de base de datos). En `package.json` se
+retiraron las dependencias `bcryptjs`, `cors`, `express`, `node-fetch`, `sqlite3`; las devDependencies
+`nodemon`, `electron-rebuild`, `@types/sqlite3`; el script `rebuild` y el proceso `nodemon` del script
+`dev`. `npm install` sincronizó el lockfile. README, AGENTS.md y DEPLOYMENT.md reflejan el stack sin
+backend local (login y caja 100 % vía RPCs de Supabase).
+
 ### 32. Verificar índice único de sesión de caja abierta por sucursal
 **Estado:** resuelto (14 sep 2026).
 
@@ -881,7 +895,7 @@ Si el `db push` falla por duplicados, el mensaje indica cuántas sucursales hay 
 abiertas (paridad con el backend anterior, que tenía la misma carrera).
 
 ### 33. Tope de apertura de caja sin panel de configuración
-**Estado:** abierto — mejora pendiente (14 sep 2026).
+**Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 El tope de efectivo inicial al abrir caja vive en `app_settings`
 (`cash_register.max_opening_amount`, seed `1000000`) y `open_cash_register` lo lee con fallback
@@ -894,8 +908,22 @@ desde la app.
 **Recomendación:** al construir el panel de ajustes, agregar policy de escritura para rol admin
 (usar `is_admin()` / `has_permission()`) y exponer el valor vía RPC o Edge Function.
 
+**Resolución (18 sep 2026):** se agregaron dos RPCs en la migración
+`20260918120000_app_settings_cash_rpcs.sql`:
+- `get_cash_max_opening_amount()` — lectura para cualquier usuario autenticado (gira sobre
+  `_cash_max_opening_amount()`, con el mismo fallback seguro).
+- `update_cash_max_opening_amount(p_amount numeric)` — escritura `SECURITY DEFINER` con
+  `set search_path = public`, guard **server-side** `is_admin()`, validación de monto no negativo y
+  `upsert` en `app_settings` registrando `updated_at` / `updated_by = auth.uid()`. Revocada a `public`
+  y concedida solo a `authenticated` (mismo patrón que `open_cash_register`).
+
+En el frontend se creó el servicio `src/pages/Settings/services/cashSettingsService.js` (con tests que
+miran el contrato de las RPCs) y un panel en `src/pages/Settings/Settings.jsx` (sección "Caja", tope de
+apertura) que solo se renderiza cuando `checkUserIsAdmin(user.id)` es verdadero. La RPC revalida el
+rol en el servidor de todos modos, por lo que el check del panel es solo de UX.
+
 ### 34. Deuda menor de la pasada de producción (no bloqueante)
-**Estado:** parcialmente resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
+**Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (con #31).
 
 Hallazgos menores de la auditoría que no se corrigieron en el cluster de producción:
 
@@ -915,8 +943,13 @@ dobles** (157 archivos con imports `"` frente a 11 con `'`), por lo que no hay t
 `src/services/*`; se descarta la unificación a comillas simples. Siguen abiertos los puntos del
 `INSERT` muerto de `server.js` y el bcrypt síncrono, ligados a la decisión de #10/#31.
 
+**Resolución (18 sep 2026):** el `INSERT` muerto de `server.js` y el bcrypt síncrono de
+`password.js` quedaron resolutos por eliminación junto con #31 (todo el backend local desapareció,
+incluida la dependencia `bcryptjs`). El apunte del bcrypt async era "si el backend local crece" y ya
+no aplica.
+
 ### 35. Sesión de Supabase persistida en `localStorage`
-**Estado:** abierto — aceptado con riesgo residual bajo (14 sep 2026).
+**Estado:** aceptado con mitigación parcial (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `src/lib/supabaseClient.js` usa el `createClient` por defecto de `@supabase/supabase-js`, que guarda
 `access_token` y `refresh_token` en `localStorage` (REACT-AUTH-001). Un XSS podría exfiltrar la
@@ -928,6 +961,14 @@ sesión. Hoy el riesgo es bajo porque no hay sinks XSS en el renderer (barrido s
 
 **Recomendación:** evaluar `storage` en memoria + PKCE, o mover la sesión a cookie `HttpOnly` cuando
 exista un gateway/Edge Function que lo permita. Revisar al endurecer auth.
+
+**Actualización (18 sep 2026):** el cliente ahora configura `createClient` con opciones de auth
+explícitas: `persistSession: true`, `autoRefreshToken: true`, `detectSessionInUrl: false`,
+`storageKey: 'sb-crokets-pos-auth-token'` y `flowType: 'pkce'`. `detectSessionInUrl: false` evita que
+aparatos URL con fragmento de token se lean por accidente en `file://`; el flujo es estrictamente
+`signInWithPassword` (el `flowType` pkce aplica solo si algún día se suma OAuth), y el `storageKey`
+deja de depender del ref remoto del proyecto. El riesgo residual (token en `localStorage` ante un
+sink XSS) se mantiene documentado y se atacará de fondo al endurecer auth.
 
 ### 36. Assets con ruta absoluta bajo `file://` en el build empaquetado
 **Estado:** Resuelto — 14 sep 2026 (validar instalador NSIS en Windows antes de distribuir).
@@ -1128,7 +1169,7 @@ tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashC
 ---
 
 ### 48. `!important` en módulos CSS (deuda de estilo transversal)
-**Estado:** abierto (15 sep 2026) — hallazgo de la auditoría de la Fase 4 del refactor de `CashCut.jsx`.
+**Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `AGENTS.md` prohíbe `!important` en los módulos CSS, pero persiste deuda heredada en varios archivos
 (no introducida por el refactor de `CashCut`). Al cierre de la Fase 4 el módulo de la página conserva
@@ -1138,6 +1179,25 @@ tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashC
 
 **Recomendación:** pasada transversal de limpieza, resolviendo la especificidad con selectores más
 específicos u orden de carga en lugar de `!important`. Fuera del alcance del refactor de `CashCut.jsx`.
+
+**Resolución (18 sep 2026):** barrido completo. Las **128 ocurrencias** en **30 `*.module.css`** se
+resolvieron con:
+- **Selectores con prefijo de mayor especificidad** para estados: `.tableRow.selectedRow`,
+  `.resultItem.selectedResult`, `.ticketItem.selectedTicket`, `.paymentMethod.paymentMethodSelected`,
+  `.infoCard .statusConnected`, `.field .fieldError`, `.fieldGroup input.inputValid`, etc.
+- **Anclaje por tabla** cuando el override competía con el `td` base del módulo padre:
+  `.itemsTable td.textCenter`, `.salesTable td.totalCell`, `.detailTable td.emptyText`,
+  `.table td.empty` y los hovers de fila (`table tbody tr.outOfStockRow:hover > td`).
+- **Stripping directo** donde el orden de fuente ya garantizaba el estado (`.modernInput`/`.modernSelect`
+  de `SalesHistoryModal`, `.kardex` `positive`/`negative`/`lowStock`, `.bold` de CashCut, `.actionBtn:disabled`).
+- **Doble clase para ganar la cascada** en elemementos portaleados de `react-datepicker`
+  (`.datePickerPopper.datePickerPopper`, `.datePickerCalendar.datePickerCalendar`) y en el detalle
+  expandible del reporte de inventario (`td.detailCell` vs. el hover del padre).
+- **Refactor de `IconImg`** (CashCut) a variables CSS (`--icon-size`, `--icon-filter`) para eliminar el
+  `!important` sobre los estilos `inline` de los iconos (`heroStatLabel`, `cardIcon`, `cutDoneAlert`).
+- **Limpieza de código muerto**: se eliminó el bloque `.recoveredDraftDiscard` (no usado en ningún JSX).
+
+Verificado: `rg "!important" --glob "*.module.css" src` devuelve **0** resultados.
 
 ---
 

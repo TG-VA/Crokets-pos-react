@@ -13,16 +13,16 @@
   background: #fff9f8;
 }
 
-.outOfStockRow:hover > td {
-  background: #fff3f1 !important;
+table tbody tr.outOfStockRow:hover > td {
+  background: #fff3f1;
 }
 
 .lowStockRow > td {
   background: #fffdf7;
 }
 
-.lowStockRow:hover > td {
-  background: #fff9e9 !important;
+table tbody tr.lowStockRow:hover > td {
+  background: #fff9e9;
 }
 
 .notApplicableRow > td {
@@ -30,8 +30,8 @@
   color: #6f7780;
 }
 
-.notApplicableRow:hover > td {
-  background: #f3f5f6 !important;
+table tbody tr.notApplicableRow:hover > td {
+  background: #f3f5f6;
 }
 
 .stockCell {
@@ -124,9 +124,14 @@
   white-space: nowrap;
 }
 
-.detailCell {
-  background: #fbfdff !important;
-  padding: 14px 16px !important;
+table tbody td.detailCell {
+  background: #fbfdff;
+  padding: 14px 16px;
+}
+
+table tbody tr:hover > td.detailCell,
+table tbody tr:hover > td.detailCell.detailCell {
+  background: #fbfdff;
 }
 
 .nestedTable {

@@ -215,9 +215,9 @@
   border-bottom: none;
 }
 
-.textCenter {
-  text-align: center !important;
-  padding: 28px !important;
+.customersTable td.textCenter {
+  text-align: center;
+  padding: 28px;
   color: #666666;
 }
 

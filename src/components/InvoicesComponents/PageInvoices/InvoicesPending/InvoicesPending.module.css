@@ -154,9 +154,9 @@
   background: #e3f2fd;
 }
 
-.textCenter {
-  text-align: center !important;
-  padding: 28px !important;
+.salesTable td.textCenter {
+  text-align: center;
+  padding: 28px;
   color: #666666;
 }
 
@@ -165,9 +165,9 @@
   color: #1092b1;
 }
 
-.totalCell {
+.salesTable td.totalCell {
   font-weight: 800;
-  text-align: right !important;
+  text-align: right;
 }
 
 .statusBadge {

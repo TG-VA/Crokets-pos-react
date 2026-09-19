@@ -142,8 +142,8 @@
   width: 140px;
 }
 
-.empty {
-  padding: 28px 16px !important;
+.table td.empty {
+  padding: 28px 16px;
   color: #666666;
   font-weight: 700;
   text-align: center;

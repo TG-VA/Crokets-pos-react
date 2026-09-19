@@ -304,9 +304,9 @@
   border-bottom: none;
 }
 
-.textCenter {
-  text-align: center !important;
-  padding: 28px !important;
+.pointsTable td.textCenter {
+  text-align: center;
+  padding: 28px;
   color: #666666;
 }
 

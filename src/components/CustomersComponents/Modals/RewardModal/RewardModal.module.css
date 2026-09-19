@@ -127,14 +127,18 @@
   cursor: not-allowed;
 }
 
-.inputValid {
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16) !important;
+.fieldGroup input.inputValid,
+.fieldGroup textarea.inputValid,
+.fieldGroup select.inputValid {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16);
 }
 
-.inputInvalid {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.16) !important;
+.fieldGroup input.inputInvalid,
+.fieldGroup textarea.inputInvalid,
+.fieldGroup select.inputInvalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.16);
 }
 
 .fieldError {

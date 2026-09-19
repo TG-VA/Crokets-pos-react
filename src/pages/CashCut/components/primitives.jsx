@@ -7,12 +7,12 @@ export const IconImg = ({ src, className = "", alt = "" }) => (
     className={className}
     aria-hidden={alt ? undefined : "true"}
     style={{
-      width: "1em",
-      height: "1em",
+      width: "var(--icon-size, 1em)",
+      height: "var(--icon-size, 1em)",
       display: "inline-block",
       objectFit: "contain",
       verticalAlign: "middle",
-      filter: "brightness(0) invert(1)",
+      filter: "var(--icon-filter, brightness(0) invert(1))",
     }}
   />
 );
@@ -53,4 +53,6 @@ export const DataRow = ({ label, value, color, bold, borderTop }) => (
   </div>
 );
 
-export const EmptyState = ({ msg }) => <div className={styles.emptyState}>{msg}</div>;
+export const EmptyState = ({ msg }) => (
+  <div className={styles.emptyState}>{msg}</div>
+);

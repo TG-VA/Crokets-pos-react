@@ -23,9 +23,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild native sqlite3
-        run: npm rebuild sqlite3
-
       - name: Compute diff base
         id: base
         run: |

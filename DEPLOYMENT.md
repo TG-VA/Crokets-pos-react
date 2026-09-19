@@ -5,15 +5,14 @@ a un negocio real.
 
 ## Estado del backend local
 
-**Resuelto el 14 sep 2026** (`KNOWN_ISSUES.md` #1, rama `fix/production-backend`). El frontend ya
-no depende del servidor Express local: la resolución de sucursal por dispositivo y las operaciones
-de caja se ejecutan con RPCs de Supabase (`get_branch_by_device`, `get_cash_register_session`,
-`open_cash_register`). El instalador no necesita iniciar `src/backend/server.js`, ni empaquetar la
-`SUPABASE_SERVICE_ROLE_KEY`, ni resolver el ABI de `sqlite3` contra Electron. En la misma fecha se
-eliminaron además los endpoints `/device/branch` y `/cash/*` del backend local, su helper y el
-cliente con service-role key, junto con los handlers IPC legacy (`login`, `set-initial-cash`,
-`check-cash-register`, `close-cash-register`). `src/backend/` se conserva solo como login legacy por
-SQLite (ya no consumido por el frontend) para desarrollo local.
+**Eliminado el 18 sep 2026** (cierre de `KNOWN_ISSUES.md` #1/#10/#31). El frontend no depende de
+ningún servidor local: la resolución de sucursal por dispositivo y las operaciones de caja se ejecutan
+con RPCs de Supabase (`get_branch_by_device`, `get_cash_register_session`, `open_cash_register`), y
+el login usa Supabase Auth. `src/backend/` (server Express, SQLite, `password.js`, `users.db`) se
+eliminó por completo, junto con los handlers IPC legacy (`login`, `set-initial-cash`,
+`check-cash-register`, `close-cash-register`). El instalador no necesita iniciar servidor alguno ni
+empaquetar la `SUPABASE_SERVICE_ROLE_KEY`, ni resolver el ABI de `sqlite3` contra Electron (ver
+`KNOWN_ISSUES.md` #31).
 
 ## Configuración del build
 
@@ -37,17 +36,9 @@ electron-builder).
 
 ## Módulos nativos
 
-El proyecto usa `sqlite3` (módulo nativo). Tras instalar dependencias o cambiar la versión de
-Electron/Node, hay que reconstruir el binario contra el runtime de Electron:
-
-```bash
-npm run rebuild   # electron-rebuild -f -w sqlite3
-```
-
-Si no se hace, el login local (que depende de SQLite) fallará al abrir la app empaquetada. Desde el
-14 sep 2026 el instalador ya no carga `sqlite3` (el login de producción usa Supabase Auth), por lo
-que `npm run rebuild` no es necesario para distribuir; solo aplica al backend de desarrollo
-(`npm run dev` corre bajo el Node del sistema).
+No quedan módulos nativos tras la eliminación del backend local SQLite (`KNOWN_ISSUES.md` #31): la
+dependencia `sqlite3` y el script `npm run rebuild` (`electron-rebuild`) se retiraron de
+`package.json`. No hay binarios que reconstruir contra el runtime de Electron en el flujo normal.
 
 ## Flujo de build
 
@@ -55,13 +46,10 @@ que `npm run rebuild` no es necesario para distribuir; solo aplica al backend de
 # 1. Instalar dependencias
 npm install
 
-# 2. (si cambió Electron/Node) reconstruir módulo nativo
-npm run rebuild
-
-# 3. Correr los tests
+# 2. Correr los tests
 npm test
 
-# 4. Generar el instalador completo (frontend + electron-builder)
+# 3. Generar el instalador completo (frontend + electron-builder)
 npm run build
 ```
 
@@ -71,10 +59,9 @@ Para iterar solo el frontend o solo el empaquetado existen `npm run build:fronte
 ## Checklist antes de distribuir a un cliente
 
 - [x] El bloqueante de login (#1) está verificado/resuelto (frontend sin dependencia del server local).
-- [x] La contraseña del admin local ya no está en texto plano (#2: `bcryptjs` + migración en login).
+- [x] Backend local eliminado por completo (#31): sin Express/SQLite/`npm run rebuild` en el stack.
 - [x] CSP estricta inyectada en el build de producción y Electron endurecido (ventanas/navegación), 14 sep 2026.
 - [ ] `npm test` pasa.
-- [ ] `npm run rebuild` ejecutado si cambió Electron/Node.
 - [ ] Versión (`package.json`) incrementada.
 - [ ] Cuenta de prueba `alexander@example.com` desactivada/eliminada (#14).
 - [ ] RLS/roles revisados (#13) o riesgo aceptado.
@@ -95,8 +82,9 @@ Para iterar solo el frontend o solo el empaquetado existen `npm run build:fronte
 
 ## Datos y respaldo
 
-Los datos de negocio viven en **Supabase Postgres** (el SQLite local solo guarda el login local).
-Antes de una actualización mayor o migración:
+Los datos de negocio viven en **Supabase Postgres** (todo el stack de datos es remoto desde la
+eliminación del backend SQLite local, `KNOWN_ISSUES.md` #31). Antes de una actualización mayor o
+migración:
 
 - Generar un respaldo del proyecto Supabase (dashboard o `pg_dump` / `supabase db dump`).
 - Las migraciones se aplican con `supabase db push` (ver `docs/SUPABASE_MIGRATIONS.md`); no hay

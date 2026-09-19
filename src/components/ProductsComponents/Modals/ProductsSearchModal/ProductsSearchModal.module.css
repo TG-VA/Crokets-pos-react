@@ -88,7 +88,9 @@
   border: 2px solid #bdc3c7;
   border-radius: 6px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .searchInput:focus {
@@ -171,10 +173,10 @@
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
 }
 
-.selectedResult {
-  border-color: #3498db !important;
-  background: rgba(52, 152, 219, 0.05) !important;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1) !important;
+.resultItem.selectedResult {
+  border-color: #3498db;
+  background: rgba(52, 152, 219, 0.05);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
 }
 
 .productInfo {
@@ -263,20 +265,20 @@
   opacity: 0.6;
 }
 
-.selectButton {
-  background: #27ae60 !important;
+.actionButton.selectButton {
+  background: #27ae60;
 }
 
 .selectButton:hover:not(:disabled) {
-  background: #219a52 !important;
+  background: #219a52;
 }
 
-.cancelButton {
-  background: #6c757d !important;
+.actionButton.cancelButton {
+  background: #6c757d;
 }
 
-.cancelButton:hover {
-  background: #5a6268 !important;
+.cancelButton:hover:not(:disabled) {
+  background: #5a6268;
 }
 
 .actionHints {
