@@ -14,6 +14,7 @@ const Customers = lazy(() => import("./pages/Customers/Customers"));
 const Reports = lazy(() => import("./pages/Reports/Reports"));
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { BranchProvider } from "./contexts/BranchContext";
 import { PendingTransfersProvider } from "./contexts/PendingTransfersContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
@@ -83,11 +84,13 @@ function App() {
 
   return (
     <AuthProvider>
-      <PendingTransfersProvider>
-        <ProductsProvider>
-          <AppRoutes />
-        </ProductsProvider>
-      </PendingTransfersProvider>
+      <BranchProvider>
+        <PendingTransfersProvider>
+          <ProductsProvider>
+            <AppRoutes />
+          </ProductsProvider>
+        </PendingTransfersProvider>
+      </BranchProvider>
     </AuthProvider>
   );
 }
