@@ -1,35 +1,14 @@
-import { useEffect, useState } from 'react';
-import Navbar from '../../components/Navbar/Navbar';
-import Footer from '../../components/Footer/Footer';
-import UserList from './UserList';
-import styles from './Profiles.module.css';
-import { supabase } from '../../lib/supabaseClient';
-
-const normalizeRoleName = (rolesValue) => {
-  if (Array.isArray(rolesValue)) {
-    return rolesValue[0]?.name || null;
-  }
-  return rolesValue?.name || null;
-};
-
-const normalizeUserRow = (row) => {
-  const roleName = normalizeRoleName(row?.roles);
-  const username = (row?.username || row?.email || 'SIN USUARIO').toString().trim();
-
-  return {
-    id: row?.id || username,
-    username,
-    email: row?.email || 'SIN CORREO',
-    status: typeof row?.status === 'boolean' ? row.status : null,
-    roleName: roleName || 'SIN ROL',
-    createdAt: row?.created_at || null,
-  };
-};
+import React, { useEffect, useState } from "react";
+import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
+import UserList from "./UserList";
+import styles from "./Profiles.module.css";
+import { supabase } from "../../lib/supabaseClient";
 
 const Profiles = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -38,11 +17,12 @@ const Profiles = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       const candidates = [
-        'id, username, email, status, created_at, roles ( name )',
-        'id, username, email, status, created_at',
+        "id, username, email, status, created_at, role_id, roles ( id, name )",
+        "id, username, email, status, created_at, role_id, roles ( name )",
+        "id, username, email, status, created_at",
       ];
 
       let data = null;
@@ -50,9 +30,9 @@ const Profiles = () => {
 
       for (const selectClause of candidates) {
         const result = await supabase
-          .from('users')
+          .from("users")
           .select(selectClause)
-          .order('created_at', { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (!result.error) {
           data = result.data;
@@ -67,15 +47,11 @@ const Profiles = () => {
         throw lastError;
       }
 
-      const normalizedUsers = Array.isArray(data)
-        ? data.map(normalizeUserRow)
-        : [];
-
-      setUsers(normalizedUsers);
+      setUsers(Array.isArray(data) ? data : []);
     } catch (loadError) {
-      console.error('Error al cargar usuarios desde Supabase:', loadError);
+      console.error("Error al cargar usuarios desde Supabase:", loadError);
       setUsers([]);
-      setError('No se pudieron cargar los usuarios desde la base de datos.');
+      setError("No se pudieron cargar los usuarios desde la base de datos.");
     } finally {
       setLoading(false);
     }
