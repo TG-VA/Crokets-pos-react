@@ -137,7 +137,6 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     transferHistory,
     transferMetrics,
     transferNotes,
-    clearLookupSelection: sendForm.clearLookupSelection || (() => {}),
     handleCancelTransfer,
     handleConfirmReceipt,
     handleDraftQuantityChange,
