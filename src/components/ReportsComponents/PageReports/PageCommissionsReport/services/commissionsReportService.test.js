@@ -59,7 +59,9 @@ describe("commissionsReportService", () => {
       const params = supabase.rpc.mock.calls[0][1];
       expect(params).not.toHaveProperty("p_page");
       expect(params).not.toHaveProperty("p_page_size");
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
+        100000
+      );
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {
@@ -184,10 +186,68 @@ describe("commissionsReportService", () => {
       });
     });
 
+    it("mapea una fila exenta como sin comision segun el contrato de la RPC", async () => {
+      const row = {
+        detail_id: "d9",
+        sale_id: "s9",
+        created_at: "2026-09-05T10:00:00.000Z",
+        quantity: "1",
+        unit_price: "80",
+        total_price: "80",
+        has_commission: false,
+        commission_amount: "0",
+        commission_type: null,
+        commission_value: null,
+        rule_label: "Sin comision",
+      };
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [row], error: null }));
+
+      const { detailedRows } = await fetchCommissionsData({
+        startDateIso,
+        endDateIso,
+      });
+
+      expect(detailedRows[0]).toMatchObject({
+        hasCommission: false,
+        commissionAmount: 0,
+        commissionType: null,
+        commissionValue: 0,
+        ruleLabel: "Sin comision",
+      });
+    });
+
+    it("mapea una fila con comision heredada del departamento con sus valores efectivos", async () => {
+      const row = {
+        detail_id: "d10",
+        sale_id: "s10",
+        created_at: "2026-09-05T10:00:00.000Z",
+        quantity: "2",
+        unit_price: "80",
+        total_price: "160",
+        has_commission: true,
+        commission_amount: "8",
+        commission_type: "percent",
+        commission_value: "5",
+        rule_label: "percent: 5%",
+      };
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [row], error: null }));
+
+      const { detailedRows } = await fetchCommissionsData({
+        startDateIso,
+        endDateIso,
+      });
+
+      expect(detailedRows[0]).toMatchObject({
+        hasCommission: true,
+        commissionAmount: 8,
+        commissionType: "percent",
+        commissionValue: 5,
+        ruleLabel: "percent: 5%",
+      });
+    });
+
     it("delega el filtro de ventas canceladas al RPC sin p_status en cliente", async () => {
-      supabase.rpc.mockReturnValue(
-        rpcBuilder({ data: [], error: null })
-      );
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
       await fetchCommissionsData({ startDateIso, endDateIso });
 
