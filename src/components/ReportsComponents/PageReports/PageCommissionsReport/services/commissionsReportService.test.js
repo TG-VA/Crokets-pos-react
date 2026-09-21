@@ -246,6 +246,37 @@ describe("commissionsReportService", () => {
       });
     });
 
+    it("mapea tal cual la comision congelada en la RPC sin recalcular contra el catalogo", async () => {
+      const row = {
+        detail_id: "d11",
+        sale_id: "s11",
+        created_at: "2026-09-05T10:00:00.000Z",
+        quantity: "3",
+        unit_price: "100",
+        catalog_price: "120",
+        total_price: "300",
+        has_commission: true,
+        commission_amount: "30",
+        commission_type: "percent",
+        commission_value: "10",
+        rule_label: "percent: 10%",
+      };
+      supabase.rpc.mockReturnValue(rpcBuilder({ data: [row], error: null }));
+
+      const { detailedRows } = await fetchCommissionsData({
+        startDateIso,
+        endDateIso,
+      });
+
+      expect(detailedRows[0]).toMatchObject({
+        hasCommission: true,
+        commissionAmount: 30,
+        commissionType: "percent",
+        commissionValue: 10,
+        ruleLabel: "percent: 10%",
+      });
+    });
+
     it("delega el filtro de ventas canceladas al RPC sin p_status en cliente", async () => {
       supabase.rpc.mockReturnValue(rpcBuilder({ data: [], error: null }));
 
