@@ -23,6 +23,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 * [x] Validación de membresía de sucursal en las RPCs de caja (`get_cash_register_session`/`open_cash_register`) — migración `20260917190000`, pendiente `supabase db push`; ver `KNOWN_ISSUES.md` #29
 * [x] Documentar la excepción pre-auth de `get_branch_by_device` (anon + `SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #30, `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`
 * [x] Endurecer RPCs transaccionales (SEC-3): revocar `EXECUTE` a `anon`/`PUBLIC` y derivar `p_user_id` de `auth.uid()` — migración `20260917200000`, pendiente `supabase db push`; el gateo de mutaciones admin en el cliente queda como riesgo aceptado por decisión #10/#13; ver `KNOWN_ISSUES.md` #38, `PR_REVIEW.md` y `docs/EDGE_FUNCTIONS.md`
+* [x] Propagar la comisión del departamento a **todos** sus productos al confirmar propagación (sin filtrar por la comisión previa del departamento; las decisiones individuales de producto mandan solo hasta la próxima propagación) — ver `KNOWN_ISSUES.md` #51
 
 ## Prioridad Media (Infraestructura y Testing)
 

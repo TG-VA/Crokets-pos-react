@@ -866,3 +866,139 @@ evidencia en SQL y cliente, el cambio es quirúrgico, grants seguros, `npm test`
 convenciones cumplidas. La rama **no está lista para push/PR todavía**: falta (F1) commitear el trabajo
 (5 modificados + 2 nuevos) y (F2) aplicar y validar la migración contra el remoto. Con F1 y F2
 resueltos y F4/F5 ajustados, la rama queda aprobada conforme a `PR_REVIEW.md`.
+
+## Informe de Auditoría — RAMA `fix/department-commission-full-propagation` (borrador, 21 sep 2026)
+
+**Alcance:** corrección de la propagación masiva de comisión de departamento en `departmentService.js`
+(#51). La regla de negocio objetivo: al actualizar un departamento y confirmar la propagación, **todos**
+los productos con `department_id = id` adoptan los nuevos valores de comisión
+(`commission_enabled`, `commission_type`, `commission_value`, `commission_percent`); las decisiones
+individuales de producto mandan solo hasta la siguiente propagación del departamento. Estado: **trabajo
+sin commitear aún**; este informe es borrador a revisar en la PR.
+
+### Veredicto por sección
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO (cambio quirúrgico):**
+- Se eliminó el `select` previo del departamento (`oldDept`) que quedaba como dead code y el bloque
+  `if (oldDept)` que añadía tres `.eq` de comisión a la query de `products`. La actualización masiva
+  quedó como una sola cadena limpia (`departmentService.js:97-106`):
+  `supabase.from("products").update({...}).eq("department_id", id)` — un único `.eq`, sin filtros por
+  valores anteriores.
+- Sin cambios de contrato: `updateDepartment` sigue devolviendo `{ success, data, error, partial }` y
+  `console.error` del `catch` se conserva (`:118`).
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (caso que rompía la regla ejecutado):**
+- Antes: producto con comisión individual distinta a la previa del departamento (ej. exento con
+  `commission_enabled=false`, o con `commission_value` propio) no matcheaba los tres `.eq` del filtro
+  y **no** se actualizaba en la propagación — quedaba con valores obsoletos. Después: la propagación
+  toca todos los productos del departamento; la decisión individual sigue mandando hasta la próxima
+  propagación (que la re-impone), tal y como exige la regla.
+- Evidencia de no-regresión en el payload: `commission_percent` se mantiene derivado
+  (`comType === "percent" && comEnabled ? comVal : 0.0`, `:103-104`) con los mismos defaults de antes
+  (`comEnabled=false`, `comType="percent"`, `comVal=0`), por lo que el comportamiento para el caso
+  general de propagación es idéntico al previo cuando no existían overrides.
+- `propagateToProducts=false` no toca la tabla `products` (el bloque vive dentro de la condición).
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** el service no muta contextos; no se tocan hooks ni
+componentes.
+
+**§4 Estilos y UI — SIN CAMBIO:** el diff no toca JSX ni CSS.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis (barrido de rangos
+Unicode sobre los dos archivos: sin resultados; las únicas coincidencias no-ASCII son acentos
+españoles); sin `console.log`/`console.warn` nuevos; `console.error` del `catch` conservado; comillas
+dobles; EOF newline verificada por byte (`0a` en ambos archivos); ESLint y Prettier `EXIT=0` sobre los
+archivos tocados.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` nuevo #51 regla + resolución + cobertura,
+`BACKLOG.md` con checkbox nuevo y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` **45 archivos / 599 cases** OK (588 previos + 11 de
+`departmentService.test.js`); `npm run build:frontend` OK (warning de chunk > 500 kB preexistente).
+Suite nueva: propagación a todos los productos (verifica que el único `.eq` sobre `products` es
+`["department_id","d1"]` y que no se llama `select`/`maybeSingle` en `departments`), `propagate=false`
+sin tocar `products`, defaults con campos ausentes, `commission_percent` en 0 para `amount`, error de
+departamento sin tocar productos, error de actualización masiva y excepción inesperada (`console.error`
+espiado).
+
+### Notas y límites conscientes
+- **Filtro `oldDept` eliminado por completo:** al quitar la condición, el `select` previo quedaba dead
+  code; se retiró también (un `select` menos por operación).
+- **QA manual pendiente:** verificar en la UI (Productos > Departamentos) que al modificar la comisión
+  de un departamento y confirmar la propagación se actualicen productos con comisión propia/exenta y
+  que el reporte de comisiones refleje los nuevos valores con `npm run dev`.
+- **Pendiente de proceso:** commit + push de la rama para que el CI incremental pueda evaluar el diff
+  (mismo hallazgo F1 de ramas previas).
+
+## Informe de Auditoría final — RAMA `fix/department-commission-full-propagation` (21 sep 2026, revisión externa)
+
+**Metodología:** `code-review-quality` + `react-vite-best-practices`. Verificación mecánica previa a la
+interpretación (`git diff`, `npm test`, `npm run build:frontend`, barridos de texto y bytes); evidencia
+textual por ítem.
+
+### Estado de refs (hallazgo de proceso)
+`main` = `HEAD` = `487bb18`; `git diff main...HEAD` queda vacío y `git merge-base main HEAD` = `HEAD`.
+**Todo el trabajo vivía sin commitear** en el working tree (4 modificados + 1 archivo nuevo: `BACKLOG.md`,
+`KNOWN_ISSUES.md`, `PR_REVIEW.md`, `src/services/products/departmentService.js` y
+`src/services/products/departmentService.test.js`). Resuelto en esta sesión: commit + push.
+
+### §0 Bloqueantes de revisión previa — N/A
+La rama no responde a bloqueantes previos.
+
+### §1 Funcionalidad y Arquitectura — CUMPLIDO (cambio quirúrgico)
+- El diff elimina el `select` previo del depto (`oldDept`) y todo el bloque `if (oldDept)` con los tres
+  `.eq` de comisión. La propagación quedó como una sola cadena con un único `.eq`:
+  `departmentService.js:97-106` → `supabase.from("products").update({...}).eq("department_id", id)`.
+  Verificado mecánicamente: `rg` muestra solo `.eq("id", id)` (dept) y `.eq("department_id", id)`
+  (products); sin `select` ni `maybeSingle` sobre `departments`.
+- Contrato intacto: `{ success, data, error, partial }`; consumidores (`ProductsContext.jsx:142-144`,
+  `useDepartments.js:155,222`) solo leen `result.success`/`result.error`. Un `select` de `departments`
+  menos por operación.
+
+### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (caso que rompía la regla ejecutado)
+- Antes: producto con comisión individual ≠ comisión previa del depto (exenta `commission_enabled=false`,
+  otro tipo/valor) no matcheaba los tres `.eq` y quedaba con valores obsoletos. Después: la propagación
+  toca **todos** los productos de `department_id = id`; la decisión individual manda hasta la próxima
+  propagación (regla #51).
+- No-regresión en payload: `commission_percent` (`comType === "percent" && comEnabled ? comVal : 0.0`,
+  `:103-104`) y los defaults están en contexto del diff (idénticos a `HEAD`).
+- `propagateToProducts=false` no toca `products` (bloque dentro de la condición, `:89-109`); la UI
+  (`useDepartments.js:199-210`) solo ofrece el diálogo de sobrescritura si cambió la comisión.
+
+### §3 Estado y Contexto Global — SIN CAMBIO
+No se mutan contextos ni hooks.
+
+### §4 Estilos y UI — SIN CAMBIO
+El diff no toca JSX ni CSS.
+
+### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+- Emojis: `rg` de rangos Unicode sobre líneas agregadas → sin resultados (EXIT 1); los únicos no-ASCII
+  son acentos españoles.
+- `console.log`/`console.warn`: ninguno. `console.error` conservados en los `catch`
+  (`departmentService.js:33,118`).
+- EOF newline por byte (`od`): `0a` en ambos archivos y en los 3 docs.
+- Comillas dobles; ESLint EXIT 0 y Prettier --check EXIT 0 en los dos archivos tocados.
+
+### §6 Documentación — CUMPLIDO
+`KNOWN_ISSUES.md` #51 (regla + resolución + cobertura), `BACKLOG.md` checkbox (`:26`), borrador y este
+informe final en `PR_REVIEW.md`.
+
+### §7 Calidad/testing — CUMPLIDO
+- `npm test`: **45 archivos / 599 tests passed**. Suite nueva `departmentService.test.js` con 11 casos,
+  incluida la aserción central `expect(productsQ.eq.mock.calls).toEqual([["department_id","d1"]])`
+  (único `.eq` sobre `products`) y `select`/`maybeSingle` de `departments` no llamados.
+- `npm run build:frontend`: EXIT 0 (warning de chunk > 500 kB preexistente).
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Alto (proceso) | Rama sin commits sobre `main`; CI incremental no evalúa el diff. | RESUELTO — commit + push en esta sesión |
+| F2 | Manual | QA visual `npm run dev` (propagación con productos de comisión individual/exenta + reporte de comisiones). | PENDIENTE — a cargo del autor |
+| O1 | Bajo | Interacción #50/#51: la propagación re-impone los valores del depto sobre exenciones individuales. | **APROBADO — es la regla de negocio objetivo**: la decisión individual manda solo hasta la próxima propagación (decisión 21 sep 2026) |
+| O2 | Bajo | `partial` nunca se setea `true` en `updateDepartment` (depto actualizado + falla masiva → `success:false`). | Documentado como deuda preexistente, fuera del alcance |
+
+### Veredicto
+La **lógica del cambio es correcta y verificable mecánicamente**: propagación total con un único
+`.eq("department_id", id)`, sin queries redundantes a `departments`, contrato intacto, `npm test` 599/599,
+build OK, sin emojis/logs de depuración/`!important`, EOF newline y lint/format limpios. Con F1 resuelto
+(commit + push) y F2 (QA visual) sin hallazgos, la rama queda **aprobada** conforme a `PR_REVIEW.md`.
