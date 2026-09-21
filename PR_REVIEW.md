@@ -552,3 +552,145 @@ recogía Vitest, y el conteo subió de 35 a 36 archivos solo por la suite nueva 
   este borrador (ver `KNOWN_ISSUES.md` #8).
 - **QA visual pendiente:** tamaños de icono de CashCut con las nuevas variables `--icon-size` y los
   estados de fila reescritos (reporte de inventario) deben verificarse en la UI con `npm run dev`.
+
+## Informe de Auditoría — RAMA `refactor/products-modify` (borrador, 21 sep 2026)
+
+**Alcance:** descomposición del god component
+`src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` (#3), última fila
+declarada como refactor posterior. Alcance estricto: solo el formulario Modificar producto; no se tocan
+`ProductsSearchModal`, `AppModal`, `useProductModifyDOM.js` ni `ProductsModify.module.css`. Estado:
+**trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `RewardModal`):**
+- `services/productModifyCalculationService.js` (puro, sin I/O): `calculateGanancia`, `roundMoney`/
+  `roundPercent`, `getDiscountPriceFromPercent`/`getDiscountPercentFromPrice`, `validateProductModifyForm`
+  y los payloads `buildProductPayload`/`buildDiscountPayload`.
+- `services/productModifyDataService.js` (DIP): `loadProductDiscountData` (normaliza `{ success,
+  discount, error }` y aísla el flujo `getProductDiscountByProductId`) y `saveProductModifications`
+  (orquesta producto → descuento con resultado `{ success, error, partial }`); recibe los callbacks del
+  contexto, no importa `supabase`.
+- Seis vistas presentacionales en `components/`: `ProductModifyLookup`, `ProductModifyGeneralSection`,
+  `ProductModifyPricingSection`, `ProductModifyInventorySection`, `ProductModifyDiscountSection` y
+  `ProductModifyFooter`; comparten el CSS module del módulo y reciben `getFieldClassName`/`renderError`
+  como props (patrón `RewardDiscountFields`).
+- `ProductsModify.jsx` bajó de **640 a 177 líneas** y quedó como orquestador (header + lookup + grid de
+  columnas + modales). Los hooks delegan: `useProductModifyForm` → validación/cálculos/payloads del
+  servicio puro; `useProductsModify` → persistencia y mensajes del data service.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (48 tests de caracterización):**
+- `productModifyCalculationService.test.js` (39 casos): ganancia (incl. costo 0, negativos y no
+  numéricos), redondeos, descuento ida/vuelta, validación campo a campo (obligatorios, rangos, dup codigo
+  con `selectedProduct.id`, comisión y descuento condicionales) y payloads (coerciones, defaults,
+  descuento deshabilitado que conserva el porcentaje configurado).
+- `productModifyDataService.test.js` (9 casos): normalización de descuento (habilitado/deshabilitado),
+  propagación de error del callback, guard de `productId` y captura de excepciones en ambos servicios
+  (`console.error` espiado).
+- Detalle: el formulario original sobrescribía "precio venta debe ser mayor a 0" con "no puede ser menor
+  al costo" cuando `precio = 0` (orden de checks). El refactor fija la precedencia de `precio <= 0`; el
+  resto de mensajes/contratos se conservan idénticos (verificado por tests).
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** el contrato expuesto por `useProductsModify` es el mismo
+(los componentes consumen las mismas props); no se muta contexto global ni se agrega estado nuevo fuera
+del módulo.
+
+**§4 Estilos y UI — SIN CAMBIO:** no se agregó CSS; las seis vistas reutilizan clases existentes de
+`ProductsModify.module.css` (`.formRow`, `.input`, `.inputError`, `.sectionCard`, `.helperBox`,
+`.infoBox`, `.bodyFooter`, etc.).
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO:** sin emojis; sin `console.log`/`console.warn` nuevos;
+`console.error` conservado en los `catch` de ambos services; comillas dobles y EOF newline.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #3 (tabla + estado + bitácora), `BACKLOG.md`
+(checkbox) y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` **573/573** (43 archivos) con los 48 casos nuevos;
+`npm run build:frontend` OK; ESLint incremental sin errores nuevos (persisten los warnings
+preexistentes de `no-unused-vars` por JSX que ya emitía el archivo original en `main`).
+
+### Notas y límites conscientes
+- **Prettier sobre el módulo:** los 10 archivos tocados ya incumplían `prettier --check` en `main`
+  (todo el módulo `ProductsModify`); se formatearon íntegros porque el CI incremental verifica el archivo
+  completo (churn acotado a los archivos del refactor; `useProductModifyDOM.js` y el CSS module quedan
+  fuera del diff).
+- **Fix de precedencia §2:** pequeño cambio de mensaje observable solo cuando `precio = 0`; se documenta
+  aquí para decisión del revisor (alternativa: preservar el mensaje original "menor al costo").
+- **QA visual pendiente:** el grid de dos columnas, el estado `readOnly` de ganancia y los toggles de
+  comisión/descuento deben verificarse en la UI con `npm run dev` antes de cerrar la PR.
+
+## Informe de Auditoría final — 21 sep 2026 (revisión externa)
+
+**Metodología:** `code-review-quality` + `react-vite-best-practices` (la skill `modern-web-guidance`
+solicitada no existe en el inventario; se usó la más cercana para la semántica de inputs/formularios).
+Verificación mecánica previa a la interpretación; evidencia textual por ítem.
+
+### Estado de refs (hallazgo estructural)
+`main` y `HEAD` apuntan al mismo commit `d645701`; `git diff main...HEAD` vacío y
+`git merge-base main HEAD` = `HEAD`. Todo el refactor vivía sin commitear en el working tree
+(6 modificados + 10 nuevos). **Resuelto en esta sesión:** commits creados en la rama y push.
+
+### §1 Funcionalidad y Arquitectura — CUMPLIDO
+- SRP: `services/productModifyCalculationService.js` puro (sin I/O); `services/productModifyDataService.js`
+  DIP (recibe callbacks del contexto; único match de "supabase" es un JSDoc en `productModifyDataService.js:4`);
+  6 vistas presentacionales ≤ 180 líneas; `ProductsModify.jsx` orquestador = **177 líneas** vs 640 en `main`.
+- Extracción JSX token-idéntica (mismos `name`, clases, `type`, `step`, handlers y orden de focos).
+- Foco por teclado conservado: `useProductModifyDOM.js` (fuera del diff) controla `getFocusableBodyElements`
+  excluyendo `tabIndex -1`/`readOnly`/`disabled`; Ganancia conserva `tabIndex={-1}` en `ProductModifyPricingSection.jsx:69`.
+- ISP/OCP/KISS validados; límite de líneas OK (todos ≤ 271).
+- **Pendiente:** QA visual `npm run dev` (a cargo del autor).
+
+### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (1 cambio documentado y aprobado)
+- Traza del caso límite `costo=50, precio=0`: en `main` el `if` de `precio <= 0` era sobrescrito por el
+  bloque `precio < costo` (mensaje final "no puede ser menor al costo"); el refactor lo fija con cadena
+  `else if` en `productModifyCalculationService.js:105-112` → mensaje "El precio venta global debe ser mayor a 0."
+- Misma validez (form inválido en ambos casos), cambia solo el texto. Test `productModifyCalculationService.test.js:228-236`
+  fija el nuevo mensaje. **Decisión del revisor (21 sep 2026): MANTENER** el nuevo mensaje.
+- Preservación verificada: `calculateGanancia`, payloads y normalización de descuento idénticos;
+  `saveProductModifications` con mismos tipos de alerta; `loadProductDiscountData` más defensivo
+  (elimina posible unhandled rejection que `main` podía propagar desde `onSelect` → `loadProduct`).
+- Caso que rompe la regla ejecutado: `costo=0/precio=0` → 0; `costo=0/precio=100` → 100; negativos → 0 (idénticos).
+
+### §3 Estado y Contexto Global — SIN CAMBIO
+Sin estados globales nuevos; el contrato de `useProductsModify` (props) es el mismo; `useProductModifyDOM.js`
+intacto; persistencia vía callbacks preexistentes de `useProducts`.
+
+### §4 Estilos y UI — SIN CAMBIO (verificación mecánica)
+`rg "!important"` = 0; `rg "style=\{\{"` = 0; sin CSS nuevo (reuso de `ProductsModify.module.css`); el
+CSS module no está en el diff; `getFieldClassName` idéntico al anterior `inputClassName` (sin espacios colgantes).
+
+### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+- Cero emojis (barrido Unicode de los 15 archivos del módulo; `→` en `KNOWN_ISSUES.md`/`PR_REVIEW.md` es
+  separador tipográfico preexistente, no emoji).
+- Cero `console.log/warn/debug/info`; `console.error` conservados en `useProductsModify.js:44,90` y
+  `productModifyDataService.js:54,106` (catch/fallo).
+- EOF newline verificada (`od`) en los 16 archivos; comillas dobles.
+- Prettier: los 3 originales fallaban `--check` en `main` (verificado) → churn de formato justificado.
+
+### §6 Documentación — CUMPLIDO (impresión corregida en esta sesión)
+- `KNOWN_ISSUES.md` #3, `BACKLOG.md` checkbox y borrador de auditoría presentes.
+- Impresión "173 líneas" corregida a **177** (`KNOWN_ISSUES.md:95,194` y `PR_REVIEW.md:577`), acorde a `wc -l`.
+
+### §7 Calidad/testing — CUMPLIDO
+- `npm test` **573/573** (43 archivos) con los 48 casos nuevos (39+9); `npm run build:frontend` EXIT 0.
+- ESLint módulo: **0 errores**; 9 warnings `no-unused-vars` por JSX **preexistentes** (config sin
+  `react/jsx-uses-vars`; la versión de `main` emite la misma categoría — verificado linteando el original).
+- Cobertura: validación campo a campo, ganancia (costo 0/negativo/no-numérico), descuento ida/vuelta,
+  guard de `productId`, excepciones con `console.error` espiado.
+- Descripción de test engañosa corregida en esta sesión: "devuelve 0 con costo cero y precio positivo"
+  → "devuelve 100 (margen completo) con costo cero y precio positivo" (`productModifyCalculationService.test.js:46`).
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits (`main` = `HEAD` = d645701); CI no podía correr sobre el diff. | RESUELTO — commits y push en esta sesión |
+| F2 | Minor | Conteo documentado 173 ≠ 177 reales. | RESUELTO — corregido |
+| F3 | Minor | Descripción de test contradecía la aserción. | RESUELTO — corregido |
+| F4 | Sugerencia | Cambio de mensaje de precedencia `precio=0`. | APROBADO — se mantiene el nuevo mensaje |
+| F5 | Manual | QA visual `npm run dev` (grid, `readOnly` ganancia, toggles, F10/Enter). | PENDIENTE — a cargo del autor |
+| F6 | Observación | Labels sin `htmlFor`/`id` (patrón a11y preexistente en todo el módulo, no introducido por el diff). | Backlog futuro, no bloqueante |
+
+### Veredicto
+El código del refactor es aprobable: servicios puros/DIP correctos, extracción fiel, DIP/ISP/SRP
+verificados, tests (573/573) y build OK, sin emojis/logs depurados/`!important`. Único pendiente antes de
+cerrar la PR: **QA visual manual (F5)**. Con el resultado de ese QA sin hallazgos, la rama queda
+aprobada conforme a los estándares de `PR_REVIEW.md`.
