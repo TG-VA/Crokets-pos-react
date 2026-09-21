@@ -294,6 +294,41 @@ tickets `'cancelled'`/`'cancelada'`. El test contract en
 `commissionsReportService.test.js` cubre que el filtro de canceladas queda delegado al RPC (sin
 `p_status` en cliente).
 
+### 51. Propagación de comisión de departamento no aplicaba a productos con comisión individual propia
+**Estado:** resuelto — rama `fix/department-commission-full-propagation`, 21 de septiembre de 2026.
+
+Al actualizar la comisión de un departamento con propagación confirmada (`data.propagateToProducts`),
+`updateDepartment` (`src/services/products/departmentService.js`) filtraba los `products` a actualizar
+por los valores de comisión que el departamento tenía ANTES de la actualización:
+
+```js
+query = query
+  .eq("commission_enabled", !!oldDept.commission_enabled)
+  .eq("commission_type", oldDept.commission_type || "percent")
+  .eq("commission_value", Number(oldDept.commission_value || 0));
+```
+
+Ese filtro se basaba en la comisión previa del departamento, por lo que **todo producto cuya comisión
+individual difería de la anterior del departamento** (ajustada manualmente, exenta con
+`commission_enabled=false`, con otro tipo o valor) quedaba fuera de la actualización masiva y
+conservaba valores obsoletos tras la propagación.
+
+**Regla de negocio corregida:**
+- Al confirmar la propagación, **todos** los productos con `department_id = id` adoptan los nuevos
+  valores (`commission_enabled`, `commission_type`, `commission_value`, `commission_percent`).
+- Si un producto se modifica individualmente después, esa decisión individual manda **hasta la próxima
+  propagación** del departamento, que vuelve a imponer la comisión del departamento sobre los productos
+  del departamento.
+
+**Resolución (21 sep 2026):** se eliminó el `select` previo de la comisión del departamento (que
+quedaba como dead code) y el bloque `if (oldDept)`. La actualización masiva quedó limpia:
+`supabase.from("products").update(payload).eq("department_id", id)` — un `.eq` único, sin filtros por
+valores anteriores. Cobertura nueva en `src/services/products/departmentService.test.js` (11 casos):
+propagación a todos los productos sin filtrar por valores previos (verifica que el único `.eq` sobre
+`products` es `department_id`), `propagateToProducts=false` no toca la tabla `products`, defaults con
+campos de comisión ausentes, `commission_percent` en 0 para tipo `amount` y propagación de errores
+(actualización del departamento, actualización masiva y excepciones inesperadas).
+
 ---
 
 ## Medio
