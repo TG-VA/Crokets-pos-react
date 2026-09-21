@@ -694,3 +694,175 @@ El código del refactor es aprobable: servicios puros/DIP correctos, extracción
 verificados, tests (573/573) y build OK, sin emojis/logs depurados/`!important`. Único pendiente antes de
 cerrar la PR: **QA visual manual (F5)**. Con el resultado de ese QA sin hallazgos, la rama queda
 aprobada conforme a los estándares de `PR_REVIEW.md`.
+
+## Informe de Auditoría — RAMA `fix/commissions-product-override` (borrador, 21 sep 2026)
+
+**Alcance:** corrección de la precedencia de comisión de producto sobre departamento en la RPC
+`get_commissions_report_data` (migración `20260921140000`) y su paridad en el servicio de cálculo
+cliente (`commissionsCalculationService.js`). La regla de negocio objetivo: la decisión individual del
+producto (exento con `commission_enabled = false`, o comisión propia con `= true`) **siempre** gana
+sobre la comisión general del departamento; el departamento solo se hereda para productos sin
+configuración explícita (`commission_enabled IS NULL`). Estado: **trabajo sin commitear aún**; este
+informe es borrador a revisar en la PR.
+
+### Veredicto por sección
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+- RPC (`computed` CTE): el `CASE` de `commission_amount` pasa a
+  `WHEN dr.commission_enabled` → comisión de producto; `WHEN dr.commission_enabled IS NULL AND
+  COALESCE(dr.dept_commission_enabled, false)` → herencia de departamento; `ELSE 0`. Un producto con
+  `commission_enabled = false` ya no cae en la rama del departamento.
+- `has_commission` (`WHEN commission_enabled THEN true / WHEN IS NULL THEN COALESCE(dept,false) /
+  ELSE false`) ya no es `commission_enabled OR dept_commission_enabled`, que devolvía `NULL` (no
+  `false`) cuando el producto era `NULL` y el depto no comisionaba.
+- Sincronización de salida: `eff_commission_type` / `eff_commission_value` calculados por origen
+  efectivo (producto: usa `commission_percent` para `percent`, coherente con el monto; departamento:
+  `dept_commission_type`/`dept_commission_value`), y `rule_label` formatea esos valores efectivos con
+  'Sin comision' para exentos. El `RETURNS TABLE` y el orden de columnas se conservan.
+- Cliente (`commissionsCalculationService.js`): early-return con exención si
+  `product.commission_enabled === false`; comisión propia solo si `=== true`; herencia del
+  departamento únicamente en el `else if (department.commission_enabled)` (caso `undefined`/`null`);
+  caso restante dispara el guard `!isEnabled || commVal <= 0` → 'Sin comisión'.
+- Caso que rompía la regla ejecutado: *Nupec Adulto 2kg* (`commission_enabled = false`) en depto
+  *Nupec* (`commission_enabled = true`) → antes caía en la rama del depto; ahora `has_commission =
+  false`, monto 0, `rule_label = 'Sin comision'`. Cubierto por test en
+  `commissionsCalculationService.test.js` (exención con depto comisionando) y por el contrato de la
+  RPC en `commissionsReportService.test.js` (fila exenta / fila heredada).
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:** el cálculo sigue siendo puro (sin I/O); la regla vive
+en SQL y en el service de cálculo, no en la vista (SRP). Sin cambios de contrato del RPC hacia el
+cliente (mismas columnas).
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** no se tocan contextos ni hooks.
+
+**§4 Estilos y UI — SIN CAMBIO:** el diff no toca JSX ni CSS.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):** sin emojis en líneas
+agregadas; sin `console.log`/`console.warn` nuevos; `console.error` conservados en los `catch` de los
+services (sin cambios); comillas dobles y EOF newline (verificado con `od`).
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` nuevo #50 (precedencia y exención de producto
+sobre departamento) y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` pasa la suite completa (ver resultado en el paso de
+verificación); `npm run build:frontend` OK. Suite nueva `commissionsCalculationService.test.js`:
+exención sobre depto comisionando, comisión propia, herencia con `commission_enabled` null/ausente,
+producto sin departamento, tipo `percentage`, flat por pieza, valor ≤ 0, agregaciones y KPIs
+(montos solo de filas comisionables). Contrato RPC complementado en `commissionsReportService.test.js`
+(fila exenta y fila heredada).
+
+### Notas y límites conscientes
+- **Esquema `products.commission_enabled` con `DEFAULT false`:** al existir el default, los productos
+  nuevos quedan exentos por defecto (no heredan el depto) salvo configuración explícita; es la regla
+  objetivo del PR, pero implica que en datos legacy los productos con `commission_enabled = false`
+  dejarán de comisionar si su depto sí lo hacía — efecto esperado y central del cambio.
+- **Migración remota pendiente:** `20260921140000` debe aplicarse con `supabase db push`; hasta
+  entonces el remoto conserva la precedencia antigua.
+- **QA manual:** verificar en Reportes > Comisiones que *Nupec Adulto 2kg* figure como "Sin comisión"
+  y no sume incentivo, y que el resto de productos del depto *Nupec* siga comisionando.
+
+## Informe de Auditoría final — RAMA `fix/commissions-product-override` (21 sep 2026, revisión externa)
+
+**Metodología:** `code-review-quality` + `supabase-postgres-best-practices`. Verificación mecánica
+previa a la interpretación (`git diff`, `npm test`, `npm run build:frontend`, barridos de texto y
+comparación estructural de migraciones); evidencia textual por ítem.
+
+### Estado de refs (hallazgo de proceso)
+`main` = `HEAD` = `4164732`; `git diff main...HEAD` queda vacío y `git merge-base main HEAD` = `HEAD`.
+**Todo el trabajo sigue sin commitear en el working tree** (5 modificados + 2 archivos nuevos:
+`BACKLOG.md`, `KNOWN_ISSUES.md`, `PR_REVIEW.md`, `commissionsCalculationService.js`,
+`commissionsReportService.test.js`, `commissionsCalculationService.test.js` y la migración
+`20260921140000`). El CI incremental no podrá evaluar el diff hasta commitear y pushear.
+
+### §0 Bloqueantes de revisión previa — N/A
+La rama no responde a bloqueantes previos.
+
+### §1 Funcionalidad y Arquitectura — CUMPLIDO
+- SRP/DIP intactos: la regla de precedencia vive en la RPC y en el service de cálculo puro (sin I/O);
+  la vista y los hooks no calculan comisión por ítem (`useCommissionsReport.js:14-17` solo importa los
+  agregadores; ningún componente importa `supabase`).
+- La comparación estructural (`diff` normalizado, base `20260910120500` vs `20260921140000`) demuestra
+  cirugía acotada: la firma, `RETURNS TABLE` (columna a columna), `filtered_sales`, `detail_rows`,
+  `has_discount`, `ticket_number`, `LIMIT/OFFSET` y el bloque de grants quedan idénticos; cambian solo
+  el `CASE` de `commission_amount`, `has_commission`, las dos columnas efectivas nuevas
+  (`eff_commission_type`/`eff_commission_value`), su proyección y `rule_label`.
+- **Obs (no nuevo):** `calculateItemCommission` es código muerto — no tiene consumidor en `src/` ni en
+  `main` (grep: solo definición y tests). El render path es 100% RPC → mapping (`commissionsReportService.js:87-113`)
+  → agregaciones. El PR lo mantiene sincronizado con tests de caracterización (higiene válida), pero
+  no tiene efecto de runtime.
+
+### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (con cargas de evidencia)
+Se ejecutaron los tres casos exigidos con números concretos (partida qty=2, unit_price=80, total_price=160,
+depto *Nupec* value=5 percent, producto *Nupec Adulto 2kg*):
+
+1. `p.commission_enabled = true` → usa el producto. SQL: primer `WHEN dr.commission_enabled`
+   (`20260921140000:92-96`); has_commission `true` (`:105`); eff_type `COALESCE(commission_type,'percent')`
+   (`:110`); eff_value coherente con el monto (`:115-119`). Cliente: `product.commission_enabled === true`
+   (`commissionsCalculationService.js:32-37`).
+2. `p.commission_enabled = false` → exención total. SQL: cae al `ELSE 0` (`:102`), has_commission `false`
+   (`:108`), eff_type/value `NULL` (`:112,123`), rule_label `'Sin comision'` (`:143`). Cliente: early-return
+   (`:18-26`). Antes caía en `WHEN dr.dept_commission_enabled` (base `:89`) y pagaba depto — bug #50.
+3. `p.commission_enabled IS NULL` → solo entonces hereda el depto si `d.commission_enabled = true`.
+   SQL: segunda rama exige `IS NULL AND COALESCE(dept_commission_enabled,false)` (`:97,111,120`); monto 8
+   (160*0.05). Cliente: `else if (department.commission_enabled)` (`:38-43`).
+- `has_commission` ya nunca devuelve `NULL` (antes `commission_enabled OR dept_commission_enabled` con
+  producto NULL producía `NULL`); el CASE explícito (`:104-108`) resuelve el tercer estado.
+- Cuba adicional ejecutada (caso que rompe la regla): producto exento + depto *Nupec* comisionando
+  → 0 en monto y 0 en agregaciones (los agregadores y KPIs filtran `hasCommission`); producto sin
+  departamento y sin comisión → correctamente no comisionable (`commissionsCalculationService.test.js:131-143`).
+- **Paridad "exacta" del cliente acotada a la precedencia semántica:** en los bordes numéricos
+  documentados la RPC y el legacy no son idénticos — base `unit_price*qty` vs `total_price` (#19),
+  precedencia `commission_percent` vs `commission_value` y `has_commission` con valor 0 y tipo
+  `'percentage'` (#20), formato de `rule_label` `percent: 10%` vs `10.00%` (#24). Ninguno es introducido
+  por este PR (verificado: las sentencias relevantes y el default `commission_percent = commission_value`
+  ya existían en `main`), y son irrelevantes en runtime por ser código muerto. La RPC es autoritativa.
+- Grants: `REVOKE ALL FROM public` + `GRANT EXECUTE TO authenticated` (`20260921140000:152-153`); no se
+  re-otorga `anon` → la ACL efectiva queda `authenticated`-only, consistente con `20260910120600` y con
+  `docs/SUPABASE_MIGRATIONS.md` (RPC invoker, sin `SECURITY DEFINER`, RLS al llamador).
+
+### §3 Estado y Contexto Global — SIN CAMBIO
+No se tocan hooks de estado, contextos ni filtros (`useCommissionsReport.js` intacto).
+
+### §4 Estilos y UI — SIN CAMBIO (verificación mecánica)
+El diff no toca JSX ni CSS; barrido `!important` y `style={{` sin resultados en líneas agregadas.
+
+### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+- Cero emojis en líneas agregadas (ripgrep de rangos Unicode sobre el diff consolidado): sin resultados.
+- `console.log/warn/info/debug`: sin resultados (único match es prosa de este documento).
+- `console.error` conservados en los `catch` de los services (sin cambios en el diff).
+- EOF newline por byte (`tail -c 1`): `0a` en los 7 archivos tocados; comillas dobles.
+
+### §6 Documentación — CUMPLIDO
+`KNOWN_ISSUES.md` nuevo #50 completo (impacto, regla, verificación); `BACKLOG.md` con checkbox nuevo;
+borrador de auditoría presente; este informe final.
+
+### §7 Calidad/testing — CUMPLIDO con 1 pendiente de verificación
+- `npm test`: **44 archivos / 588 tests** OK (573 previos + 13 de `commissionsCalculationService.test.js`
+  + 2 de `commissionsReportService.test.js`).
+- `npm run build:frontend`: EXIT 0, 7.71 s (warning de chunk > 500 kB preexistente).
+- Cobertura unitaria del service: exención sobre depto comisionando, comisión propia, herencia
+  null/ausente, producto sin depto, `'percentage'`, flat por pieza, valor ≤ 0, agregaciones y KPIs
+  solo de filas comisionables. Contrato RPC: fila exenta y fila heredada en
+  `commissionsReportService.test.js:189-251`.
+- **Pendiente de verificar (mecánico, no diferible):** la migración `20260921140000` no tiene ninguna
+  prueba ejecutada sobre su SQL. `commissionsReportService.test.js` mockea `supabase.rpc` (no lee el
+  archivo de migración), y no se ejecutó la función contra Postgres (sin Docker local para
+  `supabase start`; no tocar el remoto). El RPC debe validarse con `supabase db push` + consulta real
+  (fila *Nupec Adulto 2kg* exenta monto 0; heredada del depto monto correcto) y verificación de la ACL
+  (`\df+` / `information_schema`) tras el push — patrón usado con #18 al momento de aplicar migraciones.
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits sobre `main` (`main` = `HEAD`); CI no puede evaluar el diff. | PENDIENTE — commit + push antes de abrir la PR |
+| F2 | Major | La migración (corazón del fix) no tiene cobertura ejecutada; validada solo textualmente. | PENDIENTE — `supabase db push` + verificación runtime + ACL |
+| F3 | Minor | "Paridad exacta" del cliente aplica a precedencia; bordes #19/#20/#24 difieren (preexistentes) y `calculateItemCommission` es código muerto. | Aceptado, documentado |
+| F4 | Minor | QA del borrador impreciso: `CommissionsAuditTable.jsx:14-16` y `useCashierCommissionDetail.js:23` filtran `hasCommission`, por lo que *Nupec Adulto 2kg* NO figurará en tablas; la exención solo se verá en el export Excel (detailedRows completos). | Ajustar la verificación de QA |
+| F5 | Manual | QA visual `npm run dev` (formato `ruleLabel` #24, exención visible en detalle/export). | PENDIENTE — a cargo del autor |
+
+### Veredicto
+La **lógica del cambio es correcta y verificable mecánicamente**: los tres casos exigidos se trazan con
+evidencia en SQL y cliente, el cambio es quirúrgico, grants seguros, `npm test` 588/588, build OK y
+convenciones cumplidas. La rama **no está lista para push/PR todavía**: falta (F1) commitear el trabajo
+(5 modificados + 2 nuevos) y (F2) aplicar y validar la migración contra el remoto. Con F1 y F2
+resueltos y F4/F5 ajustados, la rama queda aprobada conforme a `PR_REVIEW.md`.

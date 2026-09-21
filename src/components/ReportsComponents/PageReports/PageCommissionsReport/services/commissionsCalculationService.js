@@ -7,21 +7,42 @@
 /**
  * Calcula la comisión individual devengada en una partida de venta.
  * Soporta comisión por porcentaje sobre importe o monto fijo por pieza.
+ * Precedencia: la configuración del producto siempre gana sobre el departamento.
  */
 export const calculateItemCommission = (item) => {
   const product = item.products || {};
   const department = product.departments || {};
 
-  // Determinar si la comisión proviene del producto o del departamento
-  let isEnabled = Boolean(product.commission_enabled);
-  let commType = product.commission_type || "percent";
-  let commVal = Number(product.commission_value || product.commission_percent || 0);
+  // Exención total: un producto con commission_enabled = false no hereda la
+  // comisión de su departamento, aunque este la tenga habilitada.
+  if (product.commission_enabled === false) {
+    return {
+      hasCommission: false,
+      commissionAmount: 0,
+      commissionType: null,
+      commissionValue: 0,
+      ruleLabel: "Sin comisión",
+    };
+  }
 
-  // Fallback a departamento si el producto no la tiene explícita pero el depto sí
-  if (!isEnabled && department.commission_enabled) {
+  let isEnabled;
+  let commType;
+  let commVal;
+
+  if (product.commission_enabled === true) {
+    isEnabled = true;
+    commType = product.commission_type || "percent";
+    commVal = Number(
+      product.commission_value || product.commission_percent || 0
+    );
+  } else if (department.commission_enabled) {
+    // Solo productos sin configuración explícita (commission_enabled null o
+    // ausente) heredan la comisión del departamento.
     isEnabled = true;
     commType = department.commission_type || "percent";
     commVal = Number(department.commission_value || 0);
+  } else {
+    isEnabled = false;
   }
 
   if (!isEnabled || commVal <= 0) {
@@ -147,7 +168,10 @@ export const aggregateProductCommissions = (detailedRows = []) => {
 /**
  * Calcula los KPIs globales del reporte de comisiones en el periodo.
  */
-export const calculateGlobalKpis = (cashierSummaries = [], detailedRows = []) => {
+export const calculateGlobalKpis = (
+  cashierSummaries = [],
+  detailedRows = []
+) => {
   const commissionableRows = detailedRows.filter((r) => r.hasCommission);
 
   const totalCommissions = commissionableRows.reduce(
@@ -177,4 +201,3 @@ export const calculateGlobalKpis = (cashierSummaries = [], detailedRows = []) =>
     totalCashiersWithCommissions: cashierSummaries.length,
   };
 };
-

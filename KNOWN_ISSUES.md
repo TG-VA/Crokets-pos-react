@@ -724,6 +724,43 @@ sobrecargas de `create_sale_transaction` añadiendo `SET search_path TO 'public'
 de contrato para exigir el `search_path` también en `create_sale_transaction`. No se corrige en la
 Fase 4 por ser una fase de testing.
 
+### 50. Comisión de producto exento pisada por la comisión del departamento en la RPC de comisiones
+**Estado:** resuelto — migración `supabase/migrations/20260921140000_fix_commissions_product_override.sql`,
+rama `fix/commissions-product-override`, 21 de septiembre de 2026.
+
+La RPC `get_commissions_report_data` implementaba un fallback en cascada:
+```
+CASE
+  WHEN dr.commission_enabled THEN ...   (comisión de producto)
+  WHEN dr.dept_commission_enabled THEN ...   (fallback que pisaba la exención)
+  ELSE 0
+END
+```
+Si un producto tenía `commission_enabled = false` y pertenecía a un departamento con comisión
+habilitada (p. ej. *Nupec Adulto 2kg* en el departamento *Nupec*), la primera condición era falsa y el
+CASE saltaba a la rama del departamento, cobrando la comisión pese a la exención explícita del
+producto.
+
+**Regla corregida (precedencia producto > departamento):**
+- `p.commission_enabled = true` → el producto genera su propia comisión (`commission_type` /
+  `commission_value`).
+- `p.commission_enabled = false` → exención total: `has_commission = false`, `commission_amount = 0`,
+  `rule_label = 'Sin comision'`, sin heredar nada del departamento.
+- `p.commission_enabled IS NULL` (productos sin configuración explícita) → único caso donde se hereda
+  la comisión del departamento si `d.commission_enabled = true`.
+
+Además, los campos retornados `commission_type` / `commission_value` se sincronizaron para reflejar el
+origen efectivo (producto o departamento) y `rule_label` se mantiene 'Sin comision' para exentos y
+formatea los valores efectivos cuando aplica.
+
+**Impacto:** montos de comisión sobreliquidados para productos exentos cuyo departamento comisiona.
+
+**Verificación:** la migración conserva el `RETURNS TABLE` y el `REVOKE ALL FROM public` +
+`GRANT EXECUTE TO authenticated` de los RPCs de reportes. Tests de contrato en
+`commissionsReportService.test.js` (fila exenta y fila con herencia de departamento) y suite unitaria
+nueva en `commissionsCalculationService.test.js` (exención con prioridad sobre el depto, comisión
+propia, herencia solo con `commission_enabled` null/ausente, producto sin departamento).
+
 ---
 
 ## Bajo
