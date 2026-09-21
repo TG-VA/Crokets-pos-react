@@ -380,4 +380,122 @@ describe("commissionsCalculationService", () => {
       });
     });
   });
+
+  describe("snapshot de comision congelada", () => {
+    it("agrega por cajero los montos congelados aunque el catalogo del producto cambie despues de la venta", () => {
+      const rows = [
+        {
+          cashierId: "c1",
+          cashierName: "JUAN",
+          branchName: "Norte",
+          saleId: "s1",
+          productId: "p1",
+          quantity: 2,
+          totalPrice: 200,
+          commissionAmount: 20,
+          hasCommission: true,
+        },
+        {
+          cashierId: "c1",
+          cashierName: "JUAN",
+          branchName: "Norte",
+          saleId: "s2",
+          productId: "p1",
+          quantity: 1,
+          totalPrice: 100,
+          commissionAmount: 5,
+          hasCommission: true,
+        },
+        {
+          cashierId: "c1",
+          cashierName: "JUAN",
+          branchName: "Norte",
+          saleId: "s3",
+          productId: "p2",
+          quantity: 1,
+          totalPrice: 50,
+          commissionAmount: 0,
+          hasCommission: false,
+        },
+      ];
+
+      const result = aggregateCashierCommissions(rows);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        cashierId: "c1",
+        totalCommission: 25,
+        ticketsCount: 2,
+      });
+    });
+
+    it("suma por producto las comisiones congeladas aunque sus valores difieran entre ventas", () => {
+      const rows = [
+        {
+          productId: "p1",
+          barcode: "7501",
+          productName: "CROQUETA",
+          departmentName: "Alimentos",
+          commissionType: "percent",
+          commissionValue: 10,
+          ruleLabel: "percent: 10%",
+          quantity: 2,
+          totalPrice: 200,
+          commissionAmount: 20,
+          hasCommission: true,
+          saleId: "s1",
+        },
+        {
+          productId: "p1",
+          barcode: "7501",
+          productName: "CROQUETA",
+          departmentName: "Alimentos",
+          commissionType: "flat",
+          commissionValue: 5,
+          ruleLabel: "flat: 5",
+          quantity: 3,
+          totalPrice: 300,
+          commissionAmount: 15,
+          hasCommission: true,
+          saleId: "s2",
+        },
+      ];
+
+      const result = aggregateProductCommissions(rows);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        productId: "p1",
+        totalCommission: 35,
+        totalCommissionPaid: 35,
+      });
+    });
+
+    it("los KPIs globales usan solo los montos congelados, sin depender del catalogo vivo", () => {
+      const rows = [
+        {
+          hasCommission: true,
+          commissionAmount: 20,
+          totalPrice: 200,
+          quantity: 2,
+        },
+        {
+          hasCommission: false,
+          commissionAmount: 0,
+          totalPrice: 999,
+          quantity: 9,
+        },
+      ];
+
+      const kpis = calculateGlobalKpis([], rows);
+
+      expect(kpis).toMatchObject({
+        totalCommissions: 20,
+        totalCommissionableSales: 200,
+        totalCommissionableUnits: 2,
+        totalCommissionablePieces: 2,
+        totalCashiersWithCommissions: 0,
+      });
+    });
+  });
 });

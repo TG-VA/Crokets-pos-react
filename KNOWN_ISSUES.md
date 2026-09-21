@@ -12,6 +12,7 @@ Severidad: **Crítico** (bloquea funcionalidad o expone datos) / **Alto** (riesg
 ## Crítico
 
 ### 1. El backend local no arranca en producción
+
 **Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 `electron/main.js` llama a `http://localhost:3000/login` (y presumiblemente otros endpoints) para
@@ -41,6 +42,7 @@ exponer en el instalador), ni resolver el ABI de `sqlite3` contra el runtime de 
 `electron/main.js` y el script `npm run dev` se conservan sin cambios para desarrollo local.
 
 ### 2. Contraseña del usuario admin en texto plano
+
 **Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 En `src/backend/bd.js`, el usuario `admin` local se crea con contraseña `'1234'` sin hash
@@ -61,6 +63,7 @@ devuelve `needsUpgrade` y el servidor re-hashea). Cubierto por `src/backend/pass
 sesión no se implementó (queda como mejora futura).
 
 ### 43. `useProductsList` con doble declaración rompía el build de producción
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `src/components/.../ProductsList/hooks/useProductsList.js` contenía **dos** bloques de
@@ -82,18 +85,19 @@ instalador. Detectado al verificar esta rama.
 ## Alto
 
 ### 3. Componentes "dios" (god components) que violan SRP
+
 **Estado:** prácticamente resuelto — falta solo `ProductsPromotions.jsx`, declarado fuera de alcance; ver tabla.
 
 Varios archivos concentran demasiada responsabilidad (UI + lógica de negocio + llamadas a datos)
 en un solo componente:
 
-| Archivo | Líneas | Nota |
-|---|---|---|
-| `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
-| `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
-| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 280 | refactor Fase 3 completado (servicios + hook + vistas) |
-| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 177 | refactor completado (21 sep 2026, rama `refactor/products-modify`) |
-| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345 | no requiere refactor; fuera de alcance |
+| Archivo                                                                                    | Líneas | Nota                                                               |
+| ------------------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------ |
+| `src/pages/CashCut/CashCut.jsx`                                                            | ~372   | orquesta hooks + vistas; refactor #3 en curso                      |
+| `src/utils/ticket/`                                                                        | ~1710  | `ticketBuilder` descompuesto en 8 módulos puros + orquestador      |
+| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx`                    | 280    | refactor Fase 3 completado (servicios + hook + vistas)             |
+| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx`         | 177    | refactor completado (21 sep 2026, rama `refactor/products-modify`) |
+| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345    | no requiere refactor; fuera de alcance                             |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
 dividir un componente grande"). No requiere reescritura de golpe.
@@ -197,10 +201,12 @@ servicio de datos. Tests: **48 casos nuevos** (`productModifyCalculationService.
 `productModifyDataService.test.js` 9). Sin cambios en `useProductModifyDOM.js` ni en el CSS module.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 Más de 20 archivos `.jsx`/`.js` contienen emojis o símbolos Unicode usados como iconos o en logs
 de consola. Ejemplos notables:
+
 - `src/pages/Settings/Settings.jsx` — emojis distintos usados como iconos de categoría
 - `src/components/SalesComponents/SalesProductsTable/SalesProductsTable.jsx` — indicadores de
   color/estado con emoji
@@ -219,6 +225,7 @@ solid — `brush`, `ruler`, `barcode`, `display`, `database`, `rotate`, `broom`,
 registraron en `ICONS.md`. Verificado: `rg` no encuentra emojis en `src/`.
 
 ### 5. Transacciones Atómicas (RPC) faltantes en Supabase
+
 **Estado:** abierto — parcialmente resuelto.
 
 Actualmente, módulos críticos como Importación Masiva (`productsImportService.js`) y Promociones/Kits (`productKitsService.js`) utilizan múltiples llamadas HTTP independientes con rollbacks manuales desde el frontend (Transacciones Compensatorias).
@@ -238,6 +245,7 @@ registros huérfanos en Importación o Kits, a pesar de los bloques `try/catch`.
 `create_transfer_order`.
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
+
 **Estado:** decidido (17 sep 2026) — no se habilita RLS ni se diferencia admin vs cajero; riesgo aceptado y documentado en `PERMISSIONS.md`.
 
 El sistema de roles en Supabase (`users → roles → role_permissions → permissions`) existe y está
@@ -274,6 +282,7 @@ a `anon`/`PUBLIC` en las RPCs transaccionales y fija el actor desde `auth.uid()`
 decisión (no como cambio de permisos); ver #38 y #10.
 
 ### 18. RPC de comisiones pagaba comisión por ventas canceladas (filtro `'canceled'`)
+
 **Estado:** resuelto — migración `supabase/migrations/20260910120500_fix_commissions_status_filter.sql`,
 rama `perf/report-optimization`, 10 de septiembre de 2026.
 
@@ -295,6 +304,7 @@ tickets `'cancelled'`/`'cancelada'`. El test contract en
 `p_status` en cliente).
 
 ### 51. Propagación de comisión de departamento no aplicaba a productos con comisión individual propia
+
 **Estado:** resuelto — rama `fix/department-commission-full-propagation`, 21 de septiembre de 2026.
 
 Al actualizar la comisión de un departamento con propagación confirmada (`data.propagateToProducts`),
@@ -314,6 +324,7 @@ individual difería de la anterior del departamento** (ajustada manualmente, exe
 conservaba valores obsoletos tras la propagación.
 
 **Regla de negocio corregida:**
+
 - Al confirmar la propagación, **todos** los productos con `department_id = id` adoptan los nuevos
   valores (`commission_enabled`, `commission_type`, `commission_value`, `commission_percent`).
 - Si un producto se modifica individualmente después, esa decisión individual manda **hasta la próxima
@@ -329,11 +340,27 @@ propagación a todos los productos sin filtrar por valores previos (verifica que
 campos de comisión ausentes, `commission_percent` en 0 para tipo `amount` y propagación de errores
 (actualización del departamento, actualización masiva y excepciones inesperadas).
 
+### 52. Comisiones históricas de ventas mutaban retroactivamente por recálculo en vivo contra el catálogo
+
+**Estado:** resuelto — migración `supabase/migrations/20260921170000_freeze_sale_details_commissions.sql`, rama `fix/sale-details-commission-snapshot`, 21 de septiembre de 2026.
+
+La RPC `get_commissions_report_data` recalculaba las comisiones devengadas al vuelo mediante un `JOIN products` y `LEFT JOIN departments` contra el catálogo vivo. Si un producto o departamento cambiaba o desactivaba su comisión después de haberse cobrado una venta (p. ej., desmarcar "Genera comisión" en _Nupec Adulto 2kg_), todas las ventas históricas de ese producto pasaban retroactivamente a `commission_amount = 0` y `has_commission = false`, desapareciendo del reporte de comisiones de los cajeros.
+
+**Principio corregido (Inmutabilidad histórica y snapshot en la venta):**
+
+- En un POS, la comisión ganada por el cajero al momento de la venta es un hecho histórico inmutable.
+- Se agregaron 4 columnas de snapshot a `public.sale_details`: `commission_enabled`, `commission_type`, `commission_value` y `commission_amount`.
+- La RPC `create_sale_transaction` (sobrecarga con `p_notes`) consulta la configuración vigente en el instante de la transacción (regla #50) y congela estos valores en la inserción de cada partida en `sale_details`.
+- La migración incluye un backfill histórico para ventas existentes con desactivación y reactivación segura de `trg_prevent_edit_sale_details`.
+- La RPC `get_commissions_report_data` se desacopló del catálogo vivo y ahora lee directamente las columnas congeladas de `sale_details`.
+- Cobertura de tests: contrato SQL en `freezeCommissionsSnapshotContract.test.js` y suites de cálculo en `commissionsCalculationService.test.js` y `commissionsReportService.test.js`.
+
 ---
 
 ## Medio
 
 ### 6. Sin migraciones SQL versionadas para Supabase
+
 **Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations`.
 
 El schema completo de las tablas remotas (ver `docs/SCHEMA.md`) vive únicamente en el proyecto de
@@ -369,6 +396,7 @@ el SQL legacy de la raíz a `supabase/legacy/` para no confundirlo con las migra
 `docs/SUPABASE_MIGRATIONS.md`.
 
 ### 7. Discrepancia README vs. dependencias reales (SQLite)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 El `README.MD` mencionaba `better-sqlite3` como ORM, pero `package.json` usa el paquete
@@ -381,6 +409,7 @@ las dependencias; se quitó `src/backend` de la estructura del proyecto; `npm ru
 Vite + Electron y se eliminaron la fila `npm run rebuild` y la opción SQLite3 como prerrequisito.
 
 ### 8. Sin `lint` ni `test` configurados
+
 **Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations` (test desde el 9 sep; lint
 completado).
 
@@ -408,11 +437,13 @@ preexistente arrastra 684 problemas de lint (140 errores, 544 warnings) que **no
 esta fase; se saldan incrementalmente conforme se tocan los archivos. Ver `docs/TESTING.md`.
 
 ### 9. Falta de Unit Tests para Utilidades Puras
+
 **Estado:** parcialmente resuelto — 9 de septiembre de 2026.
 
 Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`), la suite preexistente de `useSalesTotals`, el hook global `usePagination` (10 tests) y los contratos de CRUD de productos en `productCrudService` (15 tests).
 
 **Actualización 2 (9 sep 2026):** se agregó la cobertura de Importación y Kits con la suite en **83 tests**:
+
 - `importUtils` (14 tests de funciones puras: `normalizeText`, `normalizeHeader`, `parseBoolean`, `parseNumber`, `formatCurrency` y catálogos de columnas).
 - `productsImportService` (11 tests con `supabase` y `validateSatClaves` mockeados: validación de datos, sucursales/departamentos, creación de departamentos faltantes y `processImportTransaction` con inventario por sucursal, productos globales y rollback cuando falla la inserción de inventario).
 - `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
@@ -429,6 +460,7 @@ sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo to
 
 **Actualización 4 (17 sep 2026) — Fase 4, rama `test/coverage-gaps`:** la suite pasó a **41 archivos /
 524 casos** (+94) cerrando los huecos priorizados:
+
 - **RPC de ventas:** `salesTransactionService.test.js` (13 tests: guardas, mapeo snake_case, coerción
   numérica, notas, fecha por defecto, propagación de error y falta de id) y
   `supabase/migrations/transactionalRpcsContract.test.js` (8 tests: firma, retorno y grants de
@@ -451,6 +483,7 @@ sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo to
 renderer.
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
+
 **Estado:** abierto — parcialmente documentado.
 
 Falta confirmar si el rol `admin` en Supabase tiene roles hermanos (ej. cajero, gerente) y definir formalmente si los permisos locales de SQLite deben sincronizarse con los de Supabase, para evitar discrepancias de autorización entre entornos.
@@ -468,6 +501,7 @@ SQLite se elimina en favor de Supabase Auth + RLS o se sincroniza. El detalle de
 sus límites está en #38.
 
 ### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
+
 **Estado:** completado — migración de client-side, server-side (Sales) e híbrido (Cash) terminada el 9 de septiembre de 2026 (rama `feature/products-pagination`).
 
 El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) estaba
@@ -479,6 +513,7 @@ Se creó el hook global `src/hooks/usePagination.js` cubriendo ambas variantes �
 productos (`useProductsList`).
 
 **Migrado a `usePagination` (client-side, commit `04cd71f`):**
+
 - Rentabilidad: `ProfitabilityDepartmentsTable`, `ProfitabilityProductsTable`,
   `ProfitabilityCriticalTable` (selector [5,10,20] en departamentos).
 - Inventario: `ReorderSuggestionsTable`, `InventoryValuationTable`, `InventoryDepartmentSummary`.
@@ -491,17 +526,20 @@ productos (`useProductsList`).
 - Productos: `TopProductsTable`, `DeadStockTable` (paginación fija de 50/ítem, sin selector).
 
 **Migrado a `usePagination` (server-side):**
+
 - `PageSalesReport` + `useSalesReport`: el hook centraliza `currentPage`/`totalPages`/`startIndex`/
   `endIndex` derivando de `totalCount` que llega de `getPaginatedSales` (query con `range`); el
   `export default` de `ITEMS_PER_PAGE` se mantiene fijo (sin selector de tamaño de página).
 
 **Migrado a `usePagination` (híbrido):**
+
 - `useCashReport`: dos instancias `usePagination` (sesiones y movimientos) con `pageSizeOptions`
   fijo de 5, compartidas con `CashSessionsTable`/`CashMovementsTable` (UI de paginación por props,
   sin estado propio) y reseteo en `loadReportData` al cambiar filtros.
 - `DetailMovementsSection`/`DetailDiscountsSection` (tamaño fijo 5) del modal de detalle de sesión.
 
 **Unificación visual con `PaginationBar` (extraído):**
+
 - Nuevo `components/PaginationBar/PaginationBar.jsx` (+ `.module.css`) compartido por los ~24
   consumers: cash, comisiones, clientes (incl. modales), inventario, productos (reporte y
   `ProductsList`), rentabilidad (3 tablas) y ventas (server-side). Admite selector de páginas
@@ -516,6 +554,7 @@ página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de c
 el estilo y el marcado del footer de paginación en un único componente.
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
+
 **Estado:** resuelto — 9 de septiembre de 2026.
 
 `ProductsContext.loadProducts` cargaba el catálogo global completo (productos + inventario de la
@@ -561,6 +600,7 @@ página es limitado y filtrado en el servidor.
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
 ### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
+
 **Estado:** Resuelto — 17 sep 2026, verificado con datos reales de Supabase; decisión: mantener base neta (sin cambio de código).
 
 La RPC calcula la comisión porcentual sobre `unit_price * quantity` (monto bruto), mientras el
@@ -583,6 +623,7 @@ neta actual; no requiere migración. La premisa original de diferencia bruta/net
 `BACKLOG.md`.
 
 ### 20. Precedencia commission_value/percent y bordes de has_commission y tipo `'percentage'`
+
 **Estado:** Resuelto — 17 sep 2026, decisión YAGNI: no se normaliza (los bordes no ocurren en datos; sin cambio de código).
 
 En la RPC de comisiones: la comisión % usa `COALESCE(commission_percent, commission_value, 0)`
@@ -604,6 +645,7 @@ para el caso de que aparezca el tipo `'percentage'`, productos con ambos campos 
 `commission_enabled = true` con valor 0.
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
+
 **Estado:** resuelto en código — rama `perf/reports-scalability` (17 sep 2026); migración pendiente de
 aplicar al remoto.
 
@@ -623,6 +665,7 @@ ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Pend
 migración con `supabase db push`.
 
 ### 22. Rentabilidad: procesamiento de partidas secuencial por chunks sin concurrencia
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `profitabilityReportService.js` recorría `sale_details` en chunks de `CHUNK_SIZE = 100` con un bucle
@@ -639,6 +682,7 @@ ahora carga `sale_details` en lotes de `SALE_DETAILS_CHUNK_SIZE = 100` con
 `profitabilityReportService.test.js` (verifica 5 lotes para 450 ventas con máximo 4 en vuelo).
 
 ### 25. Agregación del reporte de inventario inline en el service sin CalculationService puro
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `inventoryReportService.fetchInventoryReportData` agrupaba filas, calculaba KPIs/reorder/sugerencias y
@@ -656,6 +700,7 @@ consumido por `fetchInventoryReportData`, que conserva idéntico el contrato de 
 `inventoryReportCalculationService.test.js`.
 
 ### 26. RPCs de reportes concedían EXECUTE a `anon` (exposición de datos sin sesión)
+
 **Estado:** resuelto — migración `20260910120600_restrict_report_rpc_grants.sql`, 10 sep 2026.
 Detectado en el micro-pase de seguridad (skill `security-best-practices`).
 
@@ -675,6 +720,7 @@ RPC base `get_branch_products_paginated` (aplicada con `supabase db push`). `aut
 conserva y `useProductsList` solo lo llama con sesión, sin impacto funcional.
 
 ### 29. RPCs de caja no validan membresía de sucursal (`user_branches`)
+
 **Estado:** Resuelto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; pendiente `supabase db push`).
 
 `get_cash_register_session` y `open_cash_register` (migración `20260914120100`) son `SECURITY
@@ -694,6 +740,7 @@ tiene membresía activa en `user_branches` para esa sucursal. La excepción `SEC
 documentada en `docs/SUPABASE_MIGRATIONS.md`; pendiente `supabase db push` para aplicarla al remoto.
 
 ### 30. `get_branch_by_device` es anon + `SECURITY DEFINER` (excepción de login pre-auth)
+
 **Estado:** Aceptado y documentado — 17 sep 2026 (excepción de login pre-auth; ver `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`).
 
 El login debe resolver la sucursal del equipo **antes** de autenticar, por lo que la RPC
@@ -709,6 +756,7 @@ limiting o a un intercambio one-time; mientras tanto, mantener el retorno mínim
 excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
 
 ### 44. `supabase/.temp/` registrado en git (estado local del CLI)
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `supabase/.temp/` contiene el estado local del Supabase CLI (`cli-latest`, `gotrue-version`,
@@ -725,6 +773,7 @@ expuestas. Aun así, versionar estado local del CLI no es deseable.
 archivos del índice con `git rm --cached -r supabase/.temp/` (se conservan en disco).
 
 ### 45. Agrupación de pagos por nombre en el cálculo del corte
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `groupPaymentsByMethod` (extraído en la Fase 1 del refactor a
@@ -741,6 +790,7 @@ en `cashCutCalculationService.test.js` (mismo nombre con `id` distinto no se fus
 agrupa por `name`).
 
 ### 49. `create_sale_transaction` es `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
+
 **Estado:** abierto — 17 sep 2026 (detectado en la Fase 4, rama `test/coverage-gaps`).
 
 La migración de endurecimiento `20260917200000_harden_transactional_rpcs.sql` fija
@@ -760,10 +810,12 @@ de contrato para exigir el `search_path` también en `create_sale_transaction`. 
 Fase 4 por ser una fase de testing.
 
 ### 50. Comisión de producto exento pisada por la comisión del departamento en la RPC de comisiones
+
 **Estado:** resuelto — migración `supabase/migrations/20260921140000_fix_commissions_product_override.sql`,
 rama `fix/commissions-product-override`, 21 de septiembre de 2026.
 
 La RPC `get_commissions_report_data` implementaba un fallback en cascada:
+
 ```
 CASE
   WHEN dr.commission_enabled THEN ...   (comisión de producto)
@@ -771,12 +823,14 @@ CASE
   ELSE 0
 END
 ```
+
 Si un producto tenía `commission_enabled = false` y pertenecía a un departamento con comisión
-habilitada (p. ej. *Nupec Adulto 2kg* en el departamento *Nupec*), la primera condición era falsa y el
+habilitada (p. ej. _Nupec Adulto 2kg_ en el departamento _Nupec_), la primera condición era falsa y el
 CASE saltaba a la rama del departamento, cobrando la comisión pese a la exención explícita del
 producto.
 
 **Regla corregida (precedencia producto > departamento):**
+
 - `p.commission_enabled = true` → el producto genera su propia comisión (`commission_type` /
   `commission_value`).
 - `p.commission_enabled = false` → exención total: `has_commission = false`, `commission_amount = 0`,
@@ -801,6 +855,7 @@ propia, herencia solo con `commission_enabled` null/ausente, producto sin depart
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod
+
 **Estado:** resuelto (15 sep 2026) — verificado en el barrido de limpieza.
 
 En `electron/main.js`, `getMainWindow()` calculaba `iconPath` con una rama `isDev ? X : X` donde
@@ -811,6 +866,7 @@ un bug funcional, pero era código muerto que se podía simplificar.
 `iconPath` de forma directa (`path.join(__dirname, '../icon.ico')`). No requiere cambios de código.
 
 ### 12. Desarrollo de Vistas Pendientes
+
 **Estado:** resuelto (14 sep 2026).
 
 Las vistas base de la arquitectura ya están implementadas y enrutadas. Evidencia: `src/App.jsx:52-63`
@@ -822,6 +878,7 @@ Nota: la ruta de corte de caja es `/cashcut/*` (no `/cashout`, como figuraba en 
 `TEMPLATE_NUEVA_PAGINA.md`). Ver también `TEMPLATE_NUEVA_PAGINA.md`, actualizado en la misma fecha.
 
 ### 14. Usuario con dominio de correo distinto a la convención interna
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 El usuario `alexander@example.com` (rol `cajero`, activo) no sigue la convención
@@ -837,6 +894,7 @@ que es una cuenta de prueba.
 `supabase db push` (verificado con `supabase migration list`).
 
 ### 17. Archivos sin salto de línea final (EOF newline)
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
@@ -857,6 +915,7 @@ EOF newline. Nota: una verificación previa con `tail | wc -l` había reportado 
 pendientes; la comprobación correcta es por byte final.
 
 ### 23. Migraciones de comisiones re-definidas en cascada (CREATE OR REPLACE correctivo)
+
 **Estado:** no procede (cerrado) — las migraciones ya fueron aplicadas al remoto
 (`supabase db push`, 10 sep 2026), por lo que no se pueden aplastar sin resetear proyectos
 externos.
@@ -871,6 +930,7 @@ sin efecto porque las tres ya están aplicadas al proyecto remoto.
 por migración propia a partir de aquí).
 
 ### 24. ruleLabel de comisiones cambió de formato vs legacy
+
 **Estado:** abierto — QA visual pendiente (10 sep 2026).
 
 La RPC genera `rule_label` como `percent: 10%` / `<tipo>: <valor>` (migración `20260910120200`),
@@ -884,6 +944,7 @@ etiquetas distintas a las previas.
 en la RPC (y su test).
 
 ### 28. Guard de autorización de administrador duplicado en módulos (ProtectedRoute)
+
 **Estado:** resuelto (10 sep 2026).
 
 Cada módulo (Productos, Reportes, y originalmente Facturas) mantenía su propia copia del guard:
@@ -900,6 +961,7 @@ duplicación del guard): el guard `ProtectedRoute` cambia la URL antes de mostra
 que la navbar debe bloquear la navegación ANTES de que ocurra. Ver punto #27.
 
 ### 27. Intercepción de navegación protegida en navbars de módulo (`useProtectedNavigation`)
+
 **Estado:** resuelto (13 sep 2026).
 
 Tras consolidar el guard en `ProtectedRoute` (ver #28), la navbar del módulo dejó de interceptar
@@ -935,6 +997,7 @@ se re-solicita autorización. Además, las páginas ahora derivan sus rutas prot
 tests de `withProtectedMetadata`, `useProtectedNavigation` y `ProtectedRoute`.
 
 ### 31. Residuo legacy del backend local tras el fix de producción (#1)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (cierre de #10/#34).
 
 Con #1 resuelto, el frontend ya no consumía el backend Express local. En una segunda pasada se
@@ -966,6 +1029,7 @@ retiraron las dependencias `bcryptjs`, `cors`, `express`, `node-fetch`, `sqlite3
 backend local (login y caja 100 % vía RPCs de Supabase).
 
 ### 32. Verificar índice único de sesión de caja abierta por sucursal
+
 **Estado:** resuelto (14 sep 2026).
 
 `open_cash_register` (migración `20260914120100`) traduce un `unique_violation` en la respuesta de
@@ -981,6 +1045,7 @@ Si el `db push` falla por duplicados, el mensaje indica cuántas sucursales hay 
 abiertas (paridad con el backend anterior, que tenía la misma carrera).
 
 ### 33. Tope de apertura de caja sin panel de configuración
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 El tope de efectivo inicial al abrir caja vive en `app_settings`
@@ -996,6 +1061,7 @@ desde la app.
 
 **Resolución (18 sep 2026):** se agregaron dos RPCs en la migración
 `20260918120000_app_settings_cash_rpcs.sql`:
+
 - `get_cash_max_opening_amount()` — lectura para cualquier usuario autenticado (gira sobre
   `_cash_max_opening_amount()`, con el mismo fallback seguro).
 - `update_cash_max_opening_amount(p_amount numeric)` — escritura `SECURITY DEFINER` con
@@ -1009,6 +1075,7 @@ apertura) que solo se renderiza cuando `checkUserIsAdmin(user.id)` es verdadero.
 rol en el servidor de todos modos, por lo que el check del panel es solo de UX.
 
 ### 34. Deuda menor de la pasada de producción (no bloqueante)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (con #31).
 
 Hallazgos menores de la auditoría que no se corrigieron en el cluster de producción:
@@ -1035,6 +1102,7 @@ incluida la dependencia `bcryptjs`). El apunte del bcrypt async era "si el backe
 no aplica.
 
 ### 35. Sesión de Supabase persistida en `localStorage`
+
 **Estado:** aceptado con mitigación parcial (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `src/lib/supabaseClient.js` usa el `createClient` por defecto de `@supabase/supabase-js`, que guarda
@@ -1057,6 +1125,7 @@ deja de depender del ref remoto del proyecto. El riesgo residual (token en `loca
 sink XSS) se mantiene documentado y se atacará de fondo al endurecer auth.
 
 ### 36. Assets con ruta absoluta bajo `file://` en el build empaquetado
+
 **Estado:** Resuelto — 14 sep 2026 (validar instalador NSIS en Windows antes de distribuir).
 
 `vite.config.mjs` no define `base`, por lo que Vite emite rutas absolutas
@@ -1074,6 +1143,7 @@ sink XSS) se mantiene documentado y se atacará de fondo al endurecer auth.
 Windows (ítem del checklist de `DEPLOYMENT.md`) antes de distribuir.
 
 ### 37. Ausencia de Content-Security-Policy en el renderer (SEC-1)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 `index.html` no definía CSP, por lo que el renderer no tenía una segunda barrera contra inyección de
@@ -1088,6 +1158,7 @@ Supabase, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`). En dev 
 romper el HMR. Verificado en `dist/index.html`. Ver `DEPLOYMENT.md`.
 
 ### 38. Autorización de administrador gateada solo en el cliente (SEC-3)
+
 **Estado:** Mitigado parcialmente — 17 sep 2026. RPCs transaccionales endurecidas; el gateo en el cliente de las mutaciones administrativas se mantiene como **riesgo aceptado** por decisión #10/#13 (ver `PR_REVIEW.md`, `docs/EDGE_FUNCTIONS.md` y `PERMISSIONS.md`).
 
 Las secciones administrativas se protegen en el renderer (`ProtectedRoute` +
@@ -1122,6 +1193,7 @@ validación/auditoría de `reason`/`action`/`targetId`; se resolverían con RLS 
 un token de autorización de un solo uso desde la edge function (ver `docs/EDGE_FUNCTIONS.md`).
 
 ### 39. Endurecimiento de Electron incompleto (SEC-4)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 `electron/main.js` no denegaba ventanas emergentes ni bloqueaba la navegación fuera del origen, y
@@ -1137,6 +1209,7 @@ realmente registrados (`get-device-code`, `close-app`, `set-zoom-factor`, `confi
 `reset-zoom`, `get-zoom-debug`).
 
 ### 40. Bundle único de ~3.2 MB sin code-splitting (PERF-1)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 El build generaba un solo chunk (~3.2 MB, ~907 KB gzip) porque `App.jsx` importaba las 11 páginas de
@@ -1149,6 +1222,7 @@ forma eager y no había `manualChunks`.
 gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
 ### 41. `get_email_by_username` sin definición en migraciones versionadas
+
 **Estado:** Resuelto — 17 sep 2026, rama `chore/tech-debt-foundations`.
 
 La RPC `get_email_by_username` la usa el login (`src/pages/Login/Login.jsx`) y está documentada en
@@ -1175,6 +1249,7 @@ pre-auth, excepción de #30), `authenticated` y `service_role`. Aplicada al remo
 Con esto el login puede recrearse en un entorno nuevo solo con las migraciones versionadas.
 
 ### 42. `--scroll-distance` usada pero nunca definida (marquee de productos inerte)
+
 **Estado:** Resuelto — 15 sep 2026, rama `cleanup/quick-win-debt`.
 
 `src/components/ProductsComponents/PageProducts/ProductsList/ProductsList.module.css:355` usa
@@ -1196,6 +1271,7 @@ el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles
 eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
 
 ### 46. Colisión de nombres `fetchCutsHistory` entre componente y servicio
+
 **Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-reload-unify`.
 
 Tras extraer las consultas a `src/pages/CashCut/services/cashCutReportService.js`, el componente
@@ -1215,6 +1291,7 @@ colisión. Cobertura intacta: los tests siguen asertando `fetchCutsHistory` con 
 ---
 
 ### 47. Flujos de recarga duplicados en `useCashCutReport`
+
 **Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-reload-unify`.
 
 `useCashCutReport.js` implementa tres variantes de "recargar la vista actual": `changeSelectedCut("current")`
@@ -1240,8 +1317,9 @@ de sucursal), y el guard `if (activeSession?.id)` anulaba la rama sin-sesión de
 obsoleto si el turno se cerraba en otro dispositivo). Además, encaminar el realtime por
 `loadCurrentSession` agregaba un `resetSalesState()` previo que el flujo same-session de antes no
 tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashCutReport.js`:
+
 - El realtime ahora colapsa a una llamada única `reloadCurrentView({ refreshHistory: true,
-  resetSalesOnSessionChange: true })`, sin `fetchSession` duplicado y con la rama sin-sesión del
+resetSalesOnSessionChange: true })`, sin `fetchSession` duplicado y con la rama sin-sesión del
   helper de vuelta.
 - `loadCurrentSession(sessionData, { resetSales = true })` y
   `reloadCurrentView({ refreshHistory, resetSales, resetSalesOnSessionChange })`: el realtime solo
@@ -1255,6 +1333,7 @@ tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashC
 ---
 
 ### 48. `!important` en módulos CSS (deuda de estilo transversal)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `AGENTS.md` prohíbe `!important` en los módulos CSS, pero persiste deuda heredada en varios archivos
@@ -1268,6 +1347,7 @@ específicos u orden de carga en lugar de `!important`. Fuera del alcance del re
 
 **Resolución (18 sep 2026):** barrido completo. Las **128 ocurrencias** en **30 `*.module.css`** se
 resolvieron con:
+
 - **Selectores con prefijo de mayor especificidad** para estados: `.tableRow.selectedRow`,
   `.resultItem.selectedResult`, `.ticketItem.selectedTicket`, `.paymentMethod.paymentMethodSelected`,
   `.infoCard .statusConnected`, `.field .fieldError`, `.fieldGroup input.inputValid`, etc.
