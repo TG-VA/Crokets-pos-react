@@ -4,9 +4,24 @@ import { fetchSatClaves } from "../../../../../services/satClavesService";
 import { useProductModifyForm } from "./useProductModifyForm";
 import { useProductModifyDOM } from "./useProductModifyDOM";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import {
+  buildDiscountPayload,
+  buildProductPayload,
+} from "../services/productModifyCalculationService";
+import {
+  loadProductDiscountData,
+  saveProductModifications,
+} from "../services/productModifyDataService";
 
 export const useProductsModify = () => {
-  const { products, departments, getProductByCodigo, updateProductByCodigo, getProductDiscountByProductId, upsertProductDiscount } = useProducts();
+  const {
+    products,
+    departments,
+    getProductByCodigo,
+    updateProductByCodigo,
+    getProductDiscountByProductId,
+    upsertProductDiscount,
+  } = useProducts();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
@@ -33,12 +48,26 @@ export const useProductsModify = () => {
       }
     };
     loadSatClaves();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const {
-    form, setForm, touched, usesInventory, activeDepartments, ganancia, errors, isFormValid,
-    updateField, markTouched, touchAllRelevantFields, resetForm, resetTouched, showError, getDiscountPriceFromPercent
+    form,
+    setForm,
+    touched,
+    usesInventory,
+    activeDepartments,
+    ganancia,
+    errors,
+    isFormValid,
+    updateField,
+    markTouched,
+    touchAllRelevantFields,
+    resetForm,
+    resetTouched,
+    showError,
   } = useProductModifyForm(departments, getProductByCodigo, selectedProduct);
 
   const handleClearAndReset = () => {
@@ -52,21 +81,23 @@ export const useProductsModify = () => {
     if (!productId) return;
     try {
       setLoadingDiscount(true);
-      const result = await getProductDiscountByProductId(productId);
-      if (!result?.success) {
+      const result = await loadProductDiscountData(
+        productId,
+        salePrice,
+        getProductDiscountByProductId
+      );
+      if (!result.success) {
         console.error("No se pudo cargar el descuento.");
         return;
       }
-      const discount = result.data;
-      const discountPercent = Number(discount?.discount_percent ?? 0);
-      const discountPrice = getDiscountPriceFromPercent(salePrice, discountPercent);
-
+      const { enabled, discount_percent, discount_price, discount_concept } =
+        result.discount;
       setForm((prev) => ({
         ...prev,
-        discount_enable: !!discount?.enabled,
-        discount_percent: discountPercent,
-        discount_price: discount?.enabled ? discountPrice : "",
-        discount_concept: discount?.discount_concept || "",
+        discount_enable: enabled,
+        discount_percent,
+        discount_price,
+        discount_concept,
       }));
     } finally {
       setLoadingDiscount(false);
@@ -80,20 +111,34 @@ export const useProductsModify = () => {
     resetTouched();
 
     const salePrice = product.precio ?? "";
-    const productDepartment = product.departamento === "Sin departamento" ? "" : product.departamento ?? "";
+    const productDepartment =
+      product.departamento === "Sin departamento"
+        ? ""
+        : (product.departamento ?? "");
 
     setForm({
-      codigo: product.codigo ?? "", descripcion: product.descripcion ?? "",
-      costo: (product.costo ?? "").toString(), precio: (salePrice ?? "").toString(),
-      departamento: productDepartment, minimo: product.minimo ?? 0, maximo: product.maximo ?? 0,
+      codigo: product.codigo ?? "",
+      descripcion: product.descripcion ?? "",
+      costo: (product.costo ?? "").toString(),
+      precio: (salePrice ?? "").toString(),
+      departamento: productDepartment,
+      minimo: product.minimo ?? 0,
+      maximo: product.maximo ?? 0,
       use_inventory: product.use_inventory ?? product.tracks_inventory ?? true,
-      sale_type: product.sale_type ?? "unidad", unit: product.unit ?? "pieza",
-      tax: product.tax ?? 16, cfdi: product.cfdi ?? "", status: product.status ? "activo" : "inactivo",
-      isGlobal: !!product.is_global, commission_enabled: !!product.commission_enabled,
+      sale_type: product.sale_type ?? "unidad",
+      unit: product.unit ?? "pieza",
+      tax: product.tax ?? 16,
+      cfdi: product.cfdi ?? "",
+      status: product.status ? "activo" : "inactivo",
+      isGlobal: !!product.is_global,
+      commission_enabled: !!product.commission_enabled,
       commission_type: product.commission_type || "percent",
-      commission_value: product.commission_value ?? product.commission_percent ?? 0,
+      commission_value:
+        product.commission_value ?? product.commission_percent ?? 0,
       discount_enable: false,
-      discount_percent: 0, discount_price: "", discount_concept: "",
+      discount_percent: 0,
+      discount_price: "",
+      discount_concept: "",
     });
 
     await loadProductDiscount(product.id, salePrice);
@@ -102,12 +147,22 @@ export const useProductsModify = () => {
   const handleLookup = async () => {
     const cleanBarcode = barcode.trim();
     if (!cleanBarcode) {
-      showAppAlert({ type: "warning", title: "Código requerido", message: "Captura un código de barras.", confirmText: "Entendido" });
+      showAppAlert({
+        type: "warning",
+        title: "Código requerido",
+        message: "Captura un código de barras.",
+        confirmText: "Entendido",
+      });
       return;
     }
     const found = getProductByCodigo(cleanBarcode);
     if (!found) {
-      showAppAlert({ type: "warning", title: "Producto no encontrado", message: "Producto no encontrado.", confirmText: "Entendido" });
+      showAppAlert({
+        type: "warning",
+        title: "Producto no encontrado",
+        message: "Producto no encontrado.",
+        confirmText: "Entendido",
+      });
       return;
     }
     await loadProduct(found);
@@ -125,38 +180,35 @@ export const useProductsModify = () => {
 
     try {
       setSaving(true);
-      const payload = {
-        codigo: form.codigo.toString().trim(), descripcion: form.descripcion.toString().trim(),
-        costo: parseFloat(form.costo) || 0, precio: parseFloat(form.precio) || 0,
-        ganancia, departamento: form.departamento.toString().trim(),
-        minimo: usesInventory ? parseFloat(form.minimo) || 0 : 0, maximo: usesInventory ? parseFloat(form.maximo) || 0 : 0,
-        use_inventory: usesInventory, sale_type: form.sale_type || "unidad",
-        unit: form.unit || "pieza", tax: parseFloat(form.tax) || 0,
-        cfdi: form.cfdi.toString().trim(), status: form.status,
-        isGlobal: !!form.isGlobal, commission_enabled: !!form.commission_enabled,
-        commission_type: form.commission_type || "percent",
-        commission_value: parseFloat(form.commission_value) || 0,
-        commission_percent: form.commission_type === "percent" ? (parseFloat(form.commission_value) || 0) : 0,
-      };
+      const payload = buildProductPayload(form, ganancia, usesInventory);
+      const discountPayload = buildDiscountPayload(form);
 
-      const productResult = await updateProductByCodigo(selectedProduct.codigo, payload);
-
-      if (!productResult?.success) {
-        showAppAlert({ type: "danger", title: "No se pudo actualizar el producto", message: productResult?.error || "No se pudo actualizar el producto.", confirmText: "Entendido" });
-        return;
-      }
-
-      const discountResult = await upsertProductDiscount(selectedProduct.id, {
-        enabled: !!form.discount_enable, discount_percent: parseFloat(form.discount_percent) || 0,
-        discount_concept: form.discount_concept.trim(),
+      const result = await saveProductModifications({
+        updateProductByCodigo,
+        upsertProductDiscount,
+        selectedProduct,
+        payload,
+        discountPayload,
       });
 
-      if (!discountResult?.success) {
-        showAppAlert({ type: "warning", title: "Producto modificado parcialmente", message: discountResult?.error || "El producto se modificó, pero no se pudo guardar el descuento.", confirmText: "Entendido" });
+      if (!result.success) {
+        showAppAlert({
+          type: result.partial ? "warning" : "danger",
+          title: result.partial
+            ? "Producto modificado parcialmente"
+            : "No se pudo actualizar el producto",
+          message: result.error,
+          confirmText: "Entendido",
+        });
         return;
       }
 
-      showAppAlert({ type: "success", title: "Producto modificado", message: "Producto modificado correctamente.", confirmText: "Entendido" });
+      showAppAlert({
+        type: "success",
+        title: "Producto modificado",
+        message: "Producto modificado correctamente.",
+        confirmText: "Entendido",
+      });
       handleClearAndReset();
     } finally {
       setSaving(false);
@@ -164,18 +216,56 @@ export const useProductsModify = () => {
   };
 
   const {
-    bodyRef, submitArmed, setSubmitArmed, focusFirstInvalidField,
-    preventNumberScrollChange, preventNumberArrows, handleContentKeyDown
+    bodyRef,
+    submitArmed,
+    setSubmitArmed,
+    focusFirstInvalidField,
+    preventNumberScrollChange,
+    preventNumberArrows,
+    handleContentKeyDown,
   } = useProductModifyDOM({
-    isFormValid, errors, usesInventory, form, appModalIsOpen: appModal.isOpen,
-    selectedProduct, onSubmit: handleSave, setSearchModalOpen
+    isFormValid,
+    errors,
+    usesInventory,
+    form,
+    appModalIsOpen: appModal.isOpen,
+    selectedProduct,
+    onSubmit: handleSave,
+    setSearchModalOpen,
   });
 
   return {
-    products, searchModalOpen, setSearchModalOpen, barcode, setBarcode, selectedProduct,
-    saving, loadingDiscount, satClaves, loadingSatClaves, appModal, closeAppModal,
-    form, touched, usesInventory, activeDepartments, ganancia, errors, isFormValid,
-    updateField, markTouched, handleClearAndReset, showError, handleLookup, loadProduct, handleSave,
-    bodyRef, submitArmed, setSubmitArmed, preventNumberScrollChange, preventNumberArrows, handleContentKeyDown
+    products,
+    searchModalOpen,
+    setSearchModalOpen,
+    barcode,
+    setBarcode,
+    selectedProduct,
+    saving,
+    loadingDiscount,
+    satClaves,
+    loadingSatClaves,
+    appModal,
+    closeAppModal,
+    form,
+    touched,
+    usesInventory,
+    activeDepartments,
+    ganancia,
+    errors,
+    isFormValid,
+    updateField,
+    markTouched,
+    handleClearAndReset,
+    showError,
+    handleLookup,
+    loadProduct,
+    handleSave,
+    bodyRef,
+    submitArmed,
+    setSubmitArmed,
+    preventNumberScrollChange,
+    preventNumberArrows,
+    handleContentKeyDown,
   };
 };

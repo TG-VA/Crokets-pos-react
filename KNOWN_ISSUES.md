@@ -82,7 +82,7 @@ instalador. Detectado al verificar esta rama.
 ## Alto
 
 ### 3. Componentes "dios" (god components) que violan SRP
-**Estado:** abierto, documentado en `CODE_STANDARDS.md`.
+**Estado:** prácticamente resuelto — falta solo `ProductsPromotions.jsx`, declarado fuera de alcance; ver tabla.
 
 Varios archivos concentran demasiada responsabilidad (UI + lógica de negocio + llamadas a datos)
 en un solo componente:
@@ -92,7 +92,7 @@ en un solo componente:
 | `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
 | `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
 | `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 280 | refactor Fase 3 completado (servicios + hook + vistas) |
-| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 640 | formulario + validación + datos; PR posterior `refactor/products-modify` |
+| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 177 | refactor completado (21 sep 2026, rama `refactor/products-modify`) |
 | `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345 | no requiere refactor; fuera de alcance |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
@@ -181,6 +181,20 @@ por mount, `refreshAfterCut`, `changeSelectedCut("current")` con `refreshHistory
 realtime; la auditoría posterior eliminó el doble `fetchSession` del realtime y preservó el
 no-flicker same-session vía `resetSalesOnSessionChange`, ver #47). Sigue abierto #45 (llave de
 agrupación de pagos por método en el cálculo del corte — requiere decisión de negocio).
+
+**Actualización (21 sep 2026) — refactor de `ProductsModify.jsx`:** rama `refactor/products-modify`. El
+formulario de modificación se descompuso en dos servicios dentro de `services/`:
+`productModifyCalculationService.js` (puro, sin I/O: `calculateGanancia`, `roundMoney`/`roundPercent`,
+`getDiscountPriceFromPercent`/`getDiscountPercentFromPrice`, `validateProductModifyForm` y los payloads
+`buildProductPayload`/`buildDiscountPayload`) y `productModifyDataService.js` (DIP: `loadProductDiscountData`
+y `saveProductModifications`, recibe los callbacks del contexto `useProducts` y no importa `supabase`).
+Se extrajeron seis vistas presentacionales a `components/` (`ProductModifyLookup`,
+`ProductModifyGeneralSection`, `ProductModifyPricingSection`, `ProductModifyInventorySection`,
+`ProductModifyDiscountSection`, `ProductModifyFooter`) que comparten el mismo `ProductsModify.module.css`
+y reciben `getFieldClassName`/`renderError` como props. `ProductsModify.jsx` bajó de **640 a 177 líneas**
+y quedó como orquestador; los hooks delegan la validación/cálculos al servicio puro y la persistencia al
+servicio de datos. Tests: **48 casos nuevos** (`productModifyCalculationService.test.js` 39 +
+`productModifyDataService.test.js` 9). Sin cambios en `useProductModifyDOM.js` ni en el CSS module.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
