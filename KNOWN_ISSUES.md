@@ -86,7 +86,7 @@ instalador. Detectado al verificar esta rama.
 
 ### 3. Componentes "dios" (god components) que violan SRP
 
-**Estado:** prácticamente resuelto — falta solo `ProductsPromotions.jsx`, declarado fuera de alcance; ver tabla.
+**Estado:** **100% resuelto (23 sep 2026)** — todos los componentes listados quedaron modularizados; ver tabla y bitácora.
 
 Varios archivos concentran demasiada responsabilidad (UI + lógica de negocio + llamadas a datos)
 en un solo componente:
@@ -97,7 +97,7 @@ en un solo componente:
 | `src/utils/ticket/`                                                                        | ~1710  | `ticketBuilder` descompuesto en 8 módulos puros + orquestador      |
 | `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx`                    | 280    | refactor Fase 3 completado (servicios + hook + vistas)             |
 | `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx`         | 177    | refactor completado (21 sep 2026, rama `refactor/products-modify`) |
-| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345    | no requiere refactor; fuera de alcance                             |
+| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 113    | refactor completado (23 sep 2026, rama `refactor/products-promotions-modularization`; reducido de 346 a <120 líneas) |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
 dividir un componente grande"). No requiere reescritura de golpe.
@@ -199,6 +199,17 @@ y reciben `getFieldClassName`/`renderError` como props. `ProductsModify.jsx` baj
 y quedó como orquestador; los hooks delegan la validación/cálculos al servicio puro y la persistencia al
 servicio de datos. Tests: **48 casos nuevos** (`productModifyCalculationService.test.js` 39 +
 `productModifyDataService.test.js` 9). Sin cambios en `useProductModifyDOM.js` ni en el CSS module.
+
+**Actualización (23 sep 2026) — refactor de `ProductsPromotions.jsx`:** rama
+`refactor/products-promotions-modularization`. El orquestador de Promociones y Kits se descompuso en
+cinco vistas presentacionales en `components/` (`KitFormSection`, `KitSelectedProductsSection`,
+`KitActionsSection`, `KitRegisteredListSection` y `KitProductSearchModal`, este último extraído del
+JSX inline de las líneas 271-343) que comparten el mismo `ProductsPromotions.module.css` y reciben
+únicamente los props que consumen (ISP). `ProductsPromotions.jsx` bajó de **346 a 113 líneas**
+(<120) y quedó como orquestador declarativo: consume `useProductsPromotions()` y ensambla header +
+tarjetas + modales sin lógica de negocio ni imports a `supabase` (DIP). No se alteraron estilos,
+hooks de negocio (`useProductsPromotions.js`, `useKitProductSearch.js`), ni el módulo CSS. Con esto
+cierra el último componente de la tabla del ítem #3: **100% resuelto**.
 
 ### 4. Emojis pendientes de limpiar en el código fuente
 
