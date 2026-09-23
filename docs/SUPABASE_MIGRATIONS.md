@@ -34,6 +34,12 @@ Migraciones existentes (al 23 sep 2026):
 | `20260917180000_get_email_by_username.sql` | Versiona la RPC `get_email_by_username` (login pre-auth): `SECURITY DEFINER`, `STABLE`, `search_path=public`, grants a `anon`/`authenticated`/`service_role` (#41) |
 | `20260917190000_cash_register_branch_validation.sql` | Validación de membresía de sucursal en `get_cash_register_session` y `open_cash_register` (helper `_user_can_access_branch`, excepción `42501` si no pertenece; exento `is_admin()`) (#29) |
 | `20260917200000_harden_transactional_rpcs.sql` | Revoca `EXECUTE` a `anon`/`PUBLIC` en las RPCs transaccionales y fija `p_user_id := coalesce(auth.uid(), p_user_id)` para impedir suplantación entre usuarios autenticados (#10/#13/#38) |
+| `20260917210000_cash_report_session_payments_pushdown.sql` | Índice `idx_sale_payments_branch_created_at` + pushdown del rango de fechas en el CTE `session_payments` de `get_cash_report_sessions` (#21) |
+| `20260918120000_app_settings_cash_rpcs.sql` | RPCs del tope de apertura de caja sobre `app_settings`: `get_cash_max_opening_amount` y `update_cash_max_opening_amount` (escritura `SECURITY DEFINER` con guard `is_admin()`) (#33) |
+| `20260921140000_fix_commissions_product_override.sql` | Precedencia producto > departamento en `get_commissions_report_data`: `commission_enabled=false` es exención total; herencia de depto solo cuando el producto no define comisión (#50) |
+| `20260921170000_freeze_sale_details_commissions.sql` | Snapshot de comisión en `sale_details` (`commission_enabled`/`commission_type`/`commission_value`/`commission_amount`) + backfill histórico y desacople de `get_commissions_report_data` del catálogo vivo (#52) |
+| `20260923130000_fix_create_sale_transaction_search_path.sql` | Corrige vector SEC-5: `SET search_path TO 'public'` en las 3 sobrecargas de `create_sale_transaction` (cuerpos preservados byte a byte); REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role` (#49) |
+| `20260923140000_fix_cancel_and_return_search_path.sql` | Corrige vector SEC-5: `SET search_path TO 'public'` en `cancel_sale_transaction` y `create_partial_return_transaction` (cuerpos preservados byte a byte); REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role` (#53) |
 | `20260923150000_create_product_kits_rpcs.sql` | RPCs atómicas del ciclo de vida de Kits de Productos: `create_kit_transaction` (uuid), `update_kit_transaction` (boolean) y `delete_kit_transaction` (boolean, soft-delete producto + kit) — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productKitsService.js` con ACID nativo (#5) |
 | `20260923160000_create_products_import_rpc.sql` | RPC atómica de Importación Masiva: `import_products_transaction(p_rows jsonb, p_branch_id uuid, p_all_branches jsonb)` retorna `jsonb` (`created_products_count` / `created_inventories_count`); inserta producto + `branch_inventory` (sucursal actual y, para globales, una fila inicial por sucursal de `p_all_branches`) en una sola transacción — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productsImportService.js` con ACID nativo (#5) |
 
@@ -119,5 +125,15 @@ El schema base quedó capturado en `00000000000000_remote_schema_baseline.sql`. 
 
 ## Pendiente
 
-- **Regenerar `SCHEMA.md`** usando `supabase/scripts/schema_introspection.sql` cuando cambie el
-  schema; el inventario actual es del 24 ago 2026 y no incorpora aún las últimas migraciones.
+- ~~Regenerar `SCHEMA.md`~~ **Hecho (23 sep 2026):** el inventario se regeneró desde el remoto vía
+  `supabase/scripts/schema_introspection.sql` y ya incorpora el estado completo tras el despliegue
+  del 23 sep 2026 (50 tablas, 37 funciones, tablas de kits/devoluciones/config, snapshot de comisión).
+
+## Registro de despliegues
+
+- **23 sep 2026** — `supabase db push` del paquete `20260923130000` (#49), `20260923140000` (#53),
+  `20260923150000` (#5 kits) y `20260923160000` (#5 import). Verificado con `supabase migration list`
+  (25 versiones alineadas Local = Remote, baseline incluido) y por introspección de las 9 funciones
+  transaccionales (`SECURITY DEFINER`, `SET search_path TO 'public'`, ACL sin `anon`/`PUBLIC`). Se
+  regeneró `SCHEMA.md` y se cerraron los estados pendientes de `KNOWN_ISSUES.md` (#5, #21, #29, #49,
+  #53).
