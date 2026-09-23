@@ -126,6 +126,7 @@ npm run dev
 - `KNOWN_ISSUES.md` — problemas conocidos y su severidad
 - `BACKLOG.md` — roadmap priorizado de pendientes
 - `PR_REVIEW.md` — checklist de revisión de PRs
+- `docs/PR_AUDIT_HISTORY.md` — historial de auditorías de PRs aprobados
 - `DEPLOYMENT.md` — build y distribución
 - `PERMISSIONS.md` / `SCHEMA.md` — roles, permisos y datos
 - `ICONS.md` / `TEMPLATE_NUEVA_PAGINA.md` — catálogo de iconos y plantilla de páginas
