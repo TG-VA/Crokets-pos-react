@@ -1324,3 +1324,102 @@ ACID nativo vía `import_products_transaction`, con contrato SQL cliente↔BD ve
 grants mínimos, `search_path` fijado y eliminación total de los rollbacks compensatorios del
 frontend. Suite 643/643, build OK, convenciones y documentación al día. Con F1 (commit + push) y F2
 (push de la migración al remoto) resueltos, la rama queda **aprobada** conforme a `PR_REVIEW.md`.
+
+## Informe de Auditoría — RAMA `chore/deploy-supabase-migrations-and-sync-schema` (23 de septiembre de 2026)
+
+**Alcance:** despliegue al remoto (`zshftroziapkelhlmghf`) del paquete de 4 migraciones acumuladas
+pendientes + regeneración de `SCHEMA.md` y cierre documental de los estados pendientes. Migraciones:
+`20260923130000_fix_create_sale_transaction_search_path.sql` (#49),
+`20260923140000_fix_cancel_and_return_search_path.sql` (#53),
+`20260923150000_create_product_kits_rpcs.sql` (#5 Kits) y
+`20260923160000_create_products_import_rpc.sql` (#5 Importación). Rama creada sobre `main`
+(`8694dbc`, limpio).
+
+### Veredicto por sección
+
+**§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+- Las 4 migraciones responden a hallazgos registrados con severidad en `KNOWN_ISSUES.md` (#49, #53
+  SEC-5; #5 kits/importación) y a los F2 de Deployment abiertos en los informes previos de Kits e
+  Importación. Se confirma el objetivo de cierre en el diff: todos quedan cerrados en esta pasada.
+- La preferencia de los informes previos era coordinar el `supabase db push` en "la pasada general de
+  despliegue" — ejecutada aquí el 23 sep 2026.
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- `supabase migration list` pre-despliegue: 21 versiones aplicadas en el remoto (incluyendo el baseline) y 4 migraciones locales pendientes, sin divergencias en las versiones previas. `db push --dry-run`
+  confirmó que la pass solo listaba esas 4 (no se ejecutó DDL fuera del paquete; los archivos de
+  contrato `.test.js` en `supabase/migrations/` se saltan por patrón de nombre de la CLI — esperado).
+- `supabase db push --yes` aplicó las 4; `migration list` post-push: 25 versiones alineadas
+  Local = Remote (baseline `00000000000000` aplicado en ambos lados, sin `migration repair` extra).
+- `SCHEMA.md` regenerado desde el remoto con `supabase/scripts/schema_introspection.sql`
+  (solo lectura, 7 consultas vía Management API `database/query`): 50 tablas, 37 funciones,
+  114 índices, 9 triggers, 13 tablas con RLS activo, 31 políticas. Se incorporan las tablas
+  `sale_kit_items`, `sale_return_items`, `sale_returns`, `system_settings` y `user_sessions`, el
+  snapshot de comisión en `sale_details` (`commission_enabled/type/value/amount`) y el inventario RPC
+  completo.
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+- Verificación de las 9 funciones transaccionales en el remoto (introspección): todas quedaron
+  `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL solo `postgres` (owner) +
+  `authenticated` + `service_role`, sin `anon` ni `PUBLIC`: `create_sale_transaction` (3
+  sobrecargas), `cancel_sale_transaction`, `create_partial_return_transaction`,
+  `create_kit_transaction`, `update_kit_transaction`, `delete_kit_transaction` e
+  `import_products_transaction`. Se confirmó el comentado "congelamiento de snapshot" real en
+  `sale_details` (migración `20260921170000`): la columna se llama `commission_amount`
+  — no existe `commission_frozen` (instrucción/fuente descartada, se documenta el estado real).
+- `migration list` no reporta divergencias: el remoto quedó idéntico al histórico local versionado.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** el despliegue no altera contexto en runtime;
+regenera únicamente documentos de inventario (`SCHEMA.md`, `KNOWN_ISSUES.md`,
+`docs/SUPABASE_MIGRATIONS.md`, este historial).
+
+**§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff** (solo markdown/README).
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+- Sin secretos en el diff: no se expusieron `SUPABASE_SERVICE_ROLE_KEY`, valores `.env`, tokens
+  (el access token del CLI se usó solo desde el keychain/`/tmp` con `chmod 600`, fuera del repo,
+  y se elimina al cierre). Los nombres de variables y el flujo quedan referenciados en
+  `docs/ENV_VARIABLES.md`, nunca los valores.
+- Sin emojis en archivos tocados (revisión de rango Unicode).
+- EOF newline (`0x0a`) presente en los archivos modificados.
+
+**§6 Documentación — CUMPLIDO:** `SCHEMA.md` regenerado; `KNOWN_ISSUES.md` con estados cerrados
+(#5 kits + importación, #21, #29, #49, #53 con nota de despliegue y verificación); filas completas
+de las 5 migraciones que faltaban en `docs/SUPABASE_MIGRATIONS.md` + registro de despliegue del
+23 sep 2026; entrada de esta auditoría en `docs/PR_AUDIT_HISTORY.md`; `PR_REVIEW.md` intacto (guía
+§0–§7).
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` 643/643 y `npm run build:frontend` OK (warning de
+chunk preexistente). Sin código productivo en el diff, solo verificaciones mecánicas y doc.
+
+### Micro-pase de seguridad (skill security-best-practices, 23 sep 2026)
+
+Alcance: despliegue de 4 migraciones SQL y regeneración de documentación. Sin nueva superficie
+DOM/redirect/postMessage.
+
+- **SEC-GRANT-004 — PASS (verificación remota).** Las 4 migraciones declaraban REVOKE de
+  `public`/`anon` + GRANT solo `authenticated`/`service_role`; la introspección del remoto post-push
+  confirma el estado efectivo de las 9 funciones transaccionales (sin `anon`/`PUBLIC` en ACL).
+- **SEC-DEFINER-006 — PASS (verificación remota).** Las 9 funciones quedaron `SECURITY DEFINER` con
+  `SET search_path TO 'public'` a nivel de función — cierra por introspección la familia de vectores
+  SEC-5 (#49/#53) en el entorno real, no solo en los archivos de migración.
+- **SEC-SQLI-004 — PASS:** sin SQL dinámico nuevo; las RPCs desplegadas usan parámetros tipados
+  (`jsonb`/`uuid`/`numeric`) y casting explícito.
+- **SEC-SECRETS-005 — PASS:** grep del diff sin secretos/credenciales; el despliegue se realizó con
+  el token de la CLI desde el keychain (nunca en el repo).
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Deployment | Migraciones acumuladas sin aplicar al remoto (#49, #53, #5 kits, #5 importación). | RESUELTO — `supabase db push` 23 sep 2026; `migration list` alineado (25/25) |
+| F2 | Documentación | `SCHEMA.md` desactualizado (24 ago 2026) sin tablas de kits/devoluciones/config ni RPCs nuevas. | RESUELTO — regenerado desde el remoto |
+| F3 | Documentación | Estados "pendiente de aplicar al remoto" stale en `KNOWN_ISSUES.md` (#5, #21, #29). | RESUELTO — actualizados a aplicados/verificados |
+| F4 | Deployment | Sin `psql`/`pg_dump` local y sin Docker daemon: `supabase db dump --linked` no disponible. | ACEPTADO — workaround con Management API `database/query` (solo lectura) |
+| F5 | Manual | QA visual de kits en Promociones y de importación CSV tras el push (heredado de los informes de Kits/Importación). | PENDIENTE — a cargo del autor |
+
+### Veredicto
+La pasada de despliegue del 23 sep 2026 cierra sin divergencias el remoto vs el histórico versionado
+(`supabase migration list` 25/25 alineados), verifica por introspección el endurecimiento completo
+de las 9 funciones transaccionales (SECURITY DEFINER + `search_path` fijado + ACL sin
+anon/PUBLIC) y deja `SCHEMA.md`, `KNOWN_ISSUES.md` y `docs/SUPABASE_MIGRATIONS.md` al día.
+Suite 643/643, build OK, convenciones y documentación al día. Con F1–F4 resueltos (F5 manual
+pendiente, no bloqueante), la rama queda **aprobada** conforme a `PR_REVIEW.md`.

@@ -1,23 +1,30 @@
 ### SCHEMA.md — Inventario de datos (SQLite local + Supabase remoto)
 
 Este documento es un **inventario de tablas y columnas** del schema `public` de Supabase, generado
-por introspección directa (`information_schema`) el 24 de agosto de 2026. No sustituye el detalle
-completo del Dashboard de Supabase, pero permite entender la estructura del proyecto sin salir del
-repositorio. Si el schema cambia, este documento debe regenerarse ejecutando el script versionado
-`supabase/scripts/schema_introspection.sql` (solo lectura) y actualizando las tablas de abajo.
+por introspección directa (`information_schema`), origen el 24 de agosto de 2026 y regenerado el
+23 de septiembre de 2026. No sustituye el detalle completo del Dashboard de Supabase, pero permite
+entender la estructura del proyecto sin salir del repositorio. Si el schema cambia, este documento
+debe regenerarse ejecutando el script versionado `supabase/scripts/schema_introspection.sql`
+(solo lectura) y actualizando las tablas de abajo.
 
 **Actualización (17 sep 2026) — rama `chore/tech-debt-foundations`:** el schema completo quedó
 versionado como baseline ejecutable en
 `supabase/migrations/00000000000000_remote_schema_baseline.sql` (`pg_dump` schema-only: 50 tablas,
-30 funciones, 31 políticas RLS), marcado como aplicado en el remoto con `supabase migration repair`.
-El script de introspección que antes se corría ad-hoc ya está versionado en
-`supabase/scripts/schema_introspection.sql`. Con esto este documento deja de ser la única referencia
-de schema en Git (ver `KNOWN_ISSUES.md` #6 y `docs/SUPABASE_MIGRATIONS.md`). `get_email_by_username`,
-que se documenta más abajo en la tabla de RPCs, también quedó capturada en una migración
-(`20260917180000`, ver `KNOWN_ISSUES.md` #41).
+30 funciones, 31 políticas RLS — hoy el remoto tiene 37 funciones, ver inventario RPC abajo),
+marcado como aplicado en el remoto con `supabase migration repair`. El script de introspección que
+antes se corría ad-hoc ya está versionado en `supabase/scripts/schema_introspection.sql`. Con esto
+este documento deja de ser la única referencia de schema en Git (ver `KNOWN_ISSUES.md` #6 y
+`docs/SUPABASE_MIGRATIONS.md`). `get_email_by_username`, que se documenta más abajo en la tabla de
+RPCs, también quedó capturada en una migración (`20260917180000`, ver `KNOWN_ISSUES.md` #41).
 
-**Pendiente:** regenerar las tablas de inventario con el script versionado — este documento es del
-24 ago 2026 y no refleja aún las migraciones posteriores (`app_settings`, RPCs de caja y login).
+**Actualización (23 sep 2026) — rama `chore/deploy-supabase-migrations-and-sync-schema`:** las
+tablas de abajo fueron regeneradas desde el remoto vía `supabase/scripts/schema_introspection.sql`.
+Coinciden con `supabase/migrations/00000000000000_remote_schema_baseline.sql` más las migraciones
+posteriores desplegadas (`app_settings`, RPCs de caja/login, kits de productos, devoluciones
+parciales, importación masiva, `sale_details` con snapshot de comisiones). Se incorporan al
+inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `system_settings` y
+`user_sessions`, y se actualiza la lista de RPC con las funciones atómicas de kits e importación
+(definidas en `20260923150000`/`20260923160000`, ver `KNOWN_ISSUES.md` #5).
 
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 
@@ -100,6 +107,32 @@ que se documenta más abajo en la tabla de RPCs, también quedó capturada en un
 | refund_amount    | numeric     |                      |
 | refund_method_id | uuid        | → payment_methods.id |
 | canceled_at      | timestamptz |                      |
+
+### sale_returns
+
+| Columna            | Tipo        | Notas                  |
+| ------------------ | ----------- | ---------------------- |
+| id                 | uuid        | PK, default gen_random_uuid() |
+| sale_id            | uuid        | NN, → sales.id         |
+| user_id            | uuid        | NN, → users.id         |
+| branch_id          | uuid        | NN, → branches.id      |
+| return_reason      | text        | NN                     |
+| refund_method_id   | uuid        | NN, → payment_methods.id |
+| total_refund       | numeric(10,2) | NN, default 0          |
+| created_at         | timestamp   | default now() (without time zone) |
+
+### sale_return_items
+
+| Columna           | Tipo        | Notas                    |
+| ----------------- | ----------- | ------------------------ |
+| id                | uuid        | PK, default gen_random_uuid() |
+| return_id         | uuid        | NN, → sale_returns.id    |
+| sale_detail_id    | uuid        | NN, → sale_details.id    |
+| product_id        | uuid        | NN, → products.id        |
+| quantity          | numeric     | NN                       |
+| unit_price        | numeric     | NN                       |
+| total_price       | numeric     | NN                       |
+| created_at        | timestamptz | default now()            |
 
 ### cash_register_sessions
 
@@ -284,6 +317,19 @@ que se documenta más abajo en la tabla de RPCs, también quedó capturada en un
 | kit_id               | uuid    | NN, → product_kits.id |
 | component_product_id | uuid    | NN, → products.id     |
 | quantity             | numeric | NN                    |
+
+### sale_kit_items
+
+| Columna               | Tipo      | Notas                       |
+| --------------------- | --------- | --------------------------- |
+| id                    | uuid      | PK, default gen_random_uuid() |
+| sale_id               | uuid      | NN, → sales.id              |
+| sale_detail_id        | uuid      | NN, → sale_details.id       |
+| kit_product_id        | uuid      | NN, → products.id           |
+| component_product_id  | uuid      | NN, → products.id           |
+| quantity              | numeric   | NN                          |
+| branch_id             | uuid      | NN, → branches.id           |
+| created_at            | timestamp | default now()               |
 
 ### product_discounts
 
@@ -526,6 +572,20 @@ que se documenta más abajo en la tabla de RPCs, también quedó capturada en un
 | access_level | varchar | NN, default 'view' |
 | is_active    | boolean | NN, default true   |
 
+### user_sessions
+
+| Columna        | Tipo      | Notas                        |
+| -------------- | --------- | ---------------------------- |
+| id             | uuid      | PK, default gen_random_uuid() |
+| user_id        | uuid      | NN → users.id                |
+| branch_id      | uuid      | NN, → branches.id            |
+| session_token  | varchar   | NN, único                    |
+| ip_address     | varchar   |                              |
+| user_agent     | text      |                              |
+| started_at     | timestamp | default now()                |
+| ended_at       | timestamp |                              |
+| status         | varchar   | default 'active'             |
+
 ---
 
 ## Auditoría
@@ -558,35 +618,62 @@ que se documenta más abajo en la tabla de RPCs, también quedó capturada en un
 
 Creada en la migración `20260914130000`. RLS activa y sin grants para `anon`/`authenticated`: solo
 la leen/escriben las RPC `SECURITY DEFINER` (owner) o `service_role`. El panel de configuración que
-escribirá estos valores queda pendiente (ver `KNOWN_ISSUES.md` #33).
+escribirá estos valores queda pendiente (ver `KNOWN_ISSUES.md` #33). El tope de apertura de caja se
+expone vía `get_cash_max_opening_amount` / `update_cash_max_opening_amount`.
+
+### system_settings
+
+| Columna       | Tipo      | Notas                        |
+| ------------- | --------- | ---------------------------- |
+| id            | uuid      | PK, default gen_random_uuid() |
+| setting_key   | varchar   | NN                           |
+| setting_value | text      | NN                           |
+| value_type    | varchar   | NN                           |
+| description   | text      |                              |
+| branch_id     | uuid      | → branches.id (índice único por key+branch) |
+| is_active     | boolean   | default true                 |
+| created_at    | timestamp | default now()                |
+| updated_at    | timestamp | default now() (trigger `trg_system_settings_set_updated_at`) |
 
 ---
 
 ## Funciones (RPC) relevantes
 
-Detectadas en `information_schema.routines`, útiles como referencia antes de crear nuevas RPC (ver
-`KNOWN_ISSUES.md` punto 5):
+Detectadas en `information_schema.routines` (introspección 23 sep 2026: **37 funciones**). Las
+funciones transaccionales (`create_*`, `cancel_*`, `update_*`, `delete_*`, `import_*`) son
+`SECURITY DEFINER` con `SET search_path TO 'public'` y grants restringidos a `authenticated`
+(revisadas en el despliegue del 23 sep 2026). Ver `KNOWN_ISSUES.md` punto 5 para entender por qué se
+prefiere RPC atómica sobre cliente con múltiples queries.
 
 | Función                                                                                | Devuelve      | Uso aparente                                                                                                                         |
 | -------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `create_sale_transaction`                                                              | uuid          | Crea una venta de forma atómica (existen 3 sobrecargas — confirmar cuál usa el frontend)                                             |
-| `complete_sale`                                                                        | void          |                                                                                                                                      |
-| `cancel_sale` / `cancel_sale_transaction`                                              | void / uuid   | Cancelación de venta                                                                                                                 |
-| `create_partial_return_transaction`                                                    | uuid          | Devoluciones parciales                                                                                                               |
+| `cancel_sale_transaction`                                                              | uuid          | Cancelación de venta (atómica, reemplaza al flujo cliente)                                                                           |
+| `cancel_sale`                                                                          | void          | Cancelación de venta (legacy no transaccional, sin `SECURITY DEFINER`)                                                               |
+| `create_partial_return_transaction`                                                    | uuid          | Devolución parcial (atómica; alimenta `sale_returns`/`sale_return_items`)                                                            |
+| `complete_sale`                                                                        | void          | Legacy no transaccional                                                                                                              |
+| `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`         | uuid / uuid / void | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                            |
+| `import_products_transaction`                                                          | jsonb         | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                                               |
 | `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`           | jsonb         | Transferencias entre sucursales — **ya atómicas vía RPC**                                                                            |
 | `close_cash_register_session`                                                          | jsonb         | Cierre de caja                                                                                                                       |
-| `get_sales_report_kpis`                                                                | record        | KPIs para reportes                                                                                                                   |
-| `has_permission` / `is_admin`                                                          | boolean       | Ver `PERMISSIONS.md`                                                                                                                 |
+| `open_cash_register` / `get_cash_register_session`                                     | jsonb         | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                                    |
+| `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                       | numeric / void | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                                    |
+| `get_sales_report_kpis` / `get_commissions_report_data` / `get_inventory_report_data` / `get_cash_report_sessions` | record / jsonb | Datasets para reportes de ventas, comisiones, inventario y caja                                   |
+| `get_branch_products_paginated`                                                        | jsonb         | Catálogo paginado de productos por sucursal                                                                                          |
+| `has_permission` / `is_admin` / `_user_can_access_branch`                              | boolean       | Permisos (ver `PERMISSIONS.md`)                                                                                                      |
 | `get_email_by_username`                                                                | text          | Traduce username local a email para login contra Supabase Auth                                                                       |
 | `get_branch_by_device`                                                                 | jsonb         | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30)                  |
-| `get_cash_register_session`                                                            | jsonb         | Sesión de caja abierta de la sucursal + nombre del dueño (o `null`)                                                                  |
-| `open_cash_register`                                                                   | jsonb         | Abre la caja derivando el usuario de `auth.uid()`; códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT` (tope desde `app_settings`) |
-| `_cash_session_payload`                                                                | jsonb         | Helper interno de las RPC de caja (prefijo `_`, sin grants)                                                                          |
-| `_cash_already_open_response`                                                          | jsonb         | Helper interno: respuesta uniforme de "caja ya abierta" (prefijo `_`, sin grants)                                                    |
-| `_cash_max_opening_amount`                                                             | numeric       | Helper interno: tope de apertura desde `app_settings` con fallback (prefijo `_`, sin grants)                                         |
+| `_cash_session_payload` / `_cash_already_open_response` / `_cash_max_opening_amount`   | jsonb / jsonb / numeric | Helpers internos de caja (prefijo `_`, sin grants)                                                     |
 | `_apply_inventory_delta` / `_build_transfer_notes`                                     | record / text | Helpers internos (prefijo `_`)                                                                                                       |
-| `enforce_sale_branch_consistency` / `prevent_edit_if_sale_not_open` / `set_updated_at` | trigger       | Triggers de integridad                                                                                                               |
 
-**Nota para `KNOWN_ISSUES.md` punto 5:** las transferencias entre sucursales y las ventas ya usan
-RPC atómica. Los módulos pendientes de migrar a RPC (Importación masiva y Kits de Productos) siguen
-sin tener función equivalente — no aparece ninguna RPC de import/kits en esta lista.
+**Triggers (9)** (nombres reales de la introspección):
+`trg_sales_set_updated_at`, `trg_products_updated_at`, `trg_branch_inventory_set_updated_at`,
+`trg_product_discounts_updated_at`, `trg_system_settings_set_updated_at`
+(funciones `set_updated_at`), `trg_enforce_sale_branch_details` / `trg_prevent_edit_sale_details`
+(sobre `sale_details`) y `trg_enforce_sale_branch_payments` / `trg_prevent_edit_sale_payments`
+(sobre `sale_payments`).
+
+**Nota (actualizada 23 sep 2026):** ya existen RPC atómicas para kits (`create_kit_transaction`,
+`update_kit_transaction`, `delete_kit_transaction`) e importación masiva (`import_products_transaction`),
+desplegadas en producción. Con esto el cliente de Electron ya no necesita mutar `product_kits`,
+`product_kit_items` ni `products` directamente para esos flujos (ver `KNOWN_ISSUES.md` #5).

@@ -19,10 +19,10 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Transacciones atómicas (RPC) faltantes en Supabase — **Kits** (`create/update/delete_kit_transaction`, `20260923150000`) e **Importación Masiva** (`import_products_transaction`, `20260923160000`) resueltos; ver `KNOWN_ISSUES.md` #5
 - [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
 - [x] Verificar con datos reales la base de la comisión % — resuelto: RPC y client ya coinciden en el neto `unit_price*qty` (`= total_price`) y los bordes de #20 no ocurren en datos (YAGNI); ver `KNOWN_ISSUES.md` #19 y #20
-- [x] Precedencia de comisión de producto sobre departamento (exención con `commission_enabled=false`) — migración `20260921140000`, pendiente `supabase db push`; ver `KNOWN_ISSUES.md` #50
-- [x] Validación de membresía de sucursal en las RPCs de caja (`get_cash_register_session`/`open_cash_register`) — migración `20260917190000`, pendiente `supabase db push`; ver `KNOWN_ISSUES.md` #29
+- [x] Precedencia de comisión de producto sobre departamento (exención con `commission_enabled=false`) — migración `20260921140000`, aplicada al remoto; ver `KNOWN_ISSUES.md` #50
+- [x] Validación de membresía de sucursal en las RPCs de caja (`get_cash_register_session`/`open_cash_register`) — migración `20260917190000`, aplicada al remoto; ver `KNOWN_ISSUES.md` #29
 - [x] Documentar la excepción pre-auth de `get_branch_by_device` (anon + `SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #30, `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`
-- [x] Endurecer RPCs transaccionales (SEC-3): revocar `EXECUTE` a `anon`/`PUBLIC` y derivar `p_user_id` de `auth.uid()` — migración `20260917200000`, pendiente `supabase db push`; el gateo de mutaciones admin en el cliente queda como riesgo aceptado por decisión #10/#13; ver `KNOWN_ISSUES.md` #38, `PR_REVIEW.md` y `docs/EDGE_FUNCTIONS.md`
+- [x] Endurecer RPCs transaccionales (SEC-3): revocar `EXECUTE` a `anon`/`PUBLIC` y derivar `p_user_id` de `auth.uid()` — migración `20260917200000`, aplicada al remoto; el gateo de mutaciones admin en el cliente queda como riesgo aceptado por decisión #10/#13; ver `KNOWN_ISSUES.md` #38, `PR_REVIEW.md` y `docs/EDGE_FUNCTIONS.md`
 - [x] Propagar la comisión del departamento a **todos** sus productos al confirmar propagación (sin filtrar por la comisión previa del departamento; las decisiones individuales de producto mandan solo hasta la próxima propagación) — ver `KNOWN_ISSUES.md` #51
 - [x] Congelar comisiones en la venta (`sale_details`) y desacoplar el reporte del catálogo vivo — migración `20260921170000`, ver `KNOWN_ISSUES.md` #52 y `SCHEMA.md`
 
@@ -38,7 +38,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Extraer componente compartido `PaginationBar` y eliminar los footers de paginación duplicados — ver `KNOWN_ISSUES.md` #15
 - [x] Migrar lista de productos a paginación server-side (RPC `get_branch_products_paginated`; `useProductsList` desacoplado de `ProductsContext`) — ver `KNOWN_ISSUES.md` #16
 - [x] Refactor de `ProductsContext`: extraer lógica de datos/CRUD a `src/services/products/` y optimizar realtime — ver `KNOWN_ISSUES.md` #16
-- [x] Acotar el CTE `session_payments` por rango de fechas + índice compuesto en `sale_payments` para el reporte de caja (migración `20260917210000`, pendiente de aplicar al remoto) — ver `KNOWN_ISSUES.md` #21
+- [x] Acotar el CTE `session_payments` por rango de fechas + índice compuesto en `sale_payments` para el reporte de caja (migración `20260917210000`, aplicada al remoto) — ver `KNOWN_ISSUES.md` #21
 - [x] Concurrencia acotada en el procesamiento de partidas de rentabilidad (chunks paralelos o RPC) — ver `KNOWN_ISSUES.md` #22
 - [x] Extraer `inventoryReportCalculationService.js` puro (agregaciones del reporte de inventario) — ver `KNOWN_ISSUES.md` #25
 - [x] Revocar `EXECUTE` a `anon` en el RPC base `get_branch_products_paginated` (hardening de grants; reports ya corregidos) — ver `KNOWN_ISSUES.md` #26
@@ -47,7 +47,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Compartir la autorización entre navbar y guard vía el Set `authorizedRoutes` por montaje de módulo (una sola autorización; las páginas derivan sus rutas de `adminProtectedSections`) — ver `KNOWN_ISSUES.md` #27
 - [x] Definir la llave de agrupación de pagos por método (por `id`, no solo por nombre) en el corte de caja — ver `KNOWN_ISSUES.md` #45
 - [x] Unificar los flujos de recarga de la vista actual de `useCashCutReport` (`changeSelectedCut("current")`, `refreshAfterCut` y realtime) en un helper común — ver `KNOWN_ISSUES.md` #47
-- [x] Panel de configuración del tope de apertura de caja con RPCs admin (`get_cash_max_opening_amount` / `update_cash_max_opening_amount`, migración `20260918120000`, pendiente `supabase db push`) — ver `KNOWN_ISSUES.md` #33
+- [x] Panel de configuración del tope de apertura de caja con RPCs admin (`get_cash_max_opening_amount` / `update_cash_max_opening_amount`, migración `20260918120000`, aplicada al remoto; panel de ajustes pendiente) — ver `KNOWN_ISSUES.md` #33
 - [ ] Endurecer la persistencia de sesión de Supabase (storage en memoria / cookie HttpOnly) cuando exista gateway o Edge Function — ver `KNOWN_ISSUES.md` #35
 - [x] Fijar `search_path` en las sobrecargas de `create_sale_transaction` (`SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #49
 - [x] Fijar `search_path` en `cancel_sale_transaction` y `create_partial_return_transaction` (`SECURITY DEFINER`, cierre total de la familia SEC-5) — ver `KNOWN_ISSUES.md` #53

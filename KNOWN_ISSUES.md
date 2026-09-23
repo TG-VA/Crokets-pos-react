@@ -245,7 +245,8 @@ de transacciones compensatorias. El cliente (`createNewKitTransaction`, `updateK
 `softDeleteKitTransaction`) ahora invoca `supabase.rpc(...)` con payloads tipados; quedan eliminados
 los bloques `try/catch` de rollback y los `console.error("ALERTA CRÍTICA...")` del frontend. El
 contrato SQL cliente↔BD se verifica en `supabase/migrations/productKitsRpcsContract.test.js`.
-Pendiente de `supabase db push` al remoto (ver F2 de PR_AUDIT_HISTORY.md).
+Aplicada al remoto el 23 sep 2026 con `supabase db push` (verificado en `supabase migration list` y
+por introspección: ACL de las 3 funciones sin `anon`/`public`).
 
 **Resolución (23 sep 2026) — Importación Masiva:** migración
 `20260923160000_create_products_import_rpc.sql` implementa la RPC atómica
@@ -260,7 +261,9 @@ una fila inicial (stock 0) por cada sucursal de `p_all_branches`; cualquier erro
 (`created_products_count` / `created_inventories_count`); se eliminaron los bloques `try/catch` de
 rollback y el `console.error("ALERTA CRÍTICA...")`. El contrato SQL cliente↔BD se verifica en
 `supabase/migrations/productsImportRpcContract.test.js`. Con esto queda resuelto el ítem #5 completo
-(Kits `20260923150000` + Importación `20260923160000`). Pendiente de `supabase db push` al remoto.
+(Kits `20260923150000` + Importación `20260923160000`). **Aplicadas al remoto el 23 sep 2026 con
+`supabase db push`** (verificado en `supabase migration list` y por introspección: ACL de las 4
+funciones sin `anon`/`public`).
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
 
@@ -664,8 +667,8 @@ para el caso de que aparezca el tipo `'percentage'`, productos con ambos campos 
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
 
-**Estado:** resuelto en código — rama `perf/reports-scalability` (17 sep 2026); migración pendiente de
-aplicar al remoto.
+**Estado:** resuelto en código y aplicado al remoto — rama `perf/reports-scalability` (17 sep 2026;
+`supabase db push` verificado el 23 sep 2026, presente en `supabase migration list`).
 
 `get_cash_report_sessions` (migración `20260910120100`) agregaba `sale_payments` completos en el CTE
 `session_payments` y solo acotaba por ventana de sesión en el JOIN final; no había pushdown del rango
@@ -679,8 +682,8 @@ de fechas dentro del CTE ni un índice acotado para el join por ventana.
 para acotar por `sp.branch_id IN (SELECT branch_id FROM filtered_sessions)` y por el rango
 `MIN(opened_at)`–`MAX(COALESCE(closed_at, now()))` de las sesiones filtradas. Validado contra el remoto
 con `BEGIN/ROLLBACK`: 34 filas, salida idéntica a la versión previa; `sale_payments` sin `branch_id`
-ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Pendiente:** aplicar la
-migración con `supabase db push`.
+ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Aplicada al remoto con
+`supabase db push`** (index `idx_sale_payments_branch_created_at` verificado por introspección).
 
 ### 22. Rentabilidad: procesamiento de partidas secuencial por chunks sin concurrencia
 
@@ -739,7 +742,7 @@ conserva y `useProductsList` solo lo llama con sesión, sin impacto funcional.
 
 ### 29. RPCs de caja no validan membresía de sucursal (`user_branches`)
 
-**Estado:** Resuelto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; pendiente `supabase db push`).
+**Estado:** Resuelto y aplicado al remoto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; `supabase db push` verificado el 23 sep 2026).
 
 `get_cash_register_session` y `open_cash_register` (migración `20260914120100`) son `SECURITY
 DEFINER` y reciben `p_branch_id` del cliente sin verificar que el usuario autenticado pertenezca a
@@ -755,7 +758,8 @@ key pública y su propia sesión.
 (`SECURITY DEFINER`, exento vía `is_admin()`) y lo aplica en `get_cash_register_session` y
 `open_cash_register`, que ahora lanzan `42501` (`insufficient_privilege`) si el usuario autenticado no
 tiene membresía activa en `user_branches` para esa sucursal. La excepción `SECURITY DEFINER` queda
-documentada en `docs/SUPABASE_MIGRATIONS.md`; pendiente `supabase db push` para aplicarla al remoto.
+documentada en `docs/SUPABASE_MIGRATIONS.md`; **aplicada al remoto el 23 sep 2026** (verificado en
+`supabase migration list` y por introspección de `_user_can_access_branch`).
 
 ### 30. `get_branch_by_device` es anon + `SECURITY DEFINER` (excepción de login pre-auth)
 
@@ -832,6 +836,10 @@ reafirman por sobrecarga: `REVOKE ALL` de `public` y `anon`, `GRANT EXECUTE` sol
 el `SET search_path TO 'public'` más los grants de las tres sobrecargas (6 casos nuevos). Cuerpos
 verificados idénticos a las fuentes `20260917200000` (9 y 10 parámetros) y `20260921170000`
 (11 parámetros, con el congelamiento de snapshot de comisión en `sale_details`).
+
+**Despliegue:** la migración se aplicó al remoto el 23 sep 2026 con `supabase db push`; verificado por
+introspección que las 3 sobrecargas quedaron `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL
+solo `authenticated`/`service_role`.
 
 ### 50. Comisión de producto exento pisada por la comisión del departamento en la RPC de comisiones
 
@@ -1419,6 +1427,10 @@ byte-idénticos a sus fuentes. Los grants se reafirman por función: `REVOKE ALL
 `transactionalRpcsContract.test.js` lee la nueva migración y exige el `SET search_path TO 'public'`
 más los grants de ambas funciones (4 casos nuevos). Con esto se cierra al 100% la familia de vectores
 SEC-5 en todos los procedimientos almacenados transaccionales de venta del proyecto.
+
+**Despliegue:** la migración se aplicó al remoto el 23 sep 2026 con `supabase db push`; verificado por
+introspección que ambas funciones quedaron `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL
+solo `authenticated`/`service_role`.
 
 ---
 
