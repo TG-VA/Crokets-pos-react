@@ -226,9 +226,7 @@ registraron en `ICONS.md`. Verificado: `rg` no encuentra emojis en `src/`.
 
 ### 5. Transacciones Atómicas (RPC) faltantes en Supabase
 
-**Estado:** abierto — parcialmente resuelto.
-
-Actualmente, módulos críticos como Importación Masiva (`productsImportService.js`) y Promociones/Kits (`productKitsService.js`) utilizan múltiples llamadas HTTP independientes con rollbacks manuales desde el frontend (Transacciones Compensatorias).
+**Estado:** abierto — parcialmente resuelto (Kits resueltos, Importación pendiente).
 
 **Actualización (24 ago 2026):** se confirmó por introspección directa del schema (ver `SCHEMA.md`)
 que **ventas y transferencias entre sucursales ya cuentan con RPC atómica**
@@ -237,12 +235,24 @@ que **ventas y transferencias entre sucursales ya cuentan con RPC atómica**
 equivalente para Importación masiva ni para Kits de Productos — el problema descrito sigue vigente
 específicamente para esos dos módulos.
 
-**Impacto:** existe una ventana de riesgo de concurrencia donde un fallo de red puede dejar
-registros huérfanos en Importación o Kits, a pesar de los bloques `try/catch`.
+**Resolución (23 sep 2026) — Kits:** migración `20260923150000_create_product_kits_rpcs.sql`
+implementa RPCs atómicas (PL/pgSQL, `SECURITY DEFINER`, `SET search_path TO 'public'`) para el ciclo
+de vida de Kits, reemplazando los rollbacks compensatorios de `productKitsService.js`:
+`create_kit_transaction` (retorna `uuid`), `update_kit_transaction` (retorna `boolean`) y
+`delete_kit_transaction` (retorna `boolean`; soft-delete del producto + kit). Cada RPC inserta
+producto, kit e items, o revierte con `raise exception` tipado — ACID nativo de PostgreSQL en lugar
+de transacciones compensatorias. El cliente (`createNewKitTransaction`, `updateKitTransaction`,
+`softDeleteKitTransaction`) ahora invoca `supabase.rpc(...)` con payloads tipados; quedan eliminados
+los bloques `try/catch` de rollback y los `console.error("ALERTA CRÍTICA...")` del frontend. El
+contrato SQL cliente↔BD se verifica en `supabase/migrations/productKitsRpcsContract.test.js`.
+Pendiente de `supabase db push` al remoto (ver F2 de PR_AUDIT_HISTORY.md).
 
-**Recomendación:** migrar la lógica de inserción masiva de Importación y Kits a Stored Procedures
+**Impacto restante:** sigue vigente únicamente para Importación Masiva (`productsImportService.js`),
+donde un fallo de red puede dejar registros huérfanos a pesar de los bloques `try/catch`.
+
+**Recomendación:** migrar la lógica de inserción masiva de Importación a un Stored Procedure
 (`plpgsql` / RPC) en Supabase, siguiendo el mismo patrón ya usado en `create_sale_transaction` /
-`create_transfer_order`.
+`create_transfer_order` y el de Kits (`20260923150000`).
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
 

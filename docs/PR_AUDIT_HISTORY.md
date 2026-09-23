@@ -1126,3 +1126,102 @@ funciones con cuerpos byte-idénticos a las fuentes (evidencia autónoma por SHA
 reafirmados, `npm test` 620/620, build OK y convenciones cumplidas. Con F1 (commit + push) y F2
 (push de la migración al remoto) resueltos, la rama queda **aprobada** conforme a `PR_REVIEW.md`. Con
 esto la familia de vectores SEC-5 queda cerrada al 100% en los procedimientos transaccionales de venta.
+
+---
+## Informe de Auditoría — RAMA `feature/atomic-product-kits-rpc` (23 de septiembre de 2026)
+
+**Alcance:** migración de las operaciones compuestas de Kits de Productos de transacciones
+compensatorias en el frontend a RPCs atómicas en Supabase (cierre del lado Kits de
+`KNOWN_ISSUES.md` #5). Archivos: migración nueva
+`supabase/migrations/20260923150000_create_product_kits_rpcs.sql`, test de contrato nuevo
+`supabase/migrations/productKitsRpcsContract.test.js`, y refactor de
+`src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService.js`
+(+ su test). Rama creada sobre `main` (`567911e`); sin commits aún.
+
+### Veredicto por sección
+
+**§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+- Objetivo de cierre marcado explícito en el diff: `KNOWN_ISSUES.md` #5 — parte Kits resuelta
+  (migración `20260923150000`), parte Importación Masiva queda documentada como pendiente
+  (no se toca `productsImportService.js` en esta rama).
+- Se conservó el contrato público del servicio: `createNewKitTransaction(kitData, selectedProducts)`,
+  `updateKitTransaction(editingKit, kitData, selectedProducts)` y
+  `softDeleteKitTransaction(kitId, kitProductId)` — mismos nombres, argumentos y retorno `true`
+  (consumidores en `useProductsPromotions.js` sin cambios).
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- ACID nativo: `create_kit_transaction` inserta `public.products` +
+  `public.product_kits` + `product_kit_items` en una sola transacción
+  (`20260923150000_create_product_kits_rpcs.sql:5-90`); cualquier `raise exception` (validaciones de
+  barcode/nombre/precio/max_kits/items en `:29-43`) o violación de constraint revierte todo, igual
+  que en el patrón `create_sale_transaction`/`create_transfer_order`.
+- `update_kit_transaction` reemplaza items por delete+reinsert dentro de la misma transacción
+  (`:118-158`); `delete_kit_transaction` soft-deletea producto (`status=false`) y kit
+  (`is_active=false`) atómicamente (`:181-203`).
+- DIP respetado: el servicio sigue siendo la única puerta de persistencia para la vista de
+  Promociones; no se importa `supabase` en componentes.
+- Los métodos de solo lectura (`fetchKits`, `fetchKitItems`, `checkKitDuplicates`,
+  `toggleKitStatus`, `fetchActiveNonKitProducts`) quedan byte-idénticos (sin diff en el bloque).
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+- Los defaults SQL replican exactamente los valores que enviaba el frontend al insertar
+  (`sale_type 'unidad'`, `unit 'pieza'`, `cost_price 0`, `tax 16`, `commission_enabled false`,
+  `commission_percent 0`, `is_kit true`, `tracks_inventory false`, `is_global true`).
+- Normalización tolerante: `name`/`description`, `sale_price`/`price` y
+  `component_product_id`/`product_id`/`id` ambos aceptados, pero el cliente solo envía las claves
+  canónicas (verificado por contrato: `productKitsRpcsContract.test.js`).
+- Caso único esperado de error: la UNIQUE `products_barcode_key` sigue aplicando en `products`;
+  sin ambigüedad de datos.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** `productKitsService` no muta contextos compartidos; el
+consumo vía `useProductsPromotions.js` es idéntico.
+
+**§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff.**
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+- Eliminados los tres `console.error("ALERTA CRÍTICA...")` del frontend junto con los rollbacks; no
+  quedan `console.log`/`console.warn` nuevos.
+- Sin emojis (revisión de rango Unicode sobre el diff, sin resultados).
+- EOF newline presente en los 4 archivos nuevos/modificados (bits verificados: `0x0a` final).
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #5 (parte Kits resuelta + referencia a la
+migración y al contrato), `BACKLOG.md` (ítem #5 reetiquetado a solo Importación), y este informe;
+la tabla de migraciones de `docs/SUPABASE_MIGRATIONS.md` se actualiza con la fila
+`20260923150000`.
+
+**§7 Calidad/testing — CUMPLIDO:** suite completa `npm test` 636/636 (47 archivos; previo 620/620 en
+la rama anterior), `npm run build:frontend` OK (warning de chunk preexistente), `npx eslint` sin
+hallazgos sobre el servicio, su test y el contrato.
+
+### Micro-pase de seguridad (skill security-best-practices, 23 sep 2026)
+
+Alcance: migración SQL nueva (una función por operación) + service refactor (network layer). Sin
+nueva superficie DOM/redirect/postMessage.
+
+- **SEC-GRANT-003 — PASS.** Los grants heredan el patrón endurecido del repo: cada RPC declara
+  `SECURITY DEFINER` con `SET search_path TO 'public'` (`:9,91,178`), REVOKE `EXECUTE` de
+  `public`/`anon` (`:207-208,212-213,217-218`) y GRANT solo a `authenticated`/
+  `service_role` (`:209-210,214-215,219-220`). El llamador autenticado pasa por `authenticated`; la
+  anon key no puede invocarlas.
+- **SEC-SQLI-003 — PASS (SQL injection):** parámetros tipados `jsonb`/`uuid` deserializados con
+  operadores `->>` y casting explícito; no hay concatenación de strings en los `insert`/`update`.
+- **SEC-AUTHZ-003 — PASS (broadly):** como en el resto de las RPCs transaccionales del repo
+  (`create_sale_transaction`), las nuevas funciones no validan rol granular — riesgo aceptado y
+  documentado en `KNOWN_ISSUES.md` #13 (hardening sin habilitar RLS). No se introduce regresión vs
+  el baseline.
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | PENDIENTE — sigue el flujo de commit + push del autor |
+| F2 | Deployment | Migración no aplicada al remoto (requiere `supabase db push` y verificación de ACL con `\df+` de las 3 funciones). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3 | Manual | QA visual del flujo crear/editar/desactivar kit en Promociones tras el push. | PENDIENTE — a cargo del autor |
+| F4 | Riesgo aceptado | `update_kit_transaction` borra e reinserta `product_kit_items` en la misma transacción: si un componente deja de existir (FK), la transacción revierte completa — comportamiento ACID deseado. | ACEPTADO |
+
+### Veredicto
+La refactorización cumple el objetivo del cierre de #5 (Kits): ACID nativo reemplaza a las
+transacciones compensatorias, con contrato SQL cliente↔BD verificado por test, grants mínimos y
+`search_path` fijado en las 3 RPCs. Suite 636/636, build OK, convenciones y documentación al día.
+Con F1 (commit + push) y F2 (push de la migración al remoto) resueltos, la rama queda **aprobada**
+conforme a `PR_REVIEW.md`. La parte restante del ítem #5 (Importación Masiva) queda abierta en
+`KNOWN_ISSUES.md` y `BACKLOG.md`.

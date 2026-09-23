@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
-  supabase: { from: vi.fn() },
+  supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 
 import { supabase } from "../../../../../lib/supabaseClient";
@@ -53,6 +53,7 @@ describe("productKitsService", () => {
 
   beforeEach(() => {
     supabase.from.mockReset();
+    supabase.rpc.mockReset();
     productsQ = thenableQuery();
     kitsQ = thenableQuery();
     itemsQ = thenableQuery();
@@ -127,10 +128,8 @@ describe("productKitsService", () => {
   });
 
   describe("createNewKitTransaction", () => {
-    it("crea producto kit, kit e items", async () => {
-      productsQ.single.mockResolvedValue({ data: { id: "prod1" }, error: null });
-      kitsQ.single.mockResolvedValue({ data: { id: "kit1" }, error: null });
-      itemsQ.then = (ok) => Promise.resolve({ data: null, error: null }).then(ok);
+    it("invoca la RPC create_kit_transaction con el payload del kit", async () => {
+      supabase.rpc.mockResolvedValue({ data: "kit1", error: null });
 
       const kitData = { barcode: "KIT1", description: "Pack", price: 100, max_kits_per_sale: 3 };
       const result = await createNewKitTransaction(kitData, [
@@ -139,38 +138,45 @@ describe("productKitsService", () => {
       ]);
 
       expect(result).toBe(true);
-      expect(productsQ.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ barcode: "KIT1", is_kit: true, max_kits_per_sale: 3 })
-      );
-      expect(kitsQ.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ kit_product_id: "prod1" })
-      );
-      expect(itemsQ.insert).toHaveBeenCalledWith([
-        expect.objectContaining({ kit_id: "kit1", component_product_id: "c1", quantity: 2 }),
-        expect.objectContaining({ kit_id: "kit1", component_product_id: "c2", quantity: 1 }),
-      ]);
+      expect(supabase.rpc).toHaveBeenCalledWith("create_kit_transaction", {
+        p_kit_product: {
+          barcode: "KIT1",
+          name: "Pack",
+          sale_price: 100,
+          max_kits_per_sale: 3,
+        },
+        p_kit_items: [
+          { component_product_id: "c1", quantity: 2 },
+          { component_product_id: "c2", quantity: 1 },
+        ],
+      });
     });
 
-    it("hace rollback del kit y del producto si fallan los items", async () => {
-      productsQ.single.mockResolvedValue({ data: { id: "prod1" }, error: null });
-      kitsQ.single.mockResolvedValue({ data: { id: "kit1" }, error: null });
-      itemsQ.then = (ok) =>
-        Promise.resolve({ data: null, error: { message: "items fail" } }).then(ok);
+    it("usa max_kits_per_sale por defecto 1 si no se envía", async () => {
+      supabase.rpc.mockResolvedValue({ data: "kit1", error: null });
+
+      await createNewKitTransaction({ barcode: "KIT1", description: "Pack", price: 100 }, [
+        { id: "c1", quantity: 1 },
+      ]);
+
+      expect(supabase.rpc.mock.calls[0][1].p_kit_product.max_kits_per_sale).toBe(1);
+    });
+
+    it("propaga el error de la RPC sin intentar rollback", async () => {
+      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
 
       await expect(
         createNewKitTransaction({ barcode: "KIT1", description: "Pack", price: 100 }, [
           { id: "c1", quantity: 1 },
         ])
-      ).rejects.toThrow("items fail");
-      expect(kitsQ.delete).toHaveBeenCalled();
-      expect(productsQ.delete).toHaveBeenCalled();
+      ).rejects.toThrow("rpc fail");
+      expect(supabase.from).not.toHaveBeenCalledWith("product_kits");
     });
   });
 
   describe("updateKitTransaction", () => {
-    it("actualiza producto, kit e items", async () => {
-      itemsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "old1", quantity: 1 }], error: null }).then(ok);
+    it("invoca la RPC update_kit_transaction con el kit e items", async () => {
+      supabase.rpc.mockResolvedValue({ data: true, error: null });
 
       const editingKit = { id: "kit1", kit_product_id: "prod1" };
       const result = await updateKitTransaction(editingKit, {
@@ -181,35 +187,29 @@ describe("productKitsService", () => {
       }, [{ id: "c1", quantity: 2 }]);
 
       expect(result).toBe(true);
-      expect(productsQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ barcode: "KIT1", sale_price: 120, max_kits_per_sale: 4 })
-      );
-      expect(kitsQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ updated_at: expect.any(String) })
-      );
-      expect(itemsQ.delete).toHaveBeenCalled();
-      expect(itemsQ.insert).toHaveBeenCalledWith([
-        expect.objectContaining({ kit_id: "kit1", component_product_id: "c1", quantity: 2 }),
-      ]);
+      expect(supabase.rpc).toHaveBeenCalledWith("update_kit_transaction", {
+        p_kit_id: "kit1",
+        p_kit_product_id: "prod1",
+        p_kit_product: {
+          barcode: "KIT1",
+          name: "Pack",
+          sale_price: 120,
+          max_kits_per_sale: 4,
+        },
+        p_kit_items: [{ component_product_id: "c1", quantity: 2 }],
+      });
     });
 
-    it("restaura los items previos si falla la inserción y relanza", async () => {
-      itemsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "old1", quantity: 1 }], error: null }).then(ok);
-      itemsQ.insert.mockReturnValue(
-        thenableQuery({ data: null, error: { message: "insert fail" } })
-      );
+    it("propaga el error de la RPC", async () => {
+      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
 
       const editingKit = { id: "kit1", kit_product_id: "prod1" };
       await expect(
         updateKitTransaction(editingKit, { barcode: "KIT1", description: "Pack", price: 120, max_kits_per_sale: 1 }, [
           { id: "c1", quantity: 2 },
         ])
-      ).rejects.toThrow("insert fail");
-      expect(itemsQ.insert.mock.calls).toHaveLength(2);
-      expect(itemsQ.insert.mock.calls[1][0]).toEqual([
-        expect.objectContaining({ id: "old1", quantity: 1 }),
-      ]);
+      ).rejects.toThrow("rpc fail");
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 
@@ -245,29 +245,25 @@ describe("productKitsService", () => {
   });
 
   describe("softDeleteKitTransaction", () => {
-    it("desactiva el producto y el kit", async () => {
+    it("invoca la RPC delete_kit_transaction con kit y producto", async () => {
+      supabase.rpc.mockResolvedValue({ data: true, error: null });
+
       const result = await softDeleteKitTransaction("kit1", "prod1");
 
       expect(result).toBe(true);
-      expect(productsQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ status: false })
-      );
-      expect(kitsQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ is_active: false })
-      );
+      expect(supabase.rpc).toHaveBeenCalledWith("delete_kit_transaction", {
+        p_kit_id: "kit1",
+        p_kit_product_id: "prod1",
+      });
     });
 
-    it("reversa la desactivación del producto si falla el kit", async () => {
-      kitsQ.update.mockReturnValue(
-        thenableQuery({ data: null, error: { message: "kit fail" } })
-      );
+    it("propaga el error de la RPC sin reverir estados", async () => {
+      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
 
       await expect(softDeleteKitTransaction("kit1", "prod1")).rejects.toThrow(
-        "kit fail"
+        "rpc fail"
       );
-      expect(productsQ.update.mock.calls[1][0]).toEqual(
-        expect.objectContaining({ status: true })
-      );
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 
