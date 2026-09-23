@@ -1423,3 +1423,59 @@ de las 9 funciones transaccionales (SECURITY DEFINER + `search_path` fijado + AC
 anon/PUBLIC) y deja `SCHEMA.md`, `KNOWN_ISSUES.md` y `docs/SUPABASE_MIGRATIONS.md` al día.
 Suite 643/643, build OK, convenciones y documentación al día. Con F1–F4 resueltos (F5 manual
 pendiente, no bloqueante), la rama queda **aprobada** conforme a `PR_REVIEW.md`.
+
+---
+
+## Informe de Auditoría — RAMA `refactor/products-promotions-modularization` (borrador, 23 sep 2026)
+
+**Alcance:** descomposición del último god component pendiente de la tabla del ítem #3,
+`src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` (346
+líneas). Alcance estricto: solo las vistas presentacionales; no se tocan `useProductsPromotions.js`,
+`useKitProductSearch.js`, `productKitsService.js` ni `ProductsPromotions.module.css`. Estado:
+**trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
+
+### Veredicto por sección
+**§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `ProductsModify`/`RewardModal`):**
+- Cinco vistas presentacionales en `components/` que comparten `ProductsPromotions.module.css` y
+  reciben únicamente los props que consumen (ISP): `KitFormSection` (formColumn: barcode con
+  `barcodeInputRef`, descripción, precio, `max_kits_per_sale`, `summaryBox` de ahorro y botón
+  `F10 - Buscar producto`), `KitSelectedProductsSection` (listColumn: lista de productos del kit,
+  selección activa y cambio de cantidad), `KitActionsSection` (actionsSection: guardar/actualizar,
+  limpiar y remover seleccionado), `KitRegisteredListSection` (card de kits registrados con badges
+  activo/inactivo y acciones editar/desactivar/eliminar) y `KitProductSearchModal` (extraído del JSX
+  inline original, líneas 271-343, sin cambios: consume `useKitProductSearch`).
+- `ProductsPromotions.jsx` bajó de **346 a 113 líneas** (<120) y quedó como orquestador declarativo:
+  consume `useProductsPromotions()` y ensambla header + card principal (form + selected + actions) +
+  card secundaria (registrados) + `KitProductSearchModal` + `AppModal`. No importa `supabase` (DIP) y
+  sin lógica de negocio en el JSX (SRP). Límite de líneas §1: todos los archivos del módulo < 400.
+
+**§2 Corrección de Datos y Lógica de Negocio — SIN CAMBIO:** el contrato del hook es idéntico; todas
+las fórmulas (`selectedProductsTotal`, `kitDiscount`, `kitDiscountPercent`, totales por fila) viven
+en `useProductsPromotions.js`/JSX de las vistas sin alterar. Ningún cálculo se tocó.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** las mismas props del hook se reparten entre las vistas;
+no se muta contexto global ni se agrega estado nuevo. La posición de `AppModal` y
+`KitProductSearchModal` como hijos directos de `styles.container` (hermanos de `styles.innerContainer`) se conserva idéntica al original.
+
+**§4 Estilos y UI — SIN CAMBIO:** no se agregó CSS; las cinco vistas reutilizan exclusivamente clases
+existentes de `ProductsPromotions.module.css`. Clases dinámicas sin espacios colgantes
+(`...filter(Boolean).join(" ")`), mismas que en `main`.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO:** sin emojis (barrido de rango Unicode en los 6
+archivos); sin `console.log`/`console.warn` nuevos; los `console.error` se conservan en los hooks
+(no tocados); comillas dobles, EOF newline y `prettier --check` verde en los 6 archivos tocados.
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #3 marcado 100% resuelto (tabla + estado +
+bitácora), `BACKLOG.md` actualizado y este informe anexado; `PR_REVIEW.md` intacto como guía §0-§7.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` **643/643** y `npm run build:frontend` EXIT 0;
+`npx eslint` sobre los 6 archivos nuevos/tocados sin errores (0); sin cambios funcionales, por lo
+que no se requieren tests nuevos (las vistas son presentacionales, coherente con el stance del
+proyecto de no testear UI).
+
+### Notas y límites conscientes
+- **Prettier:** el módulo `ProductsPromotions.jsx` incumplía `prettier --check` en `main` (igual que
+  el resto del módulo); los 6 archivos tocados se dejaron formateados íntegros porque el CI
+  incremental verifica el archivo completo (churn acotado a los archivos del refactor).
+- **QA visual pendiente:** grid de dos columnas, summary de ahorro, selector de fila, badges de
+  estado y flujo F10 deben verificarse en la UI con `npm run dev` antes de cerrar la PR.

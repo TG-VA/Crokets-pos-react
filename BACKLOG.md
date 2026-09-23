@@ -14,7 +14,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 ## Prioridad Alta (Arquitectura y Backend)
 
-- [x] Componentes "dios" pendientes de refactor (`ProductsModify.jsx` resuelto; `ProductsPromotions.jsx` fuera de alcance por tamaño) — `CashCut.jsx`, `ticketBuilder.js` y `RewardModal.jsx` ya refactorizados; ver `KNOWN_ISSUES.md` #3
+- [x] Componentes "dios" pendientes de refactor — **todos modularizados** (`CashCut.jsx`, `ticketBuilder.js`, `RewardModal.jsx`, `ProductsModify.jsx` y `ProductsPromotions.jsx` resueltos; este último el 23 sep 2026 en rama `refactor/products-promotions-modularization`); ver `KNOWN_ISSUES.md` #3
 - [x] Emojis pendientes de limpiar en código fuente (`Settings.jsx`, `SalesProductsTable.jsx`, `bd.js`) — ver `KNOWN_ISSUES.md` #4
 - [x] Transacciones atómicas (RPC) faltantes en Supabase — **Kits** (`create/update/delete_kit_transaction`, `20260923150000`) e **Importación Masiva** (`import_products_transaction`, `20260923160000`) resueltos; ver `KNOWN_ISSUES.md` #5
 - [x] RPC de comisiones: excluir ventas canceladas (`'cancelled'`/`'cancelada'`) — ver `KNOWN_ISSUES.md` #18
