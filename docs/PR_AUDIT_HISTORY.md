@@ -1225,3 +1225,102 @@ transacciones compensatorias, con contrato SQL cliente↔BD verificado por test,
 Con F1 (commit + push) y F2 (push de la migración al remoto) resueltos, la rama queda **aprobada**
 conforme a `PR_REVIEW.md`. La parte restante del ítem #5 (Importación Masiva) queda abierta en
 `KNOWN_ISSUES.md` y `BACKLOG.md`.
+
+## Informe de Auditoría — RAMA `feature/atomic-products-import-rpc` (borrador, 23 de septiembre de 2026)
+
+**Alcance:** cierre del lado Importación Masiva de `KNOWN_ISSUES.md` #5: migración de las
+operaciones compuestas de la importación de productos de transacciones compensatorias en el
+frontend a una RPC atómica en Supabase. Archivos: migración nueva
+`supabase/migrations/20260923160000_create_products_import_rpc.sql`, test de contrato nuevo
+`supabase/migrations/productsImportRpcContract.test.js`, y refactor de
+`src/components/ProductsComponents/PageProducts/ProductsImport/services/productsImportService.js`
+(+ su test). Rama creada sobre `main` (`1eb5657`); sin commits aún.
+
+### Veredicto por sección
+
+**§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+- Objetivo de cierre marcado explícito en el diff: `KNOWN_ISSUES.md` #5 — parte Importación resuelta
+  con la migración `20260923160000`; con esto el ítem #5 queda **resuelto en su totalidad**
+  (Kits `20260923150000` + Importación `20260923160000`).
+- Se conservó el contrato público del servicio: `processImportTransaction(validRows, branchId,
+  allBranches, departmentMap)` — mismos nombres, argumentos y shape de retorno
+  (`{ createdProductsCount, createdInventoriesCount }`); el consumidor `useProductsImport.js:212`
+  no cambia.
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+- ACID nativo: `import_products_transaction` inserta `public.products` y
+  `public.branch_inventory` en una sola transacción
+  (`20260923160000_create_products_import_rpc.sql:14-118`); cualquier `raise exception`
+  (barcode/nombre obligatorios en `:58-66`) o violación de constraint revierte todo.
+- Reproducción exacta de la lógica previa del frontend: por fila inserta producto; si
+  `tracks_inventory`, inventario de la sucursal actual (`p_branch_id`) con datos reales
+  (stock/min/max/has_been_stocked) y — para productos `is_global` — una fila inicial por sucursal de
+  `p_all_branches` (stock 0, `is_active true`, snapshot de cost/sale price); para no-globales solo
+  `p_branch_id` (`:70-106`).
+- DIP respetado: el servicio sigue siendo la única puerta de persistencia para la vista de
+  Importación; no se importa `supabase` en componentes.
+- Los métodos de solo lectura/validación (`fetchValidationData`, `fetchBranchesAndDepartments`,
+  `createMissingDepartments`) quedan byte-idénticos (sin diff en el bloque).
+
+**§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+- El mapeo de `department_id` del cliente conserva exactamente la semántica anterior
+  (`item.department_name ? departmentMap[item.department_name.toLowerCase()] || null : null`) y se
+  delega a la BD como `(v_product ->> 'department_id')::uuid`.
+- Los defaults SQL replican los valores que se infieren en la lectura de cada fila (`sale_type
+  'unidad'`, `unit 'pieza'`, `tax 16`, `status true`, `is_global true`, `is_kit false`,
+  `commission_type 'percent'`), sin cambiar lo que el frontend ya enviaba explícitamente.
+- Caso único esperado de error: la UNIQUE `products_barcode_key` (o cadenas/checks de
+  `products`/`branch_inventory`) sigue aplicando dentro de la transacción — sin ambigüedad de datos.
+
+**§3 Estado y Contexto Global — SIN CAMBIO:** `productsImportService` no muta contextos compartidos;
+el consumo vía `useProductsImport.js` es idéntico.
+
+**§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff.**
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+- Eliminado el `console.error("ALERTA CRÍTICA...")` del frontend junto con el bloque de rollback
+  manual; no quedan `console.log`/`console.warn` nuevos.
+- Sin emojis (revisión de rango Unicode sobre el diff, sin resultados).
+- EOF newline presente en los 4 archivos nuevos/modificados (bits verificados: `0x0a` final).
+
+**§6 Documentación — CUMPLIDO:** `KNOWN_ISSUES.md` #5 (estado resuelto en su totalidad, con
+resolución de Importación), `BACKLOG.md` (ítem #5 marcado `[x]`), `docs/SUPABASE_MIGRATIONS.md`
+(fila `20260923160000`) y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** suite completa `npm test` 643/643 (previo 636/636), con +2 tests
+netos en `productsImportService.test.js` (los 6 casos de `processImportTransaction` reescritos para
+la RPC — payload, mapeo de `department_id`, `p_all_branches` para globales, propagación de errores
+sin rollback manual — reemplazan los 4 previos de insert/rollback) y +5 en
+`supabase/migrations/productsImportRpcContract.test.js` (firma, tipos, search_path, grants y
+cross-check cliente↔BD). `npm run build:frontend` OK (warning de chunk preexistente), `npx eslint`
+sin hallazgos sobre el servicio, su test y el contrato.
+
+### Micro-pase de seguridad (skill security-best-practices, 23 sep 2026)
+
+Alcance: migración SQL nueva (una función) + service refactor (network layer). Sin nueva superficie
+DOM/redirect/postMessage.
+
+- **SEC-GRANT-003 — PASS.** La RPC declara `SECURITY DEFINER` con `SET search_path TO 'public'`
+  (`:20-22`), REVOKE `EXECUTE` de `public`/`anon` (`:133-134`) y GRANT solo a
+  `authenticated`/`service_role` (`:135-136`). El llamador autenticado pasa por `authenticated`; la
+  anon key no puede invocarla.
+- **SEC-SQLI-003 — PASS (SQL injection):** parámetros tipados `jsonb`/`uuid` deserializados con
+  operadores `->>` y casting explícito; no hay concatenación de strings en los `insert`.
+- **SEC-AUTHZ-003 — PASS (broadly):** como en el resto de las RPCs transaccionales del repo, la
+  función no valida rol granular — riesgo aceptado y documentado en `KNOWN_ISSUES.md` #13 (hardening
+  sin habilitar RLS). No se introduce regresión vs el baseline.
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | PENDIENTE — sigue el flujo de commit + push del autor |
+| F2 | Deployment | Migración no aplicada al remoto (requiere `supabase db push` y verificación con `\df+ import_products_transaction`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3 | Manual | QA visual del flujo de importación masiva (CSV con productos tracks/globales) tras el push. | PENDIENTE — a cargo del autor |
+| F4 | Riesgo aceptado | El contrato SQL replica la lógica previa del frontend (incluido el lookup de `department_id` por `department_name.toLowerCase()` sin strippear acentos, quirk preexistente). | ACEPTADO — se conservó byte-idéntico a propósito |
+
+### Veredicto
+La refactorización cierra por completo el ítem `KNOWN_ISSUES.md` #5: la importación masiva pasa a
+ACID nativo vía `import_products_transaction`, con contrato SQL cliente↔BD verificado por test,
+grants mínimos, `search_path` fijado y eliminación total de los rollbacks compensatorios del
+frontend. Suite 643/643, build OK, convenciones y documentación al día. Con F1 (commit + push) y F2
+(push de la migración al remoto) resueltos, la rama queda **aprobada** conforme a `PR_REVIEW.md`.

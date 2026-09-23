@@ -226,7 +226,7 @@ registraron en `ICONS.md`. Verificado: `rg` no encuentra emojis en `src/`.
 
 ### 5. Transacciones Atómicas (RPC) faltantes en Supabase
 
-**Estado:** abierto — parcialmente resuelto (Kits resueltos, Importación pendiente).
+**Estado:** resuelto (23 sep 2026) — rama `feature/atomic-products-import-rpc`.
 
 **Actualización (24 ago 2026):** se confirmó por introspección directa del schema (ver `SCHEMA.md`)
 que **ventas y transferencias entre sucursales ya cuentan con RPC atómica**
@@ -247,12 +247,20 @@ los bloques `try/catch` de rollback y los `console.error("ALERTA CRÍTICA...")` 
 contrato SQL cliente↔BD se verifica en `supabase/migrations/productKitsRpcsContract.test.js`.
 Pendiente de `supabase db push` al remoto (ver F2 de PR_AUDIT_HISTORY.md).
 
-**Impacto restante:** sigue vigente únicamente para Importación Masiva (`productsImportService.js`),
-donde un fallo de red puede dejar registros huérfanos a pesar de los bloques `try/catch`.
-
-**Recomendación:** migrar la lógica de inserción masiva de Importación a un Stored Procedure
-(`plpgsql` / RPC) en Supabase, siguiendo el mismo patrón ya usado en `create_sale_transaction` /
-`create_transfer_order` y el de Kits (`20260923150000`).
+**Resolución (23 sep 2026) — Importación Masiva:** migración
+`20260923160000_create_products_import_rpc.sql` implementa la RPC atómica
+`import_products_transaction(p_rows jsonb, p_branch_id uuid, p_all_branches jsonb) RETURNS jsonb`
+(PL/pgSQL, `SECURITY DEFINER`, `SET search_path TO 'public'`) que inserta productos y su
+`branch_inventory` en una sola transacción de PostgreSQL. Por cada fila inserta el producto y, si
+`tracks_inventory`, el inventario de la sucursal actual (datos reales) y, para productos globales,
+una fila inicial (stock 0) por cada sucursal de `p_all_branches`; cualquier error revierte todo con
+`raise exception` — ACID nativo en lugar de las transacciones compensatorias del frontend.
+`productsImportService.js` ya no hace `.insert()` + rollback manual: invoca
+`supabase.rpc("import_products_transaction", ...)` y devuelve los conteos
+(`created_products_count` / `created_inventories_count`); se eliminaron los bloques `try/catch` de
+rollback y el `console.error("ALERTA CRÍTICA...")`. El contrato SQL cliente↔BD se verifica en
+`supabase/migrations/productsImportRpcContract.test.js`. Con esto queda resuelto el ítem #5 completo
+(Kits `20260923150000` + Importación `20260923160000`). Pendiente de `supabase db push` al remoto.
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
 

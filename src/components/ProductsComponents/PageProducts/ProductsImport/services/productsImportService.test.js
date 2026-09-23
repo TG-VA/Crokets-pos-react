@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
-  supabase: { from: vi.fn() },
+  supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 vi.mock("../../../../../services/satClavesService", () => ({
   validateSatClaves: vi.fn(),
@@ -68,6 +68,7 @@ describe("productsImportService", () => {
 
   beforeEach(() => {
     supabase.from.mockReset();
+    supabase.rpc.mockReset();
     validateSatClaves.mockReset();
     productsQ = thenableQuery();
     departmentsQ = thenableQuery();
@@ -86,9 +87,15 @@ describe("productsImportService", () => {
   describe("fetchValidationData", () => {
     it("consulta productos, departamentos y claves SAT existentes", async () => {
       productsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "p1", barcode: "BC1" }], error: null }).then(ok);
+        Promise.resolve({
+          data: [{ id: "p1", barcode: "BC1" }],
+          error: null,
+        }).then(ok);
       departmentsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "d1", name: "Alimentos" }], error: null }).then(ok);
+        Promise.resolve({
+          data: [{ id: "d1", name: "Alimentos" }],
+          error: null,
+        }).then(ok);
       validateSatClaves.mockResolvedValue(["SAT1"]);
 
       const result = await fetchValidationData(["BC1"], ["SAT1"]);
@@ -130,7 +137,9 @@ describe("productsImportService", () => {
       branchesQ.then = (ok) =>
         Promise.resolve({ data: [{ id: "b1" }], error: null }).then(ok);
       departmentsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "d1", name: "X" }], error: null }).then(ok);
+        Promise.resolve({ data: [{ id: "d1", name: "X" }], error: null }).then(
+          ok
+        );
 
       const result = await fetchBranchesAndDepartments();
 
@@ -156,7 +165,10 @@ describe("productsImportService", () => {
 
     it("inserta los departamentos faltantes y devuelve las filas creadas", async () => {
       departmentsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "d9", name: "NUPEC" }], error: null }).then(ok);
+        Promise.resolve({
+          data: [{ id: "d9", name: "NUPEC" }],
+          error: null,
+        }).then(ok);
 
       const result = await createMissingDepartments(["NUPEC"]);
 
@@ -166,7 +178,9 @@ describe("productsImportService", () => {
 
     it("propaga errores al insertar", async () => {
       departmentsQ.then = (ok) =>
-        Promise.resolve({ data: null, error: { message: "insert fail" } }).then(ok);
+        Promise.resolve({ data: null, error: { message: "insert fail" } }).then(
+          ok
+        );
 
       await expect(createMissingDepartments(["NUPEC"])).rejects.toThrow(
         "insert fail"
@@ -183,80 +197,101 @@ describe("productsImportService", () => {
         createdInventoriesCount: 0,
       });
       expect(supabase.from).not.toHaveBeenCalled();
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
-    it("inserta productos y genera inventario para la sucursal actual", async () => {
-      productsQ.then = (ok) =>
-        Promise.resolve({
-          data: [{ id: "p1", barcode: "BC1", is_global: false, tracks_inventory: true }],
-          error: null,
-        }).then(ok);
-      inventoryQ.then = (ok) =>
-        Promise.resolve({ data: null, error: null }).then(ok);
+    it("invoca la RPC con el payload mapeado y devuelve los conteos", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { created_products_count: 1, created_inventories_count: 1 },
+        error: null,
+      });
 
       const departmentMap = { alimentos: "dA" };
       const result = await processImportTransaction(
         [validRow()],
         "b1",
-        [],
+        [{ id: "b1" }],
         departmentMap
       );
 
-      expect(result).toEqual({ createdProductsCount: 1, createdInventoriesCount: 1 });
-      expect(productsQ.insert.mock.calls[0][0][0]).toEqual(
-        expect.objectContaining({ barcode: "BC1", name: "Producto 1", department_id: "dA" })
-      );
-      expect(inventoryQ.insert).toHaveBeenCalledWith([
+      expect(result).toEqual({
+        createdProductsCount: 1,
+        createdInventoriesCount: 1,
+      });
+      expect(supabase.from).not.toHaveBeenCalled();
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+
+      const [rpcName, params] = supabase.rpc.mock.calls[0];
+      expect(rpcName).toBe("import_products_transaction");
+      expect(params.p_branch_id).toBe("b1");
+      expect(params.p_all_branches).toEqual([{ id: "b1" }]);
+      expect(params.p_rows).toHaveLength(1);
+      expect(params.p_rows[0].product).toEqual(
         expect.objectContaining({
-          branch_id: "b1",
-          product_id: "p1",
+          barcode: "BC1",
+          name: "Producto 1",
+          department_id: "dA",
+        })
+      );
+      expect(params.p_rows[0].inventory).toEqual(
+        expect.objectContaining({
           stock: 5,
           min_stock: 1,
           max_stock: 9,
           has_been_stocked: true,
-        }),
-      ]);
+        })
+      );
     });
 
-    it("crea inventario en todas las sucursales cuando el producto es global", async () => {
-      productsQ.then = (ok) =>
-        Promise.resolve({
-          data: [{ id: "p1", barcode: "BC1", is_global: true, tracks_inventory: true }],
-          error: null,
-        }).then(ok);
-      inventoryQ.then = (ok) =>
-        Promise.resolve({ data: null, error: null }).then(ok);
+    it("envía todas las sucursales como p_all_branches cuando el producto es global", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { created_products_count: 1, created_inventories_count: 2 },
+        error: null,
+      });
 
       const result = await processImportTransaction(
-        [validRow()],
+        [validRow({ product: { ...validRow().product, is_global: true } })],
         "b1",
         [{ id: "b1" }, { id: "b2" }],
         {}
       );
 
       expect(result.createdInventoriesCount).toBe(2);
-      const rows = inventoryQ.insert.mock.calls[0][0];
-      expect(rows).toHaveLength(2);
-      expect(rows.map((row) => ({ branch: row.branch_id, stock: row.stock }))).toEqual([
-        { branch: "b1", stock: 5 },
-        { branch: "b2", stock: 0 },
-      ]);
+      const [, params] = supabase.rpc.mock.calls[0];
+      expect(params.p_rows[0].product.is_global).toBe(true);
+      expect(params.p_all_branches).toEqual([{ id: "b1" }, { id: "b2" }]);
     });
 
-    it("hace rollback de productos y relanza cuando falla el inventario", async () => {
-      productsQ.then = (ok) =>
-        Promise.resolve({
-          data: [{ id: "p1", barcode: "BC1", is_global: false, tracks_inventory: true }],
-          error: null,
-        }).then(ok);
-      inventoryQ.then = (ok) =>
-        Promise.resolve({ data: null, error: { message: "inv fail" } }).then(ok);
+    it("establece department_id null cuando el departamento no está en el mapa", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { created_products_count: 1, created_inventories_count: 0 },
+        error: null,
+      });
+
+      await processImportTransaction([validRow()], "b1", [], {});
+
+      const [, params] = supabase.rpc.mock.calls[0];
+      expect(params.p_rows[0].product.department_id).toBeNull();
+    });
+
+    it("propaga los errores de la RPC sin ejecutar rollback manual", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "inv fail" },
+      });
 
       await expect(
         processImportTransaction([validRow()], "b1", [], {})
       ).rejects.toThrow("inv fail");
-      expect(productsQ.delete).toHaveBeenCalled();
-      expect(productsQ.in).toHaveBeenCalledWith("id", ["p1"]);
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it("propaga excepciones lanzadas por la RPC", async () => {
+      supabase.rpc.mockRejectedValue(new Error("network boom"));
+
+      await expect(
+        processImportTransaction([validRow()], "b1", [], {})
+      ).rejects.toThrow("network boom");
     });
   });
 });
