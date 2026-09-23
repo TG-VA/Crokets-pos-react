@@ -791,7 +791,9 @@ agrupa por `name`).
 
 ### 49. `create_sale_transaction` es `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
 
-**Estado:** abierto — 17 sep 2026 (detectado en la Fase 4, rama `test/coverage-gaps`).
+**Estado:** resuelto — migración `supabase/migrations/20260923130000_fix_create_sale_transaction_search_path.sql`,
+rama `fix/harden-create-sale-transaction-search-path`, 23 sep 2026 (detectado el 17 sep 2026 en la
+Fase 4, rama `test/coverage-gaps`).
 
 La migración de endurecimiento `20260917200000_harden_transactional_rpcs.sql` fija
 `SET search_path TO 'public'` en las funciones que reescribe (`create_transfer_order`,
@@ -804,10 +806,14 @@ los privilegios del definer (vector clásico de escalada de privilegios). El tes
 `supabase/migrations/transactionalRpcsContract.test.js` fija la firma y los grants de la sobrecarga
 efectiva y deja constancia de que `create_transfer_order` sí fija el `search_path`.
 
-**Recomendación:** crear una migración correctiva que haga `CREATE OR REPLACE` de las tres
-sobrecargas de `create_sale_transaction` añadiendo `SET search_path TO 'public'`, y extender el test
-de contrato para exigir el `search_path` también en `create_sale_transaction`. No se corrige en la
-Fase 4 por ser una fase de testing.
+**Resolución (23 sep 2026):** la migración `20260923130000_fix_create_sale_transaction_search_path.sql`
+hace `CREATE OR REPLACE` de las tres sobrecargas (9, 10 y 11 parámetros) añadiendo
+`SET search_path TO 'public'` a nivel de función, preservando los cuerpos byte a byte. Los grants se
+reafirman por sobrecarga: `REVOKE ALL` de `public` y `anon`, `GRANT EXECUTE` solo a `authenticated` y
+`service_role`. El test de contrato `transactionalRpcsContract.test.js` lee la nueva migración y exige
+el `SET search_path TO 'public'` más los grants de las tres sobrecargas (6 casos nuevos). Cuerpos
+verificados idénticos a las fuentes `20260917200000` (9 y 10 parámetros) y `20260921170000`
+(11 parámetros, con el congelamiento de snapshot de comisión en `sale_details`).
 
 ### 50. Comisión de producto exento pisada por la comisión del departamento en la RPC de comisiones
 
@@ -1364,6 +1370,24 @@ resolvieron con:
 - **Limpieza de código muerto**: se eliminó el bloque `.recoveredDraftDiscard` (no usado en ningún JSX).
 
 Verificado: `rg "!important" --glob "*.module.css" src` devuelve **0** resultados.
+
+### 53. `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
+
+**Estado:** abierto — detectado el 23 sep 2026 durante la auditoría externa de #49 (rama
+`fix/harden-create-sale-transaction-search-path`).
+
+`cancel_sale_transaction` y `create_partial_return_transaction` se definen como `SECURITY DEFINER`
+**sin** `SET search_path` en `20260917200000_harden_transactional_rpcs.sql` (líneas 283 y 1136), la
+misma clase de vector que #49: un objeto creado por el llamador en un esquema previo del path puede
+sombrear referencias no calificadas dentro del cuerpo y ejecutarse con los privilegios del definer.
+Ninguna migración posterior las reescribe con `search_path` fijado. Comparten dominio de negocio y
+riesgo con los tres overrides de `create_sale_transaction` corregidos en #49.
+
+**Recomendación:** crear una migración correctiva de seguimiento que haga `CREATE OR REPLACE` de
+`cancel_sale_transaction` y `create_partial_return_transaction` añadiendo
+`SET search_path TO 'public'` a nivel de función, preservando los cuerpos byte a byte (mismo patrón
+que `20260923130000_fix_create_sale_transaction_search_path.sql`), y extender
+`transactionalRpcsContract.test.js` para exigir el `search_path` en ambas.
 
 ---
 

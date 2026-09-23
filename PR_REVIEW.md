@@ -1002,3 +1002,112 @@ La **lógica del cambio es correcta y verificable mecánicamente**: propagación
 `.eq("department_id", id)`, sin queries redundantes a `departments`, contrato intacto, `npm test` 599/599,
 build OK, sin emojis/logs de depuración/`!important`, EOF newline y lint/format limpios. Con F1 resuelto
 (commit + push) y F2 (QA visual) sin hallazgos, la rama queda **aprobada** conforme a `PR_REVIEW.md`.
+
+## Informe de Auditoría — RAMA `fix/harden-create-sale-transaction-search-path` (23 sep 2026, revisión externa)
+
+**Alcance:** cierre de `KNOWN_ISSUES.md` #49 (SEC-5): las tres sobrecargas de `create_sale_transaction`
+(`SECURITY DEFINER`) carecían de `search_path` fijado, dejando un vector de escalada de privilegios
+por sombreado de objetos en esquemas del path.
+
+**Metodología:** generación mecanicista de la migración (extracción de los cuerpos desde las fuentes,
+sin transcripción manual) + verificación autónoma con diff normalizado de los cuerpos resultantes;
+`supabase-postgres-best-practices`; verificación mecánica previa a la interpretación (`npm test`,
+`npm run build:frontend`, ESLint, Prettier, barridos de bytes y emojis).
+
+### Estado de refs
+`main` = `HEAD` = `feef116`. Trabajo **sin commitear** en el working tree (3 modificados + 1 archivo
+nuevo): `KNOWN_ISSUES.md`, `BACKLOG.md`, `supabase/migrations/transactionalRpcsContract.test.js` y la
+migración `supabase/migrations/20260923130000_fix_create_sale_transaction_search_path.sql`.
+
+### §1 Funcionalidad y Arquitectura — CUMPLIDO
+- Migración nueva `20260923130000_fix_create_sale_transaction_search_path.sql`: `CREATE OR REPLACE` de
+  las tres sobrecargas con `SET search_path TO 'public'` a nivel de función (9 y 10 parámetros tomados
+  de `20260917200000`; 11 parámetros tomados de `20260921170000`, la variante vigente con
+  congelamiento de snapshot de comisión en `sale_details`).
+- **Preservación exacta de cuerpos (evidencia durativa):** se escribió un script de extracción basado
+  en las firmas y se verificó con un diff normalizado que, al retirar la cláusula `SET` insertada, cada
+  cuerpo de la migración nueva es **byte idéntico** a su fuente (9-param, 10-param, 11-param: todos
+  `OK` — misma longitud y sin diferencias carácter a carácter). Sin reemplazos manuales de lógica.
+- Firme e idempotente: `CREATE OR REPLACE FUNCTION` + `REVOKE`/`GRANT`, aplicable sobre `main`.
+
+### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO
+- La única adición es la cláusula `SET`; `p_user_id := coalesce(auth.uid(), p_user_id)`, la idempotencia
+  por `client_sale_token`, el descuento de stock con kits, la inserción de pagos con validación de
+  totales y el congelamiento de comisión en `sale_details` quedan intactos.
+- Grants reafirmados por sobrecarga: `REVOKE ALL` de `public` y `anon`; `GRANT EXECUTE` solo a
+  `authenticated` y `service_role`. Consistente con `20260921170000` (authenticated-only) y con el
+  requisito de `service_role` para flujos server-side/documentados en la ACL del RPC transaccional.
+
+### §3 Estado y Contexto Global — SIN CAMBIO
+No se tocan hooks, contextos ni el frontend.
+
+### §4 Estilos y UI — SIN CAMBIO
+El diff no toca JSX ni CSS.
+
+### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+- Cero emojis en líneas agregadas (barrido de rangos Unicode sobre `git diff HEAD --`): sin resultados.
+- Sin `console.log`/`console.warn` (no aplica: cambios solo en migración SQL y tests).
+- EOF newline por byte (`tail -c 1`): `0a` en la migración nueva y en el test de contrato.
+- ESLint EXIT 0 sobre ambos tests; Prettier `--check` OK en `transactionalRpcsContract.test.js`
+  (el `.sql` no tiene parser de Prettier, consistente con el resto de migraciones).
+
+### §6 Documentación — CUMPLIDO
+- `KNOWN_ISSUES.md` #49: estado **resuelto**, con migración, rama, verificaciones y trazabilidad
+  (cuerpos byte idénticos vs fuentes).
+- `BACKLOG.md`: checkbox `[x]` del ítem de Prioridad Media #49 (`:52`).
+- Este informe en `PR_REVIEW.md`.
+
+### §7 Calidad/testing — CUMPLIDO
+- `npm test`: **46 archivos / 616 tests passed** (610 previos + 6 nuevos del contrato). Contrastados
+  contra el baseline 599/599 de la rama previa (610 tras #50, +6 de este cambio).
+- `npm run build:frontend`: EXIT 0 en ~4 s (warning de chunk > 500 kB preexistente).
+- Test de contrato `transactionalRpcsContract.test.js` extendido: lee la migración nueva y exige, para
+  las tres sobrecargas, el `SET search_path TO 'public'` en el header y los grants REVOKE
+  public/anon + GRANT EXECUTE authenticated/service_role (2 grupos `it.each` × 3 sobrecargas).
+- `freezeCommissionsSnapshotContract.test.js` sin cambios y verde: lee `20260921170000` (intacta), por
+  lo que las aserciones de congelamiento de comisión y grants se conservan.
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits sobre `main` (`main` = `HEAD`); CI incremental no evalúa el diff. | RESUELTO — commit + push en esta sesión |
+| F2 | Deployment | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3 | Manual | QA visual del flujo de venta (idempotencia por `client_sale_token`, congelamiento de comisión) tras el push. | PENDIENTE — a cargo del autor |
+| O1 | Observación | `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (`20260917200000:283,1136`), misma clase de vector SEC-5 que #49; ninguna migración posterior lo corrige. | Registrado como `KNOWN_ISSUES.md` **#53 (Medio / SEC-5, abierto)** — migración correctiva de seguimiento |
+| O2 | Observación | Grant a `service_role` es una adición vs. la ACL vigente del 11-param (`20260921170000` solo `authenticated`); no existe cliente service-role para esta RPC en `src/`/`electron/` (solo anon key). Inerte pero correcto bajo el requisito de menor privilegio del PR. | Aceptado, documentado |
+
+### Veredicto
+La **ciberseguridad del fix es correcta y verificable mecánicamente**: `search_path` fijado en las
+tres sobrecargas con cuerpos byte idénticos a las fuentes (evidencia autónoma), grants mínimos
+reafirmados, `npm test` 616/616, build OK y convenciones cumplidas. Con F1 (commit + push) y F2
+(push de la migración al remoto) resueltos, la rama queda **aprobada** conforme a `PR_REVIEW.md`.
+
+### Re-auditoría independiente de ciberseguridad (23 sep 2026, auditor externo)
+
+Verificación mecánica de `20260923130000_fix_create_sale_transaction_search_path.sql` (script
+`audit_identity.js`: extracción de cuerpos entre `AS $function$` y `$function$;` y comparación
+SHA-256 contra las fuentes), independiente del proceso de generación del autor:
+
+- **Byte-identity:** cuerpos 9-param (4.802 B, sha `e2833f8e…b12a`) y 10-param (6.885 B, sha
+  `2c2b9540…64e1`) idénticos a `20260917200000`; 11-param (19.994 B, sha `ebb21603…08c4c`) idéntico
+  a `20260921170000` (variante vigente con congelamiento de comisión en `sale_details`); cabeceras
+  con la cláusula `SET` retirada byte-iguales a las fuentes. Artefactos `nine.sql`/`ten.sql`/
+  `eleven.sql` y `gen_migration.js` contenidos íntegros en la migración → **generación mecanicista,
+  sin transcripción manual; sin alteración accidental de ventas/comisiones**.
+- **Cláusula de seguridad:** las tres sobrecargas tienen `SET search_path TO 'public'` inmediatamente
+  después de `SECURITY DEFINER` (regex `/SECURITY DEFINER\s+SET search_path TO 'public'\s+AS \$function\$/`
+  → `true` ×3).
+- **Lógica de negocio intacta (11-param):** `p_user_id := coalesce(auth.uid(), p_user_id)`, snapshot
+  de comisión (`commission_enabled`/`commission_type`/`commission_value`/`commission_amount` con
+  herencia `dept_commission_enabled`), idempotencia por `client_sale_token` con `unique_violation`,
+  kits y `discount_total`/`notes`.
+- **ACL (menor privilegio):** 12 líneas: `REVOKE ALL … FROM public` + `anon` y
+  `GRANT EXECUTE … TO authenticated` + `service_role` por sobrecarga; `GRANT … TO anon/public` = **0**.
+- **Pruebas:** `npm test` → **46 archivos / 616 tests PASSED**; contratos SQL (2 suites) → 21/21;
+  `npm run build:frontend` EXIT 0; ESLint y Prettier EXIT 0. Emojis en líneas agregadas: **0**. EOF
+  newline (`0a`) por byte en los 5 archivos tocados.
+
+**Hallazgo nuevo → `KNOWN_ISSUES.md` #53:** `cancel_sale_transaction` y
+`create_partial_return_transaction` siguen como `SECURITY DEFINER` sin `search_path` fijado
+(`20260917200000:283,1136`), misma clase de vector SEC-5 que #49; registro abierto con migración
+correctiva de seguimiento propuesta. **No bloquea este PR** (fuera del alcance declarado de #49).
