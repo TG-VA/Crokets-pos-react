@@ -1373,8 +1373,9 @@ Verificado: `rg "!important" --glob "*.module.css" src` devuelve **0** resultado
 
 ### 53. `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
 
-**Estado:** abierto — detectado el 23 sep 2026 durante la auditoría externa de #49 (rama
-`fix/harden-create-sale-transaction-search-path`).
+**Estado:** resuelto — migración `supabase/migrations/20260923140000_fix_cancel_and_return_search_path.sql`,
+rama `fix/harden-cancel-and-return-search-path`, 23 sep 2026 (detectado el 23 sep 2026 durante la
+auditoría externa de #49, rama `fix/harden-create-sale-transaction-search-path`).
 
 `cancel_sale_transaction` y `create_partial_return_transaction` se definen como `SECURITY DEFINER`
 **sin** `SET search_path` en `20260917200000_harden_transactional_rpcs.sql` (líneas 283 y 1136), la
@@ -1388,6 +1389,18 @@ riesgo con los tres overrides de `create_sale_transaction` corregidos en #49.
 `SET search_path TO 'public'` a nivel de función, preservando los cuerpos byte a byte (mismo patrón
 que `20260923130000_fix_create_sale_transaction_search_path.sql`), y extender
 `transactionalRpcsContract.test.js` para exigir el `search_path` en ambas.
+
+**Resolución (23 sep 2026):** la migración `20260923140000_fix_cancel_and_return_search_path.sql`
+hace `CREATE OR REPLACE` de ambas funciones (`cancel_sale_transaction` y
+`create_partial_return_transaction`) añadiendo `SET search_path TO 'public'` a nivel de función,
+preservando los cuerpos byte a byte desde `20260917200000_harden_transactional_rpcs.sql`. La
+extracción de los cuerpos fue mecanicista (script de generación, sin transcripción manual) y se
+verificó con diff normalizado y SHA-256: ambos cuerpos (entre `AS $function$` y `$function$;`) son
+byte-idénticos a sus fuentes. Los grants se reafirman por función: `REVOKE ALL` de `public` y `anon`,
+`GRANT EXECUTE` solo a `authenticated` y `service_role`. El test de contrato
+`transactionalRpcsContract.test.js` lee la nueva migración y exige el `SET search_path TO 'public'`
+más los grants de ambas funciones (4 casos nuevos). Con esto se cierra al 100% la familia de vectores
+SEC-5 en todos los procedimientos almacenados transaccionales de venta del proyecto.
 
 ---
 

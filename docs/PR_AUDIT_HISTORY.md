@@ -1034,3 +1034,95 @@ SHA-256 contra las fuentes), independiente del proceso de generación del autor:
 `create_partial_return_transaction` siguen como `SECURITY DEFINER` sin `search_path` fijado
 (`20260917200000:283,1136`), misma clase de vector SEC-5 que #49; registro abierto con migración
 correctiva de seguimiento propuesta. **No bloquea este PR** (fuera del alcance declarado de #49).
+
+## Informe de Auditoría — RAMA `fix/harden-cancel-and-return-search-path` (23 sep 2026, revisión externa)
+
+**Alcance:** cierre de `KNOWN_ISSUES.md` #53 (SEC-5): `cancel_sale_transaction` y
+`create_partial_return_transaction` (`SECURITY DEFINER`) carecían de `search_path` fijado, misma
+clase de vector de escalada de privilegios por sombreado de objetos que #49. Con esta corrección se
+cierra al 100% la familia SEC-5 en todos los RPCs transaccionales de venta del proyecto.
+
+**Metodología:** generación mecanicista de la migración (extracción de los cuerpos desde las fuentes,
+sin transcripción manual) + verificación autónoma con diff normalizado y SHA-256 de los cuerpos
+resultantes; `supabase-postgres-best-practices`; verificación mecánica previa a la interpretación
+(`npm test`, `npm run build:frontend`, ESLint, barridos de bytes y emojis).
+
+### Estado de refs
+`main` = `HEAD` = `7ec3961` limpio; rama nueva `fix/harden-cancel-and-return-search-path`. Trabajo sin
+commitear en el working tree (3 modificados + 1 archivo nuevo): `KNOWN_ISSUES.md`, `BACKLOG.md`,
+`supabase/migrations/transactionalRpcsContract.test.js` y la migración
+`supabase/migrations/20260923140000_fix_cancel_and_return_search_path.sql`.
+
+### §1 Funcionalidad y Arquitectura — CUMPLIDO
+- Migración nueva `20260923140000_fix_cancel_and_return_search_path.sql`: `CREATE OR REPLACE` de las
+  dos funciones con `SET search_path TO 'public'` a nivel de función (ambos cuerpos tomados de
+  `20260917200000_harden_transactional_rpcs.sql`, líneas 280 y 1133).
+- **Preservación exacta de cuerpos (evidencia durativa):** script de generación que extrae cada
+  definición desde `CREATE OR REPLACE FUNCTION` hasta su `$function$;`, inserta solo la cláusula
+  `SET` y reensambla la migración. Verificación autónoma con diff normalizado (retirando la línea
+  `SET` insertada) y SHA-256 de los cuerpos entre `AS $function$` y `$function$;`:
+  - `cancel_sale_transaction`: cuerpo **8.155 B** - sha `76febb3a46a8793f9e31cd47b4c34c744e53403efdeadde627b0eb60ff3b29da` - idéntico fuente y nueva.
+  - `create_partial_return_transaction`: cuerpo **9.230 B** - sha `502b37869c9ceb4a2b85d8b779e94a031acc5ebc3d55840db92a30b30772fc32` - idéntico
+    fuente y nueva.
+  - Cabeceras con la cláusula `SET` retirada byte-iguales a las fuentes. Sin reemplazos manuales de
+    lógica de inventario, kits, estados ni cálculo de reembolsos.
+- Firme e idempotente: `CREATE OR REPLACE FUNCTION` + `REVOKE`/`GRANT`, aplicable sobre `main`.
+
+### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO
+- La única adición es la cláusula `SET`; la lógica interna queda intacta: en `cancel_sale_transaction`
+  la derivación de `p_user_id := coalesce(auth.uid(), p_user_id)`, reversión de puntos de
+  recompensa/ganados, reincorporación de stock (incl. componentes de kit por `sale_kit_items`) y la
+  inserción del reembolso en `sale_returns`; en `create_partial_return_transaction` la validación de
+  la venta, el cálculo de `v_total_refund`, la restitución de inventario (producto/kit) con
+  `inventory_movements` tipo `'return'` y el `update` de `sale_returns.total_refund`.
+- Grants reafirmados por función (8 sentencias): `REVOKE ALL` de `public` y `anon`; `GRANT EXECUTE`
+  solo a `authenticated` y `service_role`. Consistente con `20260923130000` y con la ACL del resto de
+  RPCs transaccionales (menor privilegio; sin `GRANT` a `anon`/`public`). El archivo fuente
+  (`20260917200000`) no traía REVOKE/GRANT para ninguna de las dos, por lo que esta migración normaliza
+  la ACL por primera vez.
+
+### §3 Estado y Contexto Global — SIN CAMBIO
+No se tocan hooks, contextos ni el frontend.
+
+### §4 Estilos y UI — SIN CAMBIO
+El diff no toca JSX ni CSS.
+
+### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+- Cero emojis en líneas agregadas (barrido de rangos Unicode sobre `git diff HEAD --`): sin resultados;
+  los únicos no-ASCII son acentos españoles.
+- Sin `console.log`/`console.warn` (no aplica: cambios solo en migración SQL, tests y docs).
+- EOF newline por byte (`tail -c 1` / `od`): `0a` en la migración nueva y en el test de contrato.
+- ESLint EXIT 0 sobre `transactionalRpcsContract.test.js`; el `.sql` no tiene parser de Prettier
+  (consistente con el resto de migraciones).
+
+### §6 Documentación — CUMPLIDO
+- `KNOWN_ISSUES.md` #53: estado **resuelto**, con migración, rama, resolución y trazabilidad (cuerpos
+  byte-idénticos vs fuentes y cierre total de la familia SEC-5).
+- `BACKLOG.md`: checkbox `[x]` del ítem de Prioridad Media #53.
+- Este informe en `docs/PR_AUDIT_HISTORY.md`.
+
+### §7 Calidad/testing — CUMPLIDO
+- `npm test`: **46 archivos / 620 tests passed** (616 del baseline previo + 4 nuevos del contrato).
+  Contrastados contra el baseline 616/616 de la rama #49.
+- `npm run build:frontend`: EXIT 0 en ~4 s (warning de chunk > 500 kB preexistente).
+- Test de contrato `transactionalRpcsContract.test.js` extendido: lee la migración nueva
+  (`20260923140000`) y exige, para `cancel_sale_transaction` y
+  `create_partial_return_transaction`, el `SET search_path TO 'public'` en el header y los grants
+  REVOKE public/anon + GRANT EXECUTE authenticated/service_role (2 grupos `it.each` × 2 funciones).
+- `freezeCommissionsSnapshotContract.test.js` y las aserciones previas del contrato sin cambios y
+  verdes.
+
+### Hallazgos y estado
+| # | Nivel | Hallazgo | Estado |
+|---|---|---|---|
+| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | RESUELTO — commit de esta sesión aplicado y pushed a `origin/fix/harden-cancel-and-return-search-path` |
+| F2 | Deployment | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3 | Manual | QA visual del flujo de cancelación y devolución parcial tras el push. | PENDIENTE — a cargo del autor |
+| F4 | Proceso | Longitudes/hashes iniciales del informe no reproducibles con extracción estándar del cuerpo; falta hash completo en la evidencia durativa. | RESUELTO — hashes SHA-256 definitivos consignados en §1 |
+
+### Veredicto
+La **ciberseguridad del fix es correcta y verificable mecánicamente**: `search_path` fijado en ambas
+funciones con cuerpos byte-idénticos a las fuentes (evidencia autónoma por SHA-256), grants mínimos
+reafirmados, `npm test` 620/620, build OK y convenciones cumplidas. Con F1 (commit + push) y F2
+(push de la migración al remoto) resueltos, la rama queda **aprobada** conforme a `PR_REVIEW.md`. Con
+esto la familia de vectores SEC-5 queda cerrada al 100% en los procedimientos transaccionales de venta.
