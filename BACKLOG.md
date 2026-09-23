@@ -50,4 +50,5 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Panel de configuración del tope de apertura de caja con RPCs admin (`get_cash_max_opening_amount` / `update_cash_max_opening_amount`, migración `20260918120000`, pendiente `supabase db push`) — ver `KNOWN_ISSUES.md` #33
 - [ ] Endurecer la persistencia de sesión de Supabase (storage en memoria / cookie HttpOnly) cuando exista gateway o Edge Function — ver `KNOWN_ISSUES.md` #35
 - [x] Fijar `search_path` en las sobrecargas de `create_sale_transaction` (`SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #49
+- [x] Fijar `search_path` en `cancel_sale_transaction` y `create_partial_return_transaction` (`SECURITY DEFINER`, cierre total de la familia SEC-5) — ver `KNOWN_ISSUES.md` #53
 - [ ] Desacoplar `src/backend/server.js` (factory de Express) y `bd.js` (conexión SQLite inyectable) para poder testear el backend local — ver `KNOWN_ISSUES.md` #9
