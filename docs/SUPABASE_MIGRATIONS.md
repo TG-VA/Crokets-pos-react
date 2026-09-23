@@ -13,7 +13,7 @@ Guía del flujo de cambios de schema y funciones en el proyecto Supabase remoto.
 - `supabase/scripts/schema_introspection.sql` es un script de **solo lectura** para regenerar el
   inventario de schema (`SCHEMA.md`) por introspección; no es una migración ni se aplica con `db push`.
 
-Migraciones existentes (al 17 sep 2026):
+Migraciones existentes (al 23 sep 2026):
 
 | Migración | Contenido |
 |---|---|
@@ -35,6 +35,7 @@ Migraciones existentes (al 17 sep 2026):
 | `20260917190000_cash_register_branch_validation.sql` | Validación de membresía de sucursal en `get_cash_register_session` y `open_cash_register` (helper `_user_can_access_branch`, excepción `42501` si no pertenece; exento `is_admin()`) (#29) |
 | `20260917200000_harden_transactional_rpcs.sql` | Revoca `EXECUTE` a `anon`/`PUBLIC` en las RPCs transaccionales y fija `p_user_id := coalesce(auth.uid(), p_user_id)` para impedir suplantación entre usuarios autenticados (#10/#13/#38) |
 | `20260923150000_create_product_kits_rpcs.sql` | RPCs atómicas del ciclo de vida de Kits de Productos: `create_kit_transaction` (uuid), `update_kit_transaction` (boolean) y `delete_kit_transaction` (boolean, soft-delete producto + kit) — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productKitsService.js` con ACID nativo (#5) |
+| `20260923160000_create_products_import_rpc.sql` | RPC atómica de Importación Masiva: `import_products_transaction(p_rows jsonb, p_branch_id uuid, p_all_branches jsonb)` retorna `jsonb` (`created_products_count` / `created_inventories_count`); inserta producto + `branch_inventory` (sucursal actual y, para globales, una fila inicial por sucursal de `p_all_branches`) en una sola transacción — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productsImportService.js` con ACID nativo (#5) |
 
 ## Convención de nombres
 
