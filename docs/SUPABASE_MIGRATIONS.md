@@ -34,6 +34,7 @@ Migraciones existentes (al 17 sep 2026):
 | `20260917180000_get_email_by_username.sql` | Versiona la RPC `get_email_by_username` (login pre-auth): `SECURITY DEFINER`, `STABLE`, `search_path=public`, grants a `anon`/`authenticated`/`service_role` (#41) |
 | `20260917190000_cash_register_branch_validation.sql` | Validación de membresía de sucursal en `get_cash_register_session` y `open_cash_register` (helper `_user_can_access_branch`, excepción `42501` si no pertenece; exento `is_admin()`) (#29) |
 | `20260917200000_harden_transactional_rpcs.sql` | Revoca `EXECUTE` a `anon`/`PUBLIC` en las RPCs transaccionales y fija `p_user_id := coalesce(auth.uid(), p_user_id)` para impedir suplantación entre usuarios autenticados (#10/#13/#38) |
+| `20260923150000_create_product_kits_rpcs.sql` | RPCs atómicas del ciclo de vida de Kits de Productos: `create_kit_transaction` (uuid), `update_kit_transaction` (boolean) y `delete_kit_transaction` (boolean, soft-delete producto + kit) — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productKitsService.js` con ACID nativo (#5) |
 
 ## Convención de nombres
 

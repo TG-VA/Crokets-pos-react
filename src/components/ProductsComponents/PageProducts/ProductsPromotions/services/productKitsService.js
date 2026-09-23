@@ -41,105 +41,41 @@ export const checkKitDuplicates = async (cleanBarcode, cleanDescription, current
 };
 
 export const createNewKitTransaction = async (kitData, selectedProducts) => {
-  const now = new Date().toISOString();
-  let createdProductId = null;
-  let createdKitId = null;
+  const { error } = await supabase.rpc("create_kit_transaction", {
+    p_kit_product: {
+      barcode: kitData.barcode,
+      name: kitData.description,
+      sale_price: kitData.price,
+      max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
+    },
+    p_kit_items: selectedProducts.map((product) => ({
+      component_product_id: product.id,
+      quantity: Number(product.quantity),
+    })),
+  });
 
-  try {
-    const { data: kitProduct, error: productError } = await supabase
-      .from("products")
-      .insert({
-        barcode: kitData.barcode, name: kitData.description, sale_type: "unidad", department_id: null,
-        unit: "pieza", cost_price: 0, sale_price: kitData.price, tax: 16, commission_enabled: false,
-        commission_percent: 0, clave_sat: null, status: true, is_global: true, is_kit: true,
-        tracks_inventory: false, created_at: now, updated_at: now, max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
-      })
-      .select("id")
-      .single();
-
-    if (productError) throw productError;
-    createdProductId = kitProduct.id;
-
-    const { data: kitRow, error: kitError } = await supabase
-      .from("product_kits")
-      .insert({ kit_product_id: createdProductId, is_active: true, created_at: now, updated_at: now })
-      .select("id")
-      .single();
-
-    if (kitError) throw kitError;
-    createdKitId = kitRow.id;
-
-    const kitItemsPayload = selectedProducts.map((product) => ({
-      kit_id: createdKitId, component_product_id: product.id, quantity: Number(product.quantity), created_at: now,
-    }));
-
-    const { error: itemsError } = await supabase.from("product_kit_items").insert(kitItemsPayload);
-    if (itemsError) throw itemsError;
-
-    return true;
-  } catch (error) {
-    try {
-      if (createdKitId) await supabase.from("product_kits").delete().eq("id", createdKitId);
-      if (createdProductId) await supabase.from("products").delete().eq("id", createdProductId);
-    } catch (rollbackErr) {
-      console.error("ALERTA CRÍTICA: Falló el rollback al crear un nuevo kit.", rollbackErr);
-    }
-    throw error;
-  }
+  if (error) throw error;
+  return true;
 };
 
 export const updateKitTransaction = async (editingKit, kitData, selectedProducts) => {
-  const now = new Date().toISOString();
-  let oldItems = [];
+  const { error } = await supabase.rpc("update_kit_transaction", {
+    p_kit_id: editingKit.id,
+    p_kit_product_id: editingKit.kit_product_id,
+    p_kit_product: {
+      barcode: kitData.barcode,
+      name: kitData.description,
+      sale_price: kitData.price,
+      max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
+    },
+    p_kit_items: selectedProducts.map((product) => ({
+      component_product_id: product.id,
+      quantity: Number(product.quantity),
+    })),
+  });
 
-  try {
-    const { data: existingItems } = await supabase
-      .from("product_kit_items")
-      .select("*")
-      .eq("kit_id", editingKit.id);
-    
-    if (existingItems) oldItems = existingItems;
-
-    const { error: productError } = await supabase
-      .from("products")
-      .update({ barcode: kitData.barcode, name: kitData.description, sale_price: kitData.price, max_kits_per_sale: Number(kitData.max_kits_per_sale || 1), updated_at: now })
-      .eq("id", editingKit.kit_product_id);
-
-    if (productError) throw productError;
-
-    const { error: kitError } = await supabase
-      .from("product_kits")
-      .update({ updated_at: now })
-      .eq("id", editingKit.id);
-
-    if (kitError) throw kitError;
-
-    const { error: deleteItemsError } = await supabase
-      .from("product_kit_items")
-      .delete()
-      .eq("kit_id", editingKit.id);
-
-    if (deleteItemsError) throw deleteItemsError;
-
-    const kitItemsPayload = selectedProducts.map((product) => ({
-      kit_id: editingKit.id, component_product_id: product.id, quantity: Number(product.quantity), created_at: now,
-    }));
-
-    const { error: itemsError } = await supabase.from("product_kit_items").insert(kitItemsPayload);
-    if (itemsError) throw itemsError;
-
-    return true;
-  } catch (error) {
-    if (oldItems.length > 0) {
-      try {
-        await supabase.from("product_kit_items").delete().eq("kit_id", editingKit.id);
-        await supabase.from("product_kit_items").insert(oldItems);
-      } catch (rollbackErr) {
-        console.error("ALERTA CRÍTICA: Falló el rollback al restaurar items previos del kit.", rollbackErr);
-      }
-    }
-    throw error;
-  }
+  if (error) throw error;
+  return true;
 };
 
 export const fetchKitItems = async (kitId) => {
@@ -161,28 +97,13 @@ export const toggleKitStatus = async (kitId, nextStatus) => {
 };
 
 export const softDeleteKitTransaction = async (kitId, kitProductId) => {
-  const now = new Date().toISOString();
-  let productDeactivated = false;
+  const { error } = await supabase.rpc("delete_kit_transaction", {
+    p_kit_id: kitId,
+    p_kit_product_id: kitProductId,
+  });
 
-  try {
-    const { error: productError } = await supabase.from("products").update({ status: false, updated_at: now }).eq("id", kitProductId);
-    if (productError) throw productError;
-    productDeactivated = true;
-
-    const { error: kitError } = await supabase.from("product_kits").update({ is_active: false, updated_at: now }).eq("id", kitId);
-    if (kitError) throw kitError;
-
-    return true;
-  } catch (error) {
-    if (productDeactivated) {
-      try {
-        await supabase.from("products").update({ status: true }).eq("id", kitProductId);
-      } catch (rollbackErr) {
-        console.error("ALERTA CRÍTICA: Falló el rollback al revertir estado del producto tras fallar eliminación suave del kit.", rollbackErr);
-      }
-    }
-    throw error;
-  }
+  if (error) throw error;
+  return true;
 };
 
 export const fetchActiveNonKitProducts = async () => {
