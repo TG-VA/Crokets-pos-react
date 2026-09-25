@@ -67,7 +67,8 @@ const InvoicesPending = () => {
 
       let query = supabase
         .from("sales")
-        .select(`
+        .select(
+          `
           id,
           sale_date,
           subtotal,
@@ -97,7 +98,8 @@ const InvoicesPending = () => {
           invoices (
             id
           )
-        `)
+        `
+        )
         .eq("branch_id", branch.id)
         .eq("status", "completed")
         .order("sale_date", { ascending: false });
@@ -124,7 +126,7 @@ const InvoicesPending = () => {
     } finally {
       setLoadingSales(false);
     }
-  }, [branch?.id, dayRange]);
+  }, [branch, dayRange]);
 
   useEffect(() => {
     loadPendingSales();
@@ -207,7 +209,9 @@ const InvoicesPending = () => {
       <div className={styles.header}>
         <div>
           <h1>VENTAS POR FACTURAR</h1>
-          <p>Ventas completadas de la sucursal actual que aún no tienen factura.</p>
+          <p>
+            Ventas completadas de la sucursal actual que aún no tienen factura.
+          </p>
         </div>
 
         <button
@@ -336,16 +340,18 @@ const InvoicesPending = () => {
                       </span>
                     </td>
                     <td>
-<button
-  type="button"
-  className={styles.invoiceButton}
-  onClick={() => handleInvoiceSale(sale)}
-  title={
-    isBillingReady ? "Facturar venta" : "Seleccionar o crear cliente fiscal"
-  }
->
-  Facturar
-</button>
+                      <button
+                        type="button"
+                        className={styles.invoiceButton}
+                        onClick={() => handleInvoiceSale(sale)}
+                        title={
+                          isBillingReady
+                            ? "Facturar venta"
+                            : "Seleccionar o crear cliente fiscal"
+                        }
+                      >
+                        Facturar
+                      </button>
                     </td>
                   </tr>
                 );

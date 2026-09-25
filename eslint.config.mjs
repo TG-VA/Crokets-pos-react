@@ -59,7 +59,10 @@ export default [
         cancelAnimationFrame: "readonly",
         Event: "readonly",
         CustomEvent: "readonly",
+        KeyboardEvent: "readonly",
+        MouseEvent: "readonly",
         HTMLElement: "readonly",
+        HTMLButtonElement: "readonly",
       },
       parserOptions: {
         ecmaFeatures: {
