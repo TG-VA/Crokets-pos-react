@@ -25,11 +25,14 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Endurecer RPCs transaccionales (SEC-3): revocar `EXECUTE` a `anon`/`PUBLIC` y derivar `p_user_id` de `auth.uid()` — migración `20260917200000`, aplicada al remoto; el gateo de mutaciones admin en el cliente queda como riesgo aceptado por decisión #10/#13; ver `KNOWN_ISSUES.md` #38, `PR_REVIEW.md` y `docs/EDGE_FUNCTIONS.md`
 - [x] Propagar la comisión del departamento a **todos** sus productos al confirmar propagación (sin filtrar por la comisión previa del departamento; las decisiones individuales de producto mandan solo hasta la próxima propagación) — ver `KNOWN_ISSUES.md` #51
 - [x] Congelar comisiones en la venta (`sale_details`) y desacoplar el reporte del catálogo vivo — migración `20260921170000`, ver `KNOWN_ISSUES.md` #52 y `SCHEMA.md`
+- [ ] Modularizar componentes monolíticos y desacoplar DIP en el módulo de Clientes (`Customers`) — ver `KNOWN_ISSUES.md` #54
+- [ ] Modularizar componentes monolíticos y desacoplar DIP en el módulo de Facturación (`Invoices`) — ver `KNOWN_ISSUES.md` #55
 
 ## Prioridad Media (Infraestructura y Testing)
 
 - [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 - [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
+- [ ] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — ver `KNOWN_ISSUES.md` #56
 - [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
 - [x] Cerrar huecos de testing: contrato de RPCs de ventas (`create_sale_transaction` mock + firma SQL de `create_transfer_order`), `cashCutBuilder.js`, `ticketPrinter.js` y proceso principal de Electron (`electron/mainProcess.js`) — suite en 41 archivos / 524 tests; ver `KNOWN_ISSUES.md` #9
 - [x] Migraciones SQL versionadas para el schema de Supabase (baseline `00000000000000_remote_schema_baseline.sql` marcado como aplicado; SQL legacy movido a `supabase/legacy/`; script de introspección versionado) — ver `KNOWN_ISSUES.md` #6
@@ -51,4 +54,10 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [ ] Endurecer la persistencia de sesión de Supabase (storage en memoria / cookie HttpOnly) cuando exista gateway o Edge Function — ver `KNOWN_ISSUES.md` #35
 - [x] Fijar `search_path` en las sobrecargas de `create_sale_transaction` (`SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #49
 - [x] Fijar `search_path` en `cancel_sale_transaction` y `create_partial_return_transaction` (`SECURITY DEFINER`, cierre total de la familia SEC-5) — ver `KNOWN_ISSUES.md` #53
-- [ ] Desacoplar `src/backend/server.js` (factory de Express) y `bd.js` (conexión SQLite inyectable) para poder testear el backend local — ver `KNOWN_ISSUES.md` #9
+- [x] Desacoplar `src/backend/server.js` y `bd.js` — resuelto por eliminación total del backend local SQLite (18 sep 2026, rama `cleanup/ui-and-docs`); ver `KNOWN_ISSUES.md` #31
+
+## Prioridad Baja (Limpieza y Convenciones)
+
+- [ ] Eliminar declaraciones residuales de `console.log` en código de producción — ver `KNOWN_ISSUES.md` #57
+- [ ] Reemplazar caracteres tipográficos (`✓`, `✕`) por iconos SVG estandarizados — ver `KNOWN_ISSUES.md` #58
+

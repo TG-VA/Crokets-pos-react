@@ -1443,6 +1443,126 @@ SEC-5 en todos los procedimientos almacenados transaccionales de venta del proye
 introspección que ambas funciones quedaron `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL
 solo `authenticated`/`service_role`.
 
+### 54. Componentes monolíticos y violación de DIP en el módulo de Clientes (`Customers`)
+
+**Estado:** abierto (25 sep 2026).
+
+Tras concluir la modularización de los 5 componentes fijados en el ítem #3 (`CashCut`, `ticketBuilder`,
+`RewardModal`, `ProductsModify` y `ProductsPromotions`), el módulo de Clientes (`src/components/CustomersComponents/`)
+conserva una deuda técnica severa de arquitectura que viola los principios SOLID (SRP, ISP y DIP definidos en `AGENTS.md`).
+Seis componentes superan holgadamente el límite de 300-400 líneas:
+
+- `RewardsSettings.jsx` (984 líneas): gestión de recompensas, settings de puntos y realtime, acoplando formularios y queries.
+- `PointsAdjustment.jsx` (933 líneas): búsqueda de clientes, validación de perfil, inserción de movimientos e historial.
+- `PointsHistory.jsx` (754 líneas): consulta de historial, exportación y suscripciones a realtime.
+- `CustomersList.jsx` (710 líneas): tabla principal, filtros, paginación y mutaciones.
+- `RewardsAvailability.jsx` (661 líneas): orquestación de canjes disponibles y cálculo de puntos.
+- `CustomerModal.jsx` (635 líneas): modal CRUD de alta/edición de cliente con llamadas directas a Supabase.
+
+Además, todos estos componentes importan `supabase` directamente desde `src/lib/supabaseClient.js`, violando
+el principio de Inversión de Dependencias (DIP): la lógica de persistencia, queries y mutaciones no está
+abstraída en servicios (`src/services/customers/`) ni hooks dedicados.
+
+**Impacto:** alto riesgo de regresiones al modificar reglas de clientes/puntos, nula reusabilidad de lógica de
+datos y dificultad para añadir pruebas unitarias automatizadas.
+
+**Recomendación:** modularizar cada pantalla en subcomponentes presentacionales puros (< 300 líneas),
+extraer los hooks de orquestación (`useCustomersList`, `useRewardsSettings`, etc.) y desacoplar el acceso a datos
+en servicios puros (`customersService.js`, `rewardsService.js`, `pointsService.js`).
+
+---
+
+### 55. Componentes monolíticos y violación de DIP en el módulo de Facturación (`Invoices`)
+
+**Estado:** abierto (25 sep 2026).
+
+De manera idéntica al módulo de Clientes, el módulo de Facturación (`src/components/InvoicesComponents/`)
+contiene componentes monolíticos masivos que concentran lógica fiscal, catálogos del SAT, validaciones de RFC/CP,
+mutaciones a base de datos y renderizado visual:
+
+- `FiscalCustomerModal.jsx` (883 líneas): validación de datos fiscales, autocompletado de C.P., catálogos SAT y llamadas directas a `customers`.
+- `InvoiceSettings.jsx` (824 líneas): configuración de emisor, certificados y régimen fiscal.
+- `InvoiceSaleModal.jsx` (809 líneas): emisión de factura a partir de venta con múltiples pasos y queries inline.
+- `InvoiceCustomers.jsx` (790 líneas): administración de clientes de facturación con suscripción realtime embebida.
+- `InvoicesHistory.jsx` (613 líneas): historial y descarga de XML/PDF.
+
+Todos importan directamente el cliente `supabase`, incumpliendo DIP y dificultando el mocking y testing.
+
+**Impacto:** deuda técnica acumulada en un dominio crítico (facturación y cumplimiento SAT), con componentes
+frágiles y difíciles de auditar o refactorizar.
+
+**Recomendación:** aplicar el mismo patrón de segregación: servicios puros de facturación (`invoiceService.js`,
+`fiscalCustomerService.js`), hooks de estado y subcomponentes visuales desacoplados.
+
+---
+
+### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
+
+**Estado:** abierto (25 sep 2026).
+
+La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
+existen errores de lógica, compatibilidad con React 19 y control de excepciones:
+
+1. **`no-unsafe-finally` en `useReportsDashboard.js:106`:** un `return;` prematuro dentro de un bloque `finally`
+   descarta silenciosamente cualquier excepción o rechazo originado en `try/catch`.
+2. **`no-constant-binary-expression`:** en `salesRewardsService.js:88` y `salesTicketService.js:14`, la expresión
+   `(unitPrice * quantity) ?? 0` contiene una comprobación de nulidad redundante e inalcanzable.
+3. **`react-hooks/refs`:** mutación directa de `ref.current` durante el ciclo de renderizado en `AppModal.jsx:107`,
+   `useSalesDraft.js:68` y `useSalesKeyboardShortcuts.js:7`, lo que viola la semántica de renderizado puro de React.
+4. **`react-hooks/immutability`:** acceso a funciones antes de su declaración dentro de hooks y efectos en
+   `FiscalCustomerModal.jsx:228`, `useKitProductSearch.js:72` y `Profiles.jsx:35`.
+5. **`react-hooks/set-state-in-effect` (69 ocurrencias):** llamadas síncronas a `setState` en el cuerpo de efectos,
+   provocando re-renderizados en cascada que degradan el rendimiento en React 19.
+
+**Impacto:** posibles excepciones silenciadas, bugs en la persistencia de borradores/atajos de venta y re-renders innecesarios.
+
+**Recomendación:** sanear los errores prioritarios de ejecución (`no-unsafe-finally`, refs en render, binary expressions)
+y ordenar el ciclo de vida de los hooks.
+
+---
+
+### 57. Declaraciones de `console.log` residuales en código de producción
+
+**Estado:** abierto (25 sep 2026).
+
+`AGENTS.md` estipula la eliminación obligatoria de todos los `console.log` y `console.warn` de depuración antes de commitear
+(permitiendo únicamente `console.error` dentro de bloques `catch` para trazabilidad). Persisten llamadas en:
+
+- `src/utils/ticketPrinter.js:3-5` (3 logs que imprimen el separador y texto completo del ticket en consola).
+- `src/components/InventoryComponents/PageInventory/PageKardex/hooks/useKardexRealtime.js:219` (1 log de evento realtime).
+- `src/components/InvoicesComponents/PageInvoices/InvoiceCustomers/InvoiceCustomers.jsx:312` (1 log).
+- `src/components/InvoicesComponents/PageInvoices/InvoicesPending/InvoicesPending.jsx:163` (1 log).
+
+**Impacto:** ruido en la consola de producción de Electron y violación de las normas de calidad del proyecto.
+
+**Recomendación:** eliminar las llamadas a `console.log` de depuración.
+
+---
+
+### 58. Caracteres tipográficos (`✓`, `✕`) usados como pseudo-iconos en componentes
+
+**Estado:** abierto (25 sep 2026).
+
+`AGENTS.md` e `ICONS.md` prohíben el uso de emojis y caracteres tipográficos sueltos como sustitutos de iconos en la UI,
+exigiendo el uso de SVGs estandarizados en `src/assets/icons/`. Se identificaron 12 ocurrencias de caracteres `✓` y `✕`
+hardcodeados como texto en:
+
+- `AppModal.jsx:16`
+- `SaleSuccessModal.jsx:51`
+- `NotesModal.jsx:56`
+- `InventorySearchModal.jsx:77`
+- `InvoicesPending.jsx:254`
+- `InvoicesHistory.jsx:341, 464`
+- `InvoiceSaleModal.jsx:531`
+- `FiscalCustomerModal.jsx:566`
+- `ProductsList.jsx:84`
+- `ProductsSearchModal.jsx:24`
+- `UserForm.jsx:132`
+
+**Impacto:** inconsistencia visual entre plataformas y problemas de accesibilidad con lectores de pantalla.
+
+**Recomendación:** sustituir por componentes SVG (`checkIcon`, `xmarkIcon`) con `aria-hidden="true"` y atributos semánticos.
+
 ---
 
 ## Cómo usar este documento
@@ -1453,3 +1573,4 @@ solo `authenticated`/`service_role`.
   commit/PR que lo corrigió, para mantener historial de qué se ha ido arreglando.
 - Los ítems nuevos se numeran de forma consecutiva al final (no se renumeran los existentes), para
   que las referencias cruzadas desde `BACKLOG.md` y otros documentos no queden rotas.
+
