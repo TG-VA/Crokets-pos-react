@@ -40,6 +40,12 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
     }
   }, [selectedIndex, isOpen]);
 
+  const handleSelect = (product) => {
+    if (!product) return;
+    onSelectProduct(product);
+    onClose();
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -121,12 +127,6 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelect = (product) => {
-    if (!product) return;
-    onSelectProduct(product);
-    onClose();
   };
 
   return {

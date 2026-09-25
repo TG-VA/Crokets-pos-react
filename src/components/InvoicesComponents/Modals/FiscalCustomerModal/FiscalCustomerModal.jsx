@@ -222,6 +222,33 @@ const FiscalCustomerModal = ({
     }
   };
 
+  const loadCatalogs = async () => {
+    try {
+      const [cfdiRes, regimesRes] = await Promise.all([
+        supabase
+          .from("cfdi_uses")
+          .select("id, description")
+          .eq("status", true)
+          .order("id", { ascending: true }),
+
+        supabase
+          .from("tax_regimes")
+          .select("id, description")
+          .eq("status", true)
+          .order("id", { ascending: true }),
+      ]);
+
+      if (cfdiRes.error) throw cfdiRes.error;
+      if (regimesRes.error) throw regimesRes.error;
+
+      setCfdiUses(cfdiRes.data || []);
+      setTaxRegimes(regimesRes.data || []);
+    } catch (err) {
+      console.error("Error cargando catálogos fiscales:", err);
+      setError("No se pudieron cargar los catálogos fiscales.");
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -285,33 +312,6 @@ const FiscalCustomerModal = ({
     };
   }, [isOpen, appModal.isOpen, saving, onClose]);
 
-
-  const loadCatalogs = async () => {
-    try {
-      const [cfdiRes, regimesRes] = await Promise.all([
-        supabase
-          .from("cfdi_uses")
-          .select("id, description")
-          .eq("status", true)
-          .order("id", { ascending: true }),
-
-        supabase
-          .from("tax_regimes")
-          .select("id, description")
-          .eq("status", true)
-          .order("id", { ascending: true }),
-      ]);
-
-      if (cfdiRes.error) throw cfdiRes.error;
-      if (regimesRes.error) throw regimesRes.error;
-
-      setCfdiUses(cfdiRes.data || []);
-      setTaxRegimes(regimesRes.data || []);
-    } catch (err) {
-      console.error("Error cargando catálogos fiscales:", err);
-      setError("No se pudieron cargar los catálogos fiscales.");
-    }
-  };
 
   const normalizedSearch = useMemo(
     () => searchTerm.trim().toLowerCase(),

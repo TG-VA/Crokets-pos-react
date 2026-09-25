@@ -65,7 +65,10 @@ const useSalesDraft = ({
 
   // Guarda las funciones más recientes sin provocar re-ejecuciones de efectos
   const callbacksRef = useRef({ onRestoreDraft, onDiscardDraft, onOpenRecoveryModal });
-  callbacksRef.current = { onRestoreDraft, onDiscardDraft, onOpenRecoveryModal };
+
+  useEffect(() => {
+    callbacksRef.current = { onRestoreDraft, onDiscardDraft, onOpenRecoveryModal };
+  });
 
   const { draftKey, sessionAcknowledgedKey, sessionAliveKey } = getSalesDraftKeys({ branchId, userId });
 

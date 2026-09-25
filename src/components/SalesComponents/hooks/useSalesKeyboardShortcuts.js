@@ -3,8 +3,10 @@ import { isSameCartItem } from "../utils/salesCartUtils";
 
 const useSalesKeyboardShortcuts = (props) => {
   const stateRef = useRef(props);
-  
-  stateRef.current = props;
+
+  useEffect(() => {
+    stateRef.current = props;
+  });
 
   useEffect(() => {
     const handleKeyDown = (event) => {

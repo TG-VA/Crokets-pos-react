@@ -13,6 +13,7 @@ const useSalesTableColumns = ({
   const [isInitialized, setIsInitialized] = useState(false);
 
   const tableRef = useRef(null);
+  const handleMouseUpRef = useRef(null);
   const resizeRef = useRef({
     isResizing: false,
     columnIndex: -1,
@@ -53,11 +54,18 @@ const useSalesTableColumns = ({
     resizeRef.current.columnIndex = -1;
 
     document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
-    
+
+    if (handleMouseUpRef.current) {
+      document.removeEventListener("mouseup", handleMouseUpRef.current);
+    }
+
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
   }, [handleMouseMove]);
+
+  useEffect(() => {
+    handleMouseUpRef.current = handleMouseUp;
+  }, [handleMouseUp]);
 
   const handleMouseDown = useCallback((event, columnIndex) => {
     event.preventDefault();

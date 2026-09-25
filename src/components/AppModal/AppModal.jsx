@@ -104,13 +104,15 @@ const AppModal = ({
     onClose,
   });
 
-  actionStateRef.current = {
-    loading,
-    showCancel,
-    onConfirm,
-    onCancel,
-    onClose,
-  };
+  useEffect(() => {
+    actionStateRef.current = {
+      loading,
+      showCancel,
+      onConfirm,
+      onCancel,
+      onClose,
+    };
+  });
 
   const config =
     MODAL_TYPE_CONFIG[type] ||
