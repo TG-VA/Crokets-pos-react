@@ -32,7 +32,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 - [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 - [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
-- [x] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — resueltos los puntos 1 a 4 (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`); queda abierto el punto 5, `react-hooks/set-state-in-effect` (69 ocurrencias) — ver `KNOWN_ISSUES.md` #56
+- [ ] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — resueltos los puntos 1 a 4 (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`); queda abierto el punto 5, `react-hooks/set-state-in-effect` (70 ocurrencias en `src/`, 13 de ellas en los archivos tocados por la rama) — ver `KNOWN_ISSUES.md` #56
 - [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
 - [x] Cerrar huecos de testing: contrato de RPCs de ventas (`create_sale_transaction` mock + firma SQL de `create_transfer_order`), `cashCutBuilder.js`, `ticketPrinter.js` y proceso principal de Electron (`electron/mainProcess.js`) — suite en 41 archivos / 524 tests; ver `KNOWN_ISSUES.md` #9
 - [x] Migraciones SQL versionadas para el schema de Supabase (baseline `00000000000000_remote_schema_baseline.sql` marcado como aplicado; SQL legacy movido a `supabase/legacy/`; script de introspección versionado) — ver `KNOWN_ISSUES.md` #6

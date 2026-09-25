@@ -1498,7 +1498,8 @@ frágiles y difíciles de auditar o refactorizar.
 
 ### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
 
-**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
+**Estado:** parcialmente resuelto (25 sep 2026) — rama `fix/code-quality-and-runtime-bugs`. Puntos 1 a 4
+cerrados; el punto 5 permanece abierto.
 
 La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
 existen errores de lógica, compatibilidad con React 19 y control de excepciones:
@@ -1511,7 +1512,7 @@ existen errores de lógica, compatibilidad con React 19 y control de excepciones
    `useSalesDraft.js:68` y `useSalesKeyboardShortcuts.js:7`, lo que viola la semántica de renderizado puro de React.
 4. **`react-hooks/immutability`:** acceso a funciones antes de su declaración dentro de hooks y efectos en
    `FiscalCustomerModal.jsx:228`, `useKitProductSearch.js:72` y `Profiles.jsx:35`.
-5. **`react-hooks/set-state-in-effect` (69 ocurrencias):** llamadas síncronas a `setState` en el cuerpo de efectos,
+5. **`react-hooks/set-state-in-effect` (70 ocurrencias):** llamadas síncronas a `setState` en el cuerpo de efectos,
    provocando re-renderizados en cascada que degradan el rendimiento en React 19.
 
 **Impacto:** posibles excepciones silenciadas, bugs en la persistencia de borradores/atajos de venta y re-renders innecesarios.
@@ -1520,7 +1521,7 @@ existen errores de lógica, compatibilidad con React 19 y control de excepciones
 y ordenar el ciclo de vida de los hooks.
 
 **Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** se corrigieron los puntos 1 a 4
-(los de ejecución y ciclo de vida); el punto 5 permanece abierto por su volumen (69 ocurrencias) y requiere una
+(los de ejecución y ciclo de vida); el punto 5 permanece abierto por su volumen y requiere una
 pasada propia de refactor por hook.
 
 1. `useReportsDashboard.js`: el bloque `finally` ya no usa `return;`. La actualización de estado quedó encapsulada en
@@ -1540,8 +1541,29 @@ pasada propia de refactor por hook.
    auto-referencia se sustituyó por un `handleMouseUpRef` sincronizado en un efecto, preservando la identidad exacta
    de la función entre `addEventListener` y `removeEventListener`.
 
-Verificación: `npm test` (48 archivos, 642 tests) y `npm run build:frontend` en verde; conteo de reglas ESLint sobre los
-archivos intervenidas pasando de 14 a 6 errores, todos ellos preexistentes y pertenecientes al punto 5.
+Verificación: `npm test` y `npm run build:frontend` en verde. Conteo de errores de ESLint sobre los 23 archivos
+`.js/.jsx` intervenidos: **30 en la base (`0c51210`) → 13 al cierre de este ítem**, es decir 17 errores
+eliminados. La composición final son 13 `react-hooks/set-state-in-effect`, todos del punto 5.
+
+Detalle del intercambio 1 a 1 en `Profiles.jsx:81`: al reordenar `loadUsers` antes de su efecto, esa
+ocurrencia dejó de ser `react-hooks/immutability` y pasó a ser `react-hooks/set-state-in-effect`. El saldo
+del punto 4 es neto negativo en una unidad (`immutability` 4 → 3) pero el punto 5 sube de 12 a 13 en estos
+archivos. No es una regresión funcional: la callback se invoca desde el mismo efecto que antes.
+
+**Los 13 errores restantes bloquean el gate de CI**, que corre ESLint por archivo y no por línea
+(`.github/workflows/ci.yml`). Por eso este ítem no puede declararse cerrado mientras el punto 5 siga abierto;
+el ítem equivalente de `BACKLOG.md` queda como `[ ]`.
+
+**Ampliación (25 sep 2026, mismo PR):** además de los puntos 1 a 4 se cerraron los dos errores de los archivos
+intervenidos que **no** pertenecían al punto 5, para dejar el gate de CI con un delta atribuible solo a esa
+deuda conocida:
+
+- `AppModal.jsx:59` (`no-undef` sobre `HTMLButtonElement`): el global existía en el DOM pero faltaba en la
+  lista `globals` de `eslint.config.mjs`. Se añadió junto a `HTMLElement` en lugar de alterar el código.
+- `InvoicesPending.jsx:61` (`react-hooks/preserve-manual-memoization`): el compilador de React infiere
+  `branch` como dependencia de `loadPendingSales`, pero el `useCallback` declaraba `branch?.id`. Se alineó
+  a `[branch, dayRange]`. Es seguro porque `branch` proviene de un `useState` (`BranchContext.jsx:6`), por lo
+  que su identidad solo cambia cuando el usuario elige otra sucursal.
 
 ---
 
@@ -1573,12 +1595,17 @@ conservaron intactos.
 - `ticketPrinter.js`: al retirar los 3 logs, el cuerpo de `try` quedó sin ninguna operación que pudiera lanzar, por lo que
   el linter marcó el `catch` como código inalcanzable (`no-unreachable`). Se eliminó el `try/catch` muerto y se conservó
   el contrato `{ success, message }` que consumen los tres llamadores (`CashCut.jsx`, `salesTicketService.js` y
-  `useSalesHistory.js`); ninguno de ellos lee la propiedad `error`.
+  `useSalesHistory.js`); ninguno de ellos lee la propiedad `error`. Como la función ya no puede fallar, la rama de
+  error desaparece del contrato: la ausencia de una implementación real de impresión y el manejo de error
+  muerto en esos tres llamadores quedan registrados como deuda consciente en #59.
 
 Impacto en pruebas: `ticketPrinter.test.js` contenía dos tests acoplados al log eliminado — uno afirmaba que se
 imprimía el texto y otro provocaba el fallo haciendo que el propio `console.log` lanzara. El primero se reescribió para
 verificar el contrato de éxito y que **no** se emita ningún `console.log` (invariante de este ítem); el segundo se retiró
-por depender del comportamiento eliminado. La suite pasó de 643 a 642 tests, todos en verde.
+por depender del comportamiento eliminado, ya que sin una implementación real de impresión no hay forma de provocar
+un fallo de impresión legítimo. La cobertura de esa pérdida se repuso con 21 casos nuevos sobre los ganchos de ciclo de
+vida corregidos en #56 (`useReportsDashboard`, `useSalesTableColumns` y `useSalesKeyboardShortcuts`), dejando la suite
+en 51 archivos / 663 tests, por encima de los 643 de la base.
 
 ---
 
@@ -1616,10 +1643,13 @@ siguiendo la convención ya establecida en el proyecto (por ejemplo `DeleteTicke
   (URL del asset) junto a `icon`, y el render decide entre `<img>` y carácter según `config.iconSrc`. Esto mantiene el
   patrón de extensibilidad por configuración (OCP) sin duplicar JSX. Los descriptores `info`, `warning` y `danger` se
   mantienen con `iconSrc: null` porque sus glifos (`i` y `!`) no son parte de este ítem.
-- Cada CSS Module recibió la clase del icono con `display: block`, dimensiones proporcionales al contenedor y el `filter`
-  de tinte que reproduce el color previo (`brightness(0) invert(1)` para los cierres blancos, reuso de la cadena ya
-  presente en el proyecto para el verde de éxito). Como los SVG del catálogo se sirven en negro, el `color` del botón no
-  los tiñe y el `filter` es el mecanismo vigente en el repositorio.
+- Cada CSS Module recibió la clase del icono con `display: block`, dimensiones proporcionales al contenedor y un `filter`
+  de tinte que reproduce el color previo: `brightness(0) invert(1)` para los cierres blancos y una cadena
+  `brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%) hue-rotate(75deg) brightness(51%) contrast(81%)`
+  para el verde de éxito. Como los SVG del catálogo se sirven en negro, el `color` del botón no los tiñe y el `filter`
+  es el mecanismo vigente en el repositorio. Todas las cadenas de tinte son **nuevas** en este PR: no reusan ninguna
+  preexistente en `origin/main`. Los cierres que en `origin/main` usaban `invert(1)` conservan ese mismo filtro.
+  (Las cadenas de tinte se calibraron después contra el navegador; ver la verificación de tintes más abajo.)
 - `ProductsList.jsx`: el `hover` que cambiaba el color a `--croketsOrange` se preservó con una regla
   `.clearSearchButton:hover .clearSearchIcon`, de modo que el tinte naranja se mantiene en hover.
 - `SaleSuccessModal.jsx`: de paso se corrigió el `className` dinámico de esa misma línea con `.trim()`, ya que
@@ -1628,9 +1658,67 @@ siguiendo la convención ya establecida en el proyecto (por ejemplo `DeleteTicke
 Verificación: `rg "✓|✕|✗|✔|✖" src/` sin resultados, `npm run build:frontend` en verde (EXIT 0) con los SVG emitidos
 como data URI en los chunks correspondientes, y las clases CSS compiladas presentes en `dist/`.
 
+**Verificación de los tintes (25 sep 2026, mismo PR):** los colores no se comprobaron a ojo sino
+midiendo el pixel renderizado. Se renderizó cada cadena de `filter` sobre un cuadrado negro en un
+Chromium headless y se comparó el resultado con el color de texto que el glifo heredaba, en CIELAB
+con ΔE2000 (≈2.3 es el umbral de percepción). El color heredado se resolvió por la cascada: los
+`.clearSearchButton` y `.closeButton` de `InvoicesHistory` no declaran `color`, así que toman
+`#333333` de `.content`; `AppModal` tomaba `#15803d` de `.success .iconWrapper`.
+
+El primer pase reveló cuatro desviaciones reales, dos de ellas por copy-paste evidente:
+
+| Ubicación | Color original | Cadena entregada | Render | ΔE00 |
+|---|---|---|---|---|
+| `AppModal .iconGlyph` | `#15803d` | `invert(20%) sepia(36%) … hue-rotate(121deg)` | `#0b4a3b` | 21.3 |
+| `InvoicesHistory .clearSearchIcon` | `#333333` | `brightness(0) invert(0.45)` | `#737373` | 22.3 |
+| `InvoicesHistory .closeIcon` | `#333333` | `brightness(0) invert(0.25)` | `#404040` | 4.2 |
+| `ProductsList .clearSearchIcon` | `#64748b` | `brightness(0) invert(0.45)` | `#737373` | 10.9 |
+| `ProductsList … :hover` | `#fc8913` | `invert(68%) sepia(93%) … hue-rotate(346deg)` | `#edaa24` | 13.7 |
+
+Los otros 8 iconos (7 cierres blancos y `InvoicesPending .clearSearchIcon` sobre `#666666`) ya
+renderizaban con ΔE00 = 0. Las cuatro desviaciones se corrigieron buscando por búsqueda aleatoria
+contra el navegador y redondeando a enteros: las dos de `InvoicesHistory` ahora usan
+`brightness(0) invert(0.2)`, que es la conversión exacta de `#333333`, y `ProductsList` y `AppModal`
+reciben cadenas propias calibradas contra su color objetivo. Re-medido sobre los CSS finales, el
+ΔE00 máximo de los 13 iconos es **1.17**, por debajo del umbral de percepción. No queda verificación
+visual manual pendiente.
+
 Pendiente fuera de alcance: `AppModal.jsx` sigue usando `i` y `!` como pseudo-iconos para los tipos `info`, `warning` y
 `danger`; por `ICONS.md` corresponderían a `verifyIcon.svg` y `triangle-exclamation-solid-full.svg`. No se tocó para
 mantener el alcance de este ítem.
+
+---
+
+### 59. `printTicket` no implementa impresión y su rama de error se eliminó
+
+**Estado:** abierto (registrado 25 sep 2026, rama `fix/code-quality-and-runtime-bugs`).
+
+`src/utils/ticketPrinter.js` no imprime nada. Su único argumento se ignora y su cuerpo no tiene
+operación alguna que pueda fallar. En la base (`0c51210`) tampoco imprimía: solo escribía el texto
+del ticket en `console.log`, y la rama `catch` que devolvía `{ success: false, message, error }` solo
+era alcanzable si ese `console.log` lanzaba.
+
+Al retirar los `console.log` de #57, el `catch` quedó marcado como código inalcanzable
+(`no-unreachable`) y se eliminó. Como consecuencia:
+
+- El contrato de fallo desapareció. `printTicket` ya no tiene forma de devolver `success: false`.
+- El manejo de error de los tres llamadores es código muerto: `CashCut.jsx:184-186`,
+  `salesTicketService.js:227` y `useSalesHistory.js:262` ramifican sobre `!result?.success` y lanzan
+  o registran un error que no puede ocurrir. Ninguno de los tres lee la propiedad `error`.
+- El test que cubría la rama de fallo se eliminó en vez de reemplazarse, porque sin impresión real
+  no hay forma de provocar un fallo de impresión legítimo. La pérdida se compensó con 21 casos
+  nuevos en los ganchos de #56 (ver #57).
+
+**Impacto:** no hay regresión de comportamiento observable —los tres llamadores siempre reportan
+éxito—, pero la UI muestra "Corte impreso correctamente" sin que exista impresión, y el manejo de
+error induce a error a quien lea el código. Es un riesgo de engañar al usuario, no de integridad de
+datos.
+
+
+**Recomendación:** decidir la vía de impresión (canal IPC en Electron o `window.print` del renderer),
+implementarla y restituir la rama `{ success: false, message, error }` con su test. Mientras tanto, la
+limitación está documentada en el propio módulo y los tres call sites deben leerse como
+"generación de ticket" y no como "impresión".
 
 ---
 

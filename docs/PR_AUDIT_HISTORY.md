@@ -1479,3 +1479,151 @@ proyecto de no testear UI).
   incremental verifica el archivo completo (churn acotado a los archivos del refactor).
 - **QA visual pendiente:** grid de dos columnas, summary de ahorro, selector de fila, badges de
   estado y flujo F10 deben verificarse en la UI con `npm run dev` antes de cerrar la PR.
+
+---
+
+## Doble Auditoría — RAMA `fix/code-quality-and-runtime-bugs` (25 de septiembre de 2026)
+
+**Alcance:** remediación de los ítems técnicos #56, #57 y #58 de `KNOWN_ISSUES.md`. Base:
+`0c51210`. La rama quedó sujeta a **dos auditorías independientes**: la primera sobre los cuatro
+commits de remediación, y una segunda, posterior, sobre el diff de remediación. Ambas están
+registradas aquí.
+
+### Serie 1 — Auditoría inicial (4 commits)
+
+| Commit | Alcance | Diff |
+|---|---|---|
+| `8892134` | #56 — errores de lint en runtime, `no-unsafe-finally`, mutación de refs en render | 10 archivos, +69/−56 |
+| `0dc79f3` | #57 — retiro de `console.log`/`console.warn` de depuración | 5 archivos, +11/−61 |
+| `4b1b508` | #58 — pseudo-iconos tipográficos `✓`/`✕` reemplazados por SVG del catálogo | 22 archivos, +193/−13 |
+| `8b0d491` | #56/#57/#58 marcados como resueltos en `KNOWN_ISSUES.md` y `BACKLOG.md` | 2 archivos, +75/−6 |
+
+Total del primer pase: 36 archivos, +348/−136.
+
+### Serie 2 — Auditoría de la remediación y resolución de bloqueantes
+
+La segunda auditoría halló que la remediación estaba incompleta en cinco puntos y que tres
+afirmaciones de la documentación no se sostenían contra el código. Todo se resolvió con evidencia
+ejecutable, no por inspección visual.
+
+**B1 — Violación de Prettier introducida (RESUELTO).** `AppModal.module.css` incumplía
+`prettier --check`, por lo que el gate incremental de CI quedaba en rojo. Corregido con
+`prettier --write`; el archivo dejó de aparecer entre los archivos con problemas de estilo.
+
+**B2 — Errores de ESLint ajenos al punto 5 (RESUELTO).** Quedaban dos errores de la serie inicial
+que no eran instancias de `react-hooks/set-state-in-effect`:
+- `no-undef` sobre `HTMLButtonElement` en anotaciones de tipo: se añadió
+  `languageOptions.globals` con `HTMLButtonElement: "readonly"`. No se declararon más globals del
+  DOM porque el código no los usa. Al commitear las suites de A4 aparecieron además nueve
+  `no-undef` sobre `KeyboardEvent` y `MouseEvent` —constructores que los tests usan para crear
+  eventos—, invisibles antes porque los archivos aún no estaban versionados; se declararon también
+  como `readonly`, junto a los constructores que la configuración ya incluía.
+- `react-hooks/preserve-manual-memoization` en `InvoicesPending.jsx`: el arreglo de dependencias
+  de `loadPendingSales` usaba `branch?.id` y se cambió a `branch`, la identidad estable del contexto
+  (verificada: `branch` proviene de `useState` y solo cambia ante una selección explícita de
+  sucursal, no en cada render).
+
+Con B2 cerrado, los errores del diff quedaron en 13 y **los 13 son `set-state-in-effect`**, que es
+la deuda grande #56 y que la segunda auditoría recomendación explícitamente diferir en este PR
+(70 ocurrencias en `src/`, 13 en los archivos del diff). Las seis reglas de la serie 1
+(`no-unsafe-finally`, `preserve-manual-memoization`, `exhaustive-deps`,
+`no-constant-binary-expression`, `no-undef`, `no-unused-vars`) quedan en 0.
+
+**B3 — `printTicket` no imprime y su manejo de error es código muerto (RESUELTO como deuda
+registrada).** En la base `0c51210`, `src/utils/ticketPrinter.js` no imprimía: escribía el texto
+del ticket con `console.log` y su `catch` solo era alcanzable si ese `console.log` lanzaba. Al
+retirar los logs en `0dc79f3`, el `catch` quedó inalcanzable (`no-unreachable`) y se eliminó, lo que
+borró el contrato `{ success: false, message, error }`. Se verificó que `electron/` no expone ningún
+canal de impresión. Consecuencia: el manejo de error de los tres llamadores
+(`CashCut.jsx:184`, `salesTicketService.js:227`, `useSalesHistory.js:262`) es inalcanzable, y la UI
+muestra "Corte impreso correctamente" sin que exista impresión. Se optó por **documentar en vez de
+implementar** (fuera de alcance): nuevo ítem **#59** en `KNOWN_ISSUES.md` y JSDoc en el propio
+módulo que advierte la limitación y explica por qué el manejo de error de los tres call sites debe
+leerse como "generación de ticket", no como "impresión".
+
+**A5 — Botones de cierre desalineados (RESUELTO).** `InventorySearchModal.module.css` y
+`ProductsSearchModal.module.css` no centraban su glifo: al pasar de carácter tipográfico a `<img>`
+(commit `4b1b508`), el SVG heredaba el line-height del texto y quedaba descentrado. Se añadió
+`display: flex` + `align-items: center` + `justify-content: center` sin fijar dimensiones, para no
+alterar el tamaño del área táctil.
+
+**F — Tintes SVG nunca verificados (RESUELTO con medición).** El cambio de glifos de texto a SVG
+necesitó replicar por `filter` los colores que el texto heredaba, y ninguna de las cadenas se
+comprobó contra el color de origen. En vez de una revisión visual, se renderizó cada cadena sobre
+un cuadrado negro en un Chromium headless y se comparó el píxel resultante con el color heredado
+por la cascada, en CIELAB con ΔE2000 (≈2.3 es el umbral de percepción). El primer pase reveló
+**cuatro desviaciones reales**, dos de ellas por copy-paste evidente:
+
+| Ubicación | Color de origen | Render de la cadena entregada | ΔE00 |
+|---|---|---|---|
+| `AppModal .iconGlyph` | `#15803d` | `#0b4a3b` | 21.3 |
+| `InvoicesHistory .clearSearchIcon` | `#333333` | `#737373` | 22.3 |
+| `InvoicesHistory .closeIcon` | `#333333` | `#404040` | 4.2 |
+| `ProductsList .clearSearchIcon` | `#64748b` | `#737373` | 10.9 |
+| `ProductsList … :hover` | `#fc8913` | `#edaa24` | 13.7 |
+
+`InvoicesHistory` no declara `color`, así que sus dos iconos tomaban `#333333` de `.content`: el
+`invert(0.45)` entregaba un gris visiblemente más claro que el original. Se corrigieron las cuatro
+desviaciones calibrando por búsqueda contra el navegador y redondeando a enteros; las dos de
+`InvoicesHistory` usan ahora `brightness(0) invert(0.2)`, conversión exacta de `#333333`.
+Re-medido sobre los CSS finales, el **ΔE00 máximo de los 13 iconos es 1.17**, por debajo del umbral
+de percepción. Los 8 restantes (7 cierres blancos y `InvoicesPending` sobre `#666666`) ya eran
+idénticos.
+
+**A4 — Contratos críticos sin cobertura (RESUELTO).** Tres archivos de hooks con suite creada pero sin un solo caso de prueba.
+Se añadieron **21 tests en 3 suites**, todos verificados por *mutation testing* (cada uno falla al
+revertir el guard que fija):
+- `useReportsDashboard.test.js` (7): el `finally` de la petición obsoleta no invierte el resultado;
+  una respuesta tardía no pisa el estado; el intervalo se limpia al desmontar.
+- `useSalesTableColumns.test.js` (6): cada listener `mousedown` se empareja con su `mouseup`; una
+  columna reordenada invalida los cierres previos.
+- `useSalesKeyboardShortcuts.test.js` (8): los atajos leen siempre las props vigentes sin
+  re-registrar el listener.
+
+**A1/A2/A3 — Afirmaciones documentalmente incorrectas (RESUELTO).** Tres cifras y una reutilización
+falsa en la documentación, corregidas contra medición: `BACKLOG.md` declaraba 69 ocurrencias de
+`set-state-in-effect` cuando el recuento real es 70; `KNOWN_ISSUES.md` #56 atribuía las 30
+violaciones de ESLint del baseline a la rama cuando el baseline es 30 y la rama arranca en 15; y #58
+afirmaba que la cadena de tinte verde "reutilizaba" un filtro preexistente cuando es nueva en este
+PR. Además se registró el intercambio de una `Profile` por `Branch` en `Profiles.jsx:81`, que
+compensa la reducción de errores.
+
+### Verificación final
+
+| Comprobación | Resultado |
+|---|---|
+| `npm test` | **51 archivos / 663 tests, 0 fallos** (baseline 643; +20 netos) |
+| `npm run build:frontend` | **EXIT 0** |
+| `npx eslint` sobre el diff | 13 errores, **los 13 `set-state-in-effect` diferidos**; 0 en las otras seis reglas |
+| `prettier --check` sobre el diff | 0 fallos en los archivos de esta remediación |
+| Mutation testing de A4 | los 3 guards verificados |
+| Medición de tintes | ΔE00 máximo 1.17 en 13 iconos |
+| `console.log`/`console.warn` nuevos | 0 |
+| Emojis en código/UI | 0 |
+
+### Notas y límites conscientes
+
+- **El gate de ESLint del CI sigue en rojo**, por los 13 `set-state-in-effect` del diff. Es
+  deliberado: la deuda pertenece a #56 y diferirla fue una decisión explícita de esta auditoría. La
+  rama no debe declararse "verde" hasta que #56 se aborde por separado.
+- **El gate de Prettier del CI también sigue en rojo** por 21 archivos con problemas de estilo
+  preexistentes en la base, ninguno de ellos tocado por esta remediación. Se optó por no generar
+  churn de formato en archivos ajenos; se verificó por intersección que ninguno de los archivos
+  modificados en esta sesión está entre ellos (salvo `InvoicesPending.jsx`, que sí se editó para B2
+  y por eso se formateó completo).
+- **`printTicket` continúa sin imprimir** (#59). La UI sigue reportando éxito de impresión; es un
+  riesgo de engañar al usuario, no de integridad de datos, y está documentado en el módulo y en
+  `KNOWN_ISSUES.md`.
+- `AppModal.jsx` sigue usando `i` y `!` como pseudo-iconos para los tipos `info`, `warning` y
+  `danger`, fuera del alcance de #58.
+- Los 21 tests nuevos no cubren componente/UI ni flujos de integración: el stance del proyecto es no
+  testear vistas presentacionales. Estos tres contratos sí son lógica con estado y efectos, que es
+  exactamente donde la suite anterior tenía el hueco.
+
+### Veredicto
+
+**APROBADO.** Los bloqueantes B1, B2, B3, A5, F y A4 quedan cerrados con evidencia ejecutable, y las
+afirmaciones documentales erróneas (A1, A2, A3) están corregidas contra medición. La doble auditoría
+no dejó bloqueantes abiertos: el único redness persistente en CI (los 13
+`react-hooks/set-state-in-effect`) es deuda diferida de forma explícita y registrada en #56, ajena al
+alcance de este PR. La rama queda lista para merge, con #59 y #56 como deuda conocida y explícita.
