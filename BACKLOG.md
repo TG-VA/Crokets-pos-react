@@ -32,7 +32,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 - [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 - [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
-- [ ] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — ver `KNOWN_ISSUES.md` #56
+- [x] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — resueltos los puntos 1 a 4 (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`); queda abierto el punto 5, `react-hooks/set-state-in-effect` (69 ocurrencias) — ver `KNOWN_ISSUES.md` #56
 - [x] Unit tests para utilidades puras restantes — `importUtils`, `productsImportService` y `productKitsService` cubiertos (suite total en 83 tests con `productFormatters`, `usePagination`, `productCrudService` y `useSalesTotals`) — ver `KNOWN_ISSUES.md` #9
 - [x] Cerrar huecos de testing: contrato de RPCs de ventas (`create_sale_transaction` mock + firma SQL de `create_transfer_order`), `cashCutBuilder.js`, `ticketPrinter.js` y proceso principal de Electron (`electron/mainProcess.js`) — suite en 41 archivos / 524 tests; ver `KNOWN_ISSUES.md` #9
 - [x] Migraciones SQL versionadas para el schema de Supabase (baseline `00000000000000_remote_schema_baseline.sql` marcado como aplicado; SQL legacy movido a `supabase/legacy/`; script de introspección versionado) — ver `KNOWN_ISSUES.md` #6
@@ -58,6 +58,6 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 ## Prioridad Baja (Limpieza y Convenciones)
 
-- [ ] Eliminar declaraciones residuales de `console.log` en código de producción — ver `KNOWN_ISSUES.md` #57
-- [ ] Reemplazar caracteres tipográficos (`✓`, `✕`) por iconos SVG estandarizados — ver `KNOWN_ISSUES.md` #58
+- [x] Eliminar declaraciones residuales de `console.log` en código de producción — cero `console.log`/`console.warn` en `src/` (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`) — ver `KNOWN_ISSUES.md` #57
+- [x] Reemplazar caracteres tipográficos (`✓`, `✕`) por iconos SVG estandarizados — 12 ocurrencias sustituidas por `xmark-solid-full.svg` y `circle-check-solid-full.svg` (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`) — ver `KNOWN_ISSUES.md` #58
 

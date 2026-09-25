@@ -1498,7 +1498,7 @@ frágiles y difíciles de auditar o refactorizar.
 
 ### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
 
 La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
 existen errores de lógica, compatibilidad con React 19 y control de excepciones:
@@ -1519,11 +1519,35 @@ existen errores de lógica, compatibilidad con React 19 y control de excepciones
 **Recomendación:** sanear los errores prioritarios de ejecución (`no-unsafe-finally`, refs en render, binary expressions)
 y ordenar el ciclo de vida de los hooks.
 
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** se corrigieron los puntos 1 a 4
+(los de ejecución y ciclo de vida); el punto 5 permanece abierto por su volumen (69 ocurrencias) y requiere una
+pasada propia de refactor por hook.
+
+1. `useReportsDashboard.js`: el bloque `finally` ya no usa `return;`. La actualización de estado quedó encapsulada en
+   `if (mountedRef.current && isCurrentRequest) { setLoading(false); setRefreshing(false); }`, de modo que una excepción
+   lanzada en `try` ya no puede ser suprimida por la salida del bloque `finally`.
+2. `salesRewardsService.js:88` y `salesTicketService.js:14`: se eliminó el `?? 0` inalcanzable, dejando
+   `Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity))`. El comportamiento es idéntico
+   (una resta aritmética nunca es `null` ni `undefined`), por lo que no cambia ningún resultado calculado.
+3. `AppModal.jsx`, `useSalesDraft.js` y `useSalesKeyboardShortcuts.js`: la sincronización de `actionStateRef.current`,
+   `callbacksRef.current` y `stateRef.current` se movió a efectos sin arreglo de dependencias, con el valor inicial
+   preservado en `useRef(...)`. Se mantiene la garantía original de leer siempre el callback más reciente sin
+   re-registrar el listener de teclado en cada render.
+4. `FiscalCustomerModal.jsx`, `useKitProductSearch.js` y `Profiles.jsx`: `loadCatalogs`, `handleSelect` y `loadUsers` se
+   declararon antes de los efectos que los invocan. Adicionalmente se corrigió una cuarta ocurrencia de
+   `react-hooks/immutability` detectada por el linter y no contemplada en el reporte original:
+   `useSalesTableColumns.js:56`, donde `handleMouseUp` se auto-referenciaba en su propio `useCallback`. La
+   auto-referencia se sustituyó por un `handleMouseUpRef` sincronizado en un efecto, preservando la identidad exacta
+   de la función entre `addEventListener` y `removeEventListener`.
+
+Verificación: `npm test` (48 archivos, 642 tests) y `npm run build:frontend` en verde; conteo de reglas ESLint sobre los
+archivos intervenidas pasando de 14 a 6 errores, todos ellos preexistentes y pertenecientes al punto 5.
+
 ---
 
 ### 57. Declaraciones de `console.log` residuales en código de producción
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
 
 `AGENTS.md` estipula la eliminación obligatoria de todos los `console.log` y `console.warn` de depuración antes de commitear
 (permitiendo únicamente `console.error` dentro de bloques `catch` para trazabilidad). Persisten llamadas en:
@@ -1537,11 +1561,30 @@ y ordenar el ciclo de vida de los hooks.
 
 **Recomendación:** eliminar las llamadas a `console.log` de depuración.
 
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** las 6 llamadas `console.log` se
+eliminaron y la regla `no-console` quedó en cero en todo `src/`. Los `console.error` de los bloques `catch` se
+conservaron intactos.
+
+- `InvoiceCustomers.jsx` e `InvoicesPending.jsx`: el callback de `.subscribe()` solo contenía el log, por lo que se
+  eliminó por completo el argumento; el handler de `.on("postgres_changes", ...)` que recarga los datos se mantiene.
+- `useKardexRealtime.js`: se eliminó la rama `status === "SUBSCRIBED"` y el guard `import.meta.env.DEV` que solo existían
+  para silenciar el log. Se conservó el `console.error` de `CHANNEL_ERROR` / `TIMED_OUT`, que ahora reporta también en
+  producción (antes quedaba suprimido fuera de DEV).
+- `ticketPrinter.js`: al retirar los 3 logs, el cuerpo de `try` quedó sin ninguna operación que pudiera lanzar, por lo que
+  el linter marcó el `catch` como código inalcanzable (`no-unreachable`). Se eliminó el `try/catch` muerto y se conservó
+  el contrato `{ success, message }` que consumen los tres llamadores (`CashCut.jsx`, `salesTicketService.js` y
+  `useSalesHistory.js`); ninguno de ellos lee la propiedad `error`.
+
+Impacto en pruebas: `ticketPrinter.test.js` contenía dos tests acoplados al log eliminado — uno afirmaba que se
+imprimía el texto y otro provocaba el fallo haciendo que el propio `console.log` lanzara. El primero se reescribió para
+verificar el contrato de éxito y que **no** se emita ningún `console.log` (invariante de este ítem); el segundo se retiró
+por depender del comportamiento eliminado. La suite pasó de 643 a 642 tests, todos en verde.
+
 ---
 
 ### 58. Caracteres tipográficos (`✓`, `✕`) usados como pseudo-iconos en componentes
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
 
 `AGENTS.md` e `ICONS.md` prohíben el uso de emojis y caracteres tipográficos sueltos como sustitutos de iconos en la UI,
 exigiendo el uso de SVGs estandarizados en `src/assets/icons/`. Se identificaron 12 ocurrencias de caracteres `✓` y `✕`
@@ -1562,6 +1605,32 @@ hardcodeados como texto en:
 **Impacto:** inconsistencia visual entre plataformas y problemas de accesibilidad con lectores de pantalla.
 
 **Recomendación:** sustituir por componentes SVG (`checkIcon`, `xmarkIcon`) con `aria-hidden="true"` y atributos semánticos.
+
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** las 12 ocurrencias se sustituyeron por
+los SVG del catálogo, importados como assets de Vite y renderizados con `<img src={...} alt="" aria-hidden="true" />`,
+siguiendo la convención ya establecida en el proyecto (por ejemplo `DeleteTicketModal.jsx`). Se usó
+`xmark-solid-full.svg` para los 10 cierres y descartes, y `circle-check-solid-full.svg` para las 2 confirmaciones
+(`AppModal` y `SaleSuccessModal`). Ningún icono decorativo es anunciado por los lectores de pantalla.
+
+- `AppModal.jsx`: en lugar de codificar el carácter en el descriptor `MODAL_TYPE_CONFIG`, el config ahora expone `iconSrc`
+  (URL del asset) junto a `icon`, y el render decide entre `<img>` y carácter según `config.iconSrc`. Esto mantiene el
+  patrón de extensibilidad por configuración (OCP) sin duplicar JSX. Los descriptores `info`, `warning` y `danger` se
+  mantienen con `iconSrc: null` porque sus glifos (`i` y `!`) no son parte de este ítem.
+- Cada CSS Module recibió la clase del icono con `display: block`, dimensiones proporcionales al contenedor y el `filter`
+  de tinte que reproduce el color previo (`brightness(0) invert(1)` para los cierres blancos, reuso de la cadena ya
+  presente en el proyecto para el verde de éxito). Como los SVG del catálogo se sirven en negro, el `color` del botón no
+  los tiñe y el `filter` es el mecanismo vigente en el repositorio.
+- `ProductsList.jsx`: el `hover` que cambiaba el color a `--croketsOrange` se preservó con una regla
+  `.clearSearchButton:hover .clearSearchIcon`, de modo que el tinte naranja se mantiene en hover.
+- `SaleSuccessModal.jsx`: de paso se corrigió el `className` dinámico de esa misma línea con `.trim()`, ya que
+  `AGENTS.md` prohíbe los espacios colgantes en el DOM.
+
+Verificación: `rg "✓|✕|✗|✔|✖" src/` sin resultados, `npm run build:frontend` en verde (EXIT 0) con los SVG emitidos
+como data URI en los chunks correspondientes, y las clases CSS compiladas presentes en `dist/`.
+
+Pendiente fuera de alcance: `AppModal.jsx` sigue usando `i` y `!` como pseudo-iconos para los tipos `info`, `warning` y
+`danger`; por `ICONS.md` corresponderían a `verifyIcon.svg` y `triangle-exclamation-solid-full.svg`. No se tocó para
+mantener el alcance de este ítem.
 
 ---
 
