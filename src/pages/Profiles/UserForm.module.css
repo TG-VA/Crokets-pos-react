@@ -60,6 +60,14 @@
   color: #ffffff;
 }
 
+.closeIcon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
 .userForm {
   flex: 1;
   overflow-y: auto;

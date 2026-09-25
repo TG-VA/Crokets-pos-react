@@ -4,6 +4,7 @@ import InventorySearchResults from "./components/InventorySearchResults";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
 
 import styles from "./InventorySearchModal.module.css";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const InventorySearchModal = ({
   isOpen,
@@ -74,7 +75,12 @@ const InventorySearchModal = ({
             }
             aria-label="Cerrar búsqueda de productos"
           >
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 

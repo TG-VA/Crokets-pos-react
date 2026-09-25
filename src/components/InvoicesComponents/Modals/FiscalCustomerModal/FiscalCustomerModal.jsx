@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./FiscalCustomerModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const emptyForm = {
   customerId: "",
@@ -563,7 +564,7 @@ const FiscalCustomerModal = ({
           </div>
 
           <button type="button" className={styles.closeButton} onClick={onClose}>
-            ✕
+            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
           </button>
         </div>
 

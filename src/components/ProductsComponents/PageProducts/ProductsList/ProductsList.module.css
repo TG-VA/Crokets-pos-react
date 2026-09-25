@@ -82,6 +82,19 @@
   color: var(--croketsOrange);
 }
 
+.clearSearchIcon {
+  display: block;
+  width: 13px;
+  height: 13px;
+  filter: brightness(0) invert(0.45);
+  pointer-events: none;
+}
+
+.clearSearchButton:hover .clearSearchIcon {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(93%) saturate(866%)
+    hue-rotate(346deg) brightness(101%) contrast(86%);
+}
+
 .filterContainer {
   position: relative;
   display: inline-block;

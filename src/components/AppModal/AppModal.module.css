@@ -66,6 +66,15 @@
   line-height: 1;
 }
 
+.iconGlyph {
+  display: block;
+  width: 30px;
+  height: 30px;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(36%)
+    saturate(1312%) hue-rotate(121deg) brightness(92%) contrast(91%);
+  pointer-events: none;
+}
+
 .content {
   flex: 1;
   min-width: 0;

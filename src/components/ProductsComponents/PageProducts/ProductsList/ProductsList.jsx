@@ -2,6 +2,7 @@ import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
 import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const ProductsList = () => {
   const {
@@ -81,7 +82,12 @@ const ProductsList = () => {
                 title="Limpiar búsqueda"
                 type="button"
               >
-                ✕
+                <img
+                  src={XmarkIcon}
+                  alt=""
+                  className={styles.clearSearchIcon}
+                  aria-hidden="true"
+                />
               </button>
             )}
           </div>

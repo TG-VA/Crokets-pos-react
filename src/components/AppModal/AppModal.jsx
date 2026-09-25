@@ -6,22 +6,27 @@ import React, {
 } from "react";
 
 import styles from "./AppModal.module.css";
+import CircleCheckIcon from "../../assets/icons/circle-check-solid-full.svg";
 
 const MODAL_TYPE_CONFIG = {
   info: {
     icon: "i",
+    iconSrc: null,
     className: styles.info,
   },
   success: {
-    icon: "✓",
+    icon: null,
+    iconSrc: CircleCheckIcon,
     className: styles.success,
   },
   warning: {
     icon: "!",
+    iconSrc: null,
     className: styles.warning,
   },
   danger: {
     icon: "!",
+    iconSrc: null,
     className: styles.danger,
   },
 };
@@ -341,7 +346,16 @@ const AppModal = ({
             aria-hidden="true"
           >
             <span className={styles.icon}>
-              {config.icon}
+              {config.iconSrc ? (
+                <img
+                  src={config.iconSrc}
+                  alt=""
+                  className={styles.iconGlyph}
+                  aria-hidden="true"
+                />
+              ) : (
+                config.icon
+              )}
             </span>
           </div>
 

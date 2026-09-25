@@ -3,6 +3,7 @@ import styles from "./InvoicesPending.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
 import InvoiceSaleModal from "../../Modals/InvoiceSaleModal/InvoiceSaleModal";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const TIME_ZONE = "America/Cancun";
 
@@ -246,7 +247,12 @@ const InvoicesPending = () => {
               className={styles.clearSearchButton}
               onClick={() => setSearchTerm("")}
             >
-              ✕
+              <img
+                src={XmarkIcon}
+                alt=""
+                className={styles.clearSearchIcon}
+                aria-hidden="true"
+              />
             </button>
           )}
         </div>

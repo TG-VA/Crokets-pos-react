@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import styles from "./NotesModal.module.css";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
   const [notes, setNotes] = useState(initialNotes);
@@ -53,7 +54,9 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
       >
         <div className={styles.modalHeader}>
           <h2>Agregar Notas</h2>
-          <button type="button" className={styles.closeButton} onClick={handleClose}>✕</button>
+          <button type="button" className={styles.closeButton} onClick={handleClose}>
+            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
+          </button>
         </div>
 
         <div className={styles.notesModalBody}>

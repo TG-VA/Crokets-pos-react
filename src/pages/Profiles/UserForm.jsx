@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './UserForm.module.css';
+import XmarkIcon from '../../assets/icons/xmark-solid-full.svg';
 
 const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -129,7 +130,7 @@ const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
             className={styles.closeButton}
             onClick={onCancel}
           >
-            ✕
+            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
           </button>
         </div>
 
