@@ -4,6 +4,7 @@ import { supabase } from "../../../../lib/supabaseClient";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import AppModal from "../../../AppModal/AppModal";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const DEFAULT_CLAVE_PROD_SERV = "01010101";
 const DEFAULT_PAYMENT_METHOD = "PUE";
@@ -528,7 +529,7 @@ const InvoiceSaleModal = ({ isOpen, onClose, sale, onSaved }) => {
           </div>
 
           <button type="button" className={styles.closeButton} onClick={onClose}>
-            ✕
+            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
           </button>
         </div>
 

@@ -85,7 +85,7 @@ export const registerSaleRewardRedemptions = async ({ saleId, customerId, saleDa
     const quantity = Number(item.cantidad || 0);
     const pointsPerUnit = getRewardItemPointsPerUnit(item);
     const unitPrice = Number(item.precioOriginal ?? item.precio ?? 0);
-    const discountAmount = Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity) ?? 0);
+    const discountAmount = Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity));
 
     const detailRow = findSaleDetailForRewardItem(item, saleDetails, usedDetailIds);
     if (detailRow?.id) usedDetailIds.add(detailRow.id);

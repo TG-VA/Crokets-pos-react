@@ -102,12 +102,10 @@ const useReportsDashboard = () => {
         const isCurrentRequest =
           currentRequestId === requestIdRef.current;
 
-        if (!mountedRef.current || !isCurrentRequest) {
-          return;
+        if (mountedRef.current && isCurrentRequest) {
+          setLoading(false);
+          setRefreshing(false);
         }
-
-        setLoading(false);
-        setRefreshing(false);
       }
     },
     [selectedBranchId]

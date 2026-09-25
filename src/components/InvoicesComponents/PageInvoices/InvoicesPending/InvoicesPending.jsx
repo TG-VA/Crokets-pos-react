@@ -3,6 +3,7 @@ import styles from "./InvoicesPending.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
 import InvoiceSaleModal from "../../Modals/InvoiceSaleModal/InvoiceSaleModal";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const TIME_ZONE = "America/Cancun";
 
@@ -66,7 +67,8 @@ const InvoicesPending = () => {
 
       let query = supabase
         .from("sales")
-        .select(`
+        .select(
+          `
           id,
           sale_date,
           subtotal,
@@ -96,7 +98,8 @@ const InvoicesPending = () => {
           invoices (
             id
           )
-        `)
+        `
+        )
         .eq("branch_id", branch.id)
         .eq("status", "completed")
         .order("sale_date", { ascending: false });
@@ -123,7 +126,7 @@ const InvoicesPending = () => {
     } finally {
       setLoadingSales(false);
     }
-  }, [branch?.id, dayRange]);
+  }, [branch, dayRange]);
 
   useEffect(() => {
     loadPendingSales();
@@ -157,12 +160,7 @@ const InvoicesPending = () => {
         () => {
           loadPendingSales();
         }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime activo: ventas por facturar");
-        }
-      });
+      );
 
     return () => {
       supabase.removeChannel(channel);
@@ -211,7 +209,9 @@ const InvoicesPending = () => {
       <div className={styles.header}>
         <div>
           <h1>VENTAS POR FACTURAR</h1>
-          <p>Ventas completadas de la sucursal actual que aún no tienen factura.</p>
+          <p>
+            Ventas completadas de la sucursal actual que aún no tienen factura.
+          </p>
         </div>
 
         <button
@@ -251,7 +251,12 @@ const InvoicesPending = () => {
               className={styles.clearSearchButton}
               onClick={() => setSearchTerm("")}
             >
-              ✕
+              <img
+                src={XmarkIcon}
+                alt=""
+                className={styles.clearSearchIcon}
+                aria-hidden="true"
+              />
             </button>
           )}
         </div>
@@ -335,16 +340,18 @@ const InvoicesPending = () => {
                       </span>
                     </td>
                     <td>
-<button
-  type="button"
-  className={styles.invoiceButton}
-  onClick={() => handleInvoiceSale(sale)}
-  title={
-    isBillingReady ? "Facturar venta" : "Seleccionar o crear cliente fiscal"
-  }
->
-  Facturar
-</button>
+                      <button
+                        type="button"
+                        className={styles.invoiceButton}
+                        onClick={() => handleInvoiceSale(sale)}
+                        title={
+                          isBillingReady
+                            ? "Facturar venta"
+                            : "Seleccionar o crear cliente fiscal"
+                        }
+                      >
+                        Facturar
+                      </button>
                     </td>
                   </tr>
                 );

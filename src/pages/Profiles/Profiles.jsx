@@ -31,10 +31,6 @@ const Profiles = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
   const loadUsers = async () => {
     try {
       setLoading(true);
@@ -80,6 +76,10 @@ const Profiles = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   return (
     <div className={styles.container}>

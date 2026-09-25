@@ -11,7 +11,7 @@ const buildRewardRowsFromCartItems = ({ rewardItems = [], customerId = null }) =
       const totalPoints = getRewardItemTotalPoints(item);
       const pointsPerUnit = getRewardItemPointsPerUnit(item);
       const unitPrice = Number(item.precioOriginal ?? item.precio ?? 0);
-      const discountAmount = Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity) ?? 0);
+      const discountAmount = Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity));
 
       return {
         id: item.sale_reward_redemption_id || `local_${item.reward_id}_${item.id}`,

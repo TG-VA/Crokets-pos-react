@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./InvoicesHistory.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const InvoiceHistory = () => {
   const { branch } = useBranch();
@@ -338,7 +339,12 @@ const InvoiceHistory = () => {
               className={styles.clearSearchButton}
               onClick={() => setSearchTerm("")}
             >
-              ✕
+              <img
+                src={XmarkIcon}
+                alt=""
+                className={styles.clearSearchIcon}
+                aria-hidden="true"
+              />
             </button>
           )}
         </div>
@@ -461,7 +467,12 @@ const InvoiceHistory = () => {
                   setInvoiceItems([]);
                 }}
               >
-                ✕
+                <img
+                  src={XmarkIcon}
+                  alt=""
+                  className={styles.closeIcon}
+                  aria-hidden="true"
+                />
               </button>
             </div>
 

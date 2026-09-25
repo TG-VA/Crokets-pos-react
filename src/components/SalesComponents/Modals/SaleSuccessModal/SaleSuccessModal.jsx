@@ -1,5 +1,6 @@
 import React, { useEffect, memo } from "react";
 import styles from "./SaleSuccessModal.module.css";
+import CircleCheckIcon from "../../../../assets/icons/circle-check-solid-full.svg";
 
 const formatCurrency = (val) => `$${Number(val || 0).toFixed(2)}`;
 const toNumber = (val) => Number.isFinite(Number(val || 0)) ? Number(val || 0) : 0;
@@ -48,7 +49,14 @@ const SaleSuccessModal = memo(({ isOpen, saleData, onClose, onViewSalesHistory }
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <div className={`${styles.successIcon} ${isRewardRedemptionOnly ? styles.rewardSuccessIcon : ""}`}>✓</div>
+        <div className={`${styles.successIcon} ${isRewardRedemptionOnly ? styles.rewardSuccessIcon : ""}`.trim()}>
+          <img
+            src={CircleCheckIcon}
+            alt=""
+            className={styles.successIconGlyph}
+            aria-hidden="true"
+          />
+        </div>
         <h2 className={styles.title}>{isRewardRedemptionOnly ? "CANJE REGISTRADO CORRECTAMENTE" : "VENTA REGISTRADA CORRECTAMENTE"}</h2>
 
         <div className={styles.infoGrid}>

@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (17 sep 2026)
+## Cobertura actual (25 sep 2026)
 
-41 archivos de test (**524 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+51 archivos de test (**663 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área | Archivo |
@@ -35,7 +35,7 @@ y el proceso principal de Electron:
 | Corte de cajero (hook de modales) | `src/pages/CashCut/hooks/useCashCutDetail.test.js` |
 | Corte de cajero (formateadores) | `src/pages/CashCut/utils/cashCutFormatters.test.js` |
 | Corte impreso (builder de ancho fijo) | `src/utils/cashCutBuilder.test.js` |
-| Impresión de ticket (fallback) | `src/utils/ticketPrinter.test.js` |
+| Ticket: generación (sin impresión) | `src/utils/ticketPrinter.test.js` |
 | Modal de recompensas (cálculos) | `.../RewardModal/rewardModalCalculationService.test.js` |
 | Modal de recompensas (hook) | `.../RewardModal/useRewardModal.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
@@ -59,6 +59,9 @@ y el proceso principal de Electron:
 | Ticket: formateadores de sucursal | `src/utils/ticket/ticketBranchFormatters.test.js` |
 | Ticket: servicios de puntos | `src/utils/ticket/ticketPointsService.test.js` |
 | Ticket: secciones | `src/utils/ticket/ticketSections.test.js` |
+| Reportes: ciclo de vida del dashboard | `.../PageReportsHome/hooks/useReportsDashboard.test.js` |
+| Ventas: sincronización de columnas | `.../SalesComponents/hooks/useSalesTableColumns.test.js` |
+| Ventas: atajos de teclado | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js` |
 
 ## Patrones y convenciones
 
@@ -84,10 +87,19 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   parámetros. `create_transfer_order` aún no tiene caller JS (la vista de traspasos es el stub de
   #12), por eso se fija su interfaz SQL.
 - **Lógica de impresión y corte:** `cashCutBuilder.js` (secciones, totales, wrapping e invariante de
-  32 columnas) y `ticketPrinter.js` (contrato de éxito/fallo).
+  32 columnas). `ticketPrinter.js` solo cubre el contrato de éxito: su rama de fallo se eliminó en
+  #57 por ser inalcanzable y no se ha restituido porque la función todavía no imprime. Ver
+  `KNOWN_ISSUES.md` #59.
 - **Proceso principal de Electron:** `mainProcess.test.js` cubre los seis canales IPC, el zoom por
   `webContents` y el ciclo de vida de la ventana. `electron/main.js` se redujo a wiring y la lógica
   se movió a `electron/mainProcess.js` (inyección de dependencias, sin `require('electron')`).
+- **Ganchos de página de reportes y de ventas** (25 sep 2026, 21 casos, rama
+  `fix/code-quality-and-runtime-bugs`): `useReportsDashboard.test.js` fija que el `finally` de la
+  petición obsoleta no invierte el resultado (mutación: quitar el guard rompe el caso), que una
+  respuesta tardía no pisa el estado y que el intervalo se limpia al desmontar;
+  `useSalesTableColumns.test.js` fija que cada listener de `mousedown` se empareja con su `mouseup`
+  y que una columna reordenada invalida los cierres previos; `useSalesKeyboardShortcuts.test.js`
+  fija que los atajos leen siempre las props vigentes sin re-registrar el listener.
 
 No hay todavía:
 
@@ -114,6 +126,10 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
   reglas `recommended` (`@eslint/js`) + `eslint-plugin-react` (jsx-runtime) +
   `eslint-plugin-react-hooks` (recommended). `no-console` con `allow: ["error"]` para preservar los
   `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`.
+  `languageOptions.globals` declara los constructores DOM que el código y las suites usan
+  (`Event`, `CustomEvent`, `KeyboardEvent`, `MouseEvent`, `HTMLElement`, `HTMLButtonElement`) como
+  `readonly`, para que crearlos en los tests no dispare `no-undef`; el resto de globals del DOM no
+  se declara porque no se usan.
 - **Prettier 3** con `.prettierrc.json` (2 espacios, comillas dobles —estilo dominante del repo—,
   `trailingComma: es5`, `lf`) y `.prettierignore` (`dist/`, `node_modules/`, `supabase/.temp/`,
   `supabase/functions/`).

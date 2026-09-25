@@ -211,18 +211,6 @@ const useKardexRealtime = ({
           queueAffectedProducts
         )
         .subscribe((status) => {
-  if (!import.meta.env.DEV) {
-    return;
-  }
-
-  if (status === "SUBSCRIBED") {
-    console.log(
-      "Realtime del Kardex activo."
-    );
-
-    return;
-  }
-
   if (
     status === "CHANNEL_ERROR" ||
     status === "TIMED_OUT"
