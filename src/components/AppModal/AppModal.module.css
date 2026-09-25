@@ -70,8 +70,8 @@
   display: block;
   width: 30px;
   height: 30px;
-  filter: brightness(0) saturate(100%) invert(20%) sepia(36%)
-    saturate(1312%) hue-rotate(121deg) brightness(92%) contrast(91%);
+  filter: brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%)
+    hue-rotate(75deg) brightness(51%) contrast(81%);
   pointer-events: none;
 }
 

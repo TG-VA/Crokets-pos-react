@@ -86,13 +86,14 @@
   display: block;
   width: 13px;
   height: 13px;
-  filter: brightness(0) invert(0.45);
+  filter: brightness(0) saturate(100%) invert(62%) sepia(3%) saturate(3974%)
+    hue-rotate(175deg) brightness(67%) contrast(65%);
   pointer-events: none;
 }
 
 .clearSearchButton:hover .clearSearchIcon {
-  filter: brightness(0) saturate(100%) invert(68%) sepia(93%) saturate(866%)
-    hue-rotate(346deg) brightness(101%) contrast(86%);
+  filter: brightness(0) saturate(100%) invert(63%) sepia(80%) saturate(2742%)
+    hue-rotate(342deg) brightness(105%) contrast(131%);
 }
 
 .filterContainer {
