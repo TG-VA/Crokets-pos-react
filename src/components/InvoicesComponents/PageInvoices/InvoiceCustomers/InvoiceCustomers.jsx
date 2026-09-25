@@ -306,12 +306,7 @@ const InvoiceCustomers = () => {
             loadCustomers();
           }
         }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime activo: clientes fiscales");
-        }
-      });
+      );
 
     return () => {
       supabase.removeChannel(channel);

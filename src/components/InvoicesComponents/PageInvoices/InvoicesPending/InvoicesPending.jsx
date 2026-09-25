@@ -157,12 +157,7 @@ const InvoicesPending = () => {
         () => {
           loadPendingSales();
         }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Realtime activo: ventas por facturar");
-        }
-      });
+      );
 
     return () => {
       supabase.removeChannel(channel);
