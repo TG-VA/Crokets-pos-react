@@ -89,6 +89,8 @@ const AppModal = ({
   onConfirm,
   onCancel,
   onClose,
+  children = null,
+  size = "default",
 }) => {
   const titleId = useId();
   const messageId = useId();
@@ -328,7 +330,7 @@ const AppModal = ({
     >
       <div
         ref={modalRef}
-        className={`${styles.modal} ${config.className}`}
+        className={`${styles.modal} ${config.className} ${styles[`size-${size}`] || ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={
@@ -377,6 +379,10 @@ const AppModal = ({
                 {message}
               </p>
             )}
+
+            {children ? (
+              <div className={styles.children}>{children}</div>
+            ) : null}
           </div>
         </div>
 

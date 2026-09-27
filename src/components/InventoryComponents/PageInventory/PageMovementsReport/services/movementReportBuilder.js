@@ -85,6 +85,48 @@ const createRedemptionSaleIds = (
   );
 };
 
+const reorderTransferReason = (value) => {
+  const text = String(value ?? "").trim();
+
+  if (!/^TRASPASO\s/i.test(text)) {
+    return value;
+  }
+
+  const match = text.match(
+    /^TRASPASO\s+(.*?)\s+(TR-\d{6}-\d{6})\s+(.+)$/i
+  );
+
+  if (!match) {
+    return value;
+  }
+
+  const [, actionPhrase, folio, rest] = match;
+
+  const restMatch =
+    rest.match(
+      /^([A-Za-zÁÉÍÓÚáéíóúÑñ0-9_\- ]+?)(?:\s*-\s*(.+))?$/
+    );
+
+  let branchName;
+  let notes;
+
+  if (restMatch) {
+    branchName = String(restMatch[1] ?? "").trim();
+    notes = restMatch[2] ? String(restMatch[2]).trim() : "";
+  } else {
+    branchName = rest.trim();
+    notes = "";
+  }
+
+  let result = `TRASPASO ${actionPhrase} ${branchName} ${folio}`;
+
+  if (notes) {
+    result += ` - ${notes}`;
+  }
+
+  return result;
+};
+
 export const hydrateBaseMovements = ({
   baseRows,
   rewardRows,
@@ -165,7 +207,7 @@ export const hydrateBaseMovements = ({
               rewardLabel,
               pointsValue
             )
-          : row?.reason,
+          : reorderTransferReason(row?.reason),
 
       products:
         productsById.get(
