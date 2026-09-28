@@ -1780,3 +1780,71 @@ excepción de alcance en lugar de resolverlo. El segundo: rebajó A5 a inocuo si
 `chk_customer_points_movement_type`, bajo la cual cuatro de sus cinco marcadores no pueden existir. Ambos
 se corrigieron en un pase posterior, con mutation testing que demuestra que los tests nuevos fallan contra
 el código anterior. La rama queda lista para merge, con #56 como deuda conocida y explícita.
+
+---
+
+## Informe de Auditoría — RAMA `refactor/invoices-modularization-and-dip` (28 de septiembre de 2026)
+
+Cierre de `KNOWN_ISSUES.md` #55 (DIP y SRP en Facturación). Base: `main` en `e3a8b67`.
+Commits: `1fdeded` (servicios), `a2072a3` (tests), `f0c1e81` (componentes), más el commit de docs.
+
+### Veredicto por sección
+
+| Verificación | Resultado |
+|---|---|
+| `npm test` | 81 archivos / **1225 tests** en verde (base 64/931) |
+| `npx vitest run src/components/InvoicesComponents` | 17 archivos / **294 tests** |
+| `npm run build:frontend` | `EXIT=0` |
+| `npx eslint src/components/InvoicesComponents` | **9 errores → 0**; 24 → 37 warnings |
+| `npx eslint .` (repo completo) | 69 errores, **0 en el módulo de Facturación** (deuda de otros módulos) |
+| `prettier --check` sobre el módulo | limpio |
+| Componentes principales | 79 / 108 / 133 / 134 / 151 líneas; el `.jsx` más largo del módulo tiene 176 |
+| Servicios y hooks | 16 servicios, 3 utilidades, 6 hooks, 25 subcomponentes |
+| DIP | cero imports de `supabase` en componentes y hooks; solo en `services/` |
+| Paridad de clases CSS | **112/112** clases idénticas contra `e3a8b67` |
+| Paridad de texto visible | verificada cadena por cadena en las seis unidades |
+| Props padre→hijo | validadas contra la firma de cada subcomponente: 0 faltantes, 0 desconocidas |
+| Referencias `styles.*` | todas resueltas contra su módulo CSS (script de verificación propio) |
+| Imports relativos | todos resueltos (script de verificación propio) |
+| `console.log`/`console.warn` nuevos | 0 |
+
+### Hallazgos corregidos durante la auditoría
+
+- **Imports relativos rotos que rompían el build.** Los 10 subcomponentes de `components/`
+  importaban `./X.module.css` en vez de `../X.module.css`, tres importaban el icono SVG con cuatro
+  niveles en vez de cinco, `InvoicesHistory.jsx` apuntaba un nivel de más a
+  `utils/invoiceFormatters` y `InvoiceSettingsTimbresSection.jsx` importaba un
+  `./InvoiceSettingsDateFormatters` inexistente. Los tests pasaban porque la suite no importa
+  vistas; el build de producción sí lo detectó.
+- **Realtime muerto (heredado de `main`).** Los canales de `InvoiceCustomers` e `InvoicesPending`
+  registraban `.on(...)` sin llamar nunca a `.subscribe()`. El servicio compartido corrige el
+  contrato (un binding `postgres_changes` por tabla con `table` resuelto, un solo `subscribe()`,
+  payload entregado a `onChange`) y está cubierto por tests que fallan contra la versión previa.
+- **Churn de formato fuera de alcance.** `prettier --write` sobre todo el módulo reformateó
+  `Modals/InvoiceModal/InvoiceModal.jsx` y `NavbarInvoices/NavbarInvoices.jsx`, que no pertenecen a
+  este ítem; se restauraron para que el commit de refactor no arrastre ruido ajeno.
+
+### Notas y límites conscientes
+
+- **El patrón de `set-state-in-effect` sigue abierto en #56.** Los dos efectos de reinicio de
+  `useFiscalCustomerModal` y `useInvoiceSaleModal` y el efecto de carga de `useInvoicesPending`
+  conservan la semántica de `main`; se anotaron con `eslint-disable-next-line` y su justificación.
+  Mover las cargas iniciales fuera del efecto cambiaría el orden de montaje y pertenece a #56.
+- **`useAppModal` no es estable.** Sus funciones se recrean en cada render, así que los listeners
+  de `Escape` de los dos modales no dependen de `closeAppModal` (con `eslint-disable` y nota): en
+  caso contrario se re-registrarían en cada actualización. Es el mismo criterio que ya se aplica en
+  los hooks del módulo de Clientes.
+- **Los 25 subcomponentes no tienen tests.** Son de render y reciben el estado ya resuelto del
+  hook; el stance del proyecto es no testear vistas presentacionales, documentado en
+  `docs/TESTING.md`. La lógica que sí tenía valor propio quedó en los servicios puros, con 294
+  casos.
+- **Sin smoke test de render.** Un error de prop mal cableado no lo detectan ni Vitest ni ESLint en
+  este proyecto; se cubrió con la verificación mecánica de props y con el build, no con un test de
+  integración. Queda como hueco recomendado en `docs/TESTING.md`.
+
+### Veredicto
+
+**APROBADO.** Los seis monolitos quedaron como composición de vistas, con la persistencia confinada
+a servicios y la lógica de negocio en funciones puras cubiertas por tests. Se preservaron consultas,
+orden, textos y clases, y el módulo pasó de 9 errores de ESLint a 0. #56 permanece como deuda
+conocida y explícita.
