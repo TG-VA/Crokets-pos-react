@@ -1,10 +1,10 @@
 import React from "react";
 import styles from "./RewardsAvailability.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import RewardsAvailabilityCustomerSearch from "./RewardsAvailabilityCustomerSearch";
-import RewardsAvailabilityCustomerSummary from "./RewardsAvailabilityCustomerSummary";
-import RewardsAvailabilityRewardsGrid from "./RewardsAvailabilityRewardsGrid";
-import { useRewardsAvailability } from "./useRewardsAvailability";
+import RewardsAvailabilityCustomerSearch from "./components/RewardsAvailabilityCustomerSearch";
+import RewardsAvailabilityCustomerSummary from "./components/RewardsAvailabilityCustomerSummary";
+import RewardsAvailabilityRewardsGrid from "./components/RewardsAvailabilityRewardsGrid";
+import { useRewardsAvailability } from "./hooks/useRewardsAvailability";
 
 const RewardsAvailability = () => {
   const {

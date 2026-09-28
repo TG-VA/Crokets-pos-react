@@ -1,14 +1,14 @@
 import styles from "./PointsAdjustment.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import PointsAdjustmentConfirmModal from "../../Modals/PointsAdjustmentConfirmModal/PointsAdjustmentConfirmModal";
-import PointsAdjustmentAccessStates from "./PointsAdjustmentAccessStates";
+import PointsAdjustmentAccessStates from "./components/PointsAdjustmentAccessStates";
 import {
   PointsAdjustmentAdminNotice,
   PointsAdjustmentCustomerSearchCard,
   PointsAdjustmentSelectedCustomerCard,
-} from "./PointsAdjustmentCustomerCards";
-import PointsAdjustmentForm from "./PointsAdjustmentForm";
-import { usePointsAdjustment } from "./usePointsAdjustment";
+} from "./components/PointsAdjustmentCustomerCards";
+import PointsAdjustmentForm from "./components/PointsAdjustmentForm";
+import { usePointsAdjustment } from "./hooks/usePointsAdjustment";
 
 const PointsAdjustment = () => {
   const {

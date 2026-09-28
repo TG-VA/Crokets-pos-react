@@ -1,9 +1,9 @@
 import styles from "./PointsHistory.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import PointsHistoryFilters from "./PointsHistoryFilters";
-import PointsHistorySummary from "./PointsHistorySummary";
-import PointsHistoryTable from "./PointsHistoryTable";
-import { usePointsHistory } from "./usePointsHistory";
+import PointsHistoryFilters from "./components/PointsHistoryFilters";
+import PointsHistorySummary from "./components/PointsHistorySummary";
+import PointsHistoryTable from "./components/PointsHistoryTable";
+import { usePointsHistory } from "./hooks/usePointsHistory";
 
 const PointsHistory = () => {
   const {

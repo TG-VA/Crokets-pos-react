@@ -1,8 +1,8 @@
 import React from "react";
 import styles from "./CustomerModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import CustomerModalFields from "./CustomerModalFields";
-import { useCustomerModal } from "./useCustomerModal";
+import CustomerModalFields from "./components/CustomerModalFields";
+import { useCustomerModal } from "./hooks/useCustomerModal";
 
 const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
   const {

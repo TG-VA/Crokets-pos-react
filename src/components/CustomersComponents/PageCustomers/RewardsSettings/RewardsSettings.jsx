@@ -2,11 +2,11 @@ import React from "react";
 import styles from "./RewardsSettings.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import RewardModal from "../../Modals/RewardModal/RewardModal";
-import RewardsSettingsFilters from "./RewardsSettingsFilters";
-import RewardsSettingsPointsRule from "./RewardsSettingsPointsRule";
-import RewardsSettingsRewardDetailsModal from "./RewardsSettingsRewardDetailsModal";
-import RewardsSettingsTable from "./RewardsSettingsTable";
-import { useRewardsSettings } from "./useRewardsSettings";
+import RewardsSettingsFilters from "./components/RewardsSettingsFilters";
+import RewardsSettingsPointsRule from "./components/RewardsSettingsPointsRule";
+import RewardsSettingsRewardDetailsModal from "./components/RewardsSettingsRewardDetailsModal";
+import RewardsSettingsTable from "./components/RewardsSettingsTable";
+import { useRewardsSettings } from "./hooks/useRewardsSettings";
 
 const RewardsSettings = () => {
   const {

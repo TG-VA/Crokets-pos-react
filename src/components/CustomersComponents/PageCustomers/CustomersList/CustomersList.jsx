@@ -4,10 +4,10 @@ import CustomerModal from "../../Modals/CustomerModal/CustomerModal";
 import { useBranch } from "../../../../contexts/BranchContext";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 import AppModal from "../../../AppModal/AppModal";
-import CustomersListFilters from "./CustomersListFilters";
-import CustomersListFiscalMatch from "./CustomersListFiscalMatch";
-import CustomersListTable from "./CustomersListTable";
-import { useCustomersList } from "./useCustomersList";
+import CustomersListFilters from "./components/CustomersListFilters";
+import CustomersListFiscalMatch from "./components/CustomersListFiscalMatch";
+import CustomersListTable from "./components/CustomersListTable";
+import { useCustomersList } from "./hooks/useCustomersList";
 
 const CustomersList = () => {
   const { branch } = useBranch();
