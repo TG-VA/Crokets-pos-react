@@ -1848,3 +1848,159 @@ Commits: `1fdeded` (servicios), `a2072a3` (tests), `f0c1e81` (componentes), más
 a servicios y la lógica de negocio en funciones puras cubiertas por tests. Se preservaron consultas,
 orden, textos y clases, y el módulo pasó de 9 errores de ESLint a 0. #56 permanece como deuda
 conocida y explícita.
+
+---
+
+## Contra-Auditoría — RAMA `refactor/invoices-modularization-and-dip` (28 de septiembre de 2026)
+
+**Alcance:** verificación independiente del mismo diff ya auditado en el informe previo de esta rama
+(cierre de `KNOWN_ISSUES.md` #55). Base: `origin/main` = `e3a8b67`; HEAD al auditar: `b8ce56a`.
+Commits: `1fdeded` (servicios), `a2072a3` (tests), `f0c1e81` (componentes, hooks y subcomponentes),
+`b8ce56a` (cierre documental). Diff: 77 archivos, +9328 / -4027.
+
+La auditoría previa declaraba el PR aprobado y sin bloqueantes abiertos, por lo que la sección 0 del
+checklist de `PR_REVIEW.md` no aplica: no hay bloqueantes previos que atender. Esta contra-auditoría
+no da por cierto ningún dato del informe anterior; todo se remedió por medición propia.
+
+### Verificaciones mecánicas exigidas
+
+| Verificación | Comando | Resultado |
+|---|---|---|
+| Suite completa | `npm test` | `EXIT=0` — **81 archivos / 1225 tests** en verde |
+| Build de producción | `npm run build:frontend` | `EXIT=0` — `built in 11.57s` |
+| Suite del módulo | `npx vitest run src/components/InvoicesComponents` | **17 archivos / 294 tests** |
+| DIP | `rg 'from .*supabaseClient'` fuera de `services/` | **0 resultados** |
+| Emojis | barrido por codepoint en líneas añadidas | **0** |
+| `console.log` / `console.warn` | barrido en los 77 archivos del diff | **0** |
+| `!important` | barrido en líneas añadidas y en los 8 `*.module.css` del módulo | **0** |
+| `style={{...}}` | barrido en líneas añadidas | **0** |
+| EOF newline | los 77 archivos cambiados | **77/77** con salto final |
+| Espacios en blanco | `git diff --check e3a8b67..HEAD` | limpio, 0 errores |
+
+**Sobre DIP.** La exclusión de `NavbarInvoices` resultó inocua: no importa el cliente de Supabase.
+Las únicas 18 coincidencias de `supabaseClient` en todo el módulo caen dentro de directorios
+`services/`, y 8 de ellas son archivos `.test.js` que mockean el cliente. Ningún componente `.jsx` ni
+ningún hook lo importa:
+
+```
+$ rg -n "from ['\"].*supabaseClient" src/components/InvoicesComponents -g '!**/services/**'
+0 resultados
+```
+
+### Descomposición
+
+| Componente | Líneas | `components/` | `hooks/` | `services/` |
+|---|---|---|---|---|
+| `InvoicesPending.jsx` | 79 | 2 | 1 | 4 |
+| `InvoicesHistory.jsx` | 108 | 3 | 1 | 6 |
+| `FiscalCustomerModal.jsx` | 131 | 6 | 1 | 4 |
+| `InvoiceCustomers.jsx` | 133 | 3 | 1 | 4 |
+| `InvoiceSaleModal.jsx` | 134 | 5 | 1 | 4 |
+| `InvoiceSettings.jsx` | 151 | 6 | 1 | 4 |
+
+Las seis unidades quedan bajo el techo de 160 líneas y con las tres carpetas. El `.jsx` más largo del
+módulo es `InvoicesHistoryDetail.jsx` con 176. Inventario: 16 servicios, 3 utilidades, 6 hooks, 25
+subcomponentes y 17 archivos de test.
+
+### Comprobaciones independientes no escritas en el informe previo
+
+Se reprodujeron con scripts propios, porque ninguna de ellas figuraba como evidencia en el informe
+anterior:
+
+- **Imports relativos: 169/169 resueltos.** Sin el archivo `.js`/`.jsx` que se resuelve por
+  extensionless.
+- **Referencias `styles.*`: 204/204 resueltas** contra su módulo CSS.
+- **Props padre→hijo: 163/163 correctas.** Cada prop pasado a cada subcomponente está declarada en su
+  firma. Un primer script produjo 5 falsos positivos por anclarse en una declaración hermana previa
+  (`InvoicesPendingRow` en vez de `InvoicesPendingTable`); se corrigió anclando el patrón en el nombre
+  del componente. Confirmación directa: `InvoicesHistoryDetail.jsx:84` y `InvoicesPendingTable.jsx:57`
+  desestructuran `{ invoice, items, loading, onClose }` y `{ sales, loading, onInvoice }`.
+- **Paridad de CSS: 8/8 módulos con conjunto de clases idéntico a `main`, y 0 archivos `.module.css`
+  modificados por el diff.** La identidad visual no depende de una reconstrucción.
+- **Consultas críticas idénticas campo por campo.** `invoices` (historial) y `sales` (por facturar)
+  conservan columnas, filtros y orden; `buildSalesDayRange` réplica los desplazadores `-05:00` y el
+  `.999` ms de `main`; la tripartición de sucursal (`current` / `all` / id concreto) se conserva con la
+  misma verdad lógica; `sumInvoicesTotal` es la misma expresión de `main`; y la regla `isBillingReady`
+  se extrajo literal a `hasFiscalCustomerData` (`invoiceFormatters.js:128-134`).
+- **ESLint del módulo: 0 errores, 37 warnings**, los 37 de `no-unused-vars` sobre imports que solo se
+  usan en JSX, porque `eslint.config.mjs` no activa `react/jsx-uses-vars`. Un barrido de imports
+  realmente no usados no encontró ninguno en el alcance del PR; el único hit (`React` en
+  `NavbarInvoices.jsx`) es deuda previa de `main` en un archivo que el diff no toca.
+- **Secretos.** `api_password` y `api_token` se renderizan con `type="password"`, y ningún `console.*`
+  imprime el objeto de formulario ni los valores: los 20 `console.error` del diff imprimen cadenas
+  estáticas y el `err` de Supabase. Sin `.env` ni `.sqlite` en el diff, y `.env` no está trackeado.
+- **Prettier.** Los 3 archivos que fallan el chequeo (`InvoiceModal.jsx`, su `.module.css` y
+  `NavbarInvoices.jsx`) están fuera del diff y ya fallaban en `main`: el refactor no arrastró churn ajeno.
+
+### Mutation testing del dominio fiscal
+
+Para no aceptar la cobertura nominal, se mutaron servicios críticos y se observó si la suite lo nota:
+
+| Mutación | Sensible la suite |
+|---|---|
+| Quitar `channel.subscribe()` de `invoicesRealtimeService` | **sí** — 3 tests fallan |
+| `isValidRfc` siempre `false` | **sí** — 14 tests fallan |
+| `isValidNextFolio` `> 0` → `>= 0` | **sí** — 3 tests fallan |
+| `isValidPhone` `=== 10` → `>= 7` | **sí** — 1 test falla |
+| `sumInvoicesTotal` sin coerción `Number()` | **sí** — 1 test falla |
+| `isSaleReadyToInvoice` negada | **sí** — 1 test falla |
+| **Quitar `if (!target) return false;` de `isPhoneAlreadyFiscalCustomer`** | **NO — 294/294 siguen en verde** |
+
+### Hallazgo
+
+**H1 (no bloqueante, calidad de test).** La guarda de teléfono vacío en
+`invoiceCustomersCalculationService.js:116` es load-bearing pero no está cubierta. El test que
+aparenta cubrirla es vacuo: `invoiceCustomersCalculationService.test.js:139-141` se titula *"devuelve
+false cuando el teléfono está vacío"* pero invoca `isPhoneAlreadyFiscalCustomer([], "")`, que devuelve
+`false` de forma trivial por `[].some(...)` y no ejercita la guarda.
+
+Escenario que la rompe, ejecutado con números: con un cliente ya registrado cuyo teléfono es `null` en
+base de datos y un alta nueva sin teléfono, `normalizePhoneDigits(null)` y `normalizePhoneDigits("")`
+producen ambos `""`. Sin la guarda, `"" === ""` hace que la función reporte `true` y bloquee el alta de
+un cliente fiscal legítimo.
+
+| Estado del código | `isPhoneAlreadyFiscalCustomer([{ phone: null }], "")` |
+|---|---|
+| Con la guarda (código actual) | `false` — correcto |
+| Sin la guarda | `true` — `AssertionError: expected true to be false` |
+
+La suite existente pasa 294/294 con la guarda eliminada, es decir, nadie la protege contra una
+regresión. **El código de producción es correcto y el arreglo funciona**; lo que falta es la red de
+seguridad. Como el caso límite está documentado en `KNOWN_ISSUES.md` #55 y el PR sí entrega el arreglo,
+la sección 7 del checklist se cumple con la observación registrada, no como incumplimiento. Corrección
+propuesta, de una línea y sin tocar producción:
+
+```js
+it("no bloquea el alta cuando el cliente existente no tiene telefono", () => {
+  expect(
+    isPhoneAlreadyFiscalCustomer([{ phone: null }, { phone: "  " }], "")
+  ).toBe(false);
+});
+```
+
+### Notas y limites conscientes
+
+- **Sin smoke test de render.** Ni Vitest ni ESLint detectan un prop mal cableado en este proyecto. Se
+  compensó con la verificación mecánica de 163 props y con el build, no con un test de integración.
+- **`npm run dev` no se ejecutó.** La verificacion de flujo manual (ventas, caja, sucursal) del punto 1
+  del checklist queda como no verificada en esta contra-auditoría; el build de producción y las
+  consultas idénticas a `main` acotan el riesgo, pero no sustituyen esa prueba.
+- **Credenciales del PAC en el frontend.** `InvoiceSettingsCredentialsSection.jsx` carga
+  `api_password` y `api_token` al formulario (enmascarados) y `api_username` en texto plano. Es el
+  diseño heredado de `main` y no lo introduce este PR, pero roza la regla de no exponer credenciales del
+  PAC en el frontend y conviene tratarlo en una issue propia.
+- **Patrón `set-state-in-effect`.** Los tres efectos de reinicio y carga inicial conservan la semántica
+  de `main`, con `eslint-disable-next-line` y su justificación. Pertenece a #56.
+- **Paridad de queries verificada por lectura, no por automatismo.** Un script de cosecha de cadenas
+  `select`/`filter` produjo falsos positivos por no tolerar los selects ahora extraídos a constantes
+  (`INVOICES_COLUMNS`, `PENDING_SALES_COLUMNS`); se descartó su resultado y la paridad se afirmó solo
+  donde hay cita textual en ambos lados.
+
+### Veredicto
+
+**APROBADO CON UNA OBSERVACIÓN NO BLOQUEANTE.** Las cuatro verificaciones mecánicas exigidas pasan con
+evidencia ejecutable, el DIP está completo, la higiene del diff es limpia, los seis monolitos quedaron
+como composición de vistas y la lógica fiscal nueva resiste mutation testing. No se declaran bloqueantes.
+Queda H1: la guarda de teléfono vacío funciona pero el test que dice cubrirla no la cubre; se recomienda
+añadir el caso de una línea antes o después del merge, sin bloquearlo. #56 permanece como deuda
+conocida y explicita.
