@@ -1696,25 +1696,51 @@ limpios" cuando la tabla de métricas añadida incumplía `prettier --check`, y 
 como estado final. Se corrigieron ambas contra medición: `KNOWN_ISSUES.md` conserva exactamente los mismos
 4 hunks de Prettier que `main` (cero introducidos por la rama) y el recuento es 64/930.
 
-**A4 — `closeOnConfirm` muerto (OBSERVADO, no bloqueante).** `useAppModal.js` acepta `closeOnConfirm` y
-`AppModal.jsx` nunca lo pasa. Se deja fuera de alcance por ser comportamiento heredado de `main` y ajeno a
-la descomposición de Clientes.
+**A4 — `closeOnConfirm` muerto (RESUELTO en un pase posterior).** El primer informe de esta serie lo
+clasificó como "heredado de `main` y ajeno al alcance". Esa atribución era falsa en las dos partes:
+`origin/main:src/hooks/useAppModal.js` no contiene `closeOnConfirm`, y el diff `origin/main...HEAD` de ese
+archivo **sí** lo añade esta rama. Era, por tanto, código muerto introducido por el PR y no una excepción
+de alcance. Se eliminó el parámetro y su rama `if (closeOnConfirm)`: `showAppConfirm` vuelve al cierre
+incondicional previo a la rama, conservando el orden cerrar→ejecutar y la ejecución de `onConfirm`. La
+rama también había ampliado `showAppAlert` con `onConfirm` y añadido `setAppModalLoading`; ambos sí
+tienen consumidores reales (`useCustomerModal.js`, `useRewardsSettings.js`) y se conservan.
 
-**A5 — `REDEEMING_MOVEMENT_MARKERS` con marcadores muertos (OBSERVADO, no bloqueante).** El clasificador de
-movimientos redime el SKU o el reward; la constante conserva cuatro claves que ya no se emiten. Se conserva
-como red de seguridad defensiva y no se toca para no alterar el comportamiento con tipos futuros.
+**A5 — `REDEEMING_MOVEMENT_MARKERS` con cuatro marcadores imposibles (RESUELTO en un pase posterior).** El
+primer informe lo décritió como una inocua "red de seguridad defensiva". Era una lectura incompleta, y la
+frase que lo acompañaba ("el clasificador redime el SKU o el reward") no describía nada real. El hecho
+verificable es más grave: la restricción `chk_customer_points_movement_type` de `customer_points` solo
+admite `earn` y `redeem`, de modo que `canje`, `used`, `uso` y `resta` —cuatro de los cinco marcadores— no
+podían existir en la tabla. Peor aún, tres tests del servicio asientaban `movement_type: "canje"`, `"used"`
+y `"resta_manual"`, es decir, fijaban estados que la base rechaza, dando confianza sobre un clasificador
+que en producción solo vería `earn` y `redeem`. La clasificación pasó a ser una comparación exacta contra
+`"redeem"` (tolerante a mayúsculas y espacios), alineada con la restricción y con lo que ya hacía
+`pointsHistoryCalculationService.js`. Los tests se reescribieron para usar solo los dos valores reales y se
+añadió un caso que fija que `used`, `resta_manual`, `entrada`, `salida`, `sale`, `transfer` y `adjustment`
+ya no restan. Verificado por mutation testing: el caso falla contra la versión con marcadores. El propio
+JSDoc del servicio ya afirmaba que la base solo admite `earn` y `redeem`, de modo que el código contradecía
+su documentación.
+
+**A6 — El mismo patrón de marcadores fuera del alcance del PR (OBSERVADO, requiere verificación
+separada).** `customersReportCalculationService.js` (dos sitios), `CustomerDetailModal.jsx` y
+`CustomerDetailPointsTab.jsx` clasifican el canje con `movementType.includes("canje" | "used" | "uso" |
+...)`. Los tres archivos están fuera del diff de la rama, así que quedan fuera de alcance. **No se afirma
+que sean defectuosos:** esos servicios leen también `sale_reward_redemptions`, que tiene `status` y no
+`movement_type`, y condicionan además por `source === "reward"`, así que el conjunto de marcadores puede
+ser legítimo para ese segundo origen. Queda registrado para una auditoría propia del módulo de Reportes.
 
 ### Verificación final
 
 | Comprobación | Resultado |
 |---|---|
-| `npm test` | **64 archivos / 930 tests, 0 fallos** (baseline 51/663) |
+| `npm test` | **64 archivos / 931 tests, 0 fallos** (baseline 51/663) |
 | `npm run build:frontend` | **EXIT 0** |
 | `npx eslint` sobre el módulo y sobre el diff | **EXIT 0** en ambos |
+| `npx eslint src/` completo | 90 errores, **0 en archivos del diff de la rama** (verificado por intersección) |
 | `prettier --check` sobre el diff | limpio en el código; los 2 avisos (`BACKLOG.md`, `KNOWN_ISSUES.md`) fallan igual en `main` |
 | Hunks de Prettier en `KNOWN_ISSUES.md` | 4, los mismos que `main`; **0 introducidos** |
 | `git diff --check` | limpio |
 | Mutation testing de B1 | 5 de 9 tests fallan contra el servicio previo |
+| Mutation testing de A5 | 1 test falla contra la versión con marcadores |
 | Paridad de clases CSS | **180/180** clases idénticas en los seis módulos |
 | Paridad de texto visible | idéntica cadena por cadena en las seis pantallas |
 | Componentes principales | 122 / 145 / 89 / 126 / 88 / 101 líneas; ninguno sobre 150 |
@@ -1725,7 +1751,12 @@ como red de seguridad defensiva y no se toca para no alterar el comportamiento c
 
 - **El patrón de `set-state-in-effect` sigue abierto en #56.** Los ocho `eslint-disable-next-line`
   compran el gate de CI, no resuelven la causa raíz. Cambiar las cargas iniciales de efecto a un patrón
-  distinto cambiaría el orden de montaje y pertenece a #56, no a esta rama.
+  distinto cambiaría el orden de montaje y pertenece a #56, no a esta rama. En `src/` completo quedan 90
+  errores de esa y otras reglas de hooks, todos fuera del diff de la rama.
+- **A5 solo cambia el resultado ante datos que la base no puede contener.** Con filas reales (`earn` y
+  `redeem`) el saldo por cliente es idéntico antes y después. La diferencia aparece únicamente si
+  existieran filas con `movement_type` fuera de la restricción, que es justo lo que la restricción
+  impide. El `trim()` se mantiene por si quedaran filas anteriores a ella.
 - **`NavbarCustomers.jsx` importa `supabaseClient` en un componente.** Se verificó por intersección que
   el archivo no aparece en el diff de la rama: es herencia de `main` y excede el alcance de #54. Lo mismo
   aplica a `RewardModal/rewardModalService.js`.
@@ -1740,7 +1771,12 @@ como red de seguridad defensiva y no se toca para no alterar el comportamiento c
 ### Veredicto
 
 **APROBADO.** Los dos bloqueantes quedan cerrados con evidencia ejecutable: B1 con mutation testing que
-falla contra la versión previa del servicio, y B2 con el gate de CI medido en `EXIT=0`. Los cuatro
-hallazgos secundarios (A1, A2, A3 corregidos; A4, A5 observados) están resueltos o aceptados
-explícitamente con su justificación. La contra-auditoría no dejó bloqueantes abiertos: la rama queda
-lista para merge, con #56 como deuda conocida y explícita.
+falla contra la versión previa del servicio, y B2 con el gate de CI medido en `EXIT=0`. Los seis hallazgos
+secundarios están resueltos (A1, A2, A3, A4, A5) o registrados para una auditoría propia (A6).
+
+La contra-auditoría cometió dos errores propios, que quedan registrados sin maquillar. El primero: el
+informe inicial atribuyó A4 a `main` cuando lo había introducido esta rama, y por eso lo aceptó como
+excepción de alcance en lugar de resolverlo. El segundo: rebajó A5 a inocuo sin comprobar la restricción
+`chk_customer_points_movement_type`, bajo la cual cuatro de sus cinco marcadores no pueden existir. Ambos
+se corrigieron en un pase posterior, con mutation testing que demuestra que los tests nuevos fallan contra
+el código anterior. La rama queda lista para merge, con #56 como deuda conocida y explícita.

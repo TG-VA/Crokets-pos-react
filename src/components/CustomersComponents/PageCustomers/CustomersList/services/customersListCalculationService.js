@@ -7,24 +7,23 @@
 import { normalizePhoneDigits } from "../../utils/customerFormatters";
 
 /**
- * Tipos de movimiento que descuentan puntos.
+ * Tipo de movimiento que descuenta puntos.
  *
- * La base de datos solo admite `earn` y `redeem` (CHECK en `customer_points`),
- * y los canjes se guardan con `points` negativo. El `Math.abs` mantiene el
- * resultado correcto aun si algun movimiento llegara con signo positivo.
+ * La restriccion `chk_customer_points_movement_type` de la base solo admite
+ * `earn` y `redeem`, de modo que la comparacion es exacta y no por marcadores:
+ * cualquier otro valor es rechazado por la base y no puede llegar aqui. Los
+ * canjes se guardan con `points` negativo, y el `Math.abs` mantiene el
+ * resultado correcto aun si alguno llegara con signo positivo.
  */
-const REDEEMING_MOVEMENT_MARKERS = ["canje", "redeem", "used", "uso", "resta"];
+const REDEEMING_MOVEMENT_TYPE = "redeem";
 
 /**
- * Red de seguridad: clasifica el signo de un movimiento a partir de su tipo.
+ * Clasifica el signo de un movimiento a partir de su tipo.
  */
-const isRedeemingMovement = (movementType) => {
-  const normalizedType = String(movementType || "").toLowerCase();
-
-  return REDEEMING_MOVEMENT_MARKERS.some((marker) =>
-    normalizedType.includes(marker)
-  );
-};
+const isRedeemingMovement = (movementType) =>
+  String(movementType || "")
+    .trim()
+    .toLowerCase() === REDEEMING_MOVEMENT_TYPE;
 
 /**
  * Calcula el saldo de puntos indexado por `customer_id`.

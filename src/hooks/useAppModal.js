@@ -59,7 +59,6 @@ export const useAppModal = () => {
     confirmText = "Confirmar",
     cancelText = "Cancelar",
     onConfirm,
-    closeOnConfirm = true,
   }) => {
     setAppModal({
       isOpen: true,
@@ -71,9 +70,7 @@ export const useAppModal = () => {
       showCancel: true,
       loading: false,
       onConfirm: async () => {
-        if (closeOnConfirm) {
-          closeAppModal();
-        }
+        closeAppModal();
 
         if (onConfirm) {
           await onConfirm();
