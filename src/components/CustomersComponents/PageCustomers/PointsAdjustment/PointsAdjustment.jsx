@@ -1,52 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./PointsAdjustment.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
-import PointsAdjustmentConfirmModal from "../../Modals/PointsAdjustmentConfirmModal/PointsAdjustmentConfirmModal";
-import AppModal from "../../../AppModal/AppModal";
-
-const ADMIN_AUTH_STORAGE_KEY = "customers_points_adjustment_admin_authorized";
-
-const ADJUSTMENT_REASON_OPTIONS = [
-  {
-    value: "migration",
-    label: "MIGRACIÓN DE PUNTOS DESDE SISTEMA ANTERIOR",
-  },
-  {
-    value: "administrative_correction",
-    label: "CORRECCIÓN ADMINISTRATIVA",
-  },
-  {
-    value: "authorized_compensation",
-    label: "COMPENSACIÓN AUTORIZADA",
-  },
-  {
-    value: "operational_error",
-    label: "CORRECCIÓN POR ERROR OPERATIVO",
-  },
-  {
-    value: "customer_clarification",
-    label: "ACLARACIÓN DE PUNTOS DEL CLIENTE",
-  },
-  {
-    value: "other",
-    label: "OTRO",
-  },
-];
-
-const BLOCKED_GENERIC_NOTES = [
-  "PRUEBA",
-  "TEST",
-  "OK",
-  "AJUSTE",
-  "PUNTOS",
-  "MANUAL",
-  "OTRO",
-  "N/A",
-  "NA",
-  ".",
-  "-",
-];
+import { useAppModal } from "../../../../hooks/useAppModal";
+import { subscribeToTableChanges } from "../services/customersRealtimeService";
+import { sortCustomersByName } from "../utils/customerFormatters";
+import { calculatePointsBalance } from "../services/customerPointsCalculationService";
+import {
+  fetchCurrentAuthUser,
+  fetchCustomerPointMovements,
+  fetchUserProfileWithRole,
+  insertPointsMovement,
+  searchPointsCustomers,
+} from "./services/pointsAdjustmentService";
+import {
+  ADJUSTMENT_REASON_OPTIONS,
+  ADMIN_AUTH_STORAGE_KEY,
+  BLOCKED_GENERIC_NOTES,
+  buildAdjustmentSuccessMessage,
+  buildFinalNotes,
+  buildPointsMovementPayload,
+  calculateNewBalance,
+  calculateSignedPoints,
+  isAdminProfile,
+  normalizeNotes,
+  sanitizePointsAmountInput,
+} from "./services/pointsAdjustmentCalculationService";
 
 const PointsAdjustment = () => {
   const { branch } = useBranch();
@@ -71,74 +49,18 @@ const PointsAdjustment = () => {
   const [saving, setSaving] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
   const numericPoints = Number(pointsAmount || 0);
 
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const selectedReason = useMemo(() => {
-    return ADJUSTMENT_REASON_OPTIONS.find(
-      (reason) => reason.value === adjustmentReason
-    );
-  }, [adjustmentReason]);
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
 
   const isOtherReason = adjustmentReason === "other";
 
   const finalNotes = useMemo(() => {
-    if (!adjustmentReason) return "";
-
-    if (isOtherReason) {
-      return String(notes || "").trim();
-    }
-
-    return selectedReason?.label || "";
-  }, [adjustmentReason, isOtherReason, notes, selectedReason]);
+    return buildFinalNotes({ adjustmentReason, notes });
+  }, [adjustmentReason, notes]);
 
   const normalizedFinalNotes = useMemo(() => {
-    return String(finalNotes || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();
+    return normalizeNotes(finalNotes);
   }, [finalNotes]);
 
   const isGenericNote = useMemo(() => {
@@ -148,12 +70,11 @@ const PointsAdjustment = () => {
   }, [isOtherReason, normalizedFinalNotes]);
 
   const signedPoints = useMemo(() => {
-    if (!numericPoints) return 0;
-    return adjustmentType === "add" ? numericPoints : numericPoints * -1;
+    return calculateSignedPoints({ numericPoints, adjustmentType });
   }, [numericPoints, adjustmentType]);
 
   const newBalance = useMemo(() => {
-    return Number(currentPoints || 0) + signedPoints;
+    return calculateNewBalance({ currentPoints, signedPoints });
   }, [currentPoints, signedPoints]);
 
   const canSubmit =
@@ -166,33 +87,6 @@ const PointsAdjustment = () => {
     !isGenericNote &&
     !saving &&
     !(adjustmentType === "subtract" && newBalance < 0);
-
-  const normalizeSearch = (value) => {
-    return String(value || "").trim();
-  };
-
-  const getCustomerSortName = (customer) => {
-    return String(
-      customer.name || customer.phone || customer.email || "SIN NOMBRE"
-    ).trim();
-  };
-
-  const sortCustomersByName = (customersList = []) => {
-    return [...customersList].sort((a, b) => {
-      return getCustomerSortName(a).localeCompare(getCustomerSortName(b), "es", {
-        sensitivity: "base",
-        numeric: true,
-      });
-    });
-  };
-
-  const getRoleName = (profile) => {
-    if (Array.isArray(profile?.roles)) {
-      return profile.roles[0]?.name || "";
-    }
-
-    return profile?.roles?.name || "";
-  };
 
   const checkAdminAccess = async () => {
     try {
@@ -207,39 +101,23 @@ const PointsAdjustment = () => {
         return;
       }
 
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
+      const authUser = await fetchCurrentAuthUser();
 
-      if (authError || !authUser?.id) {
+      if (!authUser?.id) {
         setAdminAccessStatus("denied");
         setAdminAccessMessage("No se pudo validar la sesión del usuario.");
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select(`
-          id,
-          status,
-          roles (
-            name
-          )
-        `)
-        .eq("id", authUser.id)
-        .maybeSingle();
+      const profile = await fetchUserProfileWithRole(authUser.id);
 
-      if (profileError || !profile) {
+      if (!profile) {
         setAdminAccessStatus("denied");
         setAdminAccessMessage("No se encontró el perfil del usuario actual.");
         return;
       }
 
-      const roleName = String(getRoleName(profile) || "").toLowerCase();
-      const isAdmin = profile.status !== false && roleName === "admin";
-
-      if (!isAdmin) {
+      if (!isAdminProfile(profile)) {
         setAdminAccessStatus("denied");
         setAdminAccessMessage(
           "Solo un administrador puede realizar ajustes manuales de puntos."
@@ -257,36 +135,14 @@ const PointsAdjustment = () => {
   };
 
   const handlePointsChange = (value) => {
-    const onlyNumbers = String(value || "").replace(/\D/g, "").slice(0, 6);
-    setPointsAmount(onlyNumbers);
+    setPointsAmount(sanitizePointsAmountInput(value));
   };
 
   const searchCustomers = async (term = searchTerm) => {
-    const cleanSearch = normalizeSearch(term);
-
     try {
       setSearchingCustomers(true);
 
-      if (cleanSearch.length < 2) {
-        setCustomers([]);
-        return;
-      }
-
-      const { data, error: customersError } = await supabase
-        .from("customers")
-        .select("id, name, phone, email, status, is_points_customer")
-        .eq("status", true)
-        .eq("is_points_customer", true)
-        .or(
-          `name.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%,email.ilike.%${cleanSearch}%`
-        )
-        .order("name", { ascending: true, nullsFirst: false })
-        .limit(10);
-
-      if (customersError) throw customersError;
-
-      const results = sortCustomersByName(data || []);
-      setCustomers(results);
+      setCustomers(sortCustomersByName(await searchPointsCustomers(term)));
     } catch (err) {
       console.error("Error buscando clientes:", err);
 
@@ -312,18 +168,9 @@ const PointsAdjustment = () => {
     try {
       setLoadingPoints(true);
 
-      const { data, error: pointsError } = await supabase
-        .from("customer_points")
-        .select("points")
-        .eq("customer_id", customerId);
+      const movements = await fetchCustomerPointMovements(customerId);
 
-      if (pointsError) throw pointsError;
-
-      const totalPoints = (data || []).reduce((sum, movement) => {
-        return sum + Number(movement.points || 0);
-      }, 0);
-
-      setCurrentPoints(totalPoints);
+      setCurrentPoints(calculatePointsBalance(movements));
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
 
@@ -358,25 +205,12 @@ const PointsAdjustment = () => {
     if (adminAccessStatus !== "allowed") return;
     if (!selectedCustomer?.id) return;
 
-    const pointsChannel = supabase
-      .channel(`points-adjustment-${selectedCustomer.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "customer_points",
-          filter: `customer_id=eq.${selectedCustomer.id}`,
-        },
-        () => {
-          loadCustomerPoints(selectedCustomer.id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(pointsChannel);
-    };
+    return subscribeToTableChanges({
+      channelName: `points-adjustment-${selectedCustomer.id}`,
+      tables: ["customer_points"],
+      rowFilter: `customer_id=eq.${selectedCustomer.id}`,
+      onChange: () => loadCustomerPoints(selectedCustomer.id),
+    });
   }, [selectedCustomer?.id, adminAccessStatus]);
 
   const handleSelectCustomer = async (customer) => {
@@ -547,40 +381,25 @@ const PointsAdjustment = () => {
 
       setSaving(true);
 
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
+      const authUser = await fetchCurrentAuthUser();
 
-      if (authError) throw authError;
-
-      const payload = {
-        id: crypto.randomUUID(),
-        customer_id: selectedCustomer.id,
-        points: signedPoints,
-        movement_type: adjustmentType === "add" ? "earn" : "redeem",
-        source: "manual",
-        related_sale_id: null,
-        reward_id: null,
-        user_id: authUser?.id || null,
-        branch_id: branch?.id || null,
-        notes: normalizedFinalNotes,
-        created_at: new Date().toISOString(),
-      };
-
-      const { error: insertError } = await supabase
-        .from("customer_points")
-        .insert([payload]);
-
-      if (insertError) throw insertError;
+      await insertPointsMovement(
+        buildPointsMovementPayload({
+          customerId: selectedCustomer.id,
+          signedPoints,
+          adjustmentType,
+          userId: authUser?.id,
+          branchId: branch?.id,
+          notes: normalizedFinalNotes,
+        })
+      );
 
       await loadCustomerPoints(selectedCustomer.id);
 
-      const message = `Ajuste realizado correctamente. ${
-        selectedCustomer.name || "EL CLIENTE"
-      } ${signedPoints > 0 ? "recibió" : "usó"} ${Math.abs(
-        signedPoints
-      )} punto${Math.abs(signedPoints) !== 1 ? "s" : ""}.`;
+      const message = buildAdjustmentSuccessMessage({
+        customerName: selectedCustomer.name,
+        signedPoints,
+      });
 
       setPointsAmount("");
       setAdjustmentReason("");
@@ -634,8 +453,8 @@ const PointsAdjustment = () => {
           <div>
             <h1>AJUSTE DE PUNTOS</h1>
             <p>
-              Agrega o descuenta puntos manualmente por migración, correcciones o
-              ajustes autorizados.
+              Agrega o descuenta puntos manualmente por migración, correcciones
+              o ajustes autorizados.
             </p>
           </div>
         </div>
@@ -786,8 +605,8 @@ const PointsAdjustment = () => {
           <div>
             <h2>Datos del ajuste</h2>
             <p>
-              El ajuste quedará registrado en el historial de puntos con usuario,
-              sucursal y motivo.
+              El ajuste quedará registrado en el historial de puntos con
+              usuario, sucursal y motivo.
             </p>
           </div>
         </div>

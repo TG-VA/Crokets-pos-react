@@ -1,148 +1,50 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./CustomerModal.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import { useAppModal } from "../../../../hooks/useAppModal";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
-
-const emptyForm = {
-  name: "",
-  phone: "",
-  phoneConfirm: "",
-  email: "",
-  status: true,
-};
+import { normalizePhoneDigits } from "../../PageCustomers/utils/customerFormatters";
+import {
+  createCustomer,
+  findCustomerByPhone,
+  resolveCustomerSaveErrorMessage,
+  updateCustomer,
+} from "./services/customerModalService";
+import {
+  CUSTOMER_TOUCHED_FIELDS,
+  EMPTY_CUSTOMER_FORM,
+  buildCustomerFormValues,
+  buildDuplicatePhoneMessage,
+  buildDuplicatePointsCustomerMessage,
+  buildNormalizedCustomerData,
+  buildPhoneChangeConfirmation,
+  canSubmitCustomerForm,
+  getCustomerSaveSuccessMessage,
+  getCustomerSaveSuccessTitle,
+  hasPhoneChanged,
+  isEditingCustomer,
+  normalizeCustomerFieldValue,
+  validateCustomerValues,
+} from "./services/customerModalCalculationService";
 
 const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
-  const [formData, setFormData] = useState(emptyForm);
+  const [formData, setFormData] = useState(EMPTY_CUSTOMER_FORM);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
+  const {
+    appModal,
+    closeAppModal,
+    setAppModalLoading,
+    showAppAlert,
+    showAppConfirm,
+  } = useAppModal();
 
-  const isEditing = useMemo(() => !!customerToEdit?.id, [customerToEdit]);
-
-  const normalizeName = (value) => {
-    return String(value || "")
-      .replace(/\s+/g, " ")
-      .toUpperCase();
-  };
-
-  const normalizePhone = (value) => {
-    return String(value || "")
-      .replace(/\D/g, "")
-      .slice(0, 10);
-  };
-
-  const normalizeEmail = (value) => {
-    return String(value || "").trim().toLowerCase();
-  };
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-    onConfirm = closeAppModal,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const showAppConfirm = ({
-    type = "warning",
-    title = "Confirmar acción",
-    message = "",
-    confirmText = "Confirmar",
-    cancelText = "Cancelar",
-    onConfirm,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      showCancel: true,
-      loading: false,
-      onConfirm,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const setAppModalLoading = (loading) => {
-    setAppModal((prev) => ({
-      ...prev,
-      loading,
-    }));
-  };
-
-  const validateValues = (values) => {
-    const errors = {};
-
-    const cleanName = String(values.name || "").trim();
-    const cleanPhone = String(values.phone || "").trim();
-    const cleanPhoneConfirm = String(values.phoneConfirm || "").trim();
-    const cleanEmail = String(values.email || "").trim();
-
-    if (!cleanName) {
-      errors.name = "Ingresa el nombre del cliente.";
-    } else if (cleanName.length < 3) {
-      errors.name = "El nombre debe tener al menos 3 caracteres.";
-    }
-
-    if (!cleanPhone) {
-      errors.phone = "Ingresa el teléfono del cliente.";
-    } else if (cleanPhone.length !== 10) {
-      errors.phone = "El teléfono debe tener 10 dígitos.";
-    }
-
-    if (!cleanPhoneConfirm) {
-      errors.phoneConfirm = "Confirma el teléfono del cliente.";
-    } else if (cleanPhoneConfirm.length !== 10) {
-      errors.phoneConfirm = "La confirmación debe tener 10 dígitos.";
-    } else if (cleanPhone && cleanPhoneConfirm !== cleanPhone) {
-      errors.phoneConfirm = "Los teléfonos no coinciden.";
-    }
-
-    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      errors.email = "Ingresa un correo válido.";
-    }
-
-    return errors;
-  };
+  const isEditing = useMemo(
+    () => isEditingCustomer(customerToEdit),
+    [customerToEdit]
+  );
 
   const handleRequestClose = () => {
     if (saving || appModal.isOpen) return;
@@ -150,27 +52,13 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
   };
 
   const handleChange = (field, value) => {
-    let finalValue = value;
-
-    if (field === "name") {
-      finalValue = normalizeName(value);
-    }
-
-    if (field === "phone" || field === "phoneConfirm") {
-      finalValue = normalizePhone(value);
-    }
-
-    if (field === "email") {
-      finalValue = normalizeEmail(value);
-    }
-
     const nextFormData = {
       ...formData,
-      [field]: finalValue,
+      [field]: normalizeCustomerFieldValue(field, value),
     };
 
     setFormData(nextFormData);
-    setFieldErrors(validateValues(nextFormData));
+    setFieldErrors(validateCustomerValues(nextFormData));
   };
 
   const handleBlur = (field) => {
@@ -179,7 +67,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
       [field]: true,
     }));
 
-    setFieldErrors(validateValues(formData));
+    setFieldErrors(validateCustomerValues(formData));
   };
 
   const getFieldClassName = (field) => {
@@ -200,84 +88,31 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     return "";
   };
 
-  const findCustomerByPhone = async (phone) => {
-    let query = supabase
-      .from("customers")
-      .select(`
-        id,
-        name,
-        phone,
-        email,
-        razon_social,
-        status,
-        is_billing_customer,
-        is_points_customer
-      `)
-      .eq("phone", phone)
-      .limit(1);
+  const currentErrors = validateCustomerValues(formData);
 
-    if (isEditing && customerToEdit?.id) {
-      query = query.neq("id", customerToEdit.id);
-    }
-
-    const { data, error: phoneError } = await query;
-
-    if (phoneError) {
-      throw phoneError;
-    }
-
-    return data?.[0] || null;
-  };
-
-  const currentErrors = validateValues(formData);
-
-  const canSave =
-    String(formData.name || "").trim().length >= 3 &&
-    String(formData.phone || "").trim().length === 10 &&
-    String(formData.phoneConfirm || "").trim().length === 10 &&
-    formData.phone === formData.phoneConfirm &&
-    Object.keys(currentErrors).length === 0 &&
-    !saving;
+  const canSave = canSubmitCustomerForm({
+    formData,
+    errors: currentErrors,
+    saving,
+  });
 
   const saveCustomer = async (normalizedData, existingCustomer = null) => {
     try {
       setSaving(true);
       setAppModalLoading(true);
 
-      const payload = {
-        name: normalizedData.name,
-        phone: normalizedData.phone,
-        email: normalizedData.email || null,
-        status: normalizedData.status,
-        is_points_customer: true,
-        updated_at: new Date().toISOString(),
-      };
-
       if (isEditing) {
-        const { error: updateError } = await supabase
-          .from("customers")
-          .update(payload)
-          .eq("id", customerToEdit.id);
-
-        if (updateError) throw updateError;
+        await updateCustomer({
+          customerId: customerToEdit.id,
+          normalizedData,
+        });
       } else if (existingCustomer?.id) {
-        const { error: linkError } = await supabase
-          .from("customers")
-          .update(payload)
-          .eq("id", existingCustomer.id);
-
-        if (linkError) throw linkError;
+        await updateCustomer({
+          customerId: existingCustomer.id,
+          normalizedData,
+        });
       } else {
-        const { error: insertError } = await supabase.from("customers").insert([
-          {
-            id: crypto.randomUUID(),
-            ...payload,
-            is_billing_customer: false,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-        if (insertError) throw insertError;
+        await createCustomer(normalizedData);
       }
 
       try {
@@ -286,47 +121,24 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
         console.error("Error actualizando listado de clientes:", refreshError);
       }
 
-      setAppModal({
-        isOpen: true,
+      showAppAlert({
         type: "success",
-        title: isEditing ? "Cliente actualizado" : "Cliente creado",
-        message: isEditing
-          ? "Los datos del cliente fueron actualizados correctamente."
-          : "El cliente fue registrado correctamente.",
+        title: getCustomerSaveSuccessTitle(isEditing),
+        message: getCustomerSaveSuccessMessage(isEditing),
         confirmText: "Aceptar",
-        cancelText: "Cancelar",
-        showCancel: false,
-        loading: false,
         onConfirm: () => {
           closeAppModal();
           onClose();
         },
-        onCancel: closeAppModal,
       });
     } catch (err) {
       console.error("Error guardando cliente:", err);
 
-      const errorMessage = String(err?.message || "");
-
-      let message = err?.message || "No se pudo guardar el cliente.";
-
-      if (errorMessage.includes("customers_email_key")) {
-        message = "Ya existe un cliente registrado con ese correo.";
-      } else if (errorMessage.includes("duplicate key")) {
-        message = "Ya existe un cliente con información duplicada.";
-      }
-
-      setAppModal({
-        isOpen: true,
+      showAppAlert({
         type: "danger",
         title: "No se pudo guardar",
-        message,
+        message: resolveCustomerSaveErrorMessage(err),
         confirmText: "Entendido",
-        cancelText: "Cancelar",
-        showCancel: false,
-        loading: false,
-        onConfirm: closeAppModal,
-        onCancel: closeAppModal,
       });
     } finally {
       setSaving(false);
@@ -336,23 +148,12 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const normalizedData = {
-      name: normalizeName(formData.name).trim(),
-      phone: normalizePhone(formData.phone).trim(),
-      phoneConfirm: normalizePhone(formData.phoneConfirm).trim(),
-      email: normalizeEmail(formData.email),
-      status: formData.status,
-    };
+    const normalizedData = buildNormalizedCustomerData(formData);
 
-    const errors = validateValues(normalizedData);
+    const errors = validateCustomerValues(normalizedData);
 
     setFieldErrors(errors);
-    setTouchedFields({
-      name: true,
-      phone: true,
-      phoneConfirm: true,
-      email: true,
-    });
+    setTouchedFields(CUSTOMER_TOUCHED_FIELDS);
 
     if (Object.keys(errors).length > 0) {
       showAppAlert({
@@ -367,20 +168,22 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     try {
       setSaving(true);
 
-      const originalPhone = normalizePhone(customerToEdit?.phone || "");
-      const phoneWasChanged = isEditing && originalPhone !== normalizedData.phone;
+      const phoneWasChanged = hasPhoneChanged({
+        customerToEdit,
+        isEditing,
+        newPhone: normalizedData.phone,
+      });
 
-      const existingCustomer = await findCustomerByPhone(normalizedData.phone);
+      const existingCustomer = await findCustomerByPhone({
+        phone: normalizedData.phone,
+        excludeCustomerId: isEditing ? customerToEdit.id : null,
+      });
 
       if (isEditing && existingCustomer?.id) {
         showAppAlert({
           type: "warning",
           title: "Teléfono duplicado",
-          message: `Ya existe otro cliente registrado con ese teléfono: ${
-            existingCustomer.name ||
-            existingCustomer.razon_social ||
-            "SIN NOMBRE"
-          }.`,
+          message: buildDuplicatePhoneMessage(existingCustomer),
           confirmText: "Entendido",
         });
         return;
@@ -390,33 +193,21 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
         showAppAlert({
           type: "warning",
           title: "Cliente duplicado",
-          message: `Ya existe un cliente de puntos registrado con ese teléfono: ${
-            existingCustomer.name || "SIN NOMBRE"
-          }.`,
+          message: buildDuplicatePointsCustomerMessage(existingCustomer),
           confirmText: "Entendido",
         });
         return;
       }
 
       if (phoneWasChanged) {
-        const hasFiscalData = customerToEdit?.is_billing_customer === true;
-
-        const fiscalWarning = hasFiscalData
-          ? " Este cliente también tiene datos fiscales, por lo que el teléfono fiscal asociado también se actualizará."
-          : "";
-
         setSaving(false);
 
         showAppConfirm({
-          type: "warning",
-          title: "Confirmar cambio de teléfono",
-          message: `El teléfono cambiará de ${
-            originalPhone || "SIN TELÉFONO"
-          } a ${
-            normalizedData.phone
-          }. Este dato se usa para vincular clientes de puntos con datos fiscales.${fiscalWarning} ¿Deseas continuar?`,
-          confirmText: "Continuar",
-          cancelText: "Cancelar",
+          ...buildPhoneChangeConfirmation({
+            originalPhone: normalizePhoneDigits(customerToEdit?.phone || ""),
+            newPhone: normalizedData.phone,
+            hasFiscalData: customerToEdit?.is_billing_customer === true,
+          }),
           onConfirm: () => {
             closeAppModal();
             saveCustomer(normalizedData, existingCustomer);
@@ -447,19 +238,7 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
   useEffect(() => {
     if (!isOpen) return;
 
-    if (customerToEdit) {
-      const currentPhone = normalizePhone(customerToEdit.phone || "");
-
-      setFormData({
-        name: customerToEdit.name || "",
-        phone: currentPhone,
-        phoneConfirm: currentPhone,
-        email: customerToEdit.email || "",
-        status: customerToEdit.status !== false,
-      });
-    } else {
-      setFormData(emptyForm);
-    }
+    setFormData(buildCustomerFormValues(customerToEdit));
 
     setFieldErrors({});
     setTouchedFields({});
@@ -467,10 +246,13 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
     closeAppModal();
   }, [isOpen, customerToEdit]);
 
-  useEscapeKey((event) => {
-    event.preventDefault();
-    onClose();
-  }, isOpen && !saving && !appModal.isOpen);
+  useEscapeKey(
+    (event) => {
+      event.preventDefault();
+      onClose();
+    },
+    isOpen && !saving && !appModal.isOpen
+  );
 
   if (!isOpen) return null;
 

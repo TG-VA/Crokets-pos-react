@@ -1,12 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardsSettings.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
+import { useAppModal } from "../../../../hooks/useAppModal";
+import { subscribeToTableChanges } from "../services/customersRealtimeService";
+import {
+  DEFAULT_POINTS_AMOUNT,
+  fetchOrCreatePointsAmountRule,
+  fetchRewardsCatalog,
+  savePointsAmountRule,
+  updateRewardStatus,
+} from "./services/rewardsSettingsService";
+import {
+  EXAMPLE_SALE_AMOUNT,
+  buildRewardStatusConfirmation,
+  calculateExamplePoints,
+  canSavePointsRule as canSavePointsRuleRule,
+  filterAndSortRewards,
+  getLinkedProductsLabel,
+  getRewardBenefitLabel,
+  getRewardTypeLabel as getRewardTypeLabelValue,
+  hasPointsRuleChanges as hasPointsRuleChangesRule,
+  normalizeRewardType as normalizeRewardTypeValue,
+  sanitizePointsAmountInput,
+  sortRewards,
+} from "./services/rewardsSettingsCalculationService";
 import RewardModal from "../../../../components/CustomersComponents/Modals/RewardModal/RewardModal";
 import AppModal from "../../../AppModal/AppModal";
-
-const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
-const DEFAULT_POINTS_AMOUNT = 50;
-const EXAMPLE_SALE_AMOUNT = 420;
 
 const emptyRewardDetailsModal = {
   isOpen: false,
@@ -32,210 +50,39 @@ const RewardsSettings = () => {
     emptyRewardDetailsModal
   );
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
   const numericPointsAmountPerPoint = Number(pointsAmountPerPoint || 0);
 
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const showAppConfirm = ({
-    type = "warning",
-    title = "Confirmar acción",
-    message = "",
-    confirmText = "Confirmar",
-    cancelText = "Cancelar",
-    onConfirm,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      showCancel: true,
-      loading: false,
-      onConfirm,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const setAppModalLoading = (loading) => {
-    setAppModal((prev) => ({
-      ...prev,
-      loading,
-    }));
-  };
+  const {
+    appModal,
+    closeAppModal,
+    setAppModalLoading,
+    showAppAlert,
+    showAppConfirm,
+  } = useAppModal();
 
   const examplePoints = useMemo(() => {
-    if (!numericPointsAmountPerPoint || numericPointsAmountPerPoint <= 0) {
-      return 0;
-    }
-
-    return Math.floor(EXAMPLE_SALE_AMOUNT / numericPointsAmountPerPoint);
+    return calculateExamplePoints(numericPointsAmountPerPoint);
   }, [numericPointsAmountPerPoint]);
 
   const hasPointsRuleChanges = useMemo(() => {
-    return (
-      String(pointsAmountPerPoint || "").trim() !==
-      String(originalPointsAmountPerPoint || "").trim()
-    );
+    return hasPointsRuleChangesRule({
+      pointsAmountPerPoint,
+      originalPointsAmountPerPoint,
+    });
   }, [pointsAmountPerPoint, originalPointsAmountPerPoint]);
 
-  const canSavePointsRule =
-    numericPointsAmountPerPoint > 0 &&
-    hasPointsRuleChanges &&
-    !savingPointsRule &&
-    !loadingPointsRule;
-
-  const normalizeRewardType = (type) => {
-    if (type === "product_discount") return "product_discount";
-    return "free_product";
-  };
-
-  const getRewardTypeLabel = (type) => {
-    const rewardType = normalizeRewardType(type);
-
-    if (rewardType === "free_product") return "PRODUCTO GRATIS";
-    if (rewardType === "product_discount") return "DESCUENTO EN PRODUCTO";
-
-    return "PRODUCTO GRATIS";
-  };
-
-  const getRewardBenefitLabel = (reward) => {
-    const rewardType = normalizeRewardType(reward.reward_type);
-    const quantity = Number(reward.reward_quantity || 1);
-    const discountType = reward.discount_type;
-    const discountValue = Number(reward.discount_value || 0);
-
-    if (rewardType === "free_product") {
-      return `${quantity} producto${quantity !== 1 ? "s" : ""} gratis`;
-    }
-
-    if (rewardType === "product_discount") {
-      if (discountType === "percent") {
-        return `${discountValue}% en ${quantity} unidad${
-          quantity !== 1 ? "es" : ""
-        }`;
-      }
-
-      if (discountType === "fixed") {
-        return `$${discountValue.toFixed(2)} en ${quantity} unidad${
-          quantity !== 1 ? "es" : ""
-        }`;
-      }
-
-      return `Descuento en ${quantity} unidad${quantity !== 1 ? "es" : ""}`;
-    }
-
-    return "Sin beneficio";
-  };
-
-  const getLinkedProductsLabel = (reward) => {
-    const rewardType = normalizeRewardType(reward.reward_type);
-    const linkedProductsCount = reward.reward_products?.length || 0;
-
-    if (rewardType === "product_discount") {
-      return "TODOS";
-    }
-
-    if (linkedProductsCount === 0) {
-      return "SIN PRODUCTOS";
-    }
-
-    return `${linkedProductsCount} producto${
-      linkedProductsCount !== 1 ? "s" : ""
-    }`;
-  };
-
-  const sortRewards = (rewardsList = []) => {
-    return [...rewardsList].sort((a, b) => {
-      const statusA = a.is_active === false ? 1 : 0;
-      const statusB = b.is_active === false ? 1 : 0;
-
-      if (statusA !== statusB) return statusA - statusB;
-
-      const pointsA = Number(a.points_required || 0);
-      const pointsB = Number(b.points_required || 0);
-
-      if (pointsA !== pointsB) return pointsA - pointsB;
-
-      return String(a.name || "").localeCompare(String(b.name || ""), "es", {
-        sensitivity: "base",
-        numeric: true,
-      });
-    });
-  };
+  const canSavePointsRule = canSavePointsRuleRule({
+    numericPointsAmountPerPoint,
+    hasChanges: hasPointsRuleChanges,
+    savingPointsRule,
+    loadingPointsRule,
+  });
 
   const loadRewards = async () => {
     try {
       setLoadingRewards(true);
 
-      const { data, error: rewardsError } = await supabase
-        .from("rewards")
-        .select(`
-          id,
-          name,
-          description,
-          points_required,
-          is_active,
-          reward_type,
-          reward_quantity,
-          discount_type,
-          discount_value,
-          created_at,
-          updated_at,
-          reward_products (
-            id,
-            product_id
-          )
-        `)
-        .order("is_active", { ascending: false, nullsFirst: false })
-        .order("points_required", { ascending: true })
-        .order("name", { ascending: true, nullsFirst: false });
-
-      if (rewardsError) throw rewardsError;
-
-      setRewards(sortRewards(data || []));
+      setRewards(sortRewards(await fetchRewardsCatalog()));
     } catch (err) {
       console.error("Error cargando recompensas:", err);
       setRewards([]);
@@ -255,53 +102,7 @@ const RewardsSettings = () => {
     try {
       setLoadingPointsRule(true);
 
-      const { data, error: settingsError } = await supabase
-        .from("system_settings")
-        .select(`
-          id,
-          setting_key,
-          setting_value,
-          value_type,
-          description,
-          branch_id,
-          is_active,
-          created_at,
-          updated_at
-        `)
-        .eq("setting_key", POINTS_AMOUNT_SETTING_KEY)
-        .is("branch_id", null)
-        .maybeSingle();
-
-      if (settingsError) throw settingsError;
-
-      if (!data) {
-        const defaultValue = String(DEFAULT_POINTS_AMOUNT);
-
-        const { error: insertError } = await supabase
-          .from("system_settings")
-          .insert([
-            {
-              id: crypto.randomUUID(),
-              setting_key: POINTS_AMOUNT_SETTING_KEY,
-              setting_value: defaultValue,
-              value_type: "number",
-              description:
-                "Monto de venta en MXN necesario para generar 1 punto de cliente. El cálculo redondea hacia abajo.",
-              branch_id: null,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]);
-
-        if (insertError) throw insertError;
-
-        setPointsAmountPerPoint(defaultValue);
-        setOriginalPointsAmountPerPoint(defaultValue);
-        return;
-      }
-
-      const settingValue = String(data.setting_value || DEFAULT_POINTS_AMOUNT);
+      const settingValue = await fetchOrCreatePointsAmountRule();
 
       setPointsAmountPerPoint(settingValue);
       setOriginalPointsAmountPerPoint(settingValue);
@@ -325,17 +126,7 @@ const RewardsSettings = () => {
   };
 
   const handlePointsAmountChange = (value) => {
-    const cleanValue = String(value || "")
-      .replace(/[^\d.]/g, "")
-      .replace(/^0+(?=\d)/, "");
-
-    const parts = cleanValue.split(".");
-    const normalizedValue =
-      parts.length > 1
-        ? `${parts[0]}.${parts.slice(1).join("").slice(0, 2)}`
-        : parts[0];
-
-    setPointsAmountPerPoint(normalizedValue);
+    setPointsAmountPerPoint(sanitizePointsAmountInput(value));
   };
 
   const handleSavePointsRule = async () => {
@@ -354,54 +145,10 @@ const RewardsSettings = () => {
         return;
       }
 
-      const normalizedAmount = String(amount);
+      await savePointsAmountRule(String(amount));
 
-      const { data: existingSetting, error: existingError } = await supabase
-        .from("system_settings")
-        .select("id")
-        .eq("setting_key", POINTS_AMOUNT_SETTING_KEY)
-        .is("branch_id", null)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (existingSetting?.id) {
-        const { error: updateError } = await supabase
-          .from("system_settings")
-          .update({
-            setting_value: normalizedAmount,
-            value_type: "number",
-            description:
-              "Monto de venta en MXN necesario para generar 1 punto de cliente. El cálculo redondea hacia abajo.",
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingSetting.id);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("system_settings")
-          .insert([
-            {
-              id: crypto.randomUUID(),
-              setting_key: POINTS_AMOUNT_SETTING_KEY,
-              setting_value: normalizedAmount,
-              value_type: "number",
-              description:
-                "Monto de venta en MXN necesario para generar 1 punto de cliente. El cálculo redondea hacia abajo.",
-              branch_id: null,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]);
-
-        if (insertError) throw insertError;
-      }
-
-      setPointsAmountPerPoint(normalizedAmount);
-      setOriginalPointsAmountPerPoint(normalizedAmount);
+      setPointsAmountPerPoint(String(amount));
+      setOriginalPointsAmountPerPoint(String(amount));
 
       showAppAlert({
         type: "success",
@@ -424,34 +171,7 @@ const RewardsSettings = () => {
   };
 
   const filteredRewards = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-
-    const filtered = rewards.filter((reward) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && reward.is_active !== false) ||
-        (statusFilter === "inactive" && reward.is_active === false);
-
-      if (!matchesStatus) return false;
-
-      if (!search) return true;
-
-      const values = [
-        reward.name,
-        reward.description,
-        reward.points_required,
-        normalizeRewardType(reward.reward_type),
-        getRewardTypeLabel(reward.reward_type),
-        getRewardBenefitLabel(reward),
-        getLinkedProductsLabel(reward),
-      ];
-
-      return values.some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
-    });
-
-    return sortRewards(filtered);
+    return filterAndSortRewards({ rewards, searchTerm, statusFilter });
   }, [rewards, searchTerm, statusFilter]);
 
   const handleNewReward = () => {
@@ -462,7 +182,7 @@ const RewardsSettings = () => {
   const handleEditReward = (reward) => {
     setEditingReward({
       ...reward,
-      reward_type: normalizeRewardType(reward.reward_type),
+      reward_type: normalizeRewardTypeValue(reward.reward_type),
     });
     setIsRewardModalOpen(true);
   };
@@ -473,24 +193,16 @@ const RewardsSettings = () => {
   };
 
   const handleOpenStatusConfirmModal = (reward) => {
-    const nextStatus = reward.is_active === false;
-    const actionLabel = nextStatus ? "activar" : "desactivar";
-    const title = nextStatus ? "Activar recompensa" : "Desactivar recompensa";
-    const confirmText = nextStatus ? "Activar" : "Desactivar";
+    const confirmation = buildRewardStatusConfirmation(reward);
 
     showAppConfirm({
-      type: nextStatus ? "info" : "warning",
-      title,
-      message: `¿Seguro que deseas ${actionLabel} la recompensa "${
-        reward.name || "SIN NOMBRE"
-      }"? ${
-        nextStatus
-          ? "Volverá a estar disponible para canjearse en ventas."
-          : "Ya no estará disponible para canjearse en ventas."
-      }`,
-      confirmText,
-      cancelText: "Cancelar",
-      onConfirm: () => handleConfirmToggleStatus(reward, nextStatus),
+      type: confirmation.type,
+      title: confirmation.title,
+      message: confirmation.message,
+      confirmText: confirmation.confirmText,
+      cancelText: confirmation.cancelText,
+      onConfirm: () =>
+        handleConfirmToggleStatus(reward, confirmation.nextStatus),
     });
   };
 
@@ -500,46 +212,26 @@ const RewardsSettings = () => {
     try {
       setAppModalLoading(true);
 
-      const { error: updateError } = await supabase
-        .from("rewards")
-        .update({
-          is_active: nextStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", reward.id);
-
-      if (updateError) throw updateError;
+      await updateRewardStatus({ rewardId: reward.id, nextStatus });
 
       await loadRewards();
 
-      setAppModal({
-        isOpen: true,
+      showAppAlert({
         type: "success",
         title: nextStatus ? "Recompensa activada" : "Recompensa desactivada",
         message: `La recompensa "${
           reward.name || "SIN NOMBRE"
         }" se ${nextStatus ? "activó" : "desactivó"} correctamente.`,
         confirmText: "Aceptar",
-        cancelText: "Cancelar",
-        showCancel: false,
-        loading: false,
-        onConfirm: closeAppModal,
-        onCancel: closeAppModal,
       });
     } catch (err) {
       console.error("Error actualizando recompensa:", err);
 
-      setAppModal({
-        isOpen: true,
+      showAppAlert({
         type: "danger",
         title: "No se pudo actualizar",
         message: "No se pudo actualizar el estado de la recompensa.",
         confirmText: "Entendido",
-        cancelText: "Cancelar",
-        showCancel: false,
-        loading: false,
-        onConfirm: closeAppModal,
-        onCancel: closeAppModal,
       });
     }
   };
@@ -566,56 +258,28 @@ const RewardsSettings = () => {
   }, []);
 
   useEffect(() => {
-    const rewardsChannel = supabase
-      .channel("rewards-settings-rewards-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "rewards",
-        },
-        () => {
-          loadRewards();
-        }
-      )
-      .subscribe();
+    const unsubscribeRewards = subscribeToTableChanges({
+      channelName: "rewards-settings-rewards-realtime",
+      tables: ["rewards"],
+      onChange: loadRewards,
+    });
 
-    const rewardProductsChannel = supabase
-      .channel("rewards-settings-reward-products-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reward_products",
-        },
-        () => {
-          loadRewards();
-        }
-      )
-      .subscribe();
+    const unsubscribeRewardProducts = subscribeToTableChanges({
+      channelName: "rewards-settings-reward-products-realtime",
+      tables: ["reward_products"],
+      onChange: loadRewards,
+    });
 
-    const settingsChannel = supabase
-      .channel("points-rule-settings-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "system_settings",
-          filter: `setting_key=eq.${POINTS_AMOUNT_SETTING_KEY}`,
-        },
-        () => {
-          loadPointsRule();
-        }
-      )
-      .subscribe();
+    const unsubscribeSettings = subscribeToTableChanges({
+      channelName: "rewards-settings-system-settings-realtime",
+      tables: ["system_settings"],
+      onChange: loadPointsRule,
+    });
 
     return () => {
-      supabase.removeChannel(rewardsChannel);
-      supabase.removeChannel(rewardProductsChannel);
-      supabase.removeChannel(settingsChannel);
+      unsubscribeRewards();
+      unsubscribeRewardProducts();
+      unsubscribeSettings();
     };
   }, []);
 
@@ -697,8 +361,8 @@ const RewardsSettings = () => {
             {savingPointsRule
               ? "Guardando..."
               : hasPointsRuleChanges
-              ? "Guardar regla"
-              : "Regla guardada"}
+                ? "Guardar regla"
+                : "Regla guardada"}
           </button>
         </div>
       </div>
@@ -799,15 +463,13 @@ const RewardsSettings = () => {
                         {reward.description || "SIN DESCRIPCIÓN"}
                       </span>
 
-                      <span className={styles.viewDetailText}>
-                        Ver detalle
-                      </span>
+                      <span className={styles.viewDetailText}>Ver detalle</span>
                     </button>
                   </td>
 
                   <td>
                     <span className={styles.descriptionText}>
-                      {getRewardTypeLabel(reward.reward_type)}
+                      {getRewardTypeLabelValue(reward)}
                     </span>
                   </td>
 
@@ -918,18 +580,24 @@ const RewardsSettings = () => {
                 <div className={styles.detailItem}>
                   <span>Tipo</span>
                   <strong>
-                    {getRewardTypeLabel(rewardDetailsModal.reward.reward_type)}
+                    {getRewardTypeLabelValue(
+                      rewardDetailsModal.reward.reward_type
+                    )}
                   </strong>
                 </div>
 
                 <div className={styles.detailItem}>
                   <span>Beneficio</span>
-                  <strong>{getRewardBenefitLabel(rewardDetailsModal.reward)}</strong>
+                  <strong>
+                    {getRewardBenefitLabel(rewardDetailsModal.reward)}
+                  </strong>
                 </div>
 
                 <div className={styles.detailItem}>
                   <span>Productos aplicables</span>
-                  <strong>{getLinkedProductsLabel(rewardDetailsModal.reward)}</strong>
+                  <strong>
+                    {getLinkedProductsLabel(rewardDetailsModal.reward)}
+                  </strong>
                 </div>
 
                 <div className={styles.detailItem}>

@@ -1,13 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./CustomersList.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
 import CustomerModal from "../../Modals/CustomerModal/CustomerModal";
 
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { checkUserIsAdmin } from "../../../../lib/permissionsService";
+import { useAppModal } from "../../../../hooks/useAppModal";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 import AppModal from "../../../AppModal/AppModal";
+import { subscribeToTableChanges } from "../services/customersRealtimeService";
+import { normalizePhoneDigits } from "../utils/customerFormatters";
+import {
+  fetchPointsCustomers,
+  fetchPointsMovements,
+  searchFiscalCustomerByPhone,
+  updateCustomerStatus,
+} from "./services/customersListService";
+import {
+  buildPointsCustomerFromFiscal,
+  calculatePointsBalanceByCustomer,
+  filterAndSortCustomers,
+  formatCustomerStatus,
+  isCompletePhone,
+  isPhoneAvailableInPoints,
+} from "./services/customersListCalculationService";
 
 const CustomersList = () => {
   const { user } = useAuth();
@@ -28,154 +44,26 @@ const CustomersList = () => {
   const [pendingDeactivateCustomer, setPendingDeactivateCustomer] =
     useState(null);
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const showAppConfirm = ({
-    type = "warning",
-    title = "Confirmar acción",
-    message = "",
-    confirmText = "Confirmar",
-    cancelText = "Cancelar",
-    onConfirm,
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      showCancel: true,
-      loading: false,
-      onConfirm: async () => {
-        closeAppModal();
-
-        if (onConfirm) {
-          await onConfirm();
-        }
-      },
-      onCancel: closeAppModal,
-    });
-  };
-
-  const formatStatus = (status) => (status === false ? "INACTIVO" : "ACTIVO");
-
-  const normalizePhone = (value) => {
-    return String(value || "").replace(/\D/g, "").slice(0, 10);
-  };
-
-  const calculateCustomerPoints = (pointsRows = []) => {
-    const pointsMap = {};
-
-    for (const row of pointsRows) {
-      const customerId = row.customer_id;
-      const movementType = String(row.movement_type || "").toLowerCase();
-      const rawPoints = Number(row.points || 0);
-
-      if (!customerId) continue;
-
-      if (!pointsMap[customerId]) {
-        pointsMap[customerId] = 0;
-      }
-
-      if (
-        movementType.includes("canje") ||
-        movementType.includes("redeem") ||
-        movementType.includes("used") ||
-        movementType.includes("uso") ||
-        movementType.includes("resta")
-      ) {
-        pointsMap[customerId] -= Math.abs(rawPoints);
-      } else {
-        pointsMap[customerId] += rawPoints;
-      }
-    }
-
-    return pointsMap;
-  };
+  const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
+    useAppModal();
 
   const loadCustomers = async () => {
     try {
       setLoadingCustomers(true);
 
-      const { data, error: customersError } = await supabase
-        .from("customers")
-        .select(`
-          id,
-          name,
-          phone,
-          email,
-          status,
-          is_billing_customer,
-          is_points_customer,
-          created_at,
-          updated_at
-        `)
-        .eq("is_points_customer", true)
-        .order("status", { ascending: false, nullsFirst: false })
-        .order("name", { ascending: true, nullsFirst: false });
-
-      if (customersError) throw customersError;
-
-      const customersData = data || [];
+      const customersData = await fetchPointsCustomers();
       setCustomers(customersData);
 
-      const customerIds = customersData.map((customer) => customer.id);
-
-      if (customerIds.length === 0) {
+      if (customersData.length === 0) {
         setPointsByCustomer({});
         return;
       }
 
-      const { data: pointsRows, error: pointsError } = await supabase
-        .from("customer_points")
-        .select("customer_id, points, movement_type")
-        .in("customer_id", customerIds);
+      const pointsRows = await fetchPointsMovements(
+        customersData.map((customer) => customer.id)
+      );
 
-      if (pointsError) throw pointsError;
-
-      setPointsByCustomer(calculateCustomerPoints(pointsRows || []));
+      setPointsByCustomer(calculatePointsBalanceByCustomer(pointsRows));
     } catch (err) {
       console.error("Error cargando clientes:", err);
       setCustomers([]);
@@ -192,7 +80,7 @@ const CustomersList = () => {
     }
   };
 
-  const searchFiscalCustomerByPhone = async (phone) => {
+  const handleSearchFiscalCustomer = async (phone) => {
     try {
       setSearchingFiscalCustomer(true);
       setFiscalCustomerFound(null);
@@ -201,36 +89,13 @@ const CustomersList = () => {
         return;
       }
 
-      const alreadyPointCustomer = customers.some(
-        (customer) => normalizePhone(customer.phone) === phone
-      );
-
-      if (alreadyPointCustomer) {
+      if (!isPhoneAvailableInPoints({ customers, phone })) {
         return;
       }
 
-      const { data, error: fiscalError } = await supabase
-        .from("customers")
-        .select(`
-          id,
-          name,
-          phone,
-          email,
-          rfc,
-          razon_social,
-          fiscal_email,
-          status,
-          is_billing_customer,
-          is_points_customer
-        `)
-        .eq("phone", phone)
-        .eq("is_billing_customer", true)
-        .or("is_points_customer.is.null,is_points_customer.eq.false")
-        .maybeSingle();
+      const fiscalCustomer = await searchFiscalCustomerByPhone(phone);
 
-      if (fiscalError) throw fiscalError;
-
-      setFiscalCustomerFound(data || null);
+      setFiscalCustomerFound(fiscalCustomer);
     } catch (err) {
       console.error("Error buscando cliente fiscal por teléfono:", err);
       setFiscalCustomerFound(null);
@@ -244,86 +109,30 @@ const CustomersList = () => {
   }, []);
 
   useEffect(() => {
-    const customersChannel = supabase
-      .channel("customers-list-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "customers",
-        },
-        () => {
-          loadCustomers();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "customer_points",
-        },
-        () => {
-          loadCustomers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(customersChannel);
-    };
+    return subscribeToTableChanges({
+      channelName: "customers-list-realtime",
+      tables: ["customers", "customer_points"],
+      onChange: loadCustomers,
+    });
   }, []);
 
   useEffect(() => {
-    const phoneSearch = normalizePhone(searchTerm);
+    const phoneSearch = normalizePhoneDigits(searchTerm);
 
-    if (phoneSearch.length !== 10) {
+    if (!isCompletePhone(phoneSearch)) {
       setFiscalCustomerFound(null);
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      searchFiscalCustomerByPhone(phoneSearch);
+      handleSearchFiscalCustomer(phoneSearch);
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, customers]);
 
   const filteredCustomers = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-
-    return customers
-      .filter((customer) => {
-        const matchesStatus =
-          statusFilter === "all" ||
-          (statusFilter === "active" && customer.status !== false) ||
-          (statusFilter === "inactive" && customer.status === false);
-
-        if (!matchesStatus) return false;
-
-        if (!search) return true;
-
-        const values = [customer.name, customer.phone, customer.email];
-
-        return values.some((value) =>
-          String(value || "").toLowerCase().includes(search)
-        );
-      })
-      .sort((a, b) => {
-        const statusA = a.status === false ? 1 : 0;
-        const statusB = b.status === false ? 1 : 0;
-
-        if (statusA !== statusB) {
-          return statusA - statusB;
-        }
-
-        return String(a.name || "SIN NOMBRE").localeCompare(
-          String(b.name || "SIN NOMBRE"),
-          "es",
-          { sensitivity: "base" }
-        );
-      });
+    return filterAndSortCustomers({ customers, searchTerm, statusFilter });
   }, [customers, searchTerm, statusFilter]);
 
   const handleNewCustomer = () => {
@@ -339,15 +148,7 @@ const CustomersList = () => {
   const handleAddFiscalCustomerAsPointsCustomer = () => {
     if (!fiscalCustomerFound?.id) return;
 
-    const fiscalCustomerForModal = {
-      ...fiscalCustomerFound,
-      name: fiscalCustomerFound.name || fiscalCustomerFound.razon_social || "",
-      email: fiscalCustomerFound.email || "",
-      phone: fiscalCustomerFound.phone || "",
-      status: fiscalCustomerFound.status !== false,
-    };
-
-    setEditingCustomer(fiscalCustomerForModal);
+    setEditingCustomer(buildPointsCustomerFromFiscal(fiscalCustomerFound));
     setIsCustomerModalOpen(true);
   };
 
@@ -358,15 +159,10 @@ const CustomersList = () => {
 
   const executeCustomerStatusUpdate = async (customer, nextStatus) => {
     try {
-      const { error: updateError } = await supabase
-        .from("customers")
-        .update({
-          status: nextStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", customer.id);
-
-      if (updateError) throw updateError;
+      await updateCustomerStatus({
+        customerId: customer.id,
+        nextStatus,
+      });
 
       await loadCustomers();
 
@@ -389,7 +185,7 @@ const CustomersList = () => {
     }
   };
 
-  const updateCustomerStatus = async (customer, nextStatus) => {
+  const confirmCustomerStatusChange = async (customer, nextStatus) => {
     showAppConfirm({
       type: nextStatus ? "info" : "danger",
       title: nextStatus ? "Activar cliente" : "Desactivar cliente",
@@ -406,14 +202,14 @@ const CustomersList = () => {
     const nextStatus = customer.status === false;
 
     if (nextStatus) {
-      await updateCustomerStatus(customer, true);
+      await confirmCustomerStatusChange(customer, true);
       return;
     }
 
     const isAdmin = await checkUserIsAdmin(user?.id);
 
     if (isAdmin) {
-      await updateCustomerStatus(customer, false);
+      await confirmCustomerStatusChange(customer, false);
       return;
     }
 
@@ -429,7 +225,7 @@ const CustomersList = () => {
 
     if (!customer?.id) return;
 
-    await updateCustomerStatus(customer, false);
+    await confirmCustomerStatusChange(customer, false);
   };
 
   const handleCloseAdminAuth = () => {
@@ -630,7 +426,7 @@ const CustomersList = () => {
                           : styles.statusActive
                       }`}
                     >
-                      {formatStatus(customer.status)}
+                      {formatCustomerStatus(customer.status)}
                     </span>
                   </td>
 

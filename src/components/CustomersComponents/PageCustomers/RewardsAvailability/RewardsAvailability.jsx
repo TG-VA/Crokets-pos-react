@@ -1,7 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./RewardsAvailability.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
+import { useAppModal } from "../../../../hooks/useAppModal";
 import AppModal from "../../../AppModal/AppModal";
+import { subscribeToTableChanges } from "../services/customersRealtimeService";
+import { sortCustomersByName } from "../utils/customerFormatters";
+import { calculatePointsBalance } from "../services/customerPointsCalculationService";
+import {
+  fetchActiveRewards,
+  searchActivePointsCustomers,
+  fetchCustomerPointsMovements,
+} from "./services/rewardsAvailabilityService";
+import {
+  calculateRewardsStats,
+  getRewardStatus,
+  getRewardTypeLabel,
+  isSearchableCustomerTerm,
+} from "./services/rewardsAvailabilityCalculationService";
 
 const RewardsAvailability = () => {
   const [customerSearch, setCustomerSearch] = useState("");
@@ -15,119 +29,23 @@ const RewardsAvailability = () => {
   const [loadingRewards, setLoadingRewards] = useState(false);
   const [loadingPoints, setLoadingPoints] = useState(false);
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
 
   const hasSelectedCustomer = !!selectedCustomer?.id;
 
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
-
-  const getCustomerSortName = (customer) => {
-    return String(
-      customer.name || customer.phone || customer.email || "SIN NOMBRE"
-    ).trim();
-  };
-
-  const sortCustomersByName = (customersList = []) => {
-    return [...customersList].sort((a, b) => {
-      return getCustomerSortName(a).localeCompare(getCustomerSortName(b), "es", {
-        sensitivity: "base",
-        numeric: true,
-      });
-    });
-  };
-
   const rewardsStats = useMemo(() => {
-    if (!hasSelectedCustomer) {
-      return {
-        available: 0,
-        unavailable: 0,
-        total: rewards.length,
-      };
-    }
-
-    return rewards.reduce(
-      (acc, reward) => {
-        const requiredPoints = Number(reward.points_required || 0);
-
-        if (customerPoints >= requiredPoints) {
-          acc.available += 1;
-        } else {
-          acc.unavailable += 1;
-        }
-
-        acc.total += 1;
-        return acc;
-      },
-      {
-        available: 0,
-        unavailable: 0,
-        total: 0,
-      }
-    );
+    return calculateRewardsStats({
+      rewards,
+      customerPoints,
+      hasSelectedCustomer,
+    });
   }, [hasSelectedCustomer, rewards, customerPoints]);
 
   const loadRewards = async () => {
     try {
       setLoadingRewards(true);
 
-      const { data, error: rewardsError } = await supabase
-        .from("rewards")
-        .select(`
-          id,
-          name,
-          description,
-          points_required,
-          is_active,
-          reward_type,
-          discount_type,
-          discount_value
-        `)
-        .eq("is_active", true)
-        .order("points_required", { ascending: true })
-        .order("name", { ascending: true, nullsFirst: false });
-
-      if (rewardsError) throw rewardsError;
-
-      setRewards(data || []);
+      setRewards(await fetchActiveRewards());
     } catch (err) {
       console.error("Error cargando recompensas:", err);
       setRewards([]);
@@ -152,18 +70,9 @@ const RewardsAvailability = () => {
     try {
       setLoadingPoints(true);
 
-      const { data, error: pointsError } = await supabase
-        .from("customer_points")
-        .select("points")
-        .eq("customer_id", customerId);
+      const movements = await fetchCustomerPointsMovements(customerId);
 
-      if (pointsError) throw pointsError;
-
-      const totalPoints = (data || []).reduce((sum, movement) => {
-        return sum + Number(movement.points || 0);
-      }, 0);
-
-      setCustomerPoints(totalPoints);
+      setCustomerPoints(calculatePointsBalance(movements));
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
       setCustomerPoints(0);
@@ -180,9 +89,7 @@ const RewardsAvailability = () => {
   };
 
   const searchCustomers = async (searchValue = customerSearch) => {
-    const cleanSearch = String(searchValue || "").trim().toLowerCase();
-
-    if (!cleanSearch || cleanSearch.length < 2) {
+    if (!isSearchableCustomerTerm(searchValue)) {
       setCustomerResults([]);
       return;
     }
@@ -190,30 +97,9 @@ const RewardsAvailability = () => {
     try {
       setLoadingCustomers(true);
 
-      const like = `%${cleanSearch}%`;
+      const customersData = await searchActivePointsCustomers(searchValue);
 
-      const { data, error: customersError } = await supabase
-        .from("customers")
-        .select(`
-          id,
-          name,
-          phone,
-          email,
-          status,
-          is_points_customer,
-          is_billing_customer,
-          rfc,
-          razon_social
-        `)
-        .eq("status", true)
-        .eq("is_points_customer", true)
-        .or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`)
-        .order("name", { ascending: true, nullsFirst: false })
-        .limit(20);
-
-      if (customersError) throw customersError;
-
-      setCustomerResults(sortCustomersByName(data || []));
+      setCustomerResults(sortCustomersByName(customersData));
     } catch (err) {
       console.error("Error buscando clientes:", err);
       setCustomerResults([]);
@@ -290,51 +176,6 @@ const RewardsAvailability = () => {
     searchCustomers(customerSearch);
   };
 
-  const getRewardTypeLabel = (reward) => {
-    const type = String(reward?.reward_type || "").trim();
-
-    if (type === "free_product") {
-      return "Producto gratis";
-    }
-
-    if (type === "product_discount") {
-      if (reward?.discount_type === "percent") {
-        return `Descuento ${Number(reward.discount_value || 0)}%`;
-      }
-
-      if (reward?.discount_type === "fixed") {
-        return `Descuento $${Number(reward.discount_value || 0).toFixed(2)}`;
-      }
-
-      return "Descuento en producto";
-    }
-
-    return "Recompensa";
-  };
-
-  const getRewardStatus = (reward) => {
-    const requiredPoints = Number(reward.points_required || 0);
-
-    if (!hasSelectedCustomer) {
-      return {
-        label: "Selecciona un cliente",
-        status: "neutral",
-      };
-    }
-
-    if (customerPoints >= requiredPoints) {
-      return {
-        label: "Disponible para canje en ventas",
-        status: "available",
-      };
-    }
-
-    return {
-      label: `Faltan ${requiredPoints - customerPoints} puntos`,
-      status: "unavailable",
-    };
-  };
-
   useEffect(() => {
     loadRewards();
   }, []);
@@ -358,48 +199,22 @@ const RewardsAvailability = () => {
   }, [customerSearch]);
 
   useEffect(() => {
-    const rewardsChannel = supabase
-      .channel("rewards-query-rewards-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "rewards",
-        },
-        () => {
-          loadRewards();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(rewardsChannel);
-    };
+    return subscribeToTableChanges({
+      channelName: "rewards-query-rewards-realtime",
+      tables: ["rewards"],
+      onChange: loadRewards,
+    });
   }, []);
 
   useEffect(() => {
     if (!selectedCustomer?.id) return;
 
-    const pointsChannel = supabase
-      .channel(`customer-points-query-${selectedCustomer.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "customer_points",
-          filter: `customer_id=eq.${selectedCustomer.id}`,
-        },
-        () => {
-          loadCustomerPoints(selectedCustomer.id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(pointsChannel);
-    };
+    return subscribeToTableChanges({
+      channelName: `customer-points-query-${selectedCustomer.id}`,
+      tables: ["customer_points"],
+      rowFilter: `customer_id=eq.${selectedCustomer.id}`,
+      onChange: () => loadCustomerPoints(selectedCustomer.id),
+    });
   }, [selectedCustomer?.id]);
 
   return (
@@ -591,7 +406,11 @@ const RewardsAvailability = () => {
           ) : (
             rewards.map((reward) => {
               const requiredPoints = Number(reward.points_required || 0);
-              const rewardStatus = getRewardStatus(reward);
+              const rewardStatus = getRewardStatus({
+                reward,
+                customerPoints,
+                hasSelectedCustomer,
+              });
 
               return (
                 <article

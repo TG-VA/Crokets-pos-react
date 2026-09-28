@@ -24,7 +24,13 @@ export const useAppModal = () => {
     }));
   };
 
-  const showAppAlert = ({ type = "info", title = "Aviso", message = "", confirmText = "Entendido" }) => {
+  const showAppAlert = ({
+    type = "info",
+    title = "Aviso",
+    message = "",
+    confirmText = "Entendido",
+    onConfirm = null,
+  }) => {
     setAppModal({
       isOpen: true,
       type,
@@ -34,12 +40,27 @@ export const useAppModal = () => {
       cancelText: "Cancelar",
       showCancel: false,
       loading: false,
-      onConfirm: closeAppModal,
+      onConfirm: onConfirm || closeAppModal,
       onCancel: closeAppModal,
     });
   };
 
-  const showAppConfirm = ({ type = "warning", title = "Confirmar acción", message = "", confirmText = "Confirmar", cancelText = "Cancelar", onConfirm }) => {
+  const setAppModalLoading = (loading) => {
+    setAppModal((prev) => ({
+      ...prev,
+      loading,
+    }));
+  };
+
+  const showAppConfirm = ({
+    type = "warning",
+    title = "Confirmar acción",
+    message = "",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    onConfirm,
+    closeOnConfirm = true,
+  }) => {
     setAppModal({
       isOpen: true,
       type,
@@ -50,7 +71,10 @@ export const useAppModal = () => {
       showCancel: true,
       loading: false,
       onConfirm: async () => {
-        closeAppModal();
+        if (closeOnConfirm) {
+          closeAppModal();
+        }
+
         if (onConfirm) {
           await onConfirm();
         }
@@ -59,5 +83,11 @@ export const useAppModal = () => {
     });
   };
 
-  return { appModal, closeAppModal, showAppAlert, showAppConfirm };
+  return {
+    appModal,
+    closeAppModal,
+    setAppModalLoading,
+    showAppAlert,
+    showAppConfirm,
+  };
 };

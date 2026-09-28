@@ -1,8 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./PointsHistory.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
 import { useBranch } from "../../../../contexts/BranchContext";
+import { useAppModal } from "../../../../hooks/useAppModal";
 import AppModal from "../../../AppModal/AppModal";
+import { subscribeToTableChanges } from "../services/customersRealtimeService";
+import { normalizeText } from "../utils/customerFormatters";
+import {
+  fetchBranches,
+  fetchPointsMovements,
+} from "./services/pointsHistoryService";
+import {
+  calculateMovementsSummary,
+  filterMovements,
+  filterMovementsByCustomerSearch,
+  formatMovementDateTime,
+  formatSaleFolio,
+  getMovementBadgeClassName,
+  getMovementBranchName,
+  getMovementNotes,
+  getMovementCustomerName,
+  getMovementLabel,
+  getMovementUserName,
+  getMotiveFromNotes,
+  getReturnedAmountFromNotes,
+  getSourceLabel,
+  resolveCustomerSearchLabel,
+} from "./services/pointsHistoryCalculationService";
 
 const PointsHistory = () => {
   const { branch } = useBranch();
@@ -16,59 +39,11 @@ const PointsHistory = () => {
 
   const [loadingMovements, setLoadingMovements] = useState(false);
 
-  const [appModal, setAppModal] = useState({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: "",
-    confirmText: "Entendido",
-    cancelText: "Cancelar",
-    showCancel: false,
-    loading: false,
-    onConfirm: null,
-    onCancel: null,
-  });
-
-  const closeAppModal = () => {
-    setAppModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
 
   const loadBranches = async () => {
     try {
-      const { data, error: branchesError } = await supabase
-        .from("branches")
-        .select("id, name, code, state")
-        .order("name", { ascending: true });
-
-      if (branchesError) throw branchesError;
-
-      setBranches(data || []);
+      setBranches(await fetchBranches());
     } catch (err) {
       console.error("Error cargando sucursales:", err);
       setBranches([]);
@@ -87,35 +62,7 @@ const PointsHistory = () => {
     try {
       setLoadingMovements(true);
 
-      const { data, error: movementsError } = await supabase
-        .from("customer_points")
-        .select(`
-          *,
-          customers:customer_id (
-            id,
-            name,
-            phone,
-            email
-          ),
-          rewards:reward_id (
-            id,
-            name
-          ),
-          users:user_id (
-            id,
-            username
-          ),
-          branches:branch_id (
-            id,
-            name,
-            code
-          )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (movementsError) throw movementsError;
-
-      setMovements(data || []);
+      setMovements(await fetchPointsMovements());
     } catch (err) {
       console.error("Error cargando historial de puntos:", err);
       setMovements([]);
@@ -149,243 +96,43 @@ const PointsHistory = () => {
   }, [branch?.id]);
 
   useEffect(() => {
-    const pointsChannel = supabase
-      .channel("points-history-customer-points-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "customer_points",
-        },
-        () => {
-          loadMovements();
-        }
-      )
-      .subscribe();
+    const unsubscribePoints = subscribeToTableChanges({
+      channelName: "points-history-customer-points-realtime",
+      tables: ["customer_points"],
+      onChange: loadMovements,
+    });
 
-    const branchesChannel = supabase
-      .channel("points-history-branches-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "branches",
-        },
-        () => {
-          loadBranches();
-        }
-      )
-      .subscribe();
+    const unsubscribeBranches = subscribeToTableChanges({
+      channelName: "points-history-branches-realtime",
+      tables: ["branches"],
+      onChange: loadBranches,
+    });
 
     return () => {
-      supabase.removeChannel(pointsChannel);
-      supabase.removeChannel(branchesChannel);
+      unsubscribePoints();
+      unsubscribeBranches();
     };
   }, []);
 
-  const normalizeText = (value) => {
-    return String(value || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();
-  };
-
-  const formatDateTime = (dateValue) => {
-    if (!dateValue) return "SIN FECHA";
-
-    try {
-      const rawDate = String(dateValue);
-
-      const normalizedDate =
-        rawDate.includes("T") && (rawDate.endsWith("Z") || rawDate.includes("+"))
-          ? rawDate
-          : `${rawDate.replace(" ", "T")}Z`;
-
-      return new Intl.DateTimeFormat("es-MX", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-        .format(new Date(normalizedDate))
-        .toUpperCase();
-    } catch {
-      return "SIN FECHA";
-    }
-  };
-
-  const formatSaleFolio = (saleId) => {
-    if (!saleId) return "SIN FOLIO";
-
-    return String(saleId).trim().slice(0, 8).toUpperCase();
-  };
-
-  const getMovementLabel = (movement) => {
-    const points = Number(movement.points || 0);
-
-    if (movement.source === "cancellation") {
-      return points >= 0 ? "PUNTOS DEVUELTOS" : "PUNTOS DESCONTADOS";
-    }
-
-    if (movement.source === "partial_return") return "DEVOLUCIÓN";
-    if (movement.source === "reward") return "CANJE";
-
-    if (movement.source === "manual") {
-      return points >= 0 ? "AJUSTE +" : "AJUSTE -";
-    }
-
-    if (movement.movement_type === "earn") return "GANADO";
-    if (movement.movement_type === "redeem") return "DESCONTADO";
-
-    return "OTRO";
-  };
-
-  const getMovementBadgeClass = (movement) => {
-    const points = Number(movement.points || 0);
-
-    if (movement.source === "cancellation" && points > 0) {
-      return styles.movementReturn;
-    }
-
-    if (movement.source === "cancellation" && points < 0) {
-      return styles.movementRedeem;
-    }
-
-    if (movement.source === "manual" && points > 0) {
-      return styles.movementEarn;
-    }
-
-    if (movement.source === "manual" && points < 0) {
-      return styles.movementRedeem;
-    }
-
-    if (movement.movement_type === "earn") {
-      return styles.movementEarn;
-    }
-
-    return styles.movementRedeem;
-  };
-
-  const getSourceLabel = (source) => {
-    if (source === "sale") return "VENTA";
-    if (source === "manual") return "MANUAL";
-    if (source === "reward") return "RECOMPENSA";
-    if (source === "cancellation") return "CANCELACIÓN";
-    if (source === "partial_return") return "DEVOLUCIÓN PARCIAL";
-
-    return "SIN ORIGEN";
-  };
-
-  const getBranchName = (movement) => {
-    return normalizeText(
-      movement.branches?.name || movement.branches?.code || "SIN SUCURSAL"
-    );
-  };
-
-  const getMovementNotes = (movement) => {
-    return normalizeText(movement.notes);
-  };
-
-  const getReturnedAmountFromNotes = (notes) => {
-    const match = String(notes || "").match(/\$[\d,]+(\.\d{2})?/);
-    return match ? match[0] : "";
-  };
-
-  const getMotiveFromNotes = (notes) => {
-    const cleanNotes = String(notes || "").trim();
-
-    if (!cleanNotes) return "";
-
-    const motiveMatch = cleanNotes.match(/MOTIVO:\s*(.*?)(\.|$)/i);
-
-    if (motiveMatch?.[1]) {
-      return normalizeText(motiveMatch[1]);
-    }
-
-    return normalizeText(cleanNotes);
-  };
-
-  const matchesCustomerSearch = (movement, search) => {
-    if (!search) return true;
-
-    const customerValues = [
-      movement.customers?.name,
-      movement.customers?.phone,
-      movement.customers?.email,
-    ];
-
-    return customerValues.some((value) =>
-      String(value || "").toLowerCase().includes(search)
-    );
-  };
-
-  const matchesBranchFilter = (movement) => {
-    return branchFilter === "all" || movement.branch_id === branchFilter;
-  };
-
   const baseMovementsForSummary = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-
-    return movements.filter((movement) => {
-      if (!matchesCustomerSearch(movement, search)) return false;
-
-      return true;
-    });
+    return filterMovementsByCustomerSearch({ movements, searchTerm });
   }, [movements, searchTerm]);
 
   const filteredMovements = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
-
-    return movements.filter((movement) => {
-      if (!matchesCustomerSearch(movement, search)) return false;
-      if (!matchesBranchFilter(movement)) return false;
-
-      const matchesMovement =
-        movementFilter === "all" || movement.movement_type === movementFilter;
-
-      if (!matchesMovement) return false;
-
-      return true;
+    return filterMovements({
+      movements,
+      searchTerm,
+      movementFilter,
+      branchFilter,
     });
   }, [movements, searchTerm, movementFilter, branchFilter]);
 
   const summary = useMemo(() => {
-    const earned = baseMovementsForSummary
-      .filter((movement) => Number(movement.points || 0) > 0)
-      .reduce((sum, movement) => sum + Number(movement.points || 0), 0);
-
-    const redeemed = baseMovementsForSummary
-      .filter((movement) => Number(movement.points || 0) < 0)
-      .reduce((sum, movement) => {
-        return sum + Math.abs(Number(movement.points || 0));
-      }, 0);
-
-    const balance = baseMovementsForSummary.reduce((sum, movement) => {
-      return sum + Number(movement.points || 0);
-    }, 0);
-
-    return {
-      total: baseMovementsForSummary.length,
-      earned,
-      redeemed,
-      balance,
-    };
+    return calculateMovementsSummary(baseMovementsForSummary);
   }, [baseMovementsForSummary]);
 
   const customerSearchLabel = useMemo(() => {
-    const cleanSearch = searchTerm.trim().toLowerCase();
-
-    if (!cleanSearch) return "";
-
-    const firstMatch = movements.find((movement) =>
-      matchesCustomerSearch(movement, cleanSearch)
-    );
-
-    return normalizeText(firstMatch?.customers?.name || searchTerm.trim());
+    return resolveCustomerSearchLabel({ movements, searchTerm });
   }, [movements, searchTerm]);
 
   const handleClearFilters = () => {
@@ -530,7 +277,9 @@ const PointsHistory = () => {
         </div>
 
         <div className={styles.summaryCard}>
-          <span>{searchTerm.trim() ? "Saldo del cliente" : "Saldo global"}</span>
+          <span>
+            {searchTerm.trim() ? "Saldo del cliente" : "Saldo global"}
+          </span>
           <strong>{summary.balance}</strong>
         </div>
       </div>
@@ -664,17 +413,13 @@ const PointsHistory = () => {
                   <tr key={movement.id}>
                     <td>
                       <span className={styles.dateText}>
-                        {formatDateTime(movement.created_at)}
+                        {formatMovementDateTime(movement.created_at)}
                       </span>
                     </td>
 
                     <td>
                       <div className={styles.customerInfo}>
-                        <strong>
-                          {normalizeText(
-                            movement.customers?.name || "SIN CLIENTE"
-                          )}
-                        </strong>
+                        <strong>{getMovementCustomerName(movement)}</strong>
                         <span>
                           {normalizeText(
                             movement.customers?.phone || "SIN TELÉFONO"
@@ -685,8 +430,13 @@ const PointsHistory = () => {
 
                     <td>
                       <span
-                        className={`${styles.movementBadge} ${getMovementBadgeClass(
-                          movement
+                        className={`${styles.movementBadge} ${getMovementBadgeClassName(
+                          {
+                            movement,
+                            movementReturn: styles.movementReturn,
+                            movementEarn: styles.movementEarn,
+                            movementRedeem: styles.movementRedeem,
+                          }
                         )}`}
                       >
                         {getMovementLabel(movement)}
@@ -715,15 +465,13 @@ const PointsHistory = () => {
 
                     <td>
                       <span className={styles.normalText}>
-                        {normalizeText(
-                          movement.users?.username || "SIN USUARIO"
-                        )}
+                        {getMovementUserName(movement)}
                       </span>
                     </td>
 
                     <td>
                       <span className={styles.normalText}>
-                        {getBranchName(movement)}
+                        {getMovementBranchName(movement)}
                       </span>
                     </td>
                   </tr>
