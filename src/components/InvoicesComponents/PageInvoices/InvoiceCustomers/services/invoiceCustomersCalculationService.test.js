@@ -140,6 +140,12 @@ describe("invoiceCustomersCalculationService", () => {
       expect(isPhoneAlreadyFiscalCustomer([], "")).toBe(false);
     });
 
+    it("no bloquea el alta cuando el cliente existente no tiene telefono", () => {
+      expect(
+        isPhoneAlreadyFiscalCustomer([{ phone: null }, { phone: "  " }], "")
+      ).toBe(false);
+    });
+
     it("devuelve false cuando no coincide", () => {
       expect(
         isPhoneAlreadyFiscalCustomer([{ phone: "5512345678" }], "5598765432")
