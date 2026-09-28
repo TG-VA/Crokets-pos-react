@@ -1445,7 +1445,7 @@ solo `authenticated`/`service_role`.
 
 ### 54. Componentes monolíticos y violación de DIP en el módulo de Clientes (`Customers`)
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto — rama `refactor/customers-modularization-and-dip`, 28 de septiembre de 2026.
 
 Tras concluir la modularización de los 5 componentes fijados en el ítem #3 (`CashCut`, `ticketBuilder`,
 `RewardModal`, `ProductsModify` y `ProductsPromotions`), el módulo de Clientes (`src/components/CustomersComponents/`)
@@ -1469,6 +1469,70 @@ datos y dificultad para añadir pruebas unitarias automatizadas.
 **Recomendación:** modularizar cada pantalla en subcomponentes presentacionales puros (< 300 líneas),
 extraer los hooks de orquestación (`useCustomersList`, `useRewardsSettings`, etc.) y desacoplar el acceso a datos
 en servicios puros (`customersService.js`, `rewardsService.js`, `pointsService.js`).
+
+**Resolución (28 sep 2026):** la deuda se cerró en tres commits sobre la rama
+`refactor/customers-modularization-and-dip`.
+
+1. `b9747f5` — extracción de servicios de datos y cálculos por feature (`services/`), más los servicios
+   compartidos `customersRealtimeService.js`, `customerPointsCalculationService.js` y `customerFormatters.js`.
+   Los seis componentes dejaron de importar `supabaseClient` directamente: **cero dependencias de Supabase
+   en componentes y hooks**, toda la persistencia queda encapsulada en la capa de servicios.
+2. `9e5d439` — 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de
+   Supabase (`rewardsSettingsService`, `pointsAdjustmentService`).
+3. `1c19419` — descomposición de los seis componentes en subcomponentes presentacionales y hooks.
+
+**Métricas de la descomposición (líneas del componente principal antes → después):**
+
+| Componente                | Antes | Después | Extraído en                                                                                                                                                                                                        |
+| ------------------------- | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RewardsSettings.jsx`     | 984   | 122     | `useRewardsSettings`, `useRewardsPointsRule`, `RewardsSettingsTable`, `RewardsSettingsPointsRule`, `RewardsSettingsFilters`, `RewardsSettingsRewardDetailsModal`                                                   |
+| `PointsAdjustment.jsx`    | 933   | 145     | `usePointsAdjustment`, `usePointsAdjustmentAdminAccess`, `usePointsAdjustmentCustomerSearch`, `usePointsAdjustmentSubmit`, `PointsAdjustmentForm`, `PointsAdjustmentCustomerCards`, `PointsAdjustmentAccessStates` |
+| `PointsHistory.jsx`       | 754   | 89      | `usePointsHistory`, `PointsHistoryTable`, `PointsHistoryFilters`, `PointsHistorySummary`                                                                                                                           |
+| `CustomersList.jsx`       | 710   | 126     | `useCustomersList`, `CustomersListTable`, `CustomersListFilters`, `CustomersListFiscalMatch`                                                                                                                       |
+| `RewardsAvailability.jsx` | 661   | 88      | `useRewardsAvailability`, `RewardsAvailabilityCustomerSearch`, `RewardsAvailabilityCustomerSummary`, `RewardsAvailabilityRewardsGrid`                                                                              |
+| `CustomerModal.jsx`       | 635   | 101     | `useCustomerModal`, `CustomerModalFields`                                                                                                                                                                          |
+
+Ningún componente ni hook del módulo supera las 300 líneas. El archivo más grande es
+`pointsAdjustmentCalculationService.js` (364 líneas), **servicio puro de cálculo sin dependencias de UI ni
+I/O**: supera el umbral de forma deliberada y aceptada, porque partirlo fragmentaría las reglas de negocio
+punitivas que ya cubren sus tests.
+
+**Correcciones detectadas por la contra-auditoría de la rama (28 sep 2026):**
+
+- **Contrato roto del servicio realtime (regresión funcional).** `customersRealtimeService.js` aceptaba
+  `{ channelName, table, filter }` mientras los ocho call-sites de los cinco hooks pasaban
+  `{ tables: [...], rowFilter }`. El payload que llegaba al servidor Realtime quedaba
+  `{"event":"*","schema":"public"}`: sin `table` ni `filter`, por lo que ninguna de las seis pantallas
+  recibía eventos en vivo, se perdía el segundo binding de `customers-list-realtime`
+  (`customers` + `customer_points`, que en `main` eran dos `.on()` sobre el mismo canal) y los filtros
+  `customer_id=eq.<id>`. El servicio ahora recibe `tables` (arreglo o cadena) y `rowFilter`, y registra
+  un binding `postgres_changes` por tabla sobre el mismo canal, replicando el comportamiento de `main`.
+  Cubierto por `customersRealtimeService.test.js` (9 casos) y por una aserción de contrato del call-site
+  en `usePointsAdjustment.test.js`; el test falla contra la versión previa del servicio.
+- **Puerta de CI de lint en rojo.** Los ocho errores `react-hooks/set-state-in-effect` que quedaban en los
+  cinco hooks nuevos están en archivos añadidos por la rama, y `.github/workflows/ci.yml` corre ESLint de
+  forma incremental sobre el diff: la etiqueta de "preexistente" no los exime. Se annotaron los ocho puntos
+  con `eslint-disable-next-line` y su justificación (deuda herdada de #56), dejando `npx eslint` en
+  `EXIT=0` sobre el módulo y sobre el diff. El patrón de la regla no cambia: sigue abierto en #56.
+- **`className` con espacios colgantes.** Cuatro vistas presentacionales nuevas heredaron de `main` el
+  patrón `` `${styles.x} ${cond ? styles.y : ""}` ``, que deja espacios finales o dobles en el DOM
+  (prohibido por `AGENTS.md`). Se migraron a `[...].filter(Boolean).join(" ")`.
+
+**Bugs corregidos en el camino:**
+
+- El `canSubmit` inline y la cascada de ~90 líneas de validaciones de `PointsAdjustment` quedaron
+  reemplazados por `canSubmitPointsAdjustment`, `getAdjustmentValidationMessage` y `getSaveGuardMessage`,
+  conservando la diferenciación de mensajes entre los contextos `review` y `confirm`.
+- `usePointsAdjustment` no devolvía `adjustmentReason`, que el formulario ya enlazaba; detectado por el
+  nuevo test del hook.
+
+**Verificación:** `npm test` en **64 archivos / 930 tests** (antes 51/663) y `npm run build:frontend` en
+`EXIT=0`; ESLint y Prettier incrementales sobre el diff con `EXIT=0` y `git diff --check` limpio; paridad
+de clases de CSS (180 clases en los seis módulos, conjunto idéntico) y de textos visibles comprobada
+clase por clase y cadena por cadena contra `main` para las seis pantallas; las queries conservan selects,
+filtros, orden y límites. Los warnings de `no-unused-vars` sobre imports usados solo en JSX son
+comportamiento heredado de `eslint.config.mjs`, que no habilita `react/jsx-uses-vars`: se aceptan como deuda
+documentada y quedan fuera del alcance de este ítem.
 
 ---
 

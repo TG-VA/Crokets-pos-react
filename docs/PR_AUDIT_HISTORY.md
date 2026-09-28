@@ -1627,3 +1627,156 @@ afirmaciones documentales erróneas (A1, A2, A3) están corregidas contra medici
 no dejó bloqueantes abiertos: el único redness persistente en CI (los 13
 `react-hooks/set-state-in-effect`) es deuda diferida de forma explícita y registrada en #56, ajena al
 alcance de este PR. La rama queda lista para merge, con #59 y #56 como deuda conocida y explícita.
+
+---
+
+## Doble Auditoría — RAMA `refactor/customers-modularization-and-dip` (28 de septiembre de 2026)
+
+**Alcance:** cierre del ítem #54 de `KNOWN_ISSUES.md`, la descomposición modular de los seis componentes
+de Clientes y la inversión de dependencias sobre Supabase. Base: `origin/main` = `05b3ae2`; HEAD al
+auditar: `a2e48b8`. La rama quedó sujeta a **dos auditorías independientes** sobre el mismo diff: una
+primera, de catálogo, y una segunda contra-auditoría posterior que verificó los hallazgos por medición.
+
+### Serie 1 — Auditoría inicial (4 commits)
+
+| Commit | Alcance |
+|---|---|
+| `b9747f5` | servicios de datos y cálculos por feature (`services/`), más los compartidos `customersRealtimeService.js`, `customerPointsCalculationService.js` y `customerFormatters.js` |
+| `9e5d439` | 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de Supabase |
+| `1c19419` | descomposición de los seis componentes en subcomponentes presentacionales y hooks |
+| `a2e48b8` | cierre documental de #54 en `KNOWN_ISSUES.md` |
+
+Comprobaciones que el diff ya satisfacía antes de cualquier corrección: 51 archivos de test y 663 tests en
+el baseline; los seis componentes principales entre 88 y 145 líneas, sin ninguno sobre 150; estructura
+`components/`, `hooks/` y `services/` presente en las cinco features; cero `console.log`/`console.warn`,
+cero `!important`, cero `style={{`; 63 de 63 archivos con salto de línea final; `git diff --check` limpio;
+paridad de las 180 clases de CSS de los seis módulos y de los textos visibles, comprobada clase por clase
+y cadena por cadena contra `main`; queries con selects, filtros, orden y límites idénticos.
+
+### Serie 2 — Contra-auditoría y resolución de bloqueantes
+
+La segunda auditoría encontró dos bloqueantes que el primer pase no había detectado y cuatro hallazgos
+secundarios. Los dos bloqueantes eran reales: uno anulaba por completo una funcionalidad.
+
+**B1 — Contrato roto del servicio realtime (RESUELTO, regresión funcional).** El servicio compartido
+aceptaba `{ channelName, table, filter }` y construía un único binding con
+`postgres_changes: { event: "*", schema: "public", table, filter }`, pero los ocho call-sites de los cinco
+hooks nuevos pasaban `{ tables: [...], rowFilter }`. Los nombres no coincidían, de modo que el payload
+llegaba al servidor como `{"event":"*","schema":"public"}`: sin `table` ni `filter`. Las consecuencias
+medidas fueron tres: ninguna de las seis pantallas recibía eventos en vivo; `customers-list-realtime`
+perdía su segundo binding, pues `main` registraba dos `.on()` sobre el mismo canal para `customers` y
+`customer_points`; y se perdían los filtros `customer_id=eq.<id>` de los canales por cliente. El servicio
+acepta ahora `tables` (arreglo o cadena) y `rowFilter`, y registra un binding por tabla sobre un único
+canal con una sola llamada a `subscribe()`, replicando el comportamiento de `main`. Cubierto por
+`customersRealtimeService.test.js` (9 casos) más una aserción de contrato del call-site en
+`usePointsAdjustment.test.js`. **Verificado por mutation testing:** contra la versión previa del servicio
+fijan 5 de los 9 tests, incluido el del payload.
+
+**B2 — Puerta de CI de lint en rojo (RESUELTO).** Quedaban 8 errores `react-hooks/set-state-in-effect`
+en `useCustomerModal.js`, `useCustomersList.js` (2), `usePointsHistory.js` (2),
+`useRewardsAvailability.js` (2) y `useRewardsSettings.js`. La documentación los declaraba "preexistentes",
+pero los cinco archivos fueron añadidos por la rama y `.github/workflows/ci.yml` corre ESLint de forma
+incremental sobre el diff, así que el etiqueta los alcanzaba. Se annotaron los ocho puntos con
+`eslint-disable-next-line` y su justificación (deuda heredada de #56); el patrón de la regla no cambia y
+sigue abierto en #56. `npx eslint` queda en `EXIT=0` sobre el módulo y sobre el diff.
+
+**A1 — `className` con espacios colgantes (RESUELTO).** Cuatro vistas presentacionales heredaron de `main`
+el patrón `` `${styles.x} ${cond ? styles.y : ""}` ``, que deja espacios finales o dobles en el DOM y está
+prohibido por `AGENTS.md`. Se migraron a `[...].filter(Boolean).join(" ")` en
+`PointsAdjustmentCustomerCards.jsx`, `RewardsAvailabilityCustomerSearch.jsx` y
+`RewardsAvailabilityRewardsGrid.jsx` (dos ocurrencias).
+
+**A2 — Afirmación documental falsa sobre un bug corregido (RESUELTO).** #54 declaraba que
+`PointsAdjustment.jsx` renderizaba `PointsAdjustmentConfirmModal` sin importarlo, provocando un
+`ReferenceError` en cada render. La afirmación es falsa: el componente no se renderiza en ninguna ruta y
+el archivo nunca existió en esa rama. Retirada.
+
+**A3 — Cifras y formatos documentales incorrectos (RESUELTO).** #54 declaraba "Prettier y `git diff --check`
+limpios" cuando la tabla de métricas añadida incumplía `prettier --check`, y reportaba 63/920 tests
+como estado final. Se corrigieron ambas contra medición: `KNOWN_ISSUES.md` conserva exactamente los mismos
+4 hunks de Prettier que `main` (cero introducidos por la rama) y el recuento es 64/930.
+
+**A4 — `closeOnConfirm` muerto (RESUELTO en un pase posterior).** El primer informe de esta serie lo
+clasificó como "heredado de `main` y ajeno al alcance". Esa atribución era falsa en las dos partes:
+`origin/main:src/hooks/useAppModal.js` no contiene `closeOnConfirm`, y el diff `origin/main...HEAD` de ese
+archivo **sí** lo añade esta rama. Era, por tanto, código muerto introducido por el PR y no una excepción
+de alcance. Se eliminó el parámetro y su rama `if (closeOnConfirm)`: `showAppConfirm` vuelve al cierre
+incondicional previo a la rama, conservando el orden cerrar→ejecutar y la ejecución de `onConfirm`. La
+rama también había ampliado `showAppAlert` con `onConfirm` y añadido `setAppModalLoading`; ambos sí
+tienen consumidores reales (`useCustomerModal.js`, `useRewardsSettings.js`) y se conservan.
+
+**A5 — `REDEEMING_MOVEMENT_MARKERS` con cuatro marcadores imposibles (RESUELTO en un pase posterior).** El
+primer informe lo décritió como una inocua "red de seguridad defensiva". Era una lectura incompleta, y la
+frase que lo acompañaba ("el clasificador redime el SKU o el reward") no describía nada real. El hecho
+verificable es más grave: la restricción `chk_customer_points_movement_type` de `customer_points` solo
+admite `earn` y `redeem`, de modo que `canje`, `used`, `uso` y `resta` —cuatro de los cinco marcadores— no
+podían existir en la tabla. Peor aún, tres tests del servicio asientaban `movement_type: "canje"`, `"used"`
+y `"resta_manual"`, es decir, fijaban estados que la base rechaza, dando confianza sobre un clasificador
+que en producción solo vería `earn` y `redeem`. La clasificación pasó a ser una comparación exacta contra
+`"redeem"` (tolerante a mayúsculas y espacios), alineada con la restricción y con lo que ya hacía
+`pointsHistoryCalculationService.js`. Los tests se reescribieron para usar solo los dos valores reales y se
+añadió un caso que fija que `used`, `resta_manual`, `entrada`, `salida`, `sale`, `transfer` y `adjustment`
+ya no restan. Verificado por mutation testing: el caso falla contra la versión con marcadores. El propio
+JSDoc del servicio ya afirmaba que la base solo admite `earn` y `redeem`, de modo que el código contradecía
+su documentación.
+
+**A6 — El mismo patrón de marcadores fuera del alcance del PR (OBSERVADO, requiere verificación
+separada).** `customersReportCalculationService.js` (dos sitios), `CustomerDetailModal.jsx` y
+`CustomerDetailPointsTab.jsx` clasifican el canje con `movementType.includes("canje" | "used" | "uso" |
+...)`. Los tres archivos están fuera del diff de la rama, así que quedan fuera de alcance. **No se afirma
+que sean defectuosos:** esos servicios leen también `sale_reward_redemptions`, que tiene `status` y no
+`movement_type`, y condicionan además por `source === "reward"`, así que el conjunto de marcadores puede
+ser legítimo para ese segundo origen. Queda registrado para una auditoría propia del módulo de Reportes.
+
+### Verificación final
+
+| Comprobación | Resultado |
+|---|---|
+| `npm test` | **64 archivos / 931 tests, 0 fallos** (baseline 51/663) |
+| `npm run build:frontend` | **EXIT 0** |
+| `npx eslint` sobre el módulo y sobre el diff | **EXIT 0** en ambos |
+| `npx eslint src/` completo | 90 errores, **0 en archivos del diff de la rama** (verificado por intersección) |
+| `prettier --check` sobre el diff | limpio en el código; los 2 avisos (`BACKLOG.md`, `KNOWN_ISSUES.md`) fallan igual en `main` |
+| Hunks de Prettier en `KNOWN_ISSUES.md` | 4, los mismos que `main`; **0 introducidos** |
+| `git diff --check` | limpio |
+| Mutation testing de B1 | 5 de 9 tests fallan contra el servicio previo |
+| Mutation testing de A5 | 1 test falla contra la versión con marcadores |
+| Paridad de clases CSS | **180/180** clases idénticas en los seis módulos |
+| Paridad de texto visible | idéntica cadena por cadena en las seis pantallas |
+| Componentes principales | 122 / 145 / 89 / 126 / 88 / 101 líneas; ninguno sobre 150 |
+| DIP | cero imports de Supabase en componentes y hooks; solo en `services/` |
+| `console.log`/`console.warn`, `!important`, `style={{` nuevos | 0 |
+
+### Notas y límites conscientes
+
+- **El patrón de `set-state-in-effect` sigue abierto en #56.** Los ocho `eslint-disable-next-line`
+  compran el gate de CI, no resuelven la causa raíz. Cambiar las cargas iniciales de efecto a un patrón
+  distinto cambiaría el orden de montaje y pertenece a #56, no a esta rama. En `src/` completo quedan 90
+  errores de esa y otras reglas de hooks, todos fuera del diff de la rama.
+- **A5 solo cambia el resultado ante datos que la base no puede contener.** Con filas reales (`earn` y
+  `redeem`) el saldo por cliente es idéntico antes y después. La diferencia aparece únicamente si
+  existieran filas con `movement_type` fuera de la restricción, que es justo lo que la restricción
+  impide. El `trim()` se mantiene por si quedaran filas anteriores a ella.
+- **`NavbarCustomers.jsx` importa `supabaseClient` en un componente.** Se verificó por intersección que
+  el archivo no aparece en el diff de la rama: es herencia de `main` y excede el alcance de #54. Lo mismo
+  aplica a `RewardModal/rewardModalService.js`.
+- **`pointsAdjustmentCalculationService.js` (364 líneas)** supera el umbral de 300 de forma deliberada:
+  partirlo fragmentaría las reglas de negocio punitivas que ya cubren sus tests.
+- La suite no cubre componentes ni flujos de integración; el stance del proyecto es no testear vistas
+  presentacionales. Los contratos añadidos en esta remediación son lógica con estado y efectos, que es
+  donde el hueco era real.
+- Los 32 warnings de `no-unused-vars` sobre imports usados solo en JSX son herencia de
+  `eslint.config.mjs`, que no habilita `react/jsx-uses-vars`.
+
+### Veredicto
+
+**APROBADO.** Los dos bloqueantes quedan cerrados con evidencia ejecutable: B1 con mutation testing que
+falla contra la versión previa del servicio, y B2 con el gate de CI medido en `EXIT=0`. Los seis hallazgos
+secundarios están resueltos (A1, A2, A3, A4, A5) o registrados para una auditoría propia (A6).
+
+La contra-auditoría cometió dos errores propios, que quedan registrados sin maquillar. El primero: el
+informe inicial atribuyó A4 a `main` cuando lo había introducido esta rama, y por eso lo aceptó como
+excepción de alcance en lugar de resolverlo. El segundo: rebajó A5 a inocuo sin comprobar la restricción
+`chk_customer_points_movement_type`, bajo la cual cuatro de sus cinco marcadores no pueden existir. Ambos
+se corrigieron en un pase posterior, con mutation testing que demuestra que los tests nuevos fallan contra
+el código anterior. La rama queda lista para merge, con #56 como deuda conocida y explícita.
