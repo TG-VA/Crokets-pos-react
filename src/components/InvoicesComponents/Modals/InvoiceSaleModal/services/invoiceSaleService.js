@@ -7,7 +7,7 @@
  * `invoice_payments` en el contexto de facturacion (DIP, AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 const SALE_DETAILS_COLUMNS = `
             id,

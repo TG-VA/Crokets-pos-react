@@ -6,7 +6,7 @@
  * `sales` con sus relaciones (DIP, AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 const PENDING_SALES_COLUMNS = `
           id,

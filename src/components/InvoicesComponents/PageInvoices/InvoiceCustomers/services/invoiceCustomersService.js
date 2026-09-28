@@ -6,7 +6,7 @@
  * `customers` que usa la pantalla de clientes fiscales (DIP, AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 const FISCAL_CUSTOMERS_COLUMNS = `
           id,

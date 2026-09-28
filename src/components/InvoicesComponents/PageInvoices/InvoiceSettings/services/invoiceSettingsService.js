@@ -6,7 +6,7 @@
  * `cfdi_settings` (DIP, AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 /**
  * Configuracion activa del emisor. Se toma la mas reciente: la tabla admite

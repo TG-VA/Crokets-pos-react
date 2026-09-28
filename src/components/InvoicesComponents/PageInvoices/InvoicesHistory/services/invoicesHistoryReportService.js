@@ -3,10 +3,10 @@
  * Consulta principal del historial: sucursales y listado de facturas.
  *
  * Solo este archivo conoce el cliente de Supabase para el dataset global de la
- * vista (DIP, AGENTS.md y AGENTS.md, "servicios segregados por ciclo de vida").
+ * vista (DIP: "servicios segregados por ciclo de vida" en AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 import { buildInvoicesDateRange } from "./invoicesHistoryCalculationService";
 
 const INVOICES_COLUMNS = `

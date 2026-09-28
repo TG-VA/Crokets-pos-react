@@ -6,7 +6,7 @@
  * `customers` para el alta y la edicion fiscal (DIP, AGENTS.md).
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 const FISCAL_SEARCH_COLUMNS = `
           id,

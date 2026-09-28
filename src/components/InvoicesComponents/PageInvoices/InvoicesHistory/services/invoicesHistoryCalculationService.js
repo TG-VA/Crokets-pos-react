@@ -48,8 +48,9 @@ export const filterInvoicesBySearch = (invoices, searchTerm) => {
 };
 
 /**
- * Total facturado de las facturas que se estan mostrando. Las canceladas suman
- * cero a proposito: no representan ingreso.
+ * Total facturado de las facturas que se estan mostrando, normalizando el
+ * `total` que llega de Postgres. Las canceladas siguen sumando, igual que en la
+ * vista original: el filtro de estado ya decide que entra en la tabla.
  */
 export const sumInvoicesTotal = (invoices) =>
   invoices.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);

@@ -110,8 +110,15 @@ export const buildCatalogMap = (catalog = []) => {
  * Un telefono de diez digitos ya esta dado de alta como cliente fiscal: no hay
  * que buscarlo en el modulo de puntos ni ofrecer convertirlo.
  */
-export const isPhoneAlreadyFiscalCustomer = (customers, phone) =>
-  customers.some((customer) => normalizePhoneDigits(customer.phone) === phone);
+export const isPhoneAlreadyFiscalCustomer = (customers, phone) => {
+  const target = normalizePhoneDigits(phone);
+
+  if (!target) return false;
+
+  return customers.some(
+    (customer) => normalizePhoneDigits(customer.phone) === target
+  );
+};
 
 /**
  * Prepara el cliente de puntos para abrir el modal de datos fiscales sobre el,

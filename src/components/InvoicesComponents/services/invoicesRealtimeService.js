@@ -24,7 +24,9 @@ import { supabase } from "../../../lib/supabaseClient";
  * @param {string} params.channelName Nombre unico del canal.
  * @param {string[]|string} params.tables Tabla(s) a observar en `public`.
  * @param {string} [params.rowFilter] Filtro opcional de Postgres (ej. `branch_id=eq.1`).
- * @param {Function} params.onChange Callback invocado en cada evento.
+ * @param {Function} params.onChange Callback invocado con el payload de cada
+ *   evento. La pantalla decide si el evento le interesa: la tabla `customers`,
+ *   por ejemplo, tambien recibe altas de ventas que no cambian esta vista.
  * @returns {() => void} Limpia el canal; seguro de llamar aunque no haya canal.
  */
 export const subscribeToTableChanges = ({
@@ -54,8 +56,8 @@ export const subscribeToTableChanges = ({
       changeFilter.filter = rowFilter;
     }
 
-    channel = channel.on("postgres_changes", changeFilter, () => {
-      onChange();
+    channel = channel.on("postgres_changes", changeFilter, (payload) => {
+      onChange(payload);
     });
   }
 

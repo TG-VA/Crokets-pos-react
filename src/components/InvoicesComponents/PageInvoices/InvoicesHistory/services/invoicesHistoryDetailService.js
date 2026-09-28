@@ -7,7 +7,7 @@
  * (AGENTS.md, "servicios segregados por ciclo de vida").
  */
 
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 const INVOICE_ITEMS_COLUMNS = `
           id,
