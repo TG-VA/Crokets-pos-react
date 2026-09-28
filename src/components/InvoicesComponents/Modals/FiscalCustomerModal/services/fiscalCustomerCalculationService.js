@@ -67,6 +67,36 @@ export const buildFiscalFormFromCustomer = (
 };
 
 /**
+ * Normaliza lo que el usuario escribe en cada campo del formulario fiscal.
+ *
+ * La vista no debe decidir reglas de formato: phone y C.P. solo aceptan
+ * digitos, el RFC se uppercasa sin simbolos, el correo se compacta en minusculas
+ * y los textos libres van en mayusculas.
+ */
+export const normalizeFiscalField = (field, rawValue) => {
+  switch (field) {
+    case "phone":
+      return onlyDigits(rawValue).slice(0, 10);
+
+    case "postal_code":
+      return onlyDigits(rawValue).slice(0, 5);
+
+    case "rfc":
+      return normalizeRfc(rawValue).slice(0, 13);
+
+    case "fiscal_email":
+      return normalizeEmail(rawValue);
+
+    case "razon_social":
+    case "address":
+      return normalizeUpperText(rawValue);
+
+    default:
+      return rawValue;
+  }
+};
+
+/**
  * Campos del formulario ya normalizados para confirmar y persistir.
  */
 export const buildNormalizedFiscalValues = (form) => ({

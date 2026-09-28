@@ -75,8 +75,9 @@ export const getPendingSaleCashier = (sale) =>
   sale.users?.username || sale.users?.email || "SIN CAJERO";
 
 /**
- * El boton "Facturar" se habilita con datos fiscales completos; si faltan, el
- * modal deja elegir o crear el cliente.
+ * La insignia de la fila refleja si el cliente de la venta ya tiene datos
+ * fiscales completos. El boton nunca se deshabilita: el modal deja elegir o
+ * crear el cliente cuando faltan.
  */
 export const isSaleReadyToInvoice = (sale) =>
   hasFiscalCustomerData(sale.customers);

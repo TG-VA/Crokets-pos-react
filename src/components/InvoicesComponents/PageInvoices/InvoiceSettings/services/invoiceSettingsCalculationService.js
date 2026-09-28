@@ -13,7 +13,6 @@ import {
   isValidNextFolio,
   isValidPostalCode,
   isValidRfc,
-  normalizeUpperText,
 } from "../../../services/fiscalValidationService";
 
 export const EMPTY_SETTINGS_FORM = {
