@@ -1445,7 +1445,7 @@ solo `authenticated`/`service_role`.
 
 ### 54. Componentes monolíticos y violación de DIP en el módulo de Clientes (`Customers`)
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto — rama `refactor/customers-modularization-and-dip`, 28 de septiembre de 2026.
 
 Tras concluir la modularización de los 5 componentes fijados en el ítem #3 (`CashCut`, `ticketBuilder`,
 `RewardModal`, `ProductsModify` y `ProductsPromotions`), el módulo de Clientes (`src/components/CustomersComponents/`)
@@ -1469,6 +1469,50 @@ datos y dificultad para añadir pruebas unitarias automatizadas.
 **Recomendación:** modularizar cada pantalla en subcomponentes presentacionales puros (< 300 líneas),
 extraer los hooks de orquestación (`useCustomersList`, `useRewardsSettings`, etc.) y desacoplar el acceso a datos
 en servicios puros (`customersService.js`, `rewardsService.js`, `pointsService.js`).
+
+**Resolución (28 sep 2026):** la deuda se cerró en tres commits sobre la rama
+`refactor/customers-modularization-and-dip`.
+
+1. `b9747f5` — extracción de servicios de datos y cálculos por feature (`services/`), más los servicios
+   compartidos `customersRealtimeService.js`, `customerPointsCalculationService.js` y `customerFormatters.js`.
+   Los seis componentes dejaron de importar `supabaseClient` directamente: **cero dependencias de Supabase
+   en componentes y hooks**, toda la persistencia queda encapsulada en la capa de servicios.
+2. `9e5d439` — 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de
+   Supabase (`rewardsSettingsService`, `pointsAdjustmentService`).
+3. `1c19419` — descomposición de los seis componentes en subcomponentes presentacionales y hooks.
+
+**Métricas de la descomposición (líneas del componente principal antes → después):**
+
+| Componente | Antes | Después | Extraído en |
+|---|---|---|---|
+| `RewardsSettings.jsx` | 984 | 122 | `useRewardsSettings`, `useRewardsPointsRule`, `RewardsSettingsTable`, `RewardsSettingsPointsRule`, `RewardsSettingsFilters`, `RewardsSettingsRewardDetailsModal` |
+| `PointsAdjustment.jsx` | 933 | 145 | `usePointsAdjustment`, `usePointsAdjustmentAdminAccess`, `usePointsAdjustmentCustomerSearch`, `usePointsAdjustmentSubmit`, `PointsAdjustmentForm`, `PointsAdjustmentCustomerCards`, `PointsAdjustmentAccessStates` |
+| `PointsHistory.jsx` | 754 | 89 | `usePointsHistory`, `PointsHistoryTable`, `PointsHistoryFilters`, `PointsHistorySummary` |
+| `CustomersList.jsx` | 710 | 126 | `useCustomersList`, `CustomersListTable`, `CustomersListFilters`, `CustomersListFiscalMatch` |
+| `RewardsAvailability.jsx` | 661 | 88 | `useRewardsAvailability`, `RewardsAvailabilityCustomerSearch`, `RewardsAvailabilityCustomerSummary`, `RewardsAvailabilityRewardsGrid` |
+| `CustomerModal.jsx` | 635 | 101 | `useCustomerModal`, `CustomerModalFields` |
+
+Ningún componente ni hook del módulo supera las 300 líneas. El archivo más grande es
+`pointsAdjustmentCalculationService.js` (364 líneas), **servicio puro de cálculo sin dependencias de UI ni
+I/O**: supera el umbral de forma deliberada y aceptada, porque partirlo fragmentaría las reglas de negocio
+punitivas que ya cubren sus tests. `react-hooks/set-state-in-effect` se mantiene como deuda heredada (#56);
+los errores de lint del módulo bajaron de 9 a 8 y los 8 restantes son preexistentes.
+
+**Bugs corregidos en el camino:**
+
+- `PointsAdjustment.jsx` renderizaba `PointsAdjustmentConfirmModal` sin importarlo, lo que lanzaba un
+  `ReferenceError` en cada render de la vista autorizada. El import se restituyó.
+- El `canSubmit` inline y la cascada de ~90 líneas de validaciones de `PointsAdjustment` quedaron
+  reemplazados por `canSubmitPointsAdjustment`, `getAdjustmentValidationMessage` y `getSaveGuardMessage`,
+  conservando la diferenciación de mensajes entre los contextos `review` y `confirm`.
+- `usePointsAdjustment` no devolvía `adjustmentReason`, que el formulario ya enlazaba; detectado por el
+  nuevo test del hook.
+
+**Verificación:** build correcto; suite completa en **63 archivos / 920 tests** (antes 51/663); Prettier y
+`git diff --check` limpios; paridad de clases de CSS y de textos visibles comprobada clase por clase y
+cadena por cadena contra `main` para las seis pantallas. Los 32 warnings de `no-unused-vars` sobre imports
+usados solo en JSX son comportamiento heredado de `eslint.config.mjs`, que no habilita `react/jsx-uses-vars`:
+se aceptan como deuda documentada y quedan fuera del alcance de este ítem.
 
 ---
 
