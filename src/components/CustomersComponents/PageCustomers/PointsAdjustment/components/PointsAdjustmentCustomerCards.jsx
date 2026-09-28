@@ -86,11 +86,14 @@ const PointsAdjustmentCustomerSearchCard = ({
               <button
                 key={customer.id}
                 type="button"
-                className={`${styles.customerResult} ${
+                className={[
+                  styles.customerResult,
                   selectedCustomer?.id === customer.id
                     ? styles.customerSelected
-                    : ""
-                }`}
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => onSelectCustomer(customer)}
               >
                 <strong>{customer.name || "SIN NOMBRE"}</strong>

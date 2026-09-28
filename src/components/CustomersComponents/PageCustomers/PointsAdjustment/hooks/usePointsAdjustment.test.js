@@ -24,6 +24,7 @@ import {
   insertPointsMovement,
   searchPointsCustomers,
 } from "../services/pointsAdjustmentService";
+import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import { ADMIN_AUTH_STORAGE_KEY } from "../services/pointsAdjustmentCalculationService";
 import { usePointsAdjustment } from "./usePointsAdjustment";
 
@@ -94,6 +95,18 @@ describe("usePointsAdjustment", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe("suscripcion realtime", () => {
+    it("observa customer_points filtrado por el cliente seleccionado", async () => {
+      const { result } = renderPointsAdjustment();
+      await authorizeAdmin(result);
+
+      const lastCall = subscribeToTableChanges.mock.calls.at(-1)[0];
+
+      expect(lastCall.tables).toEqual(["customer_points"]);
+      expect(lastCall.rowFilter).toBe("customer_id=eq.c1");
+    });
   });
 
   describe("acceso administrativo", () => {

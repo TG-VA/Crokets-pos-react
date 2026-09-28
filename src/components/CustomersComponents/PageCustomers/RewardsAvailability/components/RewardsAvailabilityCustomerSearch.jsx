@@ -75,11 +75,14 @@ const RewardsAvailabilityCustomerSearch = ({
               <button
                 key={customer.id}
                 type="button"
-                className={`${styles.customerCard} ${
+                className={[
+                  styles.customerCard,
                   selectedCustomer?.id === customer.id
                     ? styles.customerCardSelected
-                    : ""
-                }`}
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => onSelectCustomer(customer)}
               >
                 <div>

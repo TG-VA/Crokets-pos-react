@@ -71,6 +71,9 @@ export const usePointsHistory = () => {
   };
 
   useEffect(() => {
+    // Cargas iniciales; deuda heredada de `set-state-in-effect` registrada en
+    // `KNOWN_ISSUES.md` #56.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadBranches();
     loadMovements();
     // La carga inicial corre una sola vez; los cambios posteriores llegan por las
@@ -81,6 +84,9 @@ export const usePointsHistory = () => {
   useEffect(() => {
     if (!branch?.id) return;
 
+    // Alinea el filtro con la sucursal activa; deuda heredada de
+    // `set-state-in-effect` (`KNOWN_ISSUES.md` #56).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBranchFilter((currentFilter) => {
       if (!currentFilter || currentFilter === "all") {
         return branch.id;

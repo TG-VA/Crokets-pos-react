@@ -98,6 +98,9 @@ export const useCustomersList = () => {
   };
 
   useEffect(() => {
+    // Carga inicial del listado; deuda heredada de `set-state-in-effect`
+    // registrada en `KNOWN_ISSUES.md` #56.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCustomers();
     // La carga inicial corre una sola vez; las altas y bajas llegan por la
     // suscripcion en vivo de la tabla de clientes.
@@ -117,6 +120,8 @@ export const useCustomersList = () => {
     const phoneSearch = normalizePhoneDigits(searchTerm);
 
     if (!isCompletePhone(phoneSearch)) {
+      // Deuda heredada de `set-state-in-effect` (`KNOWN_ISSUES.md` #56).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFiscalCustomerFound(null);
       return;
     }

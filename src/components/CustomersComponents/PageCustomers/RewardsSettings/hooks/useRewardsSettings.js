@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import {
+  POINTS_AMOUNT_SETTING_KEY,
   fetchRewardsCatalog,
   updateRewardStatus,
 } from "../services/rewardsSettingsService";
@@ -155,6 +156,9 @@ export const useRewardsSettings = () => {
   };
 
   useEffect(() => {
+    // Cargas iniciales; deuda heredada de `set-state-in-effect` registrada en
+    // `KNOWN_ISSUES.md` #56.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRewards();
     loadPointsRule();
     // La carga inicial corre una sola vez; los cambios posteriores llegan por las
@@ -178,6 +182,7 @@ export const useRewardsSettings = () => {
     const unsubscribeSettings = subscribeToTableChanges({
       channelName: "rewards-settings-system-settings-realtime",
       tables: ["system_settings"],
+      rowFilter: `setting_key=eq.${POINTS_AMOUNT_SETTING_KEY}`,
       onChange: loadPointsRule,
     });
 

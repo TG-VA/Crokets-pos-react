@@ -256,6 +256,9 @@ export const useCustomerModal = ({
   useEffect(() => {
     if (!isOpen) return;
 
+    // Reinicio del formulario al abrir el modal; deuda heredada de
+    // `set-state-in-effect` (`KNOWN_ISSUES.md` #56).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData(buildCustomerFormValues(customerToEdit));
 
     setFieldErrors({});

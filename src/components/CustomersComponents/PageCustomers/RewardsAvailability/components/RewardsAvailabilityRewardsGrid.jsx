@@ -54,19 +54,20 @@ const RewardsAvailabilityRewardsGrid = ({
             return (
               <article
                 key={reward.id}
-                className={`${styles.rewardCard} ${
+                className={[
+                  styles.rewardCard,
                   rewardStatus.status === "available"
                     ? styles.rewardCardAvailable
-                    : ""
-                } ${
+                    : "",
                   rewardStatus.status === "unavailable"
                     ? styles.rewardCardUnavailable
-                    : ""
-                } ${
+                    : "",
                   rewardStatus.status === "neutral"
                     ? styles.rewardCardNeutral
-                    : ""
-                }`}
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 <div className={styles.rewardCardTop}>
                   <h3>{reward.name}</h3>
@@ -80,15 +81,17 @@ const RewardsAvailabilityRewardsGrid = ({
                 <p>{reward.description || "SIN DESCRIPCIÓN"}</p>
 
                 <div
-                  className={`${styles.rewardStatus} ${
+                  className={[
+                    styles.rewardStatus,
                     rewardStatus.status === "available"
                       ? styles.rewardStatusAvailable
-                      : ""
-                  } ${
+                      : "",
                     rewardStatus.status === "unavailable"
                       ? styles.rewardStatusUnavailable
-                      : ""
-                  }`}
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                 >
                   {rewardStatus.label}
                 </div>

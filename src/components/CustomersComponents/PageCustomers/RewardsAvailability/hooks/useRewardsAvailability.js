@@ -180,6 +180,9 @@ export const useRewardsAvailability = () => {
   };
 
   useEffect(() => {
+    // Carga inicial del catalogo; deuda heredada de `set-state-in-effect`
+    // registrada en `KNOWN_ISSUES.md` #56.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRewards();
     // La carga inicial corre una sola vez: las reactivaciones en vivo llegan
     // por la suscripcion de la tabla de recompensas.
@@ -190,7 +193,10 @@ export const useRewardsAvailability = () => {
     const searchValue = customerSearch.trim();
 
     if (!searchValue || searchValue.length < 2) {
+      // Deuda heredada de `set-state-in-effect` (`KNOWN_ISSUES.md` #56).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCustomerResults([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingCustomers(false);
       return;
     }
