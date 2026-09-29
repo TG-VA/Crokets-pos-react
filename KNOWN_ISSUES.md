@@ -1613,6 +1613,10 @@ ningún `.jsx` del módulo supera las 176.
 **Estado:** parcialmente resuelto (25 sep 2026) — rama `fix/code-quality-and-runtime-bugs`. Puntos 1 a 4
 cerrados; el punto 5 permanece abierto.
 
+**Estado:** parcialmente resuelto (28 sep 2026) — rama `fix/react-hooks-and-eslint-zero-errors`. Los puntos 1 a 4
+siguen cerrados y el punto 5 baja de 52 a 29 ocurrencias. El ítem **no** puede declararse cerrado: quedan 29
+errores, todos `react-hooks/set-state-in-effect`.
+
 La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
 existen errores de lógica, compatibilidad con React 19 y control de excepciones:
 
@@ -1676,6 +1680,82 @@ deuda conocida:
   `branch` como dependencia de `loadPendingSales`, pero el `useCallback` declaraba `branch?.id`. Se alineó
   a `[branch, dayRange]`. Es seguro porque `branch` proviene de un `useState` (`BranchContext.jsx:6`), por lo
   que su identidad solo cambia cuando el usuario elige otra sucursal.
+
+**Bitácora de solución (28 sep 2026, rama `fix/react-hooks-and-eslint-zero-errors`):** el punto 5 se abordó en
+dos frentes. Antes de escribir código se midió qué elimina realmente el re-render en cascada, porque la regla
+admite atajos que no lo hacen:
+
+| variante | ESLint | pasadas de render |
+| --- | --- | --- |
+| `useEffect(() => { load() })` (estado actual) | error | 2 |
+| `useEffect(() => { const r = async () => load(); r() })` | sin error | **2 (sin cambio)** |
+| `isLoading` inicializado en `true` y sin reset síncrono | sin error | 1 |
+
+La segunda fila es la trampa: envolver el cuerpo del efecto en una función async interna silencia la regla y
+deja el re-render en cascada intacto, porque la función se ejecuta de forma síncrona hasta el primer `await`.
+No se aplicó en ningún sitio. La tercera fila es una corrección genuina pero solo cubre el primer montaje: al
+refiltrar o cambiar de sucursal el spinner dejaría de aparecer, así que tampoco se adoptó como solución general.
+
+**Errores no React (18 de 69) resueltos en esta rama:** 4 `no-useless-escape` (barra invertida innecesaria
+dentro de clases de caracteres de saneo de nombre de archivo), 2 `no-undef` (`structuredClone` y `Storage`
+declarados como globals de solo lectura en `eslint.config.mjs`, igual que se hizo con `HTMLButtonElement`) y
+11 `preserve-manual-memoization`. En este último caso el compilador infiere el objeto raíz cuando el cuerpo
+mezcla acceso opcional y no opcional (`branch?.id` junto a `branch.id`), de modo que la lista manual declaraba
+una propiedad más estrecha y la memoización no se podía preservar. El cambio es seguro porque `branch` es un
+`useState` de `BranchContext`, con identidad estable entre cambios de sucursal.
+
+**Punto 5 (40 de 52 ocurrencias) resueltas en esta rama**, con cuatro patrones:
+
+1. *Ajuste durante el render.* Los reinicios que solo existían para compensar un efecto (limpiar un modal al
+   abrirlo, repoblar un formulario, recortar la página o el índice seleccionado) se resuelven ahora con
+   `useDidChange`, que compara la clave con la del render anterior. React descarta la salida y vuelve a
+   renderizar antes de confirmarla, así que se evita el segundo render comprometido y el fotograma con el
+   estado anterior. Donde el efecto observaba un objeto, se pasa a observar su id (`usePartialReturn`,
+   `useDepartments`) para no reajustar cuando el padre recrea el objeto.
+2. *Estado derivado puro.* En `PageReport/hooks/useInventoryReport.js` la sucursal efectiva se deriva
+   (`branchOverride || branch?.id`) en lugar de sincronizar estado. En `usePagination.js` la página se recorta
+   durante el render y se expone `safePage`, con lo que `startIndex`, `endIndex` y `pageItems` nunca quedan
+   fuera de rango.
+3. *Carga derivada de la clave de petición.* `useRequestStatus` sustituye al `setLoading(true)` síncrono:
+   guarda solo la clave ya resuelta y `isLoading` es la comparación contra la clave pedida, de modo que el
+   spinner aparece en la misma pasada de render en la que cambian los filtros. El error se expone también de
+   forma derivada para que el de una petición anterior no se vea mientras corre la nueva.
+4. *Orquestación de la carga en la capa de servicios.* La regla marca cualquier llamada desde el cuerpo de un
+   efecto a una función **del mismo archivo** que termine en `setState`, incluso con todas las escrituras
+   después del `await`. Por eso la carga de `PageInventoryReport` se movió a `loadInventoryReportData` en
+   `inventoryReportService`, que entrega el resultado por callbacks: el efecto no escribe estado y las
+   actualizaciones ocurren en la continuación asíncrona. Este es el patrón pendiente de replicar.
+
+Los efectos sobre el DOM (foco, timeouts, refs, suscripciones) permanecen en efectos: sincronizar con sistemas
+externos es justamente lo que un efecto debe hacer. Se eliminaron además dos `setState` que eran no-ops:
+`Login.jsx` limpiaba un formulario que ya nace vacío, y `UserForm.jsx` (sin importadores) repoblaba usando la
+identidad del objeto en vez de sus datos.
+
+**Lo que queda abierto (29 ocurrencias, todas de carga desde un efecto).** Requieren replicar el patrón 4, es
+decir extraer la orquestación de la carga al servicio correspondiente de cada módulo y derivar el estado de
+carga con `useRequestStatus`. Ninguno tiene cobertura de pruebas propia, salvo `useSalesCashSession`, por lo que
+cada extracción debe validarse con `npm test` y `npm run build:frontend`:
+
+- `SalesHistoryModal/useSalesHistory.js` (3), `useMovementsReport.js` (2), `PageReport/useInventoryReport.js` (2),
+  `useProductsList.js` (2), `SearchModal/useSearchModal.js` (2), `contexts/ProductsContext.jsx` (2).
+- Una ocurrencia en cada uno de: `useKardexProductSelection.js`, `useProductsPromotions.js`, `useCashReport.js`,
+  `useCommissionsReport.js`, `useCustomersReport.js`, `useProductsReport.js`, `useProfitabilityReport.js`,
+  `useReportsDashboard.js`, `useSalesReport.js`, `useProductDiscountReward.js`, `useRewardProductSelection.js`,
+  `useSalesCashSession.js`, `useSalesDraft.js`, `useCashCutReport.js`, `CashRegister.jsx`, `Profiles.jsx`.
+
+Dos casos requieren una decisión de producto antes de tocarlos: `useSalesDraft.js:102` lee `localStorage` de
+forma síncrona y dispara callbacks de restauración (no es una lectura de red, así que el patrón 3 no aplica tal
+cual), y `CashRegister.jsx:48` marca `checking` cuando no hay sucursal o usuario, es decir un caso sin petición
+que resolver.
+
+**Verificación de esta rama:** `npm test` en verde con 1237 tests (1226 previos más 11 nuevos para
+`useDidChange` y `useRequestStatus`); `npm run build:frontend` con EXIT 0; conteo de errores de ESLint
+**69 → 29**. Los 29 restantes son `react-hooks/set-state-in-effect`.
+
+Nota sobre cobertura: el error de profundidad de importación en `useSalesCartState.js` (este commit lo corrige)
+no lo detectó la suite, porque ningún test alcanza ese archivo. `npm run build:frontend` sí recorre todo el
+grafo de módulos y lo habría detectado. Para este ítem conviene validar siempre con el build, no solo con
+`npm test`.
 
 ---
 
