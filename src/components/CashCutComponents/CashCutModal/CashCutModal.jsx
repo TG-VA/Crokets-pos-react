@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./CashCutModal.module.css";
 import AppModal from "../../AppModal/AppModal";
 import receiptIcon from "../../../assets/icons/receipt-solid-full.svg";
+import { useDidChange } from "../../../hooks/useDidChange";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
@@ -63,13 +64,13 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
     });
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // El conteo arranca limpio cada vez que se abre el modal. El ajuste se
+  // resuelve durante el render para no encadenar un re-render adicional.
+  if (useDidChange(isOpen) && isOpen) {
     setCounted("");
     setNotes("");
     closeAppModal();
-  }, [isOpen]);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

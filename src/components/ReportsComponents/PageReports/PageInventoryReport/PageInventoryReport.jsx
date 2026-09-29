@@ -16,6 +16,7 @@ import ReorderSuggestionsTable from "./components/ReorderSuggestionsTable";
 import InventoryDepartmentSummary from "./components/InventoryDepartmentSummary";
 
 import { useInventoryReport } from "./hooks/useInventoryReport";
+import { useDidChange } from "../../../../hooks/useDidChange";
 
 const PageInventoryReport = () => {
   const { branch, setBranch } = useBranch();
@@ -31,13 +32,12 @@ const PageInventoryReport = () => {
   );
   const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    if (branchParam) {
-      setSelectedBranchId(branchParam);
-    } else if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id, branchParam]);
+  // La sucursal efectiva (parametro de ruta o contexto) manda sobre el filtro
+  // local. Se resuelve durante el render para no encadenar un re-render extra.
+  const effectiveBranchId = branchParam || branch?.id;
+  if (useDidChange(effectiveBranchId) && effectiveBranchId) {
+    setSelectedBranchId(effectiveBranchId);
+  }
 
   useEffect(() => {
     const loadBranches = async () => {

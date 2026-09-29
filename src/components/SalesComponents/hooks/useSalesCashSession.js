@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import { supabase } from "../../../lib/supabaseClient";
+import { useDidChange } from "../../../hooks/useDidChange";
 
 import {
   getOpenCashSession as getOpenCashSessionFromService,
@@ -82,10 +83,17 @@ const useSalesCashSession = ({
   /*
    * Restablece y sincroniza el estado cuando cambia
    * la sucursal o el usuario autenticado.
+   *
+   * El reinicio del indicador se resuelve durante el render (mismas claves y
+   * mismas dependencias que antes) para no encadenar un re-render adicional; la
+   * consulta del estado del turno permanece en el efecto, con sus dependencias
+   * intactas.
    */
-  useEffect(() => {
+  if (useDidChange(`${enabled}|${branchId}|${userId}`)) {
     setShiftAlreadyCut(false);
+  }
 
+  useEffect(() => {
     if (!enabled) {
       return undefined;
     }

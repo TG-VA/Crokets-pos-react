@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { fetchCustomersReportData } from "../services/customersReportService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const useCustomersReport = (initialBranchId = "ALL") => {
   const [branchId, setBranchId] = useState(initialBranchId);
@@ -38,12 +39,11 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
   const [error, setError] = useState(null);
   const [syncedAt, setSyncedAt] = useState(null);
 
-  // Sincronizar branchId si cambia desde fuera
-  useEffect(() => {
-    if (initialBranchId) {
-      setBranchId(initialBranchId);
-    }
-  }, [initialBranchId]);
+  // Sincronizar branchId si cambia desde fuera. Se ajusta durante el render
+  // para no encadenar un re-render adicional desde un efecto.
+  if (useDidChange(initialBranchId) && initialBranchId) {
+    setBranchId(initialBranchId);
+  }
 
   const loadData = useCallback(async () => {
     setIsLoading(true);

@@ -20,7 +20,13 @@ const useInventoryReport = () => {
   const { branch } = useBranch();
 
   const [branchOptions, setBranchOptions] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [branchOverride, setBranchOverride] = useState("");
+
+  // La sucursal efectiva se deriva: la seleccion explicita del usuario manda y,
+  // mientras no exista, se usa la sucursal del contexto. Antes esto se resolvia
+  // con un efecto que hacia setSelectedBranchId(branch.id) y provocaba un
+  // re-render en cascada; ahora no hay estado que sincronizar.
+  const selectedBranchId = branchOverride || branch?.id || "";
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,16 +44,6 @@ const useInventoryReport = () => {
       isMountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (selectedBranchId) {
-      return;
-    }
-
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id, selectedBranchId]);
 
   const loadBranches = useCallback(async () => {
     try {
@@ -287,7 +283,7 @@ const useInventoryReport = () => {
   ]);
 
   const handleBranchChange = (branchId) => {
-    setSelectedBranchId(branchId);
+    setBranchOverride(branchId);
   };
 
   return {

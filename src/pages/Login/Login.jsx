@@ -38,11 +38,9 @@ const Login = () => {
   const navigate = useNavigate();
   const usernameRef = useRef(null);
 
+  // El formulario ya nace vacio en el estado inicial, de modo que no hace falta
+  // ningun setState sincrono para limpiarlo: solo queda el efecto sobre el DOM.
   useEffect(() => {
-    setUsername('');
-    setPassword('');
-    setError('');
-
     const focusTimer = setTimeout(() => {
       usernameRef.current?.focus();
     }, 100);

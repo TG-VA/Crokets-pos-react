@@ -8,6 +8,7 @@ import {
   fetchProfitabilityReportData,
   fetchBranchesList,
 } from "../services/profitabilityReportService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const useProfitabilityReport = (initialBranchId = "ALL") => {
   const [branchId, setBranchId] = useState(initialBranchId);
@@ -67,12 +68,11 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
     };
   }, []);
 
-  // Sincronizar sucursal inicial si cambia externamente
-  useEffect(() => {
-    if (initialBranchId) {
-      setBranchId(initialBranchId);
-    }
-  }, [initialBranchId]);
+  // Sincronizar sucursal inicial si cambia externamente. El ajuste ocurre
+  // durante el render para evitar el re-render en cascada de un efecto.
+  if (useDidChange(initialBranchId) && initialBranchId) {
+    setBranchId(initialBranchId);
+  }
 
   // Función de carga principal
   const loadData = useCallback(async () => {

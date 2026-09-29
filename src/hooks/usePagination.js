@@ -37,14 +37,19 @@ export const usePagination = ({
 
   const totalPages = Math.max(1, Math.ceil(normalizedCount / pageSize));
 
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, normalizedCount);
+  // Ajuste de estado durante el render en lugar de un efecto: cuando el total de
+  // ítems se reduce, la página inválida se corrige en la misma pasada de render,
+  // sin provocar el re-render en cascada que generaba el efecto equivalente.
+  if (currentPage > totalPages) {
+    setCurrentPage(totalPages);
+  }
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  // Página efectiva: garantiza que los índices devueltos nunca queden fuera de
+  // rango durante la pasada de render en la que se aplica el ajuste anterior.
+  const safePage = Math.min(currentPage, totalPages);
+
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, normalizedCount);
 
   useEffect(() => {
     if (!storageKey) return;
@@ -77,7 +82,7 @@ export const usePagination = ({
   );
 
   return {
-    currentPage,
+    currentPage: safePage,
     totalPages,
     pageSize,
     startIndex,

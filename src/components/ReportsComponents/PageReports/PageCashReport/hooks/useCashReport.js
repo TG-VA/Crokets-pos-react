@@ -12,6 +12,7 @@ import {
 } from "../services/cashReportService";
 import { exportCashReportToExcel } from "../utils/cashReportExportUtils";
 import { usePagination } from "../../../../../hooks/usePagination";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const ITEMS_PER_PAGE = 5;
 
@@ -79,12 +80,13 @@ export const useCashReport = () => {
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
   const [loadingModal, setLoadingModal] = useState(false);
 
-  // Sincronizar sucursal del contexto
-  useEffect(() => {
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id]);
+  // Sincronizar sucursal del contexto. El ajuste se hace durante el render en
+  // lugar de en un efecto: React descarta la salida y vuelve a renderizar antes
+  // de confirmarla, de modo que no hay un re-render en cascada. Se conserva la
+  // guarda original que solo sincroniza cuando la sucursal tiene id.
+  if (useDidChange(branch?.id) && branch?.id) {
+    setSelectedBranchId(branch.id);
+  }
 
   // Cargar catálogos iniciales
   useEffect(() => {

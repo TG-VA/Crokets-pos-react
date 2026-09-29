@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import styles from "../ProductsSearchModal/ProductsSearchModal.module.css";
+import { useDidChange } from "../../../../hooks/useDidChange";
 
 export const useProductSearchModal = ({ isOpen, onClose, products, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,14 +44,19 @@ export const useProductSearchModal = ({ isOpen, onClose, products, onSelect }) =
       });
   }, [products, searchTerm]);
 
-  useEffect(() => {
+  // La seleccion se recalcula cuando cambia el termino o el numero de
+  // resultados, igual que antes, pero durante el render en lugar de desde un
+  // efecto. Dos observadores preservan exactamente las dependencias anteriores
+  // ([searchTerm, searchResults.length]).
+  const searchTermChanged = useDidChange(searchTerm);
+  const resultsCountChanged = useDidChange(searchResults.length);
+  if (searchTermChanged || resultsCountChanged) {
     if (!searchTerm.trim() || searchResults.length === 0) {
       setSelectedIndex(-1);
-      return;
+    } else {
+      setSelectedIndex(0);
     }
-
-    setSelectedIndex(0);
-  }, [searchTerm, searchResults.length]);
+  }
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
@@ -119,12 +125,10 @@ export const useProductSearchModal = ({ isOpen, onClose, products, onSelect }) =
     };
   }, [isOpen, searchResults, selectedIndex]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
+  if (useDidChange(isOpen) && isOpen) {
     setSearchTerm("");
     setSelectedIndex(-1);
-  }, [isOpen]);
+  }
 
   return {
     searchTerm,

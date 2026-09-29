@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import { useBranch } from "../../../../../contexts/BranchContext";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 import {
   loadMovementBranches,
@@ -187,11 +188,10 @@ const useMovementsReport = () => {
     loadMovements,
   ]);
 
-  useEffect(() => {
-    if (!branch?.id) {
-      return;
-    }
-
+  // La sucursal del contexto solo pisa la seleccion cuando aun no hay una
+  // eleccion propia o cuando sigue apuntando a la sucursal "POLI". El ajuste se
+  // resuelve durante el render en lugar de disparar un setState desde un efecto.
+  if (useDidChange(branch?.id) && branch?.id) {
     setSelectedBranchId(
       (currentSelectedBranchId) => {
         if (
@@ -205,7 +205,7 @@ const useMovementsReport = () => {
         return currentSelectedBranchId;
       }
     );
-  }, [branch?.id]);
+  }
 
   const selectedBranch = useMemo(() => {
     return (

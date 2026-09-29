@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { fetchInventoryReportData } from "../services/inventoryReportService";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
+import { loadInventoryReportData } from "../services/inventoryReportService";
 
 export const useInventoryReport = (selectedBranchId = "ALL") => {
   const [reportData, setReportData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [syncedAt, setSyncedAt] = useState(null);
+
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoading(true) sincrono dentro del efecto, que provocaba un re-render en
+  // cascada en cada cambio de sucursal.
+  const { isLoading, isStale, markSettled } = useRequestStatus(selectedBranchId);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? null : error;
 
   // Filtros
   const [selectedDepartment, setSelectedDepartment] = useState("ALL");
@@ -14,23 +22,41 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
   const [activeTab, setActiveTab] = useState("valuation");
 
   const loadData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await fetchInventoryReportData(selectedBranchId);
-      setReportData(data);
-      setSyncedAt(new Date().toISOString());
-    } catch (err) {
-      console.error("Error en useInventoryReport:", err);
-      setError("No se pudo cargar el reporte de inventario. Intenta nuevamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedBranchId]);
+    await loadInventoryReportData(selectedBranchId, {
+      onData: (data) => {
+        setReportData(data);
+        setError(null);
+        setSyncedAt(new Date().toISOString());
+      },
+      onError: setError,
+      onSettled: markSettled,
+    });
+  }, [selectedBranchId, markSettled]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+
+    loadInventoryReportData(selectedBranchId, {
+      onData: (data) => {
+        if (cancelled) return;
+        setReportData(data);
+        setError(null);
+        setSyncedAt(new Date().toISOString());
+      },
+      onError: (message) => {
+        if (cancelled) return;
+        setError(message);
+      },
+      onSettled: () => {
+        if (cancelled) return;
+        markSettled();
+      },
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBranchId, markSettled]);
 
   // Colecciones de origen expuestas como variables planas: la dependencia del
   // memo pasa a ser el valor ya resuelto, de modo que la lista declarada
@@ -122,7 +148,7 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
     kpis: reportData?.kpis || {},
     byDepartment: reportData?.byDepartment || [],
     isLoading,
-    error,
+    error: visibleError,
     syncedAt,
     selectedDepartment,
     setSelectedDepartment,

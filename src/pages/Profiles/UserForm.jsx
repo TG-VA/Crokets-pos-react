@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './UserForm.module.css';
 import XmarkIcon from '../../assets/icons/xmark-solid-full.svg';
+import { useDidChange } from '../../hooks/useDidChange';
 
 const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -12,8 +13,16 @@ const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
   });
   const [errors, setErrors] = useState({});
 
-  // Cargar datos del usuario si estamos editando
-  useEffect(() => {
+  // Cargar datos del usuario si estamos editando. La repoblacion se resuelve
+  // durante el render cuando cambian los datos relevantes del usuario, en lugar
+  // de disparar un setState sincrono desde un efecto. Se observa una firma de
+  // los campos usados en lugar de la identidad del objeto para no volver a
+  // poblar el formulario cuando el padre recrea el mismo usuario.
+  const userSignature = user
+    ? `${user.id}|${user.name}|${user.username}|${(user.permissions || []).join(",")}`
+    : "";
+
+  if (useDidChange(userSignature)) {
     if (user) {
       setFormData({
         name: user.name || '',
@@ -32,7 +41,7 @@ const UserForm = ({ user, availablePermissions, onSubmit, onCancel }) => {
       });
     }
     setErrors({});
-  }, [user]);
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
