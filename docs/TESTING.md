@@ -160,7 +160,7 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
   `eslint-plugin-react-hooks` (recommended). `no-console` con `allow: ["error"]` para preservar los
   `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`. `react/jsx-uses-vars`
   en `error` sobre `**/*.{js,jsx,mjs}`: sin ella, todo componente importado para usarse solo como
-  etiqueta JSX se reportaba como variable sin usar (563 warnings que no eran deuda real; hoy son 187).
+  etiqueta JSX se reportaba como variable sin usar (564 warnings que no eran deuda real; hoy son 187).
   `languageOptions.globals` declara los constructores DOM que el código y las suites usan
   (`Event`, `CustomEvent`, `KeyboardEvent`, `MouseEvent`, `HTMLElement`, `HTMLButtonElement`) como
   `readonly`, para que crearlos en los tests no dispare `no-undef`; el resto de globals del DOM no
