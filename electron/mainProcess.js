@@ -1,3 +1,8 @@
+const {
+  printTicket,
+  resolvePrintAvailability,
+} = require("./ticketPrintService");
+
 const ZOOM_MIN_DEFAULT = 0.5;
 const ZOOM_MAX_DEFAULT = 3;
 const ZOOM_STEP_EPSILON = 0.01;
@@ -203,6 +208,21 @@ function registerIpcHandlers({
         : null;
 
     return { zoomFactor, contentBounds, state };
+  });
+
+  // Imprime el texto del ticket. Delega el trabajo al servicio de impresion y solo decide
+  // aqui si el sistema tiene una impresora a la que enviarlo.
+  ipcMain.handle("print-ticket", async (event, payload) => {
+    const options = payload?.options ?? {};
+
+    const unavailable = await resolvePrintAvailability(event.sender, options);
+    if (unavailable) return unavailable;
+
+    return printTicket({
+      BrowserWindow,
+      ticketText: payload?.ticketText,
+      options,
+    });
   });
 }
 

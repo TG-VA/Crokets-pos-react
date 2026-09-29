@@ -284,9 +284,12 @@ export const useSalesHistory = ({ isOpen, branchId, user, branch, onSaleCancelle
       });
 
       const result = await printTicket(ticketText);
-      if (!result?.success) throw new Error(result?.message || "No se pudo imprimir la copia.");
+      if (!result?.success) throw new Error(result?.message || "No se pudo imprimir la copia.", { cause: result?.error });
       showAppAlert({ type: "success", title: "Copia generada", message: "Copia del ticket generada correctamente." });
-    } catch (error) { showAppAlert({ type: "danger", title: "No se pudo imprimir", message: error.message || "No se pudo imprimir la copia del ticket." }); } 
+    } catch (error) {
+      console.error("Error al imprimir la copia del ticket:", error);
+      showAppAlert({ type: "danger", title: "No se pudo imprimir", message: error.message || "No se pudo imprimir la copia del ticket." });
+    }
     finally { setPrintProcessing(false); }
   };
 

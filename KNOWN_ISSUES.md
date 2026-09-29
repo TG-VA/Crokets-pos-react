@@ -1904,34 +1904,90 @@ mantener el alcance de este ítem.
 
 ### 59. `printTicket` no implementa impresión y su rama de error se eliminó
 
-**Estado:** abierto (registrado 25 sep 2026, rama `fix/code-quality-and-runtime-bugs`).
+**Estado:** Resuelto (29 sep 2026, rama `feature/ticket-printer-ipc-setup`).
 
-`src/utils/ticketPrinter.js` no imprime nada. Su único argumento se ignora y su cuerpo no tiene
-operación alguna que pueda fallar. En la base (`0c51210`) tampoco imprimía: solo escribía el texto
-del ticket en `console.log`, y la rama `catch` que devolvía `{ success: false, message, error }` solo
-era alcanzable si ese `console.log` lanzaba.
+El problema registrado el 25 sep 2026 (rama `fix/code-quality-and-runtime-bugs`) era que
+`src/utils/ticketPrinter.js` no imprimía nada, que su único argumento se ignoraba y que, tras retirar
+los `console.log` de #57, el `catch` que devolvía `{ success: false, message, error }` había quedado
+como código inalcanzable. Como consecuencia, el manejo de error de los tres llamadores
+(`CashCut.jsx:184-186`, `salesTicketService.js:227` y `useSalesHistory.js:262`) era código muerto y la
+UI informaba "Corte impreso correctamente" sin que existiera impresión.
 
-Al retirar los `console.log` de #57, el `catch` quedó marcado como código inalcanzable
-(`no-unreachable`) y se eliminó. Como consecuencia:
+**Arquitectura IPC implementada** (cuatro piezas, cada una con una responsabilidad):
 
-- El contrato de fallo desapareció. `printTicket` ya no tiene forma de devolver `success: false`.
-- El manejo de error de los tres llamadores es código muerto: `CashCut.jsx:184-186`,
-  `salesTicketService.js:227` y `useSalesHistory.js:262` ramifican sobre `!result?.success` y lanzan
-  o registran un error que no puede ocurrir. Ninguno de los tres lee la propiedad `error`.
-- El test que cubría la rama de fallo se eliminó en vez de reemplazarse, porque sin impresión real
-  no hay forma de provocar un fallo de impresión legítimo. La pérdida se compensó con 21 casos
-  nuevos en los ganchos de #56 (ver #57).
+1. `electron/preload.js` — `'print-ticket'` se sumó a `allowedInvokeChannels`, junto a los otros seis
+   canales. La lista blanca y los `ipcMain.handle` siguen coincidiendo exactamente.
+2. `electron/mainProcess.js` — el handler `print-ticket` recibe `{ ticketText, options }` y hace una
+   sola cosa antes de imprimir: `resolvePrintAvailability(event.sender, options)`. Si el llamador no
+   eligió `deviceName` y el sistema no reporta ninguna impresora, devuelve
+   `{ success: false, message, error: "NO_PRINTER_AVAILABLE" }` sin abrir la ventana de impresión. No
+   hay lógica de impresión en este archivo: solo registra el canal.
+3. `electron/ticketPrintService.js` (nuevo) — el trabajo de impresión. Envuelve el ticket ya
+   formateado (32 columnas, el ancho útil de un rollo de 58 mm) en un documento HTML monoespaciado, lo
+   carga en una `BrowserWindow` oculta y destruida en `finally`, y llama a `webContents.print` con
+   `silent: true` (impreso sin diálogo: un POS no debe pedirle confirmación al cajero) y márgenes en
+   cero. `BrowserWindow` y el `webContents` emisivo se inyectan, así que el módulo se prueba sin
+   levantar Electron. El ancho de papel está modelado por perfiles (`58mm` / `80mm`) porque un ancho
+   distinto de 32 columnas exigiría tocar los constructores de ticket, y no al revés.
+4. `src/utils/ticketPrinter.js` — el servicio del renderer. Invoca el canal y **nunca lanza**: el
+   rechazo del canal, el error del driver y un payload malformado se normalizan al mismo contrato
+   `{ success, message, error?, simulated }`. `simulated` distingue "se imprimió en el sistema" de
+   "solo se generó el texto": fuera de Electron (navegador de desarrollo) no hay proceso principal y
+   el fallback reporta la simulación en lugar de fingir un trabajo de impresión.
 
-**Impacto:** no hay regresión de comportamiento observable —los tres llamadores siempre reportan
-éxito—, pero la UI muestra "Corte impreso correctamente" sin que exista impresión, y el manejo de
-error induce a error a quien lea el código. Es un riesgo de engañar al usuario, no de integridad de
-datos.
+**Ramas de fallo alcanzables y su cobertura:** `EMPTY_TICKET` (texto vacío o ausente, rechazada sin
+abrir ventana), `NO_PRINTER_AVAILABLE` (sin impresora en el sistema), `PRINT_JOB_REJECTED` (el driver
+aceptó la llamada pero devolvió `success: false` sin explicar por qué), `failureReason` del driver
+cuando sí la explica, y el mensaje de la excepción cuando `print` lanza. Están cubiertas en
+`electron/ticketPrintService.test.js` (27 casos) y en el canal de `electron/mainProcess.test.js`.
 
+**Restitución del manejo de error en los llamadores:** los tres vuelven a ramificar sobre
+`!result?.success` con código que puede ejecutarse. `CashCut.jsx` y `useSalesHistory.js` lanzan con
+`{ cause: result?.error }`, de modo que el motivo del driver llega al `console.error` del `catch` sin
+ensuciar el mensaje que ve el usuario; `salesTicketService.js` registra el `error`; y
+`useSalesHistory.js` —que solo mostraba el `alert` sin registrar nada— ahora conserva su
+`console.error` de trazabilidad.
 
-**Recomendación:** decidir la vía de impresión (canal IPC en Electron o `window.print` del renderer),
-implementarla y restituir la rama `{ success: false, message, error }` con su test. Mientras tanto, la
-limitación está documentada en el propio módulo y los tres call sites deben leerse como
-"generación de ticket" y no como "impresión".
+**Configuración de la impresora física (pendiente, sin hardware en el entorno).** La vía quedó
+parametrizada justamente para no requerir un cambio de código cuando exista la impresora:
+
+- `options.profile`: `"58mm"` (por omisión) o `"80mm"`. Define el ancho de `@page` y el tamaño de
+  fuente.
+- `options.deviceName`: nombre exacto que devuelve el sistema. Al pasarlo se omite la consulta de
+  impresoras, lo que permite fijar la impresora por sucursal.
+- `options.pageSize`: `{ width, height }` en micras, para el driver que no respete el ancho declarado
+  en CSS. El alto por omisión es un tramo de rollo de 300 mm y el driver corta al final de la última
+  línea con contenido.
+- `options.copies` y `options.silent`: multiplicity y si se abre el diálogo del sistema.
+
+Los llamadores todavía no pasan opciones (usan el perfil de 58 mm por omisión), así que el ajuste por
+sucursal queda como el siguiente paso natural cuando sepas qué hardware se usará.
+
+---
+
+### 60. Los pasos incrementales de ESLint y Prettier en CI no ejecutan nada
+
+**Estado:** abierto (registrado 29 sep 2026, rama `feature/ticket-printer-ipc-setup`).
+
+`.github/workflows/ci.yml` filtra el diff con `rg` en los pasos "ESLint (incremental sobre el diff)" y
+"Prettier (incremental sobre el diff)". `ripgrep` no viene preinstalado en los runners de
+`ubuntu-latest`, así que ambos pasos emiten `rg: command not found`, la tubería se queda sin
+archivos, `xargs -r` no invoca nada y el paso termina en `success` sin haber comprobado un solo archivo.
+
+**Impacto:** el pipeline está en verde sin validar formato ni lint de los archivos tocados. No es una
+regresión funcional —el gate local `npx eslint` y `npm test` siguen siendo válidos—, pero el
+"CI incremental" documentado en `docs/TESTING.md` no existe en la práctica: hoy cualquier archivo
+nuevo o modificado entra al repositorio sin cumplir el estándar y sin que nadie lo note. Por
+ejemplo, `electron/preload.js`, `src/components/SalesComponents/services/salesTicketService.js` y
+`src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js` no cumplen Prettier en
+`main`, y ese desfase se viene arrastrando desde la Fase 0.
+
+**Recomendación:** reemplazar `rg` por `grep -E` (disponible en el runner) o instalar `ripgrep` con
+`sudo apt-get install -y ripgrep` antes de los pasos. Al hacerlo, el pipeline empezará a fallar por
+los archivos legacy ya enumerados arriba: hay que decidir en la misma fase si se formatean (un commit
+de `style:` dedicado, con el ruido de reformatteo aislado del cambio funcional) o se amplían las
+excepciones de forma explícita. No se corrigió en la rama de #59 para no mezclar un arreglo de
+infraestructura de CI con el trabajo de impresión.
 
 ---
 

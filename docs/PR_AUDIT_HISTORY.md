@@ -2137,3 +2137,53 @@ protege las abstracciones compartidas y no cada hook migrado.
 Ninguno de los dos hallazgos justifica retrasar el merge: H1 es un `prettier --write` sobre dos
 archivos, y H2 es una recomendación de cobertura para futuros cambios en los reportes. #56 queda
 cerrado.
+
+---
+
+## Informe de Auditoría — RAMA `feature/ticket-printer-ipc-setup` (29 sep 2026, auditoría y contra-auditoría)
+
+**Alcance:** Cierre de `KNOWN_ISSUES.md` #59: infraestructura IPC de impresión de tickets térmicos (`print-ticket`), servicio desacoplado `electron/ticketPrintService.js` con perfiles 58/80 mm, e integración segura en el renderer (`src/utils/ticketPrinter.js`) restituyendo el contrato `{ success, message, error?, simulated }` y el manejo de errores en los tres llamadores (`CashCut.jsx`, `salesTicketService.js`, `useSalesHistory.js`).
+
+### 1. Comprobaciones mecánicas ejecutadas
+
+| # | Verificación | Comando / Método | Resultado |
+|---|---|---|---|
+| 1 | Diff base | `git diff --stat origin/main..HEAD` | 13 archivos, +1174 / −77 |
+| 2 | Suite de pruebas | `npm test` | 84 archivos passed / 1,278 tests passed (EXIT 0) |
+| 3 | Build de producción | `npm run build:frontend` | 42 chunks generados (EXIT 0) |
+| 4 | Higiene de diff | `git diff --check origin/main..HEAD` | 0 avisos (limpio) |
+| 5a | Emojis en diff | Barrido UTF-8 en líneas agregadas | 0 emojis |
+| 5b | Debug logs | Búsqueda `console.log\|console.warn` en diff | 0 en código |
+| 5c | Trazabilidad error | `console.error` en bloques `catch` | Preservado en llamadores |
+| 6 | Formato EOF | Byte `0x0A` en todos los archivos tocados | 13/13 archivos OK |
+| 7 | Linter | `npx eslint` sobre archivos tocados | 0 errores |
+
+**Rastreo de los resultados no obvios.** Los 25 warnings de `no-unused-vars` que reportan
+`CashCut.jsx` y `useSalesHistory.js` son deuda heredada, no una regresión de la rama: verificado con
+un worktree en `origin/main` (17 + 8) contra `HEAD` (17 + 8), idéntico. Los símbolos `✓ ✕ ✅` que aparecen
+en `BACKLOG.md` y `KNOWN_ISSUES.md` también preexistían en `origin/main`; el barrido de emojis
+confirma cero ocurrencias en líneas agregadas. La lista blanca de `electron/preload.js` (7 canales)
+coincide exactamente con los `ipcMain.handle` registrados en `electron/*.js`.
+
+### 2. Evaluación Arquitectónica y de Seguridad
+
+- **SRP & DIP:** `electron/ticketPrintService.js` encapsula la creación de documento HTML y el perfil de impresión; `electron/mainProcess.js` solo registra el canal IPC y valida disponibilidad. `BrowserWindow` y `webContents` se inyectan como dependencias, permitiendo 27 tests unitarios sin levantar Electron nativo. El módulo no hace `require("electron")`: la única fuente de `BrowserWindow` es `electron/main.js`, que inyecta en `mainProcess.js`.
+- **Seguridad en ventana utilitaria:** Ventana oculta con `sandbox: true`, `javascript: false`, `contextIsolation: true`, `nodeIntegration: false`, y destrucción garantizada en bloque `finally` con guardia `!isDestroyed()`. El texto del ticket pasa por `escapeHtml` (los cinco caracteres `& < > " '`) antes de envelopedarse en el `data:` URL, de modo que el renderer no puede inyectar marcado.
+- **Contrato y llamadores:** `printTicket` nunca lanza; normaliza a `{ success, message, error?, simulated }`. En navegador reporta `simulated: true`. Los tres llamadores vuelven a ramificar sobre `!result?.success` propagando `cause` para trazabilidad en logs sin alterar la experiencia de usuario.
+
+### 3. Hallazgos
+
+- **H1 (Documentado en #60):** `.github/workflows/ci.yml` filtra el diff con `rg`, no preinstalado en el runner Ubuntu, saliendo en verde sin evaluar lint/format. Registrado como deuda técnica en `KNOWN_ISSUES.md` #60 para atenderse en una rama dedicada sin contaminar este PR con reformatteos preexistentes. La premisa fue reproducida: `npx prettier --check` falla hoy en `electron/preload.js`, `salesTicketService.js` y `useSalesHistory.js`, que son precisamente los archivos que este ítem enumera. Los archivos nuevos de la rama sí pasan `prettier --check` limpio.
+- **H2 (Observación):** QA manual con `npm run dev` pendiente de confirmación física cuando se disponga de la impresora térmica; mitigado con tests de contrato y simulación. No hay evidencia en el diff ni en `docs/TESTING.md` de la prueba manual del flujo completo, por lo que el ítem "Pruebas en desarrollo" del checklist queda **pendiente de verificar**, no cumplido.
+- **H3 (Observación):** Normalización de `PRINT_FAILED` sin assert dedicado en catch sin mensaje. El `catch` genérico de `printTicket` está cubierto, pero no la normalización al código literal cuando la excepción no trae `message`.
+
+### 4. Veredicto
+
+**APROBADO CON RESERVAS NO BLOQUEANTES (H2, H3).** La rama resuelve la deuda técnica #59, no introduce regresiones y queda lista para mergear a `main`.
+
+El resumen de verificación submitted con el PR declaraba "APROBADO (100% CUMPLIDO)"; se corrige a
+aprobación con reservas por `PR_REVIEW.md`: un "100%" exige que cada ítem tenga su cita, y H2 deja un
+ítem del checklist sin evidencia de verificación, que debe marcarse como pendiente en lugar de cumplido
+por omisión. El resto de las métricas del resumen se reprodujeron sin discrepancia. Ninguna de las dos
+reservas justifica retrasar el merge: H2 se cierra con la prueba manual cuando exista el hardware, y H3
+es una aserción adicional sobre una rama ya cubierta. #59 queda cerrado.

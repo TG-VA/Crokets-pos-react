@@ -8,7 +8,8 @@ const allowedInvokeChannels = [
   'set-zoom-factor',
   'configure-zoom',
   'reset-zoom',
-  'get-zoom-debug'
+  'get-zoom-debug',
+  'print-ticket'
 ];
 
 // API expuesta al proceso de renderizado

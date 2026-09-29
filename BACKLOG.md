@@ -55,6 +55,8 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Fijar `search_path` en las sobrecargas de `create_sale_transaction` (`SECURITY DEFINER`) — ver `KNOWN_ISSUES.md` #49
 - [x] Fijar `search_path` en `cancel_sale_transaction` y `create_partial_return_transaction` (`SECURITY DEFINER`, cierre total de la familia SEC-5) — ver `KNOWN_ISSUES.md` #53
 - [x] Desacoplar `src/backend/server.js` y `bd.js` — resuelto por eliminación total del backend local SQLite (18 sep 2026, rama `cleanup/ui-and-docs`); ver `KNOWN_ISSUES.md` #31
+- [x] Implementar la impresión real de tickets (canal IPC `print-ticket`) y restituir el contrato `{ success, message, error }` en los tres llamadores — resuelto (29 sep 2026, rama `feature/ticket-printer-ipc-setup`): servicio de impresión con perfiles 58/80 mm en el proceso principal, `printTicket` sobre IPC y suite en 84 archivos / 1278 tests; queda parametrizar la impresora física por sucursal cuando exista el hardware; ver `KNOWN_ISSUES.md` #59
+- [ ] Corregir los pasos incrementales de ESLint y Prettier en CI, que no ejecutan nada porque `rg` no está en el runner — ver `KNOWN_ISSUES.md` #60
 
 ## Prioridad Baja (Limpieza y Convenciones)
 

@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (28 sep 2026)
+## Cobertura actual (29 sep 2026)
 
-81 archivos de test (**1225 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+84 archivos de test (**1278 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área | Archivo |
@@ -35,13 +35,14 @@ y el proceso principal de Electron:
 | Corte de cajero (hook de modales) | `src/pages/CashCut/hooks/useCashCutDetail.test.js` |
 | Corte de cajero (formateadores) | `src/pages/CashCut/utils/cashCutFormatters.test.js` |
 | Corte impreso (builder de ancho fijo) | `src/utils/cashCutBuilder.test.js` |
-| Ticket: generación (sin impresión) | `src/utils/ticketPrinter.test.js` |
+| Ticket: generación e impresión | `src/utils/ticketPrinter.test.js` |
 | Modal de recompensas (cálculos) | `.../RewardModal/rewardModalCalculationService.test.js` |
 | Modal de recompensas (hook) | `.../RewardModal/useRewardModal.test.js` |
 | Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
 | Venta transaccional (RPC) | `.../SalesComponents/services/salesTransactionService.test.js` |
 | Contrato SQL de RPCs transaccionales | `supabase/migrations/transactionalRpcsContract.test.js` |
 | Proceso principal de Electron | `electron/mainProcess.test.js` |
+| Impresión de tickets (proceso principal) | `electron/ticketPrintService.test.js` |
 | Utilidades async | `src/utils/asyncUtils.test.js` |
 | Paginación global | `src/hooks/usePagination.test.js` |
 | Navegación protegida | `src/hooks/useProtectedNavigation.test.js` |
@@ -103,13 +104,17 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   (`transactionalRpcsContract.test.js`), incluido el cross-check cliente↔BD de nombres de
   parámetros. `create_transfer_order` aún no tiene caller JS (la vista de traspasos es el stub de
   #12), por eso se fija su interfaz SQL.
-- **Lógica de impresión y corte:** `cashCutBuilder.js` (secciones, totales, wrapping e invariante de
-  32 columnas). `ticketPrinter.js` solo cubre el contrato de éxito: su rama de fallo se eliminó en
-  #57 por ser inalcanzable y no se ha restituido porque la función todavía no imprime. Ver
-  `KNOWN_ISSUES.md` #59.
-- **Proceso principal de Electron:** `mainProcess.test.js` cubre los seis canales IPC, el zoom por
-  `webContents` y el ciclo de vida de la ventana. `electron/main.js` se redujo a wiring y la lógica
-  se movió a `electron/mainProcess.js` (inyección de dependencias, sin `require('electron')`).
+- **Lógica de impresión y corte** (29 sep 2026, rama `feature/ticket-printer-ipc-setup`):
+  `cashCutBuilder.js` (secciones, totales, wrapping e invariante de 32 columnas) y
+  `ticketPrinter.js` sobre su contrato completo de `{ success, message, error, simulated }`: invocación
+  del canal `print-ticket`, normalización de rechazos y excepciones, y el fallback `simulated` de
+  navegador. Del lado del proceso principal, `ticketPrintService.test.js` (27 casos) fija los perfiles
+  de papel, el documento HTML, la traducción de `options` a opciones de `webContents.print`, la espera
+  de carga, el descarte de `did-fail-load` con código `-3`, la destrucción de la ventana utilitaria y
+  el descubrimiento de impresoras; `mainProcess.test.js` fija el canal `print-ticket` de extremo a
+  extremo, incluida la respuesta `NO_PRINTER_AVAILABLE` sin abrir ventana. Ver `KNOWN_ISSUES.md` #59.
+  `electron/main.js` sigue siendo wiring puro y `electron/preload.js` no tiene test: la lista blanca
+  de canales solo se valida contra los `ipcMain.handle` registrados.
 - **Ganchos de página de reportes y de ventas** (25 sep 2026, 21 casos, rama
   `fix/code-quality-and-runtime-bugs`): `useReportsDashboard.test.js` fija que el `finally` de la
   petición obsoleta no invierte el resultado (mutación: quitar el guard rompe el caso), que una
