@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   formatTime, getDisplayFolio, getPaymentMethodLabel, getPaymentSummary, fetchPaymentMethods, fetchCashiers, 
   buildCustomerPointsMaps, loadRewardRedemptionsForSale, fetchTicketsBatch, fetchSalesRelatedData, 
   fetchTicketDetailsData, fetchProductsByIds, fetchSaleReturnsData, fetchCanceledSaleData,
-  formatCurrency, executeCancelSaleTransaction
+  formatCurrency, executeCancelSaleTransaction, fetchHistoryTickets
 } from "../../services/salesHistoryService";
 
 // IMPORTAMOS LAS UTILIDADES DE IMPRESIÓN AQUÍ
+import { useDidChange } from "../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 import { printTicket } from "../../../../utils/ticketPrinter";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 
@@ -18,7 +20,6 @@ export const useSalesHistory = ({ isOpen, branchId, user, branch, onSaleCancelle
   const [tickets, setTickets] = useState([]);
   const [cashiers, setCashiers] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [loadingTickets, setLoadingTickets] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [cancelProcessing, setCancelProcessing] = useState(false);
   const [printProcessing, setPrintProcessing] = useState(false);
@@ -37,57 +38,81 @@ export const useSalesHistory = ({ isOpen, branchId, user, branch, onSaleCancelle
   // Esta función vive aquí porque usa el estado de paymentMethods
   const getPaymentMethodNameById = useCallback((id) => paymentMethods.find(m => m.id === id)?.name?.toUpperCase() || "", [paymentMethods]);
 
-  const loadBaseData = useCallback(async () => {
-    try {
-      const [methods, users] = await Promise.all([fetchPaymentMethods(), fetchCashiers()]);
-      setPaymentMethods(methods); setCashiers(users);
-    } catch (e) { console.error(e); }
-  }, []);
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoadingTickets(true) sincrono, que provocaba un re-render en cascada.
+  // La clave reproduce exactamente las dependencias que tenia la carga: si los
+  // metodos de pago llegan despues, la lista se vuelve a pedir, como antes.
+  const ticketsRequestKey = useMemo(
+    () =>
+      isOpen && branchId
+        ? { branchId, isOpen, dateFilter, cashierFilter, searchFolio, paymentMethods }
+        : null,
+    [isOpen, branchId, dateFilter, cashierFilter, searchFolio, paymentMethods]
+  );
+  const { isLoading: loadingTickets, markSettled } = useRequestStatus(ticketsRequestKey);
+
+  const applyTickets = useCallback(
+    (nextTickets) => {
+      setTickets(nextTickets);
+      markSettled();
+    },
+    [markSettled]
+  );
 
   const loadTickets = useCallback(async () => {
-    if (!branchId || !isOpen) return;
+    if (!ticketsRequestKey) return;
+
     try {
-      setLoadingTickets(true);
-      const start = new Date(`${dateFilter}T00:00:00-05:00`).toISOString();
-      const end = new Date(`${dateFilter}T23:59:59.999-05:00`).toISOString();
-      
-      const sales = await fetchTicketsBatch(branchId, start, end, cashierFilter);
-      if (!sales.length) return setTickets([]);
+      applyTickets(await fetchHistoryTickets(ticketsRequestKey));
+    } catch (e) {
+      console.error(e);
+      setTickets([]);
+      markSettled();
+    }
+  }, [ticketsRequestKey, applyTickets, markSettled]);
 
-      const saleIds = sales.map(s => s.id);
-      const userIds = [...new Set(sales.map(s => s.user_id).filter(Boolean))];
-      const customerIds = [...new Set(sales.map(s => s.customer_id).filter(Boolean))];
+  useEffect(() => {
+    if (!isOpen || !branchId) return undefined;
 
-      const related = await fetchSalesRelatedData(saleIds, userIds, customerIds);
-      const getMethod = (id) => paymentMethods.find(m => m.id === id)?.name || "DESCONOCIDO";
+    let cancelled = false;
 
-      const pointsMaps = await buildCustomerPointsMaps({ saleIds, customerIds });
+    Promise.all([fetchPaymentMethods(), fetchCashiers()])
+      .then(([methods, users]) => {
+        if (cancelled) return;
+        setPaymentMethods(methods);
+        setCashiers(users);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error(e);
+      });
 
-      const uMap = related.users.reduce((a, u) => ({ ...a, [u.id]: (u.username || u.email || "SIN NOMBRE").toUpperCase() }), {});
-      const cMap = related.customers.reduce((a, c) => ({ ...a, [c.id]: { name: c.name, phone: c.phone } }), {});
-      const detCount = related.details.reduce((a, d) => ({ ...a, [d.sale_id]: (a[d.sale_id] || 0) + Number(d.quantity || 0) }), {});
-      
-      const pBySale = related.payments.reduce((a, p) => { a[p.sale_id] = [...(a[p.sale_id] || []), { ...p, payment_method_name: getMethod(p.payment_method_id) }]; return a; }, {});
-      const retBySale = related.returns.reduce((a, r) => { a[r.sale_id] = [...(a[r.sale_id] || []), { ...r, totalRefund: Number(r.total_refund), refundMethodName: getMethod(r.refund_method_id) }]; return a; }, {});
-      const canMap = related.canceled.reduce((a, c) => ({ ...a, [c.sale_id]: { cancelReason: c.cancel_reason, refundMethodId: c.refund_method_id, refundMethodName: getMethod(c.refund_method_id), cancelledAt: c.created_at } }), {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, branchId]);
 
-      const mapped = await Promise.all(sales.map(async sale => {
-        const canInfo = canMap[sale.id] || {};
-        const rets = retBySale[sale.id] || [];
-        const totRet = rets.reduce((acc, i) => acc + i.totalRefund, 0);
-        const pays = pBySale[sale.id] || [];
-        const redemptions = await loadRewardRedemptionsForSale(sale.id);
+  useEffect(() => {
+    if (!ticketsRequestKey) return undefined;
 
-        return {
-          id: sale.id, folio: getDisplayFolio(sale), articles: detCount[sale.id] || 0, time: formatTime(sale.sale_date), total: Number(sale.total), subtotal: Number(sale.subtotal), tax: Number(sale.tax), discountTotal: Number(sale.discount_total), cashier: uMap[sale.user_id] || "SIN CAJERO", customerId: sale.customer_id, client: cMap[sale.customer_id]?.name || "PÚBLICO EN GENERAL", pointsEarned: pointsMaps.pointsBySale[sale.id] || 0, pointsReturned: pointsMaps.returnedPointsBySale[sale.id] || 0, rewardPointsUsed: pointsMaps.rewardPointsBySale[sale.id] || 0, pointsBalance: sale.customer_id ? pointsMaps.balanceByCustomer[sale.customer_id] || 0 : null, date: sale.sale_date, paymentMethod: getPaymentMethodLabel(pays), status: sale.status, payments: pays, notes: sale.notes || "", cancelReason: canInfo.cancelReason || "", refundMethodId: canInfo.refundMethodId || "", refundMethodName: canInfo.refundMethodName || "", cancelledAt: canInfo.cancelledAt || null, returns: rets, totalReturned: totRet, netTotal: Math.max(Number(sale.total) - totRet, 0), rewardsCount: redemptions.reduce((a, r) => a + Number(r.quantity), 0), hasRewardRedemptions: redemptions.length > 0, rewardRedemptions: redemptions, ...getPaymentSummary(pays, sale.total)
-        };
-      }));
-      setTickets(mapped.filter(t => t.folio.toLowerCase().includes(searchFolio.trim().toLowerCase())));
-    } catch (e) { console.error(e); setTickets([]); } finally { setLoadingTickets(false); }
-  }, [branchId, isOpen, dateFilter, cashierFilter, searchFolio, paymentMethods]);
+    let cancelled = false;
 
-  useEffect(() => { if (isOpen && branchId) loadBaseData(); }, [isOpen, branchId, loadBaseData]);
-  useEffect(() => { loadTickets(); }, [loadTickets]);
+    fetchHistoryTickets(ticketsRequestKey)
+      .then((nextTickets) => {
+        if (cancelled) return;
+        applyTickets(nextTickets);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error(e);
+        setTickets([]);
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ticketsRequestKey, applyTickets, markSettled]);
 
   const loadTicketDetail = async (ticket, updateState = true) => {
     if (!ticket?.id) return null;
@@ -265,8 +290,15 @@ export const useSalesHistory = ({ isOpen, branchId, user, branch, onSaleCancelle
     finally { setPrintProcessing(false); }
   };
 
-  const resetAll = () => { setSelectedTicket(null); setSearchFolio(""); setCashierFilter("all"); setCancelReason(""); setRefundMethodId(""); setIsNotesModalOpen(false); setPrintProcessing(false); setReturnHistory([]); setTotalReturned(0); setIsPartialReturnOpen(false); closeAppModal(); };
-  useEffect(() => { if (!isOpen) resetAll(); }, [isOpen]);
+  const resetAll = useCallback(() => { setSelectedTicket(null); setSearchFolio(""); setCashierFilter("all"); setCancelReason(""); setRefundMethodId(""); setIsNotesModalOpen(false); setPrintProcessing(false); setReturnHistory([]); setTotalReturned(0); setIsPartialReturnOpen(false); closeAppModal(); }, [closeAppModal]);
+
+  // El reinicio al cerrar ocurre durante el render: antes lo hacia un efecto que
+  // se disparaba en cada render mientras el modal estaba cerrado y provocaba un
+  // re-render adicional. Escribia sobre valores que ya son los iniciales, asi
+  // que en el montaje era un no-op y useDidChange es equivalente.
+  if (useDidChange(isOpen) && !isOpen) {
+    resetAll();
+  }
 
   return {
     searchFolio, setSearchFolio, selectedTicket, dateFilter, setDateFilter, cashierFilter, setCashierFilter, tickets, cashiers, paymentMethods,
