@@ -7,6 +7,7 @@ import {
 
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 import {
   loadMovementBranches,
@@ -21,6 +22,34 @@ import {
   getDateRangeForPreset,
   getTodayDateKey,
 } from "../utils/movementDateUtils";
+
+// Resuelve que sucursal queda seleccionada tras cargar el catalogo. Es pura, asi
+// que la comparten la carga inicial y las recargas manuales sin duplicar reglas.
+const resolveBranchSelection = (
+  currentSelectedBranchId,
+  branches,
+  branch
+) => {
+  const currentBranchExists =
+    branch?.id &&
+    branches.some((item) => item?.id === branch.id);
+
+  if (currentBranchExists) {
+    return branch.id;
+  }
+
+  const previousBranchExists =
+    currentSelectedBranchId &&
+    branches.some(
+      (item) => item?.id === currentSelectedBranchId
+    );
+
+  if (previousBranchExists) {
+    return currentSelectedBranchId;
+  }
+
+  return branches[0]?.id || "";
+};
 
 const getBranchLabel = (branch) => {
   if (!branch) {
@@ -75,11 +104,22 @@ const useMovementsReport = () => {
   const [rows, setRows] =
     useState([]);
 
-  const [loading, setLoading] =
-    useState(false);
-
   const [error, setError] =
     useState("");
+
+  // La carga se deriva de la sucursal pedida en lugar de marcarse con un
+  // setLoading(true) sincrono, que provocaba un re-render en cascada. Sin
+  // sucursal la clave es null, que es la clave inicial de las peticiones
+  // resueltas, asi que no hay nada pendiente que mostrar.
+  const { isLoading, isStale, markSettled } =
+    useRequestStatus(selectedBranchId || null);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? "" : error;
+
+  // Sin sucursal no hay reporte que mostrar; antes se vaciaba la tabla desde
+  // dentro de la carga, con lo que ademas habia que esperar un turno de render.
+  const visibleRows = selectedBranchId ? rows : [];
 
   const loadBranches = useCallback(
     async () => {
@@ -91,32 +131,12 @@ const useMovementsReport = () => {
       setBranchOptions(branches);
 
       setSelectedBranchId(
-        (currentSelectedBranchId) => {
-          const currentBranchExists =
-            branch?.id &&
-            branches.some(
-              (item) =>
-                item?.id === branch.id
-            );
-
-          if (currentBranchExists) {
-            return branch.id;
-          }
-
-          const previousBranchExists =
-            currentSelectedBranchId &&
-            branches.some(
-              (item) =>
-                item?.id ===
-                currentSelectedBranchId
-            );
-
-          if (previousBranchExists) {
-            return currentSelectedBranchId;
-          }
-
-          return branches[0]?.id || "";
-        }
+        (currentSelectedBranchId) =>
+          resolveBranchSelection(
+            currentSelectedBranchId,
+            branches,
+            branch
+          )
       );
     },
     [
@@ -127,14 +147,9 @@ const useMovementsReport = () => {
   );
 
   const loadMovements = useCallback(
-    async ({ silent = false } = {}) => {
+    async () => {
       if (!selectedBranchId) {
-        setRows([]);
         return [];
-      }
-
-      if (!silent) {
-        setLoading(true);
       }
 
       setError("");
@@ -165,28 +180,77 @@ const useMovementsReport = () => {
 
         return [];
       } finally {
-        if (!silent) {
-          setLoading(false);
-        }
+        markSettled();
       }
     },
-    [selectedBranchId]
+    [selectedBranchId, markSettled]
   );
 
+  // Los efectos llaman directo a las funciones de datos importadas y aplican el
+  // estado en la continuacion asincrona; los callbacks quedan para las llamadas
+  // imperativas (recarga manual y refresco).
   useEffect(() => {
-    loadBranches();
-  }, [loadBranches]);
+    let cancelled = false;
+
+    loadMovementBranches({
+      currentBranch: branch,
+    })
+      .then((branches) => {
+        if (cancelled) return;
+
+        setBranchOptions(branches);
+        setSelectedBranchId(
+          (currentSelectedBranchId) =>
+            resolveBranchSelection(
+              currentSelectedBranchId,
+              branches,
+              branch
+            )
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branch?.id, branch?.name, branch?.code]);
 
   useEffect(() => {
     if (!selectedBranchId) {
-      return;
+      return undefined;
     }
 
-    loadMovements();
-  }, [
-    selectedBranchId,
-    loadMovements,
-  ]);
+    let cancelled = false;
+
+    loadMovementsReport({
+      branchId: selectedBranchId,
+    })
+      .then((movements) => {
+        if (cancelled) return;
+        setRows(movements);
+        setError("");
+        markSettled();
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+
+        console.error(
+          "Error cargando reporte de movimientos:",
+          loadError
+        );
+
+        setError(
+          import.meta.env.DEV && loadError?.message
+            ? `No se pudo cargar el reporte de movimientos. ${loadError.message}`
+            : "No se pudo cargar el reporte de movimientos."
+        );
+        setRows([]);
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBranchId, markSettled]);
 
   // La sucursal del contexto solo pisa la seleccion cuando aun no hay una
   // eleccion propia o cuando sigue apuntando a la sucursal "POLI". El ajuste se
@@ -370,9 +434,9 @@ const useMovementsReport = () => {
     rangePreset,
     currentRange,
 
-    rows,
-    loading,
-    error,
+    rows: visibleRows,
+    loading: isLoading,
+    error: visibleError,
 
     setSelectedBranchId,
     setStartDateKey,
