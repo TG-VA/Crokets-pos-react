@@ -1610,12 +1610,14 @@ ningún `.jsx` del módulo supera las 176.
 
 ### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
 
+**Estado:** **resuelto (28 sep 2026)** — rama `fix/react-hooks-and-eslint-zero-errors`. Los cinco puntos
+cerrados y `npx eslint .` deja el repositorio en **0 errores**.
+
 **Estado:** parcialmente resuelto (25 sep 2026) — rama `fix/code-quality-and-runtime-bugs`. Puntos 1 a 4
 cerrados; el punto 5 permanece abierto.
 
-**Estado:** parcialmente resuelto (28 sep 2026) — rama `fix/react-hooks-and-eslint-zero-errors`. Los puntos 1 a 4
-siguen cerrados y el punto 5 baja de 52 a 29 ocurrencias. El ítem **no** puede declararse cerrado: quedan 29
-errores, todos `react-hooks/set-state-in-effect`.
+**Estado:** parcialmente resuelto (28 sep 2026, intermedio) — rama `fix/react-hooks-and-eslint-zero-errors`. Los
+puntos 1 a 4 siguen cerrados y el punto 5 baja de 52 a 29 ocurrencias.
 
 La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
 existen errores de lógica, compatibilidad con React 19 y control de excepciones:
@@ -1731,26 +1733,45 @@ externos es justamente lo que un efecto debe hacer. Se eliminaron además dos `s
 `Login.jsx` limpiaba un formulario que ya nace vacío, y `UserForm.jsx` (sin importadores) repoblaba usando la
 identidad del objeto en vez de sus datos.
 
-**Lo que queda abierto (29 ocurrencias, todas de carga desde un efecto).** Requieren replicar el patrón 4, es
-decir extraer la orquestación de la carga al servicio correspondiente de cada módulo y derivar el estado de
-carga con `useRequestStatus`. Ninguno tiene cobertura de pruebas propia, salvo `useSalesCashSession`, por lo que
-cada extracción debe validarse con `npm test` y `npm run build:frontend`:
+**Cierre del punto 5 (52 → 0).** Las 29 ocurrencias que quedaban se resolvieron replicando los cuatro patrones
+anteriores, con una variante nueva para las dos que exigían una decisión de producto:
 
-- `SalesHistoryModal/useSalesHistory.js` (3), `useMovementsReport.js` (2), `PageReport/useInventoryReport.js` (2),
-  `useProductsList.js` (2), `SearchModal/useSearchModal.js` (2), `contexts/ProductsContext.jsx` (2).
-- Una ocurrencia en cada uno de: `useKardexProductSelection.js`, `useProductsPromotions.js`, `useCashReport.js`,
-  `useCommissionsReport.js`, `useCustomersReport.js`, `useProductsReport.js`, `useProfitabilityReport.js`,
-  `useReportsDashboard.js`, `useSalesReport.js`, `useProductDiscountReward.js`, `useRewardProductSelection.js`,
-  `useSalesCashSession.js`, `useSalesDraft.js`, `useCashCutReport.js`, `CashRegister.jsx`, `Profiles.jsx`.
+5. *Lectura síncrona y caso sin petición.* `useSalesDraft.js` y `CashRegister.jsx` no encajaban en los patrones 1 a
+   4. En `useSalesDraft` la decisión de qué hacer con el borrador persistido se aísla en `readDraftRestorePlan`, una
+   función pura que solo lee `localStorage`/`sessionStorage` y devuelve qué hay que mostrar; el render aplica ese
+   plan con `useDidChange` y el efecto se queda con los efectos de verdad (avisar al padre, marcar la sesión como
+   viva, abrir el modal de recuperación). En `CashRegister` el caso "no hay sucursal ni usuario, luego no hay
+   petición que resolver" se resuelve con clave nula, que es precisamente el estado inicial de `useRequestStatus`:
+   no hay que escribir `setChecking(false)` para expresar que no hay nada pendiente.
 
-Dos casos requieren una decisión de producto antes de tocarlos: `useSalesDraft.js:102` lee `localStorage` de
-forma síncrona y dispara callbacks de restauración (no es una lectura de red, así que el patrón 3 no aplica tal
-cual), y `CashRegister.jsx:48` marca `checking` cuando no hay sucursal o usuario, es decir un caso sin petición
-que resolver.
+**Un quinto patrón, para el paso que habilita al siguiente.** `useSalesDraft` necesita que el guardado automático
+no corra hasta que el carrito restaurado esté aplicado: si corriera en el mismo commit, escribiría con el carrito
+vacío y borraría el borrador recién recuperado. Para expresar esa secuencia sin un `setState` síncrono en el
+cuerpo del efecto se añadió `afterCommit` a `src/utils/asyncUtils.js`, que agenda la tarea en un microtask. Las
+escrituras pasan así a una continuación asíncrona legítima, el efecto conserva su `cleanup` y el comportamiento de
+dos passes es explícito. No es el atajo de la tabla de arriba (envolver en una async interna): esa variante se
+ejecuta de forma síncrona hasta el primer `await`, mientras que aquí el salto es deliberado y el motivo está
+documentado. `useCashCutReport` usa el mismo helper para arrancar la carga inicial, que si no escribiría estado
+antes de que el commit quedara firme.
+
+**Punto 5 cerrado por módulo (29 → 0).** Reportes (7 hooks), inventario (`useInventoryReport`, `useMovementsReport`),
+catálogo (`useProductsList`, `ProductsContext`), ventas (`useSalesHistory`, `useSearchModal`, `useSalesCashSession`,
+`useSalesDraft`, `useProductDiscountReward`, `useRewardProductSelection`, `useProductsPromotions`,
+`useKardexProductSelection`), caja (`useCashCutReport`, `CashRegister.jsx`) y perfiles (`Profiles.jsx`).
+
+En `useSalesCashSession` y en los dos modales de recompensa la comprobación del turno y la carga de productos se
+movieron a `salesCashService` (`resolveShiftCutStatus`) y al servicio de cada módulo respectivamente, de modo que el
+efecto llama a una función importada y conserva intactos los callbacks imperativos (`validateShiftNotCut`,
+`loadProducts`, `loadRewardProducts`) que usan los eventos del navegador y los temporizadores de tiempo real. En
+`useSalesCashSession` el indicador se siembra además desde `localStorage` durante el render, de modo que un corte ya
+registrado se sigue viendo de inmediato sin la pasada extra síncrona.
 
 **Verificación de esta rama:** `npm test` en verde con 1237 tests (1226 previos más 11 nuevos para
 `useDidChange` y `useRequestStatus`); `npm run build:frontend` con EXIT 0; conteo de errores de ESLint
-**69 → 29**. Los 29 restantes son `react-hooks/set-state-in-effect`.
+**69 → 0** sobre 581 archivos. Quedan 583 warnings, todos preexistentes y fuera del alcance de este ítem
+(siguen en #8 y #57).
+
+
 
 Nota sobre cobertura: el error de profundidad de importación en `useSalesCartState.js` (este commit lo corrige)
 no lo detectó la suite, porque ningún test alcanza ese archivo. `npm run build:frontend` sí recorre todo el

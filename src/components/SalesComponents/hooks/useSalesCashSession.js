@@ -10,7 +10,7 @@ import { useDidChange } from "../../../hooks/useDidChange";
 
 import {
   getOpenCashSession as getOpenCashSessionFromService,
-  getShiftCutStatus,
+  resolveShiftCutStatus,
 } from "../services/salesCashService";
 
 const SHIFT_CUT_STORAGE_KEY = "shift_cut_done";
@@ -42,18 +42,7 @@ const useSalesCashSession = ({
 
   const validateShiftNotCut = useCallback(async () => {
     try {
-      const session = await getOpenSession();
-
-      // Validación defensiva: si no existe sesión activa o no tiene ID, asumimos que no hay corte efectuado.
-      if (!session || !session.id) {
-        setShiftAlreadyCut(false);
-        updateLocalShiftCutFlag(false);
-        return true;
-      }
-
-      const alreadyCut = await getShiftCutStatus({
-        sessionId: session.id,
-      });
+      const alreadyCut = await resolveShiftCutStatus({ branchId, userId });
 
       setShiftAlreadyCut(alreadyCut);
       updateLocalShiftCutFlag(alreadyCut);
@@ -63,17 +52,10 @@ const useSalesCashSession = ({
       console.error("Error validando corte:", error);
       return false;
     }
-  }, [getOpenSession, updateLocalShiftCutFlag]);
+  }, [branchId, userId, updateLocalShiftCutFlag]);
 
   const syncShiftCutStatus = useCallback(async () => {
-    const localFlag = localStorage.getItem(SHIFT_CUT_STORAGE_KEY);
-
-    if (localFlag === "true") {
-      setShiftAlreadyCut(true);
-    }
-
     if (!branchId || !userId) {
-      setShiftAlreadyCut(false);
       return false;
     }
 
@@ -84,24 +66,47 @@ const useSalesCashSession = ({
    * Restablece y sincroniza el estado cuando cambia
    * la sucursal o el usuario autenticado.
    *
-   * El reinicio del indicador se resuelve durante el render (mismas claves y
-   * mismas dependencias que antes) para no encadenar un re-render adicional; la
-   * consulta del estado del turno permanece en el efecto, con sus dependencias
-   * intactas.
+   * El indicador se reinicia durante el render (mismas claves y mismas
+   * dependencias que antes) para no encadenar un re-render adicional. Ademas
+   * parte del valor guardado en localStorage, que antes se aplicaba con un
+   * setState sincrono dentro del efecto: asi el corte ya registrado se sigue
+   * viendo de inmediato, sin esa pasada extra. Sin sucursal o sin usuario no hay
+   * turno que consultar, y el indicador queda en falso.
    */
   if (useDidChange(`${enabled}|${branchId}|${userId}`)) {
-    setShiftAlreadyCut(false);
+    setShiftAlreadyCut(
+      enabled &&
+        Boolean(branchId) &&
+        Boolean(userId) &&
+        localStorage.getItem(SHIFT_CUT_STORAGE_KEY) === "true"
+    );
   }
 
+  // El efecto llama directo a la funcion de servicio y escribe el estado en la
+  // continuacion asincrona. `validateShiftNotCut` conserva el mismo trabajo para
+  // los llamadores imperativos (eventos del navegador y refresco en tiempo real).
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !branchId || !userId) {
       return undefined;
     }
 
-    syncShiftCutStatus();
+    let cancelled = false;
 
-    return undefined;
-  }, [enabled, branchId, userId, syncShiftCutStatus]);
+    resolveShiftCutStatus({ branchId, userId })
+      .then((alreadyCut) => {
+        if (cancelled) return;
+        setShiftAlreadyCut(alreadyCut);
+        updateLocalShiftCutFlag(alreadyCut);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Error validando corte:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, branchId, userId, updateLocalShiftCutFlag]);
 
   /*
    * Sincronización mediante eventos del navegador

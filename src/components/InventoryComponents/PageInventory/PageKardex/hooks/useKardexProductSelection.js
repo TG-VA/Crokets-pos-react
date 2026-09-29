@@ -1,9 +1,10 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from "react";
+
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 import {
   createEmptyProductSlots,
@@ -16,6 +17,45 @@ import {
 import {
   getKardexProductId,
 } from "../utils/kardexMovementUtils";
+
+/**
+ * Descarta de los slots los productos que ya no estan disponibles.
+ *
+ * Funcion pura a proposito: la reconciliacion es estado derivado y se resuelve
+ * durante el render, no desde un efecto con un setState sincrono.
+ *
+ * @returns {Array} Los mismos slots si no cambio nada, para que React omita el
+ *   re-render.
+ */
+const reconcileSelectedProducts = (
+  currentProducts,
+  availableProductIds
+) => {
+  let changed = false;
+
+  const nextProducts = currentProducts.map(
+    (product) => {
+      if (!product) {
+        return null;
+      }
+
+      const productId = getKardexProductId(product);
+
+      if (
+        productId &&
+        availableProductIds.has(String(productId))
+      ) {
+        return product;
+      }
+
+      changed = true;
+
+      return null;
+    }
+  );
+
+  return changed ? nextProducts : currentProducts;
+};
 
 const useKardexProductSelection = ({
   products = [],
@@ -153,55 +193,29 @@ const useKardexProductSelection = ({
       );
     }, []);
 
-  useEffect(() => {
-    const availableProductIds =
-      new Set(
-        getKardexProductIds(
-          products
-        )
-          .filter(Boolean)
-          .map(String)
-      );
+  // La seleccion se reconcilia con el catalogo disponible cada vez que este
+  // cambia. Se ajusta durante el render porque es estado derivado: hacerlo en un
+  // efecto obligaba a React a confirmar un segundo render con productos que ya no
+  // existian.
+  const availableProductIdsKey = JSON.stringify(
+    getKardexProductIds(products)
+      .filter(Boolean)
+      .map(String)
+  );
+
+  if (useDidChange(availableProductIdsKey)) {
+    const availableProductIds = new Set(
+      JSON.parse(availableProductIdsKey)
+    );
 
     setSelectedProducts(
-      (currentProducts) => {
-        let changed = false;
-
-        const nextProducts =
-          currentProducts.map(
-            (product) => {
-              if (!product) {
-                return null;
-              }
-
-              const productId =
-                getKardexProductId(
-                  product
-                );
-
-              if (
-                productId &&
-                availableProductIds.has(
-                  String(
-                    productId
-                  )
-                )
-              ) {
-                return product;
-              }
-
-              changed = true;
-
-              return null;
-            }
-          );
-
-        return changed
-          ? nextProducts
-          : currentProducts;
-      }
+      (currentProducts) =>
+        reconcileSelectedProducts(
+          currentProducts,
+          availableProductIds
+        )
     );
-  }, [products]);
+  }
 
   return {
     selectedProducts,

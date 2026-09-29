@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import {
   fetchKits,
@@ -55,17 +55,35 @@ export const useProductsPromotions = () => {
     });
   };
 
-  const loadKits = async () => {
+  // Recarga imperativa tras crear, editar o eliminar; el efecto de montaje llama
+  // directo a `fetchKits` para no escribir estado de forma sincrona.
+  const loadKits = useCallback(async () => {
     try {
-      const data = await fetchKits();
-      setKits(data);
+      setKits(await fetchKits());
     } catch (error) {
       console.error("Error cargando kits:", error);
       setKits([]);
     }
-  };
+  }, []);
 
-  useEffect(() => { loadKits(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchKits()
+      .then((data) => {
+        if (cancelled) return;
+        setKits(data);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Error cargando kits:", error);
+        setKits([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {

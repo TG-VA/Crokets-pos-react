@@ -3,6 +3,8 @@ import {
   toNumber, formatCurrency, getRewardDiscountLabel, 
   calculateRewardDiscount, productUsesInventory, fetchProductsAndInventory 
 } from "../../services/productDiscountService";
+import { useDidChange } from "../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 
 export const MIN_SEARCH_LENGTH = 2;
 // Re-exportamos para la UI
@@ -13,7 +15,6 @@ export const useProductDiscountReward = ({ isOpen, reward, branchId, cartProduct
   const [products, setProducts] = useState([]);
   const [inventoryByProduct, setInventoryByProduct] = useState({});
   const [selectedProductsById, setSelectedProductsById] = useState({});
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [appModal, setAppModal] = useState({ isOpen: false, type: "warning", title: "Aviso", message: "", confirmText: "Entendido" });
@@ -47,9 +48,19 @@ export const useProductDiscountReward = ({ isOpen, reward, branchId, cartProduct
     return { available: true, stock: availableStock, label: usedInCart > 0 ? `${availableStock} disp. (${usedInCart} en carrito)` : `${availableStock} disp.` };
   }, [inventoryByProduct, cartProducts]);
 
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoadingProducts(true) sincrono, que provocaba un re-render en cascada.
+  // Con el modal cerrado la clave es null, que es la clave inicial de las
+  // peticiones resueltas, asi que no hay nada pendiente que mostrar.
+  const loadKey = isOpen ? `${branchId}|${reward?.id}` : null;
+  const { isLoading: loadingProducts, isStale, markSettled } = useRequestStatus(loadKey);
+
+  // El error de una carga anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? "" : error;
+
   const loadProducts = useCallback(async () => {
     try {
-      setLoadingProducts(true); setError("");
+      setError("");
       const { cleanProds, inventoryMap } = await fetchProductsAndInventory(branchId);
       setProducts(cleanProds);
       setInventoryByProduct(inventoryMap);
@@ -57,14 +68,46 @@ export const useProductDiscountReward = ({ isOpen, reward, branchId, cartProduct
       setProducts([]); setInventoryByProduct({});
       showAppDanger(err?.message || "Error cargando productos.", "Error");
     } finally {
-      setLoadingProducts(false);
+      markSettled();
     }
-  }, [branchId, showAppDanger]);
+  }, [branchId, showAppDanger, markSettled]);
 
+  // El reinicio al abrir el modal es estado derivado y se ajusta durante el
+  // render. Antes lo hacia un efecto que ademas disparaba la carga, con lo que
+  // el modal aparecia un turno con los datos del premio anterior.
+  if (useDidChange(`${isOpen}|${branchId}|${reward?.id}`) && isOpen) {
+    setSearchTerm(""); setSelectedProductsById({}); setSaving(false); setError(""); closeAppModal();
+  }
+
+  // El efecto llama directo a la funcion de servicio importada y aplica el estado
+  // en la continuacion asincrona; `loadProducts` queda para las recargas
+  // imperativas.
   useEffect(() => {
-    if (!isOpen) return;
-    setSearchTerm(""); setSelectedProductsById({}); setSaving(false); setError(""); closeAppModal(); loadProducts();
-  }, [isOpen, branchId, reward?.id, loadProducts, closeAppModal]);
+    if (!isOpen) return undefined;
+
+    let cancelled = false;
+
+    fetchProductsAndInventory(branchId)
+      .then(({ cleanProds, inventoryMap }) => {
+        if (cancelled) return;
+        setProducts(cleanProds);
+        setInventoryByProduct(inventoryMap);
+        setError("");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setProducts([]); setInventoryByProduct({});
+        showAppDanger(err?.message || "Error cargando productos.", "Error");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, branchId, showAppDanger, markSettled]);
 
   const selectedProductsCount = useMemo(() => Object.values(selectedProductsById).reduce((s, q) => s + toNumber(q), 0), [selectedProductsById]);
   
@@ -113,7 +156,7 @@ export const useProductDiscountReward = ({ isOpen, reward, branchId, cartProduct
   };
 
   return {
-    searchTerm, setSearchTerm, products, inventoryByProduct, loadingProducts, saving, setSaving, error, setError, appModal, closeAppModal, showAppWarning,
+    searchTerm, setSearchTerm, products, inventoryByProduct, loadingProducts, saving, setSaving, error: visibleError, setError, appModal, closeAppModal, showAppWarning,
     rewardQuantity, rewardRedeemQuantity, totalUnitsToApply, selectedProductsCount, selectedProducts, filteredProducts,
     getInventoryStatus, handleAddProduct, handleSubtractProduct, productUsesInventory,
   };

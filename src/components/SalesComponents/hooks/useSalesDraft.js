@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useDidChange } from "../../../hooks/useDidChange";
+import { afterCommit } from "../../../utils/asyncUtils";
+
 const SALES_DRAFT_VERSION = 1;
 const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
@@ -52,6 +55,75 @@ const hasDraftDataToSave = ({
   );
 };
 
+/** Clave estable para detectar cambios de borrador aunque no exista. */
+const NO_DRAFT_KEY = "__no_draft__";
+
+/** Plan vacio: no hay borrador que restaurar todavia. */
+const EMPTY_RESTORE_PLAN = {
+  ready: false,
+  draft: null,
+  showModal: false,
+  message: null,
+  savedAt: null,
+  error: null,
+};
+
+/**
+ * Lee el borrador persistido y decide que hay que hacer con el, sin escribir
+ * estado ni tocar el almacenamiento.
+ *
+ * Es una funcion pura a proposito: la decision de como queda la pantalla se toma
+ * durante el render y los efectos de la aplicacion (avisar al padre, marcar la
+ * sesion como viva, abrir el modal de recuperacion) quedan en un efecto aparte.
+ * Asi no hace falta un setState sincrono dentro de un efecto.
+ */
+const readDraftRestorePlan = ({ draftKey, sessionAcknowledgedKey, sessionAliveKey }) => {
+  if (!draftKey) {
+    return EMPTY_RESTORE_PLAN;
+  }
+
+  try {
+    const rawDraft = localStorage.getItem(draftKey);
+
+    if (!rawDraft) {
+      return { ...EMPTY_RESTORE_PLAN, ready: true };
+    }
+
+    const draft = JSON.parse(rawDraft);
+
+    if (!draft || draft.version !== SALES_DRAFT_VERSION) {
+      return { ...EMPTY_RESTORE_PLAN, ready: true };
+    }
+
+    const recoverable = hasRecoverableDraftData(draft);
+    const restorePromptRequested = sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
+    const sessionAlreadyAlive = Boolean(sessionAliveKey && sessionStorage.getItem(sessionAliveKey) === "true");
+    const alreadyAcknowledged = Boolean(sessionAcknowledgedKey && sessionStorage.getItem(sessionAcknowledgedKey) === "true");
+
+    const showModal = recoverable && (restorePromptRequested || (!sessionAlreadyAlive && !alreadyAcknowledged));
+
+    if (!showModal) {
+      return { ...EMPTY_RESTORE_PLAN, ready: true, draft };
+    }
+
+    const formattedSavedAt = formatDraftSavedAt(draft.savedAt);
+    const message = formattedSavedAt
+      ? `Hay una venta pendiente guardada automáticamente el ${formattedSavedAt}.\n\n¿Quieres recuperarla o descartarla?`
+      : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?";
+
+    return {
+      ready: true,
+      draft,
+      showModal: true,
+      message,
+      savedAt: draft.savedAt || null,
+      error: null,
+    };
+  } catch (error) {
+    return { ...EMPTY_RESTORE_PLAN, ready: true, error };
+  }
+};
+
 const useSalesDraft = ({
   branchId, userId, productos = [], pendingTickets = [], currentSaleClient = null,
   currentSaleReward = null, ticketNumber = 1, saleToken = null, saleNotes = "", barcode = "",
@@ -60,8 +132,6 @@ const useSalesDraft = ({
   const [draftReady, setDraftReady] = useState(false);
   const [recoveredDraft, setRecoveredDraft] = useState(false);
   const [recoveredDraftSavedAt, setRecoveredDraftSavedAt] = useState(null);
-
-  const draftKeyRef = useRef(null);
 
   // Guarda las funciones más recientes sin provocar re-ejecuciones de efectos
   const callbacksRef = useRef({ onRestoreDraft, onDiscardDraft, onOpenRecoveryModal });
@@ -96,87 +166,68 @@ const useSalesDraft = ({
   }, [clearSalesDraft]);
 
   // --- Restauración inicial del borrador ---
+  // El plan de restauración es estado derivado: se calcula durante el render en
+  // el momento en que cambia la clave del borrador. Antes se resolvía dentro de
+  // un efecto, con escrituras sincrónicas que provocaban un re-render en cascada
+  // y dejaban el borrador sin preparar durante una pasada.
+  const [restorePlan, setRestorePlan] = useState(EMPTY_RESTORE_PLAN);
+  const [restoreAppliedKey, setRestoreAppliedKey] = useState(null);
+
+  if (useDidChange(draftKey ?? NO_DRAFT_KEY)) {
+    const plan = readDraftRestorePlan({ draftKey, sessionAcknowledgedKey, sessionAliveKey });
+
+    setRestorePlan(plan);
+    setDraftReady(plan.ready);
+    setRecoveredDraft(plan.showModal);
+    setRecoveredDraftSavedAt(plan.showModal ? plan.savedAt : null);
+  }
+
+  // --- Aplicación del plan de restauración ---
   useEffect(() => {
-    if (!draftKey) {
-      draftKeyRef.current = null;
-      setDraftReady(false);
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
-      return;
+    if (!draftKey || !restorePlan.ready) {
+      return undefined;
     }
 
-    if (draftKeyRef.current === draftKey) return;
-    draftKeyRef.current = draftKey;
+    let cancelled = false;
 
-    setDraftReady(false);
-    setRecoveredDraft(false);
-    setRecoveredDraftSavedAt(null);
+    afterCommit(() => {
+      if (cancelled) return;
 
-    try {
-      const rawDraft = localStorage.getItem(draftKey);
-
-      if (!rawDraft) {
-        if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
-        setDraftReady(true);
-        return;
+      if (restorePlan.error) {
+        console.error("Error restaurando venta en curso:", restorePlan.error);
+        localStorage.removeItem(draftKey);
       }
 
-      const draft = JSON.parse(rawDraft);
-
-      if (!draft || draft.version !== SALES_DRAFT_VERSION) {
-        if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
-        setDraftReady(true);
-        return;
+      if (restorePlan.draft && typeof callbacksRef.current.onRestoreDraft === "function") {
+        callbacksRef.current.onRestoreDraft(restorePlan.draft);
       }
-
-      if (typeof callbacksRef.current.onRestoreDraft === "function") {
-        callbacksRef.current.onRestoreDraft(draft);
-      }
-
-      const recoverable = hasRecoverableDraftData(draft);
-      const restorePromptRequested = sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
-      const sessionAlreadyAlive = Boolean(sessionAliveKey && sessionStorage.getItem(sessionAliveKey) === "true");
-      const alreadyAcknowledged = Boolean(sessionAcknowledgedKey && sessionStorage.getItem(sessionAcknowledgedKey) === "true");
-
-      const shouldShowRecoveryModal = recoverable && (restorePromptRequested || (!sessionAlreadyAlive && !alreadyAcknowledged));
 
       if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
 
-      if (shouldShowRecoveryModal) {
-        setRecoveredDraft(true);
-        setRecoveredDraftSavedAt(draft.savedAt || null);
-
-        const formattedSavedAt = formatDraftSavedAt(draft.savedAt);
-        const message = formattedSavedAt
-          ? `Hay una venta pendiente guardada automáticamente el ${formattedSavedAt}.\n\n¿Quieres recuperarla o descartarla?`
-          : "Hay una venta pendiente guardada automáticamente.\n\n¿Quieres recuperarla o descartarla?";
-
-        if (typeof callbacksRef.current.onOpenRecoveryModal === "function") {
-          callbacksRef.current.onOpenRecoveryModal({
-            message,
-            onConfirm: dismissRecoveredDraft,
-            onCancel: discardRecoveredDraft,
-          });
-        }
-      } else {
-        setRecoveredDraft(false);
-        setRecoveredDraftSavedAt(null);
+      if (restorePlan.showModal && typeof callbacksRef.current.onOpenRecoveryModal === "function") {
+        callbacksRef.current.onOpenRecoveryModal({
+          message: restorePlan.message,
+          onConfirm: dismissRecoveredDraft,
+          onCancel: discardRecoveredDraft,
+        });
       }
 
-      setDraftReady(true);
-    } catch (error) {
-      console.error("Error restaurando venta en curso:", error);
-      localStorage.removeItem(draftKey);
-      if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
-      setRecoveredDraft(false);
-      setRecoveredDraftSavedAt(null);
-      setDraftReady(true);
-    }
-  }, [draftKey, sessionAcknowledgedKey, sessionAliveKey, dismissRecoveredDraft, discardRecoveredDraft]);
+      // El guardado automatico permanece bloqueado hasta este punto.
+      setRestoreAppliedKey(draftKey);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+
+  }, [draftKey, restorePlan, sessionAliveKey, dismissRecoveredDraft, discardRecoveredDraft]);
 
   // --- Guardado automático del borrador ---
   useEffect(() => {
-    if (!draftReady || !draftKey || draftKeyRef.current !== draftKey) return;
+    // El guardado espera a que el plan de restauracion se haya aplicado: si
+    // corriera en la misma pasada, escribiria con los datos previos a la
+    // restauracion y borraria el borrador recien recuperado.
+    if (!draftReady || !draftKey || restoreAppliedKey !== draftKey) return;
 
     const shouldSave = hasDraftDataToSave({
       productos, pendingTickets, currentSaleClient, currentSaleReward, saleToken, saleNotes, barcode,
@@ -211,7 +262,7 @@ const useSalesDraft = ({
       console.error("Error guardando venta en curso:", error);
     }
   }, [
-    draftReady, draftKey, branchId, userId, productos, pendingTickets, currentSaleClient,
+    draftReady, restoreAppliedKey, draftKey, branchId, userId, productos, pendingTickets, currentSaleClient,
     currentSaleReward, ticketNumber, saleToken, saleNotes, barcode, subtotal, discountTotal, total,
   ]);
 

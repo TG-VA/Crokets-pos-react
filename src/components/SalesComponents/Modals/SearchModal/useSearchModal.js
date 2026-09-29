@@ -4,7 +4,7 @@ import {
   fetchKitData, fetchProductStocksAcrossBranches 
 } from "../../services/searchModalService";
 import { getSoldKitsCountInBranch } from "../../services/salesProductService";
-import { useDidChange } from "../../../hooks/useDidChange";
+import { useDidChange } from "../../../../hooks/useDidChange";
 
 const EMPTY_KIT_VALIDATION = { isValid: true, message: "", items: [] };
 
