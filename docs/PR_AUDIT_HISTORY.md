@@ -2187,3 +2187,113 @@ aprobación con reservas por `PR_REVIEW.md`: un "100%" exige que cada ítem teng
 por omisión. El resto de las métricas del resumen se reprodujeron sin discrepancia. Ninguna de las dos
 reservas justifica retrasar el merge: H2 se cierra con la prueba manual cuando exista el hardware, y H3
 es una aserción adicional sobre una rama ya cubierta. #59 queda cerrado.
+
+## Informe de Auditoría — RAMA `fix/ci-eslint-and-modal-icons` (29 sep 2026, contra-auditoría y re-auditoría)
+
+**Alcance:** seis commits contra `origin/main` (`9d2c3e4` → `638beb2`): #60 (pasos incrementales de
+ESLint y Prettier que no ejecutaban nada), #8 y la regla `react/jsx-uses-vars`, #58 (cierre de los
+pseudo-iconos de `AppModal`), y la contra-auditoría que corrigió B1, N1 y N2. La rama no toca lógica
+de negocio ni el renderer de Electron.
+
+### Veredicto por sección
+
+**§1 Funcionalidad y Arquitectura — CUMPLIDO:** sin cambios de funcionalidad. El JSX de `AppModal` pasa
+de un ternario `config.iconSrc ? <img> : config.icon` a un `<span className={styles.iconGlyph} />`
+único, lo que permite borrar el contrato `icon`/`iconSrc` y los tres imports de SVG: `MODAL_TYPE_CONFIG`
+queda reducido a `className`, que es lo único que el render consume. El icono es decorativo y el
+`aria-hidden="true"` preexisting en `.iconWrapper` cubre al nuevo `<span>`, sin necesidad de `alt`.
+
+**§2 Corrección de Datos y Lógica de Negocio — SIN CAMBIO.**
+
+**§3 Estado y Contexto Global — SIN CAMBIO.**
+
+**§4 Estilos y UI — CUMPLIDO:** `.iconGlyph` pasa de `filter` a `mask-image` +
+`background-color: currentColor`, con `warning` y `danger` compartiendo la misma máscara de triángulo.
+Tamaños ópticos 25/30/32/32 px conservados; sin `!important`, sin estilos inline. Se eliminan las
+declaraciones `font-size`/`font-weight`/`line-height` de `.icon`, muertas desde que el glifo dejó de ser
+texto.
+
+**§5 Convenciones Estrictas y Logs — CUMPLIDO:** cero emoji en código y UI; `console.log`/`console.warn`
+ausentes; `console.error` preservados; comillas dobles y EOF newline en los 9 archivos del diff.
+
+**§6 Documentación — CUMPLIDO tras la re-auditoría:** `KNOWN_ISSUES.md` #8, #58, #60 y #61,
+`docs/TESTING.md`, `BACKLOG.md`, `ICONS.md` y este informe.
+
+**§7 Calidad/testing — CUMPLIDO:** `npm test` **1278/1278** (84 archivos) y `npm run build:frontend`
+`EXIT=0`; `npx eslint .` con 0 errores (206 warnings) y pasos incrementales del CI en verde sobre el
+diff completo.
+
+### Hallazgos de la contra-auditoría
+
+- **[ALTO][B1] `filter` no reproducible: dos de cuatro estados fuera de umbral de percepción.** La
+  calibración de tintes se había verificado simulando la cadena de filtros en JavaScript, sin validar
+  el simulador contra un motor de renderizado. Rasterizando el CSS real en Chromium, `warning` pintaba
+  `#7e7012` (oliva) en vez de `#ea7600` y `danger` `#dc430d` en vez de `#dc2626`. Dos lecturas
+  consecutivas de esta auditoría, la primera sobre la cadena de `main` y la segunda reconstruyendo
+  además `68a6a52`, converged en las mismas cifras con ΔE00 calculados en CIELAB/CIEDE2000 sobre los
+  colores effectivement pintados.
+- **[MEDIO][N1] #61 subestimaba el alcance de la deuda de formato por un factor de dos órdenes.** El
+  ítem decía "al menos tres" archivos legacy. Medido: 355 archivos matchean el filtro del CI y fallan
+  `prettier --check`. La consecuencia es que no es un obstáculo absorbible PR a PR, lo que invalida la
+  recomendación original de un commit `style:` por archivo.
+- **[BAJO][N2] Línea base de `no-unused-vars` documentada como 563 en tres sitios.** El valor medido
+  es 564. Sin efecto en la decisión, pero las tres menciones deben decir lo mismo.
+
+### Re-auditoría (29 de septiembre de 2026)
+
+Re-verificación independiente de B1, N1 y N2, sin reutilizar la evidencia del turno anterior: build
+limpio, extracción del CSS compilado real, el navegador reportando geometría y estilos computados, y
+recuento de archivos ejecutado en lugar de citado. Resultado: **los tres puntos resueltos, con cinco
+cifras erróneas en el propio registro**, que se corrigieron en `638beb2` antes de anexar este informe.
+
+1. **B1 — APROBADO.** ΔE00 = 0.00 exacto en los cuatro estados (`#075985`, `#15803d`, `#ea7600`,
+   `#dc2626`), con 6958, 6341, 5091 y 5091 píxeles exactos respectivamente; `filter` computado `none`
+   en los cuatro; `getComputedStyle` reporta los tamaños 25, 30, 32 y 32 px. Verificado además que
+   `.iconGlyph` no declara `color` (hereda sin interferencia de ningún ancestro) y que el segundo color
+   más frecuente de cada celda es el tinte del contenedor y no un tono del glifo, lo que descarta
+   contaminación entre estados.
+2. **N1 — nÚMERO OPERATIVO CORRECTO, tres cifras de contexto erróneas.** El 355 se reproduce exacto. Los
+   371 y 372 contaban como archivo la línea de resumen de Prettier (`Code style issues found in 370
+   files.`), que no es una ruta: el total real es 370 en la rama y 371 en `main`, y los 15 restantes son
+   `.md`/`.MD` sin ningún `.txt`. Corregido con nota de método.
+3. **N2 — APROBADO.** `564 → 187` y `583 → 206` con 0 errores, medidos en un worktree de `main` y en la
+   rama. Sin discrepancias.
+4. **[MEDIO] El registro de #58 mal cuantificaba su propia regresión.** Afirmaba que en `main` los cuatro
+   glifos eran ΔE00 = 0.00 y que el paso a `filter` empeoraba dos de cuatro. Reconstruidos `main` y
+   `68a6a52`: en `main`, `info`, `warning` y `danger` eran texto que heredaba `color` y eran exactos,
+   pero **`success` ya usaba un `<img>` con cadena `filter` y pintaba `#21823f` (ΔE00 = 1.04)**. La
+   regresión de `68a6a52` afectaba a **tres** estados de cuatro y `success` se arrastró sin corregir.
+   Además el ΔE00 de `info` era 3.30, no 3.35. La corrección refuerza el ítem: la regresión era más ancha
+   de lo registrado y estaba mal cuantificada por el mismo método no validado que el ítem condena.
+
+| Estado | `main` | `68a6a52` (`filter`) | `HEAD` (máscara) |
+| ------ | ------ | -------------------- | ---------------- |
+| `info` | 0.00 (texto) | 3.30 | **0.00** |
+| `success` | 1.04 (`<img>` + `filter`) | 1.04 | **0.00** |
+| `warning` | 0.00 (texto) | 29.19 | **0.00** |
+| `danger` | 0.00 (texto) | 8.76 | **0.00** |
+
+### 4. Veredicto
+
+**APROBADO.** B1, N1 y N2 quedan cerrados y verificados de forma independiente. Las cinco erratas
+documentales halladas en la re-auditoría se corrigieron antes de anexar este informe; ninguna afectaba
+al runtime ni al comportamiento del CI, y el número que decide el pipeline, 355, era correcto desde el
+principio. La rama queda lista para mergear a `main`.
+
+**Lección de método que este informe deja como precedente:** un color pintado con `filter` solo puede
+verificarse rasterizando en un motor real. La simulación propia de la especificación CSS produjo
+cifras con dos decimales y un error de hasta 29 ΔE00, y además llevó a cuantificar mal la línea base
+contra la que se comparaba. Toda cifra de color de aquí en adelante se mide sobre el CSS compilado en
+el navegador, y se contrasta contra la versión previa del código en lugar de contra una expectativa.
+
+### Notas y límites conscientes
+
+- **#61 sigue abierto y no lo cierra esta rama.** 355 archivos que fallan `prettier --check` y que
+  bloquearán el CI al tocarse. La barrida global es una decisión de alcance, no un cambio de formato, y
+  queda para acordarla con el responsable; por eso se documentó en vez de ejecutarse.
+- **Los 206 warnings de `no-unused-vars` restantes son deuda real**, no falsos positivos de JSX: son
+  parámetros y helpers huérfanos en servicios y hooks. Fuera del alcance de esta rama.
+- **El ΔE00 = 0.00 de HEAD es una propiedad estructural, no una medición afortunada.** Con
+  `mask-image` la forma la define la máscara y el relleno toma `currentColor`, así que el color pintado
+  es el color del estado por construcción CSS. La medición en Chromium confirma que no hay
+  intermediario que reintroduzca desviación, no que hoy se haya calibrado bien.

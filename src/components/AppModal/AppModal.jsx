@@ -1,32 +1,18 @@
-import React, {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-} from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 
 import styles from "./AppModal.module.css";
-import CircleCheckIcon from "../../assets/icons/circle-check-solid-full.svg";
 
 const MODAL_TYPE_CONFIG = {
   info: {
-    icon: "i",
-    iconSrc: null,
     className: styles.info,
   },
   success: {
-    icon: null,
-    iconSrc: CircleCheckIcon,
     className: styles.success,
   },
   warning: {
-    icon: "!",
-    iconSrc: null,
     className: styles.warning,
   },
   danger: {
-    icon: "!",
-    iconSrc: null,
     className: styles.danger,
   },
 };
@@ -65,9 +51,7 @@ const getFocusableElements = (container) => {
   }
 
   return Array.from(
-    container.querySelectorAll(
-      FOCUSABLE_ELEMENTS_SELECTOR
-    )
+    container.querySelectorAll(FOCUSABLE_ELEMENTS_SELECTOR)
   ).filter((element) => {
     return (
       element instanceof HTMLElement &&
@@ -119,9 +103,7 @@ const AppModal = ({
     };
   });
 
-  const config =
-    MODAL_TYPE_CONFIG[type] ||
-    MODAL_TYPE_CONFIG.info;
+  const config = MODAL_TYPE_CONFIG[type] || MODAL_TYPE_CONFIG.info;
 
   const executeConfirm = useCallback(() => {
     const {
@@ -152,10 +134,7 @@ const AppModal = ({
 
     if (currentLoading) return;
 
-    if (
-      currentShowCancel &&
-      typeof currentOnCancel === "function"
-    ) {
+    if (currentShowCancel && typeof currentOnCancel === "function") {
       currentOnCancel();
       return;
     }
@@ -168,17 +147,14 @@ const AppModal = ({
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    previousActiveElementRef.current =
-      document.activeElement;
+    previousActiveElementRef.current = document.activeElement;
 
-    const previousOverflow =
-      document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
 
     document.body.style.overflow = "hidden";
 
     const handleTabKey = (event) => {
-      const focusableElements =
-        getFocusableElements(modalRef.current);
+      const focusableElements = getFocusableElements(modalRef.current);
 
       if (focusableElements.length === 0) {
         event.preventDefault();
@@ -187,30 +163,21 @@ const AppModal = ({
       }
 
       const firstElement = focusableElements[0];
-      const lastElement =
-        focusableElements[
-          focusableElements.length - 1
-        ];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
-      const activeElement =
-        document.activeElement;
+      const activeElement = document.activeElement;
 
       if (
         event.shiftKey &&
-        (
-          activeElement === firstElement ||
-          !modalRef.current?.contains(activeElement)
-        )
+        (activeElement === firstElement ||
+          !modalRef.current?.contains(activeElement))
       ) {
         event.preventDefault();
         lastElement.focus();
         return;
       }
 
-      if (
-        !event.shiftKey &&
-        activeElement === lastElement
-      ) {
+      if (!event.shiftKey && activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -222,10 +189,7 @@ const AppModal = ({
         return;
       }
 
-      if (
-        event.key !== "Enter" &&
-        event.key !== "Escape"
-      ) {
+      if (event.key !== "Enter" && event.key !== "Escape") {
         return;
       }
 
@@ -235,10 +199,7 @@ const AppModal = ({
        */
       if (
         event.key === "Enter" &&
-        (
-          isEditableElement(event.target) ||
-          isButtonElement(event.target)
-        )
+        (isEditableElement(event.target) || isButtonElement(event.target))
       ) {
         return;
       }
@@ -246,10 +207,7 @@ const AppModal = ({
       event.preventDefault();
       event.stopPropagation();
 
-      if (
-        typeof event.stopImmediatePropagation ===
-        "function"
-      ) {
+      if (typeof event.stopImmediatePropagation === "function") {
         event.stopImmediatePropagation();
       }
 
@@ -261,28 +219,17 @@ const AppModal = ({
       executeCancel();
     };
 
-    window.addEventListener(
-      "keydown",
-      handleKeyDown,
-      true
-    );
+    window.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown,
-        true
-      );
+      window.removeEventListener("keydown", handleKeyDown, true);
 
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
 
-      const previousActiveElement =
-        previousActiveElementRef.current;
+      const previousActiveElement = previousActiveElementRef.current;
 
       if (
-        previousActiveElement instanceof
-          HTMLElement &&
+        previousActiveElement instanceof HTMLElement &&
         document.contains(previousActiveElement)
       ) {
         previousActiveElement.focus();
@@ -290,11 +237,7 @@ const AppModal = ({
 
       previousActiveElementRef.current = null;
     };
-  }, [
-    isOpen,
-    executeConfirm,
-    executeCancel,
-  ]);
+  }, [isOpen, executeConfirm, executeCancel]);
 
   if (!isOpen) return null;
 
@@ -322,58 +265,33 @@ const AppModal = ({
   };
 
   return (
-    <div
-      className={styles.overlay}
-      onClick={handleOverlayClick}
-    >
+    <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
         ref={modalRef}
         className={`${styles.modal} ${config.className}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={
-          title ? titleId : undefined
-        }
-        aria-describedby={
-          message ? messageId : undefined
-        }
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={message ? messageId : undefined}
         tabIndex={-1}
         onClick={handleModalClick}
       >
         <div className={styles.body}>
-          <div
-            className={styles.iconWrapper}
-            aria-hidden="true"
-          >
+          <div className={styles.iconWrapper} aria-hidden="true">
             <span className={styles.icon}>
-              {config.iconSrc ? (
-                <img
-                  src={config.iconSrc}
-                  alt=""
-                  className={styles.iconGlyph}
-                  aria-hidden="true"
-                />
-              ) : (
-                config.icon
-              )}
+              <span className={styles.iconGlyph} />
             </span>
           </div>
 
           <div className={styles.content}>
             {title && (
-              <h3
-                id={titleId}
-                className={styles.title}
-              >
+              <h3 id={titleId} className={styles.title}>
                 {title}
               </h3>
             )}
 
             {message && (
-              <p
-                id={messageId}
-                className={styles.message}
-              >
+              <p id={messageId} className={styles.message}>
                 {message}
               </p>
             )}
@@ -399,9 +317,7 @@ const AppModal = ({
             disabled={loading}
             autoFocus
           >
-            {loading
-              ? "Procesando..."
-              : confirmText}
+            {loading ? "Procesando..." : confirmText}
           </button>
         </div>
       </div>

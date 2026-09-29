@@ -158,7 +158,9 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
 - **ESLint 9 flat config** en `eslint.config.mjs` (package.json es CommonJS, por eso `.mjs`):
   reglas `recommended` (`@eslint/js`) + `eslint-plugin-react` (jsx-runtime) +
   `eslint-plugin-react-hooks` (recommended). `no-console` con `allow: ["error"]` para preservar los
-  `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`.
+  `console.error` obligatorios en bloques `catch`. `no-unused-vars` en modo `warn`. `react/jsx-uses-vars`
+  en `error` sobre `**/*.{js,jsx,mjs}`: sin ella, todo componente importado para usarse solo como
+  etiqueta JSX se reportaba como variable sin usar (564 warnings que no eran deuda real; hoy son 187).
   `languageOptions.globals` declara los constructores DOM que el código y las suites usan
   (`Event`, `CustomEvent`, `KeyboardEvent`, `MouseEvent`, `HTMLElement`, `HTMLButtonElement`) como
   `readonly`, para que crearlos en los tests no dispare `no-undef`; el resto de globals del DOM no
@@ -172,9 +174,10 @@ Configurado en la rama `chore/tech-debt-foundations` (Fase 0, `KNOWN_ISSUES.md` 
   - `npm run format` — `prettier --write .` (normalización opt-in).
   - `npm run format:check` — `prettier --check .`.
 - **CI incremental:** el workflow `.github/workflows/ci.yml` corre ESLint y Prettier **únicamente
-  sobre los archivos del diff** (`git diff --diff-filter=ACM` contra la base del PR/push). Así los
-  archivos legacy sin formatear no rompen el pipeline; cualquier archivo nuevo o modificado queda
-  obligado a cumplir el estándar. No hay husky ni lint-staged (decisión Fase 0).
+  sobre los archivos del diff** (`git diff --diff-filter=ACM` contra la base del PR/push, filtrado con
+  `grep -E`, que es POSIX y está siempre disponible en el runner; una versión anterior usaba `rg` y no
+  evaluaba nada). Así los archivos legacy sin formatear no rompen el pipeline; cualquier archivo nuevo
+  o modificado queda obligado a cumplir el estándar. No hay husky ni lint-staged (decisión Fase 0).
 - **Node requerido: `>=22.22.2`** (declarado en `engines` de `package.json` y usado por el CI).
   `jsdom@30`/`undici@8` exigen Node 22.22.2+ y `vitest@5` 22.12+; **Node 20 no funciona** (el
   worker de Vitest falla al cargar jsdom con `webidl.util.markAsUncloneable is not a function`).

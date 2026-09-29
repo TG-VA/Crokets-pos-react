@@ -468,6 +468,16 @@ líneas agregadas/modificadas del diff, además de `npm test` y `npm run build:f
 preexistente arrastra 684 problemas de lint (140 errores, 544 warnings) que **no** se corrigen en
 esta fase; se saldan incrementalmente conforme se tocan los archivos. Ver `docs/TESTING.md`.
 
+**Mitigación (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):** la mayor parte de esa deuda era
+ruido de `no-unused-vars` y no deuda real. `eslint-plugin-react` estaba en la configuración, pero su
+regla `react/jsx-uses-vars` no se había activado, así que cada componente importado para usarse solo
+como etiqueta JSX (`<ProductsList />`) se reportaba como variable sin usar. Al activar la regla en el
+bloque de `**/*.{js,jsx,mjs}` (declarando el plugin en `plugins`), los warnings de `no-unused-vars`
+bajaron de **564 a 187** y el total del repo de **583 a 206 problemas, con 0 errores**. Los 206
+warnings restantes son deuda real y transversal (parámetros y helpers huérfanos en servicios y
+páginas) que se sigue saldando archivo por archivo; con el paso incremental de CI ya funcionando
+(#60), cada archivo que se toque queda obligado a cumplir el estándar.
+
 ### 9. Falta de Unit Tests para Utilidades Puras
 
 **Estado:** parcialmente resuelto — 9 de septiembre de 2026.
@@ -1896,9 +1906,90 @@ reciben cadenas propias calibradas contra su color objetivo. Re-medido sobre los
 ΔE00 máximo de los 13 iconos es **1.17**, por debajo del umbral de percepción. No queda verificación
 visual manual pendiente.
 
-Pendiente fuera de alcance: `AppModal.jsx` sigue usando `i` y `!` como pseudo-iconos para los tipos `info`, `warning` y
-`danger`; por `ICONS.md` corresponderían a `verifyIcon.svg` y `triangle-exclamation-solid-full.svg`. No se tocó para
-mantener el alcance de este ítem.
+**Pendiente fuera de alcance:** cerrado el 29 sep 2026 en la rama `fix/ci-eslint-and-modal-icons` (ver
+"cierre total" más abajo). El `i` y el `!` de `AppModal.jsx` ya no son pseudo-iconos de texto.
+
+**Cierre total (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):** con el CI incremental ya
+funcionando (#60), el reformateo de `AppModal.jsx` con Prettier se hizo obligatorio y el descriptor
+`MODAL_TYPE_CONFIG` quedó enteramente sobre SVG:
+
+- `info` pasó a `circle-info-solid-full.svg` (nuevo en el catálogo, agregado a `ICONS.md` en la tabla de
+  alertas y estado) y `warning` y `danger` a `triangle-exclamation-solid-full.svg` ya existente. El
+  glifo de texto deja de existir por completo: `MODAL_TYPE_CONFIG` conserva solo `className`, que es
+  lo único que el render necesita.
+- El icono es decorativo: el contenedor `.iconWrapper` ya tenía `aria-hidden="true"`, así que ningún
+  lector de pantalla anuncia nada. Al dejar de ser un `<img>`, ya no aplica `alt=""`.
+- Mecanismo de color: **máscara + `currentColor`**, no `filter`. El SVG se aplica como
+  `mask-image` sobre `.iconGlyph` y el relleno se pinta con `background-color: currentColor`, de modo
+  que el glifo hereda sin transformación el `color` que cada estado ya declara en `.iconWrapper`
+  (`#075985`, `#15803d`, `#ea7600`, `#dc2626`). La máscara es lo único que define la forma, así que
+  el color pintado es exactamente el color del estado por construcción CSS, sin aproximación
+  posible y sin cadena de filtros que mantener calibrada. `.warning .iconGlyph, .danger .iconGlyph`
+  comparten la misma máscara (mismo triángulo) y por eso la regla está agrupada.
+- Dimensiones: el círculo de información y el de éxito no ocupan lo mismo en su `viewBox` (el primero
+  es de 512 px a sangre y el segundo de 640 px con margen), y el triángulo de alerta es más bajo que
+  ancho. `.iconGlyph` conserva 30 px de base, `.info .iconGlyph` baja a 25 px y
+  `.warning .iconGlyph, .danger .iconGlyph` suben a 32 px, para que los tres pesos ópticos sean
+  comparables dentro del círculo de 60 px. Ninguna regla usa `!important`.
+- De paso se eliminó el `import React` por defecto de `AppModal.jsx`, que quedó sin uso con el runtime
+  automático de JSX y era el único warning de `no-unused-vars` en el archivo, y las declaraciones de
+  `font-size`/`font-weight`/`line-height` de `.icon`, que quedaron muertas al no renderizarse ya texto.
+
+Verificación: `npm test` en verde (84 archivos / 1,278 tests), `npm run build:frontend` en verde
+(EXIT 0) con los tres SVG emitidos como data URI en el CSS compilado, `npx eslint` sin errores sobre
+el diff y `npx prettier --check` en verde sobre el diff. No queda pendiente de este ítem.
+
+**Corrección de una medición previa (29 sep 2026, contra-auditoría).** Una versión intermedia de este
+cierre calibró los tintes con cadenas `filter` y verificó el resultado **simulando** la cadena en
+JavaScript, declarando ΔE00 de 0.02 a 0.58. Ese simulador no estaba validado contra un motor de
+renderizado y sus cifras no correspondían a lo que el navegador pintaba. Medido sobre el CSS real
+renderizado en Chromium, la regresión era de otra magnitud:
+
+| Estado | Render real | Objetivo | ΔE00 real | ΔE00 declarado |
+| ------ | ----------- | -------- | --------- | --------------- |
+| `info` | `#005184` | `#075985` | 3.30 | 0.02 |
+| `success` | `#21823f` | `#15803d` | 1.04 | 0.58 |
+| `warning` | `#7e7012` | `#ea7600` | **29.19** | 0.14 |
+| `danger` | `#dc430d` | `#dc2626` | **8.76** | 0.11 |
+
+`warning` se pintaba de oliva oscuro en lugar de naranja y `danger` de rojo-naranja en lugar de rojo,
+muy por encima del umbral de percepción (~2.3).
+
+La lección queda registrada como método: un color pintado con `filter` solo se puede verificar
+rasterizando en un motor real; una simulación propia de la especificación no es evidencia suficiente,
+por muchos decimales que devuelva.
+
+**Precisión sobre la línea base (29 sep 2026, segunda contra-auditoría).** Una versión anterior de
+este párrafo afirmaba que en `main` los cuatro glifos eran ΔE00 = 0.00 y que el paso a `filter`
+"empeoraba dos de los cuatro estados". Reconstruyendo `main` y el commit `68a6a52` y midiendo ambos
+en el motor, la línea base era mixta y la regresión afectaba a tres estados, no a dos:
+
+| Estado | `main` (9d2c3e4) | `68a6a52` (con `filter`) | HEAD (con máscara) |
+| ------ | ---------------- | ------------------------ | ----------------- |
+| `info` | 0.00 — glifo de texto | 3.30 | **0.00** |
+| `success` | 1.04 — ya era `<img>` con `filter` | 1.04 | **0.00** |
+| `warning` | 0.00 — glifo de texto | 29.19 | **0.00** |
+| `danger` | 0.00 — glifo de texto | 8.76 | **0.00** |
+
+Es decir: en `main`, `info`, `warning` y `danger` eran texto que heredaba `color` del contenedor y por
+tanto eran exactos, mientras que `success` **ya usaba un `<img>` con cadena `filter`** y pintaba
+`#21823f` con ΔE00 = 1.04. El paso a `filter` de `68a6a52` empeoró tres estados de cuatro (`info`,
+`warning` y `danger`); `success` no cambió porque su cadena ya existía en `main`, y se arrastró sin
+corregir. Esto no debilita el argumento, lo refuerza: la regresión era más ancha de lo registrado y
+estaba mal cuantificada por el mismo método no validado que se estaba criticando.
+
+La medición definitiva de esta versión se hizo rasterizando el **CSS compilado de `dist/`** con el DOM
+real del modal en Chromium (`--force-color-profile=srgb`, `--force-device-scale-factor=4`, sin
+animación de entrada), y da **ΔE00 = 0.00 en los cuatro estados**. Los tamaños de glifo los reporta el
+propio navegador por `getComputedStyle` (25, 30, 32 y 32 px) y el `filter` computado resulta `none`
+en los cuatro:
+
+| Estado | Color plano medido | Objetivo | ΔE00 |
+| ------ | ------------------ | -------- | ----- |
+| `info` | `#075985` | `#075985` | 0.00 |
+| `success` | `#15803d` | `#15803d` | 0.00 |
+| `warning` | `#ea7600` | `#ea7600` | 0.00 |
+| `danger` | `#dc2626` | `#dc2626` | 0.00 |
 
 ---
 
@@ -1967,7 +2058,7 @@ sucursal queda como el siguiente paso natural cuando sepas qué hardware se usar
 
 ### 60. Los pasos incrementales de ESLint y Prettier en CI no ejecutan nada
 
-**Estado:** abierto (registrado 29 sep 2026, rama `feature/ticket-printer-ipc-setup`).
+**Estado:** resuelto (29 sep 2026) — rama `fix/ci-eslint-and-modal-icons`.
 
 `.github/workflows/ci.yml` filtra el diff con `rg` en los pasos "ESLint (incremental sobre el diff)" y
 "Prettier (incremental sobre el diff)". `ripgrep` no viene preinstalado en los runners de
@@ -1982,12 +2073,79 @@ ejemplo, `electron/preload.js`, `src/components/SalesComponents/services/salesTi
 `src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js` no cumplen Prettier en
 `main`, y ese desfase se viene arrastrando desde la Fase 0.
 
-**Recomendación:** reemplazar `rg` por `grep -E` (disponible en el runner) o instalar `ripgrep` con
-`sudo apt-get install -y ripgrep` antes de los pasos. Al hacerlo, el pipeline empezará a fallar por
-los archivos legacy ya enumerados arriba: hay que decidir en la misma fase si se formatean (un commit
-de `style:` dedicado, con el ruido de reformatteo aislado del cambio funcional) o se amplían las
-excepciones de forma explícita. No se corrigió en la rama de #59 para no mezclar un arreglo de
-infraestructura de CI con el trabajo de impresión.
+**Resolución (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):**
+
+- `rg` se sustituyó por `grep -E` en los dos pasos incrementales. `grep` es POSIX y está presente en
+  cualquier runner Linux, con lo que la tubería vuelve a devolver nombres de archivo y `xargs -r`
+  invoca `npx eslint` / `npx prettier --check` sobre ellos. La alternativa de instalar `ripgrep` con
+  `apt-get` se descartó por añadir un paso de red a un pipeline que no la necesita.
+- La premisa del ítem se reprodujo antes de tocar nada: con `grep -E` el paso de Prettier falla
+  efectivamente sobre el archivo que esta rama modifica, `src/components/AppModal/AppModal.jsx`, que
+  estaba escrito a mano con un ancho de ~40 columnas y no cumplía `printWidth: 80` ni en `main`. Se
+  corrigió con `npx prettier --write` dentro del commit de iconos; el reformateo es ruido puro (sin
+  cambios de comportamiento) y quedó aislado del resto del PR.
+- Calibración del linter (#8): se activó `react/jsx-uses-vars` en el bloque de `**/*.{js,jsx,mjs}` de
+  `eslint.config.mjs`, declarando `eslint-plugin-react` en `plugins`. Sin esa regla, todo componente
+  importado y usado solo como etiqueta JSX (`<ProductsList />`) se reportaba como variable sin usar:
+  los warnings de `no-unused-vars` bajaron de **564 a 187** y el total del repo de **583 a 206
+  problemas, todos warnings y 0 errores**. `npx eslint .` sobre el diff de la rama queda en 0 errores.
+- Verificación de la premisa del ítem: `npm test` (84 archivos / 1,278 tests), `npm run
+  build:frontend` (EXIT 0) y `git diff --name-only origin/main | grep -E '\.(js|jsx|mjs|json|html|css)$'
+  | xargs -r npx prettier --check` en verde sobre el diff.
+
+**Deuda que queda (no bloqueante, registrada como #61):** con el paso ya funcional, el pipeline
+empezará a fallar la próxima vez que se toque un archivo que no cumpla Prettier en `main`. El
+alcance real es de **355 archivos** (ver #61), no de tres: una primera versión de este ítem
+subestimaba la deuda y habría dado una falsa idea de que la puerta de formato está casi limpia. La
+decisión tomada en esta fase fue **no** reformatear ninguno aquí: son archivos ajenos al alcance de
+este arreglo de infraestructura y `git blame` atribuiría el reformateo a una línea funcional. Se
+corrigen en un commit `style:` dedicado cuando se toquen.
+
+---
+
+### 61. Archivos legacy que incumplen Prettier y bloquearán el CI cuando se toquen
+
+**Estado:** abierto (registrado 29 sep 2026, corregido en alcance el 29 sep 2026, rama
+`fix/ci-eslint-and-modal-icons`).
+
+Consecuencia directa de resolver #60: el paso incremental de Prettier del CI ahora se ejecuta de
+verdad, así que cualquier archivo que se modifique debe cumplir `.prettierrc.json`.
+
+**Alcance real medido (no estimarse):** con `npx prettier --check .` sobre la rama, **370 archivos
+del repositorio incumplen Prettier**, de los cuales **355** matchean el filtro del paso incremental
+(`js|jsx|mjs|json|html|css`) y por lo tanto harían fallar el pipeline en cuanto se toquen. Los 15
+restantes son `.md` y `.MD`, que el filtro todavía no cubre. En `main` las cifras son 371 y 356
+respectivamente: esta rama solo mejoró el conteo en un archivo (`AppModal.jsx`, reformateado por
+obligación de #60).
+
+> Nota de método (29 sep 2026): una versión anterior de este párrafo decía 371, 16 y 372. El error
+> fue contar como archivo la línea de resumen que Prettier emite al final (`Code style issues found
+> in 370 files.`), que no es una ruta. Al contar solo rutas reales, `355 + 15 = 370` cierra, y en
+> `main` `356 + 15 = 371`. El número que decide el comportamiento del pipeline, 355, era correcto
+> desde el principio.
+
+Entre los 355 se encuentran los tres que motivaron el registro original, y que son los más probables
+de tocarse pronto por estar en el flujo de impresión y de historial de ventas:
+
+- `electron/preload.js`
+- `src/components/SalesComponents/services/salesTicketService.js`
+- `src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js`
+
+**Impacto:** ninguno mientras no se toquen (el pipeline solo evalúa el diff), pero es alto en la
+práctica: **casi cualquier archivo de `src/` que se modifique hará fallar el PR por formato**, en
+archivos cuyo cambio funcional es independiente del estilo. No es un obstáculo que se pueda absorber
+PR a PR sin una barrida previa.
+
+**Recomendación:** antes de tocar funcionalidad en un archivo que ya falla, o como paso propio:
+
+1. `npx prettier --write <archivo>` en un commit `style:` dedicado, sin cambios de comportamiento.
+2. Verificar con `npx prettier --check <archivo>` y confirmar que `npm test` (84 archivos / 1,278
+   tests) y `npm run build:frontend` siguen en verde, porque el reescritor solo cambia espaciado y
+   saltos de línea.
+3. A medio plazo, evaluar si conviene una barrida global en rama propia. Dado el volumen (355
+   archivos), es preferible a seguir acumulando PRs que fallan por formato. Debe decidirse con el
+   responsable antes de hacerlo, porque el diff de esa barrida sería grande y no encaja en un PR de
+   funcionalidad.
 
 ---
 
