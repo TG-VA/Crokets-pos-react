@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { 
-  getBranchesList, getCashiersList, getSaleDetailsById, 
-  loadSalesReport, 
-  getAllSalesForExport, getDetailedSalesForExport 
+import {
+  getBranchesList, getCashiersList, getSaleDetailsById,
+  loadSalesReport,
+  getAllSalesForExport, getDetailedSalesForExport
 } from "../services/salesReportService";
 import { generateSummaryExcel, generateDetailedExcel } from "../services/excelExportService";
 import { getTimezoneOffset, formatYMD } from "../utils/dateUtils"; // <-- IMPORTACIÓN PURA
