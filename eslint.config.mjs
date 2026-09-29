@@ -20,6 +20,9 @@ export default [
   reactHooks.configs.flat.recommended,
   {
     files: ["**/*.{js,jsx,mjs}"],
+    plugins: {
+      react,
+    },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -83,6 +86,7 @@ export default [
         "warn",
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
+      "react/jsx-uses-vars": "error",
     },
   },
   {
