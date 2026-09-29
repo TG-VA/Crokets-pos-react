@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (25 sep 2026)
+## Cobertura actual (28 sep 2026)
 
-51 archivos de test (**663 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+81 archivos de test (**1225 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área | Archivo |
@@ -62,6 +62,23 @@ y el proceso principal de Electron:
 | Reportes: ciclo de vida del dashboard | `.../PageReportsHome/hooks/useReportsDashboard.test.js` |
 | Ventas: sincronización de columnas | `.../SalesComponents/hooks/useSalesTableColumns.test.js` |
 | Ventas: atajos de teclado | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js` |
+| Facturación: validación fiscal | `.../InvoicesComponents/services/fiscalValidationService.test.js` |
+| Facturación: catálogos (usos CFDI, regímenes, C.P.) | `.../InvoicesComponents/services/invoicesCatalogService.test.js` |
+| Facturación: suscripciones realtime | `.../InvoicesComponents/services/invoicesRealtimeService.test.js` |
+| Facturación: formateadores compartidos | `.../InvoicesComponents/utils/invoiceFormatters.test.js` |
+| Facturación: cliente fiscal (cálculos) | `.../Modals/FiscalCustomerModal/services/fiscalCustomerCalculationService.test.js` |
+| Facturación: cliente fiscal (datos) | `.../Modals/FiscalCustomerModal/services/fiscalCustomerService.test.js` |
+| Facturación: factura de venta (cálculos) | `.../Modals/InvoiceSaleModal/services/invoiceSaleCalculationService.test.js` |
+| Facturación: factura de venta (datos) | `.../Modals/InvoiceSaleModal/services/invoiceSaleService.test.js` |
+| Facturación: clientes fiscales (cálculos) | `.../InvoiceCustomers/services/invoiceCustomersCalculationService.test.js` |
+| Facturación: clientes fiscales (datos) | `.../InvoiceCustomers/services/invoiceCustomersService.test.js` |
+| Facturación: ajustes del emisor (cálculos) | `.../InvoiceSettings/services/invoiceSettingsCalculationService.test.js` |
+| Facturación: ajustes del emisor (datos) | `.../InvoiceSettings/services/invoiceSettingsService.test.js` |
+| Facturación: historial (cálculos) | `.../InvoicesHistory/services/invoicesHistoryCalculationService.test.js` |
+| Facturación: historial (datos del reporte) | `.../InvoicesHistory/services/invoicesHistoryReportService.test.js` |
+| Facturación: historial (detalle 360) | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js` |
+| Facturación: ventas por facturar (cálculos) | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js` |
+| Facturación: ventas por facturar (datos) | `.../InvoicesPending/services/invoicesPendingService.test.js` |
 
 ## Patrones y convenciones
 
@@ -100,11 +117,22 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   `useSalesTableColumns.test.js` fija que cada listener de `mousedown` se empareja con su `mouseup`
   y que una columna reordenada invalida los cierres previos; `useSalesKeyboardShortcuts.test.js`
   fija que los atajos leen siempre las props vigentes sin re-registrar el listener.
+- **Servicios de Facturación** (28 sep 2026, 294 casos en 17 archivos, rama
+  `refactor/invoices-modularization-and-dip`): las 14 suites nuevas cubren los 16 servicios de
+  cálculo y datos de las cuatro pantallas y los dos modales (payload de factura interna, conceptos y
+  pagos derivados de la venta, ensamble del payload fiscal del cliente, normalización de RFC y
+  C.P., rangos del día con desfase `-05:00`, filtrado de ventas sin factura, y los contratos de
+  consulta de `customers`, `sales`, `invoices`, `invoice_items`, `invoice_payments` y códigos
+  postales). `invoicesRealtimeService.test.js` fija el contrato que la auditoría de #54 rompió: un
+  binding `postgres_changes` por tabla con `table` resuelto, un solo `.subscribe()` y el payload
+  entregado a `onChange`.
 
 No hay todavía:
 
 - Tests de componentes/UI ni de flujos de integración. Las vistas presentacionales del corte
-  (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas.
+  (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas. Lo mismo aplica a
+  los 25 subcomponentes de Facturación (`.../InvoicesComponents/**/components/`): son de render y
+  reciben el estado ya resuelto del hook.
 - Tests del backend Express/SQLite (`src/backend/server.js` y `bd.js`): `app.listen()` y la apertura
   de SQLite ocurren al importar el módulo, por lo que requieren un desacople previo. La
   inicialización de Express/SQLite **no** vive en `electron/main.js`.

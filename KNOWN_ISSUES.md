@@ -1538,25 +1538,73 @@ documentada y quedan fuera del alcance de este ítem.
 
 ### 55. Componentes monolíticos y violación de DIP en el módulo de Facturación (`Invoices`)
 
-**Estado:** abierto (25 sep 2026).
+**Estado:** resuelto (28 sep 2026) — rama `refactor/invoices-modularization-and-dip`.
 
 De manera idéntica al módulo de Clientes, el módulo de Facturación (`src/components/InvoicesComponents/`)
-contiene componentes monolíticos masivos que concentran lógica fiscal, catálogos del SAT, validaciones de RFC/CP,
+contenía componentes monolíticos masivos que concentraban lógica fiscal, catálogos del SAT, validaciones de RFC/CP,
 mutaciones a base de datos y renderizado visual:
 
-- `FiscalCustomerModal.jsx` (883 líneas): validación de datos fiscales, autocompletado de C.P., catálogos SAT y llamadas directas a `customers`.
+- `FiscalCustomerModal.jsx` (884 líneas): validación de datos fiscales, autocompletado de C.P., catálogos SAT y llamadas directas a `customers`.
 - `InvoiceSettings.jsx` (824 líneas): configuración de emisor, certificados y régimen fiscal.
-- `InvoiceSaleModal.jsx` (809 líneas): emisión de factura a partir de venta con múltiples pasos y queries inline.
-- `InvoiceCustomers.jsx` (790 líneas): administración de clientes de facturación con suscripción realtime embebida.
-- `InvoicesHistory.jsx` (613 líneas): historial y descarga de XML/PDF.
+- `InvoiceSaleModal.jsx` (810 líneas): emisión de factura a partir de venta con múltiples pasos y queries inline.
+- `InvoiceCustomers.jsx` (785 líneas): administración de clientes de facturación con suscripción realtime embebida.
+- `InvoicesHistory.jsx` (624 líneas): historial y descarga de XML/PDF.
+- `InvoicesPending.jsx` (374 líneas): ventas completadas sin factura de la sucursal.
 
-Todos importan directamente el cliente `supabase`, incumpliendo DIP y dificultando el mocking y testing.
+Todos importaban directamente el cliente `supabase`, incumpliendo DIP y dificultando el mocking y testing.
 
 **Impacto:** deuda técnica acumulada en un dominio crítico (facturación y cumplimiento SAT), con componentes
 frágiles y difíciles de auditar o refactorizar.
 
 **Recomendación:** aplicar el mismo patrón de segregación: servicios puros de facturación (`invoiceService.js`,
 `fiscalCustomerService.js`), hooks de estado y subcomponentes visuales desacoplados.
+
+**Bitácora de solución (28 sep 2026, rama `refactor/invoices-modularization-and-dip`):** tres commits atómicos:
+`1fdeded` (servicios), `a2072a3` (tests) y `f0c1e81` (componentes, hooks y subcomponentes).
+
+1. **Servicios.** 16 archivos en `services/` y 3 en `utils/`: por hoja hay un `*Service.js` de datos
+   (único que importa `supabase`), un `*CalculationService.js` puro y, en Clientes, un
+   `*DetailService.js` para las consultas bajo demanda. Los catálogos (usos CFDI, regímenes, códigos
+   postales) y las suscripciones realtime son servicios compartidos por las seis unidades.
+2. **Hooks.** Seis hooks de página y de modal (`useInvoiceSettings`, `useInvoiceCustomers`,
+   `useInvoicesHistory`, `useInvoicesPending`, `useFiscalCustomerModal`, `useInvoiceSaleModal`) que
+   concentran estado, ciclo de vida y coordinación; los modales reutilizan `useAppModal` en lugar de
+   repetir el estado del modal de confirmación.
+3. **Vistas.** 25 subcomponentes presentacionales que solo reciben estado y emiten eventos, más
+   `fiscalCustomerViewUtils.js` y `invoiceSettingsFormatters.js` para las clases de estado y el
+   formateo de fechas.
+
+**Correcciones detectadas en el camino:**
+
+- **Realtime sin `subscribe()` (regresión funcional).** Los canales de `InvoiceCustomers` y
+  `InvoicesPending` se registraban con `.on(...)` pero nunca llamaban a `.subscribe()`, así que no
+  llegaban eventos; además el callback descartaba el payload. Ahora ambos usan
+  `invoicesRealtimeService.js`, que resuelve `table` por binding, llama a `.subscribe()` una vez y
+  entrega el payload a `onChange`, y `InvoiceCustomers` filtra por `shouldRefreshOnCustomerChange`
+  para no recargar los clientes fiscales por altas de ventas o puntos. Es la lección de la auditoría
+  de #54 aplicada desde el diseño. Cubierto por `invoicesRealtimeService.test.js`.
+- **Teléfono vacío tratado como duplicado.** `isPhoneAlreadyFiscalCustomer` compara el teléfono ya
+  ya normalizado, de modo que un cliente con teléfono vacío no bloquea el alta de otro.
+- **Documentación engañosa del total histórico.** El comentario de la suma de facturas anunciaba que
+  las canceladas se excluían del acumulado; el cálculo sí las incluye, igual que antes del refactor.
+  Se corrigió el comentario, no el cálculo.
+- **Imports relativos rotos en los subcomponentes nuevos.** Los componentes de `components/`
+  importaban `./X.module.css` (el CSS vive en la raíz de la unidad) y los iconos con cuatro niveles
+  en lugar de cinco; `InvoicesHistory.jsx` apuntaba a `../../../utils/invoiceFormatters` en lugar de
+  `../../utils/...`, y `InvoiceSettingsTimbresSection.jsx` importaba un `./InvoiceSettingsDateFormatters`
+  inexistente. El build de producción falló y se corrigió lo que reveló.
+
+**Verificación:** `npm test` en **81 archivos / 1225 tests** (antes 64/931; los 16 servicios nuevos
+suman 294 casos en 17 archivos del módulo) y `npm run build:frontend` en `EXIT=0`. ESLint del módulo:
+**9 errores en `e3a8b67` → 0** (los nueve eran `react-hooks/set-state-in-effect`, silenciados con
+`eslint-disable-next-line` y su justificación porque pertenecen a #56); los 37 warnings restantes son
+los `no-unused-vars` sobre imports usados solo en JSX, herencia de `eslint.config.mjs` que no
+habilita `react/jsx-uses-vars`. Paridad comprobada de forma mecánica: 112/112 clases de CSS idénticas,
+todas las cadenas de texto visible comparadas unidad por unidad contra `main` (los únicos agregados son
+literales de etiquetas en descriptores de datos y comentarios de servicio), props padre→hijo validadas
+contra la firma de cada subcomponente, y todas las referencias `styles.*` resueltas contra su módulo.
+Las queries conservan selects, filtros, orden y límites; los padres quedaron entre 79 y 151 líneas y
+ningún `.jsx` del módulo supera las 176.
 
 ---
 

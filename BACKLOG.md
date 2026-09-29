@@ -26,7 +26,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Propagar la comisión del departamento a **todos** sus productos al confirmar propagación (sin filtrar por la comisión previa del departamento; las decisiones individuales de producto mandan solo hasta la próxima propagación) — ver `KNOWN_ISSUES.md` #51
 - [x] Congelar comisiones en la venta (`sale_details`) y desacoplar el reporte del catálogo vivo — migración `20260921170000`, ver `KNOWN_ISSUES.md` #52 y `SCHEMA.md`
 - [x] Modularizar componentes monolíticos y desacoplar DIP en el módulo de Clientes (`Customers`) — ver `KNOWN_ISSUES.md` #54
-- [ ] Modularizar componentes monolíticos y desacoplar DIP en el módulo de Facturación (`Invoices`) — ver `KNOWN_ISSUES.md` #55
+- [x] Modularizar componentes monolíticos y desacoplar DIP en el módulo de Facturación (`Invoices`) — resuelto (28 sep 2026, rama `refactor/invoices-modularization-and-dip`): 16 servicios, 6 hooks y 25 subcomponentes; 6 monolitos de 374-884 líneas reducidos a padres de 79-151; módulo de 9 a 0 errores de ESLint; suite en 81 archivos / 1225 tests; ver `KNOWN_ISSUES.md` #55
 
 ## Prioridad Media (Infraestructura y Testing)
 
