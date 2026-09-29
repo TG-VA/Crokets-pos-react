@@ -61,16 +61,19 @@
 .icon {
   position: relative;
   z-index: 1;
-  font-size: 31px;
-  font-weight: 950;
-  line-height: 1;
 }
 
+/* La forma del SVG se aplica como máscara y el relleno toma currentColor, así el glifo
+   hereda el color exacto del estado sin cadenas de filter que aproximan el tinte. */
 .iconGlyph {
   display: block;
   width: 30px;
   height: 30px;
   pointer-events: none;
+  background-color: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
 }
 
 .content {
@@ -169,12 +172,12 @@
     0 0 0 8px rgba(16, 146, 177, 0.08);
 }
 
-/* Los SVG del catálogo se sirven en negro: el tinte se reproduce con filter. */
+/* Los viewBox no coinciden (512 a sangre frente a 640 con margen): se ajusta el tamaño
+   para igualar el peso óptico dentro del círculo de 60 px. */
 .info .iconGlyph {
   width: 25px;
   height: 25px;
-  filter: brightness(0) saturate(100%) invert(60%) sepia(23%) saturate(1603%)
-    hue-rotate(153deg) brightness(51%) contrast(157%);
+  mask-image: url("../../assets/icons/circle-info-solid-full.svg");
 }
 
 .info .confirmButton {
@@ -214,8 +217,7 @@
 }
 
 .success .iconGlyph {
-  filter: brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%)
-    hue-rotate(75deg) brightness(51%) contrast(81%);
+  mask-image: url("../../assets/icons/circle-check-solid-full.svg");
 }
 
 .success .title {
@@ -261,11 +263,7 @@
 .danger .iconGlyph {
   width: 32px;
   height: 32px;
-}
-
-.warning .iconGlyph {
-  filter: brightness(0) saturate(100%) invert(21%) sepia(32%) saturate(1508%)
-    hue-rotate(20deg) brightness(179%) contrast(86%);
+  mask-image: url("../../assets/icons/triangle-exclamation-solid-full.svg");
 }
 
 .warning .confirmButton {
@@ -288,11 +286,6 @@
   box-shadow:
     0 0 0 1px #fecaca inset,
     0 0 0 8px rgba(220, 38, 38, 0.08);
-}
-
-.danger .iconGlyph {
-  filter: brightness(0) saturate(100%) invert(68%) sepia(40%) saturate(5116%)
-    hue-rotate(330deg) brightness(74%) contrast(151%);
 }
 
 .danger .confirmButton {

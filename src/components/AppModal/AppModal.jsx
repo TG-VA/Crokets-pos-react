@@ -1,29 +1,18 @@
 import { useCallback, useEffect, useId, useRef } from "react";
 
 import styles from "./AppModal.module.css";
-import CircleCheckIcon from "../../assets/icons/circle-check-solid-full.svg";
-import CircleInfoIcon from "../../assets/icons/circle-info-solid-full.svg";
-import TriangleExclamationIcon from "../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const MODAL_TYPE_CONFIG = {
   info: {
-    icon: null,
-    iconSrc: CircleInfoIcon,
     className: styles.info,
   },
   success: {
-    icon: null,
-    iconSrc: CircleCheckIcon,
     className: styles.success,
   },
   warning: {
-    icon: null,
-    iconSrc: TriangleExclamationIcon,
     className: styles.warning,
   },
   danger: {
-    icon: null,
-    iconSrc: TriangleExclamationIcon,
     className: styles.danger,
   },
 };
@@ -290,16 +279,7 @@ const AppModal = ({
         <div className={styles.body}>
           <div className={styles.iconWrapper} aria-hidden="true">
             <span className={styles.icon}>
-              {config.iconSrc ? (
-                <img
-                  src={config.iconSrc}
-                  alt=""
-                  className={styles.iconGlyph}
-                  aria-hidden="true"
-                />
-              ) : (
-                config.icon
-              )}
+              <span className={styles.iconGlyph} />
             </span>
           </div>
 
