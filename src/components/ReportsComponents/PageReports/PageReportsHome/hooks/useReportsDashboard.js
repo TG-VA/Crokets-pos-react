@@ -3,8 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getBranchesCatalog,
   getEmptyReportsDashboard,
-  getReportsDashboard,
+  loadReportsDashboard,
 } from "../services/reportsDashboardService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 const AUTO_REFRESH_INTERVAL = 300_000; // 5 minutos
 
@@ -21,7 +23,6 @@ const useReportsDashboard = () => {
     getEmptyReportsDashboard()
   );
 
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,57 +57,42 @@ const useReportsDashboard = () => {
     };
   }, []);
 
+  // `loading` se deriva de la sucursal pedida: cambiar de sucursal marca la
+  // carga como pendiente en la misma pasada de render, sin un setState sincrono
+  // que provocara un re-render en cascada. Las recargas silenciosas no cambian
+  // la clave, asi que no encienden el spinner principal y usan solo `refreshing`.
+  const { loading, isStale: isBranchStale, markSettled } =
+    useRequestStatus(selectedBranchId);
+
+  const errorVisible = isBranchStale ? "" : error;
+
+  // El panel se vacia al cambiar de sucursal durante el render, no desde un
+  // efecto, para no mostrar datos de la sucursal anterior bajo el spinner.
+  useDidChange(selectedBranchId, () => {
+    setDashboard(getEmptyReportsDashboard());
+  });
+
   const loadDashboard = useCallback(
-    async ({ silent = false } = {}) => {
+    ({ silent = false } = {}) => {
       const currentRequestId = requestIdRef.current + 1;
       requestIdRef.current = currentRequestId;
 
       if (silent) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
       }
 
       setError("");
       lastFetchTimeRef.current = Date.now();
 
-      try {
-        const result = await getReportsDashboard(selectedBranchId);
+      const isStale = () =>
+        !mountedRef.current || currentRequestId !== requestIdRef.current;
 
-        const isCurrentRequest =
-          currentRequestId === requestIdRef.current;
-
-        if (!mountedRef.current || !isCurrentRequest) {
-          return;
-        }
-
-        setDashboard(result);
-      } catch (loadError) {
-        const isCurrentRequest =
-          currentRequestId === requestIdRef.current;
-
-        if (!mountedRef.current || !isCurrentRequest) {
-          return;
-        }
-
-        console.error(
-          "Error cargando el dashboard de reportes:",
-          loadError
-        );
-
-        setError(
-          loadError?.message ||
-            "No se pudo cargar el resumen de reportes."
-        );
-      } finally {
-        const isCurrentRequest =
-          currentRequestId === requestIdRef.current;
-
-        if (mountedRef.current && isCurrentRequest) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
+      return loadReportsDashboard(selectedBranchId, {
+        isStale,
+        onData: setDashboard,
+        onError: setError,
+        onSettled: () => setRefreshing(false),
+      });
     },
     [selectedBranchId]
   );
@@ -132,10 +118,27 @@ const useReportsDashboard = () => {
   }, []);
 
   useEffect(() => {
-    setDashboard(getEmptyReportsDashboard());
+    const currentRequestId = requestIdRef.current + 1;
+    requestIdRef.current = currentRequestId;
 
-    loadDashboard();
-  }, [selectedBranchId, loadDashboard]);
+    lastFetchTimeRef.current = Date.now();
+
+    const isStale = () =>
+      !mountedRef.current || currentRequestId !== requestIdRef.current;
+
+    loadReportsDashboard(selectedBranchId, {
+      isStale,
+      // El error anterior se limpia al llegar datos nuevos; mientras la carga
+      // esta pendiente ya queda oculto por `errorVisible`, asi que no hace
+      // falta un setState sincrono al inicio del efecto.
+      onData: (result) => {
+        setDashboard(result);
+        setError("");
+      },
+      onError: setError,
+      onSettled: markSettled,
+    });
+  }, [selectedBranchId, markSettled]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -160,7 +163,7 @@ const useReportsDashboard = () => {
     dashboard,
     loading,
     refreshing,
-    error,
+    error: errorVisible,
     branches,
     selectedBranchId,
     setSelectedBranchId,

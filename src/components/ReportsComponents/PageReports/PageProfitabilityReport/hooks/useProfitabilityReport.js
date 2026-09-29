@@ -5,10 +5,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  fetchProfitabilityReportData,
   fetchBranchesList,
+  loadProfitabilityReport,
 } from "../services/profitabilityReportService";
 import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 export const useProfitabilityReport = (initialBranchId = "ALL") => {
   const [branchId, setBranchId] = useState(initialBranchId);
@@ -53,7 +54,6 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
     totalSalesCount: 0,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [syncedAt, setSyncedAt] = useState(null);
 
@@ -74,35 +74,68 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
     setBranchId(initialBranchId);
   }
 
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setIsLoading(true) sincrono, que provocaba un re-render en cascada.
+  const requestKey = useMemo(
+    () => `${branchId}|${departmentId}|${startDate}|${endDate}`,
+    [branchId, departmentId, startDate, endDate]
+  );
+  const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? null : error;
+
   // Función de carga principal
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchProfitabilityReportData({
-        branchId,
-        departmentId,
-        startDate,
-        endDate,
-      });
-
-      setReportData(data);
-      if (data.departmentsList) {
-        setDepartmentsList(data.departmentsList);
-      }
-      setSyncedAt(new Date().toISOString());
-    } catch (err) {
-      console.error("Error al cargar reporte de rentabilidad:", err);
-      setError("No se pudieron cargar los datos de rentabilidad.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [branchId, departmentId, startDate, endDate]);
+  const loadData = useCallback(
+    () =>
+      loadProfitabilityReport(
+        { branchId, departmentId, startDate, endDate },
+        {
+          onData: (data) => {
+            setReportData(data);
+            if (data.departmentsList) {
+              setDepartmentsList(data.departmentsList);
+            }
+            setError(null);
+            setSyncedAt(new Date().toISOString());
+          },
+          onError: setError,
+          onSettled: markSettled,
+        }
+      ),
+    [branchId, departmentId, startDate, endDate, markSettled]
+  );
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+
+    loadProfitabilityReport(
+      { branchId, departmentId, startDate, endDate },
+      {
+        onData: (data) => {
+          if (cancelled) return;
+          setReportData(data);
+          if (data.departmentsList) {
+            setDepartmentsList(data.departmentsList);
+          }
+          setError(null);
+          setSyncedAt(new Date().toISOString());
+        },
+        onError: (message) => {
+          if (cancelled) return;
+          setError(message);
+        },
+        onSettled: () => {
+          if (cancelled) return;
+          markSettled();
+        },
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId, departmentId, startDate, endDate, markSettled]);
 
   // Manejo de ordenamiento
   const handleSort = useCallback((columnKey) => {
@@ -242,7 +275,7 @@ export const useProfitabilityReport = (initialBranchId = "ALL") => {
     criticalProducts,
     kpis: reportData.kpis,
     isLoading,
-    error,
+    error: visibleError,
     syncedAt,
     refresh: loadData,
   };

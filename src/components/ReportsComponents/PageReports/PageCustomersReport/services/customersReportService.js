@@ -298,5 +298,31 @@ export const fetchCustomersReportData = async ({
   }
 };
 
+/**
+ * Carga el reporte de clientes y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ branchId: string, customerType: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadCustomersReport = async (
+  { branchId, customerType },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(await fetchCustomersReportData({ branchId, customerType }));
+  } catch (err) {
+    onError("No se pudieron cargar los datos del reporte de clientes.");
+  } finally {
+    onSettled();
+  }
+};
+
 // Re-exportar fetchCustomerDetailReport para retrocompatibilidad
 export { fetchCustomerDetailReport } from "./customerDetailService";

@@ -157,3 +157,30 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
     deadStock,
   };
 };
+
+/**
+ * Carga el reporte de productos y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setIsLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ startDate: string, endDate: string, branchId: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadProductsReport = async (
+  { startDate, endDate, branchId },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(await fetchProductsReportData({ startDate, endDate, branchId }));
+  } catch (err) {
+    console.error("Error consultando reporte de productos:", err);
+    onError("Ocurrió un error al extraer los datos de la base de datos.");
+  } finally {
+    onSettled();
+  }
+};
