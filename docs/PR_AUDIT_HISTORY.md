@@ -2093,10 +2093,10 @@ espacios en blanco que contradicen la afirmación de "higiene estricta" del resu
   línea, por eso el control de EOF 60/60 pasa igual: lo que sobra es un `\n` de más, no la ausencia del
   último.
 
-Ambos son triviales y de un solo carácter, y ninguna regla de ESLint los detecta. Se corrigen con
-`prettier --write` sobre los dos archivos. Se registran porque la bitácora no debe afirmar "higiene
-estricta" donde `git diff --check` dice lo contrario; el resto de los puntos de higiene sí se reprodujeron
-(0 `console.log`/`console.warn`, 0 emojis, 0 `!important`, 60/60 de EOF).
+Ambos son triviales y de un solo carácter, y ninguna regla de ESLint los detecta. Se corrigieron en el
+commit siguiente (`e8b8208`), dejando `git diff --check origin/main..HEAD` en 0 avisos. Con esa corrección,
+el 100% de los puntos de higiene se cumplen (0 `console.log`/`console.warn`, 0 emojis, 0 `!important`,
+`git diff --check` limpio y 60/60 de EOF).
 
 **H2 (no bloqueante, cobertura) — la migración no dejó red de seguridad propia.** La rama mueve el
 comportamiento de 52 efectos a estado derivado y a dos abstracciones nuevas, pero su cobertura nueva se
