@@ -290,38 +290,3 @@ export const getReportsDashboard = async (
   };
 };
 
-/**
- * Carga el dashboard de reportes y entrega el resultado por callbacks.
- *
- * La orquestacion vive en el servicio para que el efecto que dispara la consulta
- * no escriba estado: todas las actualizaciones de React ocurren en la
- * continuacion asincrona, ya despues del `await`. `isStale` permite que el hook
- * descarte respuestas de peticiones que ya quedaron obsoletas, en lugar de
- * depender de un setState sincrono para marcar la carga.
- *
- * @param {string} branchId
- * @param {{ isStale: Function, onData: Function, onError: Function, onSettled: Function }} handlers
- */
-export const loadReportsDashboard = async (
-  branchId,
-  { isStale, onData, onError, onSettled }
-) => {
-  try {
-    const result = await getReportsDashboard(branchId);
-
-    if (isStale()) return;
-
-    onData(result);
-  } catch (loadError) {
-    if (isStale()) return;
-
-    console.error("Error cargando el dashboard de reportes:", loadError);
-
-    onError(
-      loadError?.message || "No se pudo cargar el resumen de reportes."
-    );
-  } finally {
-    if (!isStale()) onSettled();
-  }
-};
-
