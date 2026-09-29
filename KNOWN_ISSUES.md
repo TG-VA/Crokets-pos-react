@@ -1947,21 +1947,42 @@ renderizado en Chromium, la regresión era de otra magnitud:
 
 | Estado | Render real | Objetivo | ΔE00 real | ΔE00 declarado |
 | ------ | ----------- | -------- | --------- | --------------- |
-| `info` | `#005184` | `#075985` | 3.35 | 0.02 |
+| `info` | `#005184` | `#075985` | 3.30 | 0.02 |
 | `success` | `#21823f` | `#15803d` | 1.04 | 0.58 |
 | `warning` | `#7e7012` | `#ea7600` | **29.19** | 0.14 |
 | `danger` | `#dc430d` | `#dc2626` | **8.76** | 0.11 |
 
 `warning` se pintaba de oliva oscuro en lugar de naranja y `danger` de rojo-naranja en lugar de rojo,
-muy por encima del umbral de percepción (~2.3). Peor: en `main` los glifos `"i"` y `"!"` eran texto
-que heredaba `color` del contenedor, es decir **ΔE00 = 0.00 exacto**, de modo que el paso a `filter`
-empeoraba dos de los cuatro estados mientras se documentaba como mejora. La lección queda registrada
-como método: un color pintado con `filter` solo se puede verificar rasterizando en un motor real; una
-simulación propia de la especificación no es evidencia suficiente, por muchos decimales que devuelva.
+muy por encima del umbral de percepción (~2.3).
+
+La lección queda registrada como método: un color pintado con `filter` solo se puede verificar
+rasterizando en un motor real; una simulación propia de la especificación no es evidencia suficiente,
+por muchos decimales que devuelva.
+
+**Precisión sobre la línea base (29 sep 2026, segunda contra-auditoría).** Una versión anterior de
+este párrafo afirmaba que en `main` los cuatro glifos eran ΔE00 = 0.00 y que el paso a `filter`
+"empeoraba dos de los cuatro estados". Reconstruyendo `main` y el commit `68a6a52` y midiendo ambos
+en el motor, la línea base era mixta y la regresión afectaba a tres estados, no a dos:
+
+| Estado | `main` (9d2c3e4) | `68a6a52` (con `filter`) | HEAD (con máscara) |
+| ------ | ---------------- | ------------------------ | ----------------- |
+| `info` | 0.00 — glifo de texto | 3.30 | **0.00** |
+| `success` | 1.04 — ya era `<img>` con `filter` | 1.04 | **0.00** |
+| `warning` | 0.00 — glifo de texto | 29.19 | **0.00** |
+| `danger` | 0.00 — glifo de texto | 8.76 | **0.00** |
+
+Es decir: en `main`, `info`, `warning` y `danger` eran texto que heredaba `color` del contenedor y por
+tanto eran exactos, mientras que `success` **ya usaba un `<img>` con cadena `filter`** y pintaba
+`#21823f` con ΔE00 = 1.04. El paso a `filter` de `68a6a52` empeoró tres estados de cuatro (`info`,
+`warning` y `danger`); `success` no cambió porque su cadena ya existía en `main`, y se arrastró sin
+corregir. Esto no debilita el argumento, lo refuerza: la regresión era más ancha de lo registrado y
+estaba mal cuantificada por el mismo método no validado que se estaba criticando.
 
 La medición definitiva de esta versión se hizo rasterizando el **CSS compilado de `dist/`** con el DOM
-real del modal en Chromium (`--force-color-profile=srgb`, sin animación de entrada, muestreo dentro
-del bounding box exacto de cada glifo), y da **ΔE00 = 0.00 en los cuatro estados**:
+real del modal en Chromium (`--force-color-profile=srgb`, `--force-device-scale-factor=4`, sin
+animación de entrada), y da **ΔE00 = 0.00 en los cuatro estados**. Los tamaños de glifo los reporta el
+propio navegador por `getComputedStyle` (25, 30, 32 y 32 px) y el `filter` computado resulta `none`
+en los cuatro:
 
 | Estado | Color plano medido | Objetivo | ΔE00 |
 | ------ | ------------------ | -------- | ----- |
@@ -2090,12 +2111,18 @@ corrigen en un commit `style:` dedicado cuando se toquen.
 Consecuencia directa de resolver #60: el paso incremental de Prettier del CI ahora se ejecuta de
 verdad, así que cualquier archivo que se modifique debe cumplir `.prettierrc.json`.
 
-**Alcance real medido (no estimarse):** con `npx prettier --check .` sobre la rama, **371 archivos
+**Alcance real medido (no estimarse):** con `npx prettier --check .` sobre la rama, **370 archivos
 del repositorio incumplen Prettier**, de los cuales **355** matchean el filtro del paso incremental
-(`js|jsx|mjs|json|html|css`) y por lo tanto harían fallar el pipeline en cuanto se toquen. Los 16
-restantes son `.md` y `.txt`, que el filtro todavía no cubre. En `main` las cifras son 372 y 356
+(`js|jsx|mjs|json|html|css`) y por lo tanto harían fallar el pipeline en cuanto se toquen. Los 15
+restantes son `.md` y `.MD`, que el filtro todavía no cubre. En `main` las cifras son 371 y 356
 respectivamente: esta rama solo mejoró el conteo en un archivo (`AppModal.jsx`, reformateado por
 obligación de #60).
+
+> Nota de método (29 sep 2026): una versión anterior de este párrafo decía 371, 16 y 372. El error
+> fue contar como archivo la línea de resumen que Prettier emite al final (`Code style issues found
+> in 370 files.`), que no es una ruta. Al contar solo rutas reales, `355 + 15 = 370` cierra, y en
+> `main` `356 + 15 = 371`. El número que decide el comportamiento del pipeline, 355, era correcto
+> desde el principio.
 
 Entre los 355 se encuentran los tres que motivaron el registro original, y que son los más probables
 de tocarse pronto por estar en el flujo de impresión y de historial de ventas:
