@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppAlert, appModalIsOpen }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -10,13 +11,17 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
   const inputRef = useRef(null);
   const resultsListRef = useRef(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // Reinicio del estado al abrir el modal, resuelto durante el render para
+  // evitar el re-render en cascada. El foco permanece en el efecto.
+  if (useDidChange(isOpen) && isOpen) {
     setSearchTerm("");
     setResults([]);
     setSelectedIndex(-1);
     setLoading(false);
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     const timer = setTimeout(() => {
       inputRef.current?.focus();

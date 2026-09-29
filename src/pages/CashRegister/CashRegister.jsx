@@ -5,10 +5,10 @@ import styles from './CashRegister.module.css';
 import { useBranch } from '../../contexts/BranchContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchActiveCashSession, openCashRegister } from '../../services/cashRegisterService';
+import { useRequestStatus } from '../../hooks/useRequestStatus';
 
 const CashRegister = ({ setCashRegistered }) => {
   const [initialCash, setInitialCash] = useState('');
-  const [checking, setChecking] = useState(true);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,6 +17,14 @@ const CashRegister = ({ setCashRegistered }) => {
 
   const { branch } = useBranch();
   const { user } = useAuth();
+
+  // El indicador de verificacion se deriva de la peticion pendiente en lugar de
+  // marcarse con setChecking(true)/setChecking(false) dentro del efecto. Sin
+  // sucursal o sin usuario no hay nada que verificar, y la clave nula coincide
+  // con el estado inicial "nada pendiente": antes se resolvia con un setChecking
+  // sincrono que anadia un render en cascada.
+  const checkKey = branch?.id && user?.id ? `${branch.id}|${user.id}` : null;
+  const { isLoading: checking, markSettled } = useRequestStatus(checkKey);
 
   const getOwnerMessage = (session) => {
     const owner =
@@ -45,7 +53,6 @@ const CashRegister = ({ setCashRegistered }) => {
 
   useEffect(() => {
     if (!branch?.id || !user?.id) {
-      setChecking(false);
       return;
     }
 
@@ -67,13 +74,13 @@ const CashRegister = ({ setCashRegistered }) => {
         console.error('Error verificando caja:', err);
         setError('No se pudo verificar el estado de la caja.');
       } finally {
-        setChecking(false);
+        markSettled();
       }
     };
 
     checkCashRegister();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branch?.id, user?.id, navigate, setCashRegistered]);
+  }, [branch?.id, user?.id, navigate, setCashRegistered, markSettled]);
 
   useEffect(() => {
     if (!checking) {

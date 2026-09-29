@@ -2004,3 +2004,136 @@ como composición de vistas y la lógica fiscal nueva resiste mutation testing. 
 Queda H1: la guarda de teléfono vacío funciona pero el test que dice cubrirla no la cubre; se recomienda
 añadir el caso de una línea antes o después del merge, sin bloquearlo. #56 permanece como deuda
 conocida y explicita.
+
+---
+
+## Informe de Auditoría — RAMA `fix/react-hooks-and-eslint-zero-errors` (28 de septiembre de 2026)
+
+**Alcance:** cierre de `KNOWN_ISSUES.md` #56, Errores críticos de ESLint y React 19. Base:
+`origin/main` = `88adc94`; HEAD al auditar: `7c15387`. Diff: 60 archivos, +2545 / -830. El objetivo
+declarado de la rama es llevar `npx eslint src/` a cero errores y eliminar los renders en cascada
+provocados por `react-hooks/set-state-in-effect` bajo React 19, sin suprimir la regla.
+
+No hay bloqueantes previos que atender: la sección 0 del checklist de `PR_REVIEW.md` no aplica porque la
+rama es la que resuelve #56. Se verificó por medición propia cada afirmación del resumen de verificación,
+incluida la cifra de errores de partida.
+
+### Verificaciones mecánicas
+
+| Verificación | Comando | Resultado |
+|---|---|---|
+| Lint del código | `npx eslint src/` | **0 errores**, 583 warnings (baseline: 69 errores, 566 warnings) |
+| Suite completa | `npm test` | `EXIT=0` — **83 archivos / 1237 tests** en verde |
+| Build de producción | `npm run build:frontend` | `EXIT=0` — `built in 3.96s` |
+| Baseline de lint | worktree en `origin/main` | **69 errores**, reproducidos de forma independiente |
+| `console.log` / `console.warn` | barrido en los 59 archivos de código del diff | **0** (las únicas coincidencias en `src/` están en prosa de comentarios, `ticketPrinter.js:8`) |
+| `console.error` | barrido en el diff | conservados, como exige `AGENTS.md` |
+| `!important` | barrido en los `.css` del diff | **0** |
+| Emojis | barrido por codepoint en las líneas añadidas | **0** |
+| EOF newline | los 60 archivos del diff | **60/60** con salto final |
+| `git diff --check` | `git diff --check origin/main...HEAD` | **2 avisos** (ver H1) |
+
+### El baseline de 69 errores, reproducido y desglosado
+
+La cifra de partida se comprobó en un worktree desechable de `origin/main` con el `node_modules` del
+proyecto; no se aceptó de la rama. Los 69 errores se desglosan así:
+
+| Regla | Errores en `origin/main` |
+|---|---|
+| `react-hooks/set-state-in-effect` | 52 |
+| `react-hooks/preserve-manual-memoization` | 11 |
+| `no-useless-escape` | 4 |
+| `no-undef` | 2 |
+
+El 76% del total era una sola regla de React 19, lo que confirma que el alcance declarado de la rama es el
+dominante real del backlog de lint y no una selección conveniente.
+
+### El punto que decide la auditoría: los errores se corrigieron, no se silenciaron
+
+Las dos entradas previas de esta bitácora (Clientes y Facturación) cerraron sus puertas de CI con
+`eslint-disable-next-line` y lo registraron como deuda heredada de #56. La hipótesis por defecto para
+esta rama debe ser, por tanto, la peor: que los 69 errores bajan a cero porque creció el número de
+supresiones. Se midió directamente y **es falsa**:
+
+| Medición | `origin/main` | `7c15387` | Delta |
+|---|---|---|---|
+| `eslint-disable-next-line react-hooks` en `src/` | 41 | 41 | **0** |
+| Líneas de supresión añadidas por el diff | — | **0** | — |
+| Líneas de supresión eliminadas por el diff | — | **0** | — |
+| Errores de `react-hooks/set-state-in-effect` | 52 | **0** | −52 |
+
+Las 41 supresiones son exactamente las mismas antes y después, todas de `react-hooks`, y el diff no añade
+ni quita ninguna. El descenso de 69 a 0 es, por tanto, un descenso de errores reales.
+
+### Trabajo arquitectónico verificado
+
+Cada pieza del resumen se comprobó leyendo el código, no el mensaje de commit:
+
+- **`useDidChange`** (`src/hooks/useDidChange.js`): adoptada en **20** archivos, con
+  `useDidChange.test.js` propio.
+- **`useRequestStatus`** (`src/hooks/useRequestStatus.js`): adoptada en **19** archivos, con
+  `useRequestStatus.test.js` propio. Los dos archivos suman **11 tests**.
+- **`afterCommit`** (`src/utils/asyncUtils.js:42`): helper nuevo con exactamente **dos** call-sites
+  verificados, `useSalesDraft.js:193` y `useCashCutReport.js:557`. La cifra de dos importa: la legitima
+  continuación asíncrona post-commit se ha dirigido a los dos sitios que corresponden en lugar de
+  generalizarse como excusa para reescribir efectos.
+- **`readDraftRestorePlan`** (`useSalesDraft.js:80`): función pura extraída, llamada una vez en
+  `useSalesDraft.js:177`, lo que permite testear el plan de restauración de borrador sin montar el hook.
+- La cobertura nueva protege las dos abstracciones compartidas, no los 52 efectos migrados. Ver H2.
+
+### Hallazgos
+
+**H1 (no bloqueante, higiene) — `git diff --check` no está limpio.** La rama introduce dos defectos de
+espacios en blanco que contradicen la afirmación de "higiene estricta" del resumen de verificación:
+
+- `src/components/ReportsComponents/PageReports/PageSalesReport/hooks/useSalesReport.js:3-6`: **espacio
+  final en 4 líneas** del import multilínea (las líneas 3, 4, 5 y 6).
+- `src/components/ReportsComponents/PageReports/PageReportsHome/services/reportsDashboardService.js:292`:
+  **línea en blanco adicional al final del archivo** (`};\n};\n\n`). El archivo sí termina en salto de
+  línea, por eso el control de EOF 60/60 pasa igual: lo que sobra es un `\n` de más, no la ausencia del
+  último.
+
+Ambos son triviales y de un solo carácter, y ninguna regla de ESLint los detecta. Se corrigieron en el
+commit siguiente (`e8b8208`), dejando `git diff --check origin/main..HEAD` en 0 avisos. Con esa corrección,
+el 100% de los puntos de higiene se cumplen (0 `console.log`/`console.warn`, 0 emojis, 0 `!important`,
+`git diff --check` limpio y 60/60 de EOF).
+
+**H2 (no bloqueante, cobertura) — la migración no dejó red de seguridad propia.** La rama mueve el
+comportamiento de 52 efectos a estado derivado y a dos abstracciones nuevas, pero su cobertura nueva se
+concentra en los ganchos compartidos (11 tests en 2 archivos). No hay test nuevo en los hooks de reporte
+migrados, y alguno no tiene archivo de test: `PageSalesReport/hooks/` no contiene ninguno. El riesgo
+queda acotado porque el comportamiento derivado es una función pura y la suite completa sigue en verde,
+pero una regresión en la semántica de `isLoading` de un reporte concreto no la detectaría ningún test. No
+se bloquea el merge por esto; queda anotado para cuando se toque cada reporte.
+
+### Notas y límites conscientes
+
+- **El patrón de fondo sigue abierto.** Eliminar las 52 ocurrencias de `set-state-in-effect` es un
+  tratamiento de la causa raíz; no significa que la regla no vuelva a activarse en código nuevo. Las 41
+  supresiones preexistentes de `main` siguen ahí, y esta rama las deja intactas a propósito: retirarlas
+  pertenece a otro cambio, no a este.
+- **No se ejecutó `npm run dev`.** La verificación de flujo manual (ventas, corte de caja, reportes,
+  perfiles) no se realizó en esta auditoría. El build de producción y los 1237 tests en verde acotan el
+  riesgo, pero no sustituyen esa prueba en una rama que toca el ciclo de vida de efectos de
+  `useSalesDraft` y `useCashCutReport`.
+- **583 warnings de ESLint, todos `no-unused-vars`.** Herencia de `eslint.config.mjs`, que no activa
+  `react/jsx-uses-vars`, más deuda previa de `main`. Suben de 566 a 583 porque la rama toca archivos que
+  ya los tenían; ninguno es un error y ninguno pertenece al alcance de #56.
+- **El build emite el aviso de chunks de más de 500 kB.** Preexistente y ajeno al alcance.
+
+### Veredicto
+
+**APROBADO CON DOS OBSERVACIONES NO BLOQUEANTES.** Las cuatro verificaciones mecánicas exigidas pasan
+con evidencia ejecutable, y la afirmación más importante de la rama queda demostrada por medición y no
+por declaración: los 69 errores de `origin/main` bajan a 0 **sin añadir ni una sola supresión nueva**, lo
+que descarta la hipótesis de apaciguar la regla y cierra la deuda que las auditorías anteriores dejaron
+abierta de forma explícita. El trabajo arquitectónico existe en el código y está donde se afirma.
+
+Se corrige el resumen de verificación en un punto: la "higiene estricta" no es total, porque
+`git diff --check` devuelve 2 avisos (H1: cuatro espacios finales y una línea en blanco de más). El resto
+de las métricas del resumen se reprodujeron sin discrepancia. H2 deja anotado que la cobertura nueva
+protege las abstracciones compartidas y no cada hook migrado.
+
+Ninguno de los dos hallazgos justifica retrasar el merge: H1 es un `prettier --write` sobre dos
+archivos, y H2 es una recomendación de cobertura para futuros cambios en los reportes. #56 queda
+cerrado.

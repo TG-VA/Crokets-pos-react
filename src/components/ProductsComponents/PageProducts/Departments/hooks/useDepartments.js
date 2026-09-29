@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const useDepartments = () => {
   const { departments, addDepartment, updateDepartment } = useProducts();
@@ -40,7 +41,13 @@ export const useDepartments = () => {
     });
   }, [departments]);
 
-  useEffect(() => {
+  // El formulario se puebla desde la seleccion. Se resuelve durante el render
+  // para no disparar un setState sincrono desde un efecto. La clave combina la
+  // seleccion con el departamento resuelto, de modo que recrear el arreglo de
+  // departamentos no vuelve a vaciar lo que el usuario ya esta escribiendo.
+  const selectionKey = `${selectedId}|${selectedDept?.id || ""}`;
+
+  if (useDidChange(selectionKey)) {
     if (selectedId === "new") {
       setFormData({
         name: "",
@@ -49,10 +56,7 @@ export const useDepartments = () => {
         commission_type: "percent",
         commission_value: "",
       });
-      return;
-    }
-
-    if (selectedDept) {
+    } else if (selectedDept) {
       setFormData({
         name: selectedDept.name || "",
         status: selectedDept.status !== false,
@@ -63,7 +67,7 @@ export const useDepartments = () => {
     } else {
       setSelectedId("new");
     }
-  }, [selectedId, selectedDept]);
+  }
 
   const handleCreate = () => setSelectedId("new");
   const handleSelect = (id) => setSelectedId(id);

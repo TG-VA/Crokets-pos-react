@@ -236,7 +236,7 @@ export const exportCommissionsReportToExcel = async ({
     const anchor = document.createElement("a");
     anchor.href = objectUrl;
 
-    const cleanBranch = branchName.replace(/[\/\\:*?"<>|]/g, "_").slice(0, 20);
+    const cleanBranch = branchName.replace(/[\\/:*?"<>|]/g, "_").slice(0, 20);
     anchor.download = `Reporte_Comisiones_[${cleanBranch}]_[${formatShortDate(startDate).replace(/\//g, "-")}_al_${formatShortDate(endDate).replace(/\//g, "-")}].xlsx`;
     anchor.style.display = "none";
     document.body.appendChild(anchor);

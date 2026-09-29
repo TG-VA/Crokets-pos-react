@@ -301,3 +301,42 @@ export const fetchPaymentMethodsSummary = async ({
     return [];
   }
 };
+
+/**
+ * Carga las tres series del reporte de caja y las entrega por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{
+ *   sessionsParams: object,
+ *   movementsParams: object,
+ *   paymentsParams: object
+ * }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadCashReportData = async (
+  { sessionsParams, movementsParams, paymentsParams },
+  { onData, onError, onSettled }
+) => {
+  try {
+    const [sessions, movements, paymentMethodsSummary] = await Promise.all([
+      fetchCashSessions(sessionsParams),
+      fetchCashMovements(movementsParams),
+      fetchPaymentMethodsSummary(paymentsParams),
+    ]);
+
+    onData({ sessions, movements, paymentMethodsSummary });
+  } catch (err) {
+    console.error("Error al cargar datos del reporte de caja:", err);
+    onError(
+      "No se pudieron cargar los datos del reporte de caja. Intente nuevamente."
+    );
+  } finally {
+    onSettled();
+  }
+};

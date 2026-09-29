@@ -290,7 +290,7 @@ export const exportCashReportToExcel = async ({
     anchor.href = objectUrl;
 
     // Construcción del nombre del archivo: Reporte de caja [SUCURSAL] [RANGO DE FECHAS].xlsx
-    const cleanBranch = (branchName || "Todas las sucursales").trim().replace(/[\/\\:*?"<>|]/g, "-");
+    const cleanBranch = (branchName || "Todas las sucursales").trim().replace(/[\\/:*?"<>|]/g, "-");
     const formatSafeDate = (d) => {
       if (!d) return "";
       const dateObj = new Date(d);

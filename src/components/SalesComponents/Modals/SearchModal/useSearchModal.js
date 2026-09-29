@@ -4,6 +4,9 @@ import {
   fetchKitData, fetchProductStocksAcrossBranches 
 } from "../../services/searchModalService";
 import { getSoldKitsCountInBranch } from "../../services/salesProductService";
+import { useDidChange } from "../../../../hooks/useDidChange";
+
+const EMPTY_KIT_VALIDATION = { isValid: true, message: "", items: [] };
 
 export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta, branch }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,15 +69,24 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     setLoading(false); setLoadingStocks(false); setAddingProduct(false); setError(""); closeAppModal(); onClose();
   }, [closeAppModal, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  // El reinicio al abrir el modal es un ajuste de estado derivado: ocurre durante
+  // el render en lugar de desde un efecto que provocaba un re-render adicional.
+  // Escribia sobre valores que ya son los iniciales, asi que en el montaje era un
+  // no-op y depender solo del cambio de `isOpen` es equivalente.
+  if (useDidChange(isOpen) && isOpen) {
     setSearchTerm(""); setSearchResults([]); setSelectedIndex(-1); setSelectedProductStocks([]); setKitValidation({ isValid: true, message: "", items: [] });
     setLoading(false); setLoadingStocks(false); setAddingProduct(false); setError(""); closeAppModal();
+  }
+
+  // El efecto conserva lo que si es efecto: invalidar peticiones en vuelo y
+  // mover el foco al campo de busqueda.
+  useEffect(() => {
+    if (!isOpen) return;
     searchRequestIdRef.current++; stockRequestIdRef.current++; kitRequestIdRef.current++;
     lastStockProductKeyRef.current = ""; lastKitProductKeyRef.current = "";
     const timer = setTimeout(() => searchInputRef.current?.focus(), 80);
     return () => { clearTimeout(timer); if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-  }, [isOpen, closeAppModal]);
+  }, [isOpen]);
 
   const validateKitStock = useCallback(async (kitProductId, maxKitsLimit) => {
     if (!kitProductId || !branch?.id) return;
@@ -126,7 +138,7 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     } catch (e) {
       if (currentId === kitRequestIdRef.current) setKitValidation({ isValid: false, message: "Error validando kit.", items: [] });
     }
-  }, [branch?.id, getBranchAvailableStock, getProductCartQuantity]);
+  }, [branch, getBranchAvailableStock, getProductCartQuantity]);
 
   const fetchProductStocks = useCallback(async (productId) => {
     if (!productId) { setSelectedProductStocks([]); setLoadingStocks(false); return; }
@@ -151,20 +163,70 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     finally { if (currentId === stockRequestIdRef.current) setLoadingStocks(false); }
   }, [branch?.id, getBranchAvailableStock, getProductCartQuantity]);
 
-  useEffect(() => {
-    if (!isOpen || !selectedProduct?.id) { lastStockProductKeyRef.current = ""; lastKitProductKeyRef.current = ""; setSelectedProductStocks([]); setKitValidation({ isValid: true, message: "", items: [] }); setLoadingStocks(false); return; }
-    stockRequestIdRef.current++; kitRequestIdRef.current++;
-    
+  // Descripcion pura de que corresponde a la seleccion actual. Separa la decision
+  // de la ejecion: los reinicios de estado se ajustan durante el render y el
+  // efecto se limita a disparar las cargas, que escriben estado despues del await.
+  const stockSelection = useMemo(() => {
+    if (!isOpen || !selectedProduct?.id) {
+      return { type: "none", key: "" };
+    }
+
     if (selectedProduct.is_kit) {
+      return {
+        type: "kit",
+        key: selectedProductKey,
+        productId: selectedProduct.id,
+        maxKitsLimit: selectedProduct.max_kits_per_sale,
+      };
+    }
+
+    return {
+      type: selectedProduct.tracks_inventory ? "tracked" : "untracked",
+      key: selectedProductKey,
+      productId: selectedProduct.id,
+    };
+  }, [isOpen, selectedProduct, selectedProductKey]);
+
+  if (useDidChange(stockSelection.type)) {
+    if (stockSelection.type === "none" || stockSelection.type === "untracked") {
       setSelectedProductStocks([]);
-      if (lastKitProductKeyRef.current !== selectedProductKey) { lastKitProductKeyRef.current = selectedProductKey; lastStockProductKeyRef.current = ""; validateKitStock(selectedProduct.id, selectedProduct.max_kits_per_sale); }
+      setLoadingStocks(false);
+    }
+
+    if (stockSelection.type !== "kit") {
+      setKitValidation(EMPTY_KIT_VALIDATION);
+    }
+  }
+
+  // Cambiar de producto seleccionado descarta las existencias del anterior.
+  if (useDidChange(selectedProductKey) && stockSelection.type === "kit") {
+    setSelectedProductStocks([]);
+  }
+
+  useEffect(() => {
+    stockRequestIdRef.current++; kitRequestIdRef.current++;
+
+    if (stockSelection.type === "kit") {
+      if (lastKitProductKeyRef.current !== stockSelection.key) {
+        lastKitProductKeyRef.current = stockSelection.key;
+        lastStockProductKeyRef.current = "";
+        validateKitStock(stockSelection.productId, stockSelection.maxKitsLimit);
+      }
       return;
     }
-    
-    setKitValidation({ isValid: true, message: "", items: [] }); lastKitProductKeyRef.current = "";
-    if (selectedProduct.tracks_inventory && lastStockProductKeyRef.current !== selectedProductKey) { lastStockProductKeyRef.current = selectedProductKey; fetchProductStocks(selectedProduct.id); return; }
-    if (!selectedProduct.tracks_inventory) { lastStockProductKeyRef.current = ""; setSelectedProductStocks([]); setLoadingStocks(false); }
-  }, [isOpen, selectedProduct, selectedProductKey, validateKitStock, fetchProductStocks]);
+
+    lastKitProductKeyRef.current = "";
+
+    if (stockSelection.type === "tracked") {
+      if (lastStockProductKeyRef.current !== stockSelection.key) {
+        lastStockProductKeyRef.current = stockSelection.key;
+        fetchProductStocks(stockSelection.productId);
+      }
+      return;
+    }
+
+    lastStockProductKeyRef.current = "";
+  }, [stockSelection, validateKitStock, fetchProductStocks]);
 
   const performSearch = useCallback(async (term) => {
     const cleanTerm = String(term || "").trim();
@@ -200,7 +262,7 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
       setSearchResults(merged); setSelectedIndex(merged.length > 0 ? 0 : -1);
     } catch (e) { if (currentId === searchRequestIdRef.current) { setError("Error cargando productos."); setSearchResults([]); setSelectedIndex(-1); } } 
     finally { if (currentId === searchRequestIdRef.current) setLoading(false); }
-  }, [branch?.id, getProductCartQuantity]);
+  }, [branch, getProductCartQuantity]);
 
   const handleInputChange = (e) => {
     const val = e.target.value; 

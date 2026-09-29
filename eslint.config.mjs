@@ -63,6 +63,8 @@ export default [
         MouseEvent: "readonly",
         HTMLElement: "readonly",
         HTMLButtonElement: "readonly",
+        Storage: "readonly",
+        structuredClone: "readonly",
       },
       parserOptions: {
         ecmaFeatures: {

@@ -180,3 +180,26 @@ export const createCashMovement = async ({ sessionId, userId, branchId, movement
   if (error) throw error;
   return data;
 };
+
+/**
+ * Resuelve si el turno actual ya tiene un corte de caja registrado.
+ *
+ * Se compone en el servicio, y no en el hook, porque el efecto que dispara la
+ * comprobacion no debe escribir estado: la regla de set-state-in-effect marca
+ * cualquier llamada desde el cuerpo de un efecto a una funcion del mismo archivo
+ * que termine en setState. Devolver el valor permite que el estado se escriba en
+ * la continuacion asincrona, que es donde corresponde.
+ *
+ * @param {{ branchId: string, userId: string }} params
+ * @returns {Promise<boolean>} `true` si el turno ya fue cortado.
+ */
+export const resolveShiftCutStatus = async ({ branchId, userId }) => {
+  const session = await getOpenCashSession({ branchId, userId });
+
+  // Validación defensiva: si no existe sesión activa o no tiene ID, asumimos que no hay corte efectuado.
+  if (!session || !session.id) {
+    return false;
+  }
+
+  return getShiftCutStatus({ sessionId: session.id });
+};

@@ -13,6 +13,7 @@ import {
   fetchInventoryReportRows,
   getBranchOptionsFallback,
 } from "../services/inventoryReportService";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 const REALTIME_REFRESH_DELAY_MS = 250;
 
@@ -20,11 +21,31 @@ const useInventoryReport = () => {
   const { branch } = useBranch();
 
   const [branchOptions, setBranchOptions] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [branchOverride, setBranchOverride] = useState("");
+
+  // La sucursal efectiva se deriva: la seleccion explicita del usuario manda y,
+  // mientras no exista, se usa la sucursal del contexto. Antes esto se resolvia
+  // con un efecto que hacia setSelectedBranchId(branch.id) y provocaba un
+  // re-render en cascada; ahora no hay estado que sincronizar.
+  const selectedBranchId = branchOverride || branch?.id || "";
 
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // La carga se deriva de la sucursal pedida en lugar de marcarse con un
+  // setLoading(true) sincrono, que provocaba un re-render en cascada. Sin
+  // sucursal la clave es null, que es justamente la clave inicial de las
+  // peticiones resueltas, asi que no hay nada pendiente que mostrar.
+  const requestKey = selectedBranchId || null;
+  const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? "" : error;
+
+  // Sin sucursal no hay reporte que mostrar; antes esto se resolvia limpiando
+  // filas y error desde dentro de la carga, con lo que ademas habia que esperar
+  // un turno de render para que la tabla quedara vacia.
+  const visibleRows = selectedBranchId ? rows : [];
 
   const isMountedRef = useRef(true);
   const inventoryRequestIdRef = useRef(0);
@@ -38,16 +59,6 @@ const useInventoryReport = () => {
       isMountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (selectedBranchId) {
-      return;
-    }
-
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id, selectedBranchId]);
 
   const loadBranches = useCallback(async () => {
     try {
@@ -74,9 +85,27 @@ const useInventoryReport = () => {
     }
   }, [branch]);
 
+  // El efecto llama directo a la funcion de datos importada y aplica el estado
+  // en la continuacion asincrona; `loadBranches` queda para el refresco en
+  // tiempo real disparado por la suscripcion.
   useEffect(() => {
-    loadBranches();
-  }, [loadBranches]);
+    let cancelled = false;
+
+    fetchBranchOptions(branch)
+      .then((options) => {
+        if (cancelled) return;
+        setBranchOptions(options);
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error("Error cargando sucursales:", loadError);
+        setBranchOptions(getBranchOptionsFallback(branch));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branch]);
 
   useEffect(() => {
     const scheduleBranchesRefresh = () => {
@@ -129,14 +158,8 @@ const useInventoryReport = () => {
   }, [loadBranches]);
 
   const loadInventoryByBranch = useCallback(
-    async ({ silent = false } = {}) => {
+    async () => {
       if (!selectedBranchId) {
-        if (isMountedRef.current) {
-          setRows([]);
-          setError("");
-          setLoading(false);
-        }
-
         return;
       }
 
@@ -144,10 +167,6 @@ const useInventoryReport = () => {
         inventoryRequestIdRef.current + 1;
 
       inventoryRequestIdRef.current = requestId;
-
-      if (!silent && isMountedRef.current) {
-        setLoading(true);
-      }
 
       if (isMountedRef.current) {
         setError("");
@@ -191,20 +210,47 @@ const useInventoryReport = () => {
           inventoryRequestIdRef.current === requestId;
 
         if (
-          !silent &&
           isMountedRef.current &&
           isLatestRequest
         ) {
-          setLoading(false);
+          markSettled();
         }
       }
     },
-    [selectedBranchId]
+    [selectedBranchId, markSettled]
   );
 
   useEffect(() => {
-    loadInventoryByBranch();
-  }, [loadInventoryByBranch]);
+    if (!selectedBranchId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = inventoryRequestIdRef.current + 1;
+    inventoryRequestIdRef.current = requestId;
+
+    fetchInventoryReportRows(selectedBranchId)
+      .then((inventoryRows) => {
+        if (cancelled) return;
+        setRows(inventoryRows);
+        setError("");
+        markSettled();
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error(
+          "Error cargando reporte de inventario:",
+          loadError
+        );
+        setRows([]);
+        setError("No se pudo cargar el reporte de inventario.");
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBranchId, markSettled]);
 
   useEffect(() => {
     if (!selectedBranchId) {
@@ -220,9 +266,7 @@ const useInventoryReport = () => {
 
       inventoryRefreshTimeoutRef.current =
         window.setTimeout(() => {
-          loadInventoryByBranch({
-            silent: true,
-          });
+          loadInventoryByBranch();
         }, REALTIME_REFRESH_DELAY_MS);
     };
 
@@ -287,15 +331,15 @@ const useInventoryReport = () => {
   ]);
 
   const handleBranchChange = (branchId) => {
-    setSelectedBranchId(branchId);
+    setBranchOverride(branchId);
   };
 
   return {
     branchOptions,
     selectedBranchId,
-    rows,
-    loading,
-    error,
+    rows: visibleRows,
+    loading: isLoading,
+    error: visibleError,
     handleBranchChange,
   };
 };

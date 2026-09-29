@@ -7,6 +7,7 @@ import {
 
 import useInventorySearchKeyboard from "./useInventorySearchKeyboard";
 import useInventorySearchResults from "./useInventorySearchResults";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 const useInventorySearchModal = ({
   isOpen = false,
@@ -127,34 +128,18 @@ const useInventorySearchModal = ({
       [updateSearchTerm]
     );
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+  // La busqueda se limpia al abrir el modal, resuelto durante el render.
+  if (useDidChange(isOpen) && isOpen) {
     resetSearch();
-  }, [
-    isOpen,
-    resetSearch,
-  ]);
+  }
 
-  useEffect(() => {
-    if (
-      selectedIndex <
-      searchResults.length
-    ) {
-      return;
-    }
-
+  // El indice se recorta dentro del rango de resultados durante el render, en
+  // lugar de un efecto que lo corregiria un render despues.
+  if (selectedIndex >= searchResults.length) {
     setSelectedIndex(
-      searchResults.length > 0
-        ? searchResults.length - 1
-        : -1
+      searchResults.length > 0 ? searchResults.length - 1 : -1
     );
-  }, [
-    searchResults.length,
-    selectedIndex,
-  ]);
+  }
 
   useInventorySearchKeyboard({
     isOpen,

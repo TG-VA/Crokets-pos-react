@@ -4,6 +4,7 @@ import {
   fetchProductByBarcode, fetchProductInventory 
 } from "../../services/verifierService";
 import { getSoldKitsCountInBranch } from "../../services/salesProductService";
+import { useDidChange } from "../../../../hooks/useDidChange";
 
 export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
   const [barcode, setBarcode] = useState("");
@@ -15,9 +16,15 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
   const inputRef = useRef(null);
   const requestIdRef = useRef(0);
 
+  // Limpieza del estado al abrir el modal. Se ajusta durante el render para no
+  // encadenar un re-render adicional; el foco y la invalidacion de peticiones
+  // pendientes siguen en un efecto porque son efectos sobre el DOM.
+  if (useDidChange(isOpen) && isOpen) {
+    setBarcode(""); setProduct(null); setKitItems([]); setError(""); setIsLoading(false);
+  }
+
   useEffect(() => {
     if (!isOpen) return;
-    setBarcode(""); setProduct(null); setKitItems([]); setError(""); setIsLoading(false);
     requestIdRef.current += 1;
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
@@ -123,7 +130,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
     } finally {
       if (currentReq === requestIdRef.current) setIsLoading(false);
     }
-  }, [barcode, branch?.id]);
+  }, [barcode, branch]);
 
   const handleAddToSale = useCallback(async () => {
     if (!product || !onAddToSale) return;

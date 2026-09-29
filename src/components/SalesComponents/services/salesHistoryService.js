@@ -165,3 +165,144 @@ export const fetchCanceledSaleData = async (saleId) => {
   const { data } = await supabase.from("canceled_sales").select("cancel_reason, refund_method_id").eq("sale_id", saleId).maybeSingle();
   return data || {};
 };
+
+/**
+ * Arma el listado de tickets del historial para una sucursal, fecha y filtros.
+ *
+ * Vive en el servicio y no en el hook porque el efecto que dispara la consulta
+ * no debe escribir estado: devuelve los tickets ya mapeados y filtrados, y el
+ * hook se limita a guardarlos en la continuacion asincrona.
+ *
+ * @param {{
+ *   branchId: string,
+ *   dateFilter: string,
+ *   cashierFilter: string,
+ *   searchFolio: string,
+ *   paymentMethods: Array
+ * }} params
+ * @returns {Promise<Array>} Tickets mapeados y filtrados por folio.
+ */
+export const fetchHistoryTickets = async ({
+  branchId,
+  dateFilter,
+  cashierFilter,
+  searchFolio,
+  paymentMethods,
+}) => {
+  const start = new Date(`${dateFilter}T00:00:00-05:00`).toISOString();
+  const end = new Date(`${dateFilter}T23:59:59.999-05:00`).toISOString();
+
+  const sales = await fetchTicketsBatch(branchId, start, end, cashierFilter);
+
+  if (!sales.length) return [];
+
+  const saleIds = sales.map((s) => s.id);
+  const userIds = [...new Set(sales.map((s) => s.user_id).filter(Boolean))];
+  const customerIds = [...new Set(sales.map((s) => s.customer_id).filter(Boolean))];
+
+  const related = await fetchSalesRelatedData(saleIds, userIds, customerIds);
+  const getMethod = (id) =>
+    paymentMethods.find((m) => m.id === id)?.name || "DESCONOCIDO";
+
+  const pointsMaps = await buildCustomerPointsMaps({ saleIds, customerIds });
+
+  const uMap = related.users.reduce(
+    (a, u) => ({
+      ...a,
+      [u.id]: (u.username || u.email || "SIN NOMBRE").toUpperCase(),
+    }),
+    {}
+  );
+  const cMap = related.customers.reduce(
+    (a, c) => ({ ...a, [c.id]: { name: c.name, phone: c.phone } }),
+    {}
+  );
+  const detCount = related.details.reduce(
+    (a, d) => ({
+      ...a,
+      [d.sale_id]: (a[d.sale_id] || 0) + Number(d.quantity || 0),
+    }),
+    {}
+  );
+
+  const pBySale = related.payments.reduce((a, p) => {
+    a[p.sale_id] = [
+      ...(a[p.sale_id] || []),
+      { ...p, payment_method_name: getMethod(p.payment_method_id) },
+    ];
+    return a;
+  }, {});
+  const retBySale = related.returns.reduce((a, r) => {
+    a[r.sale_id] = [
+      ...(a[r.sale_id] || []),
+      {
+        ...r,
+        totalRefund: Number(r.total_refund),
+        refundMethodName: getMethod(r.refund_method_id),
+      },
+    ];
+    return a;
+  }, {});
+  const canMap = related.canceled.reduce(
+    (a, c) => ({
+      ...a,
+      [c.sale_id]: {
+        cancelReason: c.cancel_reason,
+        refundMethodId: c.refund_method_id,
+        refundMethodName: getMethod(c.refund_method_id),
+        cancelledAt: c.created_at,
+      },
+    }),
+    {}
+  );
+
+  const mapped = await Promise.all(
+    sales.map(async (sale) => {
+      const canInfo = canMap[sale.id] || {};
+      const rets = retBySale[sale.id] || [];
+      const totRet = rets.reduce((acc, i) => acc + i.totalRefund, 0);
+      const pays = pBySale[sale.id] || [];
+      const redemptions = await loadRewardRedemptionsForSale(sale.id);
+
+      return {
+        id: sale.id,
+        folio: getDisplayFolio(sale),
+        articles: detCount[sale.id] || 0,
+        time: formatTime(sale.sale_date),
+        total: Number(sale.total),
+        subtotal: Number(sale.subtotal),
+        tax: Number(sale.tax),
+        discountTotal: Number(sale.discount_total),
+        cashier: uMap[sale.user_id] || "SIN CAJERO",
+        customerId: sale.customer_id,
+        client: cMap[sale.customer_id]?.name || "PÚBLICO EN GENERAL",
+        pointsEarned: pointsMaps.pointsBySale[sale.id] || 0,
+        pointsReturned: pointsMaps.returnedPointsBySale[sale.id] || 0,
+        rewardPointsUsed: pointsMaps.rewardPointsBySale[sale.id] || 0,
+        pointsBalance: sale.customer_id
+          ? pointsMaps.balanceByCustomer[sale.customer_id] || 0
+          : null,
+        date: sale.sale_date,
+        paymentMethod: getPaymentMethodLabel(pays),
+        status: sale.status,
+        payments: pays,
+        notes: sale.notes || "",
+        cancelReason: canInfo.cancelReason || "",
+        refundMethodId: canInfo.refundMethodId || "",
+        refundMethodName: canInfo.refundMethodName || "",
+        cancelledAt: canInfo.cancelledAt || null,
+        returns: rets,
+        totalReturned: totRet,
+        netTotal: Math.max(Number(sale.total) - totRet, 0),
+        rewardsCount: redemptions.reduce((a, r) => a + Number(r.quantity), 0),
+        hasRewardRedemptions: redemptions.length > 0,
+        rewardRedemptions: redemptions,
+        ...getPaymentSummary(pays, sale.total),
+      };
+    })
+  );
+
+  return mapped.filter((t) =>
+    t.folio.toLowerCase().includes(searchFolio.trim().toLowerCase())
+  );
+};

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
 import { executePartialReturnTransaction, formatCurrency } from "../../services/returnsService";
+import { useDidChange } from "../../../../hooks/useDidChange";
 
 // Re-exportamos para que el JSX lo pueda seguir usando
 export { formatCurrency };
@@ -26,22 +27,28 @@ export const usePartialReturn = ({ isOpen, onClose, selectedTicket, paymentMetho
   const showAppDanger = useCallback((m, t = "Error") => showAppAlert({ type: "danger", title: t, message: m }), [showAppAlert]);
   const showAppConfirm = useCallback((cfg) => setAppModal({ isOpen: true, type: cfg.type || "warning", title: cfg.title || "Confirmar acción", message: String(cfg.message || ""), confirmText: cfg.confirmText || "Confirmar", cancelText: cfg.cancelText || "Cancelar", showCancel: true, onConfirm: async () => { closeAppModal(); if (cfg.onConfirm) await cfg.onConfirm(); }, onCancel: closeAppModal }), [closeAppModal]);
 
-  useEffect(() => {
+  // El formulario de devolucion se (re)inicializa cuando cambia el ticket
+  // seleccionado o se abre/cierra el modal. Se resuelve durante el render para
+  // no disparar un setState sincrono desde un efecto. La clave usa el id del
+  // ticket porque su identidad de objeto la controla el padre.
+  const ticketKey = `${isOpen}|${selectedTicket?.id || ""}`;
+
+  if (useDidChange(ticketKey)) {
     if (!isOpen || !selectedTicket) {
-      setItems([]); setQuantities({}); setReturnReason(""); setRefundMethodId(""); setProcessing(false); closeAppModal(); return;
+      setItems([]); setQuantities({}); setReturnReason(""); setRefundMethodId(""); setProcessing(false); closeAppModal();
+    } else {
+      const mappedItems = (selectedTicket.items || []).map(item => {
+        const returnedQty = (selectedTicket.returns || []).reduce((acc, ret) => acc + (ret.items || []).filter(ri => ri.saleDetailId === item.id).reduce((sum, ri) => sum + Number(ri.quantity || 0), 0), 0);
+        return {
+          saleDetailId: item.id, productId: item.productId || null, description: item.description, soldQty: Number(item.cant || 0), returnedQty, availableQty: Math.max(Number(item.cant || 0) - returnedQty, 0), unitPrice: Number(item.finalUnitPrice || item.unitPrice || 0), isKit: !!(item.isKit || item.is_kit), isRewardItem: isRewardLine(item), isRewardDiscountItem: isRewardDiscountLine(item), components: item.components || []
+        };
+      });
+
+      setItems(mappedItems);
+      setQuantities(mappedItems.reduce((acc, item) => ({ ...acc, [item.saleDetailId]: "" }), {}));
+      setReturnReason(""); setRefundMethodId(""); setProcessing(false);
     }
-
-    const mappedItems = (selectedTicket.items || []).map(item => {
-      const returnedQty = (selectedTicket.returns || []).reduce((acc, ret) => acc + (ret.items || []).filter(ri => ri.saleDetailId === item.id).reduce((sum, ri) => sum + Number(ri.quantity || 0), 0), 0);
-      return {
-        saleDetailId: item.id, productId: item.productId || null, description: item.description, soldQty: Number(item.cant || 0), returnedQty, availableQty: Math.max(Number(item.cant || 0) - returnedQty, 0), unitPrice: Number(item.finalUnitPrice || item.unitPrice || 0), isKit: !!(item.isKit || item.is_kit), isRewardItem: isRewardLine(item), isRewardDiscountItem: isRewardDiscountLine(item), components: item.components || []
-      };
-    });
-
-    setItems(mappedItems);
-    setQuantities(mappedItems.reduce((acc, item) => ({ ...acc, [item.saleDetailId]: "" }), {}));
-    setReturnReason(""); setRefundMethodId(""); setProcessing(false);
-  }, [isOpen, selectedTicket, closeAppModal]);
+  }
 
   const totalUnitsStillInSale = useMemo(() => items.reduce((acc, item) => acc + Number(item.availableQty || 0), 0), [items]);
   const maxUnitsAllowedInOperation = useMemo(() => Math.max(totalUnitsStillInSale - 1, 0), [totalUnitsStillInSale]);

@@ -3,6 +3,8 @@ import {
   getRewardRedeemQuantity, getRewardProductsPerRedemption, 
   getRewardQuantity, fetchRewardProductsAndInventory 
 } from "../../services/rewardProductService";
+import { useDidChange } from "../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 
 export const INITIAL_VISIBLE_PRODUCTS = 3;
 
@@ -12,7 +14,6 @@ export const useRewardProductSelection = ({ isOpen, rewards, branchId, cartProdu
   const [selectedProductsByReward, setSelectedProductsByReward] = useState({});
   const [searchByReward, setSearchByReward] = useState({});
   const [expandedRewards, setExpandedRewards] = useState({});
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [appModal, setAppModal] = useState({ isOpen: false, type: "warning", title: "Aviso", message: "", confirmText: "Entendido" });
@@ -22,24 +23,82 @@ export const useRewardProductSelection = ({ isOpen, rewards, branchId, cartProdu
 
   const freeProductRewards = useMemo(() => (Array.isArray(rewards) ? rewards : []).filter(Boolean).filter(r => r.reward_type !== "product_discount"), [rewards]);
 
+  const rewardIds = useMemo(
+    () => freeProductRewards.map((r) => r.id).filter(Boolean),
+    [freeProductRewards]
+  );
+
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoadingProducts(true) sincrono, que provocaba un re-render en cascada.
+  // Con el modal cerrado, o sin recompensas con producto gratis, la clave es null
+  // y no hay nada pendiente que mostrar.
+  const rewardsIdKey = rewardIds.join(",");
+  const loadKey = isOpen && rewardIds.length ? `${branchId}|${rewardsIdKey}` : null;
+  const { isLoading: loadingProducts, isStale, markSettled } = useRequestStatus(loadKey);
+
+  // El error de una carga anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? "" : error;
+
   const loadRewardProducts = useCallback(async () => {
-    const rewardIds = freeProductRewards.map(r => r.id).filter(Boolean);
     if (!rewardIds.length) { setRewardProducts([]); setInventoryByProduct({}); return; }
 
     try {
-      setLoadingProducts(true); setError("");
+      setError("");
       const { rewardProducts: rows, inventoryMap } = await fetchRewardProductsAndInventory(rewardIds, branchId);
       setRewardProducts(rows); setInventoryByProduct(inventoryMap);
     } catch (err) {
       setRewardProducts([]); setInventoryByProduct({}); setError("No se pudieron cargar los productos de las recompensas.");
       showAppDanger("No se pudieron cargar los productos de las recompensas.", "Error cargando recompensas");
-    } finally { setLoadingProducts(false); }
-  }, [freeProductRewards, branchId, showAppDanger]);
+    } finally { markSettled(); }
+  }, [rewardIds, branchId, showAppDanger, markSettled]);
 
+  // El reinicio al abrir el modal es estado derivado y se ajusta durante el
+  // render. Antes lo hacia un efecto que ademas disparaba la carga, con lo que el
+  // modal aparecia un turno con los datos de la apertura anterior.
+  const rewardsKey = `${isOpen}|${branchId}|${rewardsIdKey}`;
+
+  if (useDidChange(rewardsKey)) {
+    if (isOpen) {
+      setSelectedProductsByReward({}); setSearchByReward({}); setExpandedRewards({}); setSaving(false); setError(""); closeAppModal();
+    }
+
+    // Sin recompensas con producto gratis no hay nada que listar, y se vacia
+    // durante el render en lugar de desde el efecto.
+    if (!rewardIds.length) {
+      setRewardProducts([]); setInventoryByProduct({});
+    }
+  }
+
+  // El efecto llama directo a la funcion de servicio importada y aplica el estado
+  // en la continuacion asincrona; `loadRewardProducts` queda para las recargas
+  // imperativas.
   useEffect(() => {
-    if (!isOpen) return;
-    setSelectedProductsByReward({}); setSearchByReward({}); setExpandedRewards({}); setSaving(false); setError(""); closeAppModal(); loadRewardProducts();
-  }, [isOpen, branchId, loadRewardProducts, closeAppModal]);
+    if (!isOpen || !rewardIds.length) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    fetchRewardProductsAndInventory(rewardIds, branchId)
+      .then(({ rewardProducts: rows, inventoryMap }) => {
+        if (cancelled) return;
+        setRewardProducts(rows); setInventoryByProduct(inventoryMap);
+        setError("");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setRewardProducts([]); setInventoryByProduct({}); setError("No se pudieron cargar los productos de las recompensas.");
+        showAppDanger("No se pudieron cargar los productos de las recompensas.", "Error cargando recompensas");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, branchId, rewardIds, showAppDanger, markSettled]);
 
   const getCartQuantityForProduct = useCallback((productId) => {
     if (!productId) return 0;
@@ -105,7 +164,7 @@ export const useRewardProductSelection = ({ isOpen, rewards, branchId, cartProdu
 
   return {
     rewardProducts, selectedProductsByReward, searchByReward, setSearchByReward, expandedRewards, setExpandedRewards,
-    loadingProducts, saving, setSaving, error, appModal, closeAppModal,
+    loadingProducts, saving, setSaving, error: visibleError, appModal, closeAppModal,
     freeProductRewards, getInventoryStatus, getSelectedQuantityForReward, getSelectedQuantityForProduct, getFilteredOptionsForReward,
     handleAddProduct, handleSubtractProduct, svc
   };

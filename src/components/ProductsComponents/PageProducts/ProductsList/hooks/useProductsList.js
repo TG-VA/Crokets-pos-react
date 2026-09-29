@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { usePagination } from "../../../../../hooks/usePagination";
 import { useProductsRealtime } from "../../../../../hooks/useProductsRealtime";
+import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 import {
   fetchDepartments,
   fetchPaginatedBranchProducts,
@@ -22,7 +24,6 @@ export const useProductsList = () => {
 
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState(null);
   const [departmentOptions, setDepartmentOptions] = useState([]);
 
@@ -98,6 +99,17 @@ export const useProductsList = () => {
     return found?.id || null;
   }, [selectedDepartment, departmentOptions, normalizeDept]);
 
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoadingProducts(true) sincrono, que provocaba un re-render en cascada.
+  // El refresco en tiempo real no cambia la clave, asi que ya no hace falta un
+  // flag `silent`: el spinner solo aparece cuando cambia lo que el usuario pide.
+  const requestKey = `${branch?.id || ""}|${debouncedSearch}|${selectedDepartmentId}|${currentPage}|${pageSize}`;
+  const { isLoading: loadingProducts, isStale, markSettled } =
+    useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleProductsError = isStale ? null : productsError;
+
   const reload = useCallback(async () => {
     if (!branch?.id) {
       setProducts([]);
@@ -105,7 +117,6 @@ export const useProductsList = () => {
       return;
     }
 
-    setLoadingProducts(true);
     setProductsError(null);
 
     const result = await fetchPaginatedBranchProducts({
@@ -126,12 +137,54 @@ export const useProductsList = () => {
       setProductsError(result.error || "Error al cargar productos");
     }
 
-    setLoadingProducts(false);
-  }, [branch?.id, debouncedSearch, selectedDepartmentId, currentPage, pageSize]);
+    markSettled();
+  }, [branch, debouncedSearch, selectedDepartmentId, currentPage, pageSize, markSettled]);
 
+  // El efecto llama directo a la funcion de datos importada y aplica el estado
+  // en la continuacion asincrona; `reload` queda para el refresco en tiempo real.
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!branch?.id) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    fetchPaginatedBranchProducts({
+      branchId: branch.id,
+      searchTerm: debouncedSearch,
+      departmentId: selectedDepartmentId,
+      page: currentPage,
+      pageSize,
+    })
+      .then((result) => {
+        if (cancelled) return;
+
+        if (result.success) {
+          setProducts(result.data.products);
+          setTotalCount(result.data.totalCount);
+        } else {
+          console.error("Error cargando productos:", result.error);
+          setProducts([]);
+          setTotalCount(0);
+          setProductsError(result.error || "Error al cargar productos");
+        }
+
+        markSettled();
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+
+        console.error("Error cargando productos:", loadError);
+        setProducts([]);
+        setTotalCount(0);
+        setProductsError("Error al cargar productos");
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branch?.id, debouncedSearch, selectedDepartmentId, currentPage, pageSize, markSettled]);
 
   useProductsRealtime(branch?.id, reload);
 
@@ -142,11 +195,19 @@ export const useProductsList = () => {
     }
   }, [selectedRowIndex, currentPage, totalPages, pageSize, changePage]);
 
-  useEffect(() => {
+  // El indice seleccionado y la pagina se reinician durante el render, en
+  // lugar de desde un efecto que provocaba un re-render adicional. El scroll del
+  // documento si es un efecto sobre el DOM y se queda en el efecto.
+  const filtersKey = `${debouncedSearch}|${selectedDepartment}`;
+
+  if (useDidChange(filtersKey)) {
     setSelectedRowIndex(0);
     resetPagination();
+  }
+
+  useEffect(() => {
     document.body.scrollTop = 0;
-  }, [debouncedSearch, selectedDepartment, resetPagination]);
+  }, [filtersKey]);
 
   useEffect(() => {
     const row = selectedRowRef.current;
@@ -276,7 +337,7 @@ export const useProductsList = () => {
   return {
     departments: departmentOptions,
     loadingProducts,
-    productsError,
+    productsError: visibleProductsError,
     searchTerm,
     setSearchTerm,
     selectedDepartment,

@@ -284,3 +284,37 @@ export const fetchProfitabilityReportData = async ({
     throw err;
   }
 };
+
+/**
+ * Carga el reporte de rentabilidad y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setIsLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ branchId: string, departmentId: string, startDate: string, endDate: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadProfitabilityReport = async (
+  { branchId, departmentId, startDate, endDate },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(
+      await fetchProfitabilityReportData({
+        branchId,
+        departmentId,
+        startDate,
+        endDate,
+      })
+    );
+  } catch (err) {
+    console.error("Error al cargar reporte de rentabilidad:", err);
+    onError("No se pudieron cargar los datos de rentabilidad.");
+  } finally {
+    onSettled();
+  }
+};

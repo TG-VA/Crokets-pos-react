@@ -10,6 +10,7 @@ import DeadStockTable from "./components/DeadStockTable";
 
 import { useProductsReport } from "./hooks/useProductsReport";
 import { useBranch } from "../../../../contexts/BranchContext"; 
+import { useDidChange } from "../../../../hooks/useDidChange";
 import { supabase } from "../../../../lib/supabaseClient";
 import { formatSyncTime } from "../../../../utils/formatters";
 
@@ -20,11 +21,11 @@ const PageProductsReport = () => {
   const [loadingBranches, setLoadingBranches] = useState(true);
   const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
 
-  useEffect(() => {
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id]);
+  // La sucursal del contexto manda sobre el filtro local: el ajuste se resuelve
+  // durante el render para evitar el re-render en cascada de un efecto.
+  if (useDidChange(branch?.id) && branch?.id) {
+    setSelectedBranchId(branch.id);
+  }
 
   useEffect(() => {
     const fetchBranches = async () => {

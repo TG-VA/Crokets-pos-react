@@ -209,3 +209,35 @@ export const getDetailedSalesForExport = async (filters) => {
   }
   return allDetailedRows;
 };
+
+/**
+ * Carga la pagina de ventas y sus KPIs, y los entrega por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ filters: object, currentPage: number, pageSize: number }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadSalesReport = async (
+  { filters, currentPage, pageSize },
+  { onData, onError, onSettled }
+) => {
+  try {
+    const [salesRes, kpisRes] = await Promise.all([
+      getPaginatedSales(filters, currentPage, pageSize),
+      getSalesKPIs(filters),
+    ]);
+
+    onData({ salesRes, kpisRes });
+  } catch (error) {
+    console.error("Error cargando reporte de ventas:", error);
+    onError(error.message || "Revisa tu conexión a internet.");
+  } finally {
+    onSettled();
+  }
+};

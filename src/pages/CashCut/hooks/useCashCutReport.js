@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useDidChange } from "../../../hooks/useDidChange";
+import { afterCommit } from "../../../utils/asyncUtils";
+
 import { supabase } from "../../../lib/supabaseClient";
 
 import {
@@ -149,20 +152,6 @@ export const useCashCutReport = ({ user }) => {
     setSelectedCutId("current");
     setHistoricalCut(null);
     resetSalesState();
-  };
-
-  const fetchAllData = async () => {
-    setLoading(true);
-    setErrorMsg("");
-
-    try {
-      await reloadCurrentView({ refreshHistory: true });
-    } catch (err) {
-      console.error("Error cargando datos del corte:", err);
-      setErrorMsg("No se pudieron cargar los datos del turno.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const fetchSession = async () => {
@@ -551,8 +540,34 @@ export const useCashCutReport = ({ user }) => {
 
   const refreshAfterCut = () => reloadCurrentView({ refreshHistory: true });
 
+  // El error de un usuario anterior no debe mostrarse mientras se carga el
+  // reporte del nuevo usuario.
+  if (useDidChange(user?.id ?? null)) {
+    setErrorMsg("");
+  }
+
+  // Carga inicial: `loading` arranca en true, asi que no hace falta volver a
+  // marcarlo desde el efecto. El error se aplica en la continuacion asincrona,
+  // que es donde corresponde.
   useEffect(() => {
-    if (user?.id) fetchAllData();
+    if (!user?.id) return undefined;
+
+    let cancelled = false;
+
+    afterCommit(() => reloadCurrentView({ refreshHistory: true }))
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Error cargando datos del corte:", err);
+        setErrorMsg("No se pudieron cargar los datos del turno.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 

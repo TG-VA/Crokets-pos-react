@@ -1610,8 +1610,14 @@ ningún `.jsx` del módulo supera las 176.
 
 ### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
 
+**Estado:** **resuelto (28 sep 2026)** — rama `fix/react-hooks-and-eslint-zero-errors`. Los cinco puntos
+cerrados y `npx eslint .` deja el repositorio en **0 errores**.
+
 **Estado:** parcialmente resuelto (25 sep 2026) — rama `fix/code-quality-and-runtime-bugs`. Puntos 1 a 4
 cerrados; el punto 5 permanece abierto.
+
+**Estado:** parcialmente resuelto (28 sep 2026, intermedio) — rama `fix/react-hooks-and-eslint-zero-errors`. Los
+puntos 1 a 4 siguen cerrados y el punto 5 baja de 52 a 29 ocurrencias.
 
 La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
 existen errores de lógica, compatibilidad con React 19 y control de excepciones:
@@ -1676,6 +1682,101 @@ deuda conocida:
   `branch` como dependencia de `loadPendingSales`, pero el `useCallback` declaraba `branch?.id`. Se alineó
   a `[branch, dayRange]`. Es seguro porque `branch` proviene de un `useState` (`BranchContext.jsx:6`), por lo
   que su identidad solo cambia cuando el usuario elige otra sucursal.
+
+**Bitácora de solución (28 sep 2026, rama `fix/react-hooks-and-eslint-zero-errors`):** el punto 5 se abordó en
+dos frentes. Antes de escribir código se midió qué elimina realmente el re-render en cascada, porque la regla
+admite atajos que no lo hacen:
+
+| variante | ESLint | pasadas de render |
+| --- | --- | --- |
+| `useEffect(() => { load() })` (estado actual) | error | 2 |
+| `useEffect(() => { const r = async () => load(); r() })` | sin error | **2 (sin cambio)** |
+| `isLoading` inicializado en `true` y sin reset síncrono | sin error | 1 |
+
+La segunda fila es la trampa: envolver el cuerpo del efecto en una función async interna silencia la regla y
+deja el re-render en cascada intacto, porque la función se ejecuta de forma síncrona hasta el primer `await`.
+No se aplicó en ningún sitio. La tercera fila es una corrección genuina pero solo cubre el primer montaje: al
+refiltrar o cambiar de sucursal el spinner dejaría de aparecer, así que tampoco se adoptó como solución general.
+
+**Errores no React (18 de 69) resueltos en esta rama:** 4 `no-useless-escape` (barra invertida innecesaria
+dentro de clases de caracteres de saneo de nombre de archivo), 2 `no-undef` (`structuredClone` y `Storage`
+declarados como globals de solo lectura en `eslint.config.mjs`, igual que se hizo con `HTMLButtonElement`) y
+11 `preserve-manual-memoization`. En este último caso el compilador infiere el objeto raíz cuando el cuerpo
+mezcla acceso opcional y no opcional (`branch?.id` junto a `branch.id`), de modo que la lista manual declaraba
+una propiedad más estrecha y la memoización no se podía preservar. El cambio es seguro porque `branch` es un
+`useState` de `BranchContext`, con identidad estable entre cambios de sucursal.
+
+**Punto 5 (40 de 52 ocurrencias) resueltas en esta rama**, con cuatro patrones:
+
+1. *Ajuste durante el render.* Los reinicios que solo existían para compensar un efecto (limpiar un modal al
+   abrirlo, repoblar un formulario, recortar la página o el índice seleccionado) se resuelven ahora con
+   `useDidChange`, que compara la clave con la del render anterior. React descarta la salida y vuelve a
+   renderizar antes de confirmarla, así que se evita el segundo render comprometido y el fotograma con el
+   estado anterior. Donde el efecto observaba un objeto, se pasa a observar su id (`usePartialReturn`,
+   `useDepartments`) para no reajustar cuando el padre recrea el objeto.
+2. *Estado derivado puro.* En `PageReport/hooks/useInventoryReport.js` la sucursal efectiva se deriva
+   (`branchOverride || branch?.id`) en lugar de sincronizar estado. En `usePagination.js` la página se recorta
+   durante el render y se expone `safePage`, con lo que `startIndex`, `endIndex` y `pageItems` nunca quedan
+   fuera de rango.
+3. *Carga derivada de la clave de petición.* `useRequestStatus` sustituye al `setLoading(true)` síncrono:
+   guarda solo la clave ya resuelta y `isLoading` es la comparación contra la clave pedida, de modo que el
+   spinner aparece en la misma pasada de render en la que cambian los filtros. El error se expone también de
+   forma derivada para que el de una petición anterior no se vea mientras corre la nueva.
+4. *Orquestación de la carga en la capa de servicios.* La regla marca cualquier llamada desde el cuerpo de un
+   efecto a una función **del mismo archivo** que termine en `setState`, incluso con todas las escrituras
+   después del `await`. Por eso la carga de `PageInventoryReport` se movió a `loadInventoryReportData` en
+   `inventoryReportService`, que entrega el resultado por callbacks: el efecto no escribe estado y las
+   actualizaciones ocurren en la continuación asíncrona. Este es el patrón pendiente de replicar.
+
+Los efectos sobre el DOM (foco, timeouts, refs, suscripciones) permanecen en efectos: sincronizar con sistemas
+externos es justamente lo que un efecto debe hacer. Se eliminaron además dos `setState` que eran no-ops:
+`Login.jsx` limpiaba un formulario que ya nace vacío, y `UserForm.jsx` (sin importadores) repoblaba usando la
+identidad del objeto en vez de sus datos.
+
+**Cierre del punto 5 (52 → 0).** Las 29 ocurrencias que quedaban se resolvieron replicando los cuatro patrones
+anteriores, con una variante nueva para las dos que exigían una decisión de producto:
+
+5. *Lectura síncrona y caso sin petición.* `useSalesDraft.js` y `CashRegister.jsx` no encajaban en los patrones 1 a
+   4. En `useSalesDraft` la decisión de qué hacer con el borrador persistido se aísla en `readDraftRestorePlan`, una
+   función pura que solo lee `localStorage`/`sessionStorage` y devuelve qué hay que mostrar; el render aplica ese
+   plan con `useDidChange` y el efecto se queda con los efectos de verdad (avisar al padre, marcar la sesión como
+   viva, abrir el modal de recuperación). En `CashRegister` el caso "no hay sucursal ni usuario, luego no hay
+   petición que resolver" se resuelve con clave nula, que es precisamente el estado inicial de `useRequestStatus`:
+   no hay que escribir `setChecking(false)` para expresar que no hay nada pendiente.
+
+**Un quinto patrón, para el paso que habilita al siguiente.** `useSalesDraft` necesita que el guardado automático
+no corra hasta que el carrito restaurado esté aplicado: si corriera en el mismo commit, escribiría con el carrito
+vacío y borraría el borrador recién recuperado. Para expresar esa secuencia sin un `setState` síncrono en el
+cuerpo del efecto se añadió `afterCommit` a `src/utils/asyncUtils.js`, que agenda la tarea en un microtask. Las
+escrituras pasan así a una continuación asíncrona legítima, el efecto conserva su `cleanup` y el comportamiento de
+dos passes es explícito. No es el atajo de la tabla de arriba (envolver en una async interna): esa variante se
+ejecuta de forma síncrona hasta el primer `await`, mientras que aquí el salto es deliberado y el motivo está
+documentado. `useCashCutReport` usa el mismo helper para arrancar la carga inicial, que si no escribiría estado
+antes de que el commit quedara firme.
+
+**Punto 5 cerrado por módulo (29 → 0).** Reportes (7 hooks), inventario (`useInventoryReport`, `useMovementsReport`),
+catálogo (`useProductsList`, `ProductsContext`), ventas (`useSalesHistory`, `useSearchModal`, `useSalesCashSession`,
+`useSalesDraft`, `useProductDiscountReward`, `useRewardProductSelection`, `useProductsPromotions`,
+`useKardexProductSelection`), caja (`useCashCutReport`, `CashRegister.jsx`) y perfiles (`Profiles.jsx`).
+
+En `useSalesCashSession` y en los dos modales de recompensa la comprobación del turno y la carga de productos se
+movieron a `salesCashService` (`resolveShiftCutStatus`) y al servicio de cada módulo respectivamente, de modo que el
+efecto llama a una función importada y conserva intactos los callbacks imperativos (`validateShiftNotCut`,
+`loadProducts`, `loadRewardProducts`) que usan los eventos del navegador y los temporizadores de tiempo real. En
+`useSalesCashSession` el indicador se siembra además desde `localStorage` durante el render, de modo que un corte ya
+registrado se sigue viendo de inmediato sin la pasada extra síncrona.
+
+**Verificación de esta rama:** `npm test` en verde con 1237 tests (1226 previos más 11 nuevos para
+`useDidChange` y `useRequestStatus`); `npm run build:frontend` con EXIT 0; conteo de errores de ESLint
+**69 → 0** sobre 581 archivos. Quedan 583 warnings, todos preexistentes y fuera del alcance de este ítem
+(siguen en #8 y #57).
+
+
+
+Nota sobre cobertura: el error de profundidad de importación en `useSalesCartState.js` (este commit lo corrige)
+no lo detectó la suite, porque ningún test alcanza ese archivo. `npm run build:frontend` sí recorre todo el
+grafo de módulos y lo habría detectado. Para este ítem conviene validar siempre con el build, no solo con
+`npm test`.
 
 ---
 

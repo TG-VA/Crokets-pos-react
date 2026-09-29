@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./CustomersComponents.module.css";
 import useEscapeKey from "../hooks/useEscapeKey";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 import {
   formatCurrency,
   formatNumber,
@@ -34,10 +35,11 @@ const CustomerDetailModal = ({
   // Permitir cerrar modal con la tecla ESC mediante hook compartido
   useEscapeKey(isOpen, onClose);
 
-  // Reset de pestaña al cambiar de cliente
-  useEffect(() => {
+  // Reset de pestaña al cambiar de cliente, resuelto durante el render para no
+  // provocar un re-render en cascada al cambiar el cliente inspeccionado.
+  if (useDidChange(customerDetail?.customer?.id)) {
     setModalTab("PRODUCTS");
-  }, [customerDetail?.customer?.id]);
+  }
 
   if (!isOpen) return null;
 

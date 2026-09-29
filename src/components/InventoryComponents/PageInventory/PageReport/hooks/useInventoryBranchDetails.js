@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../../../lib/supabaseClient";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 const useInventoryBranchDetails = (selectedBranchId) => {
   const [expandedProductId, setExpandedProductId] = useState(null);
@@ -9,12 +10,14 @@ const useInventoryBranchDetails = (selectedBranchId) => {
   const [detailsErrorByProduct, setDetailsErrorByProduct] =
     useState({});
 
-  useEffect(() => {
+  // El detalle pertenece a una sucursal: al cambiarla se reinicia durante el
+  // render, en lugar de disparar cuatro setState desde un efecto.
+  if (useDidChange(selectedBranchId)) {
     setExpandedProductId(null);
     setOtherStocksByProduct({});
     setLoadingDetailsByProduct({});
     setDetailsErrorByProduct({});
-  }, [selectedBranchId]);
+  }
 
   const clearExpandedProduct = () => {
     setExpandedProductId(null);
