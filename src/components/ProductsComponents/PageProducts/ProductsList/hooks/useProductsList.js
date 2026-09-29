@@ -127,7 +127,7 @@ export const useProductsList = () => {
     }
 
     setLoadingProducts(false);
-  }, [branch?.id, debouncedSearch, selectedDepartmentId, currentPage, pageSize]);
+  }, [branch, debouncedSearch, selectedDepartmentId, currentPage, pageSize]);
 
   useEffect(() => {
     reload();

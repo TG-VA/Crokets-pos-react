@@ -123,7 +123,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
     } finally {
       if (currentReq === requestIdRef.current) setIsLoading(false);
     }
-  }, [barcode, branch?.id]);
+  }, [barcode, branch]);
 
   const handleAddToSale = useCallback(async () => {
     if (!product || !onAddToSale) return;

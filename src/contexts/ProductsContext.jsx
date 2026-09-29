@@ -92,7 +92,7 @@ export const ProductsProvider = ({ children }) => {
     } finally {
       setLoadingProducts(false);
     }
-  }, [branch?.id]);
+  }, [branch]);
 
   const { markLocalMutation } = useProductsRealtime(branch?.id, loadProducts);
 

@@ -361,7 +361,7 @@ export const exportCustomersReportToExcel = async ({
 
     const cleanBranch = (branchName || "Todas las sucursales")
       .trim()
-      .replace(/[\/\\:*?"<>|]/g, "-");
+      .replace(/[\\/:*?"<>|]/g, "-");
 
     const parts = [`Reporte de Clientes - ${tabLabel}`, `[${cleanBranch}]`];
 
@@ -378,7 +378,7 @@ export const exportCustomersReportToExcel = async ({
     if (searchTerm && searchTerm.trim()) {
       const cleanTerm = searchTerm
         .trim()
-        .replace(/[\/\\:*?"<>|]/g, "-")
+        .replace(/[\\/:*?"<>|]/g, "-")
         .slice(0, 20);
       parts.push(`[Filtro '${cleanTerm}']`);
     }

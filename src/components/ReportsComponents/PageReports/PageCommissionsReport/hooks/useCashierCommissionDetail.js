@@ -22,7 +22,7 @@ export const useCashierCommissionDetail = ({
     return allDetailedRows.filter(
       (r) => r.cashierId === cashier.cashierId && r.hasCommission
     );
-  }, [cashier?.cashierId, allDetailedRows]);
+  }, [cashier, allDetailedRows]);
 
   // Agrupar por ticket de venta
   const ticketGroups = useMemo(() => {
@@ -69,7 +69,7 @@ export const useCashierCommissionDetail = ({
     } finally {
       setIsExportingStatement(false);
     }
-  }, [cashier?.cashierName, ticketGroups, startDate, endDate]);
+  }, [cashier, ticketGroups, startDate, endDate]);
 
   return {
     cashierRows,

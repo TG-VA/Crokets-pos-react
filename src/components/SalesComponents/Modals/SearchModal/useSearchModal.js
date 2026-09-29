@@ -126,7 +126,7 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
     } catch (e) {
       if (currentId === kitRequestIdRef.current) setKitValidation({ isValid: false, message: "Error validando kit.", items: [] });
     }
-  }, [branch?.id, getBranchAvailableStock, getProductCartQuantity]);
+  }, [branch, getBranchAvailableStock, getProductCartQuantity]);
 
   const fetchProductStocks = useCallback(async (productId) => {
     if (!productId) { setSelectedProductStocks([]); setLoadingStocks(false); return; }
@@ -200,7 +200,7 @@ export const useSearchModal = ({ isOpen, onClose, onAddToSale, productosEnVenta,
       setSearchResults(merged); setSelectedIndex(merged.length > 0 ? 0 : -1);
     } catch (e) { if (currentId === searchRequestIdRef.current) { setError("Error cargando productos."); setSearchResults([]); setSelectedIndex(-1); } } 
     finally { if (currentId === searchRequestIdRef.current) setLoading(false); }
-  }, [branch?.id, getProductCartQuantity]);
+  }, [branch, getProductCartQuantity]);
 
   const handleInputChange = (e) => {
     const val = e.target.value; 

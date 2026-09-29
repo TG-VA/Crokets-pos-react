@@ -32,11 +32,18 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
     loadData();
   }, [loadData]);
 
+  // Colecciones de origen expuestas como variables planas: la dependencia del
+  // memo pasa a ser el valor ya resuelto, de modo que la lista declarada
+  // coincide con la inferida por el compilador sin perder el acceso seguro.
+  const reportItems = reportData?.items;
+  const reportReorderSuggestions = reportData?.reorderSuggestions;
+  const reportExhaustedProducts = reportData?.exhaustedProducts;
+
   // Filtrado de items
   const filteredItems = useMemo(() => {
-    if (!reportData?.items) return [];
+    if (!reportItems) return [];
 
-    return reportData.items.filter((item) => {
+    return reportItems.filter((item) => {
       // Filtro por departamento
       if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
         return false;
@@ -60,13 +67,13 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
 
       return true;
     });
-  }, [reportData?.items, selectedDepartment, selectedStockStatus, searchTerm]);
+  }, [reportItems, selectedDepartment, selectedStockStatus, searchTerm]);
 
   // Filtrado de sugerencias de reorden
   const filteredReorder = useMemo(() => {
-    if (!reportData?.reorderSuggestions) return [];
+    if (!reportReorderSuggestions) return [];
 
-    return reportData.reorderSuggestions.filter((item) => {
+    return reportReorderSuggestions.filter((item) => {
       if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
         return false;
       }
@@ -82,13 +89,13 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
 
       return true;
     });
-  }, [reportData?.reorderSuggestions, selectedDepartment, searchTerm]);
+  }, [reportReorderSuggestions, selectedDepartment, searchTerm]);
 
   // Filtrado de productos agotados
   const filteredExhausted = useMemo(() => {
-    if (!reportData?.exhaustedProducts) return [];
+    if (!reportExhaustedProducts) return [];
 
-    return reportData.exhaustedProducts.filter((item) => {
+    return reportExhaustedProducts.filter((item) => {
       if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
         return false;
       }
@@ -104,7 +111,7 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
 
       return true;
     });
-  }, [reportData?.exhaustedProducts, selectedDepartment, searchTerm]);
+  }, [reportExhaustedProducts, selectedDepartment, searchTerm]);
 
   return {
     reportData,
