@@ -182,7 +182,9 @@ const CashCut = () => {
       const result = await printTicket(text);
 
       if (!result?.success) {
-        throw new Error(result?.message || "No se pudo imprimir el corte.");
+        throw new Error(result?.message || "No se pudo imprimir el corte.", {
+          cause: result?.error,
+        });
       }
 
       showAppAlert({

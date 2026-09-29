@@ -1,22 +1,68 @@
 /**
- * Genera el texto del ticket y confirma su disponibilidad para impresion.
+ * Puente de impresion entre el renderer y el proceso principal de Electron.
  *
- * LIMITACION CONOCIDA (KNOWN_ISSUES.md #59): esta funcion todavia no imprime.
- * `electron/preload.js` no expone ningun canal de impresion y en la base (`0c51210`)
- * este modulo solo escribia el texto en consola. Por eso no puede fallar y su
- * contrato se reduce a `{ success: true, message }`: la rama de fallo se elimino
- * junto con los `console.log` de #57 porque era inalcanzable.
+ * El canal `print-ticket` lo registra `electron/mainProcess.js` y su lista blanca vive en
+ * `electron/preload.js`. El servicio no conoce Electron: solo detecta si la API de contexto
+ * esta expuesta y normaliza cualquier resultado al contrato `{ success, message, error?,
+ * simulated }`.
  *
- * En consecuencia, el manejo de error de los tres llamadores (`CashCut.jsx`,
- * `salesTicketService.js` y `useSalesHistory.js`) es hoy codigo muerto. Ninguno
- * lee la propiedad `error`; los tres se limitan a ramificar sobre `success`.
- *
- * Al implementar la impresion real hay que devolver `{ success: false, message, error }`
- * en el fallo para que esos tres bloques vuelvan a ser alcanzables.
+ * `simulated` distingue "imprimio en el sistema" de "solo se genero el texto": en un navegador
+ * de desarrollo no hay proceso principal, asi que el fallback reporta la simulacion en vez de
+ * fingir un trabajo de impresion.
  */
-export const printTicket = async (_ticketText) => {
-  return {
-    success: true,
-    message: "Ticket generado correctamente",
-  };
+
+const PRINT_TICKET_CHANNEL = "print-ticket";
+
+const DEFAULT_FAILURE_MESSAGE = "No se pudo imprimir el ticket.";
+const DEFAULT_UNKNOWN_ERROR = "UNKNOWN_PRINT_ERROR";
+
+const SIMULATED_MESSAGE =
+  "Ticket generado correctamente. La impresion no esta disponible fuera de Electron.";
+
+function hasElectronBridge() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.electronAPI?.invoke === "function"
+  );
+}
+
+/**
+ * Imprime el ticket ya formateado.
+ *
+ * Nunca lanza: cualquier fallo del canal, del driver o del contrato llega al llamador como
+ * `{ success: false, message, error }` para que los tres call sites puedan reportarlo.
+ */
+export const printTicket = async (ticketText, options = {}) => {
+  if (!hasElectronBridge()) {
+    return { success: true, simulated: true, message: SIMULATED_MESSAGE };
+  }
+
+  try {
+    const result = await window.electronAPI.invoke(PRINT_TICKET_CHANNEL, {
+      ticketText,
+      options,
+    });
+
+    if (!result?.success) {
+      return {
+        success: false,
+        simulated: false,
+        message: result?.message || DEFAULT_FAILURE_MESSAGE,
+        error: result?.error || DEFAULT_UNKNOWN_ERROR,
+      };
+    }
+
+    return {
+      success: true,
+      simulated: false,
+      message: result.message || "Ticket impreso correctamente.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      simulated: false,
+      message: DEFAULT_FAILURE_MESSAGE,
+      error: error?.message || DEFAULT_UNKNOWN_ERROR,
+    };
+  }
 };

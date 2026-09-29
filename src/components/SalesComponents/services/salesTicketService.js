@@ -224,7 +224,7 @@ export const printSaleTicket = async ({
     });
 
     const printResult = await printTicket(ticketText);
-    if (!printResult?.success) console.error("No se pudo imprimir el ticket automáticamente.");
+    if (!printResult?.success) console.error("No se pudo imprimir el ticket automáticamente:", printResult?.error);
 
     return { success: Boolean(printResult?.success), ticketText };
   } catch (error) {
