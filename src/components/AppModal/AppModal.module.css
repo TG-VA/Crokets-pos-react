@@ -70,8 +70,6 @@
   display: block;
   width: 30px;
   height: 30px;
-  filter: brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%)
-    hue-rotate(75deg) brightness(51%) contrast(81%);
   pointer-events: none;
 }
 
@@ -171,6 +169,14 @@
     0 0 0 8px rgba(16, 146, 177, 0.08);
 }
 
+/* Los SVG del catálogo se sirven en negro: el tinte se reproduce con filter. */
+.info .iconGlyph {
+  width: 25px;
+  height: 25px;
+  filter: brightness(0) saturate(100%) invert(60%) sepia(23%) saturate(1603%)
+    hue-rotate(153deg) brightness(51%) contrast(157%);
+}
+
 .info .confirmButton {
   background: #1092b1;
   box-shadow: none;
@@ -205,6 +211,11 @@
   box-shadow:
     0 0 0 1px #86efac inset,
     0 0 0 9px rgba(34, 197, 94, 0.12);
+}
+
+.success .iconGlyph {
+  filter: brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%)
+    hue-rotate(75deg) brightness(51%) contrast(81%);
 }
 
 .success .title {
@@ -245,6 +256,18 @@
     0 0 0 8px rgba(252, 137, 19, 0.08);
 }
 
+/* El triángulo ocupa casi toda su caja: se amplía para igualar el peso óptico. */
+.warning .iconGlyph,
+.danger .iconGlyph {
+  width: 32px;
+  height: 32px;
+}
+
+.warning .iconGlyph {
+  filter: brightness(0) saturate(100%) invert(21%) sepia(32%) saturate(1508%)
+    hue-rotate(20deg) brightness(179%) contrast(86%);
+}
+
 .warning .confirmButton {
   background: #fc8913;
   box-shadow: none;
@@ -265,6 +288,11 @@
   box-shadow:
     0 0 0 1px #fecaca inset,
     0 0 0 8px rgba(220, 38, 38, 0.08);
+}
+
+.danger .iconGlyph {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(40%) saturate(5116%)
+    hue-rotate(330deg) brightness(74%) contrast(151%);
 }
 
 .danger .confirmButton {

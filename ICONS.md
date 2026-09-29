@@ -29,6 +29,7 @@ Los iconos son archivos `.svg` sueltos en `src/assets/icons/`. Se importan como 
 ##### Alertas y estado
 | Archivo | Uso sugerido |
 | ------ | ------ |
+| `circle-info-solid-full.svg` | Información / detalle |
 | `triangle-exclamation-solid-full.svg` | Advertencia |
 | `pendingIcon.svg` | Estado pendiente |
 | `lock-solid.svg` / `lock-solid-full.svg` | Bloqueado / restringido |
