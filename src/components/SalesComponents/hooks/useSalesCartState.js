@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useDidChange } from "../../hooks/useDidChange";
+import { useDidChange } from "../../../hooks/useDidChange";
 
 export const useSalesCartState = () => {
   const [productos, setProductos] = useState([]);
