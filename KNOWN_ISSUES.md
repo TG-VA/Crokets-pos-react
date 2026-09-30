@@ -2124,7 +2124,7 @@ fallaban antes de la barrida, y ninguno más. Desglose por extensión: 195 `.js`
 del CI (`js|jsx|mjs|json|html|css`) y 15 son markdown. El diff total es de 21,484 inserciones y
 15,436 borrados, casi todos reindentaciones.
 
-El alcance reproduces las cifras medidas al registrar el ítem: 370 en la rama `fix/ci-eslint-and-modal-icons`
+El alcance reproduce las cifras medidas al registrar el ítem: 370 en la rama `fix/ci-eslint-and-modal-icons`
 y 371 en `main` (la diferencia de uno es `AppModal.jsx`, ya reformateado por obligación de #60). Esto
 confirma que la barrida no dejó ningún archivo atrás ni reformateó de más.
 

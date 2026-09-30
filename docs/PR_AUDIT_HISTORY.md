@@ -2410,3 +2410,56 @@ el navegador, y se contrasta contra la versión previa del código en lugar de c
   `mask-image` la forma la define la máscara y el relleno toma `currentColor`, así que el color pintado
   es el color del estado por construcción CSS. La medición en Chromium confirma que no hay
   intermediario que reintroduzca desviación, no que hoy se haya calibrado bien.
+
+---
+
+## Informe de Auditoría — RAMA `style/global-prettier-format` (30 sep 2026, auditoría y contra-auditoría)
+
+**Base:** `origin/main` (`dbbb01f`) · **HEAD:** `6ccf4f7`
+**Commits en la rama:**
+
+1. `ffe0388` — `style: format repository files with prettier (#61)` (370 archivos)
+2. `6ccf4f7` — `docs(debt): mark issue 61 as resolved in KNOWN_ISSUES and update BACKLOG` (2 archivos)
+   **Alcance:** 370 archivos modificados, 21,571 inserciones / 15,462 borrados. 0 archivos añadidos/eliminados/renombrados.
+   **Cierre de deuda técnica:** Resuelve de raíz el cuello de botella de formato del CI (`KNOWN_ISSUES.md` #61 y `BACKLOG.md`).
+
+### 1. Comprobaciones mecánicas reproducidas (Auditoría y Contra-auditoría independiente)
+
+| #   | Verificación              | Comando / Método                          | Resultado reproducido                                                        | Estado |
+| --- | ------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- | :----: |
+| 1   | Árbol limpio              | `git status --porcelain`                  | 0 líneas (árbol limpio)                                                      |  PASS  |
+| 2   | Base de integración       | `git merge-base origin/main HEAD`         | `dbbb01f` (= `origin/main`, sin divergencia)                                 |  PASS  |
+| 3   | Suite de pruebas          | `npm test`                                | EXIT 0 — 84 archivos passed (84), 1,278 tests passed (1,278)                 |  PASS  |
+| 4   | Compilación frontend      | `npm run build:frontend`                  | EXIT 0 — compilación limpia en ~3.80s, chunks emitidos sin anomalías         |  PASS  |
+| 5   | Prettier repo completo    | `npx prettier --check .`                  | EXIT 0 — `All matched files use Prettier code style!` (0 incidencias)        |  PASS  |
+| 6   | Linter repo completo      | `npx eslint .`                            | EXIT 0 — 206 problems (0 errores, 206 warnings, idéntico al baseline de #60) |  PASS  |
+| 7   | Higiene de diff           | `git diff --check origin/main..HEAD`      | EXIT 0 — 0 avisos de whitespace ni espacios colgantes                        |  PASS  |
+| 8   | Terminación EOF newline   | Byte `0x0A` en todos los archivos tocados | 370/370 archivos verificados                                                 |  PASS  |
+| 9   | Terminación de línea LF   | CRLF scan en archivos tocados             | 0 archivos con CRLF (100% `LF`)                                              |  PASS  |
+| 10  | Ausencia de emojis nuevos | Barrido UTF-8 en líneas añadidas          | 21,570 líneas escaneadas → 0 emojis introducidos                             |  PASS  |
+
+### 2. Invarianza funcional y pruebas de AST
+
+1. **Equivalencia byte a byte frente a Prettier base:**
+   - 367 de los 370 archivos son exactamente idénticos a `prettier(base)`.
+   - Las 3 únicas desviaciones justificadas son: `BACKLOG.md` y `KNOWN_ISSUES.md` (documentación nueva en `6ccf4f7`) y `docs/PR_AUDIT_HISTORY.md` (corrección deliberada de escape en `ffe0388`).
+2. **Invarianza de AST en 327 archivos JS/JSX/MJS:**
+   - Verificado con `espree` y `@babel/parser` normalizando posiciones y valor de texto JSX (`cleanJSXElementLiteralChild`).
+   - `327/327 AST_IDENTICAL`. Comparador validado con controles negativos (`a + b -> a - b`, alteración de queries Supabase, cambios de texto JSX y espacios renderizados fallan de forma determinista).
+   - Ningún cambio de lógica de negocio, llamadas a base de datos, hooks o contratos.
+3. **Equivalencia CSS:**
+   - 27 de 27 hojas de estilo analizadas con PostCSS resultan equivalentes. Cero `!important` introducidos o eliminados. Reglas de máscara y `currentColor` de `AppModal` intactas.
+4. **Higiene de logs y errores:**
+   - Conteo de `console.error` idéntico (257 en `src/`, 2 en `scripts/`).
+   - Cero `console.log` o `console.warn` en `src/` o `electron/`. Los 7 preexistentes en `scripts/importPostalCodes.js` permanecen inalterados.
+
+### 3. Correcciones de rescate y verificación documental
+
+- **Escape `\+` en `docs/PR_AUDIT_HISTORY.md:817`:** Prettier reinterpretaba el signo `+` como marcador de lista markdown convirtiéndolo en `-` ("573 previos + 13 de X + 2 de Y" pasaba a ser resta). Se escapó como `\+` para preservar la semántica aritmética exacta.
+- **Corrección de errata en `KNOWN_ISSUES.md:2127`:** Se corrigió «El alcance reproduces» por «El alcance reproduce» conforme a la recomendación de contra-auditoría.
+- **Aislamiento de commits:** El reformateo masivo está confinado al commit `style:` puro (`ffe0388`) para proteger `git blame`; la documentación técnica se aisló en el commit `docs(debt):` (`6ccf4f7`).
+
+### 4. Veredicto final
+
+**APROBADO POR UNANIMIDAD (Auditoría Interna y Contra-auditoría Externa).**
+La rama cumple rigurosamente con todos los gates de calidad y el protocolo estricto de dos fases. Cierra formalmente el issue #61 del repositorio sin ninguna regresión funcional.
