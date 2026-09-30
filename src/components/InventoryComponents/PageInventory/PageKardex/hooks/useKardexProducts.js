@@ -1,31 +1,19 @@
-import {
-  useCallback,
-  useMemo,
-} from "react";
+import { useCallback, useMemo } from "react";
 
-import {
-  filterBranchKardexProducts,
-} from "../utils/kardexProductUtils";
+import { filterBranchKardexProducts } from "../utils/kardexProductUtils";
 
 import useKardexProductSearch from "./useKardexProductSearch";
 import useKardexProductSelection from "./useKardexProductSelection";
 import useKardexProductShortcuts from "./useKardexProductShortcuts";
 
-const useKardexProducts = ({
-  products = [],
-} = {}) => {
-  const branchKardexProducts =
-    useMemo(() => {
-      return filterBranchKardexProducts(
-        products
-      );
-    }, [products]);
+const useKardexProducts = ({ products = [] } = {}) => {
+  const branchKardexProducts = useMemo(() => {
+    return filterBranchKardexProducts(products);
+  }, [products]);
 
-  const productSelection =
-    useKardexProductSelection({
-      products:
-        branchKardexProducts,
-    });
+  const productSelection = useKardexProductSelection({
+    products: branchKardexProducts,
+  });
 
   const {
     selectedProducts,
@@ -37,15 +25,13 @@ const useKardexProducts = ({
     getNextAvailableSlot,
   } = productSelection;
 
-  const productSearch =
-    useKardexProductSearch({
-      products:
-        branchKardexProducts,
+  const productSearch = useKardexProductSearch({
+    products: branchKardexProducts,
 
-      selectedProducts,
-      selectProduct,
-      getNextAvailableSlot,
-    });
+    selectedProducts,
+    selectProduct,
+    getNextAvailableSlot,
+  });
 
   const {
     modalTargetSlot,
@@ -65,22 +51,16 @@ const useKardexProducts = ({
   } = productSearch;
 
   useKardexProductShortcuts({
-    onOpenProductSearch:
-      openProductSearch,
+    onOpenProductSearch: openProductSearch,
   });
 
-  const clearProducts =
-    useCallback(() => {
-      clearSelectedProducts();
-      resetProductSearch();
-    }, [
-      clearSelectedProducts,
-      resetProductSearch,
-    ]);
+  const clearProducts = useCallback(() => {
+    clearSelectedProducts();
+    resetProductSearch();
+  }, [clearSelectedProducts, resetProductSearch]);
 
   return {
-    products:
-      branchKardexProducts,
+    products: branchKardexProducts,
 
     selectedProducts,
     selectedProductIds,
@@ -95,8 +75,7 @@ const useKardexProducts = ({
     openProductSearch,
     closeProductSearch,
 
-    selectProduct:
-      selectProductFromSearch,
+    selectProduct: selectProductFromSearch,
 
     removeProduct,
     clearProducts,

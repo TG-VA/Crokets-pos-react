@@ -82,7 +82,11 @@ describe("useCashCutDetail", () => {
       const { result, props } = renderDetail();
 
       await act(async () => {
-        await result.current.confirmCut({ counted: "", notes: "", expected: 0 });
+        await result.current.confirmCut({
+          counted: "",
+          notes: "",
+          expected: 0,
+        });
       });
 
       expect(props.setErrorMsg).toHaveBeenCalledWith(

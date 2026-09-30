@@ -1,22 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
-import { loadProductsReport } from '../services/productReportsService';
-import { useRequestStatus } from '../../../../../hooks/useRequestStatus';
+import { useState, useEffect, useCallback } from "react";
+import { loadProductsReport } from "../services/productReportsService";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 export const useProductsReport = (currentBranchId) => {
   // Inicializamos las fechas: Desde el día 1 del mes actual hasta hoy
-  const today = new Date().toISOString().split('T')[0];
-  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
+  const firstDayOfMonth = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1
+  )
+    .toISOString()
+    .split("T")[0];
 
-  const [dateRange, setDateRange] = useState({ startDate: firstDayOfMonth, endDate: today });
-  
+  const [dateRange, setDateRange] = useState({
+    startDate: firstDayOfMonth,
+    endDate: today,
+  });
+
   const [reportData, setReportData] = useState({
     kpis: {},
     byDepartment: [],
     topProducts: [],
     bottomProducts: [],
-    deadStock: []
+    deadStock: [],
   });
-  
+
   const [error, setError] = useState(null);
   const [syncedAt, setSyncedAt] = useState(null);
 
@@ -29,7 +38,9 @@ export const useProductsReport = (currentBranchId) => {
 
   const generateReport = useCallback(() => {
     if (!currentBranchId) {
-      setError("No se ha detectado una sucursal activa para generar el reporte.");
+      setError(
+        "No se ha detectado una sucursal activa para generar el reporte."
+      );
       return Promise.resolve();
     }
 
@@ -90,6 +101,6 @@ export const useProductsReport = (currentBranchId) => {
     isLoading,
     error: visibleError,
     syncedAt,
-    generateReport
+    generateReport,
   };
 };

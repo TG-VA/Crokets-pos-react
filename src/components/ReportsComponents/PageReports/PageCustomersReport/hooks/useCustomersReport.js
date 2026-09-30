@@ -175,7 +175,13 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
       }
       return valB - valA;
     });
-  }, [reportData.rankedCustomers, searchTerm, riskFilter, sortBy, sortDirection]);
+  }, [
+    reportData.rankedCustomers,
+    searchTerm,
+    riskFilter,
+    sortBy,
+    sortDirection,
+  ]);
 
   // Productos filtrados por búsqueda
   const filteredTopProducts = useMemo(() => {
@@ -240,4 +246,3 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
     refresh: loadData,
   };
 };
-

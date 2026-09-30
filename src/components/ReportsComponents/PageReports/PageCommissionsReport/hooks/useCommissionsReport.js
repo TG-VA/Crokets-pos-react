@@ -79,7 +79,10 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
           setDepartmentsList(depts);
         }
       } catch (err) {
-        console.error("Error al cargar catálogos en useCommissionsReport:", err);
+        console.error(
+          "Error al cargar catálogos en useCommissionsReport:",
+          err
+        );
       }
     };
     loadCatalogs();
@@ -159,7 +162,13 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
   const requestKey = useMemo(
     () =>
       `${startDate}|${endDate}|${selectedBranchId}|${selectedCashierId}|${selectedDepartmentId}`,
-    [startDate, endDate, selectedBranchId, selectedCashierId, selectedDepartmentId]
+    [
+      startDate,
+      endDate,
+      selectedBranchId,
+      selectedCashierId,
+      selectedDepartmentId,
+    ]
   );
   const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
 
@@ -324,7 +333,8 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
       const branchName =
         selectedBranchId === "ALL"
           ? "Todas las sucursales"
-          : branchesList.find((b) => b.id === selectedBranchId)?.name || "Sucursal";
+          : branchesList.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal";
 
       await exportCommissionsReportToExcel({
         cashierSummaries,

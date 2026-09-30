@@ -8,7 +8,11 @@ const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
 const getSalesDraftKeys = ({ branchId, userId }) => {
   if (!branchId || !userId) {
-    return { draftKey: null, sessionAcknowledgedKey: null, sessionAliveKey: null };
+    return {
+      draftKey: null,
+      sessionAcknowledgedKey: null,
+      sessionAliveKey: null,
+    };
   }
   const draftKey = `sales_draft_${branchId}_${userId}`;
   return {
@@ -30,28 +34,36 @@ const formatDraftSavedAt = (savedAt) => {
 };
 
 const hasRecoverableDraftData = (draft) => {
-  const restoredProducts = Array.isArray(draft?.productos) ? draft.productos : [];
+  const restoredProducts = Array.isArray(draft?.productos)
+    ? draft.productos
+    : [];
   return Boolean(
     restoredProducts.length > 0 ||
-      draft?.currentSaleClient ||
-      draft?.currentSaleReward ||
-      draft?.saleToken ||
-      String(draft?.saleNotes || "").trim().length > 0 ||
-      String(draft?.barcode || "").trim().length > 0
+    draft?.currentSaleClient ||
+    draft?.currentSaleReward ||
+    draft?.saleToken ||
+    String(draft?.saleNotes || "").trim().length > 0 ||
+    String(draft?.barcode || "").trim().length > 0
   );
 };
 
 const hasDraftDataToSave = ({
-  productos, pendingTickets, currentSaleClient, currentSaleReward, saleToken, saleNotes, barcode,
+  productos,
+  pendingTickets,
+  currentSaleClient,
+  currentSaleReward,
+  saleToken,
+  saleNotes,
+  barcode,
 }) => {
   return Boolean(
     productos.length > 0 ||
-      pendingTickets.length > 0 ||
-      currentSaleClient ||
-      currentSaleReward ||
-      saleToken ||
-      saleNotes.trim().length > 0 ||
-      barcode.trim().length > 0
+    pendingTickets.length > 0 ||
+    currentSaleClient ||
+    currentSaleReward ||
+    saleToken ||
+    saleNotes.trim().length > 0 ||
+    barcode.trim().length > 0
   );
 };
 
@@ -77,7 +89,11 @@ const EMPTY_RESTORE_PLAN = {
  * sesion como viva, abrir el modal de recuperacion) quedan en un efecto aparte.
  * Asi no hace falta un setState sincrono dentro de un efecto.
  */
-const readDraftRestorePlan = ({ draftKey, sessionAcknowledgedKey, sessionAliveKey }) => {
+const readDraftRestorePlan = ({
+  draftKey,
+  sessionAcknowledgedKey,
+  sessionAliveKey,
+}) => {
   if (!draftKey) {
     return EMPTY_RESTORE_PLAN;
   }
@@ -96,11 +112,20 @@ const readDraftRestorePlan = ({ draftKey, sessionAcknowledgedKey, sessionAliveKe
     }
 
     const recoverable = hasRecoverableDraftData(draft);
-    const restorePromptRequested = sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
-    const sessionAlreadyAlive = Boolean(sessionAliveKey && sessionStorage.getItem(sessionAliveKey) === "true");
-    const alreadyAcknowledged = Boolean(sessionAcknowledgedKey && sessionStorage.getItem(sessionAcknowledgedKey) === "true");
+    const restorePromptRequested =
+      sessionStorage.getItem(SALES_DRAFT_RESTORE_REQUEST_KEY) === "true";
+    const sessionAlreadyAlive = Boolean(
+      sessionAliveKey && sessionStorage.getItem(sessionAliveKey) === "true"
+    );
+    const alreadyAcknowledged = Boolean(
+      sessionAcknowledgedKey &&
+      sessionStorage.getItem(sessionAcknowledgedKey) === "true"
+    );
 
-    const showModal = recoverable && (restorePromptRequested || (!sessionAlreadyAlive && !alreadyAcknowledged));
+    const showModal =
+      recoverable &&
+      (restorePromptRequested ||
+        (!sessionAlreadyAlive && !alreadyAcknowledged));
 
     if (!showModal) {
       return { ...EMPTY_RESTORE_PLAN, ready: true, draft };
@@ -125,32 +150,56 @@ const readDraftRestorePlan = ({ draftKey, sessionAcknowledgedKey, sessionAliveKe
 };
 
 const useSalesDraft = ({
-  branchId, userId, productos = [], pendingTickets = [], currentSaleClient = null,
-  currentSaleReward = null, ticketNumber = 1, saleToken = null, saleNotes = "", barcode = "",
-  subtotal = 0, discountTotal = 0, total = 0, onRestoreDraft, onDiscardDraft, onOpenRecoveryModal,
+  branchId,
+  userId,
+  productos = [],
+  pendingTickets = [],
+  currentSaleClient = null,
+  currentSaleReward = null,
+  ticketNumber = 1,
+  saleToken = null,
+  saleNotes = "",
+  barcode = "",
+  subtotal = 0,
+  discountTotal = 0,
+  total = 0,
+  onRestoreDraft,
+  onDiscardDraft,
+  onOpenRecoveryModal,
 }) => {
   const [draftReady, setDraftReady] = useState(false);
   const [recoveredDraft, setRecoveredDraft] = useState(false);
   const [recoveredDraftSavedAt, setRecoveredDraftSavedAt] = useState(null);
 
   // Guarda las funciones más recientes sin provocar re-ejecuciones de efectos
-  const callbacksRef = useRef({ onRestoreDraft, onDiscardDraft, onOpenRecoveryModal });
-
-  useEffect(() => {
-    callbacksRef.current = { onRestoreDraft, onDiscardDraft, onOpenRecoveryModal };
+  const callbacksRef = useRef({
+    onRestoreDraft,
+    onDiscardDraft,
+    onOpenRecoveryModal,
   });
 
-  const { draftKey, sessionAcknowledgedKey, sessionAliveKey } = getSalesDraftKeys({ branchId, userId });
+  useEffect(() => {
+    callbacksRef.current = {
+      onRestoreDraft,
+      onDiscardDraft,
+      onOpenRecoveryModal,
+    };
+  });
+
+  const { draftKey, sessionAcknowledgedKey, sessionAliveKey } =
+    getSalesDraftKeys({ branchId, userId });
 
   const clearSalesDraft = useCallback(() => {
     if (draftKey) localStorage.removeItem(draftKey);
-    if (sessionAcknowledgedKey) sessionStorage.removeItem(sessionAcknowledgedKey);
+    if (sessionAcknowledgedKey)
+      sessionStorage.removeItem(sessionAcknowledgedKey);
     if (sessionAliveKey) sessionStorage.removeItem(sessionAliveKey);
     sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
   }, [draftKey, sessionAcknowledgedKey, sessionAliveKey]);
 
   const dismissRecoveredDraft = useCallback(() => {
-    if (sessionAcknowledgedKey) sessionStorage.setItem(sessionAcknowledgedKey, "true");
+    if (sessionAcknowledgedKey)
+      sessionStorage.setItem(sessionAcknowledgedKey, "true");
     if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
     sessionStorage.removeItem(SALES_DRAFT_RESTORE_REQUEST_KEY);
     setRecoveredDraft(false);
@@ -174,7 +223,11 @@ const useSalesDraft = ({
   const [restoreAppliedKey, setRestoreAppliedKey] = useState(null);
 
   if (useDidChange(draftKey ?? NO_DRAFT_KEY)) {
-    const plan = readDraftRestorePlan({ draftKey, sessionAcknowledgedKey, sessionAliveKey });
+    const plan = readDraftRestorePlan({
+      draftKey,
+      sessionAcknowledgedKey,
+      sessionAliveKey,
+    });
 
     setRestorePlan(plan);
     setDraftReady(plan.ready);
@@ -198,13 +251,19 @@ const useSalesDraft = ({
         localStorage.removeItem(draftKey);
       }
 
-      if (restorePlan.draft && typeof callbacksRef.current.onRestoreDraft === "function") {
+      if (
+        restorePlan.draft &&
+        typeof callbacksRef.current.onRestoreDraft === "function"
+      ) {
         callbacksRef.current.onRestoreDraft(restorePlan.draft);
       }
 
       if (sessionAliveKey) sessionStorage.setItem(sessionAliveKey, "true");
 
-      if (restorePlan.showModal && typeof callbacksRef.current.onOpenRecoveryModal === "function") {
+      if (
+        restorePlan.showModal &&
+        typeof callbacksRef.current.onOpenRecoveryModal === "function"
+      ) {
         callbacksRef.current.onOpenRecoveryModal({
           message: restorePlan.message,
           onConfirm: dismissRecoveredDraft,
@@ -219,8 +278,13 @@ const useSalesDraft = ({
     return () => {
       cancelled = true;
     };
-
-  }, [draftKey, restorePlan, sessionAliveKey, dismissRecoveredDraft, discardRecoveredDraft]);
+  }, [
+    draftKey,
+    restorePlan,
+    sessionAliveKey,
+    dismissRecoveredDraft,
+    discardRecoveredDraft,
+  ]);
 
   // --- Guardado automático del borrador ---
   useEffect(() => {
@@ -230,7 +294,13 @@ const useSalesDraft = ({
     if (!draftReady || !draftKey || restoreAppliedKey !== draftKey) return;
 
     const shouldSave = hasDraftDataToSave({
-      productos, pendingTickets, currentSaleClient, currentSaleReward, saleToken, saleNotes, barcode,
+      productos,
+      pendingTickets,
+      currentSaleClient,
+      currentSaleReward,
+      saleToken,
+      saleNotes,
+      barcode,
     });
 
     if (!shouldSave) {
@@ -262,8 +332,22 @@ const useSalesDraft = ({
       console.error("Error guardando venta en curso:", error);
     }
   }, [
-    draftReady, restoreAppliedKey, draftKey, branchId, userId, productos, pendingTickets, currentSaleClient,
-    currentSaleReward, ticketNumber, saleToken, saleNotes, barcode, subtotal, discountTotal, total,
+    draftReady,
+    restoreAppliedKey,
+    draftKey,
+    branchId,
+    userId,
+    productos,
+    pendingTickets,
+    currentSaleClient,
+    currentSaleReward,
+    ticketNumber,
+    saleToken,
+    saleNotes,
+    barcode,
+    subtotal,
+    discountTotal,
+    total,
   ]);
 
   return {

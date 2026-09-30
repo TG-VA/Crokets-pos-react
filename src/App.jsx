@@ -1,5 +1,10 @@
 import React, { Suspense, lazy } from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 const Login = lazy(() => import("./pages/Login/Login"));
 const CashRegister = lazy(() => import("./pages/CashRegister/CashRegister"));
@@ -20,7 +25,13 @@ import AuthGuard from "./components/AuthGuard/AuthGuard";
 import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 
 function AppRoutes() {
-  const { isAuthenticated, cashRegistered, setCashRegistered, loading, isLocked } = useAuth();
+  const {
+    isAuthenticated,
+    cashRegistered,
+    setCashRegistered,
+    loading,
+    isLocked,
+  } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -34,9 +45,14 @@ function AppRoutes() {
           <Route
             path="/login"
             element={
-              !isAuthenticated || isLocked
-                ? <Login />
-                : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
+              !isAuthenticated || isLocked ? (
+                <Login />
+              ) : (
+                <Navigate
+                  to={cashRegistered ? "/dashboard" : "/cash-register"}
+                  replace
+                />
+              )
             }
           />
 
@@ -44,30 +60,105 @@ function AppRoutes() {
           <Route
             path="/cash-register"
             element={
-              <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
+              <AuthGuard
+                requireCashRegister={false}
+                requireNoCashRegister={true}
+              >
                 <CashRegister setCashRegistered={setCashRegistered} />
               </AuthGuard>
             }
           />
 
           {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
-          <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
-          <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
-          <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
-          <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
-          <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
-          <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
-          <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthGuard>
+                <Dashboard setCashRegistered={setCashRegistered} />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/products/*"
+            element={
+              <AuthGuard>
+                <Products />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/cashcut/*"
+            element={
+              <AuthGuard>
+                <CashCut />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/inventory/*"
+            element={
+              <AuthGuard>
+                <Inventory />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/invoices/*"
+            element={
+              <AuthGuard>
+                <Invoices />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/customers/*"
+            element={
+              <AuthGuard>
+                <Customers />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/reports/*"
+            element={
+              <AuthGuard>
+                <Reports />
+              </AuthGuard>
+            }
+          />
 
           {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
-          <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
-          <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
+          <Route
+            path="/settings"
+            element={
+              <AuthGuard requireCashRegister={false}>
+                <Settings />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profiles"
+            element={
+              <AuthGuard requireCashRegister={false}>
+                <Profiles />
+              </AuthGuard>
+            }
+          />
 
           {/* FALLBACK ROOT */}
           <Route
             path="/"
             element={
-              <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
+              <Navigate
+                to={
+                  !isAuthenticated || isLocked
+                    ? "/login"
+                    : !cashRegistered
+                      ? "/cash-register"
+                      : "/dashboard"
+                }
+                replace
+              />
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -23,9 +23,12 @@ describe("useRequestStatus", () => {
   });
 
   it("vuelve a estar en carga cuando cambia la clave pedida", () => {
-    const { result, rerender } = renderHook(({ key }) => useRequestStatus(key), {
-      initialProps: { key: "k1" },
-    });
+    const { result, rerender } = renderHook(
+      ({ key }) => useRequestStatus(key),
+      {
+        initialProps: { key: "k1" },
+      }
+    );
 
     act(() => {
       result.current.markSettled();
@@ -38,9 +41,12 @@ describe("useRequestStatus", () => {
   });
 
   it("ignora la resolucion de una peticion que ya no es la vigente", () => {
-    const { result, rerender } = renderHook(({ key }) => useRequestStatus(key), {
-      initialProps: { key: "k1" },
-    });
+    const { result, rerender } = renderHook(
+      ({ key }) => useRequestStatus(key),
+      {
+        initialProps: { key: "k1" },
+      }
+    );
 
     // Se captura el setter de la peticion antigua antes de cambiar la clave.
     const settleOldRequest = result.current.markSettled;

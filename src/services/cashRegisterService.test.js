@@ -5,7 +5,10 @@ vi.mock("../lib/supabaseClient", () => ({
 }));
 
 import { supabase } from "../lib/supabaseClient";
-import { fetchActiveCashSession, openCashRegister } from "./cashRegisterService";
+import {
+  fetchActiveCashSession,
+  openCashRegister,
+} from "./cashRegisterService";
 
 describe("cashRegisterService", () => {
   beforeEach(() => {
@@ -22,7 +25,10 @@ describe("cashRegisterService", () => {
 
     it("devuelve la sesión activa con su dueño", async () => {
       const session = { id: "s1", user_id: "u1", username: "CAJERO" };
-      supabase.rpc.mockResolvedValue({ data: { success: true, session }, error: null });
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, session },
+        error: null,
+      });
 
       const result = await fetchActiveCashSession("branch-1");
 
@@ -34,7 +40,10 @@ describe("cashRegisterService", () => {
     });
 
     it("devuelve data null cuando no hay caja abierta", async () => {
-      supabase.rpc.mockResolvedValue({ data: { success: true, session: null }, error: null });
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, session: null },
+        error: null,
+      });
 
       const result = await fetchActiveCashSession("branch-1");
 
@@ -44,7 +53,10 @@ describe("cashRegisterService", () => {
     });
 
     it("captura errores de transporte del RPC", async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "boom" },
+      });
 
       const result = await fetchActiveCashSession("branch-1");
 
@@ -63,7 +75,10 @@ describe("cashRegisterService", () => {
 
     it("abre la caja y devuelve la sesión creada", async () => {
       const session = { id: "s2", user_id: "u1", opening_amount: 100 };
-      supabase.rpc.mockResolvedValue({ data: { success: true, session }, error: null });
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, session },
+        error: null,
+      });
 
       const result = await openCashRegister("branch-1", 100);
 
@@ -83,7 +98,8 @@ describe("cashRegisterService", () => {
           success: false,
           session,
           code: "CASH_ALREADY_OPEN_BY_OTHER_USER",
-          message: "Ya existe una caja abierta en esta sucursal por OTRO. Debe cerrarse antes de abrir otra caja.",
+          message:
+            "Ya existe una caja abierta en esta sucursal por OTRO. Debe cerrarse antes de abrir otra caja.",
         },
         error: null,
       });
@@ -97,7 +113,10 @@ describe("cashRegisterService", () => {
     });
 
     it("captura errores de transporte del RPC", async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "rpc fail" },
+      });
 
       const result = await openCashRegister("branch-1", 100);
 

@@ -104,7 +104,9 @@ describe("ticketPointsService", () => {
 
   describe("getCustomerPointsBalance", () => {
     it("devuelve el saldo o null cuando no existe", () => {
-      expect(getCustomerPointsBalance({ customer_points_balance: 800 })).toBe(800);
+      expect(getCustomerPointsBalance({ customer_points_balance: 800 })).toBe(
+        800
+      );
       expect(getCustomerPointsBalance({ points_balance: "810" })).toBe(810);
       expect(getCustomerPointsBalance({ customer: { points: 900 } })).toBe(900);
       expect(getCustomerPointsBalance({ points_balance: "" })).toBeNull();

@@ -79,8 +79,10 @@ export const useCashCutReport = ({ user }) => {
 
   const [devolucionesParcialesTotales, setDevolucionesParcialesTotales] =
     useState(0);
-  const [devolucionesParcialesAfectanCaja, setDevolucionesParcialesAfectanCaja] =
-    useState(0);
+  const [
+    devolucionesParcialesAfectanCaja,
+    setDevolucionesParcialesAfectanCaja,
+  ] = useState(0);
   const [devolucionesParciales, setDevolucionesParciales] = useState([]);
 
   const [rewardSummary, setRewardSummary] = useState(createEmptyRewardSummary);
@@ -206,7 +208,10 @@ export const useCashCutReport = ({ user }) => {
     );
   };
 
-  const loadCurrentSession = async (sessionData, { resetSales = true } = {}) => {
+  const loadCurrentSession = async (
+    sessionData,
+    { resetSales = true } = {}
+  ) => {
     setSelectedCutId("current");
     setHistoricalCut(null);
     setUsername(getDisplayUsername());
@@ -294,8 +299,8 @@ export const useCashCutReport = ({ user }) => {
         cutData.users?.username
           ? String(cutData.users.username).toUpperCase()
           : cutData.user_id
-          ? String(cutData.user_id).slice(0, 8).toUpperCase()
-          : "USUARIO"
+            ? String(cutData.user_id).slice(0, 8).toUpperCase()
+            : "USUARIO"
       );
 
       if (cutData.branch_id) {

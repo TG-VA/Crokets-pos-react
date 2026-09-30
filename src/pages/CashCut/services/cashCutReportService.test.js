@@ -122,9 +122,7 @@ describe("cashCutReportService", () => {
       expect(q.select).toHaveBeenCalledWith(
         expect.stringContaining("cash_register_sessions")
       );
-      expect(q.select).toHaveBeenCalledWith(
-        expect.stringContaining("users")
-      );
+      expect(q.select).toHaveBeenCalledWith(expect.stringContaining("users"));
       expect(q.eq).toHaveBeenCalledWith("branch_id", "b1");
       expect(q.eq).toHaveBeenCalledWith("cut_type", "shift");
       expect(q.order).toHaveBeenCalledWith("created_at", { ascending: false });

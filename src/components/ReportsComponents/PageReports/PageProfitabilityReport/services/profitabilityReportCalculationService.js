@@ -32,7 +32,8 @@ export const aggregateProductsProfitability = ({
     const kitComponents = kitConfig?.product_kit_items || [];
     const kitComponentsCount = kitComponents.length;
 
-    let departmentId = productInfo.department_id || (productInfo.departments?.id) || null;
+    let departmentId =
+      productInfo.department_id || productInfo.departments?.id || null;
     let departmentName =
       (departmentId && departmentsMap[departmentId]?.name) ||
       productInfo.departments?.name ||
@@ -59,8 +60,13 @@ export const aggregateProductsProfitability = ({
         const compProduct = productsMap[compId] || {};
         const compBranchKey = branchId ? `${branchId}_${compId}` : null;
         let compUnitCost = 0;
-        if (compBranchKey && branchInventoryMap[compBranchKey]?.cost_price !== undefined) {
-          compUnitCost = Number(branchInventoryMap[compBranchKey].cost_price || 0);
+        if (
+          compBranchKey &&
+          branchInventoryMap[compBranchKey]?.cost_price !== undefined
+        ) {
+          compUnitCost = Number(
+            branchInventoryMap[compBranchKey].cost_price || 0
+          );
         } else if (productsMap[compId]?.cost_price !== undefined) {
           compUnitCost = Number(productsMap[compId].cost_price || 0);
         }
@@ -78,7 +84,10 @@ export const aggregateProductsProfitability = ({
       }
     } else {
       const branchInvKey = branchId ? `${branchId}_${productId}` : null;
-      if (branchInvKey && branchInventoryMap[branchInvKey]?.cost_price !== undefined) {
+      if (
+        branchInvKey &&
+        branchInventoryMap[branchInvKey]?.cost_price !== undefined
+      ) {
         unitCost = Number(branchInventoryMap[branchInvKey].cost_price || 0);
       } else if (productInfo.cost_price !== undefined) {
         unitCost = Number(productInfo.cost_price || 0);
@@ -110,7 +119,10 @@ export const aggregateProductsProfitability = ({
         hasCostAssigned: unitCost > 0,
         redeemedUnits: 0,
       };
-    } else if (isKit && !productAggMap[productId].kitComponentsDetails?.length) {
+    } else if (
+      isKit &&
+      !productAggMap[productId].kitComponentsDetails?.length
+    ) {
       productAggMap[productId].kitComponentsDetails = kitComponentsDetails;
     }
 
@@ -133,8 +145,7 @@ export const aggregateProductsProfitability = ({
       p.totalRevenue > 0 ? (grossProfit / p.totalRevenue) * 100 : 0;
     const averageSalePrice =
       p.totalUnits > 0 ? p.totalRevenue / p.totalUnits : 0;
-    const averageCostPrice =
-      p.totalUnits > 0 ? p.totalCost / p.totalUnits : 0;
+    const averageCostPrice = p.totalUnits > 0 ? p.totalCost / p.totalUnits : 0;
 
     const isPureReward = p.totalRevenue === 0 && p.totalUnits > 0;
     const hasPartialReward = p.redeemedUnits > 0 && p.totalRevenue > 0;
@@ -200,9 +211,7 @@ export const aggregateDepartmentsProfitability = ({
     const grossMarginPercent =
       d.totalRevenue > 0 ? (d.grossProfit / d.totalRevenue) * 100 : 0;
     const contributionPercent =
-      totalBusinessProfit > 0
-        ? (d.grossProfit / totalBusinessProfit) * 100
-        : 0;
+      totalBusinessProfit > 0 ? (d.grossProfit / totalBusinessProfit) * 100 : 0;
 
     const marginClassification = getMarginClassification(grossMarginPercent);
 
@@ -247,8 +256,7 @@ export const calculateProfitabilityKpis = ({
   const grossProfit = totalRevenue - totalCost;
   const grossMarginPercent =
     totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-  const markupPercent =
-    totalCost > 0 ? (grossProfit / totalCost) * 100 : 0;
+  const markupPercent = totalCost > 0 ? (grossProfit / totalCost) * 100 : 0;
 
   return {
     totalRevenue,

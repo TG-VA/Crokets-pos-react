@@ -5,7 +5,9 @@ export const useSalesTerminalState = () => {
   const [cashMovements, setCashMovements] = useState([]);
 
   return {
-    barcode, setBarcode,
-    cashMovements, setCashMovements,
+    barcode,
+    setBarcode,
+    cashMovements,
+    setCashMovements,
   };
 };

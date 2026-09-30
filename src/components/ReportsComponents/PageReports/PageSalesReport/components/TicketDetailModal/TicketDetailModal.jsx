@@ -1,9 +1,15 @@
 import React from "react";
-import { formatCurrency } from "../../../../../../utils/formatters"; 
+import { formatCurrency } from "../../../../../../utils/formatters";
 import styles from "./TicketDetailModal.module.css";
 import { useEscapeKey } from "../../../../../../hooks/useEscapeKey";
 
-export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading }) => {
+export const TicketDetailModal = ({
+  isOpen,
+  onClose,
+  ticket,
+  details,
+  loading,
+}) => {
   useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !ticket) return null;
@@ -11,21 +17,29 @@ export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading })
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        
         <div className={styles.modalHeader}>
           <div className={styles.headerText}>
             <h2>
-              Ticket <span className={styles.ticketFolio}>#{ticket.ticketNumber}</span>
+              Ticket{" "}
+              <span className={styles.ticketFolio}>#{ticket.ticketNumber}</span>
             </h2>
             <p className={styles.headerSub}>
-              {ticket.date} &nbsp;•&nbsp; <strong>Sucursal:</strong> {ticket.branch} &nbsp;•&nbsp; <strong>Cajero:</strong> {ticket.cashier}
+              {ticket.date} &nbsp;•&nbsp; <strong>Sucursal:</strong>{" "}
+              {ticket.branch} &nbsp;•&nbsp; <strong>Cajero:</strong>{" "}
+              {ticket.cashier}
             </p>
           </div>
-          <button type="button" aria-label="Cerrar detalle de ticket" className={styles.closeBtn} onClick={onClose}>&times;</button>
+          <button
+            type="button"
+            aria-label="Cerrar detalle de ticket"
+            className={styles.closeBtn}
+            onClick={onClose}
+          >
+            &times;
+          </button>
         </div>
 
         <div className={styles.modalBody}>
-          
           <div className={styles.metaGrid}>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Cliente</span>
@@ -38,11 +52,15 @@ export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading })
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Estado</span>
               <div className={styles.metaValue}>
-                <span className={`${styles.badge} ${
-                  ticket.status === "Completada" ? styles.success : 
-                  ticket.status === "Cancelada" ? styles.danger : 
-                  styles.warning
-                }`}>
+                <span
+                  className={`${styles.badge} ${
+                    ticket.status === "Completada"
+                      ? styles.success
+                      : ticket.status === "Cancelada"
+                        ? styles.danger
+                        : styles.warning
+                  }`}
+                >
                   {ticket.status}
                 </span>
               </div>
@@ -69,33 +87,55 @@ export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading })
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="5" className={styles.emptyText}>Cargando productos...</td></tr>
+                  <tr>
+                    <td colSpan="5" className={styles.emptyText}>
+                      Cargando productos...
+                    </td>
+                  </tr>
                 ) : details.length === 0 ? (
-                  <tr><td colSpan="5" className={styles.emptyText}>No se encontraron productos registrados en este ticket.</td></tr>
+                  <tr>
+                    <td colSpan="5" className={styles.emptyText}>
+                      No se encontraron productos registrados en este ticket.
+                    </td>
+                  </tr>
                 ) : (
                   details.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <div className={styles.productName}>{item.productName}</div>
-                        {item.barcode !== "N/A" && <small className={styles.barcodeText}>CÓD: {item.barcode}</small>}
+                        <div className={styles.productName}>
+                          {item.productName}
+                        </div>
+                        {item.barcode !== "N/A" && (
+                          <small className={styles.barcodeText}>
+                            CÓD: {item.barcode}
+                          </small>
+                        )}
                       </td>
                       <td className={styles.textCenter}>
                         <span className={styles.qtyBadge}>{item.quantity}</span>
                       </td>
-                      <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
+                      <td className={styles.textRight}>
+                        {formatCurrency(item.unitPrice)}
+                      </td>
                       <td className={styles.textRight}>
                         {item.discount > 0 ? (
                           <div className={styles.discountWrapper}>
-                            <span className={styles.discountVal}>-{formatCurrency(item.discount)}</span>
+                            <span className={styles.discountVal}>
+                              -{formatCurrency(item.discount)}
+                            </span>
                             {item.discountType && (
-                              <span className={styles.discountTypeLabel}>{item.discountType}</span>
+                              <span className={styles.discountTypeLabel}>
+                                {item.discountType}
+                              </span>
                             )}
                           </div>
                         ) : (
                           "$0.00"
                         )}
                       </td>
-                      <td className={styles.textRight}><strong>{formatCurrency(item.total)}</strong></td>
+                      <td className={styles.textRight}>
+                        <strong>{formatCurrency(item.total)}</strong>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -105,9 +145,10 @@ export const TicketDetailModal = ({ isOpen, onClose, ticket, details, loading })
 
           <div className={styles.totalSection}>
             <span className={styles.totalLabel}>Total cobrado:</span>
-            <strong className={styles.grandTotal}>{formatCurrency(ticket.total)}</strong>
+            <strong className={styles.grandTotal}>
+              {formatCurrency(ticket.total)}
+            </strong>
           </div>
-
         </div>
       </div>
     </div>

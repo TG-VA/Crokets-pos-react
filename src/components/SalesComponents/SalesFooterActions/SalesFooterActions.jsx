@@ -38,11 +38,7 @@ const SalesFooterActions = ({
           onClick={onOpenChange}
           data-tooltip="F5"
         >
-          <img
-            src={changeIcon}
-            alt="Cambiar"
-            className={styles.squareIcon}
-          />
+          <img src={changeIcon} alt="Cambiar" className={styles.squareIcon} />
           <span className={styles.squareKey}>F5</span>
           <span className={styles.squareText}>Cambiar</span>
         </div>
@@ -56,15 +52,8 @@ const SalesFooterActions = ({
           <span className={styles.squareText}>Pendiente</span>
         </div>
 
-        <div
-          className={styles.squareButton}
-          onClick={onOpenDelete}
-        >
-          <img
-            src={deleteIcon}
-            alt="Eliminar"
-            className={styles.squareIcon}
-          />
+        <div className={styles.squareButton} onClick={onOpenDelete}>
+          <img src={deleteIcon} alt="Eliminar" className={styles.squareIcon} />
           <span className={styles.squareText}>Eliminar</span>
         </div>
 
@@ -81,10 +70,7 @@ const SalesFooterActions = ({
           <span className={styles.squareText}>Descuento</span>
         </div>
 
-        <div
-          className={styles.squareButton}
-          onClick={onOpenClient}
-        >
+        <div className={styles.squareButton} onClick={onOpenClient}>
           <img
             src={assignClientIcon}
             alt="Asignar cliente"
@@ -93,10 +79,7 @@ const SalesFooterActions = ({
           <span className={styles.squareText}>Asignar cliente</span>
         </div>
 
-        <div
-          className={styles.SquareButtonSecondary}
-          onClick={onOpenHistory}
-        >
+        <div className={styles.SquareButtonSecondary} onClick={onOpenHistory}>
           <img
             src={SalesHistoryIcon}
             alt="Ventas del día y Devoluciones"
@@ -107,9 +90,7 @@ const SalesFooterActions = ({
             <span className={styles.salesHistoryButtonLine}>
               Ventas del día y
             </span>
-            <span className={styles.salesHistoryButtonLine}>
-              Devoluciones
-            </span>
+            <span className={styles.salesHistoryButtonLine}>Devoluciones</span>
           </span>
         </div>
       </div>
@@ -142,11 +123,7 @@ const SalesFooterActions = ({
           }`}
           onClick={handlePay}
         >
-          <img
-            src={payIcon}
-            alt="Cobrar"
-            className={styles.payIcon}
-          />
+          <img src={payIcon} alt="Cobrar" className={styles.payIcon} />
           <span className={styles.payKey}>F12</span>
           <span className={styles.payText}>Cobrar</span>
         </div>

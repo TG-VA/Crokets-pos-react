@@ -1,6 +1,13 @@
 export const buildSaleSuccessPayload = ({
-  saleId, saleClient = null, subtotal = 0, discountTotal = 0, total = 0,
-  paymentData = null, pointsResult = null, rewardRedemptionResult = null, rewardPointsResult = null,
+  saleId,
+  saleClient = null,
+  subtotal = 0,
+  discountTotal = 0,
+  total = 0,
+  paymentData = null,
+  pointsResult = null,
+  rewardRedemptionResult = null,
+  rewardPointsResult = null,
 }) => {
   const hasCustomer = Boolean(saleClient?.id);
   const pointsEarned = Number(pointsResult?.points || 0);
@@ -19,14 +26,19 @@ export const buildSaleSuccessPayload = ({
     printed: Boolean(paymentData?.shouldPrint),
     pointsEarned,
     pointsUsed,
-    pointsBalance: pointsResult?.newBalance !== undefined && pointsResult?.newBalance !== null ? Number(pointsResult.newBalance) : null,
+    pointsBalance:
+      pointsResult?.newBalance !== undefined &&
+      pointsResult?.newBalance !== null
+        ? Number(pointsResult.newBalance)
+        : null,
     pointsError: pointsResult?.error || null,
     rewardPointsError: pointsResult?.rewardError || null,
     rewardRedemptions: pointsResult?.rewardRedemptions || [],
     rewardRedemptionsRegistered: Boolean(rewardRedemptionResult?.registered),
     rewardPointsRegistered: Boolean(rewardPointsResult?.registered),
-    noPointsReason: (hasCustomer && pointsEarned <= 0 && pointsUsed <= 0) 
-      ? "La venta no generó puntos porque el total no alcanzó el monto mínimo configurado." 
-      : "",
+    noPointsReason:
+      hasCustomer && pointsEarned <= 0 && pointsUsed <= 0
+        ? "La venta no generó puntos porque el total no alcanzó el monto mínimo configurado."
+        : "",
   };
 };

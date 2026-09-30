@@ -57,7 +57,8 @@ const CustomersRankingTable = ({
         style={{
           width: 9,
           height: 9,
-          transform: sortDirection === "asc" ? "rotate(180deg)" : "rotate(0deg)",
+          transform:
+            sortDirection === "asc" ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 0.15s ease",
           display: "inline-block",
           verticalAlign: "middle",
@@ -72,7 +73,8 @@ const CustomersRankingTable = ({
         <div className={styles.tableCardTitleGroup}>
           <span className={styles.tableCardTitle}>Ranking de Clientes</span>
           <span className={styles.tableCardSubtitle}>
-            Mostrando {customers.length} cliente{customers.length === 1 ? "" : "s"} según los filtros seleccionados
+            Mostrando {customers.length} cliente
+            {customers.length === 1 ? "" : "s"} según los filtros seleccionados
           </span>
         </div>
       </div>
@@ -85,7 +87,8 @@ const CustomersRankingTable = ({
             </div>
             <h3 className={styles.emptyTitle}>No se encontraron clientes</h3>
             <p className={styles.emptyDescription}>
-              No hay registros que coincidan con los filtros aplicados o el término de búsqueda.
+              No hay registros que coincidan con los filtros aplicados o el
+              término de búsqueda.
             </p>
           </div>
         ) : (
@@ -155,12 +158,16 @@ const CustomersRankingTable = ({
                         <div className={styles.customerSubtext}>
                           <span>{formatPhoneNumber(c.phone)}</span>
                           {c.isPointsCustomer && (
-                            <span className={`${styles.badge} ${styles.badgePoints}`.trim()}>
+                            <span
+                              className={`${styles.badge} ${styles.badgePoints}`.trim()}
+                            >
                               Puntos
                             </span>
                           )}
                           {c.isBillingCustomer && (
-                            <span className={`${styles.badge} ${styles.badgeBilling}`.trim()}>
+                            <span
+                              className={`${styles.badge} ${styles.badgeBilling}`.trim()}
+                            >
                               Factura
                             </span>
                           )}
@@ -208,9 +215,14 @@ const CustomersRankingTable = ({
                       )}
                     </td>
                     <td className={styles.alignCenter}>
-                      <div className={styles.customerNameCell} style={{ alignItems: "center" }}>
+                      <div
+                        className={styles.customerNameCell}
+                        style={{ alignItems: "center" }}
+                      >
                         <span style={{ fontSize: "0.775rem" }}>
-                          {c.lastSaleDate ? formatShortDate(c.lastSaleDate) : "Sin compras"}
+                          {c.lastSaleDate
+                            ? formatShortDate(c.lastSaleDate)
+                            : "Sin compras"}
                         </span>
                         {riskBadge && (
                           <span
@@ -230,7 +242,11 @@ const CustomersRankingTable = ({
                         className={styles.btnDetail}
                         title="Ver detalle 360° del cliente"
                       >
-                        <img src={eyeIcon} alt="" style={{ width: 13, height: 13 }} />
+                        <img
+                          src={eyeIcon}
+                          alt=""
+                          style={{ width: 13, height: 13 }}
+                        />
                         Ver Detalle
                       </button>
                     </td>

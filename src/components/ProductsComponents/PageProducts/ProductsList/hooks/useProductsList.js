@@ -104,8 +104,11 @@ export const useProductsList = () => {
   // El refresco en tiempo real no cambia la clave, asi que ya no hace falta un
   // flag `silent`: el spinner solo aparece cuando cambia lo que el usuario pide.
   const requestKey = `${branch?.id || ""}|${debouncedSearch}|${selectedDepartmentId}|${currentPage}|${pageSize}`;
-  const { isLoading: loadingProducts, isStale, markSettled } =
-    useRequestStatus(requestKey);
+  const {
+    isLoading: loadingProducts,
+    isStale,
+    markSettled,
+  } = useRequestStatus(requestKey);
 
   // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
   const visibleProductsError = isStale ? null : productsError;
@@ -138,7 +141,14 @@ export const useProductsList = () => {
     }
 
     markSettled();
-  }, [branch, debouncedSearch, selectedDepartmentId, currentPage, pageSize, markSettled]);
+  }, [
+    branch,
+    debouncedSearch,
+    selectedDepartmentId,
+    currentPage,
+    pageSize,
+    markSettled,
+  ]);
 
   // El efecto llama directo a la funcion de datos importada y aplica el estado
   // en la continuacion asincrona; `reload` queda para el refresco en tiempo real.
@@ -184,7 +194,14 @@ export const useProductsList = () => {
     return () => {
       cancelled = true;
     };
-  }, [branch?.id, debouncedSearch, selectedDepartmentId, currentPage, pageSize, markSettled]);
+  }, [
+    branch?.id,
+    debouncedSearch,
+    selectedDepartmentId,
+    currentPage,
+    pageSize,
+    markSettled,
+  ]);
 
   useProductsRealtime(branch?.id, reload);
 
@@ -221,7 +238,8 @@ export const useProductsList = () => {
     if (rowRect.top < topOffset) {
       body.scrollTop = body.scrollTop + rowRect.top - topOffset;
     } else if (rowRect.bottom > window.innerHeight) {
-      body.scrollTop = body.scrollTop + rowRect.bottom - window.innerHeight + 30;
+      body.scrollTop =
+        body.scrollTop + rowRect.bottom - window.innerHeight + 30;
     }
   }, [selectedRowIndex]);
 

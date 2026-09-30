@@ -7,7 +7,9 @@ const line = () => repeat("=", WIDTH);
 const dash = () => repeat("-", WIDTH);
 
 const normalizeSpaces = (text = "") =>
-  String(text ?? "").replace(/\s+/g, " ").trim();
+  String(text ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const centerText = (text = "") => {
   const clean = String(text ?? "");
@@ -136,13 +138,19 @@ const getShortFolio = (saleId) =>
   saleId ? String(saleId).slice(0, 8).toUpperCase() : "--------";
 
 const getMethodShort = (methodName = "") => {
-  const name = String(methodName || "").trim().toUpperCase();
+  const name = String(methodName || "")
+    .trim()
+    .toUpperCase();
 
   if (!name) return "N/A";
   if (name.includes("EFECTIVO")) return "EFE";
   if (name.includes("TERMINAL") || name.includes("TARJETA")) return "TER";
   if (name.includes("TRANSFER")) return "TRA";
-  if (name.includes("DÓLAR") || name.includes("DOLAR") || name.includes("USD")) {
+  if (
+    name.includes("DÓLAR") ||
+    name.includes("DOLAR") ||
+    name.includes("USD")
+  ) {
     return "USD";
   }
   if (name.includes("MIXTO")) return "MIX";
@@ -151,13 +159,19 @@ const getMethodShort = (methodName = "") => {
 };
 
 const getMethodGroup = (methodName = "") => {
-  const name = String(methodName || "").trim().toUpperCase();
+  const name = String(methodName || "")
+    .trim()
+    .toUpperCase();
 
   if (!name) return "OTRO";
   if (name.includes("EFECTIVO")) return "EFECTIVO";
   if (name.includes("TERMINAL") || name.includes("TARJETA")) return "TERMINAL";
   if (name.includes("TRANSFER")) return "TRANSFERENCIA";
-  if (name.includes("DÓLAR") || name.includes("DOLAR") || name.includes("USD")) {
+  if (
+    name.includes("DÓLAR") ||
+    name.includes("DOLAR") ||
+    name.includes("USD")
+  ) {
     return "DOLARES";
   }
 
@@ -246,8 +260,8 @@ export const buildCashCutText = (data = {}) => {
     difference !== null && difference !== undefined
       ? Number(difference || 0)
       : counted !== null
-      ? counted - expected
-      : null;
+        ? counted - expected
+        : null;
 
   const totalCancelaciones = cancelaciones.reduce(
     (acc, item) => acc + Number(item.refund_amount || 0),
@@ -388,7 +402,10 @@ export const buildCashCutText = (data = {}) => {
     formatTotalLine("Canc. caja:", formatNegativeMoney(devolucionesCaja))
   );
   lines.push(
-    formatTotalLine("Dev. caja:", formatNegativeMoney(devolucionesParcialesCaja))
+    formatTotalLine(
+      "Dev. caja:",
+      formatNegativeMoney(devolucionesParcialesCaja)
+    )
   );
   lines.push(formatTotalLine("TOTAL CAJA:", formatMoney(expected)));
   lines.push(dash());
@@ -414,10 +431,14 @@ export const buildCashCutText = (data = {}) => {
         );
 
         if (Number(ventasDolaresMxn || 0) > 0) {
-          lines.push(formatTotalLine("Eq. MXN:", formatMoney(ventasDolaresMxn)));
+          lines.push(
+            formatTotalLine("Eq. MXN:", formatMoney(ventasDolaresMxn))
+          );
         }
       } else {
-        lines.push(formatTotalLine(`${name} bruto:`, formatMoney(method.total)));
+        lines.push(
+          formatTotalLine(`${name} bruto:`, formatMoney(method.total))
+        );
       }
     });
 
@@ -485,7 +506,9 @@ export const buildCashCutText = (data = {}) => {
       lines.push(formatTotalLine(label, formatNegativeMoney(exit.amount)));
     });
 
-    lines.push(formatTotalLine("TOTAL SAL:", formatNegativeMoney(totalSalidas)));
+    lines.push(
+      formatTotalLine("TOTAL SAL:", formatNegativeMoney(totalSalidas))
+    );
   }
 
   lines.push(dash());

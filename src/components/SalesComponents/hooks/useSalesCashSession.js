@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "../../../lib/supabaseClient";
 import { useDidChange } from "../../../hooks/useDidChange";
@@ -16,11 +11,7 @@ import {
 const SHIFT_CUT_STORAGE_KEY = "shift_cut_done";
 const REALTIME_REFRESH_DELAY = 400;
 
-const useSalesCashSession = ({
-  branchId,
-  userId,
-  enabled = true,
-}) => {
+const useSalesCashSession = ({ branchId, userId, enabled = true }) => {
   const [shiftAlreadyCut, setShiftAlreadyCut] = useState(false);
   const realtimeTimerRef = useRef(null);
 
@@ -133,10 +124,7 @@ const useSalesCashSession = ({
 
     window.addEventListener("focus", handleFocus);
     window.addEventListener("storage", handleStorage);
-    window.addEventListener(
-      "shift-cut-status-changed",
-      handleCutStatusChanged
-    );
+    window.addEventListener("shift-cut-status-changed", handleCutStatusChanged);
 
     return () => {
       window.removeEventListener("focus", handleFocus);

@@ -66,16 +66,15 @@ export const fetchCommissionsData = async ({
   cashierId = "ALL",
   departmentId = "ALL",
 }) => {
-  const { data: rpcRows, error: rpcError } = await supabase.rpc(
-    "get_commissions_report_data",
-    {
+  const { data: rpcRows, error: rpcError } = await supabase
+    .rpc("get_commissions_report_data", {
       p_start_date: startDateIso,
       p_end_date: endDateIso,
       p_branch_id: branchId !== "ALL" ? branchId : null,
       p_cashier_id: cashierId !== "ALL" ? cashierId : null,
       p_department_id: departmentId !== "ALL" ? departmentId : null,
-    }
-  ).limit(100000);
+    })
+    .limit(100000);
 
   if (rpcError) {
     console.error("Error al consultar comisiones via RPC:", rpcError);

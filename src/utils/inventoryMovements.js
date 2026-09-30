@@ -94,7 +94,11 @@ const buildInsertPayload = (movement) => {
 export const logInventoryMovement = async (movement) => {
   const table = await detectInventoryMovementsTable();
   if (!table) {
-    return { success: false, skipped: true, error: "No hay tabla de movimientos." };
+    return {
+      success: false,
+      skipped: true,
+      error: "No hay tabla de movimientos.",
+    };
   }
 
   const resolvedUserId = movement?.userId || (await getSessionUserId());
@@ -110,7 +114,8 @@ export const logInventoryMovement = async (movement) => {
 
     const message = String(error.message || "").toLowerCase();
     const missingColumn =
-      message.includes("column") && (message.includes("does not exist") || message.includes("not found"));
+      message.includes("column") &&
+      (message.includes("does not exist") || message.includes("not found"));
 
     const invalidMovementType =
       message.includes("movement_type") &&
@@ -171,7 +176,11 @@ export const logInventoryMovement = async (movement) => {
 
     if (!missingColumn) {
       console.error("Error insertando movimiento:", error);
-      return { success: false, skipped: false, error: error.message || "Error insertando movimiento." };
+      return {
+        success: false,
+        skipped: false,
+        error: error.message || "Error insertando movimiento.",
+      };
     }
 
     const minimalPayload = {
@@ -185,7 +194,9 @@ export const logInventoryMovement = async (movement) => {
       created_at: fullPayload.created_at,
     };
 
-    const { error: minimalError } = await supabase.from(table).insert(minimalPayload);
+    const { error: minimalError } = await supabase
+      .from(table)
+      .insert(minimalPayload);
     if (!minimalError) return { success: true, skipped: false, error: null };
 
     console.error("Error insertando movimiento (fallback):", minimalError);
@@ -196,6 +207,10 @@ export const logInventoryMovement = async (movement) => {
     };
   } catch (err) {
     console.error("Error inesperado insertando movimiento:", err);
-    return { success: false, skipped: false, error: err.message || "Error insertando movimiento." };
+    return {
+      success: false,
+      skipped: false,
+      error: err.message || "Error insertando movimiento.",
+    };
   }
 };

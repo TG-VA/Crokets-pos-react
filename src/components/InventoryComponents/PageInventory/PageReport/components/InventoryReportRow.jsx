@@ -1,10 +1,7 @@
 import React from "react";
 import styles from "./InventoryReportRows.module.css";
 
-import {
-  getStockStatus,
-  toUpperSafe,
-} from "../utils/inventoryReportUtils";
+import { getStockStatus, toUpperSafe } from "../utils/inventoryReportUtils";
 
 import InventoryDetailRow from "./InventoryDetailRow";
 
@@ -27,51 +24,33 @@ const InventoryReportRow = ({
           ? styles.notApplicableRow
           : "";
 
-  const hasInventory =
-    row?.tracksInventory !== false;
+  const hasInventory = row?.tracksInventory !== false;
 
   const existenceValue =
-    row?.existencia === null ||
-    row?.existencia === undefined
+    row?.existencia === null || row?.existencia === undefined
       ? "—"
       : row.existencia;
 
   const minimumValue =
-    row?.min === null || row?.min === undefined
-      ? "—"
-      : row.min;
+    row?.min === null || row?.min === undefined ? "—" : row.min;
 
   const maximumValue =
-    row?.max === null || row?.max === undefined
-      ? "—"
-      : row.max;
+    row?.max === null || row?.max === undefined ? "—" : row.max;
 
   return (
     <>
       <tr className={rowClassName}>
-        <td className={styles.codeCell}>
-          {row?.codigo || "—"}
-        </td>
+        <td className={styles.codeCell}>{row?.codigo || "—"}</td>
 
-        <td className={styles.nameCell}>
-          {toUpperSafe(row?.nombre)}
-        </td>
+        <td className={styles.nameCell}>{toUpperSafe(row?.nombre)}</td>
 
         <td>{toUpperSafe(row?.depto)}</td>
 
         <td>
-          <div
-            className={`${styles.stockCell} ${
-              styles[stockStatus.type]
-            }`}
-          >
-            <span className={styles.stockValue}>
-              {existenceValue}
-            </span>
+          <div className={`${styles.stockCell} ${styles[stockStatus.type]}`}>
+            <span className={styles.stockValue}>{existenceValue}</span>
 
-            <span className={styles.stockBadge}>
-              {stockStatus.label}
-            </span>
+            <span className={styles.stockBadge}>{stockStatus.label}</span>
           </div>
         </td>
 
@@ -81,16 +60,12 @@ const InventoryReportRow = ({
 
         <td>
           {!hasInventory ? (
-            <span className={styles.notApplicableText}>
-              No aplica
-            </span>
+            <span className={styles.notApplicableText}>No aplica</span>
           ) : (
             <button
               type="button"
               className={styles.linkButton}
-              onClick={() =>
-                onToggleOtherStocks?.(row.productId)
-              }
+              onClick={() => onToggleOtherStocks?.(row.productId)}
               title={
                 isExpanded
                   ? "Ocultar existencias de otras sucursales"
@@ -98,9 +73,7 @@ const InventoryReportRow = ({
               }
               aria-expanded={isExpanded}
             >
-              {isExpanded
-                ? "Ocultar otras sucursales"
-                : "Ver otras sucursales"}
+              {isExpanded ? "Ocultar otras sucursales" : "Ver otras sucursales"}
             </button>
           )}
         </td>

@@ -1,8 +1,6 @@
 import React from "react";
 
-import {
-  formatKardexCurrency,
-} from "../utils/kardexFormatters";
+import { formatKardexCurrency } from "../utils/kardexFormatters";
 
 import {
   getKardexMaximumStock,
@@ -23,19 +21,11 @@ const STOCK_STATUS_CLASS_NAMES = {
 };
 
 const getProductName = (product) => {
-  return (
-    product?.descripcion ??
-    product?.name ??
-    "—"
-  );
+  return product?.descripcion ?? product?.name ?? "—";
 };
 
 const getProductBarcode = (product) => {
-  return (
-    product?.codigo ??
-    product?.barcode ??
-    "SIN CÓDIGO"
-  );
+  return product?.codigo ?? product?.barcode ?? "SIN CÓDIGO";
 };
 
 const getProductDepartment = (product) => {
@@ -48,12 +38,7 @@ const getProductDepartment = (product) => {
 };
 
 const getProductPrice = (product) => {
-  return (
-    product?.precio ??
-    product?.sale_price ??
-    product?.price ??
-    0
-  );
+  return product?.precio ?? product?.sale_price ?? product?.price ?? 0;
 };
 
 const KardexProductSummary = ({
@@ -72,112 +57,77 @@ const KardexProductSummary = ({
     return null;
   }
 
-  const tracksInventory =
-    productTracksInventory(product);
+  const tracksInventory = productTracksInventory(product);
 
-  const currentStock =
-    getKardexProductStock(product);
+  const currentStock = getKardexProductStock(product);
 
-  const minimumStock =
-    getKardexMinimumStock(product);
+  const minimumStock = getKardexMinimumStock(product);
 
-  const maximumStock =
-    getKardexMaximumStock(product);
+  const maximumStock = getKardexMaximumStock(product);
 
-  const stockStatus =
-    getKardexStockStatus({
-      currentStock,
-      minimumStock,
-      maximumStock,
-      tracksInventory,
-    });
+  const stockStatus = getKardexStockStatus({
+    currentStock,
+    minimumStock,
+    maximumStock,
+    tracksInventory,
+  });
 
-  const statusClassName =
-    STOCK_STATUS_CLASS_NAMES[
-      stockStatus.key
-    ] ?? "";
+  const statusClassName = STOCK_STATUS_CLASS_NAMES[stockStatus.key] ?? "";
 
-  const exportDisabled =
-    exporting || !canExport;
+  const exportDisabled = exporting || !canExport;
 
   return (
     <div className={styles.productCard}>
       <div className={styles.productMain}>
-        <div className={styles.productName}>
-          {getProductName(product)}
-        </div>
+        <div className={styles.productName}>{getProductName(product)}</div>
 
         <div className={styles.productMeta}>
           <span className={styles.metaBadge}>
-            CÓDIGO:{" "}
-            {getProductBarcode(product)}
+            CÓDIGO: {getProductBarcode(product)}
           </span>
 
           <span className={styles.metaBadge}>
-            DPTO:{" "}
-            {getProductDepartment(product)}
+            DPTO: {getProductDepartment(product)}
           </span>
         </div>
       </div>
 
       <div className={styles.inventoryStats}>
         <div className={styles.statBox}>
-          <div className={styles.statLabel}>
-            Existencia actual
-          </div>
+          <div className={styles.statLabel}>Existencia actual</div>
 
           <div className={styles.statValue}>
-            {tracksInventory
-              ? currentStock
-              : "—"}
+            {tracksInventory ? currentStock : "—"}
           </div>
         </div>
 
         <div className={styles.statBox}>
-          <div className={styles.statLabel}>
-            Mínimo
-          </div>
+          <div className={styles.statLabel}>Mínimo</div>
 
           <div className={styles.statValue}>
-            {tracksInventory
-              ? minimumStock
-              : "—"}
+            {tracksInventory ? minimumStock : "—"}
           </div>
         </div>
 
         <div className={styles.statBox}>
-          <div className={styles.statLabel}>
-            Máximo
-          </div>
+          <div className={styles.statLabel}>Máximo</div>
 
           <div className={styles.statValue}>
-            {tracksInventory
-              ? maximumStock
-              : "—"}
+            {tracksInventory ? maximumStock : "—"}
           </div>
         </div>
 
-        <div
-          className={`${styles.statBox} ${statusClassName}`}
-        >
-          <div className={styles.statLabel}>
-            Estado
-          </div>
+        <div className={`${styles.statBox} ${statusClassName}`}>
+          <div className={styles.statLabel}>Estado</div>
 
-          <div className={styles.statValue}>
-            {stockStatus.label}
-          </div>
+          <div className={styles.statValue}>{stockStatus.label}</div>
         </div>
 
         <div className={styles.statBox}>
-          <div className={styles.statLabel}>
-            Precio venta
-          </div>
+          <div className={styles.statLabel}>Precio venta</div>
 
           <div className={styles.statValue}>
-            {formatKardexCurrency(
-              getProductPrice(product)
-            )}
+            {formatKardexCurrency(getProductPrice(product))}
           </div>
         </div>
       </div>
@@ -225,15 +175,9 @@ const KardexProductSummary = ({
             onExport?.(slot);
           }}
           disabled={exportDisabled}
-          title={
-            !canExport
-              ? "No hay movimientos para exportar."
-              : undefined
-          }
+          title={!canExport ? "No hay movimientos para exportar." : undefined}
         >
-          {exporting
-            ? "Exportando..."
-            : "Exportar"}
+          {exporting ? "Exportando..." : "Exportar"}
         </button>
       </div>
     </div>

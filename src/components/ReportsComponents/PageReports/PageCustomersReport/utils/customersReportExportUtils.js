@@ -4,7 +4,10 @@
  */
 
 import ExcelJS from "exceljs";
-import { formatShortDate, formatDynamicDate } from "./customersReportFormatters";
+import {
+  formatShortDate,
+  formatDynamicDate,
+} from "./customersReportFormatters";
 
 export const exportCustomersReportToExcel = async ({
   rankedCustomers = [],
@@ -24,7 +27,9 @@ export const exportCustomersReportToExcel = async ({
       (redemptionsList && redemptionsList.length > 0);
 
     if (!hasAnyData) {
-      alert("No hay datos disponibles para exportar con los filtros seleccionados.");
+      alert(
+        "No hay datos disponibles para exportar con los filtros seleccionados."
+      );
       return;
     }
 
@@ -59,7 +64,11 @@ export const exportCustomersReportToExcel = async ({
     const titleCell = wsRanking.getCell("A1");
     titleCell.value = "CROKETS POS - REPORTE DE CLIENTES";
     titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    titleCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     wsRanking.getRow(1).height = 30;
 
@@ -75,7 +84,11 @@ export const exportCustomersReportToExcel = async ({
 
     // Resumen de KPIs en bloque
     wsRanking.addRow(["RESUMEN GENERAL"]);
-    wsRanking.getRow(4).font = { bold: true, size: 11, color: { argb: "FF1E293B" } };
+    wsRanking.getRow(4).font = {
+      bold: true,
+      size: 11,
+      color: { argb: "FF1E293B" },
+    };
 
     wsRanking.addRow([
       "Clientes con Compras:",
@@ -120,13 +133,13 @@ export const exportCustomersReportToExcel = async ({
         row.getCell(8).numFmt = '"$"#,##0.00';
       }
       if (rowIdx === 6) {
-        row.getCell(2).numFmt = '0.0';
-        row.getCell(5).numFmt = '#,##0';
-        row.getCell(8).numFmt = '#,##0';
+        row.getCell(2).numFmt = "0.0";
+        row.getCell(5).numFmt = "#,##0";
+        row.getCell(8).numFmt = "#,##0";
       }
       if (rowIdx === 7) {
         row.getCell(2).numFmt = '"$"#,##0.00';
-        row.getCell(5).numFmt = '#,##0';
+        row.getCell(5).numFmt = "#,##0";
       }
     });
 
@@ -148,21 +161,28 @@ export const exportCustomersReportToExcel = async ({
     wsRanking.addRow(tableHeader);
     const tblHeaderRow = wsRanking.getRow(9);
     tblHeaderRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    tblHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    tblHeaderRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     tblHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
     tblHeaderRow.height = 25;
 
     // Filas de clientes
     rankedCustomers.forEach((c) => {
-      const typeLabel = c.isPointsCustomer && c.isBillingCustomer
-        ? "Puntos y Facturación"
-        : c.isPointsCustomer
-        ? "Programa Puntos"
-        : c.isBillingCustomer
-        ? "Facturación"
-        : "Estándar";
+      const typeLabel =
+        c.isPointsCustomer && c.isBillingCustomer
+          ? "Puntos y Facturación"
+          : c.isPointsCustomer
+            ? "Programa Puntos"
+            : c.isBillingCustomer
+              ? "Facturación"
+              : "Estándar";
 
-      const lastVisitText = c.lastSaleDate ? formatShortDate(c.lastSaleDate) : "Sin compras";
+      const lastVisitText = c.lastSaleDate
+        ? formatShortDate(c.lastSaleDate)
+        : "Sin compras";
 
       const row = wsRanking.addRow([
         c.name,
@@ -183,7 +203,7 @@ export const exportCustomersReportToExcel = async ({
       row.getCell(6).alignment = { horizontal: "right" };
       row.getCell(7).numFmt = '"$"#,##0.00';
       row.getCell(7).alignment = { horizontal: "right" };
-      row.getCell(8).numFmt = '#,##0';
+      row.getCell(8).numFmt = "#,##0";
       row.getCell(8).alignment = { horizontal: "right" };
       row.getCell(9).alignment = { horizontal: "center" };
       row.getCell(10).alignment = { horizontal: "center" };
@@ -211,7 +231,11 @@ export const exportCustomersReportToExcel = async ({
     const pTitle = wsProducts.getCell("A1");
     pTitle.value = "PRODUCTOS MÁS COMPRADOS POR CLIENTES IDENTIFICADOS";
     pTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
-    pTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    pTitle.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     pTitle.alignment = { horizontal: "center", vertical: "middle" };
     wsProducts.getRow(1).height = 28;
 
@@ -227,7 +251,11 @@ export const exportCustomersReportToExcel = async ({
     wsProducts.addRow(prodHeaders);
     const pHeaderRow = wsProducts.getRow(2);
     pHeaderRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    pHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    pHeaderRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     pHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
     pHeaderRow.height = 24;
 
@@ -247,14 +275,14 @@ export const exportCustomersReportToExcel = async ({
         avgPerCustomer,
       ]);
       row.height = 20;
-      row.getCell(3).numFmt = '#,##0';
+      row.getCell(3).numFmt = "#,##0";
       row.getCell(3).alignment = { horizontal: "right" };
-      row.getCell(4).numFmt = '#,##0';
+      row.getCell(4).numFmt = "#,##0";
       row.getCell(4).alignment = { horizontal: "center" };
       row.getCell(5).numFmt = '"$"#,##0.00';
       row.getCell(5).alignment = { horizontal: "right" };
       row.getCell(6).alignment = { horizontal: "center" };
-      row.getCell(7).numFmt = '#,##0.0';
+      row.getCell(7).numFmt = "#,##0.0";
       row.getCell(7).alignment = { horizontal: "right" };
     });
 
@@ -277,7 +305,11 @@ export const exportCustomersReportToExcel = async ({
     const rTitle = wsRewards.getCell("A1");
     rTitle.value = "REGISTRO DE RECOMPENSAS REDIMIDAS EN EL PERIODO";
     rTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
-    rTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    rTitle.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     rTitle.alignment = { horizontal: "center", vertical: "middle" };
     wsRewards.getRow(1).height = 28;
 
@@ -295,12 +327,18 @@ export const exportCustomersReportToExcel = async ({
     wsRewards.addRow(rewHeaders);
     const rHeaderRow = wsRewards.getRow(2);
     rHeaderRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    rHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    rHeaderRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     rHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
     rHeaderRow.height = 24;
 
     redemptionsList.forEach((r) => {
-      const shortFolio = r.sale_id ? r.sale_id.substring(0, 8).toUpperCase() : "S/F";
+      const shortFolio = r.sale_id
+        ? r.sale_id.substring(0, 8).toUpperCase()
+        : "S/F";
       const row = wsRewards.addRow([
         formatDynamicDate(r.created_at, r.timezone),
         `#${shortFolio}`,
@@ -320,9 +358,9 @@ export const exportCustomersReportToExcel = async ({
       row.getCell(5).alignment = { horizontal: "left" };
       row.getCell(6).alignment = { horizontal: "left" };
       row.getCell(7).alignment = { horizontal: "center" };
-      row.getCell(7).numFmt = '#,##0';
+      row.getCell(7).numFmt = "#,##0";
       row.getCell(8).alignment = { horizontal: "right" };
-      row.getCell(8).numFmt = '#,##0';
+      row.getCell(8).numFmt = "#,##0";
       row.getCell(9).alignment = { horizontal: "right" };
       row.getCell(9).numFmt = '"$"#,##0.00';
     });

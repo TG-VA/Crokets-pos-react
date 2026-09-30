@@ -4,6 +4,7 @@ Registro cronológico de informes de auditoría de Pull Requests aprobados en Cr
 verificados conforme a la guía de [PR_REVIEW.md](file:///Users/tristanvenegas/Documents/Crokets-pos-react/PR_REVIEW.md).
 
 ---
+
 ## Informe de Auditoría — RAMA `perf/report-optimization` (10 de septiembre de 2026)
 
 **Alcance:** migración de los reportes de Comisiones, Inventario, Caja y Rentabilidad de fetching
@@ -15,6 +16,7 @@ Commits revisados: `1ef4acc`, `612b68a`, `96a622d`, `30328a1`, `8123f72` (estado
 ### Veredicto por sección
 
 **§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+
 - Comisiones: se revirtió el doble-fetch completo y se movió todo a un único RPC
   (`get_commissions_report_data`, `commissionsReportService.js:63-73` → `supabase.rpc(...).limit(100000)`).
 - Caja: movimientos con `.limit(100000)` (`cashReportService.js`); inventario: export habilitado con
@@ -23,6 +25,7 @@ Commits revisados: `1ef4acc`, `612b68a`, `96a622d`, `30328a1`, `8123f72` (estado
   por chunk de `sale_details` en rentabilidad.
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - SRP: RPCs de datos de reporting (SQL) + servicios delgados que solo mapean y encadenan
   `.limit(100000)` + hooks de estado sin lógica de persistencia (DIP respetado: los componentes no
   importan `supabase`). Evidencia: `commissionsReportService.js`, `cashReportService.js`,
@@ -31,6 +34,7 @@ Commits revisados: `1ef4acc`, `612b68a`, `96a622d`, `30328a1`, `8123f72` (estado
 - OCP/ISP/KISS: sin bloques JSX duplicados; las agregaciones se mueven al servidor en un solo place.
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO con 1 hallazgo resuelto y 2 riesgos verificados con datos reales (sin cambio de código):**
+
 - Hallazgo resuelto (F1): filtro de ventas canceladas `!= 'canceled'` no matcheaba el enum canónico
   `'cancelled'`/`'cancelada'` → pagaba comisión por tickets cancelados. Corregido en
   `20260910120500_fix_commissions_status_filter.sql` (`NOT IN ('cancelled','cancelada')`). Ver
@@ -52,6 +56,7 @@ paginación visual sigue sobre `usePagination` (client-side).
 legacy (`percent: 10%` vs `10.00%`) — QA visual pendiente, ver `KNOWN_ISSUES.md` #24.
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Emojis: búsqueda de rango Unicode sobre el diff sin resultados.
 - `console.log`/`console.warn`: sin resultados en archivos nuevos/modificados; `console.error` en
   `catch` preservados sin emojis.
@@ -103,6 +108,7 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
 **§0 Bloqueantes de revisión previa — N/A:** esta rama no responde a bloqueantes previos.
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - SRP/DIP: `src/utils/ticket/*.js` no importa `supabase` ni `sqlite3` (DIP); 8 módulos puros +
   orquestador (`src/utils/ticket/ticketBuilder.js:1-127`). Fuera del paquete solo se consume el
   export nombrado `buildTicketText`.
@@ -115,6 +121,7 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
   equivalencia se garantiza con golden tests byte-idénticos. **QA manual pendiente.**
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - Equivalencia verificada contra `origin/main`: 53/54 helpers token-idénticos y
   `getPartialReturnPointsFromReturns` refactorizado a delegar en `getReturnPointsFromReturn`
   (cadena de alias idéntica, ver re-auditoría al final); secuencia de
@@ -127,6 +134,7 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
 **§4 Estilos y UI — SIN CAMBIO:** el diff no toca JSX ni CSS.
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Emojis: rango Unicode sobre líneas agregadas del diff sin resultados; `git log` sin emojis.
 - `console.log`/`console.warn`: sin resultados en líneas agregadas; `src/utils/ticket/` sin bloques
   `catch` (no requiere `console.error`).
@@ -140,6 +148,7 @@ cancelación/puntos), `a69f142` (docs previas), `6322c9b` (DRY `getReturnPointsF
 parciales sin `created_at`/`items` cubiertas en `fefdcc5`.
 
 ### Hallazgos de la revisión
+
 - MAJOR — resuelto: cobertura de ramas de cancelación/puntos (`fefdcc5`).
 - MINOR — resueltos: self-referencias y conteos de `KNOWN_ISSUES.md`; naming
   `ticketLayout.js` → `ticketLayoutFormatters.js` (`91c7087`); duplicación DRY → `getReturnPointsFromReturn`
@@ -181,6 +190,7 @@ re-baseline documental. **No modifica código de producción**: `src/` no aparec
 cambio son archivos de configuración, CI, migraciones SQL y documentación.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — N/A (sin cambios de runtime).** El diff no toca componentes,
 hooks ni servicios. El build pasa (`npm run build:frontend` OK, 4.33 s) con el code-splitting
 existente intacto (`spreadsheets` 1.36 MB bajo demanda). La configuración de ESLint respeta los
@@ -203,6 +213,7 @@ Prettier (`tabWidth 2`, comillas dobles, `trailingComma es5`, LF), alineada con 
 del repo.
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Emojis en líneas agregadas del diff: sin resultados (las dos apariciones de `✅` en
   `KNOWN_ISSUES.md` son texto preexistente de #34, no líneas nuevas).
 - `console.log`/`console.warn`: sin resultados en los archivos nuevos.
@@ -221,6 +232,7 @@ ambos. Se corrigió el formato de `eslint.config.mjs` y `.prettierrc.json` antes
 los marcaba).
 
 ### Notas y límites conscientes
+
 - **Lint incremental:** el repo arrastra 684 problemas legacy (140 errores, 544 warnings) que no se
   corrigen en esta fase; el CI solo bloquea por el diff para no congelar el proyecto. Queda como
   deuda a saldar conforme se tocan archivos (documentado en #8).
@@ -243,7 +255,9 @@ los marcaba).
 salida de los reportes se mantiene idéntica.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - #22: nuevo helper `mapWithConcurrency` en `src/utils/asyncUtils.js` (DIP: el service no cambia su
   dependencia de Supabase, solo el patrón de carga); `profitabilityReportService.js` pasa de un
   `for await` secuencial a lotes de 100 con concurrencia 4, aislando el fallo por lote (`[]`).
@@ -274,6 +288,7 @@ nuevos; `console.error` conservado en los `catch` de los services; comillas dobl
 `profitabilityReportService.test.js` (concurrencia: 5 lotes / máximo 4 en vuelo para 450 ventas).
 
 ### Notas y límites conscientes
+
 - **#21 sin aplicar:** la migración `20260917210000_cash_report_session_payments_pushdown.sql` está
   creada y validada, pero no aplicada al remoto; requiere `supabase db push` (se solicita
   confirmación al usuario). El `CTE` nuevo ya está en el archivo de migración.
@@ -291,7 +306,9 @@ tocan `ProductsModify.jsx` ni `ProductsPromotions.jsx`. Paso previo: aplicación
 migración pendiente de Fase 2 (`supabase db push` de `20260917210000`).
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `ticketBuilder`):**
+
 - `rewardModalCalculationService.js` (puro): constantes, normalización de campos, validación,
   construcción de formulario/payload, diff de productos y helpers de UI (estado de campo, filtro).
 - `rewardModalService.js` (DIP): catálogo de productos, productos vinculados, búsqueda de duplicados,
@@ -321,6 +338,7 @@ informe.
 `EXIT=0` (solo warnings preexistentes de `no-unused-vars` por la config `jsx-runtime`).
 
 ### Hallazgos de la revisión
+
 - **Bug latente corregido (validación de productos):** el `validateValues` original resolvía el
   argumento `selectedIds` por default a partir del estado `selectedProductIds`. Al extraerlo como
   función pura a `rewardModalCalculationService.js`, ese default se perdió; el test de caracterización
@@ -329,6 +347,7 @@ informe.
   `handleBlur` y `handleRewardTypeChange`, conservando el comportamiento original.
 
 ### Notas y límites conscientes
+
 - **#21 aplicado durante el setup:** la migración de Fase 2 se aplicó al remoto con
   `supabase db push` (verificado: índice `idx_sale_payments_branch_created_at`, historial
   `20260917210000` y RPC con el filtro `filtered_sessions`).
@@ -336,7 +355,6 @@ informe.
   el servicio puro y el hook.
 
 ---
-
 
 ## Informe de Auditoría — RAMA `test/coverage-gaps` (17 de septiembre de 2026)
 
@@ -346,7 +364,9 @@ Restricción: sin cambios de lógica de producción salvo el desacople necesario
 `electron/main.js`; Vitest + jsdom.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - RPC de ventas: `salesTransactionService.test.js` (contrato mock de `create_sale_transaction`) y
   `supabase/migrations/transactionalRpcsContract.test.js` (firma, retorno y grants de
   `create_sale_transaction` y `create_transfer_order`, más cross-check cliente↔BD de nombres de
@@ -379,6 +399,7 @@ dobles y EOF newline; Prettier/ESLint sobre el diff con `EXIT=0`.
 `npm run build:frontend` `EXIT=0`.
 
 ### Hallazgos de la revisión
+
 - **[MEDIO][#49] `create_sale_transaction` sin `search_path` fijado:** sus tres sobrecargas son
   `SECURITY DEFINER` sin `SET search_path`, a diferencia de `create_transfer_order`,
   `receive_transfer_order`, `cancel_transfer_order` y `get_email_by_username`, que la migración de
@@ -392,6 +413,7 @@ dobles y EOF newline; Prettier/ESLint sobre el diff con `EXIT=0`.
   contrato `{ success, message, error }` ya queda fijado.
 
 ### Notas y límites conscientes
+
 - **Backend Express/SQLite fuera de alcance:** `electron/main.js` **no** inicializa Express ni SQLite
   (viven en `src/backend/server.js` y `bd.js`, que hacen `app.listen()`/abren SQLite al importar). Se
   documenta como el siguiente desacople en `docs/TESTING.md` y `BACKLOG.md`.
@@ -415,7 +437,9 @@ documentación (`KNOWN_ISSUES.md`, `BACKLOG.md`, `AGENTS.md`, `DEPLOYMENT.md`, `
 **trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - #33 con SRP/DIP: `cashSettingsService.js` aísla las RPCs (`getCashMaxOpeningAmount` /
   `updateCashMaxOpeningAmount`) y `Settings.jsx` no importa `supabase`; el panel se gatea con
   `checkUserIsAdmin(user.id)` solo como UX porque la RPC revalida `is_admin()` en el servidor.
@@ -425,6 +449,7 @@ documentación (`KNOWN_ISSUES.md`, `BACKLOG.md`, `AGENTS.md`, `DEPLOYMENT.md`, `
   legacy ya no existían); el diff no toca runtime de Electron/Vite.
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - #33 se sigue el patrón de `open_cash_register`: `SECURITY DEFINER` con `set search_path = public`,
   guard `is_admin()`, validación de monto no negativo (`raise exception` msj consistente) y
   `to_jsonb(v_amount::text)` replicando el formato de seed de `app_settings`. Prueba del contrato:
@@ -439,6 +464,7 @@ false` y `flowType: 'pkce'` son inocuos con `signInWithPassword` (único flujo u
 contextos compartidos.
 
 **§4 Estilos y UI — CUMPLIDO (con nota Prettier):**
+
 - Especificidad sin `!important`: selectores anclados por prefijo de tabla/estado
   (`.tableRow.selectedRow`, `.itemsTable td.textCenter`, `.infoCard .statusConnected`,
   `.field .fieldError`, `table tbody tr.outOfStockRow:hover > td`) o doble clase solo cuando compite
@@ -467,6 +493,7 @@ anterior de "35 archivos tras borrar `password.test.js`" era incorrecta — `pas
 recogía Vitest, y el conteo subió de 35 a 36 archivos solo por la suite nueva de #33.
 
 ### Hallazgos y límites conscientes
+
 - **Migración remota pendiente:** las RPCs #33 se validan contra el archivo de migración, pero aún no
   se aplicaron (`supabase db push`) — el panel mostrará error hasta aplicarlas.
 - **Re-login de sesiones existentes por `storageKey` (#35)** — efecto controlado, documentado en
@@ -485,12 +512,14 @@ declarada como refactor posterior. Alcance estricto: solo el formulario Modifica
 **trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `RewardModal`):**
+
 - `services/productModifyCalculationService.js` (puro, sin I/O): `calculateGanancia`, `roundMoney`/
   `roundPercent`, `getDiscountPriceFromPercent`/`getDiscountPercentFromPrice`, `validateProductModifyForm`
   y los payloads `buildProductPayload`/`buildDiscountPayload`.
 - `services/productModifyDataService.js` (DIP): `loadProductDiscountData` (normaliza `{ success,
-  discount, error }` y aísla el flujo `getProductDiscountByProductId`) y `saveProductModifications`
+discount, error }` y aísla el flujo `getProductDiscountByProductId`) y `saveProductModifications`
   (orquesta producto → descuento con resultado `{ success, error, partial }`); recibe los callbacks del
   contexto, no importa `supabase`.
 - Seis vistas presentacionales en `components/`: `ProductModifyLookup`, `ProductModifyGeneralSection`,
@@ -502,6 +531,7 @@ declarada como refactor posterior. Alcance estricto: solo el formulario Modifica
   servicio puro; `useProductsModify` → persistencia y mensajes del data service.
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (48 tests de caracterización):**
+
 - `productModifyCalculationService.test.js` (39 casos): ganancia (incl. costo 0, negativos y no
   numéricos), redondeos, descuento ida/vuelta, validación campo a campo (obligatorios, rangos, dup codigo
   con `selectedProduct.id`, comisión y descuento condicionales) y payloads (coerciones, defaults,
@@ -532,6 +562,7 @@ del módulo.
 preexistentes de `no-unused-vars` por JSX que ya emitía el archivo original en `main`).
 
 ### Notas y límites conscientes
+
 - **Prettier sobre el módulo:** los 10 archivos tocados ya incumplían `prettier --check` en `main`
   (todo el módulo `ProductsModify`); se formatearon íntegros porque el CI incremental verifica el archivo
   completo (churn acotado a los archivos del refactor; `useProductModifyDOM.js` y el CSS module quedan
@@ -548,11 +579,13 @@ solicitada no existe en el inventario; se usó la más cercana para la semántic
 Verificación mecánica previa a la interpretación; evidencia textual por ítem.
 
 ### Estado de refs (hallazgo estructural)
+
 `main` y `HEAD` apuntan al mismo commit `d645701`; `git diff main...HEAD` vacío y
 `git merge-base main HEAD` = `HEAD`. Todo el refactor vivía sin commitear en el working tree
 (6 modificados + 10 nuevos). **Resuelto en esta sesión:** commits creados en la rama y push.
 
 ### §1 Funcionalidad y Arquitectura — CUMPLIDO
+
 - SRP: `services/productModifyCalculationService.js` puro (sin I/O); `services/productModifyDataService.js`
   DIP (recibe callbacks del contexto; único match de "supabase" es un JSDoc en `productModifyDataService.js:4`);
   6 vistas presentacionales ≤ 180 líneas; `ProductsModify.jsx` orquestador = **177 líneas** vs 640 en `main`.
@@ -563,6 +596,7 @@ Verificación mecánica previa a la interpretación; evidencia textual por ítem
 - **Pendiente:** QA visual `npm run dev` (a cargo del autor).
 
 ### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (1 cambio documentado y aprobado)
+
 - Traza del caso límite `costo=50, precio=0`: en `main` el `if` de `precio <= 0` era sobrescrito por el
   bloque `precio < costo` (mensaje final "no puede ser menor al costo"); el refactor lo fija con cadena
   `else if` en `productModifyCalculationService.js:105-112` → mensaje "El precio venta global debe ser mayor a 0."
@@ -574,14 +608,17 @@ Verificación mecánica previa a la interpretación; evidencia textual por ítem
 - Caso que rompe la regla ejecutado: `costo=0/precio=0` → 0; `costo=0/precio=100` → 100; negativos → 0 (idénticos).
 
 ### §3 Estado y Contexto Global — SIN CAMBIO
+
 Sin estados globales nuevos; el contrato de `useProductsModify` (props) es el mismo; `useProductModifyDOM.js`
 intacto; persistencia vía callbacks preexistentes de `useProducts`.
 
 ### §4 Estilos y UI — SIN CAMBIO (verificación mecánica)
+
 `rg "!important"` = 0; `rg "style=\{\{"` = 0; sin CSS nuevo (reuso de `ProductsModify.module.css`); el
 CSS module no está en el diff; `getFieldClassName` idéntico al anterior `inputClassName` (sin espacios colgantes).
 
 ### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+
 - Cero emojis (barrido Unicode de los 15 archivos del módulo; `→` en `KNOWN_ISSUES.md`/`PR_REVIEW.md` es
   separador tipográfico preexistente, no emoji).
 - Cero `console.log/warn/debug/info`; `console.error` conservados en `useProductsModify.js:44,90` y
@@ -590,10 +627,12 @@ CSS module no está en el diff; `getFieldClassName` idéntico al anterior `input
 - Prettier: los 3 originales fallaban `--check` en `main` (verificado) → churn de formato justificado.
 
 ### §6 Documentación — CUMPLIDO (impresión corregida en esta sesión)
+
 - `KNOWN_ISSUES.md` #3, `BACKLOG.md` checkbox y borrador de auditoría presentes.
 - Impresión "173 líneas" corregida a **177** (`KNOWN_ISSUES.md:95,194` y `PR_REVIEW.md:577`), acorde a `wc -l`.
 
 ### §7 Calidad/testing — CUMPLIDO
+
 - `npm test` **573/573** (43 archivos) con los 48 casos nuevos (39+9); `npm run build:frontend` EXIT 0.
 - ESLint módulo: **0 errores**; 9 warnings `no-unused-vars` por JSX **preexistentes** (config sin
   `react/jsx-uses-vars`; la versión de `main` emite la misma categoría — verificado linteando el original).
@@ -603,16 +642,18 @@ CSS module no está en el diff; `getFieldClassName` idéntico al anterior `input
   → "devuelve 100 (margen completo) con costo cero y precio positivo" (`productModifyCalculationService.test.js:46`).
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits (`main` = `HEAD` = d645701); CI no podía correr sobre el diff. | RESUELTO — commits y push en esta sesión |
-| F2 | Minor | Conteo documentado 173 ≠ 177 reales. | RESUELTO — corregido |
-| F3 | Minor | Descripción de test contradecía la aserción. | RESUELTO — corregido |
-| F4 | Sugerencia | Cambio de mensaje de precedencia `precio=0`. | APROBADO — se mantiene el nuevo mensaje |
-| F5 | Manual | QA visual `npm run dev` (grid, `readOnly` ganancia, toggles, F10/Enter). | PENDIENTE — a cargo del autor |
-| F6 | Observación | Labels sin `htmlFor`/`id` (patrón a11y preexistente en todo el módulo, no introducido por el diff). | Backlog futuro, no bloqueante |
+
+| #   | Nivel       | Hallazgo                                                                                            | Estado                                   |
+| --- | ----------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| F1  | Proceso     | Rama sin commits (`main` = `HEAD` = d645701); CI no podía correr sobre el diff.                     | RESUELTO — commits y push en esta sesión |
+| F2  | Minor       | Conteo documentado 173 ≠ 177 reales.                                                                | RESUELTO — corregido                     |
+| F3  | Minor       | Descripción de test contradecía la aserción.                                                        | RESUELTO — corregido                     |
+| F4  | Sugerencia  | Cambio de mensaje de precedencia `precio=0`.                                                        | APROBADO — se mantiene el nuevo mensaje  |
+| F5  | Manual      | QA visual `npm run dev` (grid, `readOnly` ganancia, toggles, F10/Enter).                            | PENDIENTE — a cargo del autor            |
+| F6  | Observación | Labels sin `htmlFor`/`id` (patrón a11y preexistente en todo el módulo, no introducido por el diff). | Backlog futuro, no bloqueante            |
 
 ### Veredicto
+
 El código del refactor es aprobable: servicios puros/DIP correctos, extracción fiel, DIP/ISP/SRP
 verificados, tests (573/573) y build OK, sin emojis/logs depurados/`!important`. Único pendiente antes de
 cerrar la PR: **QA visual manual (F5)**. Con el resultado de ese QA sin hallazgos, la rama queda
@@ -631,12 +672,13 @@ informe es borrador a revisar en la PR.
 ### Veredicto por sección
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - RPC (`computed` CTE): el `CASE` de `commission_amount` pasa a
   `WHEN dr.commission_enabled` → comisión de producto; `WHEN dr.commission_enabled IS NULL AND
-  COALESCE(dr.dept_commission_enabled, false)` → herencia de departamento; `ELSE 0`. Un producto con
+COALESCE(dr.dept_commission_enabled, false)` → herencia de departamento; `ELSE 0`. Un producto con
   `commission_enabled = false` ya no cae en la rama del departamento.
 - `has_commission` (`WHEN commission_enabled THEN true / WHEN IS NULL THEN COALESCE(dept,false) /
-  ELSE false`) ya no es `commission_enabled OR dept_commission_enabled`, que devolvía `NULL` (no
+ELSE false`) ya no es `commission_enabled OR dept_commission_enabled`, que devolvía `NULL` (no
   `false`) cuando el producto era `NULL` y el depto no comisionaba.
 - Sincronización de salida: `eff_commission_type` / `eff_commission_value` calculados por origen
   efectivo (producto: usa `commission_percent` para `percent`, coherente con el monto; departamento:
@@ -646,9 +688,9 @@ informe es borrador a revisar en la PR.
   `product.commission_enabled === false`; comisión propia solo si `=== true`; herencia del
   departamento únicamente en el `else if (department.commission_enabled)` (caso `undefined`/`null`);
   caso restante dispara el guard `!isEnabled || commVal <= 0` → 'Sin comisión'.
-- Caso que rompía la regla ejecutado: *Nupec Adulto 2kg* (`commission_enabled = false`) en depto
-  *Nupec* (`commission_enabled = true`) → antes caía en la rama del depto; ahora `has_commission =
-  false`, monto 0, `rule_label = 'Sin comision'`. Cubierto por test en
+- Caso que rompía la regla ejecutado: _Nupec Adulto 2kg_ (`commission_enabled = false`) en depto
+  _Nupec_ (`commission_enabled = true`) → antes caía en la rama del depto; ahora `has_commission =
+false`, monto 0, `rule_label = 'Sin comision'`. Cubierto por test en
   `commissionsCalculationService.test.js` (exención con depto comisionando) y por el contrato de la
   RPC en `commissionsReportService.test.js` (fila exenta / fila heredada).
 
@@ -675,14 +717,15 @@ producto sin departamento, tipo `percentage`, flat por pieza, valor ≤ 0, agreg
 (fila exenta y fila heredada).
 
 ### Notas y límites conscientes
+
 - **Esquema `products.commission_enabled` con `DEFAULT false`:** al existir el default, los productos
   nuevos quedan exentos por defecto (no heredan el depto) salvo configuración explícita; es la regla
   objetivo del PR, pero implica que en datos legacy los productos con `commission_enabled = false`
   dejarán de comisionar si su depto sí lo hacía — efecto esperado y central del cambio.
 - **Migración remota pendiente:** `20260921140000` debe aplicarse con `supabase db push`; hasta
   entonces el remoto conserva la precedencia antigua.
-- **QA manual:** verificar en Reportes > Comisiones que *Nupec Adulto 2kg* figure como "Sin comisión"
-  y no sume incentivo, y que el resto de productos del depto *Nupec* siga comisionando.
+- **QA manual:** verificar en Reportes > Comisiones que _Nupec Adulto 2kg_ figure como "Sin comisión"
+  y no sume incentivo, y que el resto de productos del depto _Nupec_ siga comisionando.
 
 ## Informe de Auditoría final — RAMA `fix/commissions-product-override` (21 sep 2026, revisión externa)
 
@@ -691,6 +734,7 @@ previa a la interpretación (`git diff`, `npm test`, `npm run build:frontend`, b
 comparación estructural de migraciones); evidencia textual por ítem.
 
 ### Estado de refs (hallazgo de proceso)
+
 `main` = `HEAD` = `4164732`; `git diff main...HEAD` queda vacío y `git merge-base main HEAD` = `HEAD`.
 **Todo el trabajo sigue sin commitear en el working tree** (5 modificados + 2 archivos nuevos:
 `BACKLOG.md`, `KNOWN_ISSUES.md`, `PR_REVIEW.md`, `commissionsCalculationService.js`,
@@ -698,9 +742,11 @@ comparación estructural de migraciones); evidencia textual por ítem.
 `20260921140000`). El CI incremental no podrá evaluar el diff hasta commitear y pushear.
 
 ### §0 Bloqueantes de revisión previa — N/A
+
 La rama no responde a bloqueantes previos.
 
 ### §1 Funcionalidad y Arquitectura — CUMPLIDO
+
 - SRP/DIP intactos: la regla de precedencia vive en la RPC y en el service de cálculo puro (sin I/O);
   la vista y los hooks no calculan comisión por ítem (`useCommissionsReport.js:14-17` solo importa los
   agregadores; ningún componente importa `supabase`).
@@ -715,8 +761,9 @@ La rama no responde a bloqueantes previos.
   no tiene efecto de runtime.
 
 ### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (con cargas de evidencia)
+
 Se ejecutaron los tres casos exigidos con números concretos (partida qty=2, unit_price=80, total_price=160,
-depto *Nupec* value=5 percent, producto *Nupec Adulto 2kg*):
+depto _Nupec_ value=5 percent, producto _Nupec Adulto 2kg_):
 
 1. `p.commission_enabled = true` → usa el producto. SQL: primer `WHEN dr.commission_enabled`
    (`20260921140000:92-96`); has_commission `true` (`:105`); eff_type `COALESCE(commission_type,'percent')`
@@ -728,9 +775,10 @@ depto *Nupec* value=5 percent, producto *Nupec Adulto 2kg*):
 3. `p.commission_enabled IS NULL` → solo entonces hereda el depto si `d.commission_enabled = true`.
    SQL: segunda rama exige `IS NULL AND COALESCE(dept_commission_enabled,false)` (`:97,111,120`); monto 8
    (160*0.05). Cliente: `else if (department.commission_enabled)` (`:38-43`).
+
 - `has_commission` ya nunca devuelve `NULL` (antes `commission_enabled OR dept_commission_enabled` con
   producto NULL producía `NULL`); el CASE explícito (`:104-108`) resuelve el tercer estado.
-- Cuba adicional ejecutada (caso que rompe la regla): producto exento + depto *Nupec* comisionando
+- Cuba adicional ejecutada (caso que rompe la regla): producto exento + depto _Nupec_ comisionando
   → 0 en monto y 0 en agregaciones (los agregadores y KPIs filtran `hasCommission`); producto sin
   departamento y sin comisión → correctamente no comisionable (`commissionsCalculationService.test.js:131-143`).
 - **Paridad "exacta" del cliente acotada a la precedencia semántica:** en los bordes numéricos
@@ -744,24 +792,29 @@ depto *Nupec* value=5 percent, producto *Nupec Adulto 2kg*):
   `docs/SUPABASE_MIGRATIONS.md` (RPC invoker, sin `SECURITY DEFINER`, RLS al llamador).
 
 ### §3 Estado y Contexto Global — SIN CAMBIO
+
 No se tocan hooks de estado, contextos ni filtros (`useCommissionsReport.js` intacto).
 
 ### §4 Estilos y UI — SIN CAMBIO (verificación mecánica)
+
 El diff no toca JSX ni CSS; barrido `!important` y `style={{` sin resultados en líneas agregadas.
 
 ### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+
 - Cero emojis en líneas agregadas (ripgrep de rangos Unicode sobre el diff consolidado): sin resultados.
 - `console.log/warn/info/debug`: sin resultados (único match es prosa de este documento).
 - `console.error` conservados en los `catch` de los services (sin cambios en el diff).
 - EOF newline por byte (`tail -c 1`): `0a` en los 7 archivos tocados; comillas dobles.
 
 ### §6 Documentación — CUMPLIDO
+
 `KNOWN_ISSUES.md` nuevo #50 completo (impacto, regla, verificación); `BACKLOG.md` con checkbox nuevo;
 borrador de auditoría presente; este informe final.
 
 ### §7 Calidad/testing — CUMPLIDO con 1 pendiente de verificación
+
 - `npm test`: **44 archivos / 588 tests** OK (573 previos + 13 de `commissionsCalculationService.test.js`
-  + 2 de `commissionsReportService.test.js`).
+  \+ 2 de `commissionsReportService.test.js`).
 - `npm run build:frontend`: EXIT 0, 7.71 s (warning de chunk > 500 kB preexistente).
 - Cobertura unitaria del service: exención sobre depto comisionando, comisión propia, herencia
   null/ausente, producto sin depto, `'percentage'`, flat por pieza, valor ≤ 0, agregaciones y KPIs
@@ -771,19 +824,21 @@ borrador de auditoría presente; este informe final.
   prueba ejecutada sobre su SQL. `commissionsReportService.test.js` mockea `supabase.rpc` (no lee el
   archivo de migración), y no se ejecutó la función contra Postgres (sin Docker local para
   `supabase start`; no tocar el remoto). El RPC debe validarse con `supabase db push` + consulta real
-  (fila *Nupec Adulto 2kg* exenta monto 0; heredada del depto monto correcto) y verificación de la ACL
+  (fila _Nupec Adulto 2kg_ exenta monto 0; heredada del depto monto correcto) y verificación de la ACL
   (`\df+` / `information_schema`) tras el push — patrón usado con #18 al momento de aplicar migraciones.
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits sobre `main` (`main` = `HEAD`); CI no puede evaluar el diff. | PENDIENTE — commit + push antes de abrir la PR |
-| F2 | Major | La migración (corazón del fix) no tiene cobertura ejecutada; validada solo textualmente. | PENDIENTE — `supabase db push` + verificación runtime + ACL |
-| F3 | Minor | "Paridad exacta" del cliente aplica a precedencia; bordes #19/#20/#24 difieren (preexistentes) y `calculateItemCommission` es código muerto. | Aceptado, documentado |
-| F4 | Minor | QA del borrador impreciso: `CommissionsAuditTable.jsx:14-16` y `useCashierCommissionDetail.js:23` filtran `hasCommission`, por lo que *Nupec Adulto 2kg* NO figurará en tablas; la exención solo se verá en el export Excel (detailedRows completos). | Ajustar la verificación de QA |
-| F5 | Manual | QA visual `npm run dev` (formato `ruleLabel` #24, exención visible en detalle/export). | PENDIENTE — a cargo del autor |
+
+| #   | Nivel   | Hallazgo                                                                                                                                                                                                                                              | Estado                                                      |
+| --- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| F1  | Proceso | Rama sin commits sobre `main` (`main` = `HEAD`); CI no puede evaluar el diff.                                                                                                                                                                         | PENDIENTE — commit + push antes de abrir la PR              |
+| F2  | Major   | La migración (corazón del fix) no tiene cobertura ejecutada; validada solo textualmente.                                                                                                                                                              | PENDIENTE — `supabase db push` + verificación runtime + ACL |
+| F3  | Minor   | "Paridad exacta" del cliente aplica a precedencia; bordes #19/#20/#24 difieren (preexistentes) y `calculateItemCommission` es código muerto.                                                                                                          | Aceptado, documentado                                       |
+| F4  | Minor   | QA del borrador impreciso: `CommissionsAuditTable.jsx:14-16` y `useCashierCommissionDetail.js:23` filtran `hasCommission`, por lo que _Nupec Adulto 2kg_ NO figurará en tablas; la exención solo se verá en el export Excel (detailedRows completos). | Ajustar la verificación de QA                               |
+| F5  | Manual  | QA visual `npm run dev` (formato `ruleLabel` #24, exención visible en detalle/export).                                                                                                                                                                | PENDIENTE — a cargo del autor                               |
 
 ### Veredicto
+
 La **lógica del cambio es correcta y verificable mecánicamente**: los tres casos exigidos se trazan con
 evidencia en SQL y cliente, el cambio es quirúrgico, grants seguros, `npm test` 588/588, build OK y
 convenciones cumplidas. La rama **no está lista para push/PR todavía**: falta (F1) commitear el trabajo
@@ -802,6 +857,7 @@ sin commitear aún**; este informe es borrador a revisar en la PR.
 ### Veredicto por sección
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO (cambio quirúrgico):**
+
 - Se eliminó el `select` previo del departamento (`oldDept`) que quedaba como dead code y el bloque
   `if (oldDept)` que añadía tres `.eq` de comisión a la query de `products`. La actualización masiva
   quedó como una sola cadena limpia (`departmentService.js:97-106`):
@@ -811,6 +867,7 @@ sin commitear aún**; este informe es borrador a revisar en la PR.
   `console.error` del `catch` se conserva (`:118`).
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (caso que rompía la regla ejecutado):**
+
 - Antes: producto con comisión individual distinta a la previa del departamento (ej. exento con
   `commission_enabled=false`, o con `commission_value` propio) no matcheaba los tres `.eq` del filtro
   y **no** se actualizaba en la propagación — quedaba con valores obsoletos. Después: la propagación
@@ -845,6 +902,7 @@ departamento sin tocar productos, error de actualización masiva y excepción in
 espiado).
 
 ### Notas y límites conscientes
+
 - **Filtro `oldDept` eliminado por completo:** al quitar la condición, el `select` previo quedaba dead
   code; se retiró también (un `select` menos por operación).
 - **QA manual pendiente:** verificar en la UI (Productos > Departamentos) que al modificar la comisión
@@ -860,15 +918,18 @@ interpretación (`git diff`, `npm test`, `npm run build:frontend`, barridos de t
 textual por ítem.
 
 ### Estado de refs (hallazgo de proceso)
+
 `main` = `HEAD` = `487bb18`; `git diff main...HEAD` queda vacío y `git merge-base main HEAD` = `HEAD`.
 **Todo el trabajo vivía sin commitear** en el working tree (4 modificados + 1 archivo nuevo: `BACKLOG.md`,
 `KNOWN_ISSUES.md`, `PR_REVIEW.md`, `src/services/products/departmentService.js` y
 `src/services/products/departmentService.test.js`). Resuelto en esta sesión: commit + push.
 
 ### §0 Bloqueantes de revisión previa — N/A
+
 La rama no responde a bloqueantes previos.
 
 ### §1 Funcionalidad y Arquitectura — CUMPLIDO (cambio quirúrgico)
+
 - El diff elimina el `select` previo del depto (`oldDept`) y todo el bloque `if (oldDept)` con los tres
   `.eq` de comisión. La propagación quedó como una sola cadena con un único `.eq`:
   `departmentService.js:97-106` → `supabase.from("products").update({...}).eq("department_id", id)`.
@@ -879,6 +940,7 @@ La rama no responde a bloqueantes previos.
   menos por operación.
 
 ### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO (caso que rompía la regla ejecutado)
+
 - Antes: producto con comisión individual ≠ comisión previa del depto (exenta `commission_enabled=false`,
   otro tipo/valor) no matcheaba los tres `.eq` y quedaba con valores obsoletos. Después: la propagación
   toca **todos** los productos de `department_id = id`; la decisión individual manda hasta la próxima
@@ -889,12 +951,15 @@ La rama no responde a bloqueantes previos.
   (`useDepartments.js:199-210`) solo ofrece el diálogo de sobrescritura si cambió la comisión.
 
 ### §3 Estado y Contexto Global — SIN CAMBIO
+
 No se mutan contextos ni hooks.
 
 ### §4 Estilos y UI — SIN CAMBIO
+
 El diff no toca JSX ni CSS.
 
 ### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+
 - Emojis: `rg` de rangos Unicode sobre líneas agregadas → sin resultados (EXIT 1); los únicos no-ASCII
   son acentos españoles.
 - `console.log`/`console.warn`: ninguno. `console.error` conservados en los `catch`
@@ -903,24 +968,28 @@ El diff no toca JSX ni CSS.
 - Comillas dobles; ESLint EXIT 0 y Prettier --check EXIT 0 en los dos archivos tocados.
 
 ### §6 Documentación — CUMPLIDO
+
 `KNOWN_ISSUES.md` #51 (regla + resolución + cobertura), `BACKLOG.md` checkbox (`:26`), borrador y este
 informe final en `PR_REVIEW.md`.
 
 ### §7 Calidad/testing — CUMPLIDO
+
 - `npm test`: **45 archivos / 599 tests passed**. Suite nueva `departmentService.test.js` con 11 casos,
   incluida la aserción central `expect(productsQ.eq.mock.calls).toEqual([["department_id","d1"]])`
   (único `.eq` sobre `products`) y `select`/`maybeSingle` de `departments` no llamados.
 - `npm run build:frontend`: EXIT 0 (warning de chunk > 500 kB preexistente).
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Alto (proceso) | Rama sin commits sobre `main`; CI incremental no evalúa el diff. | RESUELTO — commit + push en esta sesión |
-| F2 | Manual | QA visual `npm run dev` (propagación con productos de comisión individual/exenta + reporte de comisiones). | PENDIENTE — a cargo del autor |
-| O1 | Bajo | Interacción #50/#51: la propagación re-impone los valores del depto sobre exenciones individuales. | **APROBADO — es la regla de negocio objetivo**: la decisión individual manda solo hasta la próxima propagación (decisión 21 sep 2026) |
-| O2 | Bajo | `partial` nunca se setea `true` en `updateDepartment` (depto actualizado + falla masiva → `success:false`). | Documentado como deuda preexistente, fuera del alcance |
+
+| #   | Nivel          | Hallazgo                                                                                                    | Estado                                                                                                                                |
+| --- | -------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| F1  | Alto (proceso) | Rama sin commits sobre `main`; CI incremental no evalúa el diff.                                            | RESUELTO — commit + push en esta sesión                                                                                               |
+| F2  | Manual         | QA visual `npm run dev` (propagación con productos de comisión individual/exenta + reporte de comisiones).  | PENDIENTE — a cargo del autor                                                                                                         |
+| O1  | Bajo           | Interacción #50/#51: la propagación re-impone los valores del depto sobre exenciones individuales.          | **APROBADO — es la regla de negocio objetivo**: la decisión individual manda solo hasta la próxima propagación (decisión 21 sep 2026) |
+| O2  | Bajo           | `partial` nunca se setea `true` en `updateDepartment` (depto actualizado + falla masiva → `success:false`). | Documentado como deuda preexistente, fuera del alcance                                                                                |
 
 ### Veredicto
+
 La **lógica del cambio es correcta y verificable mecánicamente**: propagación total con un único
 `.eq("department_id", id)`, sin queries redundantes a `departments`, contrato intacto, `npm test` 599/599,
 build OK, sin emojis/logs de depuración/`!important`, EOF newline y lint/format limpios. Con F1 resuelto
@@ -938,11 +1007,13 @@ sin transcripción manual) + verificación autónoma con diff normalizado de los
 `npm run build:frontend`, ESLint, Prettier, barridos de bytes y emojis).
 
 ### Estado de refs
+
 `main` = `HEAD` = `feef116`. Trabajo **sin commitear** en el working tree (3 modificados + 1 archivo
 nuevo): `KNOWN_ISSUES.md`, `BACKLOG.md`, `supabase/migrations/transactionalRpcsContract.test.js` y la
 migración `supabase/migrations/20260923130000_fix_create_sale_transaction_search_path.sql`.
 
 ### §1 Funcionalidad y Arquitectura — CUMPLIDO
+
 - Migración nueva `20260923130000_fix_create_sale_transaction_search_path.sql`: `CREATE OR REPLACE` de
   las tres sobrecargas con `SET search_path TO 'public'` a nivel de función (9 y 10 parámetros tomados
   de `20260917200000`; 11 parámetros tomados de `20260921170000`, la variante vigente con
@@ -954,6 +1025,7 @@ migración `supabase/migrations/20260923130000_fix_create_sale_transaction_searc
 - Firme e idempotente: `CREATE OR REPLACE FUNCTION` + `REVOKE`/`GRANT`, aplicable sobre `main`.
 
 ### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO
+
 - La única adición es la cláusula `SET`; `p_user_id := coalesce(auth.uid(), p_user_id)`, la idempotencia
   por `client_sale_token`, el descuento de stock con kits, la inserción de pagos con validación de
   totales y el congelamiento de comisión en `sale_details` quedan intactos.
@@ -962,12 +1034,15 @@ migración `supabase/migrations/20260923130000_fix_create_sale_transaction_searc
   requisito de `service_role` para flujos server-side/documentados en la ACL del RPC transaccional.
 
 ### §3 Estado y Contexto Global — SIN CAMBIO
+
 No se tocan hooks, contextos ni el frontend.
 
 ### §4 Estilos y UI — SIN CAMBIO
+
 El diff no toca JSX ni CSS.
 
 ### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+
 - Cero emojis en líneas agregadas (barrido de rangos Unicode sobre `git diff HEAD --`): sin resultados.
 - Sin `console.log`/`console.warn` (no aplica: cambios solo en migración SQL y tests).
 - EOF newline por byte (`tail -c 1`): `0a` en la migración nueva y en el test de contrato.
@@ -975,12 +1050,14 @@ El diff no toca JSX ni CSS.
   (el `.sql` no tiene parser de Prettier, consistente con el resto de migraciones).
 
 ### §6 Documentación — CUMPLIDO
+
 - `KNOWN_ISSUES.md` #49: estado **resuelto**, con migración, rama, verificaciones y trazabilidad
   (cuerpos byte idénticos vs fuentes).
 - `BACKLOG.md`: checkbox `[x]` del ítem de Prioridad Media #49 (`:52`).
 - Este informe en `PR_REVIEW.md`.
 
 ### §7 Calidad/testing — CUMPLIDO
+
 - `npm test`: **46 archivos / 616 tests passed** (610 previos + 6 nuevos del contrato). Contrastados
   contra el baseline 599/599 de la rama previa (610 tras #50, +6 de este cambio).
 - `npm run build:frontend`: EXIT 0 en ~4 s (warning de chunk > 500 kB preexistente).
@@ -991,15 +1068,17 @@ El diff no toca JSX ni CSS.
   lo que las aserciones de congelamiento de comisión y grants se conservan.
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits sobre `main` (`main` = `HEAD`); CI incremental no evalúa el diff. | RESUELTO — commit + push en esta sesión |
-| F2 | Deployment | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
-| F3 | Manual | QA visual del flujo de venta (idempotencia por `client_sale_token`, congelamiento de comisión) tras el push. | PENDIENTE — a cargo del autor |
-| O1 | Observación | `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (`20260917200000:283,1136`), misma clase de vector SEC-5 que #49; ninguna migración posterior lo corrige. | Registrado como `KNOWN_ISSUES.md` **#53 (Medio / SEC-5, abierto)** — migración correctiva de seguimiento |
-| O2 | Observación | Grant a `service_role` es una adición vs. la ACL vigente del 11-param (`20260921170000` solo `authenticated`); no existe cliente service-role para esta RPC en `src/`/`electron/` (solo anon key). Inerte pero correcto bajo el requisito de menor privilegio del PR. | Aceptado, documentado |
+
+| #   | Nivel       | Hallazgo                                                                                                                                                                                                                                                              | Estado                                                                                                   |
+| --- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| F1  | Proceso     | Rama sin commits sobre `main` (`main` = `HEAD`); CI incremental no evalúa el diff.                                                                                                                                                                                    | RESUELTO — commit + push en esta sesión                                                                  |
+| F2  | Deployment  | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`).                                                                                                                                                                   | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones                              |
+| F3  | Manual      | QA visual del flujo de venta (idempotencia por `client_sale_token`, congelamiento de comisión) tras el push.                                                                                                                                                          | PENDIENTE — a cargo del autor                                                                            |
+| O1  | Observación | `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (`20260917200000:283,1136`), misma clase de vector SEC-5 que #49; ninguna migración posterior lo corrige.                                             | Registrado como `KNOWN_ISSUES.md` **#53 (Medio / SEC-5, abierto)** — migración correctiva de seguimiento |
+| O2  | Observación | Grant a `service_role` es una adición vs. la ACL vigente del 11-param (`20260921170000` solo `authenticated`); no existe cliente service-role para esta RPC en `src/`/`electron/` (solo anon key). Inerte pero correcto bajo el requisito de menor privilegio del PR. | Aceptado, documentado                                                                                    |
 
 ### Veredicto
+
 La **ciberseguridad del fix es correcta y verificable mecánicamente**: `search_path` fijado en las
 tres sobrecargas con cuerpos byte idénticos a las fuentes (evidencia autónoma), grants mínimos
 reafirmados, `npm test` 616/616, build OK y convenciones cumplidas. Con F1 (commit + push) y F2
@@ -1048,12 +1127,14 @@ resultantes; `supabase-postgres-best-practices`; verificación mecánica previa 
 (`npm test`, `npm run build:frontend`, ESLint, barridos de bytes y emojis).
 
 ### Estado de refs
+
 `main` = `HEAD` = `7ec3961` limpio; rama nueva `fix/harden-cancel-and-return-search-path`. Trabajo sin
 commitear en el working tree (3 modificados + 1 archivo nuevo): `KNOWN_ISSUES.md`, `BACKLOG.md`,
 `supabase/migrations/transactionalRpcsContract.test.js` y la migración
 `supabase/migrations/20260923140000_fix_cancel_and_return_search_path.sql`.
 
 ### §1 Funcionalidad y Arquitectura — CUMPLIDO
+
 - Migración nueva `20260923140000_fix_cancel_and_return_search_path.sql`: `CREATE OR REPLACE` de las
   dos funciones con `SET search_path TO 'public'` a nivel de función (ambos cuerpos tomados de
   `20260917200000_harden_transactional_rpcs.sql`, líneas 280 y 1133).
@@ -1069,6 +1150,7 @@ commitear en el working tree (3 modificados + 1 archivo nuevo): `KNOWN_ISSUES.md
 - Firme e idempotente: `CREATE OR REPLACE FUNCTION` + `REVOKE`/`GRANT`, aplicable sobre `main`.
 
 ### §2 Corrección de Datos y Lógica de Negocio — CUMPLIDO
+
 - La única adición es la cláusula `SET`; la lógica interna queda intacta: en `cancel_sale_transaction`
   la derivación de `p_user_id := coalesce(auth.uid(), p_user_id)`, reversión de puntos de
   recompensa/ganados, reincorporación de stock (incl. componentes de kit por `sale_kit_items`) y la
@@ -1082,12 +1164,15 @@ commitear en el working tree (3 modificados + 1 archivo nuevo): `KNOWN_ISSUES.md
   la ACL por primera vez.
 
 ### §3 Estado y Contexto Global — SIN CAMBIO
+
 No se tocan hooks, contextos ni el frontend.
 
 ### §4 Estilos y UI — SIN CAMBIO
+
 El diff no toca JSX ni CSS.
 
 ### §5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica)
+
 - Cero emojis en líneas agregadas (barrido de rangos Unicode sobre `git diff HEAD --`): sin resultados;
   los únicos no-ASCII son acentos españoles.
 - Sin `console.log`/`console.warn` (no aplica: cambios solo en migración SQL, tests y docs).
@@ -1096,12 +1181,14 @@ El diff no toca JSX ni CSS.
   (consistente con el resto de migraciones).
 
 ### §6 Documentación — CUMPLIDO
+
 - `KNOWN_ISSUES.md` #53: estado **resuelto**, con migración, rama, resolución y trazabilidad (cuerpos
   byte-idénticos vs fuentes y cierre total de la familia SEC-5).
 - `BACKLOG.md`: checkbox `[x]` del ítem de Prioridad Media #53.
 - Este informe en `docs/PR_AUDIT_HISTORY.md`.
 
 ### §7 Calidad/testing — CUMPLIDO
+
 - `npm test`: **46 archivos / 620 tests passed** (616 del baseline previo + 4 nuevos del contrato).
   Contrastados contra el baseline 616/616 de la rama #49.
 - `npm run build:frontend`: EXIT 0 en ~4 s (warning de chunk > 500 kB preexistente).
@@ -1113,14 +1200,16 @@ El diff no toca JSX ni CSS.
   verdes.
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | RESUELTO — commit de esta sesión aplicado y pushed a `origin/fix/harden-cancel-and-return-search-path` |
-| F2 | Deployment | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
-| F3 | Manual | QA visual del flujo de cancelación y devolución parcial tras el push. | PENDIENTE — a cargo del autor |
-| F4 | Proceso | Longitudes/hashes iniciales del informe no reproducibles con extracción estándar del cuerpo; falta hash completo en la evidencia durativa. | RESUELTO — hashes SHA-256 definitivos consignados en §1 |
+
+| #   | Nivel      | Hallazgo                                                                                                                                   | Estado                                                                                                 |
+| --- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| F1  | Proceso    | Rama sin commits sobre `main`; trabajo sin commitear en el working tree.                                                                   | RESUELTO — commit de esta sesión aplicado y pushed a `origin/fix/harden-cancel-and-return-search-path` |
+| F2  | Deployment | Migración aún no aplicada al remoto (requiere `supabase db push` + verificación de ACL con `\df+`).                                        | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones                            |
+| F3  | Manual     | QA visual del flujo de cancelación y devolución parcial tras el push.                                                                      | PENDIENTE — a cargo del autor                                                                          |
+| F4  | Proceso    | Longitudes/hashes iniciales del informe no reproducibles con extracción estándar del cuerpo; falta hash completo en la evidencia durativa. | RESUELTO — hashes SHA-256 definitivos consignados en §1                                                |
 
 ### Veredicto
+
 La **ciberseguridad del fix es correcta y verificable mecánicamente**: `search_path` fijado en ambas
 funciones con cuerpos byte-idénticos a las fuentes (evidencia autónoma por SHA-256), grants mínimos
 reafirmados, `npm test` 620/620, build OK y convenciones cumplidas. Con F1 (commit + push) y F2
@@ -1128,6 +1217,7 @@ reafirmados, `npm test` 620/620, build OK y convenciones cumplidas. Con F1 (comm
 esto la familia de vectores SEC-5 queda cerrada al 100% en los procedimientos transaccionales de venta.
 
 ---
+
 ## Informe de Auditoría — RAMA `feature/atomic-product-kits-rpc` (23 de septiembre de 2026)
 
 **Alcance:** migración de las operaciones compuestas de Kits de Productos de transacciones
@@ -1141,6 +1231,7 @@ compensatorias en el frontend a RPCs atómicas en Supabase (cierre del lado Kits
 ### Veredicto por sección
 
 **§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+
 - Objetivo de cierre marcado explícito en el diff: `KNOWN_ISSUES.md` #5 — parte Kits resuelta
   (migración `20260923150000`), parte Importación Masiva queda documentada como pendiente
   (no se toca `productsImportService.js` en esta rama).
@@ -1150,6 +1241,7 @@ compensatorias en el frontend a RPCs atómicas en Supabase (cierre del lado Kits
   (consumidores en `useProductsPromotions.js` sin cambios).
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - ACID nativo: `create_kit_transaction` inserta `public.products` +
   `public.product_kits` + `product_kit_items` en una sola transacción
   (`20260923150000_create_product_kits_rpcs.sql:5-90`); cualquier `raise exception` (validaciones de
@@ -1164,6 +1256,7 @@ compensatorias en el frontend a RPCs atómicas en Supabase (cierre del lado Kits
   `toggleKitStatus`, `fetchActiveNonKitProducts`) quedan byte-idénticos (sin diff en el bloque).
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - Los defaults SQL replican exactamente los valores que enviaba el frontend al insertar
   (`sale_type 'unidad'`, `unit 'pieza'`, `cost_price 0`, `tax 16`, `commission_enabled false`,
   `commission_percent 0`, `is_kit true`, `tracks_inventory false`, `is_global true`).
@@ -1179,6 +1272,7 @@ consumo vía `useProductsPromotions.js` es idéntico.
 **§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff.**
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Eliminados los tres `console.error("ALERTA CRÍTICA...")` del frontend junto con los rollbacks; no
   quedan `console.log`/`console.warn` nuevos.
 - Sin emojis (revisión de rango Unicode sobre el diff, sin resultados).
@@ -1211,14 +1305,16 @@ nueva superficie DOM/redirect/postMessage.
   el baseline.
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | PENDIENTE — sigue el flujo de commit + push del autor |
-| F2 | Deployment | Migración no aplicada al remoto (requiere `supabase db push` y verificación de ACL con `\df+` de las 3 funciones). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
-| F3 | Manual | QA visual del flujo crear/editar/desactivar kit en Promociones tras el push. | PENDIENTE — a cargo del autor |
-| F4 | Riesgo aceptado | `update_kit_transaction` borra e reinserta `product_kit_items` en la misma transacción: si un componente deja de existir (FK), la transacción revierte completa — comportamiento ACID deseado. | ACEPTADO |
+
+| #   | Nivel           | Hallazgo                                                                                                                                                                                       | Estado                                                                      |
+| --- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| F1  | Proceso         | Rama sin commits sobre `main`; trabajo sin commitear en el working tree.                                                                                                                       | PENDIENTE — sigue el flujo de commit + push del autor                       |
+| F2  | Deployment      | Migración no aplicada al remoto (requiere `supabase db push` y verificación de ACL con `\df+` de las 3 funciones).                                                                             | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3  | Manual          | QA visual del flujo crear/editar/desactivar kit en Promociones tras el push.                                                                                                                   | PENDIENTE — a cargo del autor                                               |
+| F4  | Riesgo aceptado | `update_kit_transaction` borra e reinserta `product_kit_items` en la misma transacción: si un componente deja de existir (FK), la transacción revierte completa — comportamiento ACID deseado. | ACEPTADO                                                                    |
 
 ### Veredicto
+
 La refactorización cumple el objetivo del cierre de #5 (Kits): ACID nativo reemplaza a las
 transacciones compensatorias, con contrato SQL cliente↔BD verificado por test, grants mínimos y
 `search_path` fijado en las 3 RPCs. Suite 636/636, build OK, convenciones y documentación al día.
@@ -1239,15 +1335,17 @@ frontend a una RPC atómica en Supabase. Archivos: migración nueva
 ### Veredicto por sección
 
 **§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+
 - Objetivo de cierre marcado explícito en el diff: `KNOWN_ISSUES.md` #5 — parte Importación resuelta
   con la migración `20260923160000`; con esto el ítem #5 queda **resuelto en su totalidad**
   (Kits `20260923150000` + Importación `20260923160000`).
 - Se conservó el contrato público del servicio: `processImportTransaction(validRows, branchId,
-  allBranches, departmentMap)` — mismos nombres, argumentos y shape de retorno
+allBranches, departmentMap)` — mismos nombres, argumentos y shape de retorno
   (`{ createdProductsCount, createdInventoriesCount }`); el consumidor `useProductsImport.js:212`
   no cambia.
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - ACID nativo: `import_products_transaction` inserta `public.products` y
   `public.branch_inventory` en una sola transacción
   (`20260923160000_create_products_import_rpc.sql:14-118`); cualquier `raise exception`
@@ -1263,11 +1361,12 @@ frontend a una RPC atómica en Supabase. Archivos: migración nueva
   `createMissingDepartments`) quedan byte-idénticos (sin diff en el bloque).
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - El mapeo de `department_id` del cliente conserva exactamente la semántica anterior
   (`item.department_name ? departmentMap[item.department_name.toLowerCase()] || null : null`) y se
   delega a la BD como `(v_product ->> 'department_id')::uuid`.
 - Los defaults SQL replican los valores que se infieren en la lectura de cada fila (`sale_type
-  'unidad'`, `unit 'pieza'`, `tax 16`, `status true`, `is_global true`, `is_kit false`,
+'unidad'`, `unit 'pieza'`, `tax 16`, `status true`, `is_global true`, `is_kit false`,
   `commission_type 'percent'`), sin cambiar lo que el frontend ya enviaba explícitamente.
 - Caso único esperado de error: la UNIQUE `products_barcode_key` (o cadenas/checks de
   `products`/`branch_inventory`) sigue aplicando dentro de la transacción — sin ambigüedad de datos.
@@ -1278,6 +1377,7 @@ el consumo vía `useProductsImport.js` es idéntico.
 **§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff.**
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Eliminado el `console.error("ALERTA CRÍTICA...")` del frontend junto con el bloque de rollback
   manual; no quedan `console.log`/`console.warn` nuevos.
 - Sin emojis (revisión de rango Unicode sobre el diff, sin resultados).
@@ -1311,14 +1411,16 @@ DOM/redirect/postMessage.
   sin habilitar RLS). No se introduce regresión vs el baseline.
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Proceso | Rama sin commits sobre `main`; trabajo sin commitear en el working tree. | PENDIENTE — sigue el flujo de commit + push del autor |
-| F2 | Deployment | Migración no aplicada al remoto (requiere `supabase db push` y verificación con `\df+ import_products_transaction`). | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
-| F3 | Manual | QA visual del flujo de importación masiva (CSV con productos tracks/globales) tras el push. | PENDIENTE — a cargo del autor |
-| F4 | Riesgo aceptado | El contrato SQL replica la lógica previa del frontend (incluido el lookup de `department_id` por `department_name.toLowerCase()` sin strippear acentos, quirk preexistente). | ACEPTADO — se conservó byte-idéntico a propósito |
+
+| #   | Nivel           | Hallazgo                                                                                                                                                                     | Estado                                                                      |
+| --- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| F1  | Proceso         | Rama sin commits sobre `main`; trabajo sin commitear en el working tree.                                                                                                     | PENDIENTE — sigue el flujo de commit + push del autor                       |
+| F2  | Deployment      | Migración no aplicada al remoto (requiere `supabase db push` y verificación con `\df+ import_products_transaction`).                                                         | PENDIENTE — se coordinará en la pasada de despliegue general de migraciones |
+| F3  | Manual          | QA visual del flujo de importación masiva (CSV con productos tracks/globales) tras el push.                                                                                  | PENDIENTE — a cargo del autor                                               |
+| F4  | Riesgo aceptado | El contrato SQL replica la lógica previa del frontend (incluido el lookup de `department_id` por `department_name.toLowerCase()` sin strippear acentos, quirk preexistente). | ACEPTADO — se conservó byte-idéntico a propósito                            |
 
 ### Veredicto
+
 La refactorización cierra por completo el ítem `KNOWN_ISSUES.md` #5: la importación masiva pasa a
 ACID nativo vía `import_products_transaction`, con contrato SQL cliente↔BD verificado por test,
 grants mínimos, `search_path` fijado y eliminación total de los rollbacks compensatorios del
@@ -1338,6 +1440,7 @@ pendientes + regeneración de `SCHEMA.md` y cierre documental de los estados pen
 ### Veredicto por sección
 
 **§0 Bloqueantes de revisión previa — RESUELTO (con evidencia):**
+
 - Las 4 migraciones responden a hallazgos registrados con severidad en `KNOWN_ISSUES.md` (#49, #53
   SEC-5; #5 kits/importación) y a los F2 de Deployment abiertos en los informes previos de Kits e
   Importación. Se confirma el objetivo de cierre en el diff: todos quedan cerrados en esta pasada.
@@ -1345,6 +1448,7 @@ pendientes + regeneración de `SCHEMA.md` y cierre documental de los estados pen
   despliegue" — ejecutada aquí el 23 sep 2026.
 
 **§1 Funcionalidad y Arquitectura — CUMPLIDO:**
+
 - `supabase migration list` pre-despliegue: 21 versiones aplicadas en el remoto (incluyendo el baseline) y 4 migraciones locales pendientes, sin divergencias en las versiones previas. `db push --dry-run`
   confirmó que la pass solo listaba esas 4 (no se ejecutó DDL fuera del paquete; los archivos de
   contrato `.test.js` en `supabase/migrations/` se saltan por patrón de nombre de la CLI — esperado).
@@ -1358,6 +1462,7 @@ pendientes + regeneración de `SCHEMA.md` y cierre documental de los estados pen
   completo.
 
 **§2 Corrección de Datos y Lógica de Negocio — CUMPLIDO:**
+
 - Verificación de las 9 funciones transaccionales en el remoto (introspección): todas quedaron
   `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL solo `postgres` (owner) +
   `authenticated` + `service_role`, sin `anon` ni `PUBLIC`: `create_sale_transaction` (3
@@ -1375,6 +1480,7 @@ regenera únicamente documentos de inventario (`SCHEMA.md`, `KNOWN_ISSUES.md`,
 **§4 Estilos y UI — SIN CAMBIO de JSX/CSS en el diff** (solo markdown/README).
 
 **§5 Convenciones Estrictas y Logs — CUMPLIDO (verificación mecánica):**
+
 - Sin secretos en el diff: no se expusieron `SUPABASE_SERVICE_ROLE_KEY`, valores `.env`, tokens
   (el access token del CLI se usó solo desde el keychain/`/tmp` con `chmod 600`, fuera del repo,
   y se elimina al cierre). Los nombres de variables y el flujo quedan referenciados en
@@ -1408,15 +1514,17 @@ DOM/redirect/postMessage.
   el token de la CLI desde el keychain (nunca en el repo).
 
 ### Hallazgos y estado
-| # | Nivel | Hallazgo | Estado |
-|---|---|---|---|
-| F1 | Deployment | Migraciones acumuladas sin aplicar al remoto (#49, #53, #5 kits, #5 importación). | RESUELTO — `supabase db push` 23 sep 2026; `migration list` alineado (25/25) |
-| F2 | Documentación | `SCHEMA.md` desactualizado (24 ago 2026) sin tablas de kits/devoluciones/config ni RPCs nuevas. | RESUELTO — regenerado desde el remoto |
-| F3 | Documentación | Estados "pendiente de aplicar al remoto" stale en `KNOWN_ISSUES.md` (#5, #21, #29). | RESUELTO — actualizados a aplicados/verificados |
-| F4 | Deployment | Sin `psql`/`pg_dump` local y sin Docker daemon: `supabase db dump --linked` no disponible. | ACEPTADO — workaround con Management API `database/query` (solo lectura) |
-| F5 | Manual | QA visual de kits en Promociones y de importación CSV tras el push (heredado de los informes de Kits/Importación). | PENDIENTE — a cargo del autor |
+
+| #   | Nivel         | Hallazgo                                                                                                           | Estado                                                                       |
+| --- | ------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| F1  | Deployment    | Migraciones acumuladas sin aplicar al remoto (#49, #53, #5 kits, #5 importación).                                  | RESUELTO — `supabase db push` 23 sep 2026; `migration list` alineado (25/25) |
+| F2  | Documentación | `SCHEMA.md` desactualizado (24 ago 2026) sin tablas de kits/devoluciones/config ni RPCs nuevas.                    | RESUELTO — regenerado desde el remoto                                        |
+| F3  | Documentación | Estados "pendiente de aplicar al remoto" stale en `KNOWN_ISSUES.md` (#5, #21, #29).                                | RESUELTO — actualizados a aplicados/verificados                              |
+| F4  | Deployment    | Sin `psql`/`pg_dump` local y sin Docker daemon: `supabase db dump --linked` no disponible.                         | ACEPTADO — workaround con Management API `database/query` (solo lectura)     |
+| F5  | Manual        | QA visual de kits en Promociones y de importación CSV tras el push (heredado de los informes de Kits/Importación). | PENDIENTE — a cargo del autor                                                |
 
 ### Veredicto
+
 La pasada de despliegue del 23 sep 2026 cierra sin divergencias el remoto vs el histórico versionado
 (`supabase migration list` 25/25 alineados), verifica por introspección el endurecimiento completo
 de las 9 funciones transaccionales (SECURITY DEFINER + `search_path` fijado + ACL sin
@@ -1435,7 +1543,9 @@ líneas). Alcance estricto: solo las vistas presentacionales; no se tocan `usePr
 **trabajo sin commitear aún**; este informe es borrador a revisar en la PR.
 
 ### Veredicto por sección
+
 **§1 Funcionalidad y Arquitectura — CUMPLIDO (playbook `ProductsModify`/`RewardModal`):**
+
 - Cinco vistas presentacionales en `components/` que comparten `ProductsPromotions.module.css` y
   reciben únicamente los props que consumen (ISP): `KitFormSection` (formColumn: barcode con
   `barcodeInputRef`, descripción, precio, `max_kits_per_sale`, `summaryBox` de ahorro y botón
@@ -1474,6 +1584,7 @@ que no se requieren tests nuevos (las vistas son presentacionales, coherente con
 proyecto de no testear UI).
 
 ### Notas y límites conscientes
+
 - **Prettier:** el módulo `ProductsPromotions.jsx` incumplía `prettier --check` en `main` (igual que
   el resto del módulo); los 6 archivos tocados se dejaron formateados íntegros porque el CI
   incremental verifica el archivo completo (churn acotado a los archivos del refactor).
@@ -1491,12 +1602,12 @@ registradas aquí.
 
 ### Serie 1 — Auditoría inicial (4 commits)
 
-| Commit | Alcance | Diff |
-|---|---|---|
-| `8892134` | #56 — errores de lint en runtime, `no-unsafe-finally`, mutación de refs en render | 10 archivos, +69/−56 |
-| `0dc79f3` | #57 — retiro de `console.log`/`console.warn` de depuración | 5 archivos, +11/−61 |
-| `4b1b508` | #58 — pseudo-iconos tipográficos `✓`/`✕` reemplazados por SVG del catálogo | 22 archivos, +193/−13 |
-| `8b0d491` | #56/#57/#58 marcados como resueltos en `KNOWN_ISSUES.md` y `BACKLOG.md` | 2 archivos, +75/−6 |
+| Commit    | Alcance                                                                           | Diff                  |
+| --------- | --------------------------------------------------------------------------------- | --------------------- |
+| `8892134` | #56 — errores de lint en runtime, `no-unsafe-finally`, mutación de refs en render | 10 archivos, +69/−56  |
+| `0dc79f3` | #57 — retiro de `console.log`/`console.warn` de depuración                        | 5 archivos, +11/−61   |
+| `4b1b508` | #58 — pseudo-iconos tipográficos `✓`/`✕` reemplazados por SVG del catálogo        | 22 archivos, +193/−13 |
+| `8b0d491` | #56/#57/#58 marcados como resueltos en `KNOWN_ISSUES.md` y `BACKLOG.md`           | 2 archivos, +75/−6    |
 
 Total del primer pase: 36 archivos, +348/−136.
 
@@ -1512,6 +1623,7 @@ ejecutable, no por inspección visual.
 
 **B2 — Errores de ESLint ajenos al punto 5 (RESUELTO).** Quedaban dos errores de la serie inicial
 que no eran instancias de `react-hooks/set-state-in-effect`:
+
 - `no-undef` sobre `HTMLButtonElement` en anotaciones de tipo: se añadió
   `languageOptions.globals` con `HTMLButtonElement: "readonly"`. No se declararon más globals del
   DOM porque el código no los usa. Al commitear las suites de A4 aparecieron además nueve
@@ -1554,13 +1666,13 @@ un cuadrado negro en un Chromium headless y se comparó el píxel resultante con
 por la cascada, en CIELAB con ΔE2000 (≈2.3 es el umbral de percepción). El primer pase reveló
 **cuatro desviaciones reales**, dos de ellas por copy-paste evidente:
 
-| Ubicación | Color de origen | Render de la cadena entregada | ΔE00 |
-|---|---|---|---|
-| `AppModal .iconGlyph` | `#15803d` | `#0b4a3b` | 21.3 |
-| `InvoicesHistory .clearSearchIcon` | `#333333` | `#737373` | 22.3 |
-| `InvoicesHistory .closeIcon` | `#333333` | `#404040` | 4.2 |
-| `ProductsList .clearSearchIcon` | `#64748b` | `#737373` | 10.9 |
-| `ProductsList … :hover` | `#fc8913` | `#edaa24` | 13.7 |
+| Ubicación                          | Color de origen | Render de la cadena entregada | ΔE00 |
+| ---------------------------------- | --------------- | ----------------------------- | ---- |
+| `AppModal .iconGlyph`              | `#15803d`       | `#0b4a3b`                     | 21.3 |
+| `InvoicesHistory .clearSearchIcon` | `#333333`       | `#737373`                     | 22.3 |
+| `InvoicesHistory .closeIcon`       | `#333333`       | `#404040`                     | 4.2  |
+| `ProductsList .clearSearchIcon`    | `#64748b`       | `#737373`                     | 10.9 |
+| `ProductsList … :hover`            | `#fc8913`       | `#edaa24`                     | 13.7 |
 
 `InvoicesHistory` no declara `color`, así que sus dos iconos tomaban `#333333` de `.content`: el
 `invert(0.45)` entregaba un gris visiblemente más claro que el original. Se corrigieron las cuatro
@@ -1571,8 +1683,9 @@ de percepción. Los 8 restantes (7 cierres blancos y `InvoicesPending` sobre `#6
 idénticos.
 
 **A4 — Contratos críticos sin cobertura (RESUELTO).** Tres archivos de hooks con suite creada pero sin un solo caso de prueba.
-Se añadieron **21 tests en 3 suites**, todos verificados por *mutation testing* (cada uno falla al
+Se añadieron **21 tests en 3 suites**, todos verificados por _mutation testing_ (cada uno falla al
 revertir el guard que fija):
+
 - `useReportsDashboard.test.js` (7): el `finally` de la petición obsoleta no invierte el resultado;
   una respuesta tardía no pisa el estado; el intervalo se limpia al desmontar.
 - `useSalesTableColumns.test.js` (6): cada listener `mousedown` se empareja con su `mouseup`; una
@@ -1590,16 +1703,16 @@ compensa la reducción de errores.
 
 ### Verificación final
 
-| Comprobación | Resultado |
-|---|---|
-| `npm test` | **51 archivos / 663 tests, 0 fallos** (baseline 643; +20 netos) |
-| `npm run build:frontend` | **EXIT 0** |
-| `npx eslint` sobre el diff | 13 errores, **los 13 `set-state-in-effect` diferidos**; 0 en las otras seis reglas |
-| `prettier --check` sobre el diff | 0 fallos en los archivos de esta remediación |
-| Mutation testing de A4 | los 3 guards verificados |
-| Medición de tintes | ΔE00 máximo 1.17 en 13 iconos |
-| `console.log`/`console.warn` nuevos | 0 |
-| Emojis en código/UI | 0 |
+| Comprobación                        | Resultado                                                                          |
+| ----------------------------------- | ---------------------------------------------------------------------------------- |
+| `npm test`                          | **51 archivos / 663 tests, 0 fallos** (baseline 643; +20 netos)                    |
+| `npm run build:frontend`            | **EXIT 0**                                                                         |
+| `npx eslint` sobre el diff          | 13 errores, **los 13 `set-state-in-effect` diferidos**; 0 en las otras seis reglas |
+| `prettier --check` sobre el diff    | 0 fallos en los archivos de esta remediación                                       |
+| Mutation testing de A4              | los 3 guards verificados                                                           |
+| Medición de tintes                  | ΔE00 máximo 1.17 en 13 iconos                                                      |
+| `console.log`/`console.warn` nuevos | 0                                                                                  |
+| Emojis en código/UI                 | 0                                                                                  |
 
 ### Notas y límites conscientes
 
@@ -1639,12 +1752,12 @@ primera, de catálogo, y una segunda contra-auditoría posterior que verificó l
 
 ### Serie 1 — Auditoría inicial (4 commits)
 
-| Commit | Alcance |
-|---|---|
+| Commit    | Alcance                                                                                                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `b9747f5` | servicios de datos y cálculos por feature (`services/`), más los compartidos `customersRealtimeService.js`, `customerPointsCalculationService.js` y `customerFormatters.js` |
-| `9e5d439` | 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de Supabase |
-| `1c19419` | descomposición de los seis componentes en subcomponentes presentacionales y hooks |
-| `a2e48b8` | cierre documental de #54 en `KNOWN_ISSUES.md` |
+| `9e5d439` | 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de Supabase                                                                            |
+| `1c19419` | descomposición de los seis componentes en subcomponentes presentacionales y hooks                                                                                           |
+| `a2e48b8` | cierre documental de #54 en `KNOWN_ISSUES.md`                                                                                                                               |
 
 Comprobaciones que el diff ya satisfacía antes de cualquier corrección: 51 archivos de test y 663 tests en
 el baseline; los seis componentes principales entre 88 y 145 líneas, sin ninguno sobre 150; estructura
@@ -1730,22 +1843,22 @@ ser legítimo para ese segundo origen. Queda registrado para una auditoría prop
 
 ### Verificación final
 
-| Comprobación | Resultado |
-|---|---|
-| `npm test` | **64 archivos / 931 tests, 0 fallos** (baseline 51/663) |
-| `npm run build:frontend` | **EXIT 0** |
-| `npx eslint` sobre el módulo y sobre el diff | **EXIT 0** en ambos |
-| `npx eslint src/` completo | 90 errores, **0 en archivos del diff de la rama** (verificado por intersección) |
-| `prettier --check` sobre el diff | limpio en el código; los 2 avisos (`BACKLOG.md`, `KNOWN_ISSUES.md`) fallan igual en `main` |
-| Hunks de Prettier en `KNOWN_ISSUES.md` | 4, los mismos que `main`; **0 introducidos** |
-| `git diff --check` | limpio |
-| Mutation testing de B1 | 5 de 9 tests fallan contra el servicio previo |
-| Mutation testing de A5 | 1 test falla contra la versión con marcadores |
-| Paridad de clases CSS | **180/180** clases idénticas en los seis módulos |
-| Paridad de texto visible | idéntica cadena por cadena en las seis pantallas |
-| Componentes principales | 122 / 145 / 89 / 126 / 88 / 101 líneas; ninguno sobre 150 |
-| DIP | cero imports de Supabase en componentes y hooks; solo en `services/` |
-| `console.log`/`console.warn`, `!important`, `style={{` nuevos | 0 |
+| Comprobación                                                  | Resultado                                                                                  |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `npm test`                                                    | **64 archivos / 931 tests, 0 fallos** (baseline 51/663)                                    |
+| `npm run build:frontend`                                      | **EXIT 0**                                                                                 |
+| `npx eslint` sobre el módulo y sobre el diff                  | **EXIT 0** en ambos                                                                        |
+| `npx eslint src/` completo                                    | 90 errores, **0 en archivos del diff de la rama** (verificado por intersección)            |
+| `prettier --check` sobre el diff                              | limpio en el código; los 2 avisos (`BACKLOG.md`, `KNOWN_ISSUES.md`) fallan igual en `main` |
+| Hunks de Prettier en `KNOWN_ISSUES.md`                        | 4, los mismos que `main`; **0 introducidos**                                               |
+| `git diff --check`                                            | limpio                                                                                     |
+| Mutation testing de B1                                        | 5 de 9 tests fallan contra el servicio previo                                              |
+| Mutation testing de A5                                        | 1 test falla contra la versión con marcadores                                              |
+| Paridad de clases CSS                                         | **180/180** clases idénticas en los seis módulos                                           |
+| Paridad de texto visible                                      | idéntica cadena por cadena en las seis pantallas                                           |
+| Componentes principales                                       | 122 / 145 / 89 / 126 / 88 / 101 líneas; ninguno sobre 150                                  |
+| DIP                                                           | cero imports de Supabase en componentes y hooks; solo en `services/`                       |
+| `console.log`/`console.warn`, `!important`, `style={{` nuevos | 0                                                                                          |
 
 ### Notas y límites conscientes
 
@@ -1790,23 +1903,23 @@ Commits: `1fdeded` (servicios), `a2072a3` (tests), `f0c1e81` (componentes), más
 
 ### Veredicto por sección
 
-| Verificación | Resultado |
-|---|---|
-| `npm test` | 81 archivos / **1225 tests** en verde (base 64/931) |
-| `npx vitest run src/components/InvoicesComponents` | 17 archivos / **294 tests** |
-| `npm run build:frontend` | `EXIT=0` |
-| `npx eslint src/components/InvoicesComponents` | **9 errores → 0**; 24 → 37 warnings |
-| `npx eslint .` (repo completo) | 69 errores, **0 en el módulo de Facturación** (deuda de otros módulos) |
-| `prettier --check` sobre el módulo | limpio |
-| Componentes principales | 79 / 108 / 133 / 134 / 151 líneas; el `.jsx` más largo del módulo tiene 176 |
-| Servicios y hooks | 16 servicios, 3 utilidades, 6 hooks, 25 subcomponentes |
-| DIP | cero imports de `supabase` en componentes y hooks; solo en `services/` |
-| Paridad de clases CSS | **112/112** clases idénticas contra `e3a8b67` |
-| Paridad de texto visible | verificada cadena por cadena en las seis unidades |
-| Props padre→hijo | validadas contra la firma de cada subcomponente: 0 faltantes, 0 desconocidas |
-| Referencias `styles.*` | todas resueltas contra su módulo CSS (script de verificación propio) |
-| Imports relativos | todos resueltos (script de verificación propio) |
-| `console.log`/`console.warn` nuevos | 0 |
+| Verificación                                       | Resultado                                                                    |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `npm test`                                         | 81 archivos / **1225 tests** en verde (base 64/931)                          |
+| `npx vitest run src/components/InvoicesComponents` | 17 archivos / **294 tests**                                                  |
+| `npm run build:frontend`                           | `EXIT=0`                                                                     |
+| `npx eslint src/components/InvoicesComponents`     | **9 errores → 0**; 24 → 37 warnings                                          |
+| `npx eslint .` (repo completo)                     | 69 errores, **0 en el módulo de Facturación** (deuda de otros módulos)       |
+| `prettier --check` sobre el módulo                 | limpio                                                                       |
+| Componentes principales                            | 79 / 108 / 133 / 134 / 151 líneas; el `.jsx` más largo del módulo tiene 176  |
+| Servicios y hooks                                  | 16 servicios, 3 utilidades, 6 hooks, 25 subcomponentes                       |
+| DIP                                                | cero imports de `supabase` en componentes y hooks; solo en `services/`       |
+| Paridad de clases CSS                              | **112/112** clases idénticas contra `e3a8b67`                                |
+| Paridad de texto visible                           | verificada cadena por cadena en las seis unidades                            |
+| Props padre→hijo                                   | validadas contra la firma de cada subcomponente: 0 faltantes, 0 desconocidas |
+| Referencias `styles.*`                             | todas resueltas contra su módulo CSS (script de verificación propio)         |
+| Imports relativos                                  | todos resueltos (script de verificación propio)                              |
+| `console.log`/`console.warn` nuevos                | 0                                                                            |
 
 ### Hallazgos corregidos durante la auditoría
 
@@ -1864,18 +1977,18 @@ no da por cierto ningún dato del informe anterior; todo se remedió por medici�
 
 ### Verificaciones mecánicas exigidas
 
-| Verificación | Comando | Resultado |
-|---|---|---|
-| Suite completa | `npm test` | `EXIT=0` — **81 archivos / 1225 tests** en verde |
-| Build de producción | `npm run build:frontend` | `EXIT=0` — `built in 11.57s` |
-| Suite del módulo | `npx vitest run src/components/InvoicesComponents` | **17 archivos / 294 tests** |
-| DIP | `rg 'from .*supabaseClient'` fuera de `services/` | **0 resultados** |
-| Emojis | barrido por codepoint en líneas añadidas | **0** |
-| `console.log` / `console.warn` | barrido en los 77 archivos del diff | **0** |
-| `!important` | barrido en líneas añadidas y en los 8 `*.module.css` del módulo | **0** |
-| `style={{...}}` | barrido en líneas añadidas | **0** |
-| EOF newline | los 77 archivos cambiados | **77/77** con salto final |
-| Espacios en blanco | `git diff --check e3a8b67..HEAD` | limpio, 0 errores |
+| Verificación                   | Comando                                                         | Resultado                                        |
+| ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------ |
+| Suite completa                 | `npm test`                                                      | `EXIT=0` — **81 archivos / 1225 tests** en verde |
+| Build de producción            | `npm run build:frontend`                                        | `EXIT=0` — `built in 11.57s`                     |
+| Suite del módulo               | `npx vitest run src/components/InvoicesComponents`              | **17 archivos / 294 tests**                      |
+| DIP                            | `rg 'from .*supabaseClient'` fuera de `services/`               | **0 resultados**                                 |
+| Emojis                         | barrido por codepoint en líneas añadidas                        | **0**                                            |
+| `console.log` / `console.warn` | barrido en los 77 archivos del diff                             | **0**                                            |
+| `!important`                   | barrido en líneas añadidas y en los 8 `*.module.css` del módulo | **0**                                            |
+| `style={{...}}`                | barrido en líneas añadidas                                      | **0**                                            |
+| EOF newline                    | los 77 archivos cambiados                                       | **77/77** con salto final                        |
+| Espacios en blanco             | `git diff --check e3a8b67..HEAD`                                | limpio, 0 errores                                |
 
 **Sobre DIP.** La exclusión de `NavbarInvoices` resultó inocua: no importa el cliente de Supabase.
 Las únicas 18 coincidencias de `supabaseClient` en todo el módulo caen dentro de directorios
@@ -1889,14 +2002,14 @@ $ rg -n "from ['\"].*supabaseClient" src/components/InvoicesComponents -g '!**/s
 
 ### Descomposición
 
-| Componente | Líneas | `components/` | `hooks/` | `services/` |
-|---|---|---|---|---|
-| `InvoicesPending.jsx` | 79 | 2 | 1 | 4 |
-| `InvoicesHistory.jsx` | 108 | 3 | 1 | 6 |
-| `FiscalCustomerModal.jsx` | 131 | 6 | 1 | 4 |
-| `InvoiceCustomers.jsx` | 133 | 3 | 1 | 4 |
-| `InvoiceSaleModal.jsx` | 134 | 5 | 1 | 4 |
-| `InvoiceSettings.jsx` | 151 | 6 | 1 | 4 |
+| Componente                | Líneas | `components/` | `hooks/` | `services/` |
+| ------------------------- | ------ | ------------- | -------- | ----------- |
+| `InvoicesPending.jsx`     | 79     | 2             | 1        | 4           |
+| `InvoicesHistory.jsx`     | 108    | 3             | 1        | 6           |
+| `FiscalCustomerModal.jsx` | 131    | 6             | 1        | 4           |
+| `InvoiceCustomers.jsx`    | 133    | 3             | 1        | 4           |
+| `InvoiceSaleModal.jsx`    | 134    | 5             | 1        | 4           |
+| `InvoiceSettings.jsx`     | 151    | 6             | 1        | 4           |
 
 Las seis unidades quedan bajo el techo de 160 líneas y con las tres carpetas. El `.jsx` más largo del
 módulo es `InvoicesHistoryDetail.jsx` con 176. Inventario: 16 servicios, 3 utilidades, 6 hooks, 25
@@ -1936,22 +2049,22 @@ anterior:
 
 Para no aceptar la cobertura nominal, se mutaron servicios críticos y se observó si la suite lo nota:
 
-| Mutación | Sensible la suite |
-|---|---|
-| Quitar `channel.subscribe()` de `invoicesRealtimeService` | **sí** — 3 tests fallan |
-| `isValidRfc` siempre `false` | **sí** — 14 tests fallan |
-| `isValidNextFolio` `> 0` → `>= 0` | **sí** — 3 tests fallan |
-| `isValidPhone` `=== 10` → `>= 7` | **sí** — 1 test falla |
-| `sumInvoicesTotal` sin coerción `Number()` | **sí** — 1 test falla |
-| `isSaleReadyToInvoice` negada | **sí** — 1 test falla |
+| Mutación                                                                  | Sensible la suite                |
+| ------------------------------------------------------------------------- | -------------------------------- |
+| Quitar `channel.subscribe()` de `invoicesRealtimeService`                 | **sí** — 3 tests fallan          |
+| `isValidRfc` siempre `false`                                              | **sí** — 14 tests fallan         |
+| `isValidNextFolio` `> 0` → `>= 0`                                         | **sí** — 3 tests fallan          |
+| `isValidPhone` `=== 10` → `>= 7`                                          | **sí** — 1 test falla            |
+| `sumInvoicesTotal` sin coerción `Number()`                                | **sí** — 1 test falla            |
+| `isSaleReadyToInvoice` negada                                             | **sí** — 1 test falla            |
 | **Quitar `if (!target) return false;` de `isPhoneAlreadyFiscalCustomer`** | **NO — 294/294 siguen en verde** |
 
 ### Hallazgo
 
 **H1 (no bloqueante, calidad de test).** La guarda de teléfono vacío en
 `invoiceCustomersCalculationService.js:116` es load-bearing pero no está cubierta. El test que
-aparenta cubrirla es vacuo: `invoiceCustomersCalculationService.test.js:139-141` se titula *"devuelve
-false cuando el teléfono está vacío"* pero invoca `isPhoneAlreadyFiscalCustomer([], "")`, que devuelve
+aparenta cubrirla es vacuo: `invoiceCustomersCalculationService.test.js:139-141` se titula _"devuelve
+false cuando el teléfono está vacío"_ pero invoca `isPhoneAlreadyFiscalCustomer([], "")`, que devuelve
 `false` de forma trivial por `[].some(...)` y no ejercita la guarda.
 
 Escenario que la rompe, ejecutado con números: con un cliente ya registrado cuyo teléfono es `null` en
@@ -1959,10 +2072,10 @@ base de datos y un alta nueva sin teléfono, `normalizePhoneDigits(null)` y `nor
 producen ambos `""`. Sin la guarda, `"" === ""` hace que la función reporte `true` y bloquee el alta de
 un cliente fiscal legítimo.
 
-| Estado del código | `isPhoneAlreadyFiscalCustomer([{ phone: null }], "")` |
-|---|---|
-| Con la guarda (código actual) | `false` — correcto |
-| Sin la guarda | `true` — `AssertionError: expected true to be false` |
+| Estado del código             | `isPhoneAlreadyFiscalCustomer([{ phone: null }], "")` |
+| ----------------------------- | ----------------------------------------------------- |
+| Con la guarda (código actual) | `false` — correcto                                    |
+| Sin la guarda                 | `true` — `AssertionError: expected true to be false`  |
 
 La suite existente pasa 294/294 con la guarda eliminada, es decir, nadie la protege contra una
 regresión. **El código de producción es correcto y el arreglo funciona**; lo que falta es la red de
@@ -2020,30 +2133,30 @@ incluida la cifra de errores de partida.
 
 ### Verificaciones mecánicas
 
-| Verificación | Comando | Resultado |
-|---|---|---|
-| Lint del código | `npx eslint src/` | **0 errores**, 583 warnings (baseline: 69 errores, 566 warnings) |
-| Suite completa | `npm test` | `EXIT=0` — **83 archivos / 1237 tests** en verde |
-| Build de producción | `npm run build:frontend` | `EXIT=0` — `built in 3.96s` |
-| Baseline de lint | worktree en `origin/main` | **69 errores**, reproducidos de forma independiente |
+| Verificación                   | Comando                                       | Resultado                                                                                      |
+| ------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Lint del código                | `npx eslint src/`                             | **0 errores**, 583 warnings (baseline: 69 errores, 566 warnings)                               |
+| Suite completa                 | `npm test`                                    | `EXIT=0` — **83 archivos / 1237 tests** en verde                                               |
+| Build de producción            | `npm run build:frontend`                      | `EXIT=0` — `built in 3.96s`                                                                    |
+| Baseline de lint               | worktree en `origin/main`                     | **69 errores**, reproducidos de forma independiente                                            |
 | `console.log` / `console.warn` | barrido en los 59 archivos de código del diff | **0** (las únicas coincidencias en `src/` están en prosa de comentarios, `ticketPrinter.js:8`) |
-| `console.error` | barrido en el diff | conservados, como exige `AGENTS.md` |
-| `!important` | barrido en los `.css` del diff | **0** |
-| Emojis | barrido por codepoint en las líneas añadidas | **0** |
-| EOF newline | los 60 archivos del diff | **60/60** con salto final |
-| `git diff --check` | `git diff --check origin/main...HEAD` | **2 avisos** (ver H1) |
+| `console.error`                | barrido en el diff                            | conservados, como exige `AGENTS.md`                                                            |
+| `!important`                   | barrido en los `.css` del diff                | **0**                                                                                          |
+| Emojis                         | barrido por codepoint en las líneas añadidas  | **0**                                                                                          |
+| EOF newline                    | los 60 archivos del diff                      | **60/60** con salto final                                                                      |
+| `git diff --check`             | `git diff --check origin/main...HEAD`         | **2 avisos** (ver H1)                                                                          |
 
 ### El baseline de 69 errores, reproducido y desglosado
 
 La cifra de partida se comprobó en un worktree desechable de `origin/main` con el `node_modules` del
 proyecto; no se aceptó de la rama. Los 69 errores se desglosan así:
 
-| Regla | Errores en `origin/main` |
-|---|---|
-| `react-hooks/set-state-in-effect` | 52 |
-| `react-hooks/preserve-manual-memoization` | 11 |
-| `no-useless-escape` | 4 |
-| `no-undef` | 2 |
+| Regla                                     | Errores en `origin/main` |
+| ----------------------------------------- | ------------------------ |
+| `react-hooks/set-state-in-effect`         | 52                       |
+| `react-hooks/preserve-manual-memoization` | 11                       |
+| `no-useless-escape`                       | 4                        |
+| `no-undef`                                | 2                        |
 
 El 76% del total era una sola regla de React 19, lo que confirma que el alcance declarado de la rama es el
 dominante real del backlog de lint y no una selección conveniente.
@@ -2055,12 +2168,12 @@ Las dos entradas previas de esta bitácora (Clientes y Facturación) cerraron su
 esta rama debe ser, por tanto, la peor: que los 69 errores bajan a cero porque creció el número de
 supresiones. Se midió directamente y **es falsa**:
 
-| Medición | `origin/main` | `7c15387` | Delta |
-|---|---|---|---|
-| `eslint-disable-next-line react-hooks` en `src/` | 41 | 41 | **0** |
-| Líneas de supresión añadidas por el diff | — | **0** | — |
-| Líneas de supresión eliminadas por el diff | — | **0** | — |
-| Errores de `react-hooks/set-state-in-effect` | 52 | **0** | −52 |
+| Medición                                         | `origin/main` | `7c15387` | Delta |
+| ------------------------------------------------ | ------------- | --------- | ----- |
+| `eslint-disable-next-line react-hooks` en `src/` | 41            | 41        | **0** |
+| Líneas de supresión añadidas por el diff         | —             | **0**     | —     |
+| Líneas de supresión eliminadas por el diff       | —             | **0**     | —     |
+| Errores de `react-hooks/set-state-in-effect`     | 52            | **0**     | −52   |
 
 Las 41 supresiones son exactamente las mismas antes y después, todas de `react-hooks`, y el diff no añade
 ni quita ninguna. El descenso de 69 a 0 es, por tanto, un descenso de errores reales.
@@ -2146,17 +2259,17 @@ cerrado.
 
 ### 1. Comprobaciones mecánicas ejecutadas
 
-| # | Verificación | Comando / Método | Resultado |
-|---|---|---|---|
-| 1 | Diff base | `git diff --stat origin/main..HEAD` | 13 archivos, +1174 / −77 |
-| 2 | Suite de pruebas | `npm test` | 84 archivos passed / 1,278 tests passed (EXIT 0) |
-| 3 | Build de producción | `npm run build:frontend` | 42 chunks generados (EXIT 0) |
-| 4 | Higiene de diff | `git diff --check origin/main..HEAD` | 0 avisos (limpio) |
-| 5a | Emojis en diff | Barrido UTF-8 en líneas agregadas | 0 emojis |
-| 5b | Debug logs | Búsqueda `console.log\|console.warn` en diff | 0 en código |
-| 5c | Trazabilidad error | `console.error` en bloques `catch` | Preservado en llamadores |
-| 6 | Formato EOF | Byte `0x0A` en todos los archivos tocados | 13/13 archivos OK |
-| 7 | Linter | `npx eslint` sobre archivos tocados | 0 errores |
+| #   | Verificación        | Comando / Método                             | Resultado                                        |
+| --- | ------------------- | -------------------------------------------- | ------------------------------------------------ |
+| 1   | Diff base           | `git diff --stat origin/main..HEAD`          | 13 archivos, +1174 / −77                         |
+| 2   | Suite de pruebas    | `npm test`                                   | 84 archivos passed / 1,278 tests passed (EXIT 0) |
+| 3   | Build de producción | `npm run build:frontend`                     | 42 chunks generados (EXIT 0)                     |
+| 4   | Higiene de diff     | `git diff --check origin/main..HEAD`         | 0 avisos (limpio)                                |
+| 5a  | Emojis en diff      | Barrido UTF-8 en líneas agregadas            | 0 emojis                                         |
+| 5b  | Debug logs          | Búsqueda `console.log\|console.warn` en diff | 0 en código                                      |
+| 5c  | Trazabilidad error  | `console.error` en bloques `catch`           | Preservado en llamadores                         |
+| 6   | Formato EOF         | Byte `0x0A` en todos los archivos tocados    | 13/13 archivos OK                                |
+| 7   | Linter              | `npx eslint` sobre archivos tocados          | 0 errores                                        |
 
 **Rastreo de los resultados no obvios.** Los 25 warnings de `no-unused-vars` que reportan
 `CashCut.jsx` y `useSalesHistory.js` son deuda heredada, no una regresión de la rama: verificado con
@@ -2254,7 +2367,7 @@ cifras erróneas en el propio registro**, que se corrigieron en `638beb2` antes 
    contaminación entre estados.
 2. **N1 — nÚMERO OPERATIVO CORRECTO, tres cifras de contexto erróneas.** El 355 se reproduce exacto. Los
    371 y 372 contaban como archivo la línea de resumen de Prettier (`Code style issues found in 370
-   files.`), que no es una ruta: el total real es 370 en la rama y 371 en `main`, y los 15 restantes son
+files.`), que no es una ruta: el total real es 370 en la rama y 371 en `main`, y los 15 restantes son
    `.md`/`.MD` sin ningún `.txt`. Corregido con nota de método.
 3. **N2 — APROBADO.** `564 → 187` y `583 → 206` con 0 errores, medidos en un worktree de `main` y en la
    rama. Sin discrepancias.
@@ -2266,12 +2379,12 @@ cifras erróneas en el propio registro**, que se corrigieron en `638beb2` antes 
    Además el ΔE00 de `info` era 3.30, no 3.35. La corrección refuerza el ítem: la regresión era más ancha
    de lo registrado y estaba mal cuantificada por el mismo método no validado que el ítem condena.
 
-| Estado | `main` | `68a6a52` (`filter`) | `HEAD` (máscara) |
-| ------ | ------ | -------------------- | ---------------- |
-| `info` | 0.00 (texto) | 3.30 | **0.00** |
-| `success` | 1.04 (`<img>` + `filter`) | 1.04 | **0.00** |
-| `warning` | 0.00 (texto) | 29.19 | **0.00** |
-| `danger` | 0.00 (texto) | 8.76 | **0.00** |
+| Estado    | `main`                    | `68a6a52` (`filter`) | `HEAD` (máscara) |
+| --------- | ------------------------- | -------------------- | ---------------- |
+| `info`    | 0.00 (texto)              | 3.30                 | **0.00**         |
+| `success` | 1.04 (`<img>` + `filter`) | 1.04                 | **0.00**         |
+| `warning` | 0.00 (texto)              | 29.19                | **0.00**         |
+| `danger`  | 0.00 (texto)              | 8.76                 | **0.00**         |
 
 ### 4. Veredicto
 

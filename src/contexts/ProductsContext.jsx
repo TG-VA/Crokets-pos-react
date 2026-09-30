@@ -67,8 +67,11 @@ export const ProductsProvider = ({ children }) => {
   // con un setLoadingProducts(true) sincrono, que provocaba un re-render en
   // cascada. El refresco en tiempo real no cambia la clave, asi que el spinner no
   // parpadea ante una actualizacion de fondo.
-  const { isLoading: loadingProducts, isStale, markSettled } =
-    useRequestStatus(branch?.id || null);
+  const {
+    isLoading: loadingProducts,
+    isStale,
+    markSettled,
+  } = useRequestStatus(branch?.id || null);
 
   // El error de una carga anterior no debe mostrarse mientras corre la nueva.
   const visibleProductsError = isStale ? null : productsError;

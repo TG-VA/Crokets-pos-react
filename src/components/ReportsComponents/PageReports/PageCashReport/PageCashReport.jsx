@@ -82,7 +82,8 @@ const PageCashReport = () => {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Caja y Arqueos</h1>
           <p className={styles.description}>
-            Auditoría de turnos, aperturas, cierres de caja, ingresos/retiros de efectivo y discrepancias.
+            Auditoría de turnos, aperturas, cierres de caja, ingresos/retiros de
+            efectivo y discrepancias.
           </p>
         </div>
 
@@ -164,7 +165,9 @@ const PageCashReport = () => {
         >
           <img src={CreditCardIcon} alt="" className={styles.tabIcon} />
           Métodos de Pago
-          <span className={styles.tabBadge}>{paymentMethodsSummary.length}</span>
+          <span className={styles.tabBadge}>
+            {paymentMethodsSummary.length}
+          </span>
         </button>
 
         <button

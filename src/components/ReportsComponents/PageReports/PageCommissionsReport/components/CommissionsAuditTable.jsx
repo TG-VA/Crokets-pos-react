@@ -56,7 +56,9 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Auditoría Detallada de Comisiones</h3>
+          <h3 className={styles.tableTitle}>
+            Auditoría Detallada de Comisiones
+          </h3>
           <span className={styles.tableSubtitle}>
             Trazabilidad ticket por ticket de cada producto que generó incentivo
           </span>
@@ -98,7 +100,8 @@ export const CommissionsAuditTable = ({ detailedRows = [] }) => {
             {paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={10} className={styles.emptyState}>
-                  No hay partidas con comisión para mostrar con los filtros aplicados.
+                  No hay partidas con comisión para mostrar con los filtros
+                  aplicados.
                 </td>
               </tr>
             ) : (

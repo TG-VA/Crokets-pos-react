@@ -12,17 +12,19 @@
 #### Arquitectura Técnica
 
 ##### Frontend
-| Tecnología | Función |
-|------------|---------|
-| Electron.js | Framework para aplicaciones de escritorio |
-| React | Biblioteca principal para construcción de UI |
-| Vite | Bundler y entorno de desarrollo |
-| React Router | Manejo de navegación entre vistas |
+
+| Tecnología   | Función                                      |
+| ------------ | -------------------------------------------- |
+| Electron.js  | Framework para aplicaciones de escritorio    |
+| React        | Biblioteca principal para construcción de UI |
+| Vite         | Bundler y entorno de desarrollo              |
+| React Router | Manejo de navegación entre vistas            |
 
 ##### Backend
-| Componente | Tecnología |
-|------------|-----------|
-| Runtime | Node.js (proceso main de Electron) |
+
+| Componente     | Tecnología                                      |
+| -------------- | ----------------------------------------------- |
+| Runtime        | Node.js (proceso main de Electron)              |
 | Backend remoto | Supabase (auth, RPCs, base de datos PostgreSQL) |
 
 > **Nota:** el backend local Express con SQLite (`src/backend`) se eliminó por completo — ya no se usa en
@@ -107,20 +109,22 @@ npm run dev
 ```
 
 #### Comandos Disponibles
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Inicia Vite + Electron en modo desarrollo |
-| `npm run build` | Genera el instalador de escritorio (NSIS, Windows). Ver `DEPLOYMENT.md` antes de usarlo con clientes reales |
-| `npm run build:frontend` | Solo compila el frontend con Vite |
-| `npm run build:electron` | Solo empaqueta con electron-builder |
-| `npm run start` | Inicia Electron sobre el build existente (sin Vite) |
-| `npm run watch` | Compila el frontend en modo watch |
-| `npm run preview` | Sirve localmente el build de Vite |
-| `npm test` | Ejecuta la suite de tests (Vitest). Ver `docs/TESTING.md` |
+
+| Comando                  | Descripción                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `npm run dev`            | Inicia Vite + Electron en modo desarrollo                                                                   |
+| `npm run build`          | Genera el instalador de escritorio (NSIS, Windows). Ver `DEPLOYMENT.md` antes de usarlo con clientes reales |
+| `npm run build:frontend` | Solo compila el frontend con Vite                                                                           |
+| `npm run build:electron` | Solo empaqueta con electron-builder                                                                         |
+| `npm run start`          | Inicia Electron sobre el build existente (sin Vite)                                                         |
+| `npm run watch`          | Compila el frontend en modo watch                                                                           |
+| `npm run preview`        | Sirve localmente el build de Vite                                                                           |
+| `npm test`               | Ejecuta la suite de tests (Vitest). Ver `docs/TESTING.md`                                                   |
 
 > El linter (ESLint/Prettier) todavía no está configurado — ver `KNOWN_ISSUES.md` punto 8.
 
 #### Documentación relacionada
+
 - `AGENTS.md` — convenciones para agentes de IA y desarrolladores
 - `CODE_STANDARDS.md` — estándares de código del proyecto
 - `KNOWN_ISSUES.md` — problemas conocidos y su severidad

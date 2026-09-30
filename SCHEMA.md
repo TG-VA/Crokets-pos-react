@@ -110,29 +110,29 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 
 ### sale_returns
 
-| Columna            | Tipo        | Notas                  |
-| ------------------ | ----------- | ---------------------- |
-| id                 | uuid        | PK, default gen_random_uuid() |
-| sale_id            | uuid        | NN, → sales.id         |
-| user_id            | uuid        | NN, → users.id         |
-| branch_id          | uuid        | NN, → branches.id      |
-| return_reason      | text        | NN                     |
-| refund_method_id   | uuid        | NN, → payment_methods.id |
-| total_refund       | numeric(10,2) | NN, default 0          |
-| created_at         | timestamp   | default now() (without time zone) |
+| Columna          | Tipo          | Notas                             |
+| ---------------- | ------------- | --------------------------------- |
+| id               | uuid          | PK, default gen_random_uuid()     |
+| sale_id          | uuid          | NN, → sales.id                    |
+| user_id          | uuid          | NN, → users.id                    |
+| branch_id        | uuid          | NN, → branches.id                 |
+| return_reason    | text          | NN                                |
+| refund_method_id | uuid          | NN, → payment_methods.id          |
+| total_refund     | numeric(10,2) | NN, default 0                     |
+| created_at       | timestamp     | default now() (without time zone) |
 
 ### sale_return_items
 
-| Columna           | Tipo        | Notas                    |
-| ----------------- | ----------- | ------------------------ |
-| id                | uuid        | PK, default gen_random_uuid() |
-| return_id         | uuid        | NN, → sale_returns.id    |
-| sale_detail_id    | uuid        | NN, → sale_details.id    |
-| product_id        | uuid        | NN, → products.id        |
-| quantity          | numeric     | NN                       |
-| unit_price        | numeric     | NN                       |
-| total_price       | numeric     | NN                       |
-| created_at        | timestamptz | default now()            |
+| Columna        | Tipo        | Notas                         |
+| -------------- | ----------- | ----------------------------- |
+| id             | uuid        | PK, default gen_random_uuid() |
+| return_id      | uuid        | NN, → sale_returns.id         |
+| sale_detail_id | uuid        | NN, → sale_details.id         |
+| product_id     | uuid        | NN, → products.id             |
+| quantity       | numeric     | NN                            |
+| unit_price     | numeric     | NN                            |
+| total_price    | numeric     | NN                            |
+| created_at     | timestamptz | default now()                 |
 
 ### cash_register_sessions
 
@@ -320,16 +320,16 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 
 ### sale_kit_items
 
-| Columna               | Tipo      | Notas                       |
-| --------------------- | --------- | --------------------------- |
-| id                    | uuid      | PK, default gen_random_uuid() |
-| sale_id               | uuid      | NN, → sales.id              |
-| sale_detail_id        | uuid      | NN, → sale_details.id       |
-| kit_product_id        | uuid      | NN, → products.id           |
-| component_product_id  | uuid      | NN, → products.id           |
-| quantity              | numeric   | NN                          |
-| branch_id             | uuid      | NN, → branches.id           |
-| created_at            | timestamp | default now()               |
+| Columna              | Tipo      | Notas                         |
+| -------------------- | --------- | ----------------------------- |
+| id                   | uuid      | PK, default gen_random_uuid() |
+| sale_id              | uuid      | NN, → sales.id                |
+| sale_detail_id       | uuid      | NN, → sale_details.id         |
+| kit_product_id       | uuid      | NN, → products.id             |
+| component_product_id | uuid      | NN, → products.id             |
+| quantity             | numeric   | NN                            |
+| branch_id            | uuid      | NN, → branches.id             |
+| created_at           | timestamp | default now()                 |
 
 ### product_discounts
 
@@ -574,17 +574,17 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 
 ### user_sessions
 
-| Columna        | Tipo      | Notas                        |
-| -------------- | --------- | ---------------------------- |
-| id             | uuid      | PK, default gen_random_uuid() |
-| user_id        | uuid      | NN → users.id                |
-| branch_id      | uuid      | NN, → branches.id            |
-| session_token  | varchar   | NN, único                    |
-| ip_address     | varchar   |                              |
-| user_agent     | text      |                              |
-| started_at     | timestamp | default now()                |
-| ended_at       | timestamp |                              |
-| status         | varchar   | default 'active'             |
+| Columna       | Tipo      | Notas                         |
+| ------------- | --------- | ----------------------------- |
+| id            | uuid      | PK, default gen_random_uuid() |
+| user_id       | uuid      | NN → users.id                 |
+| branch_id     | uuid      | NN, → branches.id             |
+| session_token | varchar   | NN, único                     |
+| ip_address    | varchar   |                               |
+| user_agent    | text      |                               |
+| started_at    | timestamp | default now()                 |
+| ended_at      | timestamp |                               |
+| status        | varchar   | default 'active'              |
 
 ---
 
@@ -623,16 +623,16 @@ expone vía `get_cash_max_opening_amount` / `update_cash_max_opening_amount`.
 
 ### system_settings
 
-| Columna       | Tipo      | Notas                        |
-| ------------- | --------- | ---------------------------- |
-| id            | uuid      | PK, default gen_random_uuid() |
-| setting_key   | varchar   | NN                           |
-| setting_value | text      | NN                           |
-| value_type    | varchar   | NN                           |
-| description   | text      |                              |
-| branch_id     | uuid      | → branches.id (índice único por key+branch) |
-| is_active     | boolean   | default true                 |
-| created_at    | timestamp | default now()                |
+| Columna       | Tipo      | Notas                                                        |
+| ------------- | --------- | ------------------------------------------------------------ |
+| id            | uuid      | PK, default gen_random_uuid()                                |
+| setting_key   | varchar   | NN                                                           |
+| setting_value | text      | NN                                                           |
+| value_type    | varchar   | NN                                                           |
+| description   | text      |                                                              |
+| branch_id     | uuid      | → branches.id (índice único por key+branch)                  |
+| is_active     | boolean   | default true                                                 |
+| created_at    | timestamp | default now()                                                |
 | updated_at    | timestamp | default now() (trigger `trg_system_settings_set_updated_at`) |
 
 ---
@@ -645,26 +645,26 @@ funciones transaccionales (`create_*`, `cancel_*`, `update_*`, `delete_*`, `impo
 (revisadas en el despliegue del 23 sep 2026). Ver `KNOWN_ISSUES.md` punto 5 para entender por qué se
 prefiere RPC atómica sobre cliente con múltiples queries.
 
-| Función                                                                                | Devuelve      | Uso aparente                                                                                                                         |
-| -------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `create_sale_transaction`                                                              | uuid          | Crea una venta de forma atómica (existen 3 sobrecargas — confirmar cuál usa el frontend)                                             |
-| `cancel_sale_transaction`                                                              | uuid          | Cancelación de venta (atómica, reemplaza al flujo cliente)                                                                           |
-| `cancel_sale`                                                                          | void          | Cancelación de venta (legacy no transaccional, sin `SECURITY DEFINER`)                                                               |
-| `create_partial_return_transaction`                                                    | uuid          | Devolución parcial (atómica; alimenta `sale_returns`/`sale_return_items`)                                                            |
-| `complete_sale`                                                                        | void          | Legacy no transaccional                                                                                                              |
-| `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`         | uuid / uuid / void | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                            |
-| `import_products_transaction`                                                          | jsonb         | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                                               |
-| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`           | jsonb         | Transferencias entre sucursales — **ya atómicas vía RPC**                                                                            |
-| `close_cash_register_session`                                                          | jsonb         | Cierre de caja                                                                                                                       |
-| `open_cash_register` / `get_cash_register_session`                                     | jsonb         | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                                    |
-| `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                       | numeric / void | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                                    |
-| `get_sales_report_kpis` / `get_commissions_report_data` / `get_inventory_report_data` / `get_cash_report_sessions` | record / jsonb | Datasets para reportes de ventas, comisiones, inventario y caja                                   |
-| `get_branch_products_paginated`                                                        | jsonb         | Catálogo paginado de productos por sucursal                                                                                          |
-| `has_permission` / `is_admin` / `_user_can_access_branch`                              | boolean       | Permisos (ver `PERMISSIONS.md`)                                                                                                      |
-| `get_email_by_username`                                                                | text          | Traduce username local a email para login contra Supabase Auth                                                                       |
-| `get_branch_by_device`                                                                 | jsonb         | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30)                  |
-| `_cash_session_payload` / `_cash_already_open_response` / `_cash_max_opening_amount`   | jsonb / jsonb / numeric | Helpers internos de caja (prefijo `_`, sin grants)                                                     |
-| `_apply_inventory_delta` / `_build_transfer_notes`                                     | record / text | Helpers internos (prefijo `_`)                                                                                                       |
+| Función                                                                                                            | Devuelve                | Uso aparente                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `create_sale_transaction`                                                                                          | uuid                    | Crea una venta de forma atómica (existen 3 sobrecargas — confirmar cuál usa el frontend)                            |
+| `cancel_sale_transaction`                                                                                          | uuid                    | Cancelación de venta (atómica, reemplaza al flujo cliente)                                                          |
+| `cancel_sale`                                                                                                      | void                    | Cancelación de venta (legacy no transaccional, sin `SECURITY DEFINER`)                                              |
+| `create_partial_return_transaction`                                                                                | uuid                    | Devolución parcial (atómica; alimenta `sale_returns`/`sale_return_items`)                                           |
+| `complete_sale`                                                                                                    | void                    | Legacy no transaccional                                                                                             |
+| `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`                                     | uuid / uuid / void      | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                      |
+| `import_products_transaction`                                                                                      | jsonb                   | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                               |
+| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**                                                           |
+| `close_cash_register_session`                                                                                      | jsonb                   | Cierre de caja                                                                                                      |
+| `open_cash_register` / `get_cash_register_session`                                                                 | jsonb                   | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                   |
+| `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                                                   | numeric / void          | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                   |
+| `get_sales_report_kpis` / `get_commissions_report_data` / `get_inventory_report_data` / `get_cash_report_sessions` | record / jsonb          | Datasets para reportes de ventas, comisiones, inventario y caja                                                     |
+| `get_branch_products_paginated`                                                                                    | jsonb                   | Catálogo paginado de productos por sucursal                                                                         |
+| `has_permission` / `is_admin` / `_user_can_access_branch`                                                          | boolean                 | Permisos (ver `PERMISSIONS.md`)                                                                                     |
+| `get_email_by_username`                                                                                            | text                    | Traduce username local a email para login contra Supabase Auth                                                      |
+| `get_branch_by_device`                                                                                             | jsonb                   | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30) |
+| `_cash_session_payload` / `_cash_already_open_response` / `_cash_max_opening_amount`                               | jsonb / jsonb / numeric | Helpers internos de caja (prefijo `_`, sin grants)                                                                  |
+| `_apply_inventory_delta` / `_build_transfer_notes`                                                                 | record / text           | Helpers internos (prefijo `_`)                                                                                      |
 
 **Triggers (9)** (nombres reales de la introspección):
 `trg_sales_set_updated_at`, `trg_products_updated_at`, `trg_branch_inventory_set_updated_at`,

@@ -30,7 +30,10 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
   const currentItems = pageItems(items);
 
   const totalEstimatedInvestment = useMemo(() => {
-    return items.reduce((acc, item) => acc + (item.estimatedInvestment || 0), 0);
+    return items.reduce(
+      (acc, item) => acc + (item.estimatedInvestment || 0),
+      0
+    );
   }, [items]);
 
   const totalSuggestedUnits = useMemo(() => {
@@ -40,7 +43,9 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
   if (isLoading) {
     return (
       <div className={styles.tableCard}>
-        <div className={styles.emptyState}>Calculando sugerencias de reabastecimiento...</div>
+        <div className={styles.emptyState}>
+          Calculando sugerencias de reabastecimiento...
+        </div>
       </div>
     );
   }
@@ -49,7 +54,9 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Sugerencias de Reorden y Compras</h3>
+          <h3 className={styles.tableTitle}>
+            Sugerencias de Reorden y Compras
+          </h3>
           <span className={styles.tableSubtitle}>
             {items.length} producto(s) requieren reabastecimiento urgente
           </span>
@@ -77,9 +84,13 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
               <th>Departamento</th>
               <th className={styles.textRight}>Stock Actual</th>
               <th className={styles.textRight}>Mín / Máx</th>
-              <th className={`${styles.textRight} ${styles.fontBold}`}>Cantidad a Pedir</th>
+              <th className={`${styles.textRight} ${styles.fontBold}`}>
+                Cantidad a Pedir
+              </th>
               <th className={styles.textRight}>Costo Unit.</th>
-              <th className={`${styles.textRight} ${styles.fontBold}`}>Inversión Sugerida</th>
+              <th className={`${styles.textRight} ${styles.fontBold}`}>
+                Inversión Sugerida
+              </th>
               <th className={styles.textCenter}>Estado</th>
             </tr>
           </thead>
@@ -87,7 +98,8 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
             {currentItems.length === 0 ? (
               <tr>
                 <td colSpan={9} className={styles.emptyState}>
-                  Excelente: No hay productos agotados ni por debajo del stock mínimo.
+                  Excelente: No hay productos agotados ni por debajo del stock
+                  mínimo.
                 </td>
               </tr>
             ) : (
@@ -105,7 +117,9 @@ const ReorderSuggestionsTable = ({ items = [], isLoading = false }) => {
                   <td className={styles.reorderQtyCell}>
                     +{item.suggestedQty.toLocaleString()}
                   </td>
-                  <td className={styles.textRight}>{formatCurrency(item.cost_price)}</td>
+                  <td className={styles.textRight}>
+                    {formatCurrency(item.cost_price)}
+                  </td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
                     {formatCurrency(item.estimatedInvestment)}
                   </td>

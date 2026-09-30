@@ -151,9 +151,7 @@ const useInventoryAdjustment = () => {
       return;
     }
 
-    setQuantityToAdjust(
-      `${hasNegativeSign ? "-" : ""}${digitsOnly}`
-    );
+    setQuantityToAdjust(`${hasNegativeSign ? "-" : ""}${digitsOnly}`);
   };
 
   const handleLookup = () => {
@@ -242,8 +240,7 @@ const useInventoryAdjustment = () => {
       return;
     }
 
-    const productId =
-      selectedProduct.product_id || selectedProduct.id;
+    const productId = selectedProduct.product_id || selectedProduct.id;
 
     if (!productId) {
       showAppAlert({
@@ -269,18 +266,14 @@ const useInventoryAdjustment = () => {
 
       await refreshProducts();
 
-      const description = String(
-        selectedProduct.descripcion ?? ""
-      ).trim();
+      const description = String(selectedProduct.descripcion ?? "").trim();
 
       const descriptionUpper = description
         ? description.toUpperCase()
         : "PRODUCTO";
 
       const quantityLabel =
-        parsedQuantity > 0
-          ? `+${parsedQuantity}`
-          : `${parsedQuantity}`;
+        parsedQuantity > 0 ? `+${parsedQuantity}` : `${parsedQuantity}`;
 
       resetAfterSave();
 
@@ -316,8 +309,7 @@ const useInventoryAdjustment = () => {
       showAppAlert({
         type: "danger",
         title: "No se pudo aplicar el ajuste",
-        message:
-          error?.message || "No se pudo aplicar el ajuste.",
+        message: error?.message || "No se pudo aplicar el ajuste.",
       });
     } finally {
       setSaving(false);

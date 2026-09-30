@@ -35,6 +35,7 @@ Crokets-POS es un sistema de punto de venta (POS) de escritorio para establecimi
 ## Arquitectura Modular y Escalabilidad (Servicios, Hooks y Utils)
 
 Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de botella en Git:
+
 - **Servicios segregados por ciclo de vida:**
   - `*ReportService.js`: Consultas globales y datasets principales de la vista.
   - `*DetailService.js`: Consultas a profundidad bajo demanda (modales de inspección, historial 360°, auditorías).

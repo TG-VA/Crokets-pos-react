@@ -24,11 +24,13 @@ const ProductsNew = () => {
     handleContentKeyDown,
     preventNumberScrollChange,
     preventNumberArrows,
-    showError
+    showError,
   } = useProductsNew();
 
-  const inputClassName = (field) => 
-    [styles.input, showError(field) ? styles.inputError : ""].filter(Boolean).join(" ");
+  const inputClassName = (field) =>
+    [styles.input, showError(field) ? styles.inputError : ""]
+      .filter(Boolean)
+      .join(" ");
 
   const renderError = (field) =>
     showError(field) ? (
@@ -93,7 +95,9 @@ const ProductsNew = () => {
                     className={inputClassName("descripcion")}
                     type="text"
                     value={form.descripcion}
-                    onChange={(e) => updateField("descripcion", e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      updateField("descripcion", e.target.value.toUpperCase())
+                    }
                     onBlur={() => markTouched("descripcion")}
                   />
 
@@ -107,7 +111,9 @@ const ProductsNew = () => {
                     name="departamento"
                     className={inputClassName("departamento")}
                     value={form.departamento}
-                    onChange={(e) => updateField("departamento", e.target.value)}
+                    onChange={(e) =>
+                      updateField("departamento", e.target.value)
+                    }
                     onBlur={() => markTouched("departamento")}
                   >
                     <option value="">Sin departamento</option>
@@ -212,7 +218,9 @@ const ProductsNew = () => {
                   <select
                     className={styles.input}
                     value={form.isGlobal ? "activo" : "inactivo"}
-                    onChange={(e) => updateField("isGlobal", e.target.value === "activo")}
+                    onChange={(e) =>
+                      updateField("isGlobal", e.target.value === "activo")
+                    }
                   >
                     <option value="activo">Activo</option>
                     <option value="inactivo">Inactivo</option>
@@ -287,7 +295,9 @@ const ProductsNew = () => {
                   <input
                     className={styles.input}
                     type="text"
-                    value={Number.isFinite(ganancia) ? ganancia.toFixed(2) : "0.00"}
+                    value={
+                      Number.isFinite(ganancia) ? ganancia.toFixed(2) : "0.00"
+                    }
                     readOnly
                     tabIndex={-1}
                   />
@@ -301,7 +311,12 @@ const ProductsNew = () => {
                   <select
                     className={styles.input}
                     value={form.commission_enabled ? "activo" : "inactivo"}
-                    onChange={(e) => updateField("commission_enabled", e.target.value === "activo")}
+                    onChange={(e) =>
+                      updateField(
+                        "commission_enabled",
+                        e.target.value === "activo"
+                      )
+                    }
                   >
                     <option value="activo">Activo</option>
                     <option value="inactivo">Inactivo</option>
@@ -314,7 +329,9 @@ const ProductsNew = () => {
                   <select
                     className={styles.input}
                     value={form.commission_type || "percent"}
-                    onChange={(e) => updateField("commission_type", e.target.value)}
+                    onChange={(e) =>
+                      updateField("commission_type", e.target.value)
+                    }
                     disabled={!form.commission_enabled}
                   >
                     <option value="percent">Porcentaje (%)</option>
@@ -324,7 +341,9 @@ const ProductsNew = () => {
 
                 <div className={styles.formRow}>
                   <label className={styles.label}>
-                    {form.commission_type === "percent" ? "Porcentaje comision (%)" : "Valor de comisión"}
+                    {form.commission_type === "percent"
+                      ? "Porcentaje comision (%)"
+                      : "Valor de comisión"}
                   </label>
 
                   <input
@@ -334,7 +353,9 @@ const ProductsNew = () => {
                     inputMode="decimal"
                     step="0.01"
                     value={form.commission_value}
-                    onChange={(e) => updateField("commission_value", e.target.value)}
+                    onChange={(e) =>
+                      updateField("commission_value", e.target.value)
+                    }
                     onBlur={() => markTouched("commission_value")}
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
@@ -364,7 +385,9 @@ const ProductsNew = () => {
                   <select
                     className={styles.input}
                     value={form.use_inventory ? "si" : "no"}
-                    onChange={(e) => updateField("use_inventory", e.target.value === "si")}
+                    onChange={(e) =>
+                      updateField("use_inventory", e.target.value === "si")
+                    }
                   >
                     <option value="si">Si</option>
                     <option value="no">No</option>

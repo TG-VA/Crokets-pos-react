@@ -1,7 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-} from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   buildKardexRows,
@@ -11,10 +8,7 @@ import {
 import useKardexMovementSlots from "./useKardexMovementSlots";
 import useKardexRealtime from "./useKardexRealtime";
 
-const KARDEX_SLOTS = [
-  0,
-  1,
-];
+const KARDEX_SLOTS = [0, 1];
 
 const useKardexMovements = ({
   branchId = null,
@@ -37,36 +31,23 @@ const useKardexMovements = ({
   });
 
   useEffect(() => {
-    KARDEX_SLOTS.forEach(
-      (slot) => {
-        const product =
-          selectedProducts[
-            slot
-          ];
+    KARDEX_SLOTS.forEach((slot) => {
+      const product = selectedProducts[slot];
 
-        if (!product) {
-          clearMovementSlot(
-            slot
-          );
+      if (!product) {
+        clearMovementSlot(slot);
 
-          return;
-        }
-
-        loadSlotMovements(
-          slot,
-          product,
-          {
-            dateFrom:
-              appliedDateFrom,
-
-            dateTo:
-              appliedDateTo,
-
-            silent: false,
-          }
-        );
+        return;
       }
-    );
+
+      loadSlotMovements(slot, product, {
+        dateFrom: appliedDateFrom,
+
+        dateTo: appliedDateTo,
+
+        silent: false,
+      });
+    });
   }, [
     selectedProducts,
     appliedDateFrom,
@@ -82,42 +63,20 @@ const useKardexMovements = ({
     selectedProductIds,
     refreshSlotSilently,
 
-    enabled:
-      selectedProductIds.some(
-        Boolean
-      ),
+    enabled: selectedProductIds.some(Boolean),
   });
 
-  const rowsBySlot =
-    useMemo(() => {
-      return KARDEX_SLOTS.map(
-        (slot) => {
-          const product =
-            selectedProducts[
-              slot
-            ];
+  const rowsBySlot = useMemo(() => {
+    return KARDEX_SLOTS.map((slot) => {
+      const product = selectedProducts[slot];
 
-          const movements =
-            movementsState[
-              slot
-            ]?.movements ??
-            [];
+      const movements = movementsState[slot]?.movements ?? [];
 
-          return buildKardexRows(
-            movements,
-            {
-              tracksInventory:
-                productTracksInventory(
-                  product
-                ),
-            }
-          );
-        }
-      );
-    }, [
-      selectedProducts,
-      movementsState,
-    ]);
+      return buildKardexRows(movements, {
+        tracksInventory: productTracksInventory(product),
+      });
+    });
+  }, [selectedProducts, movementsState]);
 
   return {
     movementsState,

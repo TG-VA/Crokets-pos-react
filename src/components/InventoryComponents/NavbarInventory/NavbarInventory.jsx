@@ -11,12 +11,42 @@ import TransfersIcon from "../../../assets/icons/file-import-solid-full.svg";
 
 const NavbarInventory = () => {
   const options = [
-    { id: "agregar", label: "Agregar", icon: AddIcon, path: "/inventory/agregar" },
-    { id: "ajustes", label: "Ajustes", icon: SettingsIcon, path: "/inventory/ajustes" },
-    { id: "reporte-inventario", label: "Reporte inventario", icon: InventoryReportIcon, path: "/inventory/reporte-inventario" },
-    { id: "reporte-movimientos", label: "Reporte movimientos", icon: MovementsIcon, path: "/inventory/reporte-movimientos" },
-    { id: "kardex", label: "Kardex", icon: KardexIcon, path: "/inventory/kardex" },
-    { id: "traspasos", label: "Traspasos", icon: TransfersIcon, path: "/inventory/traspasos" },
+    {
+      id: "agregar",
+      label: "Agregar",
+      icon: AddIcon,
+      path: "/inventory/agregar",
+    },
+    {
+      id: "ajustes",
+      label: "Ajustes",
+      icon: SettingsIcon,
+      path: "/inventory/ajustes",
+    },
+    {
+      id: "reporte-inventario",
+      label: "Reporte inventario",
+      icon: InventoryReportIcon,
+      path: "/inventory/reporte-inventario",
+    },
+    {
+      id: "reporte-movimientos",
+      label: "Reporte movimientos",
+      icon: MovementsIcon,
+      path: "/inventory/reporte-movimientos",
+    },
+    {
+      id: "kardex",
+      label: "Kardex",
+      icon: KardexIcon,
+      path: "/inventory/kardex",
+    },
+    {
+      id: "traspasos",
+      label: "Traspasos",
+      icon: TransfersIcon,
+      path: "/inventory/traspasos",
+    },
   ];
 
   return (

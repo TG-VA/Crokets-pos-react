@@ -28,9 +28,13 @@ describe("usePagination", () => {
 
   it("pageItems devuelve el slice correspondiente a la página actual", () => {
     const items = Array.from({ length: 25 }, (_, i) => i);
-    const { result } = renderHook(() => usePagination({ totalItems: items.length }));
+    const { result } = renderHook(() =>
+      usePagination({ totalItems: items.length })
+    );
 
-    expect(result.current.pageItems(items)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(result.current.pageItems(items)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
   });
 
   it("handlePageChange navega dentro del rango y actualiza los índices", () => {

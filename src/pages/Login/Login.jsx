@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useBranch } from '../../contexts/BranchContext';
-import styles from './Login.module.css';
-import { supabase } from '../../lib/supabaseClient';
-import { resolveBranchByDevice } from '../../services/deviceBranchService';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBranch } from "../../contexts/BranchContext";
+import styles from "./Login.module.css";
+import { supabase } from "../../lib/supabaseClient";
+import { resolveBranchByDevice } from "../../services/deviceBranchService";
 
 // Recursos gráficos
-import logo from '../../assets/images/LOGOCROKETS.png';
-import userIcon from '../../assets/icons/user-solid.svg';
-import lockIcon from '../../assets/icons/lock-solid.svg';
-import eyeIcon from '../../assets/icons/eye-solid-full.svg';
-import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
+import logo from "../../assets/images/LOGOCROKETS.png";
+import userIcon from "../../assets/icons/user-solid.svg";
+import lockIcon from "../../assets/icons/lock-solid.svg";
+import eyeIcon from "../../assets/icons/eye-solid-full.svg";
+import eyeSlashIcon from "../../assets/icons/eye-slash-solid-full.svg";
 
 /*
   Precarga de los chunks posteriores al login. Al dispararlos junto a las
@@ -20,17 +20,17 @@ import eyeSlashIcon from '../../assets/icons/eye-slash-solid-full.svg';
   import() cachea el módulo, así que repetir la llamada es inocuo.
 */
 const prefetchPostLoginRoutes = () => {
-  import('../CashRegister/CashRegister').catch(() => {});
-  import('../Dashboard/Dashboard').catch(() => {});
+  import("../CashRegister/CashRegister").catch(() => {});
+  import("../Dashboard/Dashboard").catch(() => {});
 };
 
 const Login = () => {
   const { login, unlockScreen } = useAuth();
   const { setBranch } = useBranch();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recoverableSession, setRecoverableSession] = useState(null);
@@ -54,10 +54,10 @@ const Login = () => {
 
   const handleExitApp = async () => {
     try {
-      await window.electronAPI.invoke('close-app');
+      await window.electronAPI.invoke("close-app");
     } catch (err) {
-      console.error('Error cerrando app:', err);
-      setError('No se pudo cerrar la aplicación.');
+      console.error("Error cerrando app:", err);
+      setError("No se pudo cerrar la aplicación.");
     }
   };
 
@@ -68,13 +68,13 @@ const Login = () => {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!cleanUsername || !password.trim()) {
-      setError('Por favor, complete todos los campos.');
+      setError("Por favor, complete todos los campos.");
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
       setRecoverableSession(null);
 
       prefetchPostLoginRoutes();
@@ -88,7 +88,7 @@ const Login = () => {
         se retorna antes de esperarla.
       */
       const deviceCodePromise = Promise.resolve()
-        .then(() => window.electronAPI.invoke('get-device-code'))
+        .then(() => window.electronAPI.invoke("get-device-code"))
         .catch(() => null);
 
       /*
@@ -96,23 +96,23 @@ const Login = () => {
         username ingresado, así que no hay razón para esperarlos en serie.
       */
       const [emailResult, userResult] = await Promise.all([
-        supabase.rpc('get_email_by_username', { p_username: cleanUsername }),
+        supabase.rpc("get_email_by_username", { p_username: cleanUsername }),
         supabase
-          .from('users')
-          .select('id, username')
-          .ilike('username', cleanUsername)
+          .from("users")
+          .select("id, username")
+          .ilike("username", cleanUsername)
           .maybeSingle(),
       ]);
 
       if (emailResult.error || !emailResult.data) {
-        setError('Credenciales incorrectas');
+        setError("Credenciales incorrectas");
         return;
       }
 
       const email = emailResult.data;
 
       if (userResult.error || !userResult.data) {
-        setError('Usuario no encontrado');
+        setError("Usuario no encontrado");
         return;
       }
 
@@ -124,8 +124,8 @@ const Login = () => {
       const deviceResult = await deviceCodePromise;
 
       if (!deviceResult) {
-        console.error('No se pudo obtener el código del dispositivo');
-        setError('Error al conectar con el servidor');
+        console.error("No se pudo obtener el código del dispositivo");
+        setError("Error al conectar con el servidor");
         return;
       }
 
@@ -134,7 +134,9 @@ const Login = () => {
       const branchResult = await resolveBranchByDevice(deviceCode);
 
       if (!branchResult.success || !branchResult.data?.id) {
-        setError(branchResult.error || 'Este POS no está asignado a ninguna sucursal');
+        setError(
+          branchResult.error || "Este POS no está asignado a ninguna sucursal"
+        );
         return;
       }
 
@@ -146,8 +148,9 @@ const Login = () => {
       */
       const [fullBranchResult, activeSessionResult] = await Promise.all([
         supabase
-          .from('branches')
-          .select(`
+          .from("branches")
+          .select(
+            `
             id,
             code,
             name,
@@ -158,15 +161,16 @@ const Login = () => {
             state,
             created_at,
             updated_at
-          `)
-          .eq('id', resolvedBranchId)
+          `
+          )
+          .eq("id", resolvedBranchId)
           .single(),
         supabase
-          .from('user_sessions')
-          .select('id, user_id, status, ended_at')
-          .eq('branch_id', resolvedBranchId)
-          .eq('status', 'active')
-          .is('ended_at', null)
+          .from("user_sessions")
+          .select("id, user_id, status, ended_at")
+          .eq("branch_id", resolvedBranchId)
+          .eq("status", "active")
+          .is("ended_at", null)
           .maybeSingle(),
       ]);
 
@@ -174,18 +178,19 @@ const Login = () => {
 
       if (fullBranchError || !fullBranch) {
         console.error(fullBranchError);
-        setError('No se pudo cargar la sucursal');
+        setError("No se pudo cargar la sucursal");
         return;
       }
 
       const currentBranch = fullBranch;
       setBranch(currentBranch);
 
-      const { data: activeSession, error: activeSessionError } = activeSessionResult;
+      const { data: activeSession, error: activeSessionError } =
+        activeSessionResult;
 
       if (activeSessionError) {
         console.error(activeSessionError);
-        setError('No se pudo validar la sesión activa.');
+        setError("No se pudo validar la sesión activa.");
         return;
       }
 
@@ -202,7 +207,7 @@ const Login = () => {
             });
 
           if (signInError || !authData?.user) {
-            setError('Credenciales incorrectas');
+            setError("Credenciales incorrectas");
             return;
           }
 
@@ -217,13 +222,13 @@ const Login = () => {
 
         // otro usuario → bloquear
         const { data: activeUserProfile } = await supabase
-          .from('users')
-          .select('username')
-          .eq('id', activeSession.user_id)
+          .from("users")
+          .select("username")
+          .eq("id", activeSession.user_id)
           .maybeSingle();
 
         const activeUsername =
-          activeUserProfile?.username?.toUpperCase() || 'OTRO USUARIO';
+          activeUserProfile?.username?.toUpperCase() || "OTRO USUARIO";
 
         setError(
           `No puedes ingresar porque ${activeUsername} tiene la sesión abierta en este punto de venta.`
@@ -242,31 +247,31 @@ const Login = () => {
         });
 
       if (signInError || !authData?.user) {
-        setError('Credenciales incorrectas');
+        setError("Credenciales incorrectas");
         return;
       }
 
       const sessionToken = crypto.randomUUID();
 
       const { error: userSessionError } = await supabase
-        .from('user_sessions')
+        .from("user_sessions")
         .insert({
           user_id: dbUser.id,
           branch_id: currentBranch.id,
           session_token: sessionToken,
           user_agent: navigator.userAgent,
           started_at: new Date().toISOString(),
-          status: 'active',
+          status: "active",
         });
 
       if (userSessionError) {
         console.error(userSessionError);
-        setError('No se pudo registrar la sesión.');
+        setError("No se pudo registrar la sesión.");
         return;
       }
 
-      localStorage.setItem('user_session_token', sessionToken);
-      localStorage.setItem('cachedUsername', dbUser.username);
+      localStorage.setItem("user_session_token", sessionToken);
+      localStorage.setItem("cachedUsername", dbUser.username);
 
       login({
         ...authData.user,
@@ -274,11 +279,10 @@ const Login = () => {
       });
 
       unlockScreen();
-      navigate('/cash-register', { replace: true });
-
+      navigate("/cash-register", { replace: true });
     } catch (err) {
       console.error(err);
-      setError('Error al conectar con el servidor');
+      setError("Error al conectar con el servidor");
     } finally {
       setLoading(false);
     }
@@ -289,13 +293,13 @@ const Login = () => {
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       prefetchPostLoginRoutes();
 
       const { authUser, resolvedUsername, branch } = recoverableSession;
 
-      localStorage.setItem('cachedUsername', resolvedUsername);
+      localStorage.setItem("cachedUsername", resolvedUsername);
       setBranch(branch);
 
       login({
@@ -306,11 +310,10 @@ const Login = () => {
       unlockScreen();
       setRecoverableSession(null);
 
-      navigate('/cash-register', { replace: true });
-
+      navigate("/cash-register", { replace: true });
     } catch (err) {
       console.error(err);
-      setError('No se pudo recuperar la sesión.');
+      setError("No se pudo recuperar la sesión.");
     } finally {
       setLoading(false);
     }
@@ -319,13 +322,17 @@ const Login = () => {
   useEffect(() => {
     if (!error) return;
 
-    const timer = setTimeout(() => setError(''), 5000);
+    const timer = setTimeout(() => setError(""), 5000);
     return () => clearTimeout(timer);
   }, [error]);
 
   return (
     <div className={styles.loginWrapper}>
-      <form className={styles.loginContainer} onSubmit={handleSubmit} noValidate>
+      <form
+        className={styles.loginContainer}
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <img src={logo} alt="Logo Crokets" className={styles.logo} />
 
         <div className={styles.inputGroup}>
@@ -333,7 +340,9 @@ const Login = () => {
             Usuario
           </label>
 
-          <div className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ''}`}>
+          <div
+            className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ""}`}
+          >
             <img src={userIcon} alt="" className={styles.inputIcon} />
 
             <input
@@ -346,7 +355,7 @@ const Login = () => {
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value.trimStart());
-                setError('');
+                setError("");
               }}
             />
           </div>
@@ -357,19 +366,21 @@ const Login = () => {
             Contraseña
           </label>
 
-          <div className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ''}`}>
+          <div
+            className={`${styles.inputIconWrapper} ${error ? styles.inputIconWrapperError : ""}`}
+          >
             <img src={lockIcon} alt="" className={styles.inputIcon} />
 
             <input
               id="password"
               autoComplete="off"
               className={styles.input}
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="Ingrese la contraseña"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError('');
+                setError("");
               }}
             />
 
@@ -378,10 +389,7 @@ const Login = () => {
               className={styles.eyeButton}
               onClick={togglePasswordVisibility}
             >
-              <img
-                src={showPassword ? eyeSlashIcon : eyeIcon}
-                alt=""
-              />
+              <img src={showPassword ? eyeSlashIcon : eyeIcon} alt="" />
             </button>
           </div>
         </div>
@@ -395,7 +403,8 @@ const Login = () => {
             </div>
 
             <div className={styles.recoveryText}>
-              Se detectó una sesión activa de este mismo usuario en este punto de venta.
+              Se detectó una sesión activa de este mismo usuario en este punto
+              de venta.
             </div>
 
             <button
@@ -404,17 +413,13 @@ const Login = () => {
               onClick={handleRecoverSession}
               disabled={loading}
             >
-              {loading ? 'Recuperando...' : 'Recuperar sesión'}
+              {loading ? "Recuperando..." : "Recuperar sesión"}
             </button>
           </div>
         )}
 
-        <button
-          className={styles.loginButton}
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? 'Ingresando...' : 'Ingresar'}
+        <button className={styles.loginButton} type="submit" disabled={loading}>
+          {loading ? "Ingresando..." : "Ingresar"}
         </button>
 
         <button

@@ -5,7 +5,10 @@
 
 import React from "react";
 import styles from "./CustomersComponents.module.css";
-import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
+import {
+  formatCurrency,
+  formatNumber,
+} from "../utils/customersReportFormatters";
 
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import dollarIcon from "../../../../../assets/icons/dollar-sign-solid-full.svg";

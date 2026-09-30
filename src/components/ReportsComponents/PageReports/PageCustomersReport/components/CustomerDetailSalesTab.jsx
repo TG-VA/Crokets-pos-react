@@ -5,7 +5,10 @@
 
 import React, { useState } from "react";
 import styles from "./CustomersComponents.module.css";
-import { formatCurrency, formatDynamicDate } from "../utils/customersReportFormatters";
+import {
+  formatCurrency,
+  formatDynamicDate,
+} from "../utils/customersReportFormatters";
 import chevronDownIcon from "../../../../../assets/icons/chevron-down-solid-full.svg";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
@@ -38,7 +41,9 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
   return (
     <div className={styles.tabPanel}>
       <div className={styles.modalSectionTitle}>
-        <span>Tickets de compra (haz clic en un ticket para ver sus artículos)</span>
+        <span>
+          Tickets de compra (haz clic en un ticket para ver sus artículos)
+        </span>
       </div>
 
       {sales.length === 0 ? (
@@ -50,9 +55,13 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
           <div className={styles.ticketsList}>
             {paginatedTickets.map((sale) => {
               const isExpanded = expandedTicketId === sale.id;
-              const shortFolio = sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/F";
+              const shortFolio = sale.id
+                ? sale.id.substring(0, 8).toUpperCase()
+                : "S/F";
               const branchName = sale.branches?.name || "Sucursal";
-              const cashierName = sale.users?.username ? sale.users.username.toUpperCase() : "CAJERO";
+              const cashierName = sale.users?.username
+                ? sale.users.username.toUpperCase()
+                : "CAJERO";
 
               return (
                 <div key={sale.id} className={styles.ticketCard}>
@@ -63,9 +72,14 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
                     <div className={styles.ticketInfoGroup}>
                       <span className={styles.ticketFolio}>#{shortFolio}</span>
                       <span className={styles.ticketDate}>
-                        {formatDynamicDate(sale.sale_date, sale.branches?.timezone)}
+                        {formatDynamicDate(
+                          sale.sale_date,
+                          sale.branches?.timezone
+                        )}
                       </span>
-                      <span className={`${styles.badge} ${styles.badgeNeutral}`.trim()}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeNeutral}`.trim()}
+                      >
                         {branchName} ({cashierName})
                       </span>
                     </div>
@@ -89,9 +103,10 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
 
                   {isExpanded && (
                     <div className={styles.ticketDetailsBody}>
-                      {(!sale.items || sale.items.length === 0) ? (
+                      {!sale.items || sale.items.length === 0 ? (
                         <p className={styles.ticketEmptyItems}>
-                          No se encontraron líneas de productos registradas para este ticket.
+                          No se encontraron líneas de productos registradas para
+                          este ticket.
                         </p>
                       ) : (
                         <table className={styles.itemsTable}>
@@ -100,7 +115,9 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
                               <th>Código</th>
                               <th>Artículo</th>
                               <th className={styles.alignCenter}>Cant.</th>
-                              <th className={styles.alignRight}>Precio Unit.</th>
+                              <th className={styles.alignRight}>
+                                Precio Unit.
+                              </th>
                               <th className={styles.alignRight}>Total</th>
                             </tr>
                           </thead>
@@ -111,12 +128,16 @@ const CustomerDetailSalesTab = ({ sales = [] }) => {
                                   {it.products?.barcode || "S/C"}
                                 </td>
                                 <td>{it.products?.name || "Artículo"}</td>
-                                <td className={styles.alignCenter}>{it.quantity}</td>
+                                <td className={styles.alignCenter}>
+                                  {it.quantity}
+                                </td>
                                 <td className={styles.alignRight}>
                                   {formatCurrency(it.unit_price)}
                                 </td>
                                 <td className={styles.alignRight}>
-                                  <strong>{formatCurrency(it.total_price)}</strong>
+                                  <strong>
+                                    {formatCurrency(it.total_price)}
+                                  </strong>
                                 </td>
                               </tr>
                             ))}

@@ -51,13 +51,16 @@ export const fetchPaginatedBranchProducts = async ({
   pageSize = 10,
 }) => {
   try {
-    const { data, error } = await supabase.rpc("get_branch_products_paginated", {
-      p_branch_id: branchId,
-      p_search: searchTerm?.trim() || null,
-      p_department_id: departmentId || null,
-      p_page: page,
-      p_page_size: pageSize,
-    });
+    const { data, error } = await supabase.rpc(
+      "get_branch_products_paginated",
+      {
+        p_branch_id: branchId,
+        p_search: searchTerm?.trim() || null,
+        p_department_id: departmentId || null,
+        p_page: page,
+        p_page_size: pageSize,
+      }
+    );
 
     if (error) throw error;
 
@@ -121,7 +124,8 @@ export const fetchBranchCatalog = async (branchId) => {
 
     const { data: inventoryRows, error: inventoryError } = await supabase
       .from("branch_inventory")
-      .select(`
+      .select(
+        `
       id,
       branch_id,
       product_id,
@@ -137,7 +141,8 @@ export const fetchBranchCatalog = async (branchId) => {
       products (
         ${PRODUCT_SELECT_FIELDS}
       )
-    `)
+    `
+      )
       .eq("branch_id", branchId)
       .order("created_at", { ascending: true })
       .limit(MAX_CATALOG_ROWS_TO_LOAD);

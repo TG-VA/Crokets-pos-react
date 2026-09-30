@@ -13,7 +13,8 @@ export const fetchProductDiscount = async (productId) => {
   try {
     const { data, error } = await supabase
       .from("product_discounts")
-      .select(`
+      .select(
+        `
         id,
         product_id,
         enabled,
@@ -21,7 +22,8 @@ export const fetchProductDiscount = async (productId) => {
         discount_concept,
         created_at,
         updated_at
-      `)
+      `
+      )
       .eq("product_id", productId)
       .maybeSingle();
 
@@ -57,9 +59,7 @@ export const upsertProductDiscount = async (productId, payload) => {
 
   try {
     const enabled = !!payload.enabled;
-    const discountPercent = enabled
-      ? Number(payload.discount_percent || 0)
-      : 0;
+    const discountPercent = enabled ? Number(payload.discount_percent || 0) : 0;
     const discountConcept = enabled
       ? (payload.discount_concept || "").trim()
       : "";

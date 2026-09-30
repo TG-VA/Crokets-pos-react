@@ -1,39 +1,19 @@
-const toFiniteNumber = (
-  value,
-  fallback = null
-) => {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
+const toFiniteNumber = (value, fallback = null) => {
+  if (value === null || value === undefined || value === "") {
     return fallback;
   }
 
   const numberValue = Number(value);
 
-  return Number.isFinite(numberValue)
-    ? numberValue
-    : fallback;
+  return Number.isFinite(numberValue) ? numberValue : fallback;
 };
 
-export const getKardexStockChange = (
-  movement
-) => {
-  const previousStock =
-    toFiniteNumber(
-      movement?.previous_stock
-    );
+export const getKardexStockChange = (movement) => {
+  const previousStock = toFiniteNumber(movement?.previous_stock);
 
-  const newStock =
-    toFiniteNumber(
-      movement?.new_stock
-    );
+  const newStock = toFiniteNumber(movement?.new_stock);
 
-  if (
-    previousStock === null ||
-    newStock === null
-  ) {
+  if (previousStock === null || newStock === null) {
     return {
       previousStock,
       newStock,
@@ -43,82 +23,42 @@ export const getKardexStockChange = (
     };
   }
 
-  const difference =
-    newStock - previousStock;
+  const difference = newStock - previousStock;
 
   return {
     previousStock,
     newStock,
     difference,
 
-    entryQty:
-      difference > 0
-        ? difference
-        : 0,
+    entryQty: difference > 0 ? difference : 0,
 
-    exitQty:
-      difference < 0
-        ? Math.abs(difference)
-        : 0,
+    exitQty: difference < 0 ? Math.abs(difference) : 0,
   };
 };
 
-export const buildKardexRow = (
-  movement,
-  {
-    tracksInventory = true,
-  } = {}
-) => {
-  const stockChange =
-    getKardexStockChange(
-      movement
-    );
+export const buildKardexRow = (movement, { tracksInventory = true } = {}) => {
+  const stockChange = getKardexStockChange(movement);
 
   return {
     ...movement,
 
-    entryQty:
-      tracksInventory
-        ? stockChange.entryQty
-        : 0,
+    entryQty: tracksInventory ? stockChange.entryQty : 0,
 
-    exitQty:
-      tracksInventory
-        ? stockChange.exitQty
-        : 0,
+    exitQty: tracksInventory ? stockChange.exitQty : 0,
 
-    previousStock:
-      tracksInventory
-        ? stockChange.previousStock
-        : null,
+    previousStock: tracksInventory ? stockChange.previousStock : null,
 
-    runningStock:
-      tracksInventory
-        ? stockChange.newStock
-        : null,
+    runningStock: tracksInventory ? stockChange.newStock : null,
 
-    stockDifference:
-      tracksInventory
-        ? stockChange.difference
-        : 0,
+    stockDifference: tracksInventory ? stockChange.difference : 0,
   };
 };
 
-export const buildKardexRows = (
-  movements,
-  options = {}
-) => {
-  const normalizedMovements =
-    Array.isArray(movements)
-      ? movements
-      : [];
+export const buildKardexRows = (movements, options = {}) => {
+  const normalizedMovements = Array.isArray(movements) ? movements : [];
 
-  return normalizedMovements.map(
-    (movement) =>
-      buildKardexRow(
-        movement,
-        options
-      )
+  return normalizedMovements.map((movement) =>
+    buildKardexRow(movement, options)
   );
 };
 
@@ -135,28 +75,13 @@ export const getKardexStockStatus = ({
     };
   }
 
-  const stock =
-    toFiniteNumber(
-      currentStock,
-      0
-    );
+  const stock = toFiniteNumber(currentStock, 0);
 
-  const minimum =
-    toFiniteNumber(
-      minimumStock,
-      0
-    );
+  const minimum = toFiniteNumber(minimumStock, 0);
 
-  const maximum =
-    toFiniteNumber(
-      maximumStock,
-      0
-    );
+  const maximum = toFiniteNumber(maximumStock, 0);
 
-  if (
-    maximum > 0 &&
-    stock > maximum
-  ) {
+  if (maximum > 0 && stock > maximum) {
     return {
       key: "overstock",
       label: "SOBRESTOCK",
@@ -170,10 +95,7 @@ export const getKardexStockStatus = ({
     };
   }
 
-  if (
-    minimum > 0 &&
-    stock <= minimum * 1.5
-  ) {
+  if (minimum > 0 && stock <= minimum * 1.5) {
     return {
       key: "lowStock",
       label: "POR AGOTARSE",
@@ -186,56 +108,33 @@ export const getKardexStockStatus = ({
   };
 };
 
-export const getKardexProductId = (
-  product
-) => {
-  return (
-    product?.id ??
-    product?.product_id ??
-    null
-  );
+export const getKardexProductId = (product) => {
+  return product?.id ?? product?.product_id ?? null;
 };
 
-export const getKardexProductStock = (
-  product
-) => {
+export const getKardexProductStock = (product) => {
   return toFiniteNumber(
-    product?.existencia ??
-      product?.stock ??
-      product?.current_stock,
+    product?.existencia ?? product?.stock ?? product?.current_stock,
     0
   );
 };
 
-export const getKardexMinimumStock = (
-  product
-) => {
+export const getKardexMinimumStock = (product) => {
   return toFiniteNumber(
-    product?.minimo ??
-      product?.minimum_stock ??
-      product?.min_stock,
+    product?.minimo ?? product?.minimum_stock ?? product?.min_stock,
     0
   );
 };
 
-export const getKardexMaximumStock = (
-  product
-) => {
+export const getKardexMaximumStock = (product) => {
   return toFiniteNumber(
-    product?.maximo ??
-      product?.maximum_stock ??
-      product?.max_stock,
+    product?.maximo ?? product?.maximum_stock ?? product?.max_stock,
     0
   );
 };
 
-export const productTracksInventory = (
-  product
-) => {
-  const value =
-    product?.tracks_inventory ??
-    product?.use_inventory ??
-    true;
+export const productTracksInventory = (product) => {
+  const value = product?.tracks_inventory ?? product?.use_inventory ?? true;
 
   return Boolean(value);
 };

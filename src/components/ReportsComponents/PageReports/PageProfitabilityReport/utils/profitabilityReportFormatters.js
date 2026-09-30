@@ -42,7 +42,10 @@ export const formatPercent = (val) => {
  * - Bajo/Crítico: 0.1% - 14.9%
  * - Pérdida: <= 0%
  */
-export const getMarginClassification = (marginPercent, { isPureReward = false } = {}) => {
+export const getMarginClassification = (
+  marginPercent,
+  { isPureReward = false } = {}
+) => {
   if (isPureReward) {
     return {
       label: "Promoción / Regalo",
@@ -103,7 +106,10 @@ export const formatShortDate = (dateStr) => {
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   } catch (err) {
-    console.error("Error al formatear fecha corta en reporte de rentabilidad:", err);
+    console.error(
+      "Error al formatear fecha corta en reporte de rentabilidad:",
+      err
+    );
     return "S/F";
   }
 };

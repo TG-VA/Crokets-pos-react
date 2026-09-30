@@ -37,7 +37,9 @@ const InventoryValuationTable = ({
   if (isLoading) {
     return (
       <div className={styles.tableCard}>
-        <div className={styles.emptyState}>Cargando existencias del inventario...</div>
+        <div className={styles.emptyState}>
+          Cargando existencias del inventario...
+        </div>
       </div>
     );
   }
@@ -83,17 +85,27 @@ const InventoryValuationTable = ({
                   <td className={styles.fontBold}>{item.name}</td>
                   <td>{item.departmentName}</td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
-                    {item.tracks_inventory ? item.stock.toLocaleString() : "---"}
+                    {item.tracks_inventory
+                      ? item.stock.toLocaleString()
+                      : "---"}
                   </td>
                   <td className={`${styles.textRight} ${styles.fontMono}`}>
-                    {item.tracks_inventory ? `${item.min_stock} / ${item.max_stock}` : "---"}
+                    {item.tracks_inventory
+                      ? `${item.min_stock} / ${item.max_stock}`
+                      : "---"}
                   </td>
-                  <td className={styles.textRight}>{formatCurrency(item.cost_price)}</td>
-                  <td className={styles.textRight}>{formatCurrency(item.sale_price)}</td>
+                  <td className={styles.textRight}>
+                    {formatCurrency(item.cost_price)}
+                  </td>
+                  <td className={styles.textRight}>
+                    {formatCurrency(item.sale_price)}
+                  </td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
                     {formatCurrency(item.total_cost)}
                   </td>
-                  <td className={styles.textRight}>{formatCurrency(item.total_sale)}</td>
+                  <td className={styles.textRight}>
+                    {formatCurrency(item.total_sale)}
+                  </td>
                   <td className={styles.textCenter}>
                     {getStatusBadge(item.status, item.statusLabel)}
                   </td>

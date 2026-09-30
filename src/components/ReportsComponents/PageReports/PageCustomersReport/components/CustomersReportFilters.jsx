@@ -81,14 +81,20 @@ const CustomersReportFilters = ({
               className={styles.selectInput}
             >
               <option value="ALL">Todos los estatus</option>
-              <option value="ACTIVE_ONLY">Activos Recientes (últimos 30 días)</option>
-              <option value="RISK_ONLY">En Riesgo / Inactivos (más de 30 días)</option>
+              <option value="ACTIVE_ONLY">
+                Activos Recientes (últimos 30 días)
+              </option>
+              <option value="RISK_ONLY">
+                En Riesgo / Inactivos (más de 30 días)
+              </option>
             </select>
           </div>
         )}
 
         {/* Buscador de Texto */}
-        <div className={`${styles.filterField} ${styles.filterFieldGrow}`.trim()}>
+        <div
+          className={`${styles.filterField} ${styles.filterFieldGrow}`.trim()}
+        >
           <label className={styles.filterLabel}>Buscar:</label>
           <div className={styles.searchWrapper}>
             <img src={searchIcon} alt="" className={styles.searchIcon} />
@@ -100,8 +106,8 @@ const CustomersReportFilters = ({
                 activeTab === "PRODUCTS"
                   ? "Buscar producto por nombre o código..."
                   : activeTab === "REWARDS"
-                  ? "Buscar por cliente, ticket, premio o producto..."
-                  : "Buscar por nombre, teléfono o RFC..."
+                    ? "Buscar por cliente, ticket, premio o producto..."
+                    : "Buscar por nombre, teléfono o RFC..."
               }
               className={`${styles.searchInput} ${styles.searchInputWithIcon}`.trim()}
             />
@@ -112,7 +118,11 @@ const CustomersReportFilters = ({
                 onClick={() => setSearchTerm("")}
                 title="Borrar texto de búsqueda"
               >
-                <img src={xmarkIcon} alt="" className={styles.searchClearIcon} />
+                <img
+                  src={xmarkIcon}
+                  alt=""
+                  className={styles.searchClearIcon}
+                />
               </button>
             )}
           </div>

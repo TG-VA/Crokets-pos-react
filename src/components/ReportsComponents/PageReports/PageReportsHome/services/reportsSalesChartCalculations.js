@@ -14,11 +14,7 @@ export const buildSalesChart = ({
 }) => {
   const totalsByDate = {};
 
-  for (
-    let index = 0;
-    index < DASHBOARD_DAYS;
-    index += 1
-  ) {
+  for (let index = 0; index < DASHBOARD_DAYS; index += 1) {
     const dateInput = shiftDateInput(firstDateInput, index);
 
     totalsByDate[dateInput] = {
@@ -33,20 +29,13 @@ export const buildSalesChart = ({
   for (const sale of sales) {
     if (!isCompletedSale(sale)) continue;
 
-    const dateInput = getDateInputFromIso(
-      sale.sale_date
-    );
+    const dateInput = getDateInputFromIso(sale.sale_date);
 
     if (!totalsByDate[dateInput]) continue;
 
-    const returnedAmount = toNumber(
-      returnedAmountBySale[sale.id]
-    );
+    const returnedAmount = toNumber(returnedAmountBySale[sale.id]);
 
-    const netTotal = Math.max(
-      toNumber(sale.total) - returnedAmount,
-      0
-    );
+    const netTotal = Math.max(toNumber(sale.total) - returnedAmount, 0);
 
     totalsByDate[dateInput].total += netTotal;
     totalsByDate[dateInput].tickets += 1;

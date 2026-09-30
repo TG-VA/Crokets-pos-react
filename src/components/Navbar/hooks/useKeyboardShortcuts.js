@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const isTypingTarget = (target) => {
   if (!target) return false;
-  
+
   const tagName = String(target.tagName || "").toLowerCase();
 
   return (

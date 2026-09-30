@@ -260,15 +260,17 @@ describe("productCrudService", () => {
 
     it("detecta código de barras duplicado en otro producto", async () => {
       productsQ.maybeSingle
-        .mockResolvedValueOnce({ data: { id: "p1", barcode: "ABC" }, error: null })
+        .mockResolvedValueOnce({
+          data: { id: "p1", barcode: "ABC" },
+          error: null,
+        })
         .mockResolvedValueOnce({ data: { id: "p2" }, error: null });
 
-      const result = await updateProductByCodigo(
-        "b1",
-        [],
-        "ABC",
-        { codigo: "XYZ", descripcion: "X", departamento: "Y" }
-      );
+      const result = await updateProductByCodigo("b1", [], "ABC", {
+        codigo: "XYZ",
+        descripcion: "X",
+        departamento: "Y",
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("código de barras");
@@ -278,12 +280,11 @@ describe("productCrudService", () => {
     it("reporta producto no encontrado", async () => {
       productsQ.maybeSingle.mockResolvedValue({ data: null, error: null });
 
-      const result = await updateProductByCodigo(
-        "b1",
-        [],
-        "NOEXISTE",
-        { codigo: "NOEXISTE", descripcion: "X", departamento: "Y" }
-      );
+      const result = await updateProductByCodigo("b1", [], "NOEXISTE", {
+        codigo: "NOEXISTE",
+        descripcion: "X",
+        departamento: "Y",
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Producto no encontrado.");

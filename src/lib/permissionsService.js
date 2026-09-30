@@ -8,13 +8,15 @@ export const checkUserIsAdmin = async (userId) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select(`
+      .select(
+        `
         id,
         status,
         roles (
           name
         )
-      `)
+      `
+      )
       .eq("id", userId)
       .maybeSingle();
 

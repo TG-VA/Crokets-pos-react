@@ -13,39 +13,16 @@ const InventorySearchResults = ({
   onProductClick,
 }) => {
   if (loading) {
-    return (
-      <div
-        className={
-          styles.emptyMessage
-        }
-      >
-        Cargando inventario...
-      </div>
-    );
+    return <div className={styles.emptyMessage}>Cargando inventario...</div>;
   }
 
   if (error) {
-    return (
-      <div
-        className={
-          styles.emptyMessage
-        }
-      >
-        {error}
-      </div>
-    );
+    return <div className={styles.emptyMessage}>{error}</div>;
   }
 
-  if (
-    !Array.isArray(products) ||
-    products.length === 0
-  ) {
+  if (!Array.isArray(products) || products.length === 0) {
     return (
-      <div
-        className={
-          styles.emptyMessage
-        }
-      >
+      <div className={styles.emptyMessage}>
         {searchTerm.trim()
           ? "No se encontraron productos"
           : "No hay productos para mostrar"}
@@ -54,151 +31,75 @@ const InventorySearchResults = ({
   }
 
   return (
-    <div
-      className={
-        styles.resultsList
-      }
-      ref={resultsListRef}
-    >
-      {products.map(
-        (
-          product,
-          index
-        ) => {
-          const alreadySelected =
-            isAlreadySelected?.(
-              product
-            ) === true;
+    <div className={styles.resultsList} ref={resultsListRef}>
+      {products.map((product, index) => {
+        const alreadySelected = isAlreadySelected?.(product) === true;
 
-          const itemClassName = [
-            styles.resultItem,
-            index ===
-            selectedIndex
-              ? styles.selectedResult
-              : "",
-            alreadySelected
-              ? styles.alreadySelectedResult
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
+        const itemClassName = [
+          styles.resultItem,
+          index === selectedIndex ? styles.selectedResult : "",
+          alreadySelected ? styles.alreadySelectedResult : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
 
-          return (
-            <div
-              key={
-                product?.product_id ??
-                product?.id ??
-                product?.codigo ??
-                index
-              }
-              data-search-result
-              className={
-                itemClassName
-              }
-              onClick={() =>
-                onProductClick?.(
-                  product,
-                  index
-                )
-              }
-              role="button"
-              aria-disabled={
-                alreadySelected
-              }
-            >
-              <div
-                className={
-                  styles.productInfo
-                }
-              >
-                <div
-                  className={
-                    styles.productNameRow
-                  }
-                >
-                  <div
-                    className={
-                      styles.productName
-                    }
-                  >
-                    {product?.descripcion ??
-                      product?.name ??
-                      "Producto sin nombre"}
-                  </div>
+        return (
+          <div
+            key={product?.product_id ?? product?.id ?? product?.codigo ?? index}
+            data-search-result
+            className={itemClassName}
+            onClick={() => onProductClick?.(product, index)}
+            role="button"
+            aria-disabled={alreadySelected}
+          >
+            <div className={styles.productInfo}>
+              <div className={styles.productNameRow}>
+                <div className={styles.productName}>
+                  {product?.descripcion ??
+                    product?.name ??
+                    "Producto sin nombre"}
+                </div>
 
-                  {alreadySelected && (
-                    <span
-                      className={
-                        styles.alreadySelectedBadge
-                      }
-                    >
-                      YA SELECCIONADO
-                    </span>
+                {alreadySelected && (
+                  <span className={styles.alreadySelectedBadge}>
+                    YA SELECCIONADO
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.productDetails}>
+                <span className={styles.productCode}>
+                  Código: {product?.codigo ?? product?.barcode ?? "—"}
+                </span>
+
+                <span className={styles.productPrice}>
+                  $
+                  {Number(product?.precio ?? product?.sale_price ?? 0).toFixed(
+                    2
                   )}
-                </div>
+                </span>
 
-                <div
-                  className={
-                    styles.productDetails
-                  }
+                <span
+                  className={`${styles.productStock} ${
+                    Number(product?.existencia ?? product?.stock ?? 0) > 0
+                      ? styles.inStock
+                      : styles.outOfStock
+                  }`}
                 >
-                  <span
-                    className={
-                      styles.productCode
-                    }
-                  >
-                    Código:{" "}
-                    {product?.codigo ??
-                      product?.barcode ??
-                      "—"}
-                  </span>
+                  Stock: {product?.existencia ?? product?.stock ?? 0}
+                </span>
 
-                  <span
-                    className={
-                      styles.productPrice
-                    }
-                  >
-                    $
-                    {Number(
-                      product?.precio ??
-                        product?.sale_price ??
-                        0
-                    ).toFixed(2)}
-                  </span>
-
-                  <span
-                    className={`${styles.productStock} ${
-                      Number(
-                        product?.existencia ??
-                          product?.stock ??
-                          0
-                      ) > 0
-                        ? styles.inStock
-                        : styles.outOfStock
-                    }`}
-                  >
-                    Stock:{" "}
-                    {product?.existencia ??
-                      product?.stock ??
-                      0}
-                  </span>
-
-                  <span
-                    className={
-                      styles.productCode
-                    }
-                  >
-                    Dept:{" "}
-                    {product?.departamento ??
-                      product?.department_name ??
-                      "Sin departamento"}
-                  </span>
-                </div>
+                <span className={styles.productCode}>
+                  Dept:{" "}
+                  {product?.departamento ??
+                    product?.department_name ??
+                    "Sin departamento"}
+                </span>
               </div>
             </div>
-          );
-        }
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 };

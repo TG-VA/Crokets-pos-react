@@ -13,13 +13,14 @@ export const useProductsDelete = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
-  
+
   // Extraemos toda la lógica pesada desde el hook global
-  const { appModal, closeAppModal, showAppAlert, showAppConfirm } = useAppModal();
+  const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
+    useAppModal();
 
   const { inputRef, focusBarcodeInput } = useProductsDeleteDOM({
     appModalIsOpen: appModal.isOpen,
-    setSearchModalOpen
+    setSearchModalOpen,
   });
 
   const handleLookup = () => {
@@ -118,7 +119,8 @@ export const useProductsDelete = () => {
     });
   };
 
-  const canDelete = !!selectedProduct && confirmText.trim().toUpperCase() === CONFIRM_TEXT;
+  const canDelete =
+    !!selectedProduct && confirmText.trim().toUpperCase() === CONFIRM_TEXT;
 
   return {
     products,
@@ -138,6 +140,6 @@ export const useProductsDelete = () => {
     handleCancel,
     handleDelete,
     canDelete,
-    CONFIRM_TEXT
+    CONFIRM_TEXT,
   };
 };

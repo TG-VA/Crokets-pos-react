@@ -25,9 +25,7 @@ const MovementsReportControls = ({
     <div className={styles.controls}>
       <div className={styles.rangeControls}>
         <div className={styles.controlGroup}>
-          <label className={styles.label}>
-            Desde
-          </label>
+          <label className={styles.label}>Desde</label>
 
           <DatePicker
             selected={startDateValue}
@@ -40,23 +38,15 @@ const MovementsReportControls = ({
             maxDate={endDateValue || new Date()}
             dateFormat="dd/MM/yyyy"
             className={styles.dateInput}
-            calendarClassName={
-              styles.datePickerCalendar
-            }
-            popperClassName={
-              styles.datePickerPopper
-            }
-            wrapperClassName={
-              styles.datePickerWrapper
-            }
+            calendarClassName={styles.datePickerCalendar}
+            popperClassName={styles.datePickerPopper}
+            wrapperClassName={styles.datePickerWrapper}
             showPopperArrow={false}
           />
         </div>
 
         <div className={styles.controlGroup}>
-          <label className={styles.label}>
-            Hasta
-          </label>
+          <label className={styles.label}>Hasta</label>
 
           <DatePicker
             selected={endDateValue}
@@ -70,15 +60,9 @@ const MovementsReportControls = ({
             maxDate={new Date()}
             dateFormat="dd/MM/yyyy"
             className={styles.dateInput}
-            calendarClassName={
-              styles.datePickerCalendar
-            }
-            popperClassName={
-              styles.datePickerPopper
-            }
-            wrapperClassName={
-              styles.datePickerWrapper
-            }
+            calendarClassName={styles.datePickerCalendar}
+            popperClassName={styles.datePickerPopper}
+            wrapperClassName={styles.datePickerWrapper}
             showPopperArrow={false}
           />
         </div>
@@ -87,16 +71,12 @@ const MovementsReportControls = ({
           <button
             type="button"
             className={`${styles.quickButton} ${
-              rangePreset === "today"
-                ? styles.quickButtonActive
-                : ""
+              rangePreset === "today" ? styles.quickButtonActive : ""
             }`}
             onClick={() => {
               onSelectRangePreset?.("today");
             }}
-            aria-pressed={
-              rangePreset === "today"
-            }
+            aria-pressed={rangePreset === "today"}
           >
             Hoy
           </button>
@@ -104,16 +84,12 @@ const MovementsReportControls = ({
           <button
             type="button"
             className={`${styles.quickButton} ${
-              rangePreset === "week"
-                ? styles.quickButtonActive
-                : ""
+              rangePreset === "week" ? styles.quickButtonActive : ""
             }`}
             onClick={() => {
               onSelectRangePreset?.("week");
             }}
-            aria-pressed={
-              rangePreset === "week"
-            }
+            aria-pressed={rangePreset === "week"}
           >
             Esta semana
           </button>
@@ -121,16 +97,12 @@ const MovementsReportControls = ({
           <button
             type="button"
             className={`${styles.quickButton} ${
-              rangePreset === "month"
-                ? styles.quickButtonActive
-                : ""
+              rangePreset === "month" ? styles.quickButtonActive : ""
             }`}
             onClick={() => {
               onSelectRangePreset?.("month");
             }}
-            aria-pressed={
-              rangePreset === "month"
-            }
+            aria-pressed={rangePreset === "month"}
           >
             Este mes
           </button>
@@ -138,17 +110,13 @@ const MovementsReportControls = ({
       </div>
 
       <div className={styles.controlGroup}>
-        <label className={styles.label}>
-          Sucursal
-        </label>
+        <label className={styles.label}>Sucursal</label>
 
         <select
           className={styles.select}
           value={selectedBranchId}
           onChange={(event) => {
-            onBranchChange?.(
-              event.target.value
-            );
+            onBranchChange?.(event.target.value);
           }}
         >
           {branchOptions.map((branch) => {
@@ -157,10 +125,7 @@ const MovementsReportControls = ({
               : branch?.name;
 
             return (
-              <option
-                key={branch.id}
-                value={branch.id}
-              >
+              <option key={branch.id} value={branch.id}>
                 {branchLabel}
               </option>
             );
@@ -174,13 +139,9 @@ const MovementsReportControls = ({
         onClick={() => {
           onExport?.();
         }}
-        disabled={
-          exporting || !canExport
-        }
+        disabled={exporting || !canExport}
       >
-        {exporting
-          ? "Exportando..."
-          : "Exportar movimientos"}
+        {exporting ? "Exportando..." : "Exportar movimientos"}
       </button>
     </div>
   );

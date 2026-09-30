@@ -49,10 +49,12 @@ export const fetchKitData = async (productId) => {
 
   const { data: itemsRows, error: itemsError } = await supabase
     .from("product_kit_items")
-    .select(`
+    .select(
+      `
       id, quantity, component_product_id,
       products:component_product_id ( id, barcode, name, sale_price, tracks_inventory )
-    `)
+    `
+    )
     .eq("kit_id", kitRow.id)
     .order("created_at", { ascending: true });
 
@@ -64,7 +66,9 @@ export const fetchKitData = async (productId) => {
 export const fetchProductByBarcode = async (barcode) => {
   const { data, error } = await supabase
     .from("products")
-    .select("id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory, max_kits_per_sale")
+    .select(
+      "id, barcode, name, cost_price, sale_price, is_kit, status, is_global, tracks_inventory, max_kits_per_sale"
+    )
     .eq("barcode", barcode)
     .eq("status", true)
     .maybeSingle();

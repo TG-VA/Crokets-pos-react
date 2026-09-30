@@ -168,7 +168,9 @@ const Departments = () => {
 
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                {formData.commission_type === "percent" ? "Porcentaje de comisión (%)" : "Valor de comisión"}
+                {formData.commission_type === "percent"
+                  ? "Porcentaje de comisión (%)"
+                  : "Valor de comisión"}
               </label>
 
               <input
@@ -183,7 +185,11 @@ const Departments = () => {
                     commission_value: e.target.value,
                   })
                 }
-                placeholder={formData.commission_type === "percent" ? "Ej. 10" : "Ej. 20.00"}
+                placeholder={
+                  formData.commission_type === "percent"
+                    ? "Ej. 10"
+                    : "Ej. 20.00"
+                }
                 disabled={saving || !formData.commission_enabled}
               />
             </div>
@@ -197,8 +203,8 @@ const Departments = () => {
                 {saving
                   ? "Guardando..."
                   : selectedId === "new"
-                  ? "Guardar"
-                  : "Actualizar información"}
+                    ? "Guardar"
+                    : "Actualizar información"}
               </button>
 
               {selectedId !== "new" && selectedDept && (

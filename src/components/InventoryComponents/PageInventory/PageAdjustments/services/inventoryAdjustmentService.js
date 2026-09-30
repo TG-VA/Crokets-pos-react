@@ -20,15 +20,10 @@ const buildMovementReason = ({ reason, notes }) => {
   const cleanReason = String(reason ?? "").trim();
   const cleanNotes = String(notes ?? "").trim();
 
-  return cleanNotes
-    ? `${cleanReason} - ${cleanNotes}`
-    : cleanReason;
+  return cleanNotes ? `${cleanReason} - ${cleanNotes}` : cleanReason;
 };
 
-const findInventoryRow = async ({
-  branchId,
-  productId,
-}) => {
+const findInventoryRow = async ({ branchId, productId }) => {
   const { data, error } = await supabase
     .from("branch_inventory")
     .select("id, stock, has_been_stocked, is_active")
@@ -75,21 +70,19 @@ const insertInventoryRow = async ({
   salePrice,
   createdAt,
 }) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .insert({
-      branch_id: branchId,
-      product_id: productId,
-      stock: initialStock,
-      min_stock: 0,
-      max_stock: 0,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      sale_price: salePrice,
-      created_at: createdAt,
-      updated_at: createdAt,
-    });
+  const { error } = await supabase.from("branch_inventory").insert({
+    branch_id: branchId,
+    product_id: productId,
+    stock: initialStock,
+    min_stock: 0,
+    max_stock: 0,
+    is_active: true,
+    has_been_stocked: true,
+    cost_price: costPrice,
+    sale_price: salePrice,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
 
   if (error) {
     throw error;
@@ -105,36 +98,25 @@ export const applyInventoryAdjustment = async ({
   userId = null,
 }) => {
   if (!branchId) {
-    throw new Error(
-      "No hay una sucursal activa para aplicar el ajuste."
-    );
+    throw new Error("No hay una sucursal activa para aplicar el ajuste.");
   }
 
   const productId = getProductId(product);
 
   if (!productId) {
-    throw new Error(
-      "No se detectó el identificador del producto."
-    );
+    throw new Error("No se detectó el identificador del producto.");
   }
 
   const normalizedQuantity = Number(quantity);
 
-  if (
-    !Number.isFinite(normalizedQuantity) ||
-    normalizedQuantity === 0
-  ) {
-    throw new Error(
-      "La diferencia debe ser distinta de 0."
-    );
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity === 0) {
+    throw new Error("La diferencia debe ser distinta de 0.");
   }
 
   const cleanReason = String(reason ?? "").trim();
 
   if (!cleanReason) {
-    throw new Error(
-      "Captura el motivo del ajuste."
-    );
+    throw new Error("Captura el motivo del ajuste.");
   }
 
   const inventoryRow = await findInventoryRow({
@@ -142,12 +124,9 @@ export const applyInventoryAdjustment = async ({
     productId,
   });
 
-  const previousStock = Number(
-    inventoryRow?.stock || 0
-  );
+  const previousStock = Number(inventoryRow?.stock || 0);
 
-  const newStock =
-    previousStock + normalizedQuantity;
+  const newStock = previousStock + normalizedQuantity;
 
   if (newStock < 0) {
     const error = new Error(
@@ -169,11 +148,9 @@ export const applyInventoryAdjustment = async ({
 
   const now = new Date();
   const databaseTimestamp = now.toISOString();
-  const movementCreatedAt =
-    getSystemLocalTimestamp(now);
+  const movementCreatedAt = getSystemLocalTimestamp(now);
 
-  const { costPrice, salePrice } =
-    getProductPrices(product);
+  const { costPrice, salePrice } = getProductPrices(product);
 
   if (inventoryRow?.id) {
     await updateInventoryRow({

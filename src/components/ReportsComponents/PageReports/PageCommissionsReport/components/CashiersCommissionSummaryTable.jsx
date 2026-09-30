@@ -61,7 +61,9 @@ export const CashiersCommissionSummaryTable = ({
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Resumen de Comisiones por Cajero</h3>
+          <h3 className={styles.tableTitle}>
+            Resumen de Comisiones por Cajero
+          </h3>
           <span className={styles.tableSubtitle}>
             Ranking y montos acumulados por usuario en el periodo
           </span>
@@ -98,7 +100,8 @@ export const CashiersCommissionSummaryTable = ({
             {paginatedCashiers.length === 0 ? (
               <tr>
                 <td colSpan={8} className={styles.emptyState}>
-                  No se encontraron comisiones registradas para este periodo o filtro.
+                  No se encontraron comisiones registradas para este periodo o
+                  filtro.
                 </td>
               </tr>
             ) : (
@@ -152,7 +155,8 @@ export const CashiersCommissionSummaryTable = ({
             <tfoot>
               <tr className={styles.tableFooterTotal}>
                 <td colSpan={3} className={styles.footerTotalLabel}>
-                  Totales Consolidados ({totalItems} cajero{totalItems !== 1 ? "s" : ""})
+                  Totales Consolidados ({totalItems} cajero
+                  {totalItems !== 1 ? "s" : ""})
                 </td>
                 <td className={`${styles.textCenter} ${styles.fontMono}`}>
                   {formatInteger(totals.tickets)}

@@ -1,5 +1,9 @@
 import ExcelJS from "exceljs";
-import { formatDynamicDate, getShortFolio, formatMovementType } from "./cashReportFormatters";
+import {
+  formatDynamicDate,
+  getShortFolio,
+  formatMovementType,
+} from "./cashReportFormatters";
 
 /**
  * Exporta el reporte de caja a un archivo Excel (.xlsx) multisección
@@ -15,8 +19,13 @@ export const exportCashReportToExcel = async ({
   endDate = null,
 }) => {
   try {
-    if ((!sessions || sessions.length === 0) && (!movements || movements.length === 0)) {
-      alert("No hay datos disponibles para exportar en el periodo y filtros seleccionados.");
+    if (
+      (!sessions || sessions.length === 0) &&
+      (!movements || movements.length === 0)
+    ) {
+      alert(
+        "No hay datos disponibles para exportar en el periodo y filtros seleccionados."
+      );
       return;
     }
 
@@ -34,7 +43,11 @@ export const exportCashReportToExcel = async ({
     const titleCell = wsSessions.getCell("A1");
     titleCell.value = "CROKETS POS - REPORTE DE CAJA Y TURNOS";
     titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    titleCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     wsSessions.getRow(1).height = 30;
 
@@ -96,7 +109,7 @@ export const exportCashReportToExcel = async ({
       row.getCell(5).numFmt = '"$"#,##0.00';
       row.getCell(7).font = { bold: true };
       if (rowNum === 7) {
-        row.getCell(8).numFmt = '#,##0';
+        row.getCell(8).numFmt = "#,##0";
       } else {
         row.getCell(8).numFmt = '"$"#,##0.00';
       }
@@ -124,7 +137,11 @@ export const exportCashReportToExcel = async ({
     wsSessions.getRow(tableHeaderRowIndex).values = sessionHeaders;
     const sHeader = wsSessions.getRow(tableHeaderRowIndex);
     sHeader.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    sHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } };
+    sHeader.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF334155" },
+    };
     sHeader.alignment = { horizontal: "center", vertical: "middle" };
     sHeader.height = 24;
 
@@ -139,7 +156,9 @@ export const exportCashReportToExcel = async ({
       const row = wsSessions.addRow([
         getShortFolio(s.id),
         formatDynamicDate(s.opened_at, branchTz),
-        s.closed_at ? formatDynamicDate(s.closed_at, branchTz) : "En curso (Abierta)",
+        s.closed_at
+          ? formatDynamicDate(s.closed_at, branchTz)
+          : "En curso (Abierta)",
         s.branches?.name || "Sucursal",
         s.users?.username ? String(s.users.username).toUpperCase() : "USUARIO",
         Number(s.opening_amount || 0),
@@ -184,9 +203,14 @@ export const exportCashReportToExcel = async ({
 
     wsMovements.mergeCells("A1:G1");
     const mTitle = wsMovements.getCell("A1");
-    mTitle.value = "BITÁCORA DE MOVIMIENTOS MANUALES DE CAJA (INGRESOS Y RETIROS)";
+    mTitle.value =
+      "BITÁCORA DE MOVIMIENTOS MANUALES DE CAJA (INGRESOS Y RETIROS)";
     mTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
-    mTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    mTitle.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     mTitle.alignment = { horizontal: "center", vertical: "middle" };
     wsMovements.getRow(1).height = 26;
 
@@ -203,7 +227,11 @@ export const exportCashReportToExcel = async ({
     wsMovements.getRow(3).values = mHeaders;
     const mHeaderRow = wsMovements.getRow(3);
     mHeaderRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    mHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } };
+    mHeaderRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF334155" },
+    };
     mHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
     mHeaderRow.height = 22;
 
@@ -244,18 +272,34 @@ export const exportCashReportToExcel = async ({
       const pTitle = wsPayments.getCell("A1");
       pTitle.value = "DESGLOSE CONSOLIDADO POR MÉTODO DE PAGO";
       pTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
-      pTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+      pTitle.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0F172A" },
+      };
       pTitle.alignment = { horizontal: "center", vertical: "middle" };
       wsPayments.getRow(1).height = 26;
 
-      const pHeaders = ["Método de Pago", "Transacciones", "Total Cobrado", "% Participación"];
+      const pHeaders = [
+        "Método de Pago",
+        "Transacciones",
+        "Total Cobrado",
+        "% Participación",
+      ];
       wsPayments.getRow(3).values = pHeaders;
       const pHeaderRow = wsPayments.getRow(3);
       pHeaderRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-      pHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } };
+      pHeaderRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF334155" },
+      };
       pHeaderRow.alignment = { horizontal: "center", vertical: "middle" };
 
-      const totalAllMethods = paymentMethods.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const totalAllMethods = paymentMethods.reduce(
+        (acc, p) => acc + Number(p.amount || 0),
+        0
+      );
 
       paymentMethods.forEach((p) => {
         const amt = Number(p.amount || 0);
@@ -267,7 +311,7 @@ export const exportCashReportToExcel = async ({
           `${share.toFixed(2)}%`,
         ]);
         row.font = { size: 10 };
-        row.getCell(2).numFmt = '#,##0';
+        row.getCell(2).numFmt = "#,##0";
         row.getCell(3).numFmt = '"$"#,##0.00';
       });
 
@@ -290,7 +334,9 @@ export const exportCashReportToExcel = async ({
     anchor.href = objectUrl;
 
     // Construcción del nombre del archivo: Reporte de caja [SUCURSAL] [RANGO DE FECHAS].xlsx
-    const cleanBranch = (branchName || "Todas las sucursales").trim().replace(/[\\/:*?"<>|]/g, "-");
+    const cleanBranch = (branchName || "Todas las sucursales")
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, "-");
     const formatSafeDate = (d) => {
       if (!d) return "";
       const dateObj = new Date(d);

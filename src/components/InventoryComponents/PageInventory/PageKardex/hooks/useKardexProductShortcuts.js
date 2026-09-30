@@ -1,26 +1,16 @@
-import {
-  useEffect,
-} from "react";
+import { useEffect } from "react";
 
 const useKardexProductShortcuts = ({
   onOpenProductSearch,
   enabled = true,
 } = {}) => {
   useEffect(() => {
-    if (
-      !enabled ||
-      typeof onOpenProductSearch !==
-        "function"
-    ) {
+    if (!enabled || typeof onOpenProductSearch !== "function") {
       return undefined;
     }
 
-    const handleKeyDown = (
-      event
-    ) => {
-      if (
-        event.key !== "F10"
-      ) {
+    const handleKeyDown = (event) => {
+      if (event.key !== "F10") {
         return;
       }
 
@@ -29,21 +19,12 @@ const useKardexProductShortcuts = ({
       onOpenProductSearch();
     };
 
-    document.addEventListener(
-      "keydown",
-      handleKeyDown
-    );
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [
-    enabled,
-    onOpenProductSearch,
-  ]);
+  }, [enabled, onOpenProductSearch]);
 };
 
 export default useKardexProductShortcuts;

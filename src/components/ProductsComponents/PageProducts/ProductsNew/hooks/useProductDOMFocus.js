@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 
-export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, appModalIsOpen, onSubmit }) => {
+export const useProductDOMFocus = ({
+  isFormValid,
+  errors,
+  usesInventory,
+  form,
+  appModalIsOpen,
+  onSubmit,
+}) => {
   const bodyRef = useRef(null);
   const [submitArmed, setSubmitArmed] = useState(false);
 
   const getFocusableBodyElements = () => {
     if (!bodyRef.current) return [];
-    const nodes = Array.from(bodyRef.current.querySelectorAll("input, select, textarea, button"));
+    const nodes = Array.from(
+      bodyRef.current.querySelectorAll("input, select, textarea, button")
+    );
     return nodes.filter((el) => {
       if (!el) return false;
       if (el.disabled) return false;
@@ -19,7 +28,11 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
 
   const focusFirstInvalidField = () => {
     const order = [
-      "codigo", "descripcion", "costo", "precio", "tax",
+      "codigo",
+      "descripcion",
+      "costo",
+      "precio",
+      "tax",
       ...(usesInventory ? ["existencia", "minimo", "maximo"] : []),
       ...(form.commission_enabled ? ["commission_value"] : []),
     ];
@@ -27,10 +40,14 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
     for (const field of order) {
       if (errors[field]) {
         const selectorMap = {
-          codigo: 'input[name="codigo"]', descripcion: 'input[name="descripcion"]',
-          costo: 'input[name="costo"]', precio: 'input[name="precio"]',
-          tax: 'input[name="tax"]', existencia: 'input[name="existencia"]',
-          minimo: 'input[name="minimo"]', maximo: 'input[name="maximo"]',
+          codigo: 'input[name="codigo"]',
+          descripcion: 'input[name="descripcion"]',
+          costo: 'input[name="costo"]',
+          precio: 'input[name="precio"]',
+          tax: 'input[name="tax"]',
+          existencia: 'input[name="existencia"]',
+          minimo: 'input[name="minimo"]',
+          maximo: 'input[name="maximo"]',
           commission_value: 'input[name="commission_value"]',
         };
         const target = bodyRef.current?.querySelector(selectorMap[field]);
@@ -44,7 +61,7 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
   };
 
   const preventNumberScrollChange = (e) => e.target.blur();
-  
+
   const preventNumberArrows = (e) => {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
   };
@@ -59,7 +76,8 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
       onSubmit();
     };
     document.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => document.removeEventListener("keydown", onKeyDown, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [submitArmed, isFormValid, errors, form, appModalIsOpen, onSubmit]);
 
   const handleContentKeyDown = (e) => {
@@ -92,7 +110,12 @@ export const useProductDOMFocus = ({ isFormValid, errors, usesInventory, form, a
   };
 
   return {
-    bodyRef, submitArmed, setSubmitArmed, focusFirstInvalidField,
-    preventNumberScrollChange, preventNumberArrows, handleContentKeyDown
+    bodyRef,
+    submitArmed,
+    setSubmitArmed,
+    focusFirstInvalidField,
+    preventNumberScrollChange,
+    preventNumberArrows,
+    handleContentKeyDown,
   };
 };

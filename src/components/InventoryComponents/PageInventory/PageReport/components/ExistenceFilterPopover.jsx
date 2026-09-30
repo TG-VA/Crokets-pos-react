@@ -67,10 +67,7 @@ const ExistenceFilterPopover = ({
             <span>
               Cantidad:{" "}
               <strong>
-                {activeQuantityFilter.replace(
-                  QUANTITY_FILTER_PREFIX,
-                  ""
-                )}
+                {activeQuantityFilter.replace(QUANTITY_FILTER_PREFIX, "")}
               </strong>
             </span>
 
@@ -116,9 +113,7 @@ const ExistenceFilterPopover = ({
                   }`}
                 />
 
-                <span className={styles.stockStatusLabel}>
-                  {option.label}
-                </span>
+                <span className={styles.stockStatusLabel}>{option.label}</span>
 
                 <span className={styles.stockStatusCount}>
                   {stockStatusCounts[option.statusType] || 0}

@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 
-import { centerText, strongSeparator, separator, formatItemLine, formatTotalLine } from "./ticketLayoutFormatters";
+import {
+  centerText,
+  strongSeparator,
+  separator,
+  formatItemLine,
+  formatTotalLine,
+} from "./ticketLayoutFormatters";
 import {
   buildHeaderSection,
   buildSaleInfoSection,
@@ -105,10 +111,11 @@ describe("ticketSections", () => {
 
   describe("buildTotalsSection", () => {
     it("suma artículos y totaliza", () => {
-      const lines = buildTotalsSection(
-        [{ quantity: 2 }, { quantity: 3 }],
-        { subtotal: 200, tax: 32, total: 232 }
-      );
+      const lines = buildTotalsSection([{ quantity: 2 }, { quantity: 3 }], {
+        subtotal: 200,
+        tax: 32,
+        total: 232,
+      });
 
       expect(lines).toContain("Artículos: 5");
       expect(lines).toContain(formatTotalLine("Subtotal:", "$200.00"));

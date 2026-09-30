@@ -51,9 +51,12 @@ const CustomersRewardsSummaryTable = ({
     <div className={styles.tableCard}>
       <div className={styles.tableCardHeader}>
         <div className={styles.tableCardTitleGroup}>
-          <span className={styles.tableCardTitle}>Recompensas y Premios Redimidos</span>
+          <span className={styles.tableCardTitle}>
+            Recompensas y Premios Redimidos
+          </span>
           <span className={styles.tableCardSubtitle}>
-            Historial completo de canjes de recompensas efectuados ({totalItems} registros · {formatNumber(totalRewardsUnits)} premios entregados)
+            Historial completo de canjes de recompensas efectuados ({totalItems}{" "}
+            registros · {formatNumber(totalRewardsUnits)} premios entregados)
           </span>
         </div>
       </div>
@@ -85,26 +88,59 @@ const CustomersRewardsSummaryTable = ({
             </thead>
             <tbody>
               {paginatedRedemptions.map((r) => {
-                const shortFolio = r.sale_id ? r.sale_id.substring(0, 8).toUpperCase() : "S/F";
+                const shortFolio = r.sale_id
+                  ? r.sale_id.substring(0, 8).toUpperCase()
+                  : "S/F";
 
                 return (
                   <tr key={r.id}>
                     <td className={styles.alignCenter}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                        <span style={{ fontSize: "0.8rem", color: "#0f172a", fontWeight: 600 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "#0f172a",
+                            fontWeight: 600,
+                          }}
+                        >
                           {formatShortDate(r.created_at, r.timezone)}
                         </span>
-                        <span style={{ fontSize: "0.725rem", color: "#64748b" }}>
+                        <span
+                          style={{ fontSize: "0.725rem", color: "#64748b" }}
+                        >
                           {formatShortTime(r.created_at, r.timezone)}
                         </span>
                       </div>
                     </td>
                     <td className={styles.alignCenter}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0284c7", fontSize: "0.8rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "monospace",
+                            fontWeight: 700,
+                            color: "#0284c7",
+                            fontSize: "0.8rem",
+                          }}
+                        >
                           #{shortFolio}
                         </span>
-                        <span className={`${styles.badge} ${styles.badgeNeutral}`.trim()}>
+                        <span
+                          className={`${styles.badge} ${styles.badgeNeutral}`.trim()}
+                        >
                           {r.branch_name || "Sucursal"}
                         </span>
                       </div>
@@ -136,7 +172,14 @@ const CustomersRewardsSummaryTable = ({
                       </span>
                     </td>
                     <td className={styles.alignCenter}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
                         <span className={styles.cellPrimaryValue}>
                           {formatNumber(r.quantity || 1)}
                         </span>
@@ -146,7 +189,9 @@ const CustomersRewardsSummaryTable = ({
                       </div>
                     </td>
                     <td className={styles.alignRight}>
-                      <span className={`${styles.badge} ${styles.badgeWarning}`.trim()}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeWarning}`.trim()}
+                      >
                         -{formatNumber(r.total_points || 0)} pts
                       </span>
                     </td>

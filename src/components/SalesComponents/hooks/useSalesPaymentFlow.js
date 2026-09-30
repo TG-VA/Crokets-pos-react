@@ -11,67 +11,54 @@ const useSalesPaymentFlow = ({
   setShowPaymentModal,
   showAppWarning,
 }) => {
-  const openPaymentFlow =
-    useCallback(async () => {
-      if (
-        !Array.isArray(productos) ||
-        productos.length === 0
-      ) {
-        showAppWarning(
-          "No hay productos en la venta.",
-        );
+  const openPaymentFlow = useCallback(async () => {
+    if (!Array.isArray(productos) || productos.length === 0) {
+      showAppWarning("No hay productos en la venta.");
 
-        return false;
-      }
+      return false;
+    }
 
-      if (processingSale) {
-        return false;
-      }
+    if (processingSale) {
+      return false;
+    }
 
-      const canSell =
-        await validateShiftNotCut();
+    const canSell = await validateShiftNotCut();
 
-      if (!canSell) {
-        showAppWarning(
-          "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.",
-        );
-
-        return false;
-      }
-
-      const hasPendingDiscountRewards =
-        pendingProductDiscountRewards.length >
-          0 ||
-        Boolean(
-          activeProductDiscountReward,
-        );
-
-      if (hasPendingDiscountRewards) {
-        showAppWarning(
-          "Termina de aplicar la recompensa de descuento antes de cobrar.",
-        );
-
-        return false;
-      }
-
-      setSaleToken(
-        (currentToken) =>
-          currentToken || uuidv4(),
+    if (!canSell) {
+      showAppWarning(
+        "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
       );
 
-      setShowPaymentModal(true);
+      return false;
+    }
 
-      return true;
-    }, [
-      activeProductDiscountReward,
-      pendingProductDiscountRewards,
-      processingSale,
-      productos,
-      setSaleToken,
-      setShowPaymentModal,
-      showAppWarning,
-      validateShiftNotCut,
-    ]);
+    const hasPendingDiscountRewards =
+      pendingProductDiscountRewards.length > 0 ||
+      Boolean(activeProductDiscountReward);
+
+    if (hasPendingDiscountRewards) {
+      showAppWarning(
+        "Termina de aplicar la recompensa de descuento antes de cobrar."
+      );
+
+      return false;
+    }
+
+    setSaleToken((currentToken) => currentToken || uuidv4());
+
+    setShowPaymentModal(true);
+
+    return true;
+  }, [
+    activeProductDiscountReward,
+    pendingProductDiscountRewards,
+    processingSale,
+    productos,
+    setSaleToken,
+    setShowPaymentModal,
+    showAppWarning,
+    validateShiftNotCut,
+  ]);
 
   return {
     openPaymentFlow,

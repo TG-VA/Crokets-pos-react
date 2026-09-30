@@ -5,7 +5,11 @@ import ReportsAlerts from "./components/ReportsAlerts/ReportsAlerts";
 import ReportsHighlights from "./components/ReportsHighlights/ReportsHighlights";
 import ReportsSalesChart from "./components/ReportsSalesChart/ReportsSalesChart";
 
-import { formatCurrency, formatNumber, formatSyncTime } from "../../../../utils/formatters";
+import {
+  formatCurrency,
+  formatNumber,
+  formatSyncTime,
+} from "../../../../utils/formatters";
 import useReportsDashboard from "./hooks/useReportsDashboard";
 
 import rotateIcon from "../../../../assets/icons/rotate-left-solid-full.svg";
@@ -29,19 +33,11 @@ const PageReportsHome = () => {
     reloadDashboard,
   } = useReportsDashboard();
 
-  const {
-    kpis,
-    salesChart,
-    highlights,
-    alerts,
-    meta,
-  } = dashboard;
+  const { kpis, salesChart, highlights, alerts, meta } = dashboard;
 
   const unitsDescription = `${formatNumber(
     kpis.grossUnitsSoldToday
-  )} vendidas · ${formatNumber(
-    kpis.returnedUnitsToday
-  )} devueltas`;
+  )} vendidas · ${formatNumber(kpis.returnedUnitsToday)} devueltas`;
 
   const kpiDescriptors = [
     {
@@ -81,25 +77,17 @@ const PageReportsHome = () => {
   const branchDescription =
     selectedBranchId === "ALL"
       ? "Indicadores consolidados de todas las sucursales."
-      : `Indicadores principales de la sucursal ${
-          selectedBranch?.name || ""
-        }.`;
+      : `Indicadores principales de la sucursal ${selectedBranch?.name || ""}.`;
 
   return (
     <section className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerInfo}>
-          <span className={styles.eyebrow}>
-            Resumen ejecutivo
-          </span>
+          <span className={styles.eyebrow}>Resumen ejecutivo</span>
 
-          <h1 className={styles.title}>
-            ¿Cómo va el negocio hoy?
-          </h1>
+          <h1 className={styles.title}>¿Cómo va el negocio hoy?</h1>
 
-          <p className={styles.description}>
-            {branchDescription}
-          </p>
+          <p className={styles.description}>{branchDescription}</p>
         </div>
 
         <div className={styles.headerActions}>
@@ -109,9 +97,7 @@ const PageReportsHome = () => {
                 id="dashboard-branch-select"
                 className={styles.branchSelect}
                 value={selectedBranchId}
-                onChange={(e) =>
-                  setSelectedBranchId(e.target.value)
-                }
+                onChange={(e) => setSelectedBranchId(e.target.value)}
                 disabled={loading || refreshing}
                 aria-label="Seleccionar sucursal"
               >
@@ -144,9 +130,7 @@ const PageReportsHome = () => {
                 refreshing ? styles.spin : ""
               }`}
             />
-            <span>
-              {refreshing ? "Actualizando..." : "Actualizar"}
-            </span>
+            <span>{refreshing ? "Actualizando..." : "Actualizar"}</span>
           </button>
         </div>
       </header>
@@ -168,10 +152,7 @@ const PageReportsHome = () => {
         </div>
       ) : null}
 
-      <section
-        className={styles.kpisGrid}
-        aria-label="Indicadores principales"
-      >
+      <section className={styles.kpisGrid} aria-label="Indicadores principales">
         {kpiDescriptors.map((kpi) => (
           <ReportKpiCard
             key={kpi.key}
@@ -186,44 +167,25 @@ const PageReportsHome = () => {
       </section>
 
       <div className={styles.mainGrid}>
-        <ReportsSalesChart
-          data={salesChart}
-          loading={loading}
-        />
+        <ReportsSalesChart data={salesChart} loading={loading} />
 
         <ReportsAlerts
           selectedBranchId={selectedBranchId}
-          cancelledSalesToday={
-            alerts.cancelledSalesToday
-          }
+          cancelledSalesToday={alerts.cancelledSalesToday}
           returnsToday={alerts.returnsToday}
-          returnedAmountToday={
-            alerts.returnedAmountToday
-          }
-          returnedUnitsToday={
-            alerts.returnedUnitsToday
-          }
-          outOfStockCount={
-            alerts.outOfStockCount
-          }
-          lowStockCount={
-            alerts.lowStockCount
-          }
-          outOfStockProducts={
-            alerts.outOfStockProducts
-          }
-          lowStockProducts={
-            alerts.lowStockProducts
-          }
+          returnedAmountToday={alerts.returnedAmountToday}
+          returnedUnitsToday={alerts.returnedUnitsToday}
+          outOfStockCount={alerts.outOfStockCount}
+          lowStockCount={alerts.lowStockCount}
+          outOfStockProducts={alerts.outOfStockProducts}
+          lowStockProducts={alerts.lowStockProducts}
           loading={loading}
         />
       </div>
 
       <ReportsHighlights
         topProduct={highlights.topProduct}
-        mainPaymentMethod={
-          highlights.mainPaymentMethod
-        }
+        mainPaymentMethod={highlights.mainPaymentMethod}
         loading={loading}
       />
     </section>

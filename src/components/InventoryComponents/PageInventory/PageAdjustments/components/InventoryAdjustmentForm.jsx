@@ -61,18 +61,14 @@ const InventoryAdjustmentForm = ({
   return (
     <div className={styles.body} ref={bodyRef}>
       <section className={styles.sectionCard}>
-        <h2 className={styles.sectionTitle}>
-          Datos del producto
-        </h2>
+        <h2 className={styles.sectionTitle}>Datos del producto</h2>
 
         <p className={styles.sectionDescription}>
           Información del producto seleccionado para el ajuste.
         </p>
 
         <div className={styles.formRow}>
-          <label className={styles.label}>
-            Código de barras
-          </label>
+          <label className={styles.label}>Código de barras</label>
 
           <input
             className={styles.input}
@@ -84,9 +80,7 @@ const InventoryAdjustmentForm = ({
         </div>
 
         <div className={styles.formRow}>
-          <label className={styles.label}>
-            Nombre del producto
-          </label>
+          <label className={styles.label}>Nombre del producto</label>
 
           <input
             className={styles.input}
@@ -98,9 +92,7 @@ const InventoryAdjustmentForm = ({
         </div>
 
         <div className={styles.formRow}>
-          <label className={styles.label}>
-            Precio de venta
-          </label>
+          <label className={styles.label}>Precio de venta</label>
 
           <input
             className={styles.input}
@@ -115,9 +107,7 @@ const InventoryAdjustmentForm = ({
       </section>
 
       <section className={styles.sectionCard}>
-        <h2 className={styles.sectionTitle}>
-          Ajuste de inventario
-        </h2>
+        <h2 className={styles.sectionTitle}>Ajuste de inventario</h2>
 
         <p className={styles.sectionDescription}>
           Captura la diferencia y el motivo del ajuste.
@@ -125,9 +115,7 @@ const InventoryAdjustmentForm = ({
 
         <div className={styles.stockGrid}>
           <div className={styles.formRow}>
-            <label className={styles.label}>
-              Stock actual
-            </label>
+            <label className={styles.label}>Stock actual</label>
 
             <input
               className={styles.input}
@@ -139,9 +127,7 @@ const InventoryAdjustmentForm = ({
           </div>
 
           <div className={styles.formRow}>
-            <label className={styles.label}>
-              Diferencia
-            </label>
+            <label className={styles.label}>Diferencia</label>
 
             <input
               ref={quantityInputRef}
@@ -155,9 +141,7 @@ const InventoryAdjustmentForm = ({
           </div>
 
           <div className={styles.formRow}>
-            <label className={styles.label}>
-              Nuevo stock
-            </label>
+            <label className={styles.label}>Nuevo stock</label>
 
             <input
               className={styles.input}
@@ -170,9 +154,7 @@ const InventoryAdjustmentForm = ({
         </div>
 
         <div className={styles.formRow}>
-          <label className={styles.label}>
-            Motivo del ajuste
-          </label>
+          <label className={styles.label}>Motivo del ajuste</label>
 
           <input
             className={styles.input}
@@ -185,9 +167,7 @@ const InventoryAdjustmentForm = ({
         </div>
 
         <div className={styles.formRow}>
-          <label className={styles.label}>
-            Notas
-          </label>
+          <label className={styles.label}>Notas</label>
 
           <textarea
             className={styles.textarea}

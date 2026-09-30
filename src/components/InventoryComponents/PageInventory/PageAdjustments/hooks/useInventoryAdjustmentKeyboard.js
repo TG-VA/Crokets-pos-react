@@ -12,17 +12,11 @@ const getFocusableElements = (container) => {
     if (element.disabled) return false;
     if (element.tabIndex === -1) return false;
 
-    if (
-      element.tagName === "INPUT" &&
-      element.type === "hidden"
-    ) {
+    if (element.tagName === "INPUT" && element.type === "hidden") {
       return false;
     }
 
-    if (
-      element.tagName === "INPUT" &&
-      element.readOnly
-    ) {
+    if (element.tagName === "INPUT" && element.readOnly) {
       return false;
     }
 
@@ -64,16 +58,10 @@ const useInventoryAdjustmentKeyboard = ({
       openSearchModal();
     };
 
-    document.addEventListener(
-      "keydown",
-      handleGlobalKeyDown
-    );
+    document.addEventListener("keydown", handleGlobalKeyDown);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleGlobalKeyDown
-      );
+      document.removeEventListener("keydown", handleGlobalKeyDown);
     };
   }, [openSearchModal, saving]);
 
@@ -92,25 +80,12 @@ const useInventoryAdjustmentKeyboard = ({
       handleSubmitAdjustment();
     };
 
-    document.addEventListener(
-      "keydown",
-      handleConfirmationKeyDown,
-      true
-    );
+    document.addEventListener("keydown", handleConfirmationKeyDown, true);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleConfirmationKeyDown,
-        true
-      );
+      document.removeEventListener("keydown", handleConfirmationKeyDown, true);
     };
-  }, [
-    submitArmed,
-    saving,
-    setSubmitArmed,
-    handleSubmitAdjustment,
-  ]);
+  }, [submitArmed, saving, setSubmitArmed, handleSubmitAdjustment]);
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -122,17 +97,12 @@ const useInventoryAdjustmentKeyboard = ({
     setAdjustmentNotes("");
     setSubmitArmed(false);
 
-    const animationFrameId =
-      window.requestAnimationFrame(() => {
-        focusAndSelectElement(
-          quantityInputRef.current
-        );
-      });
+    const animationFrameId = window.requestAnimationFrame(() => {
+      focusAndSelectElement(quantityInputRef.current);
+    });
 
     return () => {
-      window.cancelAnimationFrame(
-        animationFrameId
-      );
+      window.cancelAnimationFrame(animationFrameId);
     };
   }, [
     selectedProduct?.codigo,
@@ -155,24 +125,20 @@ const useInventoryAdjustmentKeyboard = ({
 
     event.preventDefault();
 
-    const focusableElements =
-      getFocusableElements(bodyRef.current);
+    const focusableElements = getFocusableElements(bodyRef.current);
 
     const activeElement = document.activeElement;
 
-    const activeIndex =
-      focusableElements.indexOf(activeElement);
+    const activeIndex = focusableElements.indexOf(activeElement);
 
     if (activeIndex === -1) return;
 
-    const isLastElement =
-      activeIndex === focusableElements.length - 1;
+    const isLastElement = activeIndex === focusableElements.length - 1;
 
     if (!isLastElement) {
       setSubmitArmed(false);
 
-      const nextElement =
-        focusableElements[activeIndex + 1];
+      const nextElement = focusableElements[activeIndex + 1];
 
       focusAndSelectElement(nextElement);
       return;
@@ -181,10 +147,7 @@ const useInventoryAdjustmentKeyboard = ({
     if (!submitArmed) {
       setSubmitArmed(true);
 
-      if (
-        activeElement &&
-        typeof activeElement.blur === "function"
-      ) {
+      if (activeElement && typeof activeElement.blur === "function") {
         activeElement.blur();
       }
 
