@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (29 sep 2026)
+## Cobertura actual (1 oct 2026)
 
-84 archivos de test (**1278 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+85 archivos de test (**1293 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -80,6 +80,7 @@ y el proceso principal de Electron:
 | Facturación: historial (detalle 360)                | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js`                |
 | Facturación: ventas por facturar (cálculos)         | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js`           |
 | Facturación: ventas por facturar (datos)            | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
+| Smoke de render del renderer y guardas de ruta      | `src/App.test.jsx`                                                                 |
 
 ## Patrones y convenciones
 
@@ -131,13 +132,23 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   postales). `invoicesRealtimeService.test.js` fija el contrato que la auditoría de #54 rompió: un
   binding `postgres_changes` por tabla con `table` resuelto, un solo `.subscribe()` y el payload
   entregado a `onChange`.
+- **Smoke de render del renderer** (1 oct 2026, 15 casos en 1 archivo, rama
+  `test/renderer-smoke-tests`): `App.test.jsx` monta la jerarquía real de `src/main.jsx`
+  (`<BranchProvider><App /></BranchProvider>`) con `supabaseClient` y `productCatalogService`
+  simulados y las páginas lazy sustituidas por stubs, de modo que el test mide el montaje y el
+  enrutado y no la red de cada vista. Fija el arranque en frío (`LoadingScreen` → `/login`), todas
+  las ramas de `AuthGuard` (sin caja, con caja, `requireNoCashRegister`, `isLocked`), la ruta raíz, el
+  wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
+  `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
+  `RouterComponent` (por omisión `HashRouter`), igual que `App`.
 
 No hay todavía:
 
 - Tests de componentes/UI ni de flujos de integración. Las vistas presentacionales del corte
   (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas. Lo mismo aplica a
   los 25 subcomponentes de Facturación (`.../InvoicesComponents/**/components/`): son de render y
-  reciben el estado ya resuelto del hook.
+  reciben el estado ya resuelto del hook. La única capa de UI cubierta es el smoke del renderer: las
+  páginas que monta siguen siendo stubs.
 - Tests del backend Express/SQLite (`src/backend/server.js` y `bd.js`): `app.listen()` y la apertura
   de SQLite ocurren al importar el módulo, por lo que requieren un desacople previo. La
   inicialización de Express/SQLite **no** vive en `electron/main.js`.
@@ -148,8 +159,8 @@ No hay todavía:
   secundarios se mockean vacíos y no se asertan sus resultados agrupados.
 
 **Siguiente capa de valor recomendada:** desacoplar `src/backend/server.js` (factory de Express) y
-`bd.js` (inyección de la conexión SQLite) para poder cubrir el backend local, y agregar un smoke test
-de render del renderer. Ver `KNOWN_ISSUES.md` #8 y #9.
+`bd.js` (inyección de la conexión SQLite) para poder cubrir el backend local, y extender la capa de
+UI más allá del smoke (páginas reales, flujos de interacción). Ver `KNOWN_ISSUES.md` #8 y #9.
 
 ## Linter y formateo (ESLint 9 + Prettier, incremental)
 

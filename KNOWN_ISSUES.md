@@ -520,9 +520,30 @@ sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo to
 - Hallazgo de seguridad derivado al fijar el contrato SQL: #49 (`create_sale_transaction` sin
   `search_path` fijado).
 
+**Actualización 5 (1 oct 2026, rama `test/renderer-smoke-tests`):** cerrado el smoke test de render
+del renderer. La suite pasó a **85 archivos / 1,293 casos** (+15) con `src/App.test.jsx`, que monta
+el árbol real de `src/main.jsx` (`<BranchProvider><App /></BranchProvider>`) contra `Supabase` y
+Electron simulados. Cubre:
+
+- **Montaje en frío:** el primer render es `LoadingScreen` y, al resolverse `getSession()` sin
+  sesión, transiciona a `/login`; además verifica que `ProductsProvider` pide `fetchDepartments` y
+  que no dispara ninguna consulta a `supabase.from`.
+- **Rutas y guardas:** `/login` renderiza el contenedor real de login; una ruta operativa con
+  sesión y sin caja rebota a `/cash-register`; con caja abierta entra a `/dashboard`;
+  `/cash-register` con caja abierta rebota a `/dashboard` (rama `requireNoCashRegister`);
+  `isLocked` devuelve a `/login` desde una ruta protegida; `/settings` (ruta administrativa) entra
+  sin caja; y la ruta raíz resuelve a `/dashboard` o `/login` según el estado de sesión.
+- **Wildcard:** una ruta no registrada cae en la raíz y de ahí al destino correcto según el estado.
+- **`useResponsiveScale`:** el montaje tolera la ausencia de `window.electronAPI` sin lanzar
+  errores y, con el puente presente, invoca `configure-zoom` con `baseWidth` 1500 y `baseHeight` 850.
+
+Para poder usar `MemoryRouter` sin colisionar con el `HashRouter` que `App.jsx` renderizaba por
+dentro, `AppRoutes` ahora es un named export y acepta un prop opcional `RouterComponent`
+(`Router` por omisión), igual que `App`. La producción y `src/main.jsx` siguen usando
+`HashRouter`: el smoke test monta además esa ruta por omisión.
+
 **Recomendación:** con esta capa cubierta, la siguiente deuda de testing es el backend Express/SQLite
-(`src/backend/server.js` y `bd.js` requieren un desacople previo) y un smoke test de render del
-renderer.
+(`src/backend/server.js` y `bd.js` requieren un desacople previo).
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
 
