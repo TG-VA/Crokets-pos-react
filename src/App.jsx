@@ -24,7 +24,14 @@ import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
 import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 
-function AppRoutes() {
+/*
+  `RouterComponent` permite inyectar el router en los tests (por ejemplo
+  `MemoryRouter` con `initialEntries`). Por omision sigue siendo `HashRouter`,
+  que es lo que usa `src/main.jsx` en produccion. React Router 7 no admite dos
+  routers anidados, asi que `AppRoutes` no puede renderizar el suyo propio cuando
+  el test ya envuelve el arbol en uno.
+*/
+export function AppRoutes({ RouterComponent = Router }) {
   const {
     isAuthenticated,
     cashRegistered,
@@ -38,7 +45,7 @@ function AppRoutes() {
   }
 
   return (
-    <Router>
+    <RouterComponent>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
           {/* RUTA PÚBLICA / LOGIN */}
@@ -164,17 +171,17 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </Router>
+    </RouterComponent>
   );
 }
 
-function App() {
+function App({ RouterComponent = Router } = {}) {
   useResponsiveScale(1500, 850);
 
   return (
     <AuthProvider>
       <ProductsProvider>
-        <AppRoutes />
+        <AppRoutes RouterComponent={RouterComponent} />
       </ProductsProvider>
     </AuthProvider>
   );
