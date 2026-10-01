@@ -37,9 +37,9 @@ USING (has_permission('can_manage_inventory'))
 
 ### Roles existentes (datos reales al 24 de agosto de 2026)
 
-| Rol | Estado |
-|---|---|
-| `admin` | activo |
+| Rol      | Estado |
+| -------- | ------ |
+| `admin`  | activo |
 | `cajero` | activo |
 
 No existe un rol `gerente` todavía, a diferencia de lo que sugería la versión anterior de este
@@ -48,17 +48,17 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 
 ### Permisos existentes
 
-| Permiso | Habilita (según su uso en RLS) |
-|---|---|
+| Permiso                | Habilita (según su uso en RLS)                 |
+| ---------------------- | ---------------------------------------------- |
 | `can_manage_inventory` | Insertar/editar/eliminar en `branch_inventory` |
-| `can_view_branch` | Consultar `branch_inventory` |
+| `can_view_branch`      | Consultar `branch_inventory`                   |
 
 ### Matriz rol × permiso (real, no aspiracional)
 
-| | `can_manage_inventory` | `can_view_branch` |
-|---|---|---|
-| **admin** | Sí | Sí |
-| **cajero** | Sí | Sí |
+|            | `can_manage_inventory` | `can_view_branch` |
+| ---------- | ---------------------- | ----------------- |
+| **admin**  | Sí                     | Sí                |
+| **cajero** | Sí                     | Sí                |
 
 > **Hallazgo relevante:** actualmente `admin` y `cajero` tienen exactamente los mismos permisos.
 > El sistema de roles está montado a nivel de base de datos, pero **todavía no diferencia nada
@@ -73,12 +73,12 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 
 ### Usuarios reales (`public.users` × `auth.users`, 24 de agosto de 2026)
 
-| Email | Rol | Activo |
-|---|---|---|
-| carlos@internal.crokets | admin | sí |
-| tristan@internal.crokets | admin | sí |
-| kari@internal.crokets | cajero | sí |
-| alexander@example.com | cajero | sí |
+| Email                    | Rol    | Activo |
+| ------------------------ | ------ | ------ |
+| carlos@internal.crokets  | admin  | sí     |
+| tristan@internal.crokets | admin  | sí     |
+| kari@internal.crokets    | cajero | sí     |
+| alexander@example.com    | cajero | sí     |
 
 > `alexander@example.com` no sigue la convención `@internal.crokets` de los demás usuarios —
 > confirmar si es una cuenta de prueba que debería eliminarse antes de producción.
@@ -95,15 +95,15 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 Introspección directa de `pg_policies` + `pg_class.relrowsecurity` sobre el proyecto remoto. El
 control real por tabla queda así:
 
-| Estado | Tablas (ejemplos) | Control real |
-|---|---|---|
-| RLS + `is_admin()` | `user_branches` (escritura) | solo `admin` escribe; cada usuario ve sus filas |
-| RLS + `has_permission()` | `branch_inventory` | único módulo con permiso granular |
-| RLS + `USING (true)` | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions` | cualquier `authenticated`, sin importar el rol |
-| RLS + dueño de fila | `cash_register_sessions`, `cash_movements` | cada usuario su propia sesión/movimientos |
-| RLS + lectura `anon` | `postal_codes`, `tax_regimes` | catálogos de lectura pre/post login |
-| RLS sin políticas | `app_settings`, `cfdi_settings` | deny-all salvo owner/RPC |
-| RLS deshabilitado | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, `roles`, `permissions`, `role_permissions`, `user_roles`, `users`, `branches`, etc. (~37) | acceso por `GRANT` de tabla, sin filtrado de filas |
+| Estado                   | Tablas (ejemplos)                                                                                                                                                         | Control real                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| RLS + `is_admin()`       | `user_branches` (escritura)                                                                                                                                               | solo `admin` escribe; cada usuario ve sus filas    |
+| RLS + `has_permission()` | `branch_inventory`                                                                                                                                                        | único módulo con permiso granular                  |
+| RLS + `USING (true)`     | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions`                                                                                    | cualquier `authenticated`, sin importar el rol     |
+| RLS + dueño de fila      | `cash_register_sessions`, `cash_movements`                                                                                                                                | cada usuario su propia sesión/movimientos          |
+| RLS + lectura `anon`     | `postal_codes`, `tax_regimes`                                                                                                                                             | catálogos de lectura pre/post login                |
+| RLS sin políticas        | `app_settings`, `cfdi_settings`                                                                                                                                           | deny-all salvo owner/RPC                           |
+| RLS deshabilitado        | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, `roles`, `permissions`, `role_permissions`, `user_roles`, `users`, `branches`, etc. (~37) | acceso por `GRANT` de tabla, sin filtrado de filas |
 
 **Hallazgo (KNOWN_ISSUES #13):** `admin` y `cajero` tienen exactamente los mismos permisos
 (`can_manage_inventory`, `can_view_branch`). No existe hoy ninguna diferencia de autorización a

@@ -108,7 +108,10 @@ export const buildItemsSection = (
     const quantityNumber = getItemQuantity(item);
     const isKit = Boolean(item.is_kit || item.isKit);
 
-    const rewardVisualType = getRewardVisualTypeForItem(item, rewardRedemptions);
+    const rewardVisualType = getRewardVisualTypeForItem(
+      item,
+      rewardRedemptions
+    );
     const isFreeRewardLine = rewardVisualType === "free_product";
     const isDiscountRewardLine = rewardVisualType === "product_discount";
 
@@ -224,7 +227,8 @@ export const buildTotalsSection = (items = [], sale = {}) => {
   const lines = [];
 
   const itemCount = items.reduce(
-    (acc, item) => acc + Number(item.quantity ?? item.qty ?? item.cantidad ?? 0),
+    (acc, item) =>
+      acc + Number(item.quantity ?? item.qty ?? item.cantidad ?? 0),
     0
   );
 
@@ -245,7 +249,12 @@ export const buildTotalsSection = (items = [], sale = {}) => {
 
 export const buildPaymentsSection = (
   payments = [],
-  { sale = {}, paymentLabel = "", totalPaidInMxn = 0, showReceivedAndChange = false } = {}
+  {
+    sale = {},
+    paymentLabel = "",
+    totalPaidInMxn = 0,
+    showReceivedAndChange = false,
+  } = {}
 ) => {
   const lines = [];
 
@@ -337,9 +346,13 @@ export const buildCustomerPointsSection = ({
 
     if (rewardPointsUsed > 0) {
       if (isCancelled) {
-        lines.push(formatTotalLine("Puntos devueltos:", `+${rewardPointsUsed}`));
+        lines.push(
+          formatTotalLine("Puntos devueltos:", `+${rewardPointsUsed}`)
+        );
       } else {
-        lines.push(formatTotalLine("Puntos canjeados:", `-${rewardPointsUsed}`));
+        lines.push(
+          formatTotalLine("Puntos canjeados:", `-${rewardPointsUsed}`)
+        );
       }
     }
 
@@ -546,9 +559,10 @@ export const buildPartialReturnsSection = (
       }
 
       lines.push("Motivo:");
-      wrapText(ret.return_reason || "SIN MOTIVO REGISTRADO", TICKET_WIDTH).forEach(
-        (line) => lines.push(line)
-      );
+      wrapText(
+        ret.return_reason || "SIN MOTIVO REGISTRADO",
+        TICKET_WIDTH
+      ).forEach((line) => lines.push(line));
 
       if ((ret.items || []).length > 0) {
         lines.push(separator());

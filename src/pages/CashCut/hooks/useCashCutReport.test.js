@@ -216,7 +216,10 @@ describe("useCashCutReport", () => {
     fetchActiveSession.mockResolvedValue({ data: activeSession, error: null });
     fetchBranchName.mockResolvedValue({ data: { name: "Norte" }, error: null });
     fetchCutsHistory.mockResolvedValue({ data: [], error: null });
-    fetchHistoricalCutDetail.mockResolvedValue({ data: historyCut, error: null });
+    fetchHistoricalCutDetail.mockResolvedValue({
+      data: historyCut,
+      error: null,
+    });
 
     const { result } = renderHook(() => useCashCutReport({ user }));
     await waitFor(() => expect(result.current.loading).toBe(false));

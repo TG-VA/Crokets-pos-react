@@ -35,19 +35,14 @@ const FacetFilterPopover = ({
   const allValues = options.map((item) => item.value);
 
   return (
-    <div
-      className={styles.filterPopover}
-      data-inv-filter-popover={filterKey}
-    >
+    <div className={styles.filterPopover} data-inv-filter-popover={filterKey}>
       <div className={styles.filterPopoverHeader}>
         <input
           type="text"
           className={styles.filterSearch}
           placeholder="Buscar..."
           value={searchValue}
-          onChange={(event) =>
-            onSearchChange?.(filterKey, event.target.value)
-          }
+          onChange={(event) => onSearchChange?.(filterKey, event.target.value)}
         />
       </div>
 
@@ -84,18 +79,12 @@ const FacetFilterPopover = ({
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={() =>
-                    onToggleValue?.(filterKey, item.value)
-                  }
+                  onChange={() => onToggleValue?.(filterKey, item.value)}
                 />
 
-                <span className={styles.filterOptionLabel}>
-                  {item.label}
-                </span>
+                <span className={styles.filterOptionLabel}>{item.label}</span>
 
-                <span className={styles.filterOptionCount}>
-                  {item.count}
-                </span>
+                <span className={styles.filterOptionCount}>{item.count}</span>
               </label>
             );
           })

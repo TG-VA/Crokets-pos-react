@@ -20,16 +20,76 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const CRITICAL_COLUMNS = [
-  { key: "barcode", label: "Código", colClass: "colBarcode", align: "left", getVal: (p) => p.barcode || "" },
-  { key: "product", label: "Producto", colClass: "colProduct", align: "left", getVal: (p) => (p.productName || "").toLowerCase() },
-  { key: "department", label: "Departamento", colClass: "colDepartment", align: "left", getVal: (p) => (p.departmentName || "").toLowerCase() },
-  { key: "units", label: "Unidades", colClass: "colUnits", align: "center", getVal: (p) => p.totalUnits || 0 },
-  { key: "price", label: "Precio Promedio", colClass: "colPrice", align: "right", getVal: (p) => p.averageSalePrice || 0 },
-  { key: "cost", label: "Costo Unit.", colClass: "colCost", align: "right", getVal: (p) => p.averageCostPrice || 0 },
-  { key: "revenue", label: "Ingreso Total", colClass: "colRevenue", align: "right", getVal: (p) => p.totalRevenue || 0 },
-  { key: "totalCost", label: "Costo Total", colClass: "colTotalCost", align: "right", getVal: (p) => p.totalCost || 0 },
-  { key: "profit", label: "Utilidad Bruta", colClass: "colProfit", align: "right", getVal: (p) => p.grossProfit || 0 },
-  { key: "margin", label: "Margen", colClass: "colMargin", align: "center", getVal: (p) => p.grossMarginPercent || 0 },
+  {
+    key: "barcode",
+    label: "Código",
+    colClass: "colBarcode",
+    align: "left",
+    getVal: (p) => p.barcode || "",
+  },
+  {
+    key: "product",
+    label: "Producto",
+    colClass: "colProduct",
+    align: "left",
+    getVal: (p) => (p.productName || "").toLowerCase(),
+  },
+  {
+    key: "department",
+    label: "Departamento",
+    colClass: "colDepartment",
+    align: "left",
+    getVal: (p) => (p.departmentName || "").toLowerCase(),
+  },
+  {
+    key: "units",
+    label: "Unidades",
+    colClass: "colUnits",
+    align: "center",
+    getVal: (p) => p.totalUnits || 0,
+  },
+  {
+    key: "price",
+    label: "Precio Promedio",
+    colClass: "colPrice",
+    align: "right",
+    getVal: (p) => p.averageSalePrice || 0,
+  },
+  {
+    key: "cost",
+    label: "Costo Unit.",
+    colClass: "colCost",
+    align: "right",
+    getVal: (p) => p.averageCostPrice || 0,
+  },
+  {
+    key: "revenue",
+    label: "Ingreso Total",
+    colClass: "colRevenue",
+    align: "right",
+    getVal: (p) => p.totalRevenue || 0,
+  },
+  {
+    key: "totalCost",
+    label: "Costo Total",
+    colClass: "colTotalCost",
+    align: "right",
+    getVal: (p) => p.totalCost || 0,
+  },
+  {
+    key: "profit",
+    label: "Utilidad Bruta",
+    colClass: "colProfit",
+    align: "right",
+    getVal: (p) => p.grossProfit || 0,
+  },
+  {
+    key: "margin",
+    label: "Margen",
+    colClass: "colMargin",
+    align: "center",
+    getVal: (p) => p.grossMarginPercent || 0,
+  },
 ];
 
 const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
@@ -53,10 +113,14 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
 
   const filteredProducts = useMemo(() => {
     if (filterCause === "pricing") {
-      return criticalProducts.filter((p) => !p.isPureReward && !p.hasPartialReward);
+      return criticalProducts.filter(
+        (p) => !p.isPureReward && !p.hasPartialReward
+      );
     }
     if (filterCause === "rewards") {
-      return criticalProducts.filter((p) => p.isPureReward || p.hasPartialReward);
+      return criticalProducts.filter(
+        (p) => p.isPureReward || p.hasPartialReward
+      );
     }
     return criticalProducts;
   }, [criticalProducts, filterCause]);
@@ -138,8 +202,8 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             {filterCause === "pricing"
               ? " con necesidad de revisión de precios"
               : filterCause === "rewards"
-              ? " con bonificación comercial o regalo"
-              : " con rentabilidad inferior al 15% o costo no cubierto"}
+                ? " con bonificación comercial o regalo"
+                : " con rentabilidad inferior al 15% o costo no cubierto"}
           </p>
         </div>
 
@@ -194,7 +258,8 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
             Excelente: Sin productos en margen crítico
           </h4>
           <p className={styles.emptyDescription}>
-            Todos los artículos vendidos en el periodo seleccionado mantienen un margen de ganancia saludable (&gt;= 15%).
+            Todos los artículos vendidos en el periodo seleccionado mantienen un
+            margen de ganancia saludable (&gt;= 15%).
           </p>
         </div>
       ) : totalItems === 0 ? (
@@ -202,11 +267,10 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
           <div className={styles.emptyIconWrapper}>
             <img src={warningIcon} alt="" />
           </div>
-          <h4 className={styles.emptyTitle}>
-            Sin productos en este filtro
-          </h4>
+          <h4 className={styles.emptyTitle}>Sin productos en este filtro</h4>
           <p className={styles.emptyDescription}>
-            No hay artículos que coincidan con el criterio seleccionado. Puedes volver a ver todos los artículos críticos.
+            No hay artículos que coincidan con el criterio seleccionado. Puedes
+            volver a ver todos los artículos críticos.
           </p>
           <button
             type="button"
@@ -235,14 +299,14 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
                       col.align === "center"
                         ? styles.alignCenter
                         : col.align === "right"
-                        ? styles.alignRight
-                        : "";
+                          ? styles.alignRight
+                          : "";
                     const contentClass =
                       col.align === "center"
                         ? styles.thContentCenter
                         : col.align === "right"
-                        ? styles.thContentRight
-                        : styles.thContent;
+                          ? styles.thContentRight
+                          : styles.thContent;
 
                     return (
                       <th
@@ -272,7 +336,13 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
                 <tr>
                   <td colSpan={3}>
                     <span className={styles.totalRowLabel}>
-                      Total {filterCause === "pricing" ? "Revisar Precios" : filterCause === "rewards" ? "Promociones" : "Críticos"} ({sortedProducts.length}{" "}
+                      Total{" "}
+                      {filterCause === "pricing"
+                        ? "Revisar Precios"
+                        : filterCause === "rewards"
+                          ? "Promociones"
+                          : "Críticos"}{" "}
+                      ({sortedProducts.length}{" "}
                       {sortedProducts.length === 1 ? "artículo" : "artículos"})
                     </span>
                   </td>
@@ -296,7 +366,9 @@ const ProfitabilityCriticalTable = ({ criticalProducts = [] }) => {
                   <td className={styles.alignRight}>
                     <span
                       className={
-                        totals.profit < 0 ? styles.lossValue : styles.profitValue
+                        totals.profit < 0
+                          ? styles.lossValue
+                          : styles.profitValue
                       }
                     >
                       {formatCurrency(totals.profit)}

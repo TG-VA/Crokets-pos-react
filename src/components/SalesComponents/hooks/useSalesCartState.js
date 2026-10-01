@@ -20,9 +20,12 @@ export const useSalesCartState = () => {
   }, [productos]);
 
   return {
-    productos, setProductos,
-    selectedProduct, setSelectedProduct,
-    stockWarningMsg, setStockWarningMsg,
+    productos,
+    setProductos,
+    selectedProduct,
+    setSelectedProduct,
+    stockWarningMsg,
+    setStockWarningMsg,
     productosRef,
   };
 };

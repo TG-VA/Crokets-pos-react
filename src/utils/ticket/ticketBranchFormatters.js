@@ -29,7 +29,9 @@ export const extractPostalCode = (address = "") => {
 };
 
 export const removePostalCode = (address = "") => {
-  return normalizeSpaces(address).replace(/\b\d{5}\b/g, "").trim();
+  return normalizeSpaces(address)
+    .replace(/\b\d{5}\b/g, "")
+    .trim();
 };
 
 export const normalizeAddressLine1 = (address = "") => {

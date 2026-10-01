@@ -13,17 +13,47 @@ import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg"
 
 const PageSalesReport = () => {
   const {
-    reportModal, closeReportModal, // Desestructuramos el Modal
-    dateRange, setDateRange, startDate, endDate,
-    activeDatePreset, setQuickDatePreset,
-    selectedBranch, setSelectedBranch, selectedCashier, setSelectedCashier,
-    saleStatus, setSaleStatus, paymentMethod, setPaymentMethod,
-    discountFilter, setDiscountFilter, branchesList, cashiersList,
-currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales, 
-    loading, summary, syncedAt, hasActiveFilters, handleClearFilters, handleRowClick,
-    handleExportExcel, handleExportDetailedExcel, isExportingDetailed, isExportingSummary,
-    isTicketModalOpen, selectedTicket, ticketDetails,
-    loadingModal, handleCloseModal,
+    reportModal,
+    closeReportModal, // Desestructuramos el Modal
+    dateRange,
+    setDateRange,
+    startDate,
+    endDate,
+    activeDatePreset,
+    setQuickDatePreset,
+    selectedBranch,
+    setSelectedBranch,
+    selectedCashier,
+    setSelectedCashier,
+    saleStatus,
+    setSaleStatus,
+    paymentMethod,
+    setPaymentMethod,
+    discountFilter,
+    setDiscountFilter,
+    branchesList,
+    cashiersList,
+    currentPage,
+    totalPages,
+    startIndex,
+    endIndex,
+    handlePageChange,
+    paginatedSales,
+    loading,
+    summary,
+    syncedAt,
+    hasActiveFilters,
+    handleClearFilters,
+    handleRowClick,
+    handleExportExcel,
+    handleExportDetailedExcel,
+    isExportingDetailed,
+    isExportingSummary,
+    isTicketModalOpen,
+    selectedTicket,
+    ticketDetails,
+    loadingModal,
+    handleCloseModal,
   } = useSalesReport();
 
   return (
@@ -32,9 +62,11 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
       <header className={styles.header}>
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Ventas</h1>
-          <p className={styles.description}>Auditoría de ingresos y transacciones generadas en un periodo.</p>
+          <p className={styles.description}>
+            Auditoría de ingresos y transacciones generadas en un periodo.
+          </p>
         </div>
-        
+
         <div className={styles.actionButtons}>
           {syncedAt ? (
             <span className={styles.lastUpdate}>
@@ -42,22 +74,32 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
             </span>
           ) : null}
 
-          <button 
+          <button
             type="button"
-            className={styles.exportDetailedBtn} 
-            onClick={handleExportDetailedExcel} 
-            disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
+            className={styles.exportDetailedBtn}
+            onClick={handleExportDetailedExcel}
+            disabled={
+              loading ||
+              isExportingDetailed ||
+              isExportingSummary ||
+              summary.totalTickets === 0
+            }
             title="Exportar todas las ventas desglosadas a nivel partida"
           >
             <img src={fileImportIcon} alt="" className={styles.btnIcon} />
             {isExportingDetailed ? "Procesando..." : "Exportar Detalle"}
           </button>
-          
-          <button 
+
+          <button
             type="button"
-            className={styles.exportBtn} 
-            onClick={handleExportExcel} 
-            disabled={loading || isExportingDetailed || isExportingSummary || summary.totalTickets === 0}
+            className={styles.exportBtn}
+            onClick={handleExportExcel}
+            disabled={
+              loading ||
+              isExportingDetailed ||
+              isExportingSummary ||
+              summary.totalTickets === 0
+            }
             title="Exportar resumen consolidado de ventas"
           >
             <img src={fileImportIcon} alt="" className={styles.btnIcon} />
@@ -100,7 +142,9 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
               <button
                 type="button"
                 className={`${styles.presetPill} ${
-                  activeDatePreset === "yesterday" ? styles.presetPillActive : ""
+                  activeDatePreset === "yesterday"
+                    ? styles.presetPillActive
+                    : ""
                 }`.trim()}
                 onClick={() => setQuickDatePreset("yesterday")}
               >
@@ -109,7 +153,9 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
               <button
                 type="button"
                 className={`${styles.presetPill} ${
-                  activeDatePreset === "this_week" ? styles.presetPillActive : ""
+                  activeDatePreset === "this_week"
+                    ? styles.presetPillActive
+                    : ""
                 }`.trim()}
                 onClick={() => setQuickDatePreset("this_week")}
               >
@@ -118,7 +164,9 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
               <button
                 type="button"
                 className={`${styles.presetPill} ${
-                  activeDatePreset === "this_month" ? styles.presetPillActive : ""
+                  activeDatePreset === "this_month"
+                    ? styles.presetPillActive
+                    : ""
                 }`.trim()}
                 onClick={() => setQuickDatePreset("this_month")}
               >
@@ -127,7 +175,9 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
               <button
                 type="button"
                 className={`${styles.presetPill} ${
-                  activeDatePreset === "last_month" ? styles.presetPillActive : ""
+                  activeDatePreset === "last_month"
+                    ? styles.presetPillActive
+                    : ""
                 }`.trim()}
                 onClick={() => setQuickDatePreset("last_month")}
               >
@@ -159,25 +209,41 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
         <div className={styles.filtersBottomRow}>
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Sucursal:</label>
-            <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className={styles.selectInput}>
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className={styles.selectInput}
+            >
               {branchesList.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Cajero:</label>
-            <select value={selectedCashier} onChange={(e) => setSelectedCashier(e.target.value)} className={styles.selectInput}>
+            <select
+              value={selectedCashier}
+              onChange={(e) => setSelectedCashier(e.target.value)}
+              className={styles.selectInput}
+            >
               {cashiersList.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Estado:</label>
-            <select value={saleStatus} onChange={(e) => setSaleStatus(e.target.value)} className={styles.selectInput}>
+            <select
+              value={saleStatus}
+              onChange={(e) => setSaleStatus(e.target.value)}
+              className={styles.selectInput}
+            >
               <option value="Todos">Todos los estados</option>
               <option value="Completada">Completadas</option>
               <option value="Devolución Parcial">Devoluciones Parciales</option>
@@ -187,7 +253,11 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
 
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Pago:</label>
-            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={styles.selectInput}>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className={styles.selectInput}
+            >
               <option value="Todos">Todos los métodos</option>
               <option value="Efectivo">Efectivo</option>
               <option value="Terminal">Terminal</option>
@@ -198,7 +268,11 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
 
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Descuento:</label>
-            <select value={discountFilter} onChange={(e) => setDiscountFilter(e.target.value)} className={styles.selectInput}>
+            <select
+              value={discountFilter}
+              onChange={(e) => setDiscountFilter(e.target.value)}
+              className={styles.selectInput}
+            >
               <option value="Todos">Todos los descuentos</option>
               <option value="ConDescuento">Con descuento</option>
               <option value="SinDescuento">Sin descuento</option>
@@ -210,19 +284,27 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
       <div className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
           <span className={styles.kpiLabel}>Total Ingresos</span>
-          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.totalIncome)}</strong>
+          <strong className={styles.kpiValue}>
+            {loading ? "..." : formatCurrency(summary.totalIncome)}
+          </strong>
         </div>
         <div className={styles.kpiCard}>
           <span className={styles.kpiLabel}>Tickets Listados</span>
-          <strong className={styles.kpiValue}>{loading ? "..." : summary.totalTickets}</strong>
+          <strong className={styles.kpiValue}>
+            {loading ? "..." : summary.totalTickets}
+          </strong>
         </div>
         <div className={styles.kpiCard}>
           <span className={styles.kpiLabel}>Ticket Promedio</span>
-          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.averageTicket)}</strong>
+          <strong className={styles.kpiValue}>
+            {loading ? "..." : formatCurrency(summary.averageTicket)}
+          </strong>
         </div>
         <div className={styles.kpiCard}>
           <span className={styles.kpiLabel}>Descuentos Otorgados</span>
-          <strong className={styles.kpiValue}>{loading ? "..." : formatCurrency(summary.totalDiscounts)}</strong>
+          <strong className={styles.kpiValue}>
+            {loading ? "..." : formatCurrency(summary.totalDiscounts)}
+          </strong>
         </div>
       </div>
 
@@ -245,32 +327,59 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
             </thead>
             <tbody>
               {!startDate || !endDate ? (
-                <tr><td colSpan="8" className={styles.emptyState}>Por favor selecciona un rango de fechas para generar el reporte.</td></tr>
+                <tr>
+                  <td colSpan="8" className={styles.emptyState}>
+                    Por favor selecciona un rango de fechas para generar el
+                    reporte.
+                  </td>
+                </tr>
               ) : loading ? (
-                <tr><td colSpan="8" className={styles.loadingState}>Cargando datos...</td></tr>
+                <tr>
+                  <td colSpan="8" className={styles.loadingState}>
+                    Cargando datos...
+                  </td>
+                </tr>
               ) : paginatedSales.length === 0 ? (
-                <tr><td colSpan="8" className={styles.emptyState}>No hay ventas que coincidan con los filtros seleccionados.</td></tr>
+                <tr>
+                  <td colSpan="8" className={styles.emptyState}>
+                    No hay ventas que coincidan con los filtros seleccionados.
+                  </td>
+                </tr>
               ) : (
                 paginatedSales.map((sale) => (
-                  <tr 
-                    key={sale.id} 
+                  <tr
+                    key={sale.id}
                     className={`${styles.clickableRow} ${sale.status === "Cancelada" ? styles.rowCancelled : ""}`}
                     onClick={() => handleRowClick(sale)}
                   >
-                    <td><strong>{sale.ticketNumber}</strong></td>
-                    <td>{sale.date}</td>
-                    <td><span className={styles.branchTag}>{sale.branch}</span></td>
-                    <td>{sale.cashier}</td>
-                    <td><span className={styles.badge}>{sale.method}</span></td>
                     <td>
-                      <span className={`${styles.statusBadge} ${sale.status === "Completada" ? styles.statusSuccess : sale.status === "Cancelada" ? styles.statusDanger : styles.statusWarning}`}>
+                      <strong>{sale.ticketNumber}</strong>
+                    </td>
+                    <td>{sale.date}</td>
+                    <td>
+                      <span className={styles.branchTag}>{sale.branch}</span>
+                    </td>
+                    <td>{sale.cashier}</td>
+                    <td>
+                      <span className={styles.badge}>{sale.method}</span>
+                    </td>
+                    <td>
+                      <span
+                        className={`${styles.statusBadge} ${sale.status === "Completada" ? styles.statusSuccess : sale.status === "Cancelada" ? styles.statusDanger : styles.statusWarning}`}
+                      >
                         {sale.status}
                       </span>
                     </td>
-                    <td className={`${styles.textRight} ${sale.discount > 0 ? styles.discountText : ""}`}>
-                      {sale.discount > 0 ? `-${formatCurrency(sale.discount)}` : "$0.00"}
+                    <td
+                      className={`${styles.textRight} ${sale.discount > 0 ? styles.discountText : ""}`}
+                    >
+                      {sale.discount > 0
+                        ? `-${formatCurrency(sale.discount)}`
+                        : "$0.00"}
                     </td>
-                    <td className={styles.textRight}><strong>{formatCurrency(sale.total)}</strong></td>
+                    <td className={styles.textRight}>
+                      <strong>{formatCurrency(sale.total)}</strong>
+                    </td>
                   </tr>
                 ))
               )}
@@ -278,12 +387,16 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
             {startDate && endDate && !loading && summary.totalTickets > 0 && (
               <tfoot className={styles.tableFooter}>
                 <tr>
-                  <td colSpan="6" className={styles.textRight}><strong>Total acumulado (Filtro activo):</strong></td>
+                  <td colSpan="6" className={styles.textRight}>
+                    <strong>Total acumulado (Filtro activo):</strong>
+                  </td>
                   <td className={`${styles.textRight} ${styles.discountText}`}>
                     <strong>-{formatCurrency(summary.totalDiscounts)}</strong>
                   </td>
                   <td className={styles.textRight}>
-                    <strong className={styles.grandTotalText}>{formatCurrency(summary.totalIncome)}</strong>
+                    <strong className={styles.grandTotalText}>
+                      {formatCurrency(summary.totalIncome)}
+                    </strong>
                   </td>
                 </tr>
               </tfoot>
@@ -312,7 +425,7 @@ currentPage, totalPages, startIndex, endIndex, handlePageChange, paginatedSales,
         loading={loadingModal}
       />
 
-      <AppModal 
+      <AppModal
         isOpen={reportModal.isOpen}
         type={reportModal.type}
         title={reportModal.title}

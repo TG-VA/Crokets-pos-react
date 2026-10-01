@@ -122,7 +122,9 @@ describe("ProtectedRoute", () => {
 });
 
 const PageHarness = () => {
-  const [authorizedRoutes, setAuthorizedRoutes] = React.useState(() => new Set());
+  const [authorizedRoutes, setAuthorizedRoutes] = React.useState(
+    () => new Set()
+  );
 
   const handleAuthorizedRoute = (routePath) =>
     setAuthorizedRoutes((prev) => {

@@ -5,7 +5,10 @@
 
 import React from "react";
 import styles from "./CustomersComponents.module.css";
-import { formatNumber, formatDynamicDate } from "../utils/customersReportFormatters";
+import {
+  formatNumber,
+  formatDynamicDate,
+} from "../utils/customersReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
@@ -90,28 +93,37 @@ const CustomerDetailPointsTab = ({ pointsLedger = [] }) => {
 
               const absPts = Math.abs(rawPts);
               const branchName = row.branches?.name || "";
-              const userName = row.users?.username ? `- ${row.users.username}` : "";
+              const userName = row.users?.username
+                ? `- ${row.users.username}`
+                : "";
               const title = getMovementTitle(row, rawPts, mType);
               const isNotesInTitle =
                 row.notes &&
-                title.toLowerCase().includes(String(row.notes).trim().toLowerCase());
+                title
+                  .toLowerCase()
+                  .includes(String(row.notes).trim().toLowerCase());
 
               return (
                 <div key={row.id} className={styles.ledgerItem}>
                   <div className={styles.ledgerItemLeft}>
                     <span className={styles.ledgerSource}>{title}</span>
                     <span className={styles.ledgerMeta}>
-                      {formatDynamicDate(row.created_at)} {branchName ? `(${branchName})` : ""} {userName}
+                      {formatDynamicDate(row.created_at)}{" "}
+                      {branchName ? `(${branchName})` : ""} {userName}
                       {row.notes && !isNotesInTitle && ` - ${row.notes}`}
                     </span>
                   </div>
 
                   <span
                     className={`${styles.ledgerPoints} ${
-                      isNeg ? styles.ledgerPointsNegative : styles.ledgerPointsPositive
+                      isNeg
+                        ? styles.ledgerPointsNegative
+                        : styles.ledgerPointsPositive
                     }`.trim()}
                   >
-                    {isNeg ? `-${formatNumber(absPts)} pts` : `+${formatNumber(absPts)} pts`}
+                    {isNeg
+                      ? `-${formatNumber(absPts)} pts`
+                      : `+${formatNumber(absPts)} pts`}
                   </span>
                 </div>
               );

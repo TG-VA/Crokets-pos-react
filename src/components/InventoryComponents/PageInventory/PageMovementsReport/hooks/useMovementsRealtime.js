@@ -17,42 +17,33 @@ const useMovementsRealtime = ({
 }) => {
   const refreshTimerRef = useRef(null);
   const pollingIntervalRef = useRef(null);
-  const refreshFunctionRef = useRef(
-    refreshMovementsSilently
-  );
+  const refreshFunctionRef = useRef(refreshMovementsSilently);
 
   useEffect(() => {
-    refreshFunctionRef.current =
-      refreshMovementsSilently;
+    refreshFunctionRef.current = refreshMovementsSilently;
   }, [refreshMovementsSilently]);
 
   useEffect(() => {
     if (
       !enabled ||
       !selectedBranchId ||
-      typeof refreshFunctionRef.current !==
-        "function"
+      typeof refreshFunctionRef.current !== "function"
     ) {
       return undefined;
     }
 
     const queueRefresh = () => {
       if (refreshTimerRef.current) {
-        window.clearTimeout(
-          refreshTimerRef.current
-        );
+        window.clearTimeout(refreshTimerRef.current);
       }
 
-      refreshTimerRef.current =
-        window.setTimeout(() => {
-          refreshFunctionRef.current?.();
-        }, REALTIME_DEBOUNCE_MS);
+      refreshTimerRef.current = window.setTimeout(() => {
+        refreshFunctionRef.current?.();
+      }, REALTIME_DEBOUNCE_MS);
     };
 
     const channel = supabase
-      .channel(
-        `movements-report-realtime-${selectedBranchId}`
-      )
+      .channel(`movements-report-realtime-${selectedBranchId}`)
       .on(
         "postgres_changes",
         {
@@ -74,34 +65,24 @@ const useMovementsRealtime = ({
         queueRefresh
       )
       .subscribe((status) => {
-        if (
-          import.meta.env.DEV &&
-          status === "CHANNEL_ERROR"
-        ) {
-          console.error(
-            "Error en realtime del reporte de movimientos."
-          );
+        if (import.meta.env.DEV && status === "CHANNEL_ERROR") {
+          console.error("Error en realtime del reporte de movimientos.");
         }
       });
 
-    pollingIntervalRef.current =
-      window.setInterval(() => {
-        refreshFunctionRef.current?.();
-      }, FALLBACK_REFRESH_INTERVAL_MS);
+    pollingIntervalRef.current = window.setInterval(() => {
+      refreshFunctionRef.current?.();
+    }, FALLBACK_REFRESH_INTERVAL_MS);
 
     return () => {
       if (refreshTimerRef.current) {
-        window.clearTimeout(
-          refreshTimerRef.current
-        );
+        window.clearTimeout(refreshTimerRef.current);
 
         refreshTimerRef.current = null;
       }
 
       if (pollingIntervalRef.current) {
-        window.clearInterval(
-          pollingIntervalRef.current
-        );
+        window.clearInterval(pollingIntervalRef.current);
 
         pollingIntervalRef.current = null;
       }

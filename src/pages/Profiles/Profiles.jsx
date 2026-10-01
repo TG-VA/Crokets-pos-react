@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import Navbar from '../../components/Navbar/Navbar';
-import Footer from '../../components/Footer/Footer';
-import UserList from './UserList';
-import styles from './Profiles.module.css';
-import { supabase } from '../../lib/supabaseClient';
-import { useRequestStatus } from '../../hooks/useRequestStatus';
+import { useCallback, useEffect, useState } from "react";
+import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
+import UserList from "./UserList";
+import styles from "./Profiles.module.css";
+import { supabase } from "../../lib/supabaseClient";
+import { useRequestStatus } from "../../hooks/useRequestStatus";
 
 /** Identidad de la carga unica de usuarios, usada para derivar el indicador. */
-const PROFILES_USERS_REQUEST = 'profiles:users';
+const PROFILES_USERS_REQUEST = "profiles:users";
 
 /**
  * Consulta los usuarios visibles para el usuario actual.
@@ -20,8 +20,8 @@ const PROFILES_USERS_REQUEST = 'profiles:users';
  */
 const fetchProfilesUsers = async () => {
   const candidates = [
-    'id, username, email, status, created_at, roles ( name )',
-    'id, username, email, status, created_at',
+    "id, username, email, status, created_at, roles ( name )",
+    "id, username, email, status, created_at",
   ];
 
   let data = null;
@@ -29,9 +29,9 @@ const fetchProfilesUsers = async () => {
 
   for (const selectClause of candidates) {
     const result = await supabase
-      .from('users')
+      .from("users")
       .select(selectClause)
-      .order('created_at', { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (!result.error) {
       data = result.data;
@@ -58,29 +58,35 @@ const normalizeRoleName = (rolesValue) => {
 
 const normalizeUserRow = (row) => {
   const roleName = normalizeRoleName(row?.roles);
-  const username = (row?.username || row?.email || 'SIN USUARIO').toString().trim();
+  const username = (row?.username || row?.email || "SIN USUARIO")
+    .toString()
+    .trim();
 
   return {
     id: row?.id || username,
     username,
-    email: row?.email || 'SIN CORREO',
-    status: typeof row?.status === 'boolean' ? row.status : null,
-    roleName: roleName || 'SIN ROL',
+    email: row?.email || "SIN CORREO",
+    status: typeof row?.status === "boolean" ? row.status : null,
+    roleName: roleName || "SIN ROL",
     createdAt: row?.created_at || null,
   };
 };
 
 const Profiles = () => {
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Cada recarga es una peticion distinta, y el indicador se deriva de su clave en
   // lugar de marcarse con setLoading(true) dentro del efecto, que provocaba un
   // re-render en cascada en el primer render.
   const [reloadCount, setReloadCount] = useState(0);
   const requestKey = `${PROFILES_USERS_REQUEST}|${reloadCount}`;
-  const { isLoading: loading, isStale, markSettled } = useRequestStatus(requestKey);
-  const visibleError = isStale ? '' : error;
+  const {
+    isLoading: loading,
+    isStale,
+    markSettled,
+  } = useRequestStatus(requestKey);
+  const visibleError = isStale ? "" : error;
 
   const reloadUsers = useCallback(() => {
     setReloadCount((count) => count + 1);
@@ -93,13 +99,13 @@ const Profiles = () => {
       .then((normalizedUsers) => {
         if (cancelled) return;
         setUsers(normalizedUsers);
-        setError('');
+        setError("");
       })
       .catch((loadError) => {
         if (cancelled) return;
-        console.error('Error al cargar usuarios desde Supabase:', loadError);
+        console.error("Error al cargar usuarios desde Supabase:", loadError);
         setUsers([]);
-        setError('No se pudieron cargar los usuarios desde la base de datos.');
+        setError("No se pudieron cargar los usuarios desde la base de datos.");
       })
       .finally(() => {
         if (cancelled) return;

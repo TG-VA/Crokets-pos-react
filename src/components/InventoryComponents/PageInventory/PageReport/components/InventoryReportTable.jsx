@@ -92,9 +92,7 @@ const InventoryReportTable = ({
 
                 <FacetFilterButton
                   filterKey="existencia"
-                  selectedCount={
-                    facetFilters.existencia?.length || 0
-                  }
+                  selectedCount={facetFilters.existencia?.length || 0}
                   isOpen={openFacet === "existencia"}
                   onToggle={onToggleFacet}
                 />
@@ -128,8 +126,7 @@ const InventoryReportTable = ({
           {!loading && rows.length === 0 ? (
             <tr>
               <td colSpan={7} className={styles.empty}>
-                No hay productos que coincidan con los filtros
-                seleccionados.
+                No hay productos que coincidan con los filtros seleccionados.
               </td>
             </tr>
           ) : (
@@ -141,15 +138,9 @@ const InventoryReportTable = ({
                   key={row.inventoryRowId ?? productId}
                   row={row}
                   isExpanded={expandedProductId === productId}
-                  detailRows={
-                    otherStocksByProduct[productId] || []
-                  }
-                  detailsLoading={
-                    !!loadingDetailsByProduct[productId]
-                  }
-                  detailsError={
-                    detailsErrorByProduct[productId] || ""
-                  }
+                  detailRows={otherStocksByProduct[productId] || []}
+                  detailsLoading={!!loadingDetailsByProduct[productId]}
+                  detailsError={detailsErrorByProduct[productId] || ""}
                   onToggleOtherStocks={onToggleOtherStocks}
                 />
               );

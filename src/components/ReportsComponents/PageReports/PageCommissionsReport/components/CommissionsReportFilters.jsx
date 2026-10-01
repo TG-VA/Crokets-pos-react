@@ -97,7 +97,9 @@ export const CommissionsReportFilters = ({
             className={styles.clearBtnIcon}
           />
           <span>
-            {activeFiltersCount > 0 ? `Limpiar (${activeFiltersCount})` : "Limpiar"}
+            {activeFiltersCount > 0
+              ? `Limpiar (${activeFiltersCount})`
+              : "Limpiar"}
           </span>
           {hasActiveFilters && <span className={styles.activeFilterDot} />}
         </button>
@@ -169,11 +171,7 @@ export const CommissionsReportFilters = ({
         <div className={`${styles.filterField} ${styles.filterFieldSearch}`}>
           <label className={styles.filterLabel}>Buscar:</label>
           <div className={styles.searchWrapper}>
-            <img
-              src={searchIcon}
-              alt="Buscar"
-              className={styles.searchIcon}
-            />
+            <img src={searchIcon} alt="Buscar" className={styles.searchIcon} />
             <input
               type="text"
               value={searchTerm}

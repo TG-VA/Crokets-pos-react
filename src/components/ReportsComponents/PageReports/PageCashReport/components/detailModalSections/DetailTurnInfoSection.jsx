@@ -1,11 +1,19 @@
 import React from "react";
 import styles from "../CashComponents.module.css";
-import { formatCurrency, formatDynamicDate } from "../../utils/cashReportFormatters";
+import {
+  formatCurrency,
+  formatDynamicDate,
+} from "../../utils/cashReportFormatters";
 
 import CircleCheckIcon from "../../../../../../assets/icons/circle-check-solid-full.svg";
 import TriangleAlertIcon from "../../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
-const DetailTurnInfoSection = ({ sessionDetail, branchTz, diffInfo, isClosed }) => {
+const DetailTurnInfoSection = ({
+  sessionDetail,
+  branchTz,
+  diffInfo,
+  isClosed,
+}) => {
   return (
     <div className={styles.modalSection}>
       <h3 className={styles.modalSectionTitle}>Información del Turno</h3>
@@ -62,8 +70,8 @@ const DetailTurnInfoSection = ({ sessionDetail, branchTz, diffInfo, isClosed }) 
                   diffInfo.status === "exact"
                     ? styles.badgeSuccess
                     : diffInfo.status === "surplus"
-                    ? styles.badgeInfo
-                    : styles.badgeDanger
+                      ? styles.badgeInfo
+                      : styles.badgeDanger
                 }`.trim()}
               >
                 <img

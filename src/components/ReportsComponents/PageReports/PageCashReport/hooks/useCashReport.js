@@ -70,7 +70,7 @@ export const useCashReport = () => {
   const [sessions, setSessions] = useState([]);
   const [movements, setMovements] = useState([]);
   const [paymentMethodsSummary, setPaymentMethodsSummary] = useState([]);
-  
+
   // Estados de carga y error
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -109,7 +109,14 @@ export const useCashReport = () => {
   const reportKey = useMemo(
     () =>
       `${selectedBranchId}|${startDate}|${endDate}|${selectedCashierId}|${sessionStatus}|${movementType}`,
-    [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType]
+    [
+      selectedBranchId,
+      startDate,
+      endDate,
+      selectedCashierId,
+      sessionStatus,
+      movementType,
+    ]
   );
   const { isLoading, isStale, markSettled } = useRequestStatus(reportKey);
 
@@ -343,7 +350,8 @@ export const useCashReport = () => {
       const branchName =
         selectedBranchId === "ALL"
           ? "Todas las sucursales"
-          : branchesList.find((b) => b.id === selectedBranchId)?.name || "Sucursal seleccionada";
+          : branchesList.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal seleccionada";
 
       const startText = startDate ? startDate.toLocaleDateString("es-MX") : "";
       const endText = endDate ? endDate.toLocaleDateString("es-MX") : startText;
@@ -375,7 +383,14 @@ export const useCashReport = () => {
       movementType !== "ALL" ||
       activeDatePreset !== "today"
     );
-  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType, activeDatePreset]);
+  }, [
+    selectedBranchId,
+    branch?.id,
+    selectedCashierId,
+    sessionStatus,
+    movementType,
+    activeDatePreset,
+  ]);
 
   return {
     // Filtros

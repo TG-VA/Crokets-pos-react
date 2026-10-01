@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { TIME_ZONE, formatDate, formatTime, formatDateTime } from "./ticketDateFormatters";
+import {
+  TIME_ZONE,
+  formatDate,
+  formatTime,
+  formatDateTime,
+} from "./ticketDateFormatters";
 
 describe("ticketDateFormatters", () => {
   it("usa el timezone America/Cancun", () => {
@@ -34,7 +39,9 @@ describe("ticketDateFormatters", () => {
 
   describe("formatDateTime", () => {
     it("combina fecha y hora", () => {
-      expect(formatDateTime("2026-09-16T18:00:00.000Z")).toBe("16/9/2026 01:00 p.m.");
+      expect(formatDateTime("2026-09-16T18:00:00.000Z")).toBe(
+        "16/9/2026 01:00 p.m."
+      );
     });
 
     it("devuelve vacio para valores nulos o invalidos", () => {

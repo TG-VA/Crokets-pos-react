@@ -76,8 +76,10 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                     // Limpieza estricta de clases dinámicas para evitar espacios colgantes
                     const itemClasses = [
                       styles.resultItem,
-                      index === selectedIndex ? styles.selectedResult : ""
-                    ].filter(Boolean).join(" ");
+                      index === selectedIndex ? styles.selectedResult : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
 
                     return (
                       <div
@@ -102,8 +104,12 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                             <span
                               className={[
                                 styles.productStock,
-                                (product.existencia || 0) > 0 ? styles.inStock : styles.outOfStock
-                              ].filter(Boolean).join(" ")}
+                                (product.existencia || 0) > 0
+                                  ? styles.inStock
+                                  : styles.outOfStock,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                             >
                               Stock: {product.existencia ?? 0}
                             </span>

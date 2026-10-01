@@ -89,7 +89,9 @@
   outline: none;
   color: var(--textColor);
   background-color: var(--white);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   box-sizing: border-box;
 }
 
@@ -111,7 +113,7 @@
 }
 
 .limitHelperText {
-  font-size: 0.80rem;
+  font-size: 0.8rem;
   color: #666666;
   font-style: italic;
 }
@@ -249,7 +251,9 @@
   font-weight: 700;
   cursor: pointer;
   color: var(--white);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   font-size: 0.95rem;
   text-align: center;
   white-space: nowrap;
@@ -513,14 +517,14 @@
     width: 100%;
   }
 
-.kitRow {
-  display: grid;
-  grid-template-columns: 1fr 120px 320px;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eeeeee;
-}
+  .kitRow {
+    display: grid;
+    grid-template-columns: 1fr 120px 320px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eeeeee;
+  }
 
   .kitStatus {
     text-align: left;

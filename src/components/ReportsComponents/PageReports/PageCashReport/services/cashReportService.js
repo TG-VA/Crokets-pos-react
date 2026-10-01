@@ -6,7 +6,10 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
 // Re-exportar servicios modulares
-export { calculateCashReportKpis, calculateCashierDiscrepancies } from "./cashReportCalculationService";
+export {
+  calculateCashReportKpis,
+  calculateCashierDiscrepancies,
+} from "./cashReportCalculationService";
 export { fetchCashSessionDetail } from "./cashReportDetailService";
 
 /**
@@ -78,16 +81,15 @@ export const fetchCashSessions = async ({
   try {
     const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
 
-    const { data: rpcRows, error: rpcError } = await supabase.rpc(
-      "get_cash_report_sessions",
-      {
+    const { data: rpcRows, error: rpcError } = await supabase
+      .rpc("get_cash_report_sessions", {
         p_branch_id: branchId !== "ALL" ? branchId : null,
         p_start_date: startIso || null,
         p_end_date: endIso || null,
         p_cashier_id: cashierId !== "ALL" ? cashierId : null,
         p_session_status: sessionStatus !== "ALL" ? sessionStatus : null,
-      }
-    ).limit(100000);
+      })
+      .limit(100000);
 
     if (rpcError) throw rpcError;
 
@@ -136,7 +138,10 @@ export const fetchCashSessions = async ({
     }
 
     return rawSessions.map((row) => {
-      const mov = movementsBySession[row.session_id] || { manualIn: 0, manualOut: 0 };
+      const mov = movementsBySession[row.session_id] || {
+        manualIn: 0,
+        manualOut: 0,
+      };
       const opening = Number(row.opening_amount || 0);
       const cashSales = Number(row.cash_sales || 0);
       const expectedCash = opening + cashSales + mov.manualIn - mov.manualOut;
@@ -152,7 +157,11 @@ export const fetchCashSessions = async ({
         status: row.session_status,
         difference: row.difference,
         users: { id: row.user_id, username: row.username },
-        branches: { id: row.branch_id, name: row.branch_name, timezone: row.branch_timezone },
+        branches: {
+          id: row.branch_id,
+          name: row.branch_name,
+          timezone: row.branch_timezone,
+        },
         cash_cuts: row.cash_cuts || [],
         cashSales,
         cardSales: Number(row.card_sales || 0),
@@ -163,7 +172,10 @@ export const fetchCashSessions = async ({
       };
     });
   } catch (err) {
-    console.error("Error al consultar sesiones de caja en cashReportService:", err);
+    console.error(
+      "Error al consultar sesiones de caja en cashReportService:",
+      err
+    );
     throw err;
   }
 };
@@ -181,7 +193,8 @@ export const fetchCashMovements = async ({
   try {
     let query = supabase
       .from("cash_movements")
-      .select(`
+      .select(
+        `
         id,
         session_id,
         user_id,
@@ -199,7 +212,8 @@ export const fetchCashMovements = async ({
           name,
           timezone
         )
-      `)
+      `
+      )
       .order("created_at", { ascending: false });
 
     if (branchId && branchId !== "ALL") {
@@ -224,7 +238,10 @@ export const fetchCashMovements = async ({
 
     return data || [];
   } catch (err) {
-    console.error("Error al consultar movimientos de caja en cashReportService:", err);
+    console.error(
+      "Error al consultar movimientos de caja en cashReportService:",
+      err
+    );
     throw err;
   }
 };
@@ -240,7 +257,8 @@ export const fetchPaymentMethodsSummary = async ({
   try {
     let query = supabase
       .from("sale_payments")
-      .select(`
+      .select(
+        `
         id,
         sale_id,
         payment_method_id,
@@ -257,7 +275,8 @@ export const fetchPaymentMethodsSummary = async ({
           status,
           created_at
         )
-      `)
+      `
+      )
       .in("sales.status", ["completed", "partial_refund"]);
 
     if (branchId && branchId !== "ALL") {
@@ -266,7 +285,9 @@ export const fetchPaymentMethodsSummary = async ({
 
     const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
     if (startIso && endIso) {
-      query = query.gte("sales.created_at", startIso).lte("sales.created_at", endIso);
+      query = query
+        .gte("sales.created_at", startIso)
+        .lte("sales.created_at", endIso);
     }
 
     const { data, error } = await query.limit(15000);
@@ -297,7 +318,10 @@ export const fetchPaymentMethodsSummary = async ({
 
     return Object.values(summaryMap).sort((a, b) => b.amount - a.amount);
   } catch (err) {
-    console.error("Error al obtener resumen de métodos de pago en cashReportService:", err);
+    console.error(
+      "Error al obtener resumen de métodos de pago en cashReportService:",
+      err
+    );
     return [];
   }
 };

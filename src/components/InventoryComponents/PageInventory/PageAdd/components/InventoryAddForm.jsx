@@ -67,9 +67,7 @@ const InventoryAddForm = ({
   return (
     <div className={styles.body} ref={bodyRef}>
       <div className={styles.formRow}>
-        <label className={styles.label}>
-          Nombre del producto
-        </label>
+        <label className={styles.label}>Nombre del producto</label>
 
         <input
           className={styles.input}
@@ -81,9 +79,7 @@ const InventoryAddForm = ({
       </div>
 
       <div className={styles.formRow}>
-        <label className={styles.label}>
-          Inventario actual
-        </label>
+        <label className={styles.label}>Inventario actual</label>
 
         <input
           className={styles.input}
@@ -95,9 +91,7 @@ const InventoryAddForm = ({
       </div>
 
       <div className={styles.formRow}>
-        <label className={styles.label}>
-          Cantidad
-        </label>
+        <label className={styles.label}>Cantidad</label>
 
         <input
           ref={quantityInputRef}
@@ -114,9 +108,7 @@ const InventoryAddForm = ({
       </div>
 
       <div className={styles.formRow}>
-        <label className={styles.label}>
-          Nuevo inventario
-        </label>
+        <label className={styles.label}>Nuevo inventario</label>
 
         <input
           className={styles.input}
@@ -128,9 +120,7 @@ const InventoryAddForm = ({
       </div>
 
       <div className={styles.formRow}>
-        <label className={styles.label}>
-          Precio venta
-        </label>
+        <label className={styles.label}>Precio venta</label>
 
         <input
           className={styles.input}

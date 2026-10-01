@@ -10,14 +10,10 @@ const InventoryDetailRow = ({
     <tr>
       <td colSpan={7} className={styles.detailCell}>
         {loading && (
-          <div className={styles.info}>
-            Cargando otras sucursales...
-          </div>
+          <div className={styles.info}>Cargando otras sucursales...</div>
         )}
 
-        {!loading && !!error && (
-          <div className={styles.error}>{error}</div>
-        )}
+        {!loading && !!error && <div className={styles.error}>{error}</div>}
 
         {!loading && !error && detailRows.length === 0 && (
           <div className={styles.info}>
@@ -53,9 +49,7 @@ const InventoryDetailRow = ({
 
                     <td>{Number(detail?.max_stock ?? 0) || 0}</td>
 
-                    <td>
-                      {detail?.is_active ? "Activo" : "Inactivo"}
-                    </td>
+                    <td>{detail?.is_active ? "Activo" : "Inactivo"}</td>
                   </tr>
                 );
               })}

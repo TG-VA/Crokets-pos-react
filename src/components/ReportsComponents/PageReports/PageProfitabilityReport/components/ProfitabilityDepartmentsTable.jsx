@@ -17,14 +17,54 @@ import PaginationBar from "../../../../../components/PaginationBar/PaginationBar
 import tagIcon from "../../../../../assets/icons/tag-solid-full.svg";
 
 const DEPT_COLUMNS = [
-  { key: "name", label: "Departamento", colClass: "colDeptName", align: "left" },
-  { key: "variety", label: "Variedad Prod.", colClass: "colDeptVariedad", align: "center" },
-  { key: "units", label: "Unidades", colClass: "colDeptUnits", align: "center" },
-  { key: "revenue", label: "Ingreso Total", colClass: "colDeptRevenue", align: "right" },
-  { key: "cost", label: "Costo Total", colClass: "colDeptCost", align: "right" },
-  { key: "profit", label: "Utilidad Bruta", colClass: "colDeptProfit", align: "right" },
-  { key: "margin", label: "Margen", colClass: "colDeptMargin", align: "center" },
-  { key: "contribution", label: "% Contribución", colClass: "colDeptContrib", align: "center" },
+  {
+    key: "name",
+    label: "Departamento",
+    colClass: "colDeptName",
+    align: "left",
+  },
+  {
+    key: "variety",
+    label: "Variedad Prod.",
+    colClass: "colDeptVariedad",
+    align: "center",
+  },
+  {
+    key: "units",
+    label: "Unidades",
+    colClass: "colDeptUnits",
+    align: "center",
+  },
+  {
+    key: "revenue",
+    label: "Ingreso Total",
+    colClass: "colDeptRevenue",
+    align: "right",
+  },
+  {
+    key: "cost",
+    label: "Costo Total",
+    colClass: "colDeptCost",
+    align: "right",
+  },
+  {
+    key: "profit",
+    label: "Utilidad Bruta",
+    colClass: "colDeptProfit",
+    align: "right",
+  },
+  {
+    key: "margin",
+    label: "Margen",
+    colClass: "colDeptMargin",
+    align: "center",
+  },
+  {
+    key: "contribution",
+    label: "% Contribución",
+    colClass: "colDeptContrib",
+    align: "center",
+  },
 ];
 
 const SORT_GETTERS = {
@@ -125,7 +165,8 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
           </div>
           <h4 className={styles.emptyTitle}>Sin departamentos registrados</h4>
           <p className={styles.emptyDescription}>
-            No se encontraron ventas asociadas a departamentos en el rango seleccionado.
+            No se encontraron ventas asociadas a departamentos en el rango
+            seleccionado.
           </p>
         </div>
       ) : (
@@ -144,14 +185,14 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
                       col.align === "center"
                         ? styles.alignCenter
                         : col.align === "right"
-                        ? styles.alignRight
-                        : "";
+                          ? styles.alignRight
+                          : "";
                     const contentClass =
                       col.align === "center"
                         ? styles.thContentCenter
                         : col.align === "right"
-                        ? styles.thContentRight
-                        : styles.thContent;
+                          ? styles.thContentRight
+                          : styles.thContent;
 
                     return (
                       <th
@@ -200,8 +241,8 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
                             d.grossProfit > 0
                               ? styles.profitValue
                               : d.grossProfit < 0
-                              ? styles.lossValue
-                              : styles.boldValue
+                                ? styles.lossValue
+                                : styles.boldValue
                           }
                         >
                           {formatCurrency(d.grossProfit)}
@@ -247,7 +288,9 @@ const ProfitabilityDepartmentsTable = ({ departments = [] }) => {
                     </span>
                   </td>
                   <td className={styles.alignCenter}>
-                    <span className={styles.boldValue}>{totals.variety} art.</span>
+                    <span className={styles.boldValue}>
+                      {totals.variety} art.
+                    </span>
                   </td>
                   <td className={styles.alignCenter}>
                     <span className={styles.boldValue}>

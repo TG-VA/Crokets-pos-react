@@ -94,7 +94,9 @@ describe("inventoryReportService", () => {
       expect(supabase.rpc).toHaveBeenCalledWith("get_inventory_report_data", {
         p_branch_id: null,
       });
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
+        100000
+      );
       expect(result.items).toEqual([]);
       expect(result.kpis).toMatchObject({
         totalCostValuation: 0,
@@ -111,21 +113,23 @@ describe("inventoryReportService", () => {
     });
 
     it("mapea filas a items con estimatedInvestment calculado en cliente", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({ product_id: "p1" }),
-          inventoryRow({
-            product_id: "p2",
-            status: "low",
-            status_label: "Stock Bajo",
-            stock: 2,
-            total_cost: 60,
-            total_sale: 90,
-            suggested_qty: 10,
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({ product_id: "p1" }),
+            inventoryRow({
+              product_id: "p2",
+              status: "low",
+              status_label: "Stock Bajo",
+              stock: 2,
+              total_cost: 60,
+              total_sale: 90,
+              suggested_qty: 10,
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -154,19 +158,21 @@ describe("inventoryReportService", () => {
     });
 
     it("aplica defaults para campos ausentes", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({
-            barcode: null,
-            product_name: null,
-            department_name: null,
-            stock: null,
-            total_cost: null,
-            total_sale: null,
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({
+              barcode: null,
+              product_name: null,
+              department_name: null,
+              stock: null,
+              total_cost: null,
+              total_sale: null,
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const [item] = (await fetchInventoryReportData("ALL")).items;
 
@@ -180,44 +186,46 @@ describe("inventoryReportService", () => {
     });
 
     it("consolida KPIs excluyendo inventario no controlado y sin stock", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({
-            product_id: "p-optimal",
-            status: "optimal",
-            stock: 20,
-            total_cost: 600,
-            total_sale: 900,
-            suggested_qty: 0,
-          }),
-          inventoryRow({
-            product_id: "p-low",
-            status: "low",
-            stock: 2,
-            total_cost: 60,
-            total_sale: 90,
-            suggested_qty: 10,
-          }),
-          inventoryRow({
-            product_id: "p-exhausted",
-            status: "exhausted",
-            stock: 0,
-            total_cost: 0,
-            total_sale: 0,
-            suggested_qty: 15,
-            cost_price: 20,
-          }),
-          inventoryRow({
-            product_id: "p-untracked",
-            tracks_inventory: false,
-            status: "optimal",
-            stock: 5,
-            total_cost: 50,
-            total_sale: 80,
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({
+              product_id: "p-optimal",
+              status: "optimal",
+              stock: 20,
+              total_cost: 600,
+              total_sale: 900,
+              suggested_qty: 0,
+            }),
+            inventoryRow({
+              product_id: "p-low",
+              status: "low",
+              stock: 2,
+              total_cost: 60,
+              total_sale: 90,
+              suggested_qty: 10,
+            }),
+            inventoryRow({
+              product_id: "p-exhausted",
+              status: "exhausted",
+              stock: 0,
+              total_cost: 0,
+              total_sale: 0,
+              suggested_qty: 15,
+              cost_price: 20,
+            }),
+            inventoryRow({
+              product_id: "p-untracked",
+              tracks_inventory: false,
+              status: "optimal",
+              stock: 5,
+              total_cost: 50,
+              total_sale: 80,
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -236,27 +244,29 @@ describe("inventoryReportService", () => {
     });
 
     it("agrupa por departamento y ordena por valor al costo", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({
-            product_id: "p1",
-            department_id: "dp1",
-            department_name: "Alimentos",
-            stock: 20,
-            total_cost: 600,
-            total_sale: 900,
-          }),
-          inventoryRow({
-            product_id: "p2",
-            department_id: "dp2",
-            department_name: "Farmacia",
-            stock: 10,
-            total_cost: 100,
-            total_sale: 150,
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({
+              product_id: "p1",
+              department_id: "dp1",
+              department_name: "Alimentos",
+              stock: 20,
+              total_cost: 600,
+              total_sale: 900,
+            }),
+            inventoryRow({
+              product_id: "p2",
+              department_id: "dp2",
+              department_name: "Farmacia",
+              stock: 10,
+              total_cost: 100,
+              total_sale: 150,
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -267,36 +277,38 @@ describe("inventoryReportService", () => {
     });
 
     it("separa reorderSugerencias y productos agotados", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({
-            product_id: "p-optimal",
-            status: "optimal",
-            stock: 20,
-            suggested_qty: 0,
-          }),
-          inventoryRow({
-            product_id: "p-low",
-            status: "low",
-            stock: 2,
-            suggested_qty: 10,
-          }),
-          inventoryRow({
-            product_id: "p-exhausted",
-            status: "exhausted",
-            stock: 0,
-            suggested_qty: 15,
-          }),
-          inventoryRow({
-            product_id: "p-untracked-low",
-            tracks_inventory: false,
-            status: "low",
-            stock: 1,
-            suggested_qty: 5,
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({
+              product_id: "p-optimal",
+              status: "optimal",
+              stock: 20,
+              suggested_qty: 0,
+            }),
+            inventoryRow({
+              product_id: "p-low",
+              status: "low",
+              stock: 2,
+              suggested_qty: 10,
+            }),
+            inventoryRow({
+              product_id: "p-exhausted",
+              status: "exhausted",
+              stock: 0,
+              suggested_qty: 15,
+            }),
+            inventoryRow({
+              product_id: "p-untracked-low",
+              tracks_inventory: false,
+              status: "low",
+              stock: 1,
+              suggested_qty: 5,
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -310,26 +322,28 @@ describe("inventoryReportService", () => {
     });
 
     it("genera departamentos unicos para el filtro", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: [
-          inventoryRow({
-            product_id: "p1",
-            department_id: "dp1",
-            department_name: "Alimentos",
-          }),
-          inventoryRow({
-            product_id: "p2",
-            department_id: "dp2",
-            department_name: "Farmacia",
-          }),
-          inventoryRow({
-            product_id: "p3",
-            department_id: "dp1",
-            department_name: "Alimentos",
-          }),
-        ],
-        error: null,
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: [
+            inventoryRow({
+              product_id: "p1",
+              department_id: "dp1",
+              department_name: "Alimentos",
+            }),
+            inventoryRow({
+              product_id: "p2",
+              department_id: "dp2",
+              department_name: "Farmacia",
+            }),
+            inventoryRow({
+              product_id: "p3",
+              department_id: "dp1",
+              department_name: "Alimentos",
+            }),
+          ],
+          error: null,
+        })
+      );
 
       const result = await fetchInventoryReportData("ALL");
 
@@ -341,10 +355,12 @@ describe("inventoryReportService", () => {
 
     it("relanza el error si la RPC falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockReturnValue(rpcBuilder({
-        data: null,
-        error: { message: "boom" },
-      }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({
+          data: null,
+          error: { message: "boom" },
+        })
+      );
 
       await expect(fetchInventoryReportData("ALL")).rejects.toMatchObject({
         message: "boom",

@@ -1,6 +1,4 @@
-import {
-  useEffect,
-} from "react";
+import { useEffect } from "react";
 
 const useInventorySearchKeyboard = ({
   isOpen = false,
@@ -13,42 +11,28 @@ const useInventorySearchKeyboard = ({
   onSelect,
 } = {}) => {
   useEffect(() => {
-    if (
-      selectedIndex < 0 ||
-      !resultsListRef?.current
-    ) {
+    if (selectedIndex < 0 || !resultsListRef?.current) {
       return;
     }
 
-    const items =
-      resultsListRef.current
-        .querySelectorAll(
-          "[data-search-result]"
-        );
+    const items = resultsListRef.current.querySelectorAll(
+      "[data-search-result]"
+    );
 
-    items[
-      selectedIndex
-    ]?.scrollIntoView({
+    items[selectedIndex]?.scrollIntoView({
       behavior: "smooth",
       block: "nearest",
       inline: "nearest",
     });
-  }, [
-    resultsListRef,
-    selectedIndex,
-  ]);
+  }, [resultsListRef, selectedIndex]);
 
   useEffect(() => {
     if (!isOpen) {
       return undefined;
     }
 
-    const handleKeyDown = (
-      event
-    ) => {
-      if (
-        event.key === "Escape"
-      ) {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
 
@@ -56,101 +40,61 @@ const useInventorySearchKeyboard = ({
         return;
       }
 
-      if (
-        event.key ===
-        "ArrowDown"
-      ) {
+      if (event.key === "ArrowDown") {
         event.preventDefault();
 
-        setSelectedIndex?.(
-          (currentIndex) => {
-            if (
-              searchResults.length ===
-              0
-            ) {
-              return -1;
-            }
-
-            if (
-              currentIndex <
-              searchResults.length -
-                1
-            ) {
-              return (
-                currentIndex + 1
-              );
-            }
-
-            return currentIndex;
+        setSelectedIndex?.((currentIndex) => {
+          if (searchResults.length === 0) {
+            return -1;
           }
-        );
+
+          if (currentIndex < searchResults.length - 1) {
+            return currentIndex + 1;
+          }
+
+          return currentIndex;
+        });
 
         return;
       }
 
-      if (
-        event.key === "ArrowUp"
-      ) {
+      if (event.key === "ArrowUp") {
         event.preventDefault();
 
-        setSelectedIndex?.(
-          (currentIndex) => {
-            if (
-              searchResults.length ===
-              0
-            ) {
-              return -1;
-            }
-
-            return currentIndex > 0
-              ? currentIndex - 1
-              : 0;
+        setSelectedIndex?.((currentIndex) => {
+          if (searchResults.length === 0) {
+            return -1;
           }
-        );
+
+          return currentIndex > 0 ? currentIndex - 1 : 0;
+        });
 
         return;
       }
 
-      if (
-        event.key !== "Enter"
-      ) {
+      if (event.key !== "Enter") {
         return;
       }
 
       event.preventDefault();
 
-      const product =
-        searchResults[
-          selectedIndex
-        ];
+      const product = searchResults[selectedIndex];
 
       if (!product) {
         return;
       }
 
-      if (
-        isAlreadySelected?.(
-          product
-        )
-      ) {
+      if (isAlreadySelected?.(product)) {
         return;
       }
 
       onSelect?.(product);
     };
 
-    document.addEventListener(
-      "keydown",
-      handleKeyDown,
-      true
-    );
+    document.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown,
-        true
-      );
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [
     isAlreadySelected,

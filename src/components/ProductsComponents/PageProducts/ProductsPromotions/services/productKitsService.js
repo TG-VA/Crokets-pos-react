@@ -3,17 +3,23 @@ import { supabase } from "../../../../../lib/supabaseClient";
 export const fetchKits = async () => {
   const { data, error } = await supabase
     .from("product_kits")
-    .select(`
+    .select(
+      `
       id, kit_product_id, is_active, created_at, updated_at,
       products:product_kits_kit_product_id_fkey (id, barcode, name, sale_price, status, is_global, max_kits_per_sale)
-    `)
+    `
+    )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   return (data || []).filter((kit) => kit.products?.status === true);
 };
 
-export const checkKitDuplicates = async (cleanBarcode, cleanDescription, currentProductId = null) => {
+export const checkKitDuplicates = async (
+  cleanBarcode,
+  cleanDescription,
+  currentProductId = null
+) => {
   const { data: duplicatedBarcode, error: barcodeError } = await supabase
     .from("products")
     .select("id")
@@ -58,7 +64,11 @@ export const createNewKitTransaction = async (kitData, selectedProducts) => {
   return true;
 };
 
-export const updateKitTransaction = async (editingKit, kitData, selectedProducts) => {
+export const updateKitTransaction = async (
+  editingKit,
+  kitData,
+  selectedProducts
+) => {
   const { error } = await supabase.rpc("update_kit_transaction", {
     p_kit_id: editingKit.id,
     p_kit_product_id: editingKit.kit_product_id,
@@ -81,7 +91,9 @@ export const updateKitTransaction = async (editingKit, kitData, selectedProducts
 export const fetchKitItems = async (kitId) => {
   const { data, error } = await supabase
     .from("product_kit_items")
-    .select(`id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit)`)
+    .select(
+      `id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit)`
+    )
     .eq("kit_id", kitId)
     .order("created_at", { ascending: true });
 
@@ -91,7 +103,10 @@ export const fetchKitItems = async (kitId) => {
 
 export const toggleKitStatus = async (kitId, nextStatus) => {
   const now = new Date().toISOString();
-  const { error } = await supabase.from("product_kits").update({ is_active: nextStatus, updated_at: now }).eq("id", kitId);
+  const { error } = await supabase
+    .from("product_kits")
+    .update({ is_active: nextStatus, updated_at: now })
+    .eq("id", kitId);
   if (error) throw error;
   return true;
 };
@@ -109,7 +124,9 @@ export const softDeleteKitTransaction = async (kitId, kitProductId) => {
 export const fetchActiveNonKitProducts = async () => {
   const { data, error } = await supabase
     .from("products")
-    .select(`id, barcode, name, cost_price, sale_price, status, is_kit, tracks_inventory`)
+    .select(
+      `id, barcode, name, cost_price, sale_price, status, is_kit, tracks_inventory`
+    )
     .eq("status", true)
     .eq("is_kit", false)
     .order("name", { ascending: true });

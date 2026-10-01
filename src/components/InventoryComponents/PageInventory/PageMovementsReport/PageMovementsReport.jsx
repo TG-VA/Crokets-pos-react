@@ -78,24 +78,16 @@ const PageMovementsReport = () => {
     endDateKey,
   });
 
-  const {
-    columns,
-    columnWidths,
-    isResizing,
-    startResize,
-  } = useResizableColumns();
+  const { columns, columnWidths, isResizing, startResize } =
+    useResizableColumns();
 
   const activeFilterCount = useMemo(() => {
-    return Object.values(facetFilters).filter(
-      (selection) => selection !== null
-    ).length;
+    return Object.values(facetFilters).filter((selection) => selection !== null)
+      .length;
   }, [facetFilters]);
 
   const handleExportMovements = async () => {
-    if (
-      exporting ||
-      filteredRows.length === 0
-    ) {
+    if (exporting || filteredRows.length === 0) {
       return;
     }
 
@@ -116,9 +108,7 @@ const PageMovementsReport = () => {
         exportException
       );
 
-      setExportError(
-        "No se pudo exportar el reporte de movimientos."
-      );
+      setExportError("No se pudo exportar el reporte de movimientos.");
     } finally {
       setExporting(false);
     }
@@ -129,17 +119,14 @@ const PageMovementsReport = () => {
     setExportError("");
   };
 
-  const displayedError =
-    exportError || error;
+  const displayedError = exportError || error;
 
   return (
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.header}>
           <div className={styles.headingBlock}>
-            <h1 className={styles.title}>
-              Reporte de movimientos
-            </h1>
+            <h1 className={styles.title}>Reporte de movimientos</h1>
 
             <p className={styles.subtitle}>
               Consulta entradas, salidas, ajustes, ventas y cambios de
@@ -170,9 +157,7 @@ const PageMovementsReport = () => {
           <div className={styles.filterSummary}>
             <span
               className={`${styles.filterStatusBadge} ${
-                activeFilterCount > 0
-                  ? styles.filterStatusBadgeActive
-                  : ""
+                activeFilterCount > 0 ? styles.filterStatusBadgeActive : ""
               }`}
             >
               {activeFilterCount === 0
@@ -197,32 +182,23 @@ const PageMovementsReport = () => {
 
         <div className={styles.meta}>
           <span>
-            Sucursal seleccionada:{" "}
-            <strong>{selectedBranchLabel}</strong>
+            Sucursal seleccionada: <strong>{selectedBranchLabel}</strong>
           </span>
 
-          <span className={styles.metaDivider}>
-            ·
-          </span>
+          <span className={styles.metaDivider}>·</span>
 
           <span>
-            Mostrando{" "}
-            <strong>{filteredRows.length}</strong>{" "}
-            de <strong>{periodRowsCount}</strong>{" "}
-            movimiento(s)
+            Mostrando <strong>{filteredRows.length}</strong> de{" "}
+            <strong>{periodRowsCount}</strong> movimiento(s)
           </span>
         </div>
 
         {loading && rows.length === 0 ? (
-          <div className={styles.info}>
-            Cargando movimientos...
-          </div>
+          <div className={styles.info}>Cargando movimientos...</div>
         ) : null}
 
         {displayedError ? (
-          <div className={styles.error}>
-            {displayedError}
-          </div>
+          <div className={styles.error}>{displayedError}</div>
         ) : null}
 
         <MovementsReportTable
@@ -237,33 +213,15 @@ const PageMovementsReport = () => {
           openFacet={openFacet}
           onToggleFacet={toggleFacet}
           onStartResize={startResize}
-          getVisibleFacetOptions={
-            getVisibleFacetOptions
-          }
-          setFacetSearchValue={
-            setFacetSearchValue
-          }
-          clearFacetSearch={
-            clearFacetSearch
-          }
-          showAllFacetValues={
-            showAllFacetValues
-          }
-          showNoFacetValues={
-            showNoFacetValues
-          }
-          toggleFacetValue={
-            toggleFacetValue
-          }
-          isFacetValueSelected={
-            isFacetValueSelected
-          }
-          getFacetActiveCount={
-            getFacetActiveCount
-          }
-          isFacetActive={
-            isFacetActive
-          }
+          getVisibleFacetOptions={getVisibleFacetOptions}
+          setFacetSearchValue={setFacetSearchValue}
+          clearFacetSearch={clearFacetSearch}
+          showAllFacetValues={showAllFacetValues}
+          showNoFacetValues={showNoFacetValues}
+          toggleFacetValue={toggleFacetValue}
+          isFacetValueSelected={isFacetValueSelected}
+          getFacetActiveCount={getFacetActiveCount}
+          isFacetActive={isFacetActive}
         />
       </div>
     </div>

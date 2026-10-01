@@ -91,12 +91,12 @@ instalador. Detectado al verificar esta rama.
 Varios archivos concentran demasiada responsabilidad (UI + lógica de negocio + llamadas a datos)
 en un solo componente:
 
-| Archivo                                                                                    | Líneas | Nota                                                               |
-| ------------------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------ |
-| `src/pages/CashCut/CashCut.jsx`                                                            | ~372   | orquesta hooks + vistas; refactor #3 en curso                      |
-| `src/utils/ticket/`                                                                        | ~1710  | `ticketBuilder` descompuesto en 8 módulos puros + orquestador      |
-| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx`                    | 280    | refactor Fase 3 completado (servicios + hook + vistas)             |
-| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx`         | 177    | refactor completado (21 sep 2026, rama `refactor/products-modify`) |
+| Archivo                                                                                    | Líneas | Nota                                                                                                                 |
+| ------------------------------------------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| `src/pages/CashCut/CashCut.jsx`                                                            | ~372   | orquesta hooks + vistas; refactor #3 en curso                                                                        |
+| `src/utils/ticket/`                                                                        | ~1710  | `ticketBuilder` descompuesto en 8 módulos puros + orquestador                                                        |
+| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx`                    | 280    | refactor Fase 3 completado (servicios + hook + vistas)                                                               |
+| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx`         | 177    | refactor completado (21 sep 2026, rama `refactor/products-modify`)                                                   |
 | `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 113    | refactor completado (23 sep 2026, rama `refactor/products-promotions-modularization`; reducido de 346 a <120 líneas) |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
@@ -1697,11 +1697,11 @@ deuda conocida:
 dos frentes. Antes de escribir código se midió qué elimina realmente el re-render en cascada, porque la regla
 admite atajos que no lo hacen:
 
-| variante | ESLint | pasadas de render |
-| --- | --- | --- |
-| `useEffect(() => { load() })` (estado actual) | error | 2 |
+| variante                                                 | ESLint    | pasadas de render  |
+| -------------------------------------------------------- | --------- | ------------------ |
+| `useEffect(() => { load() })` (estado actual)            | error     | 2                  |
 | `useEffect(() => { const r = async () => load(); r() })` | sin error | **2 (sin cambio)** |
-| `isLoading` inicializado en `true` y sin reset síncrono | sin error | 1 |
+| `isLoading` inicializado en `true` y sin reset síncrono  | sin error | 1                  |
 
 La segunda fila es la trampa: envolver el cuerpo del efecto en una función async interna silencia la regla y
 deja el re-render en cascada intacto, porque la función se ejecuta de forma síncrona hasta el primer `await`.
@@ -1718,21 +1718,21 @@ una propiedad más estrecha y la memoización no se podía preservar. El cambio 
 
 **Punto 5 (40 de 52 ocurrencias) resueltas en esta rama**, con cuatro patrones:
 
-1. *Ajuste durante el render.* Los reinicios que solo existían para compensar un efecto (limpiar un modal al
+1. _Ajuste durante el render._ Los reinicios que solo existían para compensar un efecto (limpiar un modal al
    abrirlo, repoblar un formulario, recortar la página o el índice seleccionado) se resuelven ahora con
    `useDidChange`, que compara la clave con la del render anterior. React descarta la salida y vuelve a
    renderizar antes de confirmarla, así que se evita el segundo render comprometido y el fotograma con el
    estado anterior. Donde el efecto observaba un objeto, se pasa a observar su id (`usePartialReturn`,
    `useDepartments`) para no reajustar cuando el padre recrea el objeto.
-2. *Estado derivado puro.* En `PageReport/hooks/useInventoryReport.js` la sucursal efectiva se deriva
+2. _Estado derivado puro._ En `PageReport/hooks/useInventoryReport.js` la sucursal efectiva se deriva
    (`branchOverride || branch?.id`) en lugar de sincronizar estado. En `usePagination.js` la página se recorta
    durante el render y se expone `safePage`, con lo que `startIndex`, `endIndex` y `pageItems` nunca quedan
    fuera de rango.
-3. *Carga derivada de la clave de petición.* `useRequestStatus` sustituye al `setLoading(true)` síncrono:
+3. _Carga derivada de la clave de petición._ `useRequestStatus` sustituye al `setLoading(true)` síncrono:
    guarda solo la clave ya resuelta y `isLoading` es la comparación contra la clave pedida, de modo que el
    spinner aparece en la misma pasada de render en la que cambian los filtros. El error se expone también de
    forma derivada para que el de una petición anterior no se vea mientras corre la nueva.
-4. *Orquestación de la carga en la capa de servicios.* La regla marca cualquier llamada desde el cuerpo de un
+4. _Orquestación de la carga en la capa de servicios._ La regla marca cualquier llamada desde el cuerpo de un
    efecto a una función **del mismo archivo** que termine en `setState`, incluso con todas las escrituras
    después del `await`. Por eso la carga de `PageInventoryReport` se movió a `loadInventoryReportData` en
    `inventoryReportService`, que entrega el resultado por callbacks: el efecto no escribe estado y las
@@ -1746,8 +1746,7 @@ identidad del objeto en vez de sus datos.
 **Cierre del punto 5 (52 → 0).** Las 29 ocurrencias que quedaban se resolvieron replicando los cuatro patrones
 anteriores, con una variante nueva para las dos que exigían una decisión de producto:
 
-5. *Lectura síncrona y caso sin petición.* `useSalesDraft.js` y `CashRegister.jsx` no encajaban en los patrones 1 a
-   4. En `useSalesDraft` la decisión de qué hacer con el borrador persistido se aísla en `readDraftRestorePlan`, una
+5. _Lectura síncrona y caso sin petición._ `useSalesDraft.js` y `CashRegister.jsx` no encajaban en los patrones 1 a 4. En `useSalesDraft` la decisión de qué hacer con el borrador persistido se aísla en `readDraftRestorePlan`, una
    función pura que solo lee `localStorage`/`sessionStorage` y devuelve qué hay que mostrar; el render aplica ese
    plan con `useDidChange` y el efecto se queda con los efectos de verdad (avisar al padre, marcar la sesión como
    viva, abrir el modal de recuperación). En `CashRegister` el caso "no hay sucursal ni usuario, luego no hay
@@ -1780,8 +1779,6 @@ registrado se sigue viendo de inmediato sin la pasada extra síncrona.
 `useDidChange` y `useRequestStatus`); `npm run build:frontend` con EXIT 0; conteo de errores de ESLint
 **69 → 0** sobre 581 archivos. Quedan 583 warnings, todos preexistentes y fuera del alcance de este ítem
 (siguen en #8 y #57).
-
-
 
 Nota sobre cobertura: el error de profundidad de importación en `useSalesCartState.js` (este commit lo corrige)
 no lo detectó la suite, porque ningún test alcanza ese archivo. `npm run build:frontend` sí recorre todo el
@@ -1890,13 +1887,13 @@ con ΔE2000 (≈2.3 es el umbral de percepción). El color heredado se resolvió
 
 El primer pase reveló cuatro desviaciones reales, dos de ellas por copy-paste evidente:
 
-| Ubicación | Color original | Cadena entregada | Render | ΔE00 |
-|---|---|---|---|---|
-| `AppModal .iconGlyph` | `#15803d` | `invert(20%) sepia(36%) … hue-rotate(121deg)` | `#0b4a3b` | 21.3 |
-| `InvoicesHistory .clearSearchIcon` | `#333333` | `brightness(0) invert(0.45)` | `#737373` | 22.3 |
-| `InvoicesHistory .closeIcon` | `#333333` | `brightness(0) invert(0.25)` | `#404040` | 4.2 |
-| `ProductsList .clearSearchIcon` | `#64748b` | `brightness(0) invert(0.45)` | `#737373` | 10.9 |
-| `ProductsList … :hover` | `#fc8913` | `invert(68%) sepia(93%) … hue-rotate(346deg)` | `#edaa24` | 13.7 |
+| Ubicación                          | Color original | Cadena entregada                              | Render    | ΔE00 |
+| ---------------------------------- | -------------- | --------------------------------------------- | --------- | ---- |
+| `AppModal .iconGlyph`              | `#15803d`      | `invert(20%) sepia(36%) … hue-rotate(121deg)` | `#0b4a3b` | 21.3 |
+| `InvoicesHistory .clearSearchIcon` | `#333333`      | `brightness(0) invert(0.45)`                  | `#737373` | 22.3 |
+| `InvoicesHistory .closeIcon`       | `#333333`      | `brightness(0) invert(0.25)`                  | `#404040` | 4.2  |
+| `ProductsList .clearSearchIcon`    | `#64748b`      | `brightness(0) invert(0.45)`                  | `#737373` | 10.9 |
+| `ProductsList … :hover`            | `#fc8913`      | `invert(68%) sepia(93%) … hue-rotate(346deg)` | `#edaa24` | 13.7 |
 
 Los otros 8 iconos (7 cierres blancos y `InvoicesPending .clearSearchIcon` sobre `#666666`) ya
 renderizaban con ΔE00 = 0. Las cuatro desviaciones se corrigieron buscando por búsqueda aleatoria
@@ -1945,12 +1942,12 @@ JavaScript, declarando ΔE00 de 0.02 a 0.58. Ese simulador no estaba validado co
 renderizado y sus cifras no correspondían a lo que el navegador pintaba. Medido sobre el CSS real
 renderizado en Chromium, la regresión era de otra magnitud:
 
-| Estado | Render real | Objetivo | ΔE00 real | ΔE00 declarado |
-| ------ | ----------- | -------- | --------- | --------------- |
-| `info` | `#005184` | `#075985` | 3.30 | 0.02 |
-| `success` | `#21823f` | `#15803d` | 1.04 | 0.58 |
-| `warning` | `#7e7012` | `#ea7600` | **29.19** | 0.14 |
-| `danger` | `#dc430d` | `#dc2626` | **8.76** | 0.11 |
+| Estado    | Render real | Objetivo  | ΔE00 real | ΔE00 declarado |
+| --------- | ----------- | --------- | --------- | -------------- |
+| `info`    | `#005184`   | `#075985` | 3.30      | 0.02           |
+| `success` | `#21823f`   | `#15803d` | 1.04      | 0.58           |
+| `warning` | `#7e7012`   | `#ea7600` | **29.19** | 0.14           |
+| `danger`  | `#dc430d`   | `#dc2626` | **8.76**  | 0.11           |
 
 `warning` se pintaba de oliva oscuro en lugar de naranja y `danger` de rojo-naranja en lugar de rojo,
 muy por encima del umbral de percepción (~2.3).
@@ -1964,12 +1961,12 @@ este párrafo afirmaba que en `main` los cuatro glifos eran ΔE00 = 0.00 y que e
 "empeoraba dos de los cuatro estados". Reconstruyendo `main` y el commit `68a6a52` y midiendo ambos
 en el motor, la línea base era mixta y la regresión afectaba a tres estados, no a dos:
 
-| Estado | `main` (9d2c3e4) | `68a6a52` (con `filter`) | HEAD (con máscara) |
-| ------ | ---------------- | ------------------------ | ----------------- |
-| `info` | 0.00 — glifo de texto | 3.30 | **0.00** |
-| `success` | 1.04 — ya era `<img>` con `filter` | 1.04 | **0.00** |
-| `warning` | 0.00 — glifo de texto | 29.19 | **0.00** |
-| `danger` | 0.00 — glifo de texto | 8.76 | **0.00** |
+| Estado    | `main` (9d2c3e4)                   | `68a6a52` (con `filter`) | HEAD (con máscara) |
+| --------- | ---------------------------------- | ------------------------ | ------------------ |
+| `info`    | 0.00 — glifo de texto              | 3.30                     | **0.00**           |
+| `success` | 1.04 — ya era `<img>` con `filter` | 1.04                     | **0.00**           |
+| `warning` | 0.00 — glifo de texto              | 29.19                    | **0.00**           |
+| `danger`  | 0.00 — glifo de texto              | 8.76                     | **0.00**           |
 
 Es decir: en `main`, `info`, `warning` y `danger` eran texto que heredaba `color` del contenedor y por
 tanto eran exactos, mientras que `success` **ya usaba un `<img>` con cadena `filter`** y pintaba
@@ -1984,12 +1981,12 @@ animación de entrada), y da **ΔE00 = 0.00 en los cuatro estados**. Los tamaño
 propio navegador por `getComputedStyle` (25, 30, 32 y 32 px) y el `filter` computado resulta `none`
 en los cuatro:
 
-| Estado | Color plano medido | Objetivo | ΔE00 |
-| ------ | ------------------ | -------- | ----- |
-| `info` | `#075985` | `#075985` | 0.00 |
-| `success` | `#15803d` | `#15803d` | 0.00 |
-| `warning` | `#ea7600` | `#ea7600` | 0.00 |
-| `danger` | `#dc2626` | `#dc2626` | 0.00 |
+| Estado    | Color plano medido | Objetivo  | ΔE00 |
+| --------- | ------------------ | --------- | ---- |
+| `info`    | `#075985`          | `#075985` | 0.00 |
+| `success` | `#15803d`          | `#15803d` | 0.00 |
+| `warning` | `#ea7600`          | `#ea7600` | 0.00 |
+| `danger`  | `#dc2626`          | `#dc2626` | 0.00 |
 
 ---
 
@@ -2090,8 +2087,8 @@ ejemplo, `electron/preload.js`, `src/components/SalesComponents/services/salesTi
   los warnings de `no-unused-vars` bajaron de **564 a 187** y el total del repo de **583 a 206
   problemas, todos warnings y 0 errores**. `npx eslint .` sobre el diff de la rama queda en 0 errores.
 - Verificación de la premisa del ítem: `npm test` (84 archivos / 1,278 tests), `npm run
-  build:frontend` (EXIT 0) y `git diff --name-only origin/main | grep -E '\.(js|jsx|mjs|json|html|css)$'
-  | xargs -r npx prettier --check` en verde sobre el diff.
+build:frontend` (EXIT 0) y `git diff --name-only origin/main | grep -E '\.(js|jsx|mjs|json|html|css)$'
+| xargs -r npx prettier --check` en verde sobre el diff.
 
 **Deuda que queda (no bloqueante, registrada como #61):** con el paso ya funcional, el pipeline
 empezará a fallar la próxima vez que se toque un archivo que no cumpla Prettier en `main`. El
@@ -2101,51 +2098,112 @@ decisión tomada en esta fase fue **no** reformatear ninguno aquí: son archivos
 este arreglo de infraestructura y `git blame` atribuiría el reformateo a una línea funcional. Se
 corrigen en un commit `style:` dedicado cuando se toquen.
 
+> **Actualización (29 sep 2026):** esa deuda ya se saldó. #61 se resolvió con una barrida global en
+> la rama `style/global-prettier-format` (370 archivos reformateados, `npx prettier --check .` en 0
+> incidencias), precisamente en el commit `style:` dedicado que este párrafo dejó apuntado para no
+> mezclar el reformateo con líneas funcionales.
+
 ---
 
 ### 61. Archivos legacy que incumplen Prettier y bloquearán el CI cuando se toquen
 
-**Estado:** abierto (registrado 29 sep 2026, corregido en alcance el 29 sep 2026, rama
-`fix/ci-eslint-and-modal-icons`).
+**Estado:** Resuelto (registrado 29 sep 2026, corregido en alcance el 29 sep 2026, **resuelto 29 sep
+2026 en la rama `style/global-prettier-format`** con una barrida global).
 
 Consecuencia directa de resolver #60: el paso incremental de Prettier del CI ahora se ejecuta de
 verdad, así que cualquier archivo que se modifique debe cumplir `.prettierrc.json`.
 
-**Alcance real medido (no estimarse):** con `npx prettier --check .` sobre la rama, **370 archivos
-del repositorio incumplen Prettier**, de los cuales **355** matchean el filtro del paso incremental
-(`js|jsx|mjs|json|html|css`) y por lo tanto harían fallar el pipeline en cuanto se toquen. Los 15
-restantes son `.md` y `.MD`, que el filtro todavía no cubre. En `main` las cifras son 371 y 356
-respectivamente: esta rama solo mejoró el conteo en un archivo (`AppModal.jsx`, reformateado por
-obligación de #60).
+**Resolución:** barrida global en rama propia, tal como recomendaba el punto 3 de la recomendación
+original. `npx prettier --write .` sobre el repositorio completo, con `.prettierignore` respetado
+(`dist/`, `out/`, `release-builds/`, `node_modules/`, `supabase/.temp/`, `supabase/functions/`,
+`package-lock.json`).
+
+**Alcance realmente reformateado (medido, no estimado): 370 archivos**, exactamente los 370 que
+fallaban antes de la barrida, y ninguno más. Desglose por extensión: 195 `.js`, 131 `.jsx`, 27
+`.css`, 14 `.md`, 1 `.mjs`, 1 `.html`, 1 `.MD`. De ellos, 355 matchean el filtro del paso incremental
+del CI (`js|jsx|mjs|json|html|css`) y 15 son markdown. El diff total es de 21,484 inserciones y
+15,436 borrados, casi todos reindentaciones.
+
+El alcance reproduce las cifras medidas al registrar el ítem: 370 en la rama `fix/ci-eslint-and-modal-icons`
+y 371 en `main` (la diferencia de uno es `AppModal.jsx`, ya reformateado por obligación de #60). Esto
+confirma que la barrida no dejó ningún archivo atrás ni reformateó de más.
 
 > Nota de método (29 sep 2026): una versión anterior de este párrafo decía 371, 16 y 372. El error
 > fue contar como archivo la línea de resumen que Prettier emite al final (`Code style issues found
-> in 370 files.`), que no es una ruta. Al contar solo rutas reales, `355 + 15 = 370` cierra, y en
+in 370 files.`), que no es una ruta. Al contar solo rutas reales, `355 + 15 = 370` cierra, y en
 > `main` `356 + 15 = 371`. El número que decide el comportamiento del pipeline, 355, era correcto
 > desde el principio.
 
-Entre los 355 se encuentran los tres que motivaron el registro original, y que son los más probables
-de tocarse pronto por estar en el flujo de impresión y de historial de ventas:
+Entre los 355 se estaban los tres que motivaron el registro original, y que son los más probables
+de tocarse pronto por estar en el flujo de impresión y de historial de ventas. Los tres quedaron
+reformateados:
 
 - `electron/preload.js`
 - `src/components/SalesComponents/services/salesTicketService.js`
 - `src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js`
 
-**Impacto:** ninguno mientras no se toquen (el pipeline solo evalúa el diff), pero es alto en la
-práctica: **casi cualquier archivo de `src/` que se modifique hará fallar el PR por formato**, en
-archivos cuyo cambio funcional es independiente del estilo. No es un obstáculo que se pueda absorber
-PR a PR sin una barrida previa.
+**Impacto resuelto:** `npx prettier --check .` pasa a devolver `All matched files use Prettier code
+style!` con 0 incidencias. El paso incremental del CI ya no puede fallar por formato de un archivo
+legacy, y cualquier PR futuro que toque un archivo de `src/` no tiene que arrastrar un commit
+`style:` previo.
 
-**Recomendación:** antes de tocar funcionalidad en un archivo que ya falla, o como paso propio:
+**Salvaguarda de integridad funcional (lo importante de una barrida de este tamaño):** un cambio de
+espaciado y saltos de línea a 370 archivos no se puede dar por bueno con `git diff -w`, porque
+Prettier mueve tokens entre líneas y el diff por líneas sigue reportando diferencias. La verificación
+se hizo comparando el **AST**, no el texto:
 
-1. `npx prettier --write <archivo>` en un commit `style:` dedicado, sin cambios de comportamiento.
-2. Verificar con `npx prettier --check <archivo>` y confirmar que `npm test` (84 archivos / 1,278
-   tests) y `npm run build:frontend` siguen en verde, porque el reescritor solo cambia espaciado y
-   saltos de línea.
-3. A medio plazo, evaluar si conviene una barrida global en rama propia. Dado el volumen (355
-   archivos), es preferible a seguir acumulando PRs que fallan por formato. Debe decidirse con el
-   responsable antes de hacerlo, porque el diff de esa barrida sería grande y no encaja en un PR de
-   funcionalidad.
+- Se parsearon los 327 archivos `.js`/`.jsx`/`.mjs` de `HEAD` y del árbol de trabajo con `espree`
+  (el parser que usa el propio ESLint del proyecto) y se compararon los AST serializados sin datos
+  de posición. Resultado: **327 de 327 con AST idéntico**. Al comparar AST y no texto, las
+  diferencias que sí existen y son inertes quedan excluidas por construcción: los paréntesis que
+  Prettier añade alrededor de elementos JSX y las comas finales que agrega o quita
+  (`trailingComma: "es5"`) no son nodos del AST. No hay cambios de lógica de negocio, de imports ni
+  de contratos.
+- Para el texto JSX se comparó además el valor renderizado, con el algoritmo exacto de Babel
+  (`cleanJSXElementLiteralChild`), porque Prettier convierte un `{" "}` explícito en un espacio
+  literal del texto adyacente y viceversa. Ambas formas renderizan el mismo espacio, y la comparación
+  lo confirma archivo por archivo. Por el mismo motivo se ignoraron los nodos `JSXText` vacíos que
+  Prettier inserta al reflotar líneas: no renderizan nada.
+- Los 27 `.css` son equivalentes tras normalizar el estilo de comillas en `content:` y la escritura
+  de literales numéricos (`0.80rem` → `0.8rem`, mismo valor). `index.html` es equivalente salvo el
+  doctype, que Prettier pasa a minúsculas (`<!DOCTYPE html>` → `<!doctype html>`, sin efecto en
+  HTML5) y la eliminación de un espacio colgante.
+- Los 15 markdown son equivalentes salvo tres cambios, que se declaran aquí en vez de omitirse:
+  1. Marcadores de énfasis `*texto*` → `_texto_` y relleno de celdas de tablas. Renderizan igual.
+  2. `TEMPLATE_NUEVA_PAGINA.md`: el bloque de código de ejemplo pasa de comillas simples a dobles,
+     porque Prettier formatea el código incrustado en los bloques delimitados y
+     `.prettierrc.json` fija `singleQuote: false`. Ahora el ejemplo es consistente con la convención
+     real del repositorio.
+  3. `docs/PR_AUDIT_HISTORY.md`: **corregido a mano.** Prettier reinterpretó el signo `+` aritmético
+     de la línea "573 previos + 13 de X + 2 de Y" como marcador de lista y lo reescribió como `-`,
+     lo que convertía una suma en una resta. Se escapó como `\+`, que CommonMark renderiza como `+`
+     literal y que Prettier ya no toca. Sin esta corrección la barrida habría introducido un error de significado en un informe
+     histórico.
+- Ningún `console.error` se eliminó: el recuento es idéntico antes y después (257 en `src/`, 2 en
+  `scripts/`). Las 55 líneas con `console.error` que aparecen como borradas en el diff están
+  reindentadas o reflotadas, no perdidas. `scripts/importPostalCodes.js` mantiene sus `console.log`
+  preexistentes; no se tocaron porque corregirlo sería un cambio de comportamiento y quedaba fuera
+  del alcance de una barrida de estilo.
+
+**Verificación mecánica final de la rama:**
+
+| Comprobación                 | Resultado                                                               |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `npx prettier --check .`     | EXIT 0, `All matched files use Prettier code style!`, 0 incidencias     |
+| `npm test`                   | EXIT 0, 84 archivos / 1,278 tests, 100% en verde                        |
+| `npm run build:frontend`     | EXIT 0, compilación limpia                                              |
+| `npx eslint .`               | EXIT 0, 0 errores y 206 warnings (mismo total que la línea base de #60) |
+| `git diff --check`           | EXIT 0, sin avisos de whitespace ni espacios colgantes                  |
+| Fin de archivo (EOF newline) | los 370 archivos terminan en salto de línea                             |
+
+El reformateo quedó aislado en un commit `style:` exclusivo, sin cambios funcionales mezclados, que es
+justo lo que este ítem pedía evitar: que `git blame` atribuya el reformateo a una línea funcional. La
+documentación de la resolución va en un commit `docs(debt)` aparte.
+
+**Impacto previo (histórico):** ninguno mientras no se tocaran (el pipeline solo evalúa el diff), pero
+era alto en la práctica: casi cualquier archivo de `src/` que se modificara hacía fallar el PR por
+formato, en archivos cuyo cambio funcional era independiente del estilo. No era un obstáculo que se
+pudiera absorber PR a PR sin una barrida previa.
 
 ---
 
@@ -2157,4 +2215,3 @@ PR a PR sin una barrida previa.
   commit/PR que lo corrigió, para mantener historial de qué se ha ido arreglando.
 - Los ítems nuevos se numeran de forma consecutiva al final (no se renumeran los existentes), para
   que las referencias cruzadas desde `BACKLOG.md` y otros documentos no queden rotas.
-

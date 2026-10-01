@@ -6,8 +6,11 @@ export const useSalesTransactionState = () => {
   const [processingSale, setProcessingSale] = useState(false);
 
   return {
-    saleToken, setSaleToken,
-    saleNotes, setSaleNotes,
-    processingSale, setProcessingSale,
+    saleToken,
+    setSaleToken,
+    saleNotes,
+    setSaleNotes,
+    processingSale,
+    setProcessingSale,
   };
 };

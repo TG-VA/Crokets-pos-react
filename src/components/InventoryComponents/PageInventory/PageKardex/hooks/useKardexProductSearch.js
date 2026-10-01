@@ -1,7 +1,4 @@
-import {
-  useCallback,
-  useState,
-} from "react";
+import { useCallback, useState } from "react";
 
 import {
   findKardexProductByBarcode,
@@ -9,9 +6,7 @@ import {
   normalizeKardexBarcode,
 } from "../utils/kardexProductUtils";
 
-import {
-  getKardexProductId,
-} from "../utils/kardexMovementUtils";
+import { getKardexProductId } from "../utils/kardexMovementUtils";
 
 const useKardexProductSearch = ({
   products = [],
@@ -19,211 +14,138 @@ const useKardexProductSearch = ({
   selectProduct,
   getNextAvailableSlot,
 } = {}) => {
-  const [
-    modalTargetSlot,
-    setModalTargetSlot,
-  ] = useState(0);
+  const [modalTargetSlot, setModalTargetSlot] = useState(0);
 
-  const [
-    searchModalOpen,
-    setSearchModalOpen,
-  ] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
-  const [
-    barcode,
-    setBarcode,
-  ] = useState("");
+  const [barcode, setBarcode] = useState("");
 
-  const openProductSearch =
-    useCallback(
-      (slot = null) => {
-        const hasExplicitSlot =
-          slot === 0 ||
-          slot === 1;
+  const openProductSearch = useCallback(
+    (slot = null) => {
+      const hasExplicitSlot = slot === 0 || slot === 1;
 
-        const targetSlot =
-          hasExplicitSlot
-            ? getKardexTargetSlot(
-                slot
-              )
-            : getNextAvailableSlot?.() ??
-              0;
+      const targetSlot = hasExplicitSlot
+        ? getKardexTargetSlot(slot)
+        : (getNextAvailableSlot?.() ?? 0);
 
-        setModalTargetSlot(
-          targetSlot
-        );
+      setModalTargetSlot(targetSlot);
 
-        setSearchModalOpen(true);
-      },
-      [getNextAvailableSlot]
-    );
+      setSearchModalOpen(true);
+    },
+    [getNextAvailableSlot]
+  );
 
-  const closeProductSearch =
-    useCallback(() => {
-      setSearchModalOpen(false);
-    }, []);
+  const closeProductSearch = useCallback(() => {
+    setSearchModalOpen(false);
+  }, []);
 
-  const resetProductSearch =
-    useCallback(() => {
-      setBarcode("");
-      setSearchModalOpen(false);
-      setModalTargetSlot(0);
-    }, []);
+  const resetProductSearch = useCallback(() => {
+    setBarcode("");
+    setSearchModalOpen(false);
+    setModalTargetSlot(0);
+  }, []);
 
-  const findProductByBarcode =
-    useCallback(
-      (barcodeValue) => {
-        return findKardexProductByBarcode(
-          products,
-          barcodeValue
-        );
-      },
-      [products]
-    );
+  const findProductByBarcode = useCallback(
+    (barcodeValue) => {
+      return findKardexProductByBarcode(products, barcodeValue);
+    },
+    [products]
+  );
 
-  const selectProductFromSearch =
-    useCallback(
-      (
-        product,
-        slot = modalTargetSlot
-      ) => {
-        if (
-          typeof selectProduct !==
-          "function"
-        ) {
-          return false;
-        }
-
-        const wasSelected =
-          selectProduct(
-            product,
-            slot
-          );
-
-        if (!wasSelected) {
-          return false;
-        }
-
-        setBarcode("");
-        setSearchModalOpen(false);
-
-        return true;
-      },
-      [
-        modalTargetSlot,
-        selectProduct,
-      ]
-    );
-
-  const searchBarcode =
-    useCallback(() => {
-      const cleanBarcode =
-        normalizeKardexBarcode(
-          barcode
-        );
-
-      if (!cleanBarcode) {
-        return {
-          found: false,
-          product: null,
-          reason: "empty",
-        };
+  const selectProductFromSearch = useCallback(
+    (product, slot = modalTargetSlot) => {
+      if (typeof selectProduct !== "function") {
+        return false;
       }
 
-      const targetSlot =
-        getNextAvailableSlot?.() ??
-        0;
-
-      const product =
-        findProductByBarcode(
-          cleanBarcode
-        );
-
-      if (!product) {
-        setModalTargetSlot(
-          targetSlot
-        );
-
-        setSearchModalOpen(true);
-
-        return {
-          found: false,
-          product: null,
-          reason: "not_found",
-        };
-      }
-
-      const productId =
-        getKardexProductId(
-          product
-        );
-
-      const existingSlot =
-        selectedProducts.findIndex(
-          (selectedProduct) => {
-            const selectedProductId =
-              getKardexProductId(
-                selectedProduct
-              );
-
-            return (
-              selectedProductId &&
-              productId &&
-              String(
-                selectedProductId
-              ) ===
-                String(
-                  productId
-                )
-            );
-          }
-        );
-
-      if (
-        existingSlot !== -1 &&
-        existingSlot !==
-          targetSlot
-      ) {
-        setBarcode("");
-
-        return {
-          found: false,
-          product,
-          slot: existingSlot,
-          reason:
-            "already_selected",
-        };
-      }
-
-      const wasSelected =
-        selectProductFromSearch(
-          product,
-          targetSlot
-        );
+      const wasSelected = selectProduct(product, slot);
 
       if (!wasSelected) {
-        return {
-          found: false,
-          product,
-          slot: targetSlot,
-          reason:
-            "selection_failed",
-        };
+        return false;
       }
 
+      setBarcode("");
+      setSearchModalOpen(false);
+
+      return true;
+    },
+    [modalTargetSlot, selectProduct]
+  );
+
+  const searchBarcode = useCallback(() => {
+    const cleanBarcode = normalizeKardexBarcode(barcode);
+
+    if (!cleanBarcode) {
       return {
-        found: true,
+        found: false,
+        product: null,
+        reason: "empty",
+      };
+    }
+
+    const targetSlot = getNextAvailableSlot?.() ?? 0;
+
+    const product = findProductByBarcode(cleanBarcode);
+
+    if (!product) {
+      setModalTargetSlot(targetSlot);
+
+      setSearchModalOpen(true);
+
+      return {
+        found: false,
+        product: null,
+        reason: "not_found",
+      };
+    }
+
+    const productId = getKardexProductId(product);
+
+    const existingSlot = selectedProducts.findIndex((selectedProduct) => {
+      const selectedProductId = getKardexProductId(selectedProduct);
+
+      return (
+        selectedProductId &&
+        productId &&
+        String(selectedProductId) === String(productId)
+      );
+    });
+
+    if (existingSlot !== -1 && existingSlot !== targetSlot) {
+      setBarcode("");
+
+      return {
+        found: false,
+        product,
+        slot: existingSlot,
+        reason: "already_selected",
+      };
+    }
+
+    const wasSelected = selectProductFromSearch(product, targetSlot);
+
+    if (!wasSelected) {
+      return {
+        found: false,
         product,
         slot: targetSlot,
-        reason: "",
+        reason: "selection_failed",
       };
-    }, [
-      barcode,
-      findProductByBarcode,
-      getNextAvailableSlot,
-      selectProductFromSearch,
-      selectedProducts,
-    ]);
+    }
+
+    return {
+      found: true,
+      product,
+      slot: targetSlot,
+      reason: "",
+    };
+  }, [
+    barcode,
+    findProductByBarcode,
+    getNextAvailableSlot,
+    selectProductFromSearch,
+    selectedProducts,
+  ]);
 
   return {
     modalTargetSlot,

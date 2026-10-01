@@ -1,7 +1,4 @@
-import {
-  getMxnPaymentAmount,
-  toNumber,
-} from "./reportsDashboardUtils";
+import { getMxnPaymentAmount, toNumber } from "./reportsDashboardUtils";
 
 const normalizeText = (value) => {
   return String(value || "")
@@ -37,18 +34,13 @@ export const groupPaymentsBySale = (paymentRows = []) => {
   return paymentsBySale;
 };
 
-export const getPaymentMethodMap = (
-  paymentMethodRows = []
-) => {
-  return paymentMethodRows.reduce(
-    (result, method) => {
-      if (!method?.id) return result;
+export const getPaymentMethodMap = (paymentMethodRows = []) => {
+  return paymentMethodRows.reduce((result, method) => {
+    if (!method?.id) return result;
 
-      result[method.id] = method;
-      return result;
-    },
-    {}
-  );
+    result[method.id] = method;
+    return result;
+  }, {});
 };
 
 export const getAppliedPaymentsForSale = ({
@@ -56,10 +48,7 @@ export const getAppliedPaymentsForSale = ({
   payments = [],
   paymentMethodMap = {},
 }) => {
-  const saleTotal = Math.max(
-    toNumber(sale?.total),
-    0
-  );
+  const saleTotal = Math.max(toNumber(sale?.total), 0);
 
   if (saleTotal <= 0 || payments.length === 0) {
     return [];
@@ -67,30 +56,17 @@ export const getAppliedPaymentsForSale = ({
 
   const normalizedPayments = payments
     .map((payment) => {
-      const method =
-        paymentMethodMap[
-          payment.payment_method_id
-        ] || null;
+      const method = paymentMethodMap[payment.payment_method_id] || null;
 
       return {
-        paymentMethodId:
-          payment.payment_method_id,
+        paymentMethodId: payment.payment_method_id,
 
-        paymentMethodName:
-          method?.name ||
-          "Método desconocido",
+        paymentMethodName: method?.name || "Método desconocido",
 
-        amount: Math.max(
-          getMxnPaymentAmount(payment),
-          0
-        ),
+        amount: Math.max(getMxnPaymentAmount(payment), 0),
       };
     })
-    .filter(
-      (payment) =>
-        payment.paymentMethodId &&
-        payment.amount > 0
-    );
+    .filter((payment) => payment.paymentMethodId && payment.amount > 0);
 
   const totalReceived = normalizedPayments.reduce(
     (sum, payment) => sum + payment.amount,
@@ -101,20 +77,16 @@ export const getAppliedPaymentsForSale = ({
     return normalizedPayments;
   }
 
-  const appliedPayments = normalizedPayments.map(
-    (payment) => ({
-      ...payment,
-    })
-  );
+  const appliedPayments = normalizedPayments.map((payment) => ({
+    ...payment,
+  }));
 
-  let remainingExcess =
-    totalReceived - saleTotal;
+  let remainingExcess = totalReceived - saleTotal;
 
   remainingExcess = subtractExcessFromPayments({
     payments: appliedPayments,
     remainingExcess,
-    predicate: (payment) =>
-      canGenerateChange(payment.paymentMethodName),
+    predicate: (payment) => canGenerateChange(payment.paymentMethodName),
   });
 
   subtractExcessFromPayments({
@@ -122,9 +94,7 @@ export const getAppliedPaymentsForSale = ({
     remainingExcess,
   });
 
-  return appliedPayments.filter(
-    (payment) => payment.amount > 0
-  );
+  return appliedPayments.filter((payment) => payment.amount > 0);
 };
 
 const subtractExcessFromPayments = ({
@@ -143,10 +113,7 @@ const subtractExcessFromPayments = ({
 
     if (!predicate(payment)) continue;
 
-    const discount = Math.min(
-      payment.amount,
-      pendingExcess
-    );
+    const discount = Math.min(payment.amount, pendingExcess);
 
     payment.amount -= discount;
     pendingExcess -= discount;

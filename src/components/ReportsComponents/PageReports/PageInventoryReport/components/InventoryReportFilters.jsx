@@ -84,7 +84,9 @@ const InventoryReportFilters = ({
         </div>
 
         {/* Buscador de texto con botón borrar */}
-        <div className={`${styles.filterGroup} ${styles.filterGroupSearch}`.trim()}>
+        <div
+          className={`${styles.filterGroup} ${styles.filterGroupSearch}`.trim()}
+        >
           <label className={styles.filterLabel}>Buscar Producto:</label>
           <div className={styles.searchWrapper}>
             <img src={searchIcon} alt="" className={styles.searchIcon} />
@@ -103,7 +105,11 @@ const InventoryReportFilters = ({
                 onClick={() => onSearchChange("")}
                 title="Borrar texto de búsqueda"
               >
-                <img src={xmarkIcon} alt="" className={styles.searchClearIcon} />
+                <img
+                  src={xmarkIcon}
+                  alt=""
+                  className={styles.searchClearIcon}
+                />
               </button>
             )}
           </div>
@@ -132,4 +138,3 @@ const InventoryReportFilters = ({
 };
 
 export default InventoryReportFilters;
-

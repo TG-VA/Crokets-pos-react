@@ -10,53 +10,27 @@ const parseDateValue = (value) => {
     return null;
   }
 
-  const [
-    year,
-    month,
-    day,
-  ] = String(value)
-    .split("-")
-    .map(Number);
+  const [year, month, day] = String(value).split("-").map(Number);
 
-  if (
-    !year ||
-    !month ||
-    !day
-  ) {
+  if (!year || !month || !day) {
     return null;
   }
 
-  const date = new Date(
-    year,
-    month - 1,
-    day
-  );
+  const date = new Date(year, month - 1, day);
 
-  return Number.isNaN(
-    date.getTime()
-  )
-    ? null
-    : date;
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const formatDateValue = (date) => {
-  if (
-    !(date instanceof Date) ||
-    Number.isNaN(date.getTime())
-  ) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     return "";
   }
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
@@ -79,22 +53,12 @@ const KardexControls = ({
   onClearDateFilter,
   onOpenProductSearch,
 }) => {
-  const startDateValue =
-    parseDateValue(
-      draftDateFrom
-    );
+  const startDateValue = parseDateValue(draftDateFrom);
 
-  const endDateValue =
-    parseDateValue(
-      draftDateTo
-    );
+  const endDateValue = parseDateValue(draftDateTo);
 
-  const handleBarcodeKeyDown = (
-    event
-  ) => {
-    if (
-      event.key !== "Enter"
-    ) {
+  const handleBarcodeKeyDown = (event) => {
+    if (event.key !== "Enter") {
       return;
     }
 
@@ -106,10 +70,7 @@ const KardexControls = ({
     <div className={styles.searchSection}>
       <div className={styles.searchRow}>
         <div className={styles.searchGroup}>
-          <label
-            htmlFor="kardex-barcode"
-            className={styles.searchLabel}
-          >
+          <label htmlFor="kardex-barcode" className={styles.searchLabel}>
             Código de barras
           </label>
 
@@ -119,13 +80,9 @@ const KardexControls = ({
             type="text"
             value={barcode}
             onChange={(event) => {
-              onBarcodeChange?.(
-                event.target.value
-              );
+              onBarcodeChange?.(event.target.value);
             }}
-            onKeyDown={
-              handleBarcodeKeyDown
-            }
+            onKeyDown={handleBarcodeKeyDown}
             placeholder="Escanea o escribe el código y presiona Enter"
             autoComplete="off"
             autoFocus
@@ -133,99 +90,53 @@ const KardexControls = ({
         </div>
 
         <div className={styles.dateGroup}>
-          <label
-            htmlFor="kardex-date-from"
-            className={styles.searchLabel}
-          >
+          <label htmlFor="kardex-date-from" className={styles.searchLabel}>
             Desde
           </label>
 
           <DatePicker
             id="kardex-date-from"
-            selected={
-              startDateValue
-            }
+            selected={startDateValue}
             onChange={(date) => {
-              onDateFromChange?.(
-                formatDateValue(
-                  date
-                )
-              );
+              onDateFromChange?.(formatDateValue(date));
             }}
             selectsStart
-            startDate={
-              startDateValue
-            }
-            endDate={
-              endDateValue
-            }
-            maxDate={
-              endDateValue || new Date()
-            }
+            startDate={startDateValue}
+            endDate={endDateValue}
+            maxDate={endDateValue || new Date()}
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/mm/yyyy"
-            className={
-              styles.dateInput
-            }
-            calendarClassName={
-              styles.datePickerCalendar
-            }
-            popperClassName={
-              styles.datePickerPopper
-            }
-            wrapperClassName={
-              styles.datePickerWrapper
-            }
+            className={styles.dateInput}
+            calendarClassName={styles.datePickerCalendar}
+            popperClassName={styles.datePickerPopper}
+            wrapperClassName={styles.datePickerWrapper}
             showPopperArrow={false}
             isClearable={false}
           />
         </div>
 
         <div className={styles.dateGroup}>
-          <label
-            htmlFor="kardex-date-to"
-            className={styles.searchLabel}
-          >
+          <label htmlFor="kardex-date-to" className={styles.searchLabel}>
             Hasta
           </label>
 
           <DatePicker
             id="kardex-date-to"
-            selected={
-              endDateValue
-            }
+            selected={endDateValue}
             onChange={(date) => {
-              onDateToChange?.(
-                formatDateValue(
-                  date
-                )
-              );
+              onDateToChange?.(formatDateValue(date));
             }}
             selectsEnd
-            startDate={
-              startDateValue
-            }
-            endDate={
-              endDateValue
-            }
-            minDate={
-              startDateValue
-            }
+            startDate={startDateValue}
+            endDate={endDateValue}
+            minDate={startDateValue}
             maxDate={new Date()}
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/mm/yyyy"
-            className={
-              styles.dateInput
-            }
-            calendarClassName={
-              styles.datePickerCalendar
-            }
-            popperClassName={
-              styles.datePickerPopper
-            }
-            wrapperClassName={
-              styles.datePickerWrapper
-            }
+            className={styles.dateInput}
+            calendarClassName={styles.datePickerCalendar}
+            popperClassName={styles.datePickerPopper}
+            wrapperClassName={styles.datePickerWrapper}
             showPopperArrow={false}
             isClearable={false}
           />
@@ -233,43 +144,29 @@ const KardexControls = ({
 
         <button
           type="button"
-          className={
-            styles.filterButton
-          }
+          className={styles.filterButton}
           onClick={() => {
             onApplyDateFilter?.();
           }}
-          disabled={
-            !hasSelectedProducts
-          }
+          disabled={!hasSelectedProducts}
         >
           Filtrar
         </button>
 
         <button
           type="button"
-          className={
-            styles.filterButton
-          }
+          className={styles.filterButton}
           onClick={() => {
             onClearDateFilter?.();
           }}
-          disabled={
-  !draftDateFrom &&
-  !draftDateTo &&
-  !isDateFilterActive
-}
+          disabled={!draftDateFrom && !draftDateTo && !isDateFilterActive}
         >
-          {isDateFilterActive
-            ? "Limpiar rango"
-            : "Limpiar"}
+          {isDateFilterActive ? "Limpiar rango" : "Limpiar"}
         </button>
 
         <button
           type="button"
-          className={
-            styles.searchButton
-          }
+          className={styles.searchButton}
           onClick={() => {
             onOpenProductSearch?.();
           }}
@@ -279,12 +176,7 @@ const KardexControls = ({
       </div>
 
       {dateFilterError ? (
-        <div
-          className={
-            styles.controlError
-          }
-          role="alert"
-        >
+        <div className={styles.controlError} role="alert">
           {dateFilterError}
         </div>
       ) : null}

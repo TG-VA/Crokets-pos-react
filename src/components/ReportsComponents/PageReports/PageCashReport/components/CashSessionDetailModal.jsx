@@ -1,7 +1,10 @@
 import React from "react";
 import styles from "./CashComponents.module.css";
 import { useEscapeKey } from "../../../../../hooks/useEscapeKey";
-import { getShortFolio, getDifferenceStatus } from "../utils/cashReportFormatters";
+import {
+  getShortFolio,
+  getDifferenceStatus,
+} from "../utils/cashReportFormatters";
 
 import DetailTurnInfoSection from "./detailModalSections/DetailTurnInfoSection";
 import DetailCashBalanceSection from "./detailModalSections/DetailCashBalanceSection";
@@ -29,12 +32,16 @@ const CashSessionDetailModal = ({
 
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modalContainer}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className={styles.modalHeader}>
           <div className={styles.modalHeaderTitleGroup}>
             <h2 className={styles.modalTitle}>
-              Detalle de Turno: {sessionDetail ? getShortFolio(sessionDetail.id) : "Cargando..."}
+              Detalle de Turno:{" "}
+              {sessionDetail ? getShortFolio(sessionDetail.id) : "Cargando..."}
             </h2>
             <p className={styles.modalSubtitle}>
               {sessionDetail?.branches?.name || "Sucursal"} | Cajero:{" "}
@@ -57,9 +64,13 @@ const CashSessionDetailModal = ({
         <div className={styles.modalBody}>
           {loading ? (
             <div className={styles.modalLoadingWrapper}>
-              <div className={`${styles.skeletonCell} ${styles.skeletonTitle}`} />
+              <div
+                className={`${styles.skeletonCell} ${styles.skeletonTitle}`}
+              />
               <div className={`${styles.skeletonCell} ${styles.skeletonBox}`} />
-              <div className={`${styles.skeletonCell} ${styles.skeletonTable}`} />
+              <div
+                className={`${styles.skeletonCell} ${styles.skeletonTable}`}
+              />
             </div>
           ) : sessionDetail ? (
             <>
@@ -100,23 +111,29 @@ const CashSessionDetailModal = ({
               {/* Sección 6: Notas del Corte */}
               {cutData?.notes && (
                 <div className={styles.modalSection}>
-                  <h3 className={styles.modalSectionTitle}>Observaciones del Corte</h3>
-                  <div className={styles.modalNotesCard}>
-                    {cutData.notes}
-                  </div>
+                  <h3 className={styles.modalSectionTitle}>
+                    Observaciones del Corte
+                  </h3>
+                  <div className={styles.modalNotesCard}>{cutData.notes}</div>
                 </div>
               )}
             </>
           ) : (
             <div className={styles.emptyState}>
-              <p className={styles.emptyStateText}>No se pudo cargar la información del turno.</p>
+              <p className={styles.emptyStateText}>
+                No se pudo cargar la información del turno.
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className={styles.modalFooter}>
-          <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={onClose}
+          >
             Cerrar
           </button>
         </div>

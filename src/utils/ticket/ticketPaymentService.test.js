@@ -10,9 +10,9 @@ import {
 describe("ticketPaymentService", () => {
   describe("getPaymentLabel", () => {
     it("etiqueta como SIN PAGO cuando hay recompensas y total cero", () => {
-      expect(
-        getPaymentLabel([], "", { total: 0, points_used: 10 }, [])
-      ).toBe("SIN PAGO");
+      expect(getPaymentLabel([], "", { total: 0, points_used: 10 }, [])).toBe(
+        "SIN PAGO"
+      );
     });
 
     it("usa el metodo por defecto cuando no hay pagos", () => {
@@ -26,10 +26,7 @@ describe("ticketPaymentService", () => {
       ).toBe("EFECTIVO");
       expect(
         getPaymentLabel(
-          [
-            { payment_method_name: "efectivo" },
-            { paymentMethod: "tarjeta" },
-          ],
+          [{ payment_method_name: "efectivo" }, { paymentMethod: "tarjeta" }],
           "",
           {},
           []
@@ -42,14 +39,16 @@ describe("ticketPaymentService", () => {
   describe("getPaymentAmountInMxn", () => {
     it("convierte dolares a pesos usando el tipo de cambio", () => {
       expect(
-        getPaymentAmountInMxn({ amount: 100, currency: "USD", exchange_rate: 20 })
+        getPaymentAmountInMxn({
+          amount: 100,
+          currency: "USD",
+          exchange_rate: 20,
+        })
       ).toBe(2000);
     });
 
     it("devuelve cero si faltan el tipo de cambio", () => {
-      expect(
-        getPaymentAmountInMxn({ amount: 100, currency: "USD" })
-      ).toBe(0);
+      expect(getPaymentAmountInMxn({ amount: 100, currency: "USD" })).toBe(0);
     });
 
     it("deja los montos en MXN iguales", () => {
@@ -70,9 +69,7 @@ describe("ticketPaymentService", () => {
       expect(
         shouldShowReceivedAndChange([{ payment_method_name: "EFECTIVO" }])
       ).toBe(true);
-      expect(
-        shouldShowReceivedAndChange([{ currency: "USD" }])
-      ).toBe(true);
+      expect(shouldShowReceivedAndChange([{ currency: "USD" }])).toBe(true);
       expect(
         shouldShowReceivedAndChange([
           { payment_method_name: "TARJETA" },

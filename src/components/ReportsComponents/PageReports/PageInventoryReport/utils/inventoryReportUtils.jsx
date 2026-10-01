@@ -26,5 +26,7 @@ export const getStatusBadge = (status, label) => {
       break;
   }
 
-  return <span className={`${styles.kpiAlertBadge} ${badgeClass}`}>{label}</span>;
+  return (
+    <span className={`${styles.kpiAlertBadge} ${badgeClass}`}>{label}</span>
+  );
 };

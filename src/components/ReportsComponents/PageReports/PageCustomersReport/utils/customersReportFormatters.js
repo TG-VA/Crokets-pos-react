@@ -40,7 +40,10 @@ export const formatDynamicDate = (isoDate, timeZone = "America/Cancun") => {
       .replace(/,\s*/g, " - ")
       .replace(/\s+([ap]\.?\s*m\.?)/i, "\u00A0$1");
   } catch (err) {
-    console.error("Error al formatear fecha dinamica en reporte de clientes:", err);
+    console.error(
+      "Error al formatear fecha dinamica en reporte de clientes:",
+      err
+    );
     return "N/A";
   }
 };
@@ -62,7 +65,10 @@ export const formatShortDate = (isoDate, timeZone = "America/Cancun") => {
       day: "2-digit",
     }).format(date);
   } catch (err) {
-    console.error("Error al formatear fecha corta en reporte de clientes:", err);
+    console.error(
+      "Error al formatear fecha corta en reporte de clientes:",
+      err
+    );
     return "N/A";
   }
 };

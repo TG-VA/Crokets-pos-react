@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
 import { useDidChange } from "../../../../../hooks/useDidChange";
 
-export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppAlert, appModalIsOpen }) => {
+export const useKitProductSearch = ({
+  isOpen,
+  onClose,
+  onSelectProduct,
+  showAppAlert,
+  appModalIsOpen,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -66,7 +72,9 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
       if (e.key === "ArrowDown") {
         if (results.length === 0) return;
         e.preventDefault();
-        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+        setSelectedIndex((prev) =>
+          prev < results.length - 1 ? prev + 1 : prev
+        );
         return;
       }
 
@@ -112,9 +120,11 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
 
       const data = await fetchActiveNonKitProducts();
       const normalized = normalizeText(cleanValue);
-      
+
       const filtered = data.filter((product) => {
-        const searchable = normalizeText(`${product.name || ""} ${product.barcode || ""}`);
+        const searchable = normalizeText(
+          `${product.name || ""} ${product.barcode || ""}`
+        );
         return searchable.includes(normalized);
       });
 

@@ -14,28 +14,20 @@ const useInventoryAddKeyboard = ({
     if (!bodyRef.current) return [];
 
     const nodes = Array.from(
-      bodyRef.current.querySelectorAll(
-        "input, select, textarea"
-      )
+      bodyRef.current.querySelectorAll("input, select, textarea")
     );
 
     return nodes.filter((element) => {
       if (!element) return false;
       if (element.disabled) return false;
 
-      if (
-        element.tagName === "INPUT" &&
-        element.type === "hidden"
-      ) {
+      if (element.tagName === "INPUT" && element.type === "hidden") {
         return false;
       }
 
       if (element.tabIndex === -1) return false;
 
-      if (
-        element.tagName === "INPUT" &&
-        element.readOnly
-      ) {
+      if (element.tagName === "INPUT" && element.readOnly) {
         return false;
       }
 
@@ -51,21 +43,18 @@ const useInventoryAddKeyboard = ({
 
     event.preventDefault();
 
-    const focusableElements =
-      getFocusableBodyElements();
+    const focusableElements = getFocusableBodyElements();
 
     const activeElement = document.activeElement;
 
-    const activeIndex =
-      focusableElements.indexOf(activeElement);
+    const activeIndex = focusableElements.indexOf(activeElement);
 
     if (activeIndex === -1) return;
 
     if (activeIndex < focusableElements.length - 1) {
       setSubmitArmed(false);
 
-      const nextElement =
-        focusableElements[activeIndex + 1];
+      const nextElement = focusableElements[activeIndex + 1];
 
       nextElement.focus();
 
@@ -79,10 +68,7 @@ const useInventoryAddKeyboard = ({
     if (!submitArmed) {
       setSubmitArmed(true);
 
-      if (
-        activeElement &&
-        typeof activeElement.blur === "function"
-      ) {
+      if (activeElement && typeof activeElement.blur === "function") {
         activeElement.blur();
       }
 
@@ -101,16 +87,10 @@ const useInventoryAddKeyboard = ({
       openSearchModal();
     };
 
-    document.addEventListener(
-      "keydown",
-      handleGlobalKeyDown
-    );
+    document.addEventListener("keydown", handleGlobalKeyDown);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleGlobalKeyDown
-      );
+      document.removeEventListener("keydown", handleGlobalKeyDown);
     };
   }, [openSearchModal]);
 
@@ -127,24 +107,12 @@ const useInventoryAddKeyboard = ({
       handleSubmit();
     };
 
-    document.addEventListener(
-      "keydown",
-      handleConfirmKeyDown,
-      true
-    );
+    document.addEventListener("keydown", handleConfirmKeyDown, true);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleConfirmKeyDown,
-        true
-      );
+      document.removeEventListener("keydown", handleConfirmKeyDown, true);
     };
-  }, [
-    submitArmed,
-    setSubmitArmed,
-    handleSubmit,
-  ]);
+  }, [submitArmed, setSubmitArmed, handleSubmit]);
 
   useEffect(() => {
     if (!selectedProduct) return undefined;
@@ -152,22 +120,16 @@ const useInventoryAddKeyboard = ({
     setQuantityToAdd("");
     setSubmitArmed(false);
 
-    const animationFrameId =
-      window.requestAnimationFrame(() => {
-        quantityInputRef.current?.focus();
+    const animationFrameId = window.requestAnimationFrame(() => {
+      quantityInputRef.current?.focus();
 
-        if (
-          typeof quantityInputRef.current?.select ===
-          "function"
-        ) {
-          quantityInputRef.current.select();
-        }
-      });
+      if (typeof quantityInputRef.current?.select === "function") {
+        quantityInputRef.current.select();
+      }
+    });
 
     return () => {
-      window.cancelAnimationFrame(
-        animationFrameId
-      );
+      window.cancelAnimationFrame(animationFrameId);
     };
   }, [
     selectedProduct?.codigo,

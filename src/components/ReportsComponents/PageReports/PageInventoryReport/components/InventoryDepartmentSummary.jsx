@@ -4,7 +4,10 @@ import { formatCurrency } from "../../../../../utils/formatters";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
-const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) => {
+const InventoryDepartmentSummary = ({
+  departmentData = [],
+  isLoading = false,
+}) => {
   const {
     currentPage,
     totalPages,
@@ -31,7 +34,9 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
   if (isLoading) {
     return (
       <div className={styles.tableCard}>
-        <div className={styles.emptyState}>Calculando distribución por departamentos...</div>
+        <div className={styles.emptyState}>
+          Calculando distribución por departamentos...
+        </div>
       </div>
     );
   }
@@ -40,7 +45,9 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Distribución y Concentración por Departamento</h3>
+          <h3 className={styles.tableTitle}>
+            Distribución y Concentración por Departamento
+          </h3>
           <span className={styles.tableSubtitle}>
             Resumen de capital invertido e inventario físico por categoría
           </span>
@@ -70,14 +77,18 @@ const InventoryDepartmentSummary = ({ departmentData = [], isLoading = false }) 
               currentDepts.map((dept) => (
                 <tr key={dept.name}>
                   <td className={styles.fontBold}>{dept.name}</td>
-                  <td className={styles.textRight}>{dept.productCount.toLocaleString()}</td>
+                  <td className={styles.textRight}>
+                    {dept.productCount.toLocaleString()}
+                  </td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
                     {dept.totalUnits.toLocaleString()}
                   </td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
                     {formatCurrency(dept.totalCost)}
                   </td>
-                  <td className={styles.textRight}>{formatCurrency(dept.totalSale)}</td>
+                  <td className={styles.textRight}>
+                    {formatCurrency(dept.totalSale)}
+                  </td>
                   <td className={`${styles.textRight} ${styles.fontBold}`}>
                     {dept.percentage.toFixed(1)}%
                   </td>

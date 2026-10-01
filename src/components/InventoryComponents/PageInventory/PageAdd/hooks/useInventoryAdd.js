@@ -212,8 +212,7 @@ const useInventoryAdd = () => {
       return;
     }
 
-    const productId =
-      selectedProduct.product_id || selectedProduct.id;
+    const productId = selectedProduct.product_id || selectedProduct.id;
 
     if (!productId) {
       showAppAlert({
@@ -237,9 +236,7 @@ const useInventoryAdd = () => {
 
       await refreshProducts();
 
-      const description = String(
-        selectedProduct.descripcion ?? ""
-      ).trim();
+      const description = String(selectedProduct.descripcion ?? "").trim();
 
       const descriptionUpper = description
         ? description.toUpperCase()
@@ -261,8 +258,7 @@ const useInventoryAdd = () => {
       showAppAlert({
         type: "danger",
         title: "No se pudo agregar inventario",
-        message:
-          error?.message || "No se pudo agregar inventario.",
+        message: error?.message || "No se pudo agregar inventario.",
       });
     } finally {
       setSaving(false);

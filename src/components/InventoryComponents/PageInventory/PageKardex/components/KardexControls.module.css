@@ -63,9 +63,7 @@
 .dateInput:focus {
   outline: none;
   border-color: var(--croketsBlue);
-  box-shadow:
-    0 0 0 3px
-    rgba(16, 146, 177, 0.13);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
 }
 
 .searchInput::placeholder,

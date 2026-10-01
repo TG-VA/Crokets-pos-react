@@ -21,14 +21,65 @@ import styles from "./Navbar.module.css";
 const SALES_DRAFT_RESTORE_REQUEST_KEY = "sales_draft_restore_prompt_requested";
 
 const NAV_ITEMS = [
-  { id: "btnVentas", label: "Ventas", icon: SalesIcon, path: "/dashboard", shortcut: "F1", matchPaths: ["/dashboard", "/sales"] },
-  { id: "btnProductos", label: "Productos", icon: ProductsIcon, path: "/products", shortcut: "F2", matchPaths: ["/products"] },
-  { id: "btnInventario", label: "Inventario", icon: InventoryIcon, path: "/inventory", shortcut: "F3", matchPaths: ["/inventory"] },
-  { id: "btnFacturas", label: "Facturas", icon: InvoicesIcon, path: "/invoices", matchPaths: ["/invoices"] },
-  { id: "btnClientes", label: "Clientes", icon: CustomersIcon, path: "/customers", matchPaths: ["/customers"] },
-  { id: "btnCorte", label: "Corte", icon: CashoutIcon, path: "/cashcut", matchPaths: ["/cashcut"] },
-  { id: "btnReportes", label: "Reportes", icon: ReportsIcon, path: "/reports", matchPaths: ["/reports"] },
-  { id: "btnConfiguracion", label: "Configuración", icon: SettingsIcon, path: "/settings", matchPaths: ["/settings"] },
+  {
+    id: "btnVentas",
+    label: "Ventas",
+    icon: SalesIcon,
+    path: "/dashboard",
+    shortcut: "F1",
+    matchPaths: ["/dashboard", "/sales"],
+  },
+  {
+    id: "btnProductos",
+    label: "Productos",
+    icon: ProductsIcon,
+    path: "/products",
+    shortcut: "F2",
+    matchPaths: ["/products"],
+  },
+  {
+    id: "btnInventario",
+    label: "Inventario",
+    icon: InventoryIcon,
+    path: "/inventory",
+    shortcut: "F3",
+    matchPaths: ["/inventory"],
+  },
+  {
+    id: "btnFacturas",
+    label: "Facturas",
+    icon: InvoicesIcon,
+    path: "/invoices",
+    matchPaths: ["/invoices"],
+  },
+  {
+    id: "btnClientes",
+    label: "Clientes",
+    icon: CustomersIcon,
+    path: "/customers",
+    matchPaths: ["/customers"],
+  },
+  {
+    id: "btnCorte",
+    label: "Corte",
+    icon: CashoutIcon,
+    path: "/cashcut",
+    matchPaths: ["/cashcut"],
+  },
+  {
+    id: "btnReportes",
+    label: "Reportes",
+    icon: ReportsIcon,
+    path: "/reports",
+    matchPaths: ["/reports"],
+  },
+  {
+    id: "btnConfiguracion",
+    label: "Configuración",
+    icon: SettingsIcon,
+    path: "/settings",
+    matchPaths: ["/settings"],
+  },
 ];
 
 const Navbar = () => {
@@ -54,7 +105,13 @@ const Navbar = () => {
   });
 
   const closeAppModal = () => {
-    setAppModal((prev) => ({ ...prev, isOpen: false, loading: false, onConfirm: null, onCancel: null }));
+    setAppModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      loading: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
   };
 
   // CORRECCIÓN: Forzamos los defaults para no tener "modales fantasma"
@@ -81,7 +138,8 @@ const Navbar = () => {
     showAppConfirm({
       type: "warning",
       title: "Volver al inicio",
-      message: "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
+      message:
+        "¿Deseas volver a la pantalla de inicio sin cerrar la sesión actual?",
       confirmText: "Sí, volver",
       showCancel: true, // <--- AHORA LO PEDIMOS EXPLÍCITAMENTE PARA ESTE CASO
       onConfirm: () => {
@@ -95,14 +153,16 @@ const Navbar = () => {
   const isItemActive = (item) => {
     return item.matchPaths.some((path) => {
       if (path === "/dashboard") return location.pathname === "/dashboard";
-      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+      return (
+        location.pathname === path || location.pathname.startsWith(`${path}/`)
+      );
     });
   };
 
   const username = (
-    user?.username ?? 
-    user?.user_metadata?.username ?? 
-    user?.email?.split("@")[0] ?? 
+    user?.username ??
+    user?.user_metadata?.username ??
+    user?.email?.split("@")[0] ??
     "—"
   ).toUpperCase();
 
@@ -121,7 +181,11 @@ const Navbar = () => {
               className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
               onClick={() => navigate(item.path)}
             >
-              <img src={item.icon} alt={`${item.label} icono`} className={styles.navIcon} />
+              <img
+                src={item.icon}
+                alt={`${item.label} icono`}
+                className={styles.navIcon}
+              />
               {item.label}
             </button>
           ))}
@@ -131,17 +195,25 @@ const Navbar = () => {
           <div className={styles.userInfo}>
             <div className={styles.userName}>Usuario: {username}</div>
             <div className={styles.branchInfo}>
-              Sucursal: {branch?.code ? `${branch.code} - ${branch.name}` : "Cargando sucursal..."}
+              Sucursal:{" "}
+              {branch?.code
+                ? `${branch.code} - ${branch.name}`
+                : "Cargando sucursal..."}
             </div>
           </div>
 
-          <button type="button" className={`${styles.navButton} ${styles.logoutButton}`} onClick={handleLockScreen}>
-            <img src={LogoutIcon} alt="Salir" className={styles.navIcon} /> Salir
+          <button
+            type="button"
+            className={`${styles.navButton} ${styles.logoutButton}`}
+            onClick={handleLockScreen}
+          >
+            <img src={LogoutIcon} alt="Salir" className={styles.navIcon} />{" "}
+            Salir
           </button>
         </div>
       </nav>
 
-      <AppModal 
+      <AppModal
         isOpen={appModal.isOpen}
         type={appModal.type}
         title={appModal.title}

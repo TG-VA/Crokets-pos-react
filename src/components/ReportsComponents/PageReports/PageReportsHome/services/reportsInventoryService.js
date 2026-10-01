@@ -5,7 +5,8 @@ import { toNumber } from "./reportsDashboardUtils";
 export const getBranchInventory = async (branchId) => {
   let query = supabase
     .from("branch_inventory")
-    .select(`
+    .select(
+      `
       product_id,
       stock,
       min_stock,
@@ -15,7 +16,8 @@ export const getBranchInventory = async (branchId) => {
       products:product_id (
         tracks_inventory
       )
-    `)
+    `
+    )
     .eq("is_active", true);
 
   if (branchId && branchId !== "ALL" && branchId !== "Todas") {
@@ -118,4 +120,3 @@ export const buildInventoryAlerts = (
     lowStockProducts: { length: lowStockCount },
   };
 };
-

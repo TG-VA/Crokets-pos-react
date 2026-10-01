@@ -10,7 +10,8 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
   // La carga se deriva de la clave pedida en lugar de marcarse con un
   // setLoading(true) sincrono dentro del efecto, que provocaba un re-render en
   // cascada en cada cambio de sucursal.
-  const { isLoading, isStale, markSettled } = useRequestStatus(selectedBranchId);
+  const { isLoading, isStale, markSettled } =
+    useRequestStatus(selectedBranchId);
 
   // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
   const visibleError = isStale ? null : error;
@@ -71,12 +72,18 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
 
     return reportItems.filter((item) => {
       // Filtro por departamento
-      if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
+      if (
+        selectedDepartment !== "ALL" &&
+        item.departmentId !== selectedDepartment
+      ) {
         return false;
       }
 
       // Filtro por estado de stock
-      if (selectedStockStatus !== "ALL" && item.status !== selectedStockStatus) {
+      if (
+        selectedStockStatus !== "ALL" &&
+        item.status !== selectedStockStatus
+      ) {
         return false;
       }
 
@@ -100,7 +107,10 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
     if (!reportReorderSuggestions) return [];
 
     return reportReorderSuggestions.filter((item) => {
-      if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
+      if (
+        selectedDepartment !== "ALL" &&
+        item.departmentId !== selectedDepartment
+      ) {
         return false;
       }
 
@@ -122,7 +132,10 @@ export const useInventoryReport = (selectedBranchId = "ALL") => {
     if (!reportExhaustedProducts) return [];
 
     return reportExhaustedProducts.filter((item) => {
-      if (selectedDepartment !== "ALL" && item.departmentId !== selectedDepartment) {
+      if (
+        selectedDepartment !== "ALL" &&
+        item.departmentId !== selectedDepartment
+      ) {
         return false;
       }
 

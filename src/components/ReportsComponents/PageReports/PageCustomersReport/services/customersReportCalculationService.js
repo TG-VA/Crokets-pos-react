@@ -177,7 +177,10 @@ export const calculateCustomersKpis = ({
  * Agrupa los productos más comprados por clientes identificados
  * e incluye el listado detallado de clientes que los compraron
  */
-export const aggregateTopProducts = (saleDetailsRows = [], customerMap = {}) => {
+export const aggregateTopProducts = (
+  saleDetailsRows = [],
+  customerMap = {}
+) => {
   const productsMap = {};
 
   for (const item of saleDetailsRows) {
@@ -235,11 +238,15 @@ export const aggregateTopProducts = (saleDetailsRows = [], customerMap = {}) => 
       if (saleId) {
         buyer.saleIdsSet.add(saleId);
       }
-      buyer.purchasesCount = buyer.saleIdsSet.size > 0 ? buyer.saleIdsSet.size : (buyer.purchasesCount + 1);
+      buyer.purchasesCount =
+        buyer.saleIdsSet.size > 0
+          ? buyer.saleIdsSet.size
+          : buyer.purchasesCount + 1;
 
       if (
         saleDate &&
-        (!buyer.lastPurchaseDate || new Date(saleDate) > new Date(buyer.lastPurchaseDate))
+        (!buyer.lastPurchaseDate ||
+          new Date(saleDate) > new Date(buyer.lastPurchaseDate))
       ) {
         buyer.lastPurchaseDate = saleDate;
       }
@@ -251,7 +258,10 @@ export const aggregateTopProducts = (saleDetailsRows = [], customerMap = {}) => 
       const buyers = Object.values(p.buyersMap)
         .map((b) => ({
           ...b,
-          ticketsCount: b.saleIdsSet && b.saleIdsSet.size > 0 ? b.saleIdsSet.size : b.purchasesCount,
+          ticketsCount:
+            b.saleIdsSet && b.saleIdsSet.size > 0
+              ? b.saleIdsSet.size
+              : b.purchasesCount,
         }))
         .sort((a, b) => b.quantity - a.quantity || b.spent - a.spent);
 
@@ -304,4 +314,3 @@ export const calculateCustomerFavoriteProducts = (saleDetails = []) => {
     (a, b) => b.totalQuantity - a.totalQuantity
   );
 };
-

@@ -1,6 +1,7 @@
 import { supabase } from "../../../lib/supabaseClient";
 
-const getProductDisplayName = (product) => product?.name || product?.barcode || "Producto";
+const getProductDisplayName = (product) =>
+  product?.name || product?.barcode || "Producto";
 
 export const getBranchInventoryRow = async ({ branchId, productId }) => {
   if (!branchId) throw new Error("No se detectó la sucursal.");
@@ -25,7 +26,9 @@ export const getBranchInventoryRows = async ({ branchId, productIds = [] }) => {
 
   const { data, error } = await supabase
     .from("branch_inventory")
-    .select("product_id, stock, is_active, has_been_stocked, cost_price, sale_price")
+    .select(
+      "product_id, stock, is_active, has_been_stocked, cost_price, sale_price"
+    )
     .eq("branch_id", branchId)
     .in("product_id", normalizedProductIds);
 
@@ -51,7 +54,7 @@ export const getProductWithDiscount = async (product) => {
     ...product,
     discount_enabled: hasDiscount,
     discount_percent: hasDiscount ? discountPercent : 0,
-    discount_concept: hasDiscount ? (discountRow?.discount_concept || "") : "",
+    discount_concept: hasDiscount ? discountRow?.discount_concept || "" : "",
   };
 };
 
@@ -78,24 +81,28 @@ const calculateKitAvailability = ({ kitItems = [], inventoryRows = [] }) => {
 
     if (requiredQuantity <= 0) {
       invalidMessage = `El componente "${componentName}" tiene cantidad inválida.`;
-      availableStock = 0; break;
+      availableStock = 0;
+      break;
     }
 
     const inventory = inventoryMap[item.component_product_id];
 
     if (!inventory) {
       invalidMessage = `El componente "${componentName}" no tiene inventario en esta sucursal.`;
-      availableStock = 0; break;
+      availableStock = 0;
+      break;
     }
 
     if (inventory.is_active === false) {
       invalidMessage = `El componente "${componentName}" está inactivo en esta sucursal.`;
-      availableStock = 0; break;
+      availableStock = 0;
+      break;
     }
 
     if (inventory.has_been_stocked !== true) {
       invalidMessage = `El componente "${componentName}" aún no tiene inventario inicial.`;
-      availableStock = 0; break;
+      availableStock = 0;
+      break;
     }
 
     const componentStock = Number(inventory.stock || 0);
@@ -117,13 +124,18 @@ const calculateKitAvailability = ({ kitItems = [], inventoryRows = [] }) => {
 
 export const getKitAvailableStock = async ({ kitProductId, branchId }) => {
   if (!kitProductId || !branchId) {
-    return { availableStock: 0, isValid: false, message: "No se detectó la sucursal para validar el kit." };
+    return {
+      availableStock: 0,
+      isValid: false,
+      message: "No se detectó la sucursal para validar el kit.",
+    };
   }
 
   // OPTIMIZACIÓN: Traer el Kit y sus items en una sola consulta relacional
   const { data: kitData, error: kitError } = await supabase
     .from("product_kits")
-    .select(`
+    .select(
+      `
       id,
       is_active,
       product_kit_items (
@@ -132,32 +144,50 @@ export const getKitAvailableStock = async ({ kitProductId, branchId }) => {
         quantity,
         products:component_product_id ( id, name, barcode, tracks_inventory )
       )
-    `)
+    `
+    )
     .eq("kit_product_id", kitProductId)
     .maybeSingle();
 
   if (kitError || !kitData?.id) {
-    return { availableStock: 0, isValid: false, message: "Este kit no tiene configuración registrada." };
+    return {
+      availableStock: 0,
+      isValid: false,
+      message: "Este kit no tiene configuración registrada.",
+    };
   }
 
   if (kitData.is_active === false) {
-    return { availableStock: 0, isValid: false, message: "Este kit está inactivo." };
+    return {
+      availableStock: 0,
+      isValid: false,
+      message: "Este kit está inactivo.",
+    };
   }
 
   const kitItems = kitData.product_kit_items || [];
 
   if (!kitItems.length) {
-    return { availableStock: 0, isValid: false, message: "Este kit no tiene productos agregados." };
+    return {
+      availableStock: 0,
+      isValid: false,
+      message: "Este kit no tiene productos agregados.",
+    };
   }
 
-  const inventoryComponentIds = [...new Set(
-    kitItems
-      .filter((item) => item?.products?.tracks_inventory !== false)
-      .map((item) => item.component_product_id)
-      .filter(Boolean)
-  )];
+  const inventoryComponentIds = [
+    ...new Set(
+      kitItems
+        .filter((item) => item?.products?.tracks_inventory !== false)
+        .map((item) => item.component_product_id)
+        .filter(Boolean)
+    ),
+  ];
 
-  const inventoryRows = await getBranchInventoryRows({ branchId, productIds: inventoryComponentIds });
+  const inventoryRows = await getBranchInventoryRows({
+    branchId,
+    productIds: inventoryComponentIds,
+  });
 
   return calculateKitAvailability({ kitItems, inventoryRows });
 };

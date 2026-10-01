@@ -75,40 +75,39 @@ const importPostalCodes = async () => {
     });
   });
 
-console.log(`Registros leídos: ${rowsToInsert.length}`);
+  console.log(`Registros leídos: ${rowsToInsert.length}`);
 
-const uniqueRowsMap = new Map();
+  const uniqueRowsMap = new Map();
 
-for (const row of rowsToInsert) {
-  const key = [
-    row.postal_code,
-    row.settlement,
-    row.municipality,
-    row.state,
-  ]
-    .map((value) => String(value || "").toUpperCase().trim())
-    .join("|");
+  for (const row of rowsToInsert) {
+    const key = [row.postal_code, row.settlement, row.municipality, row.state]
+      .map((value) =>
+        String(value || "")
+          .toUpperCase()
+          .trim()
+      )
+      .join("|");
 
-  uniqueRowsMap.set(key, row);
-}
+    uniqueRowsMap.set(key, row);
+  }
 
-const uniqueRows = Array.from(uniqueRowsMap.values());
+  const uniqueRows = Array.from(uniqueRowsMap.values());
 
-console.log(`Registros únicos preparados: ${uniqueRows.length}`);
-console.log(`Duplicados omitidos: ${rowsToInsert.length - uniqueRows.length}`);
+  console.log(`Registros únicos preparados: ${uniqueRows.length}`);
+  console.log(
+    `Duplicados omitidos: ${rowsToInsert.length - uniqueRows.length}`
+  );
 
-const batches = chunkArray(uniqueRows, BATCH_SIZE);
+  const batches = chunkArray(uniqueRows, BATCH_SIZE);
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
 
     console.log(`Insertando lote ${i + 1} de ${batches.length}...`);
 
-    const { error } = await supabase
-      .from("postal_codes")
-      .upsert(batch, {
-        onConflict: "postal_code,settlement,municipality,state",
-      });
+    const { error } = await supabase.from("postal_codes").upsert(batch, {
+      onConflict: "postal_code,settlement,municipality,state",
+    });
 
     if (error) {
       console.error("Error insertando lote:", error);

@@ -6,7 +6,7 @@ const SalesProductInput = ({
   setBarcode,
   shiftAlreadyCut,
   onAddProduct,
-  inputRef // <--- 1. AGREGAMOS EL REF A LAS PROPS
+  inputRef, // <--- 1. AGREGAMOS EL REF A LAS PROPS
 }) => {
   const handleChange = (event) => {
     setBarcode(event.target.value);
@@ -54,19 +54,13 @@ const SalesProductInput = ({
 
       <div
         className={`${styles.addProductBtn} ${
-          shiftAlreadyCut
-            ? styles.actionButtonDisabled
-            : ""
+          shiftAlreadyCut ? styles.actionButtonDisabled : ""
         }`}
         onClick={handleAddProduct}
       >
-        <span className={styles.actionKey2}>
-          ENTER
-        </span>
+        <span className={styles.actionKey2}>ENTER</span>
 
-        <span className={styles.actionText2}>
-          Agregar Producto
-        </span>
+        <span className={styles.actionText2}>Agregar Producto</span>
       </div>
     </div>
   );

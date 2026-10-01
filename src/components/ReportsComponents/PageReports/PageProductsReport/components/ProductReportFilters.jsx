@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./ReportComponents.module.css";
 
-const ProductReportFilters = ({ 
-  dateRange, 
-  setDateRange, 
+const ProductReportFilters = ({
+  dateRange,
+  setDateRange,
   onGenerate,
   onExportPDF,
-  onExportExcel
+  onExportExcel,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -36,30 +36,30 @@ const ProductReportFilters = ({
     <div className={styles.filtersWrapper}>
       <div className={styles.inputGroup}>
         <label>Desde:</label>
-        <input 
-          type="date" 
-          name="startDate" 
-          value={dateRange.startDate} 
+        <input
+          type="date"
+          name="startDate"
+          value={dateRange.startDate}
           max={dateRange.endDate || new Date().toISOString().split("T")[0]}
-          onChange={handleChange} 
+          onChange={handleChange}
           className={styles.dateInput}
         />
       </div>
       <div className={styles.inputGroup}>
         <label>Hasta:</label>
-        <input 
-          type="date" 
-          name="endDate" 
-          value={dateRange.endDate} 
+        <input
+          type="date"
+          name="endDate"
+          value={dateRange.endDate}
           max={new Date().toISOString().split("T")[0]}
-          onChange={handleChange} 
+          onChange={handleChange}
           className={styles.dateInput}
         />
       </div>
-      
+
       <div className={styles.dropdownWrapper} ref={menuRef}>
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={styles.generateButton}
         >
           Generar Reporte
@@ -67,24 +67,24 @@ const ProductReportFilters = ({
 
         {isMenuOpen && (
           <div className={styles.dropdownMenu}>
-            <button 
+            <button
               onClick={() => handleAction(onGenerate)}
               className={`${styles.dropdownItem} ${styles.dropdownItemPrimary}`}
             >
               Consultar Datos en Pantalla
             </button>
-            
+
             <div className={styles.dropdownDivider}></div>
-            
-            <button 
-              onClick={() => handleAction(onExportPDF)} 
+
+            <button
+              onClick={() => handleAction(onExportPDF)}
               className={styles.dropdownItem}
             >
               Imprimir PDF (Resumen Ejecutivo)
             </button>
-            
-            <button 
-              onClick={() => handleAction(onExportExcel)} 
+
+            <button
+              onClick={() => handleAction(onExportExcel)}
               className={styles.dropdownItem}
             >
               Descargar Libro Excel (.xlsx)

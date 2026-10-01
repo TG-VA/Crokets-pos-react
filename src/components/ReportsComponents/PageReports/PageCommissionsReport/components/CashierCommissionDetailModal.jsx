@@ -66,7 +66,8 @@ export const CashierCommissionDetailModal = ({
               Desglose de Comisiones - {cashier.cashierName}
             </h3>
             <span className={styles.modalSubtitle}>
-              Sucursal: {cashier.branchName || "General"} | Total tickets: {totalTickets}
+              Sucursal: {cashier.branchName || "General"} | Total tickets:{" "}
+              {totalTickets}
             </span>
           </div>
           <button
@@ -101,9 +102,7 @@ export const CashierCommissionDetailModal = ({
               </span>
             </div>
             <div className={styles.modalMiniKpiCard}>
-              <span className={styles.modalMiniKpiLabel}>
-                Piezas Vendidas
-              </span>
+              <span className={styles.modalMiniKpiLabel}>Piezas Vendidas</span>
               <span className={styles.modalMiniKpiValue}>
                 {formatInteger(cashier.commissionablePieces)}
               </span>
@@ -135,7 +134,8 @@ export const CashierCommissionDetailModal = ({
                 {currentTickets.length === 0 ? (
                   <tr>
                     <td colSpan={5} className={styles.emptyState}>
-                      No se encontraron tickets con productos comisionables para este cajero.
+                      No se encontraron tickets con productos comisionables para
+                      este cajero.
                     </td>
                   </tr>
                 ) : (
@@ -144,13 +144,16 @@ export const CashierCommissionDetailModal = ({
                       <td className={`${styles.fontMono} ${styles.fontBold}`}>
                         {group.ticketNumber}
                       </td>
-                      <td className={`${styles.fontMono} ${styles.cellDateTime}`}>
+                      <td
+                        className={`${styles.fontMono} ${styles.cellDateTime}`}
+                      >
                         {formatDateTime(group.createdAt)}
                       </td>
                       <td>
                         {group.items.map((it, idx) => (
                           <div key={idx} style={{ fontSize: "0.825rem" }}>
-                            {it.quantity}x {it.productName} ({formatCurrency(it.commissionAmount)})
+                            {it.quantity}x {it.productName} (
+                            {formatCurrency(it.commissionAmount)})
                           </div>
                         ))}
                       </td>

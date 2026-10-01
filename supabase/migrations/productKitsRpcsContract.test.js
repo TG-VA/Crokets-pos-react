@@ -104,15 +104,19 @@ describe("contrato SQL de RPCs de kits de productos", () => {
 
     it("el cliente envía solo parámetros declarados en la BD", async () => {
       const { supabase } = await import("../../src/lib/supabaseClient");
-      const { createNewKitTransaction } = await import(
-        "../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService"
-      );
+      const { createNewKitTransaction } =
+        await import("../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService");
 
       supabase.rpc.mockReset();
       supabase.rpc.mockResolvedValue({ data: "kit-1", error: null });
 
       await createNewKitTransaction(
-        { barcode: "KIT1", description: "Pack", price: 100, max_kits_per_sale: 1 },
+        {
+          barcode: "KIT1",
+          description: "Pack",
+          price: 100,
+          max_kits_per_sale: 1,
+        },
         [{ id: "c1", quantity: 1 }]
       );
 
@@ -128,7 +132,12 @@ describe("contrato SQL de RPCs de kits de productos", () => {
   });
 
   describe("update_kit_transaction", () => {
-    const paramNames = ["p_kit_id", "p_kit_product_id", "p_kit_product", "p_kit_items"];
+    const paramNames = [
+      "p_kit_id",
+      "p_kit_product_id",
+      "p_kit_product",
+      "p_kit_items",
+    ];
 
     it("expone la firma esperada y retorna boolean", () => {
       const fn = findByParams("update_kit_transaction", paramNames);
@@ -184,16 +193,20 @@ describe("contrato SQL de RPCs de kits de productos", () => {
 
     it("el cliente envía solo parámetros declarados en la BD", async () => {
       const { supabase } = await import("../../src/lib/supabaseClient");
-      const { updateKitTransaction } = await import(
-        "../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService"
-      );
+      const { updateKitTransaction } =
+        await import("../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService");
 
       supabase.rpc.mockReset();
       supabase.rpc.mockResolvedValue({ data: true, error: null });
 
       await updateKitTransaction(
         { id: "kit-1", kit_product_id: "prod-1" },
-        { barcode: "KIT1", description: "Pack", price: 120, max_kits_per_sale: 2 },
+        {
+          barcode: "KIT1",
+          description: "Pack",
+          price: 120,
+          max_kits_per_sale: 2,
+        },
         [{ id: "c1", quantity: 1 }]
       );
 
@@ -263,9 +276,8 @@ describe("contrato SQL de RPCs de kits de productos", () => {
 
     it("el cliente envía solo parámetros declarados en la BD", async () => {
       const { supabase } = await import("../../src/lib/supabaseClient");
-      const { softDeleteKitTransaction } = await import(
-        "../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService"
-      );
+      const { softDeleteKitTransaction } =
+        await import("../../src/components/ProductsComponents/PageProducts/ProductsPromotions/services/productKitsService");
 
       supabase.rpc.mockReset();
       supabase.rpc.mockResolvedValue({ data: true, error: null });

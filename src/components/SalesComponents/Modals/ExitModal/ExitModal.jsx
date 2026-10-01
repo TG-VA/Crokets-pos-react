@@ -12,7 +12,10 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
   const amountInputRef = useRef(null);
 
   const resetForm = useCallback(() => {
-    setExitAmount(""); setExitDescription(""); setExitError(""); setIsSaving(false);
+    setExitAmount("");
+    setExitDescription("");
+    setExitError("");
+    setIsSaving(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -31,7 +34,8 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
       return amountInputRef.current?.focus();
     }
 
-    if (!exitDescription.trim()) return setExitError("Por favor, ingresa una descripción.");
+    if (!exitDescription.trim())
+      return setExitError("Por favor, ingresa una descripción.");
 
     try {
       setIsSaving(true);
@@ -66,9 +70,16 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        e.preventDefault(); e.stopPropagation(); handleClose();
-      } else if (e.key === "Enter" && document.activeElement?.tagName !== "TEXTAREA") {
-        e.preventDefault(); e.stopPropagation(); handleSave();
+        e.preventDefault();
+        e.stopPropagation();
+        handleClose();
+      } else if (
+        e.key === "Enter" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSave();
       }
     };
 
@@ -82,7 +93,8 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
     if (parts.length > 2) val = `${parts[0]}.${parts.slice(1).join("")}`;
 
     const finalParts = val.split(".");
-    if (finalParts[1]?.length > 2) val = `${finalParts[0]}.${finalParts[1].slice(0, 2)}`;
+    if (finalParts[1]?.length > 2)
+      val = `${finalParts[0]}.${finalParts[1].slice(0, 2)}`;
 
     setExitAmount(val);
     if (exitError) setExitError("");
@@ -96,37 +108,97 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
-      <div className={styles.modalContainer} role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(e) => e.stopPropagation()}>
+    <div
+      className={styles.modalOverlay}
+      onMouseDown={(e) => e.target === e.currentTarget && handleClose()}
+    >
+      <div
+        className={styles.modalContainer}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exit-modal-title"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className={styles.modalHeader}>
           <h2 id="exit-modal-title">
             <span className={styles.titleContent}>
-              <img src={ExitIcon} alt="" className={styles.titleIcon} aria-hidden="true" />
+              <img
+                src={ExitIcon}
+                alt=""
+                className={styles.titleIcon}
+                aria-hidden="true"
+              />
               Registrar salida de efectivo
             </span>
           </h2>
-          <button type="button" className={styles.closeButton} onClick={handleClose} disabled={isSaving} aria-label="Cerrar modal">
-            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={handleClose}
+            disabled={isSaving}
+            aria-label="Cerrar modal"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
         <div className={styles.modalBody}>
           <div className={styles.formGroup}>
             <label htmlFor="exitAmount">Monto:</label>
-            <input ref={amountInputRef} type="text" inputMode="decimal" id="exitAmount" value={exitAmount} onChange={handleAmountChange} placeholder="0.00" autoComplete="off" disabled={isSaving} />
+            <input
+              ref={amountInputRef}
+              type="text"
+              inputMode="decimal"
+              id="exitAmount"
+              value={exitAmount}
+              onChange={handleAmountChange}
+              placeholder="0.00"
+              autoComplete="off"
+              disabled={isSaving}
+            />
           </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="exitDescription">Descripción:</label>
-            <textarea id="exitDescription" value={exitDescription} onChange={handleDescriptionChange} placeholder="Ej. Pago a proveedor, retiro, etc." rows={4} disabled={isSaving} />
+            <textarea
+              id="exitDescription"
+              value={exitDescription}
+              onChange={handleDescriptionChange}
+              placeholder="Ej. Pago a proveedor, retiro, etc."
+              rows={4}
+              disabled={isSaving}
+            />
           </div>
 
-          {exitError && <p className={styles.errorMessage} role="alert">{exitError}</p>}
+          {exitError && (
+            <p className={styles.errorMessage} role="alert">
+              {exitError}
+            </p>
+          )}
         </div>
 
         <div className={styles.modalActions}>
-          <button type="button" className={styles.cancelButton} onClick={handleClose} disabled={isSaving}>ESC - Cancelar</button>
-          <button type="button" className={styles.saveButton} onClick={handleSave} disabled={isSaving}>{isSaving ? "Guardando..." : "Guardar salida"}</button>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={handleClose}
+            disabled={isSaving}
+          >
+            ESC - Cancelar
+          </button>
+          <button
+            type="button"
+            className={styles.saveButton}
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? "Guardando..." : "Guardar salida"}
+          </button>
         </div>
       </div>
     </div>

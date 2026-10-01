@@ -1,6 +1,9 @@
 import React from "react";
 import styles from "./CashComponents.module.css";
-import { formatCurrency, getDifferenceStatus } from "../utils/cashReportFormatters";
+import {
+  formatCurrency,
+  getDifferenceStatus,
+} from "../utils/cashReportFormatters";
 
 const CashKpiCards = ({ kpis = {}, loading = false }) => {
   const diffStatus = getDifferenceStatus(kpis.totalDifference);
@@ -47,7 +50,8 @@ const CashKpiCards = ({ kpis = {}, loading = false }) => {
           {formatCurrency(kpis.totalManualInflow - kpis.totalManualOutflow)}
         </strong>
         <span className={styles.kpiSubtitle}>
-          +{formatCurrency(kpis.totalManualInflow)} / -{formatCurrency(kpis.totalManualOutflow)}
+          +{formatCurrency(kpis.totalManualInflow)} / -
+          {formatCurrency(kpis.totalManualOutflow)}
         </span>
       </div>
 

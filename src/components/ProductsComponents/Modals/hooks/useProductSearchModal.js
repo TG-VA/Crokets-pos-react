@@ -2,17 +2,19 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import styles from "../ProductsSearchModal/ProductsSearchModal.module.css";
 import { useDidChange } from "../../../../hooks/useDidChange";
 
-export const useProductSearchModal = ({ isOpen, onClose, products, onSelect }) => {
+export const useProductSearchModal = ({
+  isOpen,
+  onClose,
+  products,
+  onSelect,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const resultsListRef = useRef(null);
 
   const getProductName = (product) => {
     return String(
-      product?.descripcion ||
-      product?.nombre ||
-      product?.name ||
-      ""
+      product?.descripcion || product?.nombre || product?.name || ""
     ).trim();
   };
 
@@ -28,9 +30,7 @@ export const useProductSearchModal = ({ isOpen, onClose, products, onSelect }) =
         const dept = (p?.departamento ?? "").toString().toLowerCase();
 
         return (
-          code.includes(term) ||
-          desc.includes(term) ||
-          dept.includes(term)
+          code.includes(term) || desc.includes(term) || dept.includes(term)
         );
       })
       .sort((a, b) => {

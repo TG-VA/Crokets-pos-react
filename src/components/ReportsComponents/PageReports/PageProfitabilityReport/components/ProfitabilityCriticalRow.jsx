@@ -23,7 +23,8 @@ const ProfitabilityCriticalRow = ({ product, onSelectKit }) => {
           <span className={styles.productNameText}>{p.productName}</span>
           {p.isPureReward ? (
             <span className={styles.rewardAlertText}>
-              Bonificación en promoción / regalo (costo absorbido por el negocio)
+              Bonificación en promoción / regalo (costo absorbido por el
+              negocio)
             </span>
           ) : p.hasPartialReward ? (
             <span className={styles.rewardSubtext}>
@@ -76,12 +77,12 @@ const ProfitabilityCriticalRow = ({ product, onSelectKit }) => {
             p.isPureReward
               ? "Costo 100% absorbido por promoción comercial o regalo ($0.00 ingreso)"
               : p.hasPartialReward
-              ? `Incluye ${p.redeemedUnits} ${
-                  p.redeemedUnits === 1
-                    ? "unidad entregada en promoción / regalo"
-                    : "unidades entregadas en promoción / regalo"
-                } ($0.00 ingreso)`
-              : ""
+                ? `Incluye ${p.redeemedUnits} ${
+                    p.redeemedUnits === 1
+                      ? "unidad entregada en promoción / regalo"
+                      : "unidades entregadas en promoción / regalo"
+                  } ($0.00 ingreso)`
+                : ""
           }
         >
           {formatCurrency(p.grossProfit)}
@@ -97,12 +98,12 @@ const ProfitabilityCriticalRow = ({ product, onSelectKit }) => {
               p.isPureReward
                 ? "100% bonificado en promoción o cortesía comercial ($0.00 ingreso)"
                 : p.hasPartialReward
-                ? `Margen contable afectado por ${p.redeemedUnits} ${
-                    p.redeemedUnits === 1
-                      ? "unidad entregada en promoción / regalo"
-                      : "unidades entregadas en promoción / regalo"
-                  }.`
-                : mClass.label
+                  ? `Margen contable afectado por ${p.redeemedUnits} ${
+                      p.redeemedUnits === 1
+                        ? "unidad entregada en promoción / regalo"
+                        : "unidades entregadas en promoción / regalo"
+                    }.`
+                  : mClass.label
             }
           >
             {mClass.badgeText || formatPercent(p.grossMarginPercent)}

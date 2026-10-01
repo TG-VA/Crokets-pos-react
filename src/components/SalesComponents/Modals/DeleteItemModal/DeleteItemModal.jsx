@@ -4,73 +4,137 @@ import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
-const DeleteItemModal = memo(({ isOpen, onClose, onConfirmDelete, selectedProduct }) => {
-  
-  const handleConfirm = useCallback(() => {
-    onConfirmDelete();
-    onClose();
-  }, [onConfirmDelete, onClose]);
+const DeleteItemModal = memo(
+  ({ isOpen, onClose, onConfirmDelete, selectedProduct }) => {
+    const handleConfirm = useCallback(() => {
+      onConfirmDelete();
+      onClose();
+    }, [onConfirmDelete, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
+    useEffect(() => {
+      if (!isOpen) return;
 
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault(); e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); e.stopImmediatePropagation?.();
-        return onClose();
-      }
-      if (e.key === "Enter") {
-        e.preventDefault(); e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); e.stopImmediatePropagation?.();
-        return handleConfirm();
-      }
-    };
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          e.nativeEvent?.stopImmediatePropagation?.();
+          e.stopImmediatePropagation?.();
+          return onClose();
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          e.nativeEvent?.stopImmediatePropagation?.();
+          e.stopImmediatePropagation?.();
+          return handleConfirm();
+        }
+      };
 
-    document.addEventListener("keydown", handleKeyDown, true);
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, onClose, handleConfirm]);
+      document.addEventListener("keydown", handleKeyDown, true);
+      return () => document.removeEventListener("keydown", handleKeyDown, true);
+    }, [isOpen, onClose, handleConfirm]);
 
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>
-            <span className={styles.titleContent}>
-              <img src={DeleteIcon} alt="" className={styles.titleIcon} aria-hidden="true" />
-              Eliminar artículo
-            </span>
-          </h2>
-          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Cerrar modal">
-            <img src={XmarkIcon} alt="" className={styles.closeIcon} aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className={styles.modalBody}>
-          <div className={styles.warningIconBox}>
-            <img src={WarningIcon} alt="" className={styles.warningIcon} aria-hidden="true" />
+    return (
+      <div className={styles.modalOverlay} onClick={onClose}>
+        <div
+          className={styles.modalContent}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className={styles.modalHeader}>
+            <h2>
+              <span className={styles.titleContent}>
+                <img
+                  src={DeleteIcon}
+                  alt=""
+                  className={styles.titleIcon}
+                  aria-hidden="true"
+                />
+                Eliminar artículo
+              </span>
+            </h2>
+            <button
+              type="button"
+              className={styles.closeButton}
+              onClick={onClose}
+              aria-label="Cerrar modal"
+            >
+              <img
+                src={XmarkIcon}
+                alt=""
+                className={styles.closeIcon}
+                aria-hidden="true"
+              />
+            </button>
           </div>
-          <h3 className={styles.confirmTitle}>¿Estás seguro?</h3>
-          <p className={styles.confirmText}>¿Deseas eliminar este producto de la venta?</p>
 
-          {selectedProduct && (
-            <div className={styles.productInfo}>
-              <p><strong>Producto:</strong> {selectedProduct.nombre || selectedProduct.name || selectedProduct.codigo || "Producto"}</p>
-              <p><strong>Código:</strong> {selectedProduct.codigo || selectedProduct.barcode || "Sin código"}</p>
-              <p><strong>Precio:</strong> ${Number(selectedProduct.precio || 0).toFixed(2)}</p>
-              <p><strong>Cantidad:</strong> {Number(selectedProduct.cantidad || 0)}</p>
-              <p><strong>Importe:</strong> ${Number(selectedProduct.importe || 0).toFixed(2)}</p>
+          <div className={styles.modalBody}>
+            <div className={styles.warningIconBox}>
+              <img
+                src={WarningIcon}
+                alt=""
+                className={styles.warningIcon}
+                aria-hidden="true"
+              />
             </div>
-          )}
-        </div>
+            <h3 className={styles.confirmTitle}>¿Estás seguro?</h3>
+            <p className={styles.confirmText}>
+              ¿Deseas eliminar este producto de la venta?
+            </p>
 
-        <div className={styles.modalFooter}>
-          <button type="button" className={styles.cancelButton} onClick={onClose}>ESC - Cancelar</button>
-          <button type="button" className={styles.confirmButton} onClick={handleConfirm}>ENTER - Eliminar</button>
+            {selectedProduct && (
+              <div className={styles.productInfo}>
+                <p>
+                  <strong>Producto:</strong>{" "}
+                  {selectedProduct.nombre ||
+                    selectedProduct.name ||
+                    selectedProduct.codigo ||
+                    "Producto"}
+                </p>
+                <p>
+                  <strong>Código:</strong>{" "}
+                  {selectedProduct.codigo ||
+                    selectedProduct.barcode ||
+                    "Sin código"}
+                </p>
+                <p>
+                  <strong>Precio:</strong> $
+                  {Number(selectedProduct.precio || 0).toFixed(2)}
+                </p>
+                <p>
+                  <strong>Cantidad:</strong>{" "}
+                  {Number(selectedProduct.cantidad || 0)}
+                </p>
+                <p>
+                  <strong>Importe:</strong> $
+                  {Number(selectedProduct.importe || 0).toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={onClose}
+            >
+              ESC - Cancelar
+            </button>
+            <button
+              type="button"
+              className={styles.confirmButton}
+              onClick={handleConfirm}
+            >
+              ENTER - Eliminar
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 export default DeleteItemModal;

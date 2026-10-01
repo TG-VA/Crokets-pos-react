@@ -8,24 +8,18 @@ import {
   toUpperSafe,
 } from "../utils/movementFormatters";
 
-import {
-  formatDateKeyLabel,
-  formatDateTime,
-} from "../utils/movementDateUtils";
+import { formatDateKeyLabel, formatDateTime } from "../utils/movementDateUtils";
 
 const EXCEL_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-const REPORT_TITLE =
-  "REPORTE DE MOVIMIENTOS";
+const REPORT_TITLE = "REPORTE DE MOVIMIENTOS";
 
-const WORKSHEET_NAME =
-  "MOVIMIENTOS";
+const WORKSHEET_NAME = "MOVIMIENTOS";
 
 const HEADER_ROW_NUMBER = 14;
 
-const DATA_START_ROW_NUMBER =
-  HEADER_ROW_NUMBER + 1;
+const DATA_START_ROW_NUMBER = HEADER_ROW_NUMBER + 1;
 
 const TABLE_COLUMN_COUNT = 9;
 
@@ -56,9 +50,7 @@ const THIN_BORDER = {
   },
 };
 
-const getPeriodLabel = (
-  rangePreset
-) => {
+const getPeriodLabel = (rangePreset) => {
   if (rangePreset === "today") {
     return "HOY";
   }
@@ -74,18 +66,12 @@ const getPeriodLabel = (
   return "RANGO PERSONALIZADO";
 };
 
-const formatFilterSummary = (
-  values,
-  formatter = (value) => value
-) => {
+const formatFilterSummary = (values, formatter = (value) => value) => {
   if (values === null) {
     return "TODOS";
   }
 
-  if (
-    Array.isArray(values) &&
-    values.length === 0
-  ) {
+  if (Array.isArray(values) && values.length === 0) {
     return "NINGUNO";
   }
 
@@ -93,48 +79,31 @@ const formatFilterSummary = (
     return "TODOS";
   }
 
-  return values
-    .map((value) => formatter(value))
-    .join(", ");
+  return values.map((value) => formatter(value)).join(", ");
 };
 
-const getRangeLabel = (
-  currentRange
-) => {
+const getRangeLabel = (currentRange) => {
   if (!currentRange) {
     return "—";
   }
 
-  const startLabel =
-    formatDateKeyLabel(
-      currentRange.startKey
-    );
+  const startLabel = formatDateKeyLabel(currentRange.startKey);
 
-  const endLabel =
-    formatDateKeyLabel(
-      currentRange.endKey
-    );
+  const endLabel = formatDateKeyLabel(currentRange.endKey);
 
-  if (
-    currentRange.startKey ===
-    currentRange.endKey
-  ) {
+  if (currentRange.startKey === currentRange.endKey) {
     return startLabel;
   }
 
   return `${startLabel} - ${endLabel}`;
 };
 
-const getFilenameDateSegment = (
-  dateKey,
-  fallback = "SIN-FECHA"
-) => {
+const getFilenameDateSegment = (dateKey, fallback = "SIN-FECHA") => {
   if (!dateKey) {
     return fallback;
   }
 
-  const [year, month, day] =
-    String(dateKey).split("-");
+  const [year, month, day] = String(dateKey).split("-");
 
   if (!year || !month || !day) {
     return fallback;
@@ -143,9 +112,7 @@ const getFilenameDateSegment = (
   return `${day}-${month}-${year}`;
 };
 
-const configureWorksheetColumns = (
-  worksheet
-) => {
+const configureWorksheetColumns = (worksheet) => {
   worksheet.columns = [
     {
       key: "fecha",
@@ -186,13 +153,10 @@ const configureWorksheetColumns = (
   ];
 };
 
-const configureReportTitle = (
-  worksheet
-) => {
+const configureReportTitle = (worksheet) => {
   worksheet.mergeCells("A1:I1");
 
-  const titleCell =
-    worksheet.getCell("A1");
+  const titleCell = worksheet.getCell("A1");
 
   titleCell.value = REPORT_TITLE;
 
@@ -218,136 +182,87 @@ const buildInformationRows = ({
   facetFilters,
 }) => {
   return [
-    [
-      "SUCURSAL",
-      branchLabel || "—",
-    ],
-    [
-      "MOVIMIENTOS EXPORTADOS",
-      String(rowsCount),
-    ],
-    [
-      "PERIODO",
-      getPeriodLabel(rangePreset),
-    ],
-    [
-      "RANGO",
-      getRangeLabel(currentRange),
-    ],
+    ["SUCURSAL", branchLabel || "—"],
+    ["MOVIMIENTOS EXPORTADOS", String(rowsCount)],
+    ["PERIODO", getPeriodLabel(rangePreset)],
+    ["RANGO", getRangeLabel(currentRange)],
     [
       "FILTRO PRODUCTO",
-      formatFilterSummary(
-        facetFilters?.product,
-        (value) => toUpperSafe(value)
-      ),
+      formatFilterSummary(facetFilters?.product, (value) => toUpperSafe(value)),
     ],
     [
       "FILTRO TICKET",
-      formatFilterSummary(
-        facetFilters?.ticket,
-        (value) => toUpperSafe(value)
-      ),
+      formatFilterSummary(facetFilters?.ticket, (value) => toUpperSafe(value)),
     ],
     [
       "FILTRO TIPO",
-      formatFilterSummary(
-        facetFilters?.type,
-        (value) =>
-          toUpperSafe(
-            formatMovementType(value)
-          )
+      formatFilterSummary(facetFilters?.type, (value) =>
+        toUpperSafe(formatMovementType(value))
       ),
     ],
     [
       "FILTRO MOTIVO",
-      formatFilterSummary(
-        facetFilters?.reason,
-        (value) => toUpperSafe(value)
-      ),
+      formatFilterSummary(facetFilters?.reason, (value) => toUpperSafe(value)),
     ],
     [
       "FILTRO USUARIO",
-      formatFilterSummary(
-        facetFilters?.user,
-        (value) => toUpperSafe(value)
-      ),
+      formatFilterSummary(facetFilters?.user, (value) => toUpperSafe(value)),
     ],
-    [
-      "EXPORTADO",
-      formatDateTime(
-        new Date().toISOString()
-      ),
-    ],
+    ["EXPORTADO", formatDateTime(new Date().toISOString())],
   ];
 };
 
-const renderInformationRows = ({
-  worksheet,
-  informationRows,
-}) => {
-  informationRows.forEach(
-    ([label, value], index) => {
-      const rowNumber = index + 2;
+const renderInformationRows = ({ worksheet, informationRows }) => {
+  informationRows.forEach(([label, value], index) => {
+    const rowNumber = index + 2;
 
-      const labelCell =
-        worksheet.getCell(
-          `A${rowNumber}`
-        );
+    const labelCell = worksheet.getCell(`A${rowNumber}`);
 
-      const valueCell =
-        worksheet.getCell(
-          `B${rowNumber}`
-        );
+    const valueCell = worksheet.getCell(`B${rowNumber}`);
 
-      labelCell.value = label;
-      valueCell.value = value;
+    labelCell.value = label;
+    valueCell.value = value;
 
-      labelCell.font = {
-        bold: true,
-        name: "Arial",
-      };
+    labelCell.font = {
+      bold: true,
+      name: "Arial",
+    };
 
-      valueCell.font = {
-        name: "Arial",
-      };
+    valueCell.font = {
+      name: "Arial",
+    };
 
-      labelCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: {
-          argb: "FFF3F3F3",
-        },
-      };
+    labelCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: {
+        argb: "FFF3F3F3",
+      },
+    };
 
-      valueCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: {
-          argb: "FFF9F9F9",
-        },
-      };
+    valueCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: {
+        argb: "FFF9F9F9",
+      },
+    };
 
-      labelCell.border = THIN_BORDER;
-      valueCell.border = THIN_BORDER;
+    labelCell.border = THIN_BORDER;
+    valueCell.border = THIN_BORDER;
 
-      labelCell.alignment = {
-        vertical: "middle",
-      };
+    labelCell.alignment = {
+      vertical: "middle",
+    };
 
-      valueCell.alignment = {
-        vertical: "middle",
-      };
-    }
-  );
+    valueCell.alignment = {
+      vertical: "middle",
+    };
+  });
 };
 
-const configureTableHeader = (
-  worksheet
-) => {
-  const headerRow =
-    worksheet.getRow(
-      HEADER_ROW_NUMBER
-    );
+const configureTableHeader = (worksheet) => {
+  const headerRow = worksheet.getRow(HEADER_ROW_NUMBER);
 
   headerRow.values = [
     "FECHA",
@@ -390,36 +305,23 @@ const configureTableHeader = (
   });
 };
 
-const getStockCellValue = (
-  rowView,
-  stockValue
-) => {
+const getStockCellValue = (rowView, stockValue) => {
   if (isNoStockMovement(rowView)) {
     return "—";
   }
 
-  if (
-    stockValue === null ||
-    stockValue === undefined
-  ) {
+  if (stockValue === null || stockValue === undefined) {
     return "—";
   }
 
   return stockValue;
 };
 
-const renderMovementRows = ({
-  worksheet,
-  rows,
-}) => {
+const renderMovementRows = ({ worksheet, rows }) => {
   rows.forEach((row, index) => {
-    const rowView =
-      buildRowView(row);
+    const rowView = buildRowView(row);
 
-    const excelRow =
-      worksheet.getRow(
-        DATA_START_ROW_NUMBER + index
-      );
+    const excelRow = worksheet.getRow(DATA_START_ROW_NUMBER + index);
 
     excelRow.values = [
       rowView.soldAt,
@@ -427,14 +329,8 @@ const renderMovementRows = ({
       rowView.ticket,
       rowView.typeLabel,
       rowView.qty,
-      getStockCellValue(
-        rowView,
-        rowView.prev
-      ),
-      getStockCellValue(
-        rowView,
-        rowView.next
-      ),
+      getStockCellValue(rowView, rowView.prev),
+      getStockCellValue(rowView, rowView.next),
       rowView.reason,
       rowView.username,
     ];
@@ -443,14 +339,10 @@ const renderMovementRows = ({
 
     for (
       let columnNumber = 1;
-      columnNumber <=
-      TABLE_COLUMN_COUNT;
+      columnNumber <= TABLE_COLUMN_COUNT;
       columnNumber += 1
     ) {
-      const cell =
-        excelRow.getCell(
-          columnNumber
-        );
+      const cell = excelRow.getCell(columnNumber);
 
       cell.font = {
         name: "Arial",
@@ -459,17 +351,14 @@ const renderMovementRows = ({
       cell.border = THIN_BORDER;
 
       cell.alignment =
-        columnNumber >= 5 &&
-        columnNumber <= 7
+        columnNumber >= 5 && columnNumber <= 7
           ? {
               horizontal: "center",
               vertical: "middle",
             }
           : {
               vertical: "middle",
-              wrapText:
-                columnNumber === 2 ||
-                columnNumber === 8,
+              wrapText: columnNumber === 2 || columnNumber === 8,
             };
 
       if (index % 2 === 0) {
@@ -485,9 +374,7 @@ const renderMovementRows = ({
   });
 };
 
-const configureAutoFilter = (
-  worksheet
-) => {
+const configureAutoFilter = (worksheet) => {
   worksheet.autoFilter = {
     from: {
       row: HEADER_ROW_NUMBER,
@@ -495,15 +382,12 @@ const configureAutoFilter = (
     },
     to: {
       row: HEADER_ROW_NUMBER,
-      column:
-        TABLE_COLUMN_COUNT,
+      column: TABLE_COLUMN_COUNT,
     },
   };
 };
 
-const configureFreezePanes = (
-  worksheet
-) => {
+const configureFreezePanes = (worksheet) => {
   worksheet.views = [
     {
       state: "frozen",
@@ -513,41 +397,28 @@ const configureFreezePanes = (
   ];
 };
 
-const downloadWorkbook = async ({
-  workbook,
-  filename,
-}) => {
-  const output =
-    await workbook.xlsx.writeBuffer();
+const downloadWorkbook = async ({ workbook, filename }) => {
+  const output = await workbook.xlsx.writeBuffer();
 
-  const blob = new Blob(
-    [output],
-    {
-      type: EXCEL_MIME_TYPE,
-    }
-  );
+  const blob = new Blob([output], {
+    type: EXCEL_MIME_TYPE,
+  });
 
-  const objectUrl =
-    URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
 
-  const downloadAnchor =
-    document.createElement("a");
+  const downloadAnchor = document.createElement("a");
 
   downloadAnchor.href = objectUrl;
   downloadAnchor.download = filename;
   downloadAnchor.style.display = "none";
 
-  document.body.appendChild(
-    downloadAnchor
-  );
+  document.body.appendChild(downloadAnchor);
 
   downloadAnchor.click();
   downloadAnchor.remove();
 
   window.setTimeout(() => {
-    URL.revokeObjectURL(
-      objectUrl
-    );
+    URL.revokeObjectURL(objectUrl);
   }, 1000);
 };
 
@@ -558,78 +429,54 @@ export const exportMovementsReport = async ({
   currentRange = null,
   facetFilters = {},
 }) => {
-  const normalizedRows =
-    Array.isArray(rows)
-      ? rows
-      : [];
+  const normalizedRows = Array.isArray(rows) ? rows : [];
 
-  const workbook =
-    new ExcelJS.Workbook();
+  const workbook = new ExcelJS.Workbook();
 
   workbook.creator = "Crokets POS";
   workbook.created = new Date();
 
-  const worksheet =
-    workbook.addWorksheet(
-      WORKSHEET_NAME
-    );
+  const worksheet = workbook.addWorksheet(WORKSHEET_NAME);
 
-  configureWorksheetColumns(
-    worksheet
-  );
+  configureWorksheetColumns(worksheet);
 
-  configureReportTitle(
-    worksheet
-  );
+  configureReportTitle(worksheet);
 
-  const informationRows =
-    buildInformationRows({
-      branchLabel,
-      rowsCount:
-        normalizedRows.length,
-      rangePreset,
-      currentRange,
-      facetFilters,
-    });
+  const informationRows = buildInformationRows({
+    branchLabel,
+    rowsCount: normalizedRows.length,
+    rangePreset,
+    currentRange,
+    facetFilters,
+  });
 
   renderInformationRows({
     worksheet,
     informationRows,
   });
 
-  configureTableHeader(
-    worksheet
-  );
+  configureTableHeader(worksheet);
 
   renderMovementRows({
     worksheet,
     rows: normalizedRows,
   });
 
-  configureAutoFilter(
-    worksheet
+  configureAutoFilter(worksheet);
+
+  configureFreezePanes(worksheet);
+
+  const branchFilenameSegment = normalizeFilenameSegment(
+    branchLabel,
+    "POLIGONO"
   );
 
-  configureFreezePanes(
-    worksheet
+  const startDateSegment = getFilenameDateSegment(currentRange?.startKey);
+
+  const endDateSegment = getFilenameDateSegment(
+    currentRange?.endKey,
+    startDateSegment
   );
-
-  const branchFilenameSegment =
-    normalizeFilenameSegment(
-      branchLabel,
-      "POLIGONO"
-    );
-
-  const startDateSegment =
-    getFilenameDateSegment(
-      currentRange?.startKey
-    );
-
-  const endDateSegment =
-    getFilenameDateSegment(
-      currentRange?.endKey,
-      startDateSegment
-    );
 
   const filenameParts = [
     "MOVIMIENTOS",
@@ -637,18 +484,11 @@ export const exportMovementsReport = async ({
     startDateSegment,
   ];
 
-  if (
-    startDateSegment !==
-    endDateSegment
-  ) {
-    filenameParts.push(
-      "A",
-      endDateSegment
-    );
+  if (startDateSegment !== endDateSegment) {
+    filenameParts.push("A", endDateSegment);
   }
 
-  const filename =
-    filenameParts.join(" ");
+  const filename = filenameParts.join(" ");
 
   await downloadWorkbook({
     workbook,
@@ -657,7 +497,6 @@ export const exportMovementsReport = async ({
 
   return {
     filename: `${filename}.xlsx`,
-    exportedRows:
-      normalizedRows.length,
+    exportedRows: normalizedRows.length,
   };
 };

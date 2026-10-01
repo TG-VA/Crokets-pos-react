@@ -95,7 +95,8 @@ const PageInventoryReport = () => {
       const branchName =
         selectedBranchId === "ALL"
           ? "Todas_las_sucursales"
-          : branchesList.find((b) => b.id === selectedBranchId)?.name || "Sucursal";
+          : branchesList.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal";
 
       await exportInventoryReportToExcel(reportData, branchName);
     } catch (err) {
@@ -112,7 +113,8 @@ const PageInventoryReport = () => {
         <div className={styles.headerTitleGroup}>
           <h1 className={styles.title}>Reporte de Inventario</h1>
           <p className={styles.description}>
-            Consulta existencias físicas, valorización al costo y venta, sugerencias de reorden y productos agotados.
+            Consulta existencias físicas, valorización al costo y venta,
+            sugerencias de reorden y productos agotados.
           </p>
         </div>
 
@@ -270,11 +272,17 @@ const PageInventoryReport = () => {
       )}
 
       {activeTab === "reorder" && (
-        <ReorderSuggestionsTable items={filteredReorder} isLoading={isLoading} />
+        <ReorderSuggestionsTable
+          items={filteredReorder}
+          isLoading={isLoading}
+        />
       )}
 
       {activeTab === "departments" && (
-        <InventoryDepartmentSummary departmentData={byDepartment} isLoading={isLoading} />
+        <InventoryDepartmentSummary
+          departmentData={byDepartment}
+          isLoading={isLoading}
+        />
       )}
 
       {activeTab === "exhausted" && (

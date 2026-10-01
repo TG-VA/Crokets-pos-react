@@ -2,8 +2,7 @@ import { supabase } from "../../../../../lib/supabaseClient";
 
 import { sortInventoryRows } from "../utils/inventoryReportUtils";
 
-const POLI_BRANCH_ID =
-  "412f367f-7c86-45ca-9e91-b8fe6274b232";
+const POLI_BRANCH_ID = "412f367f-7c86-45ca-9e91-b8fe6274b232";
 
 const INVENTORY_SELECT_CANDIDATES = [
   `
@@ -240,9 +239,7 @@ export const fetchInventoryReportRows = async (branchId) => {
   const mappedInventoryRows = activeInventoryRows.map(mapInventoryRow);
 
   const inventoryProductIds = new Set(
-    mappedInventoryRows
-      .map((item) => item.productId)
-      .filter(Boolean)
+    mappedInventoryRows.map((item) => item.productId).filter(Boolean)
   );
 
   const noStockProducts = await fetchNoStockProducts();
@@ -251,8 +248,5 @@ export const fetchInventoryReportRows = async (branchId) => {
     .filter((product) => !inventoryProductIds.has(product.id))
     .map(mapNoStockProduct);
 
-  return sortInventoryRows([
-    ...mappedInventoryRows,
-    ...mappedNoStockProducts,
-  ]);
+  return sortInventoryRows([...mappedInventoryRows, ...mappedNoStockProducts]);
 };

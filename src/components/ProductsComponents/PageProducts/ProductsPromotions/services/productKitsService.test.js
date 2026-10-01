@@ -81,13 +81,18 @@ describe("productKitsService", () => {
       const result = await fetchKits();
 
       expect(result.map((kit) => kit.id)).toEqual(["k1"]);
-      expect(kitsQ.order).toHaveBeenCalledWith("created_at", { ascending: false });
+      expect(kitsQ.order).toHaveBeenCalledWith("created_at", {
+        ascending: false,
+      });
     });
   });
 
   describe("checkKitDuplicates", () => {
     it("detecta barcode duplicado", async () => {
-      productsQ.maybeSingle.mockResolvedValue({ data: { id: "otro" }, error: null });
+      productsQ.maybeSingle.mockResolvedValue({
+        data: { id: "otro" },
+        error: null,
+      });
 
       await expect(checkKitDuplicates("BC", "Desc")).resolves.toEqual({
         isDuplicate: true,
@@ -131,7 +136,12 @@ describe("productKitsService", () => {
     it("invoca la RPC create_kit_transaction con el payload del kit", async () => {
       supabase.rpc.mockResolvedValue({ data: "kit1", error: null });
 
-      const kitData = { barcode: "KIT1", description: "Pack", price: 100, max_kits_per_sale: 3 };
+      const kitData = {
+        barcode: "KIT1",
+        description: "Pack",
+        price: 100,
+        max_kits_per_sale: 3,
+      };
       const result = await createNewKitTransaction(kitData, [
         { id: "c1", quantity: 2 },
         { id: "c2", quantity: 1 },
@@ -155,20 +165,27 @@ describe("productKitsService", () => {
     it("usa max_kits_per_sale por defecto 1 si no se envía", async () => {
       supabase.rpc.mockResolvedValue({ data: "kit1", error: null });
 
-      await createNewKitTransaction({ barcode: "KIT1", description: "Pack", price: 100 }, [
-        { id: "c1", quantity: 1 },
-      ]);
+      await createNewKitTransaction(
+        { barcode: "KIT1", description: "Pack", price: 100 },
+        [{ id: "c1", quantity: 1 }]
+      );
 
-      expect(supabase.rpc.mock.calls[0][1].p_kit_product.max_kits_per_sale).toBe(1);
+      expect(
+        supabase.rpc.mock.calls[0][1].p_kit_product.max_kits_per_sale
+      ).toBe(1);
     });
 
     it("propaga el error de la RPC sin intentar rollback", async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "rpc fail" },
+      });
 
       await expect(
-        createNewKitTransaction({ barcode: "KIT1", description: "Pack", price: 100 }, [
-          { id: "c1", quantity: 1 },
-        ])
+        createNewKitTransaction(
+          { barcode: "KIT1", description: "Pack", price: 100 },
+          [{ id: "c1", quantity: 1 }]
+        )
       ).rejects.toThrow("rpc fail");
       expect(supabase.from).not.toHaveBeenCalledWith("product_kits");
     });
@@ -179,12 +196,16 @@ describe("productKitsService", () => {
       supabase.rpc.mockResolvedValue({ data: true, error: null });
 
       const editingKit = { id: "kit1", kit_product_id: "prod1" };
-      const result = await updateKitTransaction(editingKit, {
-        barcode: "KIT1",
-        description: "Pack",
-        price: 120,
-        max_kits_per_sale: 4,
-      }, [{ id: "c1", quantity: 2 }]);
+      const result = await updateKitTransaction(
+        editingKit,
+        {
+          barcode: "KIT1",
+          description: "Pack",
+          price: 120,
+          max_kits_per_sale: 4,
+        },
+        [{ id: "c1", quantity: 2 }]
+      );
 
       expect(result).toBe(true);
       expect(supabase.rpc).toHaveBeenCalledWith("update_kit_transaction", {
@@ -201,13 +222,23 @@ describe("productKitsService", () => {
     });
 
     it("propaga el error de la RPC", async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "rpc fail" },
+      });
 
       const editingKit = { id: "kit1", kit_product_id: "prod1" };
       await expect(
-        updateKitTransaction(editingKit, { barcode: "KIT1", description: "Pack", price: 120, max_kits_per_sale: 1 }, [
-          { id: "c1", quantity: 2 },
-        ])
+        updateKitTransaction(
+          editingKit,
+          {
+            barcode: "KIT1",
+            description: "Pack",
+            price: 120,
+            max_kits_per_sale: 1,
+          },
+          [{ id: "c1", quantity: 2 }]
+        )
       ).rejects.toThrow("rpc fail");
       expect(supabase.from).not.toHaveBeenCalled();
     });
@@ -216,12 +247,17 @@ describe("productKitsService", () => {
   describe("fetchKitItems", () => {
     it("trae los items del kit ordenados", async () => {
       itemsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "i1", quantity: 2 }], error: null }).then(ok);
+        Promise.resolve({
+          data: [{ id: "i1", quantity: 2 }],
+          error: null,
+        }).then(ok);
 
       const result = await fetchKitItems("kit1");
 
       expect(result).toEqual([{ id: "i1", quantity: 2 }]);
-      expect(itemsQ.order).toHaveBeenCalledWith("created_at", { ascending: true });
+      expect(itemsQ.order).toHaveBeenCalledWith("created_at", {
+        ascending: true,
+      });
     });
   });
 
@@ -240,7 +276,9 @@ describe("productKitsService", () => {
         thenableQuery({ data: null, error: { message: "toggle fail" } })
       );
 
-      await expect(toggleKitStatus("kit1", true)).rejects.toThrow("toggle fail");
+      await expect(toggleKitStatus("kit1", true)).rejects.toThrow(
+        "toggle fail"
+      );
     });
   });
 
@@ -258,7 +296,10 @@ describe("productKitsService", () => {
     });
 
     it("propaga el error de la RPC sin reverir estados", async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: { message: "rpc fail" } });
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: "rpc fail" },
+      });
 
       await expect(softDeleteKitTransaction("kit1", "prod1")).rejects.toThrow(
         "rpc fail"

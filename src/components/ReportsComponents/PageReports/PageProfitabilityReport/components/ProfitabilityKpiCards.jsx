@@ -45,8 +45,8 @@ const ProfitabilityKpiCards = ({ kpis = {} }) => {
         (kpis.grossProfit || 0) > 0
           ? styles.kpiValueSuccess
           : (kpis.grossProfit || 0) < 0
-          ? styles.kpiValueDanger
-          : "",
+            ? styles.kpiValueDanger
+            : "",
     },
     {
       id: "margin",
@@ -58,8 +58,8 @@ const ProfitabilityKpiCards = ({ kpis = {} }) => {
         (kpis.grossMarginPercent || 0) >= 30
           ? styles.kpiValueSuccess
           : (kpis.grossMarginPercent || 0) < 15
-          ? styles.kpiValueWarning
-          : "",
+            ? styles.kpiValueWarning
+            : "",
     },
     {
       id: "critical",

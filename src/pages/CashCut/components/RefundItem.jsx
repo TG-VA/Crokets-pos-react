@@ -1,4 +1,9 @@
-import { fmt, fmtShortDate, fmtTime, getFolio } from "../utils/cashCutFormatters";
+import {
+  fmt,
+  fmtShortDate,
+  fmtTime,
+  getFolio,
+} from "../utils/cashCutFormatters";
 
 import styles from "../CashCut.module.css";
 
@@ -6,9 +11,7 @@ const RefundItem = ({ saleId, date, reason, amount, method }) => (
   <div className={styles.cancellationItem}>
     <div className={styles.cancellationTop}>
       <div className={styles.cancellationLeft}>
-        <div className={styles.cancellationFolio}>
-          Folio {getFolio(saleId)}
-        </div>
+        <div className={styles.cancellationFolio}>Folio {getFolio(saleId)}</div>
 
         <div className={styles.cancellationDate}>
           {fmtShortDate(date)} · {fmtTime(date)}

@@ -68,10 +68,16 @@ const PageProfitabilityReport = () => {
 
     try {
       const activeBranchObj = branchesList.find((b) => b.id === branchId);
-      const branchName = activeBranchObj ? activeBranchObj.name : "Todas las sucursales";
+      const branchName = activeBranchObj
+        ? activeBranchObj.name
+        : "Todas las sucursales";
 
-      const activeDeptObj = departmentsList.find((d) => String(d.id) === String(departmentId));
-      const departmentName = activeDeptObj ? activeDeptObj.name : "Todos los departamentos";
+      const activeDeptObj = departmentsList.find(
+        (d) => String(d.id) === String(departmentId)
+      );
+      const departmentName = activeDeptObj
+        ? activeDeptObj.name
+        : "Todos los departamentos";
 
       await exportProfitabilityReportToExcel({
         productsProfitability: filteredProducts,
@@ -102,7 +108,8 @@ const PageProfitabilityReport = () => {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Rentabilidad</h1>
           <p className={styles.description}>
-            Análisis financiero de ingresos, costos de venta (COGS), utilidad bruta y márgenes de ganancia.
+            Análisis financiero de ingresos, costos de venta (COGS), utilidad
+            bruta y márgenes de ganancia.
           </p>
         </div>
 
@@ -122,8 +129,8 @@ const PageProfitabilityReport = () => {
               isLoading
                 ? "Cargando datos para exportar..."
                 : !hasDataToExport
-                ? "No hay ventas en este periodo para exportar"
-                : "Descargar reporte completo en Excel (3 pestañas)"
+                  ? "No hay ventas en este periodo para exportar"
+                  : "Descargar reporte completo en Excel (3 pestañas)"
             }
           >
             <img src={fileImportIcon} alt="" className={styles.btnIcon} />
@@ -209,11 +216,7 @@ const PageProfitabilityReport = () => {
         ) : error ? (
           <div className={styles.errorState}>
             <span>{error}</span>
-            <button
-              type="button"
-              onClick={refresh}
-              className={styles.retryBtn}
-            >
+            <button type="button" onClick={refresh} className={styles.retryBtn}>
               Reintentar
             </button>
           </div>
@@ -235,9 +238,7 @@ const PageProfitabilityReport = () => {
             )}
 
             {activeTab === "CRITICAL" && (
-              <ProfitabilityCriticalTable
-                criticalProducts={criticalProducts}
-              />
+              <ProfitabilityCriticalTable criticalProducts={criticalProducts} />
             )}
           </>
         )}

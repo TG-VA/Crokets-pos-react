@@ -62,7 +62,8 @@ export const PageCommissionsReport = () => {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Comisiones de Cajeros</h1>
           <p className={styles.description}>
-            Cálculo y auditoría de incentivos generados por venta de productos comisionables
+            Cálculo y auditoría de incentivos generados por venta de productos
+            comisionables
           </p>
         </div>
 

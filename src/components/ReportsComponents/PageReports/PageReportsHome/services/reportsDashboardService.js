@@ -47,131 +47,87 @@ import {
 
 export { getEmptyReportsDashboard, getBranchesCatalog };
 
-export const getReportsDashboard = async (
-  branchId = "ALL"
-) => {
+export const getReportsDashboard = async (branchId = "ALL") => {
   const isConsolidated =
-    !branchId ||
-    branchId === "ALL" ||
-    branchId === "Todas";
+    !branchId || branchId === "ALL" || branchId === "Todas";
 
-  const {
-    todayInput,
-    todayRange,
-    chartRange,
-  } = getDashboardDateRanges();
+  const { todayInput, todayRange, chartRange } = getDashboardDateRanges();
 
-  const firstChartDateInput =
-    getDateInputFromIso(
-      chartRange.start
-    );
+  const firstChartDateInput = getDateInputFromIso(chartRange.start);
 
   /*
    * Primera carga:
    * información principal de ventas, inventario
    * e incidencias registradas durante el día.
    */
-  const [
-    salesRows,
-    inventoryRows,
-    cancelledSalesToday,
-    todayReturns,
-  ] = await Promise.all([
-    getSalesRows({
-      branchId,
-      start: chartRange.start,
-      end: chartRange.end,
-    }),
+  const [salesRows, inventoryRows, cancelledSalesToday, todayReturns] =
+    await Promise.all([
+      getSalesRows({
+        branchId,
+        start: chartRange.start,
+        end: chartRange.end,
+      }),
 
-    getBranchInventory(branchId),
+      getBranchInventory(branchId),
 
-    getTodayCancelledSales({
-      branchId,
-      todayStart: todayRange.start,
-      todayEnd: todayRange.end,
-    }),
+      getTodayCancelledSales({
+        branchId,
+        todayStart: todayRange.start,
+        todayEnd: todayRange.end,
+      }),
 
-    getTodayReturns({
-      branchId,
-      todayStart: todayRange.start,
-      todayEnd: todayRange.end,
-    }),
-  ]);
+      getTodayReturns({
+        branchId,
+        todayStart: todayRange.start,
+        todayEnd: todayRange.end,
+      }),
+    ]);
 
-  const saleIds = uniqueValues(
-    salesRows.map(
-      (sale) => sale.id
-    )
-  );
+  const saleIds = uniqueValues(salesRows.map((sale) => sale.id));
 
   /*
    * Segunda carga:
    * detalles, pagos y devoluciones de las ventas
    * recuperadas dentro del periodo del dashboard.
    */
-  const [
-    returnRows,
-    detailRows,
-    paymentRows,
-  ] = await Promise.all([
+  const [returnRows, detailRows, paymentRows] = await Promise.all([
     getSaleReturns(saleIds),
     getSaleDetails(saleIds),
     getSalePayments(saleIds),
   ]);
 
-  const returnIds = uniqueValues(
-    returnRows.map(
-      (row) => row.id
-    )
-  );
+  const returnIds = uniqueValues(returnRows.map((row) => row.id));
 
-  const returnItems =
-    await getReturnItems(returnIds);
+  const returnItems = await getReturnItems(returnIds);
 
   /*
    * Las ventas canceladas y pendientes quedan
    * excluidas de los cálculos económicos.
    */
-  const completedSales =
-    salesRows.filter(
-      isCompletedSale
-    );
+  const completedSales = salesRows.filter(isCompletedSale);
 
-  const completedSaleIds = new Set(
-    completedSales.map(
-      (sale) => sale.id
-    )
-  );
+  const completedSaleIds = new Set(completedSales.map((sale) => sale.id));
 
   /*
    * Solo se consideran devoluciones asociadas
    * a ventas válidas y completadas.
    */
-  const {
-    validReturnRows,
-    validReturnItems,
-  } = buildValidReturnsData({
+  const { validReturnRows, validReturnItems } = buildValidReturnsData({
     returnRows,
     returnItems,
     validSaleIds: completedSaleIds,
   });
 
-  const returnedAmountBySale =
-    buildReturnedAmountBySale(
-      validReturnRows
-    );
+  const returnedAmountBySale = buildReturnedAmountBySale(validReturnRows);
 
   const returnedQuantityByProduct =
-    buildReturnedQuantityByProduct(
-      validReturnItems
-    );
+    buildReturnedQuantityByProduct(validReturnItems);
 
-  const returnedAmountByProduct =
-    buildReturnedAmountByProduct({
-      returnRows: validReturnRows,
-      returnItems: validReturnItems,
-      validSaleIds: completedSaleIds,
-    });
+  const returnedAmountByProduct = buildReturnedAmountByProduct({
+    returnRows: validReturnRows,
+    returnItems: validReturnItems,
+    validSaleIds: completedSaleIds,
+  });
 
   /*
    * Identificar el producto más vendido en memoria primero
@@ -184,49 +140,34 @@ export const getReportsDashboard = async (
     returnedAmountByProduct,
   });
 
-  const paymentMethodIds =
-    uniqueValues(
-      paymentRows.map(
-        (payment) =>
-          payment.payment_method_id
-      )
-    );
+  const paymentMethodIds = uniqueValues(
+    paymentRows.map((payment) => payment.payment_method_id)
+  );
 
   /*
    * Tercera carga:
    * Solo el producto ganador del periodo y los métodos de pago.
    */
-  const [
-    topProductRecord,
-    paymentMethodRows,
-  ] = await Promise.all([
+  const [topProductRecord, paymentMethodRows] = await Promise.all([
     topProductStats?.productId
       ? getProductById(topProductStats.productId)
       : Promise.resolve(null),
 
-    getPaymentMethodsByIds(
-      paymentMethodIds
-    ),
+    getPaymentMethodsByIds(paymentMethodIds),
   ]);
 
   /*
    * KPI correspondientes al día actual.
    */
-  const kpis =
-    buildTodaySalesKpis({
-      completedSales,
-      detailRows,
-      returnedAmountBySale,
-      returnedUnitsToday:
-        todayReturns.units,
-      todayInput,
-    });
+  const kpis = buildTodaySalesKpis({
+    completedSales,
+    detailRows,
+    returnedAmountBySale,
+    returnedUnitsToday: todayReturns.units,
+    todayInput,
+  });
 
-  const inventoryAlerts =
-    buildInventoryAlerts(
-      inventoryRows,
-      isConsolidated
-    );
+  const inventoryAlerts = buildInventoryAlerts(inventoryRows, isConsolidated);
 
   return {
     kpis,
@@ -234,58 +175,43 @@ export const getReportsDashboard = async (
     salesChart: buildSalesChart({
       sales: completedSales,
       returnedAmountBySale,
-      firstDateInput:
-        firstChartDateInput,
+      firstDateInput: firstChartDateInput,
     }),
 
     highlights: {
-      topProduct: formatTopProduct(
-        topProductStats,
-        topProductRecord
-      ),
+      topProduct: formatTopProduct(topProductStats, topProductRecord),
 
-      mainPaymentMethod:
-        buildMainPaymentMethod({
-          salesRows:
-            completedSales,
-          paymentRows,
-          validSaleIds:
-            completedSaleIds,
-          paymentMethodRows,
-        }),
+      mainPaymentMethod: buildMainPaymentMethod({
+        salesRows: completedSales,
+        paymentRows,
+        validSaleIds: completedSaleIds,
+        paymentMethodRows,
+      }),
     },
 
     alerts: {
       cancelledSalesToday,
 
-      returnsToday:
-        todayReturns.count,
+      returnsToday: todayReturns.count,
 
-      returnedAmountToday:
-        todayReturns.amount,
+      returnedAmountToday: todayReturns.amount,
 
-      returnedUnitsToday:
-        todayReturns.units,
+      returnedUnitsToday: todayReturns.units,
 
-      outOfStockCount:
-        inventoryAlerts.outOfStockCount,
+      outOfStockCount: inventoryAlerts.outOfStockCount,
 
-      lowStockCount:
-        inventoryAlerts.lowStockCount,
+      lowStockCount: inventoryAlerts.lowStockCount,
 
-      outOfStockProducts:
-        inventoryAlerts.outOfStockProducts,
+      outOfStockProducts: inventoryAlerts.outOfStockProducts,
 
-      lowStockProducts:
-        inventoryAlerts.lowStockProducts,
+      lowStockProducts: inventoryAlerts.lowStockProducts,
     },
 
     meta: {
       branchId: isConsolidated ? "ALL" : branchId,
       isConsolidated,
 
-      generatedAt:
-        new Date().toISOString(),
+      generatedAt: new Date().toISOString(),
     },
   };
 };

@@ -18,7 +18,10 @@ const CriticalAuditBanner = () => {
           Auditoría de Precios y Márgenes
         </h4>
         <p className={styles.criticalBannerText}>
-          Los productos listados en esta pestaña requieren atención prioritaria. Verifica si el costo de adquisición subió con tu proveedor, si existe una bonificación de lealtad aplicada o si es necesario reajustar los precios de venta al público para proteger la utilidad del negocio.
+          Los productos listados en esta pestaña requieren atención prioritaria.
+          Verifica si el costo de adquisición subió con tu proveedor, si existe
+          una bonificación de lealtad aplicada o si es necesario reajustar los
+          precios de venta al público para proteger la utilidad del negocio.
         </p>
       </div>
     </div>

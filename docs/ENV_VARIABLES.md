@@ -10,11 +10,11 @@ Las variables con prefijo `VITE_` se **inyectan en el bundle del frontend** y po
 públicas para cualquiera que inspeccione la app empaquetada. Nunca poner aquí credenciales
 privilegiadas.
 
-| Variable | Requerida | Uso | Referencia |
-|---|---|---|---|
-| `VITE_SUPABASE_URL` | Sí | URL del proyecto Supabase | `src/lib/supabaseClient.js:3` |
-| `VITE_SUPABASE_ANON_KEY` | Sí | Anon key pública de Supabase | `src/lib/supabaseClient.js:4` |
-| `VITE_INVENTORY_MOVEMENTS_TABLE` | No | Fuerza el nombre de la tabla de movimientos de inventario (si no se define, se autodetecta entre candidatos) | `src/utils/inventoryMovements.js:20` |
+| Variable                         | Requerida | Uso                                                                                                          | Referencia                           |
+| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| `VITE_SUPABASE_URL`              | Sí        | URL del proyecto Supabase                                                                                    | `src/lib/supabaseClient.js:3`        |
+| `VITE_SUPABASE_ANON_KEY`         | Sí        | Anon key pública de Supabase                                                                                 | `src/lib/supabaseClient.js:4`        |
+| `VITE_INVENTORY_MOVEMENTS_TABLE` | No        | Fuerza el nombre de la tabla de movimientos de inventario (si no se define, se autodetecta entre candidatos) | `src/utils/inventoryMovements.js:20` |
 
 ## Backend Node (Express local)
 

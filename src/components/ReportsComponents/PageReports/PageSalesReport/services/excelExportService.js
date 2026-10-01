@@ -2,7 +2,8 @@ import { formatYMD } from "../utils/dateUtils";
 
 // helper privado para sanitizar
 const escapeHtml = (unsafe) => {
-  return (unsafe || "").toString()
+  return (unsafe || "")
+    .toString()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -11,25 +12,38 @@ const escapeHtml = (unsafe) => {
 };
 
 // helper privado para nombrar el archivo
-const getExportFileName = (prefix, startDate, endDate, selectedBranch, branchesList) => {
+const getExportFileName = (
+  prefix,
+  startDate,
+  endDate,
+  selectedBranch,
+  branchesList
+) => {
   let bName = "Global";
   if (selectedBranch !== "Todas") {
     const fb = branchesList.find((b) => b.id === selectedBranch);
     bName = fb ? fb.name.trim() : "Sucursal";
   }
   const bLabel = bName.replace(/\s+/g, "_");
-  
+
   // CORRECCIÓN: Usamos la función importada para unificar el concepto de fecha
   const startStr = formatYMD(startDate);
   const endStr = formatYMD(endDate);
-  const dateLabel = startStr && endStr ? (startStr === endStr ? startStr : `del_${startStr}_al_${endStr}`) : formatYMD(new Date());
-  
+  const dateLabel =
+    startStr && endStr
+      ? startStr === endStr
+        ? startStr
+        : `del_${startStr}_al_${endStr}`
+      : formatYMD(new Date());
+
   return `${prefix}_${bLabel}_${dateLabel}.xls`;
 };
 
 // helper privado para forzar la descarga en el navegador
 const triggerDownload = (htmlTemplate, fileName) => {
-  const blob = new Blob(["\uFEFF" + htmlTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + htmlTemplate], {
+    type: "application/vnd.ms-excel;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -40,9 +54,24 @@ const triggerDownload = (htmlTemplate, fileName) => {
   URL.revokeObjectURL(url);
 };
 
-export const generateSummaryExcel = (exportData, summary, filters, branchesList, startDate, endDate) => {
-  const fileName = getExportFileName("Resumen_Ventas", startDate, endDate, filters.branch, branchesList);
-  const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
+export const generateSummaryExcel = (
+  exportData,
+  summary,
+  filters,
+  branchesList,
+  startDate,
+  endDate
+) => {
+  const fileName = getExportFileName(
+    "Resumen_Ventas",
+    startDate,
+    endDate,
+    filters.branch,
+    branchesList
+  );
+  const emissionDate = new Date().toLocaleString("es-MX", {
+    timeZone: filters.timeZone,
+  });
 
   const htmlTemplate = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -73,9 +102,13 @@ export const generateSummaryExcel = (exportData, summary, filters, branchesList,
           <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Método de Pago</th><th>Estado</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total</th></tr>
         </thead>
         <tbody>
-          ${exportData.map((sale) => `
+          ${exportData
+            .map(
+              (sale) => `
             <tr><td><b>#${sale.ticketNumber}</b></td><td>${sale.date}</td><td>${escapeHtml(sale.branch)}</td><td>${escapeHtml(sale.cashier)}</td><td>${escapeHtml(sale.client)}</td><td class="text-center">${escapeHtml(sale.method)}</td><td class="${sale.status === "Completada" ? "status-completed" : sale.status === "Cancelada" ? "status-cancelled" : "status-warning"}">${sale.status}</td><td class="discount">${sale.discount}</td><td class="currency">${sale.total}</td></tr>
-          `).join("")}
+          `
+            )
+            .join("")}
         </tbody>
         <tfoot>
           <tr><td colspan="7" class="tfoot-label">TOTAL ACUMULADO (FILTRO ACTIVO):</td><td class="discount tfoot-value">${summary.totalDiscounts}</td><td class="currency tfoot-value">${summary.totalIncome}</td></tr>
@@ -87,9 +120,23 @@ export const generateSummaryExcel = (exportData, summary, filters, branchesList,
   triggerDownload(htmlTemplate, fileName);
 };
 
-export const generateDetailedExcel = (detailedData, filters, branchesList, startDate, endDate) => {
-  const fileName = getExportFileName("Reporte_Detallado", startDate, endDate, filters.branch, branchesList);
-  const emissionDate = new Date().toLocaleString("es-MX", { timeZone: filters.timeZone });
+export const generateDetailedExcel = (
+  detailedData,
+  filters,
+  branchesList,
+  startDate,
+  endDate
+) => {
+  const fileName = getExportFileName(
+    "Reporte_Detallado",
+    startDate,
+    endDate,
+    filters.branch,
+    branchesList
+  );
+  const emissionDate = new Date().toLocaleString("es-MX", {
+    timeZone: filters.timeZone,
+  });
 
   const htmlTemplate = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -116,9 +163,13 @@ export const generateDetailedExcel = (detailedData, filters, branchesList, start
           <tr><th>Folio</th><th>Fecha</th><th>Sucursal</th><th>Cajero</th><th>Cliente</th><th>Estado</th><th>Código Producto</th><th>Descripción</th><th style="text-align: center;">Cantidad</th><th style="text-align: right;">Precio Unitario</th><th>Motivo Descuento</th><th style="text-align: right;">Descuento</th><th style="text-align: right;">Total Línea</th></tr>
         </thead>
         <tbody>
-          ${detailedData.map((row) => `
+          ${detailedData
+            .map(
+              (row) => `
             <tr><td><b>#${row.ticketNumber}</b></td><td>${row.date}</td><td>${escapeHtml(row.branch)}</td><td>${escapeHtml(row.cashier)}</td><td>${escapeHtml(row.client)}</td><td>${row.status}</td><td class="text-code">${escapeHtml(row.barcode)}</td><td>${escapeHtml(row.productName)}</td><td class="text-center">${row.quantity}</td><td class="currency">${row.unitPrice}</td><td>${escapeHtml(row.discountType)}</td><td class="discount">${row.discountAmount}</td><td class="currency"><b>${row.totalPrice}</b></td></tr>
-          `).join("")}
+          `
+            )
+            .join("")}
         </tbody>
       </table>
     </body>

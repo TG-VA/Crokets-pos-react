@@ -19,9 +19,7 @@ const useReportsDashboard = () => {
   const [branches, setBranches] = useState([ALL_BRANCHES_OPTION]);
   const [selectedBranchId, setSelectedBranchId] = useState("ALL");
 
-  const [dashboard, setDashboard] = useState(() =>
-    getEmptyReportsDashboard()
-  );
+  const [dashboard, setDashboard] = useState(() => getEmptyReportsDashboard());
 
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -46,10 +44,7 @@ const useReportsDashboard = () => {
         ]);
       })
       .catch((catalogError) => {
-        console.error(
-          "Error al cargar catálogo de sucursales:",
-          catalogError
-        );
+        console.error("Error al cargar catálogo de sucursales:", catalogError);
       });
 
     return () => {
@@ -61,8 +56,11 @@ const useReportsDashboard = () => {
   // carga como pendiente en la misma pasada de render, sin un setState sincrono
   // que provocara un re-render en cascada. Las recargas silenciosas no cambian
   // la clave, asi que no encienden el spinner principal y usan solo `refreshing`.
-  const { isLoading, isStale: isBranchStale, markSettled } =
-    useRequestStatus(selectedBranchId);
+  const {
+    isLoading,
+    isStale: isBranchStale,
+    markSettled,
+  } = useRequestStatus(selectedBranchId);
 
   const errorVisible = isBranchStale ? "" : error;
 
@@ -101,10 +99,7 @@ const useReportsDashboard = () => {
         })
         .catch((loadError) => {
           if (!isRequestCurrent(requestId)) return;
-          console.error(
-            "Error cargando el dashboard de reportes:",
-            loadError
-          );
+          console.error("Error cargando el dashboard de reportes:", loadError);
           setError(
             loadError?.message || "No se pudo cargar el resumen de reportes."
           );
@@ -199,4 +194,3 @@ const useReportsDashboard = () => {
 };
 
 export default useReportsDashboard;
-

@@ -16,70 +16,70 @@ componentes). No hay carpeta central de tests.
 84 archivos de test (**1278 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
-| Área | Archivo |
-|---|---|
-| Formatters de producto | `src/services/products/productFormatters.test.js` |
-| CRUD de productos | `src/services/products/productCrudService.test.js` |
-| Importación de productos | `.../ProductsImport/services/productsImportService.test.js` |
-| Utilidades de importación | `.../ProductsImport/utils/importUtils.test.js` |
-| Kits / promociones | `.../ProductsPromotions/services/productKitsService.test.js` |
-| Reporte de caja | `.../PageCashReport/services/cashReportService.test.js` |
-| Reporte de comisiones | `.../PageCommissionsReport/services/commissionsReportService.test.js` |
-| Reporte de rentabilidad | `.../PageProfitabilityReport/services/profitabilityReportService.test.js` |
-| Reporte de inventario (datos) | `.../PageInventoryReport/services/inventoryReportService.test.js` |
-| Reporte de inventario (cálculos) | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js` |
-| Corte de cajero (cálculos) | `src/pages/CashCut/services/cashCutCalculationService.test.js` |
-| Corte de cajero (servicios de datos) | `src/pages/CashCut/services/cashCutReportService.test.js` |
-| Corte de cajero (detalle histórico) | `src/pages/CashCut/services/cashCutDetailService.test.js` |
-| Corte de cajero (hook principal) | `src/pages/CashCut/hooks/useCashCutReport.test.js` |
-| Corte de cajero (hook de modales) | `src/pages/CashCut/hooks/useCashCutDetail.test.js` |
-| Corte de cajero (formateadores) | `src/pages/CashCut/utils/cashCutFormatters.test.js` |
-| Corte impreso (builder de ancho fijo) | `src/utils/cashCutBuilder.test.js` |
-| Ticket: generación e impresión | `src/utils/ticketPrinter.test.js` |
-| Modal de recompensas (cálculos) | `.../RewardModal/rewardModalCalculationService.test.js` |
-| Modal de recompensas (hook) | `.../RewardModal/useRewardModal.test.js` |
-| Totales de venta | `.../SalesComponents/hooks/test/useSalesTotals.test.js` |
-| Venta transaccional (RPC) | `.../SalesComponents/services/salesTransactionService.test.js` |
-| Contrato SQL de RPCs transaccionales | `supabase/migrations/transactionalRpcsContract.test.js` |
-| Proceso principal de Electron | `electron/mainProcess.test.js` |
-| Impresión de tickets (proceso principal) | `electron/ticketPrintService.test.js` |
-| Utilidades async | `src/utils/asyncUtils.test.js` |
-| Paginación global | `src/hooks/usePagination.test.js` |
-| Navegación protegida | `src/hooks/useProtectedNavigation.test.js` |
-| Secciones protegidas | `src/config/adminProtectedSections.test.js` |
-| Guard de rutas | `src/components/ProtectedRoute/ProtectedRoute.test.jsx` |
-| Criptografía de contraseñas locales | `src/backend/password.test.js` |
-| Sucursal por dispositivo (RPC) | `src/services/deviceBranchService.test.js` |
-| Caja: sesión y apertura (RPC) | `src/services/cashRegisterService.test.js` |
-| Ticket: golden de salida | `src/utils/ticket/ticketBuilder.test.js` |
-| Ticket: primitivas de layout | `src/utils/ticket/ticketLayoutFormatters.test.js` |
-| Ticket: formateadores de fecha | `src/utils/ticket/ticketDateFormatters.test.js` |
-| Ticket: extracción de items | `src/utils/ticket/ticketItemFormatters.test.js` |
-| Ticket: servicios de recompensas | `src/utils/ticket/ticketRewardService.test.js` |
-| Ticket: servicios de pagos | `src/utils/ticket/ticketPaymentService.test.js` |
-| Ticket: formateadores de sucursal | `src/utils/ticket/ticketBranchFormatters.test.js` |
-| Ticket: servicios de puntos | `src/utils/ticket/ticketPointsService.test.js` |
-| Ticket: secciones | `src/utils/ticket/ticketSections.test.js` |
-| Reportes: ciclo de vida del dashboard | `.../PageReportsHome/hooks/useReportsDashboard.test.js` |
-| Ventas: sincronización de columnas | `.../SalesComponents/hooks/useSalesTableColumns.test.js` |
-| Ventas: atajos de teclado | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js` |
-| Facturación: validación fiscal | `.../InvoicesComponents/services/fiscalValidationService.test.js` |
-| Facturación: catálogos (usos CFDI, regímenes, C.P.) | `.../InvoicesComponents/services/invoicesCatalogService.test.js` |
-| Facturación: suscripciones realtime | `.../InvoicesComponents/services/invoicesRealtimeService.test.js` |
-| Facturación: formateadores compartidos | `.../InvoicesComponents/utils/invoiceFormatters.test.js` |
-| Facturación: cliente fiscal (cálculos) | `.../Modals/FiscalCustomerModal/services/fiscalCustomerCalculationService.test.js` |
-| Facturación: cliente fiscal (datos) | `.../Modals/FiscalCustomerModal/services/fiscalCustomerService.test.js` |
-| Facturación: factura de venta (cálculos) | `.../Modals/InvoiceSaleModal/services/invoiceSaleCalculationService.test.js` |
-| Facturación: factura de venta (datos) | `.../Modals/InvoiceSaleModal/services/invoiceSaleService.test.js` |
-| Facturación: clientes fiscales (cálculos) | `.../InvoiceCustomers/services/invoiceCustomersCalculationService.test.js` |
-| Facturación: clientes fiscales (datos) | `.../InvoiceCustomers/services/invoiceCustomersService.test.js` |
-| Facturación: ajustes del emisor (cálculos) | `.../InvoiceSettings/services/invoiceSettingsCalculationService.test.js` |
-| Facturación: ajustes del emisor (datos) | `.../InvoiceSettings/services/invoiceSettingsService.test.js` |
-| Facturación: historial (cálculos) | `.../InvoicesHistory/services/invoicesHistoryCalculationService.test.js` |
-| Facturación: historial (datos del reporte) | `.../InvoicesHistory/services/invoicesHistoryReportService.test.js` |
-| Facturación: historial (detalle 360) | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js` |
-| Facturación: ventas por facturar (cálculos) | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js` |
-| Facturación: ventas por facturar (datos) | `.../InvoicesPending/services/invoicesPendingService.test.js` |
+| Área                                                | Archivo                                                                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Formatters de producto                              | `src/services/products/productFormatters.test.js`                                  |
+| CRUD de productos                                   | `src/services/products/productCrudService.test.js`                                 |
+| Importación de productos                            | `.../ProductsImport/services/productsImportService.test.js`                        |
+| Utilidades de importación                           | `.../ProductsImport/utils/importUtils.test.js`                                     |
+| Kits / promociones                                  | `.../ProductsPromotions/services/productKitsService.test.js`                       |
+| Reporte de caja                                     | `.../PageCashReport/services/cashReportService.test.js`                            |
+| Reporte de comisiones                               | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |
+| Reporte de rentabilidad                             | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
+| Reporte de inventario (datos)                       | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
+| Reporte de inventario (cálculos)                    | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
+| Corte de cajero (cálculos)                          | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
+| Corte de cajero (servicios de datos)                | `src/pages/CashCut/services/cashCutReportService.test.js`                          |
+| Corte de cajero (detalle histórico)                 | `src/pages/CashCut/services/cashCutDetailService.test.js`                          |
+| Corte de cajero (hook principal)                    | `src/pages/CashCut/hooks/useCashCutReport.test.js`                                 |
+| Corte de cajero (hook de modales)                   | `src/pages/CashCut/hooks/useCashCutDetail.test.js`                                 |
+| Corte de cajero (formateadores)                     | `src/pages/CashCut/utils/cashCutFormatters.test.js`                                |
+| Corte impreso (builder de ancho fijo)               | `src/utils/cashCutBuilder.test.js`                                                 |
+| Ticket: generación e impresión                      | `src/utils/ticketPrinter.test.js`                                                  |
+| Modal de recompensas (cálculos)                     | `.../RewardModal/rewardModalCalculationService.test.js`                            |
+| Modal de recompensas (hook)                         | `.../RewardModal/useRewardModal.test.js`                                           |
+| Totales de venta                                    | `.../SalesComponents/hooks/test/useSalesTotals.test.js`                            |
+| Venta transaccional (RPC)                           | `.../SalesComponents/services/salesTransactionService.test.js`                     |
+| Contrato SQL de RPCs transaccionales                | `supabase/migrations/transactionalRpcsContract.test.js`                            |
+| Proceso principal de Electron                       | `electron/mainProcess.test.js`                                                     |
+| Impresión de tickets (proceso principal)            | `electron/ticketPrintService.test.js`                                              |
+| Utilidades async                                    | `src/utils/asyncUtils.test.js`                                                     |
+| Paginación global                                   | `src/hooks/usePagination.test.js`                                                  |
+| Navegación protegida                                | `src/hooks/useProtectedNavigation.test.js`                                         |
+| Secciones protegidas                                | `src/config/adminProtectedSections.test.js`                                        |
+| Guard de rutas                                      | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
+| Criptografía de contraseñas locales                 | `src/backend/password.test.js`                                                     |
+| Sucursal por dispositivo (RPC)                      | `src/services/deviceBranchService.test.js`                                         |
+| Caja: sesión y apertura (RPC)                       | `src/services/cashRegisterService.test.js`                                         |
+| Ticket: golden de salida                            | `src/utils/ticket/ticketBuilder.test.js`                                           |
+| Ticket: primitivas de layout                        | `src/utils/ticket/ticketLayoutFormatters.test.js`                                  |
+| Ticket: formateadores de fecha                      | `src/utils/ticket/ticketDateFormatters.test.js`                                    |
+| Ticket: extracción de items                         | `src/utils/ticket/ticketItemFormatters.test.js`                                    |
+| Ticket: servicios de recompensas                    | `src/utils/ticket/ticketRewardService.test.js`                                     |
+| Ticket: servicios de pagos                          | `src/utils/ticket/ticketPaymentService.test.js`                                    |
+| Ticket: formateadores de sucursal                   | `src/utils/ticket/ticketBranchFormatters.test.js`                                  |
+| Ticket: servicios de puntos                         | `src/utils/ticket/ticketPointsService.test.js`                                     |
+| Ticket: secciones                                   | `src/utils/ticket/ticketSections.test.js`                                          |
+| Reportes: ciclo de vida del dashboard               | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
+| Ventas: sincronización de columnas                  | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
+| Ventas: atajos de teclado                           | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
+| Facturación: validación fiscal                      | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
+| Facturación: catálogos (usos CFDI, regímenes, C.P.) | `.../InvoicesComponents/services/invoicesCatalogService.test.js`                   |
+| Facturación: suscripciones realtime                 | `.../InvoicesComponents/services/invoicesRealtimeService.test.js`                  |
+| Facturación: formateadores compartidos              | `.../InvoicesComponents/utils/invoiceFormatters.test.js`                           |
+| Facturación: cliente fiscal (cálculos)              | `.../Modals/FiscalCustomerModal/services/fiscalCustomerCalculationService.test.js` |
+| Facturación: cliente fiscal (datos)                 | `.../Modals/FiscalCustomerModal/services/fiscalCustomerService.test.js`            |
+| Facturación: factura de venta (cálculos)            | `.../Modals/InvoiceSaleModal/services/invoiceSaleCalculationService.test.js`       |
+| Facturación: factura de venta (datos)               | `.../Modals/InvoiceSaleModal/services/invoiceSaleService.test.js`                  |
+| Facturación: clientes fiscales (cálculos)           | `.../InvoiceCustomers/services/invoiceCustomersCalculationService.test.js`         |
+| Facturación: clientes fiscales (datos)              | `.../InvoiceCustomers/services/invoiceCustomersService.test.js`                    |
+| Facturación: ajustes del emisor (cálculos)          | `.../InvoiceSettings/services/invoiceSettingsCalculationService.test.js`           |
+| Facturación: ajustes del emisor (datos)             | `.../InvoiceSettings/services/invoiceSettingsService.test.js`                      |
+| Facturación: historial (cálculos)                   | `.../InvoicesHistory/services/invoicesHistoryCalculationService.test.js`           |
+| Facturación: historial (datos del reporte)          | `.../InvoicesHistory/services/invoicesHistoryReportService.test.js`                |
+| Facturación: historial (detalle 360)                | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js`                |
+| Facturación: ventas por facturar (cálculos)         | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js`           |
+| Facturación: ventas por facturar (datos)            | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
 
 ## Patrones y convenciones
 
@@ -90,7 +90,7 @@ y el proceso principal de Electron:
   - `thenableQuery({ data, error })` — simula una query encadenable (`.select().eq()...`) que además
     es `thenable`.
   - `rpcBuilder({ data, error })` — simula `supabase.rpc(...)`.
-  Estos helpers están duplicados por archivo (candidatos a extraerse a un helper compartido).
+    Estos helpers están duplicados por archivo (candidatos a extraerse a un helper compartido).
 - **Hooks:** se prueban con `renderHook`/`act` de `@testing-library/react`.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 

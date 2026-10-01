@@ -22,32 +22,36 @@ const useSalesTableColumns = ({
     nextStartWidth: 0,
   });
 
-  const handleMouseMove = useCallback((event) => {
-    const { isResizing, columnIndex, startX, startWidth, nextStartWidth } = resizeRef.current;
-    if (!isResizing || columnIndex === -1) return;
+  const handleMouseMove = useCallback(
+    (event) => {
+      const { isResizing, columnIndex, startX, startWidth, nextStartWidth } =
+        resizeRef.current;
+      if (!isResizing || columnIndex === -1) return;
 
-    const deltaX = event.clientX - startX;
-    let newWidth = startWidth + deltaX;
-    let newNextWidth = nextStartWidth - deltaX;
+      const deltaX = event.clientX - startX;
+      let newWidth = startWidth + deltaX;
+      let newNextWidth = nextStartWidth - deltaX;
 
-    // Protecciones contra el ancho mínimo
-    if (newWidth < minColumnWidth) {
-      newWidth = minColumnWidth;
-      newNextWidth = startWidth + nextStartWidth - minColumnWidth;
-    }
+      // Protecciones contra el ancho mínimo
+      if (newWidth < minColumnWidth) {
+        newWidth = minColumnWidth;
+        newNextWidth = startWidth + nextStartWidth - minColumnWidth;
+      }
 
-    if (newNextWidth < minColumnWidth) {
-      newNextWidth = minColumnWidth;
-      newWidth = startWidth + nextStartWidth - minColumnWidth;
-    }
+      if (newNextWidth < minColumnWidth) {
+        newNextWidth = minColumnWidth;
+        newWidth = startWidth + nextStartWidth - minColumnWidth;
+      }
 
-    setColumnWidths((prevWidths) => {
-      const updatedWidths = [...prevWidths];
-      updatedWidths[columnIndex] = newWidth;
-      updatedWidths[columnIndex + 1] = newNextWidth;
-      return updatedWidths;
-    });
-  }, [minColumnWidth]);
+      setColumnWidths((prevWidths) => {
+        const updatedWidths = [...prevWidths];
+        updatedWidths[columnIndex] = newWidth;
+        updatedWidths[columnIndex + 1] = newNextWidth;
+        return updatedWidths;
+      });
+    },
+    [minColumnWidth]
+  );
 
   const handleMouseUp = useCallback(() => {
     resizeRef.current.isResizing = false;
@@ -67,27 +71,30 @@ const useSalesTableColumns = ({
     handleMouseUpRef.current = handleMouseUp;
   }, [handleMouseUp]);
 
-  const handleMouseDown = useCallback((event, columnIndex) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const handleMouseDown = useCallback(
+    (event, columnIndex) => {
+      event.preventDefault();
+      event.stopPropagation();
 
-    // No se puede redimensionar la última columna empujando a la nada
-    if (columnIndex >= columnWidths.length - 1) return;
+      // No se puede redimensionar la última columna empujando a la nada
+      if (columnIndex >= columnWidths.length - 1) return;
 
-    resizeRef.current = {
-      isResizing: true,
-      columnIndex,
-      startX: event.clientX,
-      startWidth: columnWidths[columnIndex],
-      nextStartWidth: columnWidths[columnIndex + 1],
-    };
+      resizeRef.current = {
+        isResizing: true,
+        columnIndex,
+        startX: event.clientX,
+        startWidth: columnWidths[columnIndex],
+        nextStartWidth: columnWidths[columnIndex + 1],
+      };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
 
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, [columnWidths, handleMouseMove, handleMouseUp]);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [columnWidths, handleMouseMove, handleMouseUp]
+  );
 
   // Limpieza global por si el componente se desmonta mientras se arrastra
   useEffect(() => {
@@ -111,7 +118,10 @@ const useSalesTableColumns = ({
     );
 
     const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
-    const lastColumnWidth = Math.max(minColumnWidth, availableWidth - usedWidth);
+    const lastColumnWidth = Math.max(
+      minColumnWidth,
+      availableWidth - usedWidth
+    );
 
     setColumnWidths([...calculatedWidths, lastColumnWidth]);
     setIsInitialized(true);

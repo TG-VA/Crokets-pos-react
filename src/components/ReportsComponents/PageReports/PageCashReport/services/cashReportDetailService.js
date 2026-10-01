@@ -10,7 +10,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
     // 1. Datos principales de la sesión
     const { data: sessionData, error: sessionErr } = await supabase
       .from("cash_register_sessions")
-      .select(`
+      .select(
+        `
         id,
         user_id,
         branch_id,
@@ -39,7 +40,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
           notes,
           created_at
         )
-      `)
+      `
+      )
       .eq("id", sessionId)
       .single();
 
@@ -49,7 +51,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
     // 2. Movimientos manuales asociados a la sesión
     const { data: movementsData, error: movErr } = await supabase
       .from("cash_movements")
-      .select(`
+      .select(
+        `
         id,
         user_id,
         movement_type,
@@ -57,7 +60,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
         description,
         created_at,
         users (username)
-      `)
+      `
+      )
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true })
       .limit(5000);
@@ -80,7 +84,9 @@ export const fetchCashSessionDetail = async (sessionId) => {
         const [salesRes, paymentsRes] = await Promise.all([
           supabase
             .from("sales")
-            .select("id, subtotal, tax, total, discount_total, status, created_at")
+            .select(
+              "id, subtotal, tax, total, discount_total, status, created_at"
+            )
             .eq("branch_id", sessionData.branch_id)
             .eq("user_id", sessionData.user_id)
             .gte("created_at", sessionStart)
@@ -89,7 +95,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
             .limit(5000),
           supabase
             .from("sale_payments")
-            .select(`
+            .select(
+              `
               id,
               sale_id,
               amount,
@@ -102,7 +109,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
                 status,
                 created_at
               )
-            `)
+            `
+            )
             .eq("sales.branch_id", sessionData.branch_id)
             .eq("sales.user_id", sessionData.user_id)
             .gte("sales.created_at", sessionStart)
@@ -119,12 +127,15 @@ export const fetchCashSessionDetail = async (sessionId) => {
           const [rewardsRes, detailsRes] = await Promise.all([
             supabase
               .from("sale_reward_redemptions")
-              .select("id, sale_id, sale_detail_id, reward_name, product_name, quantity, total_points, discount_amount, status, reversed_at, created_at")
+              .select(
+                "id, sale_id, sale_detail_id, reward_name, product_name, quantity, total_points, discount_amount, status, reversed_at, created_at"
+              )
               .in("sale_id", saleIds)
               .limit(5000),
             supabase
               .from("sale_details")
-              .select(`
+              .select(
+                `
                 id,
                 sale_id,
                 product_id,
@@ -143,7 +154,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
                 sales (
                   created_at
                 )
-              `)
+              `
+              )
               .in("sale_id", saleIds)
               .gt("discount_amount", 0)
               .limit(5000),
@@ -157,7 +169,10 @@ export const fetchCashSessionDetail = async (sessionId) => {
           }
         }
       } catch (salesErr) {
-        console.error("Error al obtener ventas y pagos de la sesión:", salesErr);
+        console.error(
+          "Error al obtener ventas y pagos de la sesión:",
+          salesErr
+        );
       }
     }
 
@@ -202,7 +217,12 @@ export const fetchCashSessionDetail = async (sessionId) => {
     (movementsData || []).forEach((m) => {
       const type = String(m.movement_type || "").toLowerCase();
       const amt = Number(m.amount || 0);
-      if (type.includes("entry") || type.includes("in") || type.includes("ingreso") || type.includes("entrada")) {
+      if (
+        type.includes("entry") ||
+        type.includes("in") ||
+        type.includes("ingreso") ||
+        type.includes("entrada")
+      ) {
         totalManualIn += amt;
       } else {
         totalManualOut += amt;
@@ -211,7 +231,8 @@ export const fetchCashSessionDetail = async (sessionId) => {
 
     // 6. Balance y esperado
     const openingAmount = Number(sessionData.opening_amount || 0);
-    const expectedCashCalculated = openingAmount + cashSalesTotal + totalManualIn - totalManualOut;
+    const expectedCashCalculated =
+      openingAmount + cashSalesTotal + totalManualIn - totalManualOut;
 
     // 7. Descuentos y Canjes de recompensas
     const processedDiscountsAndRewards = [];
@@ -219,7 +240,12 @@ export const fetchCashSessionDetail = async (sessionId) => {
     (saleDetailsWithDiscounts || []).forEach((d) => {
       const rawType = String(d.discount_type || "").toLowerCase();
       let label = "Descuento Manual";
-      if (rawType.includes("promo") || rawType.includes("catalog") || rawType.includes("catálogo") || rawType.includes("global")) {
+      if (
+        rawType.includes("promo") ||
+        rawType.includes("catalog") ||
+        rawType.includes("catálogo") ||
+        rawType.includes("global")
+      ) {
         label = "Desc. Catálogo";
       }
 
@@ -270,7 +296,9 @@ export const fetchCashSessionDetail = async (sessionId) => {
     return {
       ...sessionData,
       movements: movementsData || [],
-      paymentsByMethod: Object.values(paymentsByMethodMap).sort((a, b) => b.total - a.total),
+      paymentsByMethod: Object.values(paymentsByMethodMap).sort(
+        (a, b) => b.total - a.total
+      ),
       cashSalesTotal,
       cardSalesTotal,
       totalSalesVolume: cashSalesTotal + cardSalesTotal,
@@ -285,7 +313,10 @@ export const fetchCashSessionDetail = async (sessionId) => {
       totalPointsUsed,
     };
   } catch (err) {
-    console.error("Error al obtener detalle de sesión en fetchCashSessionDetail:", err);
+    console.error(
+      "Error al obtener detalle de sesión en fetchCashSessionDetail:",
+      err
+    );
     throw err;
   }
 };

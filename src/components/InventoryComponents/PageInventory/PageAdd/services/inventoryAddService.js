@@ -63,21 +63,19 @@ const insertInventoryRow = async ({
   salePrice,
   createdAt,
 }) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .insert({
-      branch_id: branchId,
-      product_id: productId,
-      stock: quantity,
-      min_stock: 0,
-      max_stock: 0,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      sale_price: salePrice,
-      created_at: createdAt,
-      updated_at: createdAt,
-    });
+  const { error } = await supabase.from("branch_inventory").insert({
+    branch_id: branchId,
+    product_id: productId,
+    stock: quantity,
+    min_stock: 0,
+    max_stock: 0,
+    is_active: true,
+    has_been_stocked: true,
+    cost_price: costPrice,
+    sale_price: salePrice,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
 
   if (error) {
     throw error;
@@ -91,9 +89,7 @@ export const addInventoryToProduct = async ({
   userId = null,
 }) => {
   if (!branchId) {
-    throw new Error(
-      "No hay una sucursal activa para registrar el inventario."
-    );
+    throw new Error("No hay una sucursal activa para registrar el inventario.");
   }
 
   const productId = getProductId(product);
@@ -104,10 +100,7 @@ export const addInventoryToProduct = async ({
 
   const normalizedQuantity = Number(quantity);
 
-  if (
-    !Number.isFinite(normalizedQuantity) ||
-    normalizedQuantity <= 0
-  ) {
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
     throw new Error("La cantidad debe ser mayor a 0.");
   }
 

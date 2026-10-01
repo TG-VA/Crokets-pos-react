@@ -55,7 +55,8 @@ const ProfitabilityProductsTable = ({
         <div className={styles.tableTitleGroup}>
           <h3 className={styles.tableTitle}>Rentabilidad por Producto</h3>
           <p className={styles.tableSubtitle}>
-            Mostrando {products.length} artículos vendidos según los filtros seleccionados
+            Mostrando {products.length} artículos vendidos según los filtros
+            seleccionados
           </p>
         </div>
       </div>
@@ -67,7 +68,8 @@ const ProfitabilityProductsTable = ({
           </div>
           <h4 className={styles.emptyTitle}>Sin ventas en el periodo</h4>
           <p className={styles.emptyDescription}>
-            No se encontraron transacciones registradas de productos con los filtros y fechas seleccionadas.
+            No se encontraron transacciones registradas de productos con los
+            filtros y fechas seleccionadas.
           </p>
         </div>
       ) : (
@@ -106,8 +108,16 @@ const ProfitabilityProductsTable = ({
                       Unidades {renderSortIndicator("units")}
                     </span>
                   </th>
-                  <th className={`${styles.colPrice} ${styles.alignRight}`.trim()}>Precio Promedio</th>
-                  <th className={`${styles.colCost} ${styles.alignRight}`.trim()}>Costo Unit.</th>
+                  <th
+                    className={`${styles.colPrice} ${styles.alignRight}`.trim()}
+                  >
+                    Precio Promedio
+                  </th>
+                  <th
+                    className={`${styles.colCost} ${styles.alignRight}`.trim()}
+                  >
+                    Costo Unit.
+                  </th>
                   <th
                     className={`${styles.colRevenue} ${styles.alignRight} ${styles.sortableTh}`.trim()}
                     onClick={() => onSort && onSort("revenue")}
@@ -161,7 +171,11 @@ const ProfitabilityProductsTable = ({
                             </span>
                           ) : p.hasPartialReward ? (
                             <span className={styles.rewardSubtext}>
-                              Incluye {p.redeemedUnits} {p.redeemedUnits === 1 ? "unidad en promoción / regalo" : "unidades en promoción / regalo"} ($0.00)
+                              Incluye {p.redeemedUnits}{" "}
+                              {p.redeemedUnits === 1
+                                ? "unidad en promoción / regalo"
+                                : "unidades en promoción / regalo"}{" "}
+                              ($0.00)
                             </span>
                           ) : p.isKit ? (
                             <button
@@ -170,7 +184,8 @@ const ProfitabilityProductsTable = ({
                               onClick={() => setSelectedKitProduct(p)}
                               title="Clic para ver desglose de componentes y costos de este kit"
                             >
-                              Kit ({p.kitComponentsCount || 0} prod.) · Costo por componentes
+                              Kit ({p.kitComponentsCount || 0} prod.) · Costo
+                              por componentes
                             </button>
                           ) : !p.hasCostAssigned ? (
                             <span className={styles.productMeta}>
@@ -209,15 +224,15 @@ const ProfitabilityProductsTable = ({
                             p.grossProfit > 0
                               ? styles.profitValue
                               : p.grossProfit < 0
-                              ? styles.lossValue
-                              : styles.boldValue
+                                ? styles.lossValue
+                                : styles.boldValue
                           }
                           title={
                             p.isPureReward
                               ? "Costo 100% absorbido por promoción comercial o regalo ($0.00 ingreso)"
                               : p.hasPartialReward
-                              ? `Incluye ${p.redeemedUnits} ${p.redeemedUnits === 1 ? "unidad entregada en promoción / regalo" : "unidades entregadas en promoción / regalo"} ($0.00 ingreso)`
-                              : ""
+                                ? `Incluye ${p.redeemedUnits} ${p.redeemedUnits === 1 ? "unidad entregada en promoción / regalo" : "unidades entregadas en promoción / regalo"} ($0.00 ingreso)`
+                                : ""
                           }
                         >
                           {formatCurrency(p.grossProfit)}
@@ -232,11 +247,12 @@ const ProfitabilityProductsTable = ({
                             p.isPureReward
                               ? "100% bonificado en promoción o cortesía comercial ($0.00 ingreso)"
                               : p.hasPartialReward
-                              ? `Margen contable afectado por ${p.redeemedUnits} ${p.redeemedUnits === 1 ? "unidad entregada en promoción / regalo" : "unidades entregadas en promoción / regalo"}.`
-                              : mClass.label
+                                ? `Margen contable afectado por ${p.redeemedUnits} ${p.redeemedUnits === 1 ? "unidad entregada en promoción / regalo" : "unidades entregadas en promoción / regalo"}.`
+                                : mClass.label
                           }
                         >
-                          {mClass.badgeText || formatPercent(p.grossMarginPercent)}
+                          {mClass.badgeText ||
+                            formatPercent(p.grossMarginPercent)}
                         </span>
                       </td>
                     </tr>
