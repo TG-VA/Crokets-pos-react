@@ -387,6 +387,36 @@ La RPC `get_commissions_report_data` recalculaba las comisiones devengadas al vu
 - La RPC `get_commissions_report_data` se desacopló del catálogo vivo y ahora lee directamente las columnas congeladas de `sale_details`.
 - Cobertura de tests: contrato SQL en `freezeCommissionsSnapshotContract.test.js` y suites de cálculo en `commissionsCalculationService.test.js` y `commissionsReportService.test.js`.
 
+### 62. Valuación de inventario con Costo Promedio Ponderado (CPP) y congelamiento de costo histórico en ventas
+
+**Estado:** Fase 1 resuelta y desplegada (2 oct 2026) — migración `supabase/migrations/20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`, rama `feature/costo-promedio-ponderado`, commit `b96f215`. Fases 2 y 3 pendientes.
+
+Es el gemelo de #52 para el costo: allí el historial se mutaba por las comisiones, aquí por el costo.
+
+**Problema resuelto en la Fase 1.** El sistema mantenía un único costo estático (`cost_price`) en el catálogo y por sucursal. Al ingresar un lote con costo distinto (una promoción de compra, un reprecio), actualizar el costo en el catálogo **sobreescribía el costo de todo el inventario previo** y mutaba retroactivamente el margen de utilidad de las ventas ya registradas. El reporte de rentabilidad (`profitabilityReportCalculationService.js`) resolvía el costo contra el catálogo vivo, de modo que un cambio de costo posterior a una venta reescribía el margen histórico de esa venta y distorsionaba los estados financieros. Además, no existía forma de saber a qué costo entró cada lote: el kardex (`inventory_movements`) no registraba valor de adquisición.
+
+**Qué agrega la Fase 1 (ya desplegada):**
+
+- `inventory_movements.unit_cost numeric NULL` y `inventory_movements.total_cost numeric NULL`: costo de adquisición de la entrada y su importe. Quedan en `NULL` en esta fase; su llenado en las entradas corresponde al flujo de compras de la Fase 2.
+- `sale_details.cost_price numeric NOT NULL DEFAULT 0`: snapshot del costo unitario vigente al momento de la venta.
+- Las tres sobrecargas de `create_sale_transaction` (9, 10 y 11 parámetros) se redefinieron para resolver el costo **en el servidor** con `coalesce(branch_inventory.cost_price, products.cost_price)` y congelarlo en el `INSERT` de la partida. Los cuerpos se preservaron: la única adición es `v_cost_price`, su resolución y la columna del `INSERT`; comisiones devengadas, validación de stock y kits quedaron intactos.
+- El snapshot no es falsificable desde el cliente: la RPC ignora cualquier `cost_price` que llegue en `p_products`.
+- La inmabilidad se hereda sin cambios: `trg_prevent_edit_sale_details` es `BEFORE INSERT OR DELETE OR UPDATE` sobre `sale_details`, blanket a nivel tabla, así que cubre la columna nueva.
+- Hardening conservado en las tres sobrecargas: `SECURITY DEFINER`, `SET search_path TO 'public'`, `REVOKE` a `anon` **y** `public`, `GRANT` a `authenticated` y `service_role`.
+
+**Decisiones de auditoría:**
+
+- **R1 — Los kits calculan su rentabilidad por suma de sus componentes.** `create_kit_transaction` inserta kits con `cost_price = 0` hardcodeado y `tracks_inventory = false`, sin fila en `branch_inventory`. Por lo tanto `sale_details.cost_price` de una línea de kit es **0**, mientras que el reporte de rentabilidad actual sí suma el costo de cada componente en `product_kit_items` (`profitabilityReportCalculationService.js`). La Fase 3 **no** debe cambiar a `sd.cost_price` de forma indiscriminada: hacerlo dejaría los kits con costo 0 y margen cercano al 100 %, inflado y falso, y además `hasCostAssigned` (que depende de `unitCost > 0`) passaría a `false` sin que el error fuera visible. La decisión vigente es mantener la rama de kits por componentes.
+- **R2 — Protección estricta de no-negatividad del costo.** El costo se valida con `Math.max(0, costo)` en el servicio de cálculo (Fase 2). Refuerzo complementario recomendado en SQL para la Fase 2: `CHECK (cost_price >= 0)` en `sale_details.cost_price` y en `branch_inventory.cost_price`. El hueco es real y asimétrico — `products.cost_price` ya tiene `chk_products_cost_price_nonneg`, pero `branch_inventory.cost_price`, que es la fuente **preferida** por el `coalesce`, no tiene ninguna restricción; un valor negativo ahí fluiría directo al snapshot y inflaría el margen. `v_unit_price` y `v_total_price` ya se validan contra negativos; el costo era la única magnitud de la partida sin defensa.
+- **Sin backfill — Las ventas anteriores usan fallback a catálogo para no falsear el histórico.** El costo de las partidas anteriores nunca quedó registrado. Rellenarlo con el catálogo vigente fabricaría un costo que no era el de la venta y falsearía el reporte de rentabilidad. Las partidas previas conservan `cost_price = 0` (costo desconocido) y el reporte debe distinguirlas de las que sí tienen costo real, manteniendo el fallback a catálogo para los periodos sin snapshot.
+
+**Fases restantes:**
+
+- **Fase 2 — CPP móvil.** Flujo de compras que escribe `unit_cost`/`total_cost` en las entradas y recalcula el promedio ponderado en `branch_inventory.cost_price` dentro de la transacción. Los movimientos que no tocan valor (venta, cancelación, devolución, traspaso) quedan en `NULL`.
+- **Fase 3 — UI y rentabilidad.** `profitabilityReportService.js` debe agregar `cost_price` al `select` de `sale_details` y el cálculo debe pasar a consumir el snapshot, **respetando R1** para kits, con el fallback de R2/sin-backfill para las partidas históricas.
+
+**Cobertura de tests:** `costSnapshotContract.test.js` (23 casos) fija las columnas con sus tipos y default, la resolución con fallback, la alineación columnas/valores del `INSERT` en las tres sobrecargas, la conservación de las columnas de comisión en la sobrecarga de 11 parámetros, la ausencia de backfill y el hardening. `transactionalRpcsContract.test.js` fija que la definición vigente no altera la firma de la RPC endurecida. No hay cobertura del **cálculo** del promedio ponderado (Fase 2).
+
 ---
 
 ## Medio
