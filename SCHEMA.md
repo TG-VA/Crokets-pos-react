@@ -26,6 +26,14 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 `user_sessions`, y se actualiza la lista de RPC con las funciones atómicas de kits e importación
 (definidas en `20260923150000`/`20260923160000`, ver `KNOWN_ISSUES.md` #5).
 
+**Actualización (2 oct 2026) — rama `feature/costo-promedio-ponderado`:** la migración
+`supabase/migrations/20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql` agrega el soporte de
+costo promedio ponderado: `inventory_movements.unit_cost`/`total_cost` (costo de adquisición de la
+entrada) y `sale_details.cost_price` (snapshot del costo unitario vigente al momento de la venta,
+resuelto desde `branch_inventory.cost_price` con fallback a `products.cost_price`). Las tres
+sobrecargas de `create_sale_transaction` quedaron redefinidas para congelar ese snapshot. No hay
+backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo desconocido).
+
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 
 ---
@@ -51,17 +59,18 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 
 ### sale_details
 
-| Columna                                                                     | Tipo                                  | Notas                                    |
-| --------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------- |
-| id                                                                          | uuid                                  | PK                                       |
-| sale_id                                                                     | uuid                                  | NN, → sales.id                           |
-| product_id                                                                  | uuid                                  | NN, → products.id                        |
-| branch_id                                                                   | uuid                                  | NN, → branches.id                        |
-| quantity                                                                    | integer                               | NN                                       |
-| unit_price / final_unit_price / original_unit_price                         | numeric                               | precio aplicado vs. original             |
-| total_price                                                                 | numeric                               | NN                                       |
-| discount_type / discount_value / discount_amount                            | varchar / numeric / numeric           | descuento por línea                      |
-| commission_enabled / commission_type / commission_value / commission_amount | boolean / varchar / numeric / numeric | snapshot de comisión devengada por línea |
+| Columna                                                                     | Tipo                                  | Notas                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------- |
+| id                                                                          | uuid                                  | PK                                                                                     |
+| sale_id                                                                     | uuid                                  | NN, → sales.id                                                                         |
+| product_id                                                                  | uuid                                  | NN, → products.id                                                                      |
+| branch_id                                                                   | uuid                                  | NN, → branches.id                                                                      |
+| quantity                                                                    | integer                               | NN                                                                                     |
+| unit_price / final_unit_price / original_unit_price                         | numeric                               | precio aplicado vs. original                                                           |
+| total_price                                                                 | numeric                               | NN                                                                                     |
+| discount_type / discount_value / discount_amount                            | varchar / numeric / numeric           | discount por línea                                                                     |
+| commission_enabled / commission_type / commission_value / commission_amount | boolean / varchar / numeric / numeric | snapshot de comisión devengada por línea                                               |
+| cost_price                                                                  | numeric                               | NN, default 0 — costo unitario congelado al vender (base del costo promedio ponderado) |
 
 ### sale_payments
 
@@ -209,17 +218,18 @@ inventario las tablas `sale_kit_items`, `sale_return_items`, `sale_returns`, `sy
 
 ### inventory_movements
 
-| Columna                               | Tipo    | Notas                          |
-| ------------------------------------- | ------- | ------------------------------ |
-| id                                    | uuid    | PK                             |
-| product_id                            | uuid    | NN, → products.id              |
-| branch_id                             | uuid    | NN, → branches.id              |
-| related_branch_id                     | uuid    | → branches.id (transferencias) |
-| movement_type                         | varchar | NN                             |
-| quantity / previous_stock / new_stock | integer | NN                             |
-| sale_id                               | uuid    | → sales.id                     |
-| user_id                               | uuid    | → users.id                     |
-| reason                                | text    |                                |
+| Columna                               | Tipo    | Notas                                                                                   |
+| ------------------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| id                                    | uuid    | PK                                                                                      |
+| product_id                            | uuid    | NN, → products.id                                                                       |
+| branch_id                             | uuid    | NN, → branches.id                                                                       |
+| related_branch_id                     | uuid    | → branches.id (transferencias)                                                          |
+| movement_type                         | varchar | NN                                                                                      |
+| quantity / previous_stock / new_stock | integer | NN                                                                                      |
+| unit_cost / total_cost                | numeric | NULL — costo de adquisición de la entrada y su importe (NULL en movimientos históricos) |
+| sale_id                               | uuid    | → sales.id                                                                              |
+| user_id                               | uuid    | → users.id                                                                              |
+| reason                                | text    |                                                                                         |
 
 ### inventory_adjustments
 
@@ -645,26 +655,26 @@ funciones transaccionales (`create_*`, `cancel_*`, `update_*`, `delete_*`, `impo
 (revisadas en el despliegue del 23 sep 2026). Ver `KNOWN_ISSUES.md` punto 5 para entender por qué se
 prefiere RPC atómica sobre cliente con múltiples queries.
 
-| Función                                                                                                            | Devuelve                | Uso aparente                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `create_sale_transaction`                                                                                          | uuid                    | Crea una venta de forma atómica (existen 3 sobrecargas — confirmar cuál usa el frontend)                            |
-| `cancel_sale_transaction`                                                                                          | uuid                    | Cancelación de venta (atómica, reemplaza al flujo cliente)                                                          |
-| `cancel_sale`                                                                                                      | void                    | Cancelación de venta (legacy no transaccional, sin `SECURITY DEFINER`)                                              |
-| `create_partial_return_transaction`                                                                                | uuid                    | Devolución parcial (atómica; alimenta `sale_returns`/`sale_return_items`)                                           |
-| `complete_sale`                                                                                                    | void                    | Legacy no transaccional                                                                                             |
-| `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`                                     | uuid / uuid / void      | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                      |
-| `import_products_transaction`                                                                                      | jsonb                   | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                               |
-| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**                                                           |
-| `close_cash_register_session`                                                                                      | jsonb                   | Cierre de caja                                                                                                      |
-| `open_cash_register` / `get_cash_register_session`                                                                 | jsonb                   | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                   |
-| `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                                                   | numeric / void          | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                   |
-| `get_sales_report_kpis` / `get_commissions_report_data` / `get_inventory_report_data` / `get_cash_report_sessions` | record / jsonb          | Datasets para reportes de ventas, comisiones, inventario y caja                                                     |
-| `get_branch_products_paginated`                                                                                    | jsonb                   | Catálogo paginado de productos por sucursal                                                                         |
-| `has_permission` / `is_admin` / `_user_can_access_branch`                                                          | boolean                 | Permisos (ver `PERMISSIONS.md`)                                                                                     |
-| `get_email_by_username`                                                                                            | text                    | Traduce username local a email para login contra Supabase Auth                                                      |
-| `get_branch_by_device`                                                                                             | jsonb                   | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30) |
-| `_cash_session_payload` / `_cash_already_open_response` / `_cash_max_opening_amount`                               | jsonb / jsonb / numeric | Helpers internos de caja (prefijo `_`, sin grants)                                                                  |
-| `_apply_inventory_delta` / `_build_transfer_notes`                                                                 | record / text           | Helpers internos (prefijo `_`)                                                                                      |
+| Función                                                                                                            | Devuelve                | Uso aparente                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_sale_transaction`                                                                                          | uuid                    | Crea una venta de forma atómica y congela el costo unitario vigente en `sale_details.cost_price` (existen 3 sobrecargas; la de 11 parámetros es la que usa el frontend) |
+| `cancel_sale_transaction`                                                                                          | uuid                    | Cancelación de venta (atómica, reemplaza al flujo cliente)                                                                                                              |
+| `cancel_sale`                                                                                                      | void                    | Cancelación de venta (legacy no transaccional, sin `SECURITY DEFINER`)                                                                                                  |
+| `create_partial_return_transaction`                                                                                | uuid                    | Devolución parcial (atómica; alimenta `sale_returns`/`sale_return_items`)                                                                                               |
+| `complete_sale`                                                                                                    | void                    | Legacy no transaccional                                                                                                                                                 |
+| `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`                                     | uuid / uuid / void      | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                                                                          |
+| `import_products_transaction`                                                                                      | jsonb                   | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                                                                                   |
+| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**                                                                                                               |
+| `close_cash_register_session`                                                                                      | jsonb                   | Cierre de caja                                                                                                                                                          |
+| `open_cash_register` / `get_cash_register_session`                                                                 | jsonb                   | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                                                                       |
+| `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                                                   | numeric / void          | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                                                                       |
+| `get_sales_report_kpis` / `get_commissions_report_data` / `get_inventory_report_data` / `get_cash_report_sessions` | record / jsonb          | Datasets para reportes de ventas, comisiones, inventario y caja                                                                                                         |
+| `get_branch_products_paginated`                                                                                    | jsonb                   | Catálogo paginado de productos por sucursal                                                                                                                             |
+| `has_permission` / `is_admin` / `_user_can_access_branch`                                                          | boolean                 | Permisos (ver `PERMISSIONS.md`)                                                                                                                                         |
+| `get_email_by_username`                                                                                            | text                    | Traduce username local a email para login contra Supabase Auth                                                                                                          |
+| `get_branch_by_device`                                                                                             | jsonb                   | Login pre-auth: traduce `device_code` a la sucursal asignada (anon + `SECURITY DEFINER`; ver `KNOWN_ISSUES.md` #30)                                                     |
+| `_cash_session_payload` / `_cash_already_open_response` / `_cash_max_opening_amount`                               | jsonb / jsonb / numeric | Helpers internos de caja (prefijo `_`, sin grants)                                                                                                                      |
+| `_apply_inventory_delta` / `_build_transfer_notes`                                                                 | record / text           | Helpers internos (prefijo `_`)                                                                                                                                          |
 
 **Triggers (9)** (nombres reales de la introspección):
 `trg_sales_set_updated_at`, `trg_products_updated_at`, `trg_branch_inventory_set_updated_at`,

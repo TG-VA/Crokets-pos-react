@@ -30,6 +30,14 @@ const FIX_CANCEL_RETURN_MIGRATION = join(
 const fixedCancelRawSql = readFileSync(FIX_CANCEL_RETURN_MIGRATION, "utf8");
 const fixedCancelNormSql = fixedCancelRawSql.replace(/\s+/g, " ");
 
+const COST_SNAPSHOT_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql"
+);
+
+const costSnapshotRawSql = readFileSync(COST_SNAPSHOT_MIGRATION, "utf8");
+const costSnapshotNormSql = costSnapshotRawSql.replace(/\s+/g, " ");
+
 const FUNCTION_PATTERN =
   /CREATE OR REPLACE FUNCTION public\.(\w+)\s*\(([^)]*)\)\s*RETURNS\s+([a-z ]+?)\s+LANGUAGE plpgsql SECURITY DEFINER/gi;
 
@@ -43,17 +51,26 @@ const parseParams = (paramsString) =>
       return { name, type: typeParts.join(" ") };
     });
 
-const parseFunctions = () =>
-  [...normalizedSql.matchAll(FUNCTION_PATTERN)].map((match) => ({
+const parseFunctions = (sql) =>
+  [...sql.matchAll(FUNCTION_PATTERN)].map((match) => ({
     name: match[1],
     params: parseParams(match[2]),
     returns: match[3].trim(),
   }));
 
-const functions = parseFunctions();
+const functions = parseFunctions(normalizedSql);
+
+const costSnapshotFunctions = parseFunctions(costSnapshotNormSql);
 
 const findByParams = (name, paramNames) =>
   functions.find(
+    (fn) =>
+      fn.name === name &&
+      fn.params.map((param) => param.name).join(",") === paramNames.join(",")
+  );
+
+const findByParamsIn = (list, name, paramNames) =>
+  list.find(
     (fn) =>
       fn.name === name &&
       fn.params.map((param) => param.name).join(",") === paramNames.join(",")
@@ -214,6 +231,115 @@ describe("contrato SQL de RPCs transaccionales", () => {
             `GRANT EXECUTE ON FUNCTION public.create_sale_transaction(${grantParams}) TO service_role;`
           )
         ).toBe(true);
+      }
+    );
+  });
+
+  describe("estabilidad de la definicion vigente de create_sale_transaction", () => {
+    // La migracion de snapshot de costo (20261002124615) es la ultima que
+    // redefinio las tres sobrecargas: es la version que el remoto ejecuta hoy.
+    // Se fija aqui para que una futura redefinition no pueda cambiar la firma
+    // (el cliente envia los parametros por nombre) ni perder el hardening.
+    const currentOverloads = [
+      {
+        label: "9 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+        ],
+        sigParams: SALE_PARAMS_9,
+        grantParams: SALE_PARAMS_9,
+      },
+      {
+        label: "10 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+          "p_client_sale_token",
+        ],
+        sigParams: SALE_PARAMS_10,
+        grantParams: SALE_PARAMS_10,
+      },
+      {
+        label: "11 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+          "p_client_sale_token",
+          "p_notes",
+        ],
+        sigParams: `${SALE_PARAMS_10}, p_notes text DEFAULT NULL::text`,
+        grantParams: SALE_PARAMS,
+      },
+    ];
+
+    it.each(currentOverloads)(
+      "$label — la versión vigente conserva firma y retorno de la RPC endurecida",
+      ({ paramNames }) => {
+        const baseline = findByParams("create_sale_transaction", paramNames);
+        const current = findByParamsIn(
+          costSnapshotFunctions,
+          "create_sale_transaction",
+          paramNames
+        );
+
+        expect(
+          baseline,
+          `falta la sobrecarga base de ${paramNames.length} parámetros`
+        ).toBeDefined();
+        expect(
+          current,
+          "la migración vigente no redefine la sobrecarga"
+        ).toBeDefined();
+        expect(current.returns).toBe("uuid");
+        expect(current.params).toEqual(baseline.params);
+      }
+    );
+
+    it.each(currentOverloads)(
+      "$label — la versión vigente mantiene el hardening y los grants mínimos",
+      ({ sigParams, grantParams }) => {
+        const signature = `public.create_sale_transaction(${sigParams})`;
+        const fn = `public.create_sale_transaction(${grantParams})`;
+
+        expect(
+          costSnapshotNormSql.includes(
+            `FUNCTION ${signature} RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'`
+          )
+        ).toBe(true);
+        expect(costSnapshotRawSql).toContain(
+          `REVOKE ALL ON FUNCTION ${fn} FROM public;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `REVOKE ALL ON FUNCTION ${fn} FROM anon;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `GRANT EXECUTE ON FUNCTION ${fn} TO authenticated;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `GRANT EXECUTE ON FUNCTION ${fn} TO service_role;`
+        );
       }
     );
   });
