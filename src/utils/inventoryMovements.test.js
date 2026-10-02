@@ -85,6 +85,30 @@ describe("inventoryMovements - columnas de costo", () => {
     );
   });
 
+  it("guarda null en las columnas de costo cuando se pasan null explicito", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      unitCost: null,
+      totalCost: null,
+    });
+
+    expect(q.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ unit_cost: null, total_cost: null })
+    );
+  });
+
+  it("no confunde un null explicito con un costo cero", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      unitCost: null,
+      totalCost: 4000,
+    });
+
+    expect(q.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ unit_cost: null, total_cost: 4000 })
+    );
+  });
+
   it("normaliza strings numericos en las columnas de costo", async () => {
     await logInventoryMovement({
       ...baseMovement,

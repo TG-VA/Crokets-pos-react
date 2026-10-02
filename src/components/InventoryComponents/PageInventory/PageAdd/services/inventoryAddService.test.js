@@ -222,7 +222,56 @@ describe("inventoryAddService", () => {
       );
     });
 
-    it("cae al costo del catalogo cuando incomingCostPrice no se provee", async () => {
+    it("no altera el CPP cuando la entrada no es compra y el CPP difiere del catalogo", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 10,
+        has_been_stocked: true,
+        cost_price: 250,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      // baseProduct.costo es 100: sin costo explicito el CPP debe quedarse en
+      // 250, porque ((10*250)+(10*250))/20 === 250.
+      const result = await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 10,
+      });
+
+      expect(selectQ.update).toHaveBeenCalledWith(
+        expect.objectContaining({ cost_price: 250 })
+      );
+      expect(result.costPrice).toBe(250);
+      expect(logInventoryMovement).toHaveBeenCalledWith(
+        expect.objectContaining({ unitCost: 250, totalCost: 2500 })
+      );
+    });
+
+    it("cae al costo vigente sin re-ponderar cuando incomingCostPrice no es numerico", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 10,
+        has_been_stocked: true,
+        cost_price: 250,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 10,
+        incomingCostPrice: "cuatrocientos",
+      });
+
+      expect(selectQ.update).toHaveBeenCalledWith(
+        expect.objectContaining({ cost_price: 250 })
+      );
+    });
+
+    it("redondea el costo de adquisicion y su importe a 2 decimales", async () => {
       setupRow({
         id: "inv-1",
         stock: 10,
@@ -235,18 +284,44 @@ describe("inventoryAddService", () => {
       await addInventoryToProduct({
         branchId: BRANCH_ID,
         product: baseProduct,
-        quantity: 10,
+        quantity: 3,
+        incomingCostPrice: 33.333,
       });
 
+      // El costo de adquisicion se congela en 33.33 y el importe se deriva de
+      // ese valor canonico: 33.33 * 3 = 99.99, no 99.999.
       expect(logInventoryMovement).toHaveBeenCalledWith(
-        expect.objectContaining({ unitCost: 100, totalCost: 1000 })
+        expect.objectContaining({ unitCost: 33.33, totalCost: 99.99 })
       );
+      // El CPP usa el mismo costo redondeado: (1000 + 99.99) / 13 = 84.61.
       expect(selectQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ cost_price: 100 })
+        expect.objectContaining({ cost_price: 84.61 })
       );
     });
 
-    it("cae a product.cost_price cuando el producto no expone costo", async () => {
+    it("cae al costo vigente cuando incomingCostPrice es null explicito", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 10,
+        has_been_stocked: true,
+        cost_price: 250,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 10,
+        incomingCostPrice: null,
+      });
+
+      expect(selectQ.update).toHaveBeenCalledWith(
+        expect.objectContaining({ cost_price: 250 })
+      );
+    });
+
+    it("cae al costo del catalogo solo cuando el producto no expone costo", async () => {
       setupRow({
         id: "inv-1",
         stock: 4,
@@ -316,7 +391,7 @@ describe("inventoryAddService", () => {
       expect(result.costPrice).toBe(400);
     });
 
-    it("hereda el costo del catalogo como base al insertar la primera fila", async () => {
+    it("inserta la primera fila valorada al catalogo por no existir promedio previo", async () => {
       setupRow(null);
 
       await addInventoryToProduct({

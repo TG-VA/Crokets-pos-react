@@ -56,9 +56,35 @@ const getSessionUserId = async () => {
   try {
     const { data } = await supabase.auth.getSession();
     return data?.session?.user?.id || null;
-  } catch (err) {
+  } catch {
     return null;
   }
+};
+
+/**
+ * Normaliza una columna de costo de movimiento.
+ *
+ * La distincion entre `null` y `0` es semantica y no puede colapsarse: `NULL`
+ * significa "este movimiento no mueve valor" (ajustes, ventas, devoluciones,
+ * traspasos) y `0` significa "se movio valor a costo cero". Por eso el guard
+ * nullish va ANTES de la coercion: `Number(null)` es `0`, y sin este guard un
+ * `unitCost: null` explicito terminaria persistiendo un `0` que destruiria la
+ * distincion de la que depende el reporte de rentabilidad para separar costo
+ * real de costo desconocido.
+ *
+ * Decision R2: un costo negativo nunca se persiste; se neutraliza a 0.
+ * Un valor no finito (`NaN`, `Infinity`, string no numerico) tampoco: se deja
+ * en `NULL` en vez de guardar un `NaN` en PostgreSQL.
+ *
+ * @param {unknown} value
+ * @returns {number|null}
+ */
+const toCostColumn = (value) => {
+  if (value === null || value === undefined) return null;
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
 };
 
 const buildInsertPayload = (movement) => {
@@ -87,12 +113,8 @@ const buildInsertPayload = (movement) => {
       ? Number(previousStock)
       : null,
     new_stock: Number.isFinite(Number(newStock)) ? Number(newStock) : null,
-    unit_cost: Number.isFinite(Number(unitCost))
-      ? Math.max(0, Number(unitCost))
-      : null,
-    total_cost: Number.isFinite(Number(totalCost))
-      ? Math.max(0, Number(totalCost))
-      : null,
+    unit_cost: toCostColumn(unitCost),
+    total_cost: toCostColumn(totalCost),
     reason: reason ? String(reason).trim() : null,
     user_id: userId || null,
     created_at: createdAt ? String(createdAt) : null,

@@ -29,10 +29,16 @@ const toNonNegativeNumber = (value) => {
 
 /**
  * Redondeo financiero a 2 decimales conservando el tipo Number.
+ *
+ * Se exporta porque el importe total de un movimiento de inventario
+ * (`unit_cost * quantity`) debe redondearse con el mismo criterio que el costo
+ * promedio, y duplicar el factor en el servicio de alta reintroduce el riesgo
+ * de que las dos rutas se desincronicen.
+ *
  * @param {number} value
  * @returns {number}
  */
-const roundCost = (value) => {
+export const roundCost = (value) => {
   const rounded = Math.round(value * COST_FACTOR) / COST_FACTOR;
 
   return Number.isFinite(rounded) ? Math.max(0, rounded) : 0;

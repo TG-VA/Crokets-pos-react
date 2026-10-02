@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (2 oct 2026)
 
-89 archivos de test (**1370 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+89 archivos de test (**1375 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -148,7 +148,7 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   definición vigente (la última migración que la redeclara) no altera la firma de la RPC endurecida
   de `20260917200000`, de modo que una redefinición futura no pueda cambiar los parámetros que el
   cliente envía ni perder el hardening.
-- **Costo promedio ponderado, calculo y servicios** (2 oct 2026, 48 casos en 3 archivos, rama
+- **Costo promedio ponderado, calculo y servicios** (2 oct 2026, 53 casos en 3 archivos, rama
   `feature/cpp-fase-2-servicios-y-calculo`): cierra el hueco de calculo que dejo la fase anterior.
   `inventoryCostCalculationService.test.js` (25 casos) fija la formula
   `((stock * costo) + (cantidad * costoEntrante)) / (stock + cantidad)` con el caso real de negocio
@@ -156,17 +156,51 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   entrada negativa, fraccionadas, redondeo a 2 decimales) y la proteccion R2: stock negativo tratado
   como 0, costo entrante negativo neutralizado a 0 y resultado nunca negativo. Tambien fija la
   coercion de `NaN`, `Infinity`, `null`, `undefined`, strings numericos y la invocacion sin
-  argumentos. `inventoryAddService.test.js` (17 casos) fija que el alta persista el CPP exacto en
+  argumentos. `inventoryAddService.test.js` (20 casos) fija que el alta persista el CPP exacto en
   `branch_inventory.cost_price`, que respete un `cost_price` ya calculado en 0 frente al fallback del
   catalogo (el `??` en vez de `||`), que inserte con el costo entrante cuando no hay fila previa, que
-  mande `unitCost`/`totalCost` a `logInventoryMovement` y que propague errores de lectura y escritura
-  sin registrar el movimiento. `inventoryMovements.test.js` (6 casos) fija el mapeo de
-  `unit_cost`/`total_cost` con `Math.max(0, ...)` (R2), que los movimientos que no informan costo
-  (ajustes, ventas, devoluciones) sigan guardando NULL y que el fallback por columna ausente omita
-  ambas columnas en lugar de fallar. Las tres suites son mutacion-verificadas: quitar el clamp de
-  negativos, la rama de `stock <= 0` o el mapeo de columnas rompe casos concretos.
+  mande `unitCost`/`totalCost` a `logInventoryMovement` redondeados a 2 decimales y que propague
+  errores de lectura y escritura sin registrar el movimiento. `inventoryMovements.test.js` (8 casos)
+  fija el mapeo de `unit_cost`/`total_cost` con `Math.max(0, ...)` (R2), que los movimientos que no
+  informan costo (ajustes, ventas, devoluciones) sigan guardando NULL, que un `null` explicito se
+  guarde como NULL y no como 0, y que el fallback por columna ausente omita ambas columnas en lugar
+  de fallar.
   El calculo puro vive en `src/services/inventory/` y no importa Supabase (SRP/DIP); el servicio de
   alta es el unico que persiste.
+
+  **Distincion `null` vs `0` en las columnas de costo.** `NULL` significa "el movimiento no mueve
+  valor" y `0` significa "se movio valor a costo cero": no es lo mismo y el reporte de rentabilidad
+  depende de la distincion para separar costo real de costo desconocido. El guard nullish de
+  `toCostColumn` va **antes** de la coercion a proposito, porque `Number(null)` es `0` y sin el guard
+  un `unitCost: null` explicito persistiria un `0` falso. Ver el hallazgo H1 en la bitacora de
+  auditoria.
+
+  **Altas que no son compras no re-ponderan el CPP.** `resolveIncomingCostPrice` valora la mercancia
+  entrante al costo promedio vigente cuando el flujo no informa un costo de compra explicito, de modo
+  que `((stock*c) + (qtd*c)) / (stock+qtd) === c` y el promedio queda intacto. Heredar el precio de
+  catalogo en ese caso contaminaria la base de costo de la sucursal con una operacion que no
+  adquiere valor (correccion de conteo fisico, resguardo), y de forma silenciosa. El catalogo sigue
+  sirviendo como promedio de referencia cuando **no existe** costo previo (primera fila de
+  `branch_inventory` o `cost_price` nulo), que es el unico caso en que no hay lote al cual entrar al
+  mismo costo. Solo un `incomingCostPrice` explicito y finito dispara la re-ponderacion real; un valor
+  presente pero no numerico cae al costo vigente en vez de re-ponderar con basura. Ver el hallazgo H2.
+
+  **Costo de adquisicion canonico.** `resolveIncomingCostPrice` redondea a 2 decimales una sola vez, y
+  ese valor es el que alimenta el CPP, el `unit_cost` del movimiento y la base del `total_cost`. Asi se
+  sostiene la invariante contable `total_cost === round(unit_cost * cantidad)`; redondear solo el
+  importe dejaria `unit_cost` con mas decimales que el total que lo deriva (33.333 x 3 = 99.999 contra
+  un `total_cost` de 99.99) y el movimiento dejaria de cuadrar consigo mismo.
+
+  **Verificacion por mutacion.** Las tres suites se contrastaron mutando el codigo de produccion:
+  quitar el clamp de negativos de `toNonNegativeNumber` rompe 3 casos; quitar el mapeo de columnas de
+  costo rompe 5; quitar el guard nullish de `toCostColumn` rompe 2; revertir el fallback del CPP al
+  catalogo rompe 5. La rama `if (safeCurrentStock <= 0)` **no** es detectable por mutacion y no se
+  cuenta como verificada: con stock 0 la formula ya devuelve `(0*c + qtd*p)/(0+qtd) === p`, que es
+  identico al `return roundCost(safeIncomingCost)`, y ninguna combinacion de cantidades fraccionadas
+  y costos en centavos produce una diferencia tras el redondeo. Se conserva de todos modos porque
+  documenta la regla de negocio ("sin base ponderable, el costo es el del lote entrante") y protege
+  contra una reformulacion futura de la formula; lo que no debe afirmarse es que un test lo exija.
+
 - **Smoke de render del renderer** (1 oct 2026, 15 casos en 1 archivo, rama
   `test/renderer-smoke-tests`): `App.test.jsx` monta la jerarquía real de `src/main.jsx`
   (`<BranchProvider><App /></BranchProvider>`) con `supabaseClient` y `productCatalogService`
