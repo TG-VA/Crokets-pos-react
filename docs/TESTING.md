@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (1 oct 2026)
+## Cobertura actual (2 oct 2026)
 
-85 archivos de test (**1293 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+86 archivos de test (**1322 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -41,6 +41,7 @@ y el proceso principal de Electron:
 | Totales de venta                                    | `.../SalesComponents/hooks/test/useSalesTotals.test.js`                            |
 | Venta transaccional (RPC)                           | `.../SalesComponents/services/salesTransactionService.test.js`                     |
 | Contrato SQL de RPCs transaccionales                | `supabase/migrations/transactionalRpcsContract.test.js`                            |
+| Contrato SQL del snapshot de costo de venta         | `supabase/migrations/costSnapshotContract.test.js`                                 |
 | Proceso principal de Electron                       | `electron/mainProcess.test.js`                                                     |
 | Impresión de tickets (proceso principal)            | `electron/ticketPrintService.test.js`                                              |
 | Utilidades async                                    | `src/utils/asyncUtils.test.js`                                                     |
@@ -132,6 +133,20 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   postales). `invoicesRealtimeService.test.js` fija el contrato que la auditoría de #54 rompió: un
   binding `postgres_changes` por tabla con `table` resuelto, un solo `.subscribe()` y el payload
   entregado a `onChange`.
+- **Costo promedio ponderado (2 oct 2026, 23 casos en 1 archivo, rama
+  `feature/costo-promedio-ponderado`):** `costSnapshotContract.test.js` fija el contrato SQL de
+  `20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`: las columnas
+  `inventory_movements.unit_cost`/`total_cost` y `sale_details.cost_price` con sus tipos y default,
+  la resolución del costo desde `branch_inventory.cost_price` con fallback a `products.cost_price`, el
+  `INSERT` del snapshot en las tres sobrecargas de `create_sale_transaction` (comprueba que
+  `cost_price` sea la última columna y que la lista de valores esté alineada con la de columnas), que
+  la sobrecarga efectiva de 11 parámetros conserve las columnas de comisión, que la migración no haga
+  backfill histórico y que cada sobrecarga mantenga `SECURITY DEFINER`, `SET search_path TO 'public'`
+  y los grants mínimos. Además `transactionalRpcsContract.test.js` se extendió para fijar que la
+  definición vigente (la última migración que la redeclara) no altera la firma de la RPC endurecida
+  de `20260917200000`, de modo que una redefinición futura no pueda cambiar los parámetros que el
+  cliente envía ni perder el hardening. No hay cobertura del **cálculo** del promedio ponderado: esa
+  lógica (y el llenado de `unit_cost`/`total_cost` en las entradas) es de la fase siguiente.
 - **Smoke de render del renderer** (1 oct 2026, 15 casos en 1 archivo, rama
   `test/renderer-smoke-tests`): `App.test.jsx` monta la jerarquía real de `src/main.jsx`
   (`<BranchProvider><App /></BranchProvider>`) con `supabaseClient` y `productCatalogService`
