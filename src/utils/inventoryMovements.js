@@ -70,6 +70,8 @@ const buildInsertPayload = (movement) => {
     quantity,
     previousStock,
     newStock,
+    unitCost,
+    totalCost,
     reason,
     userId,
     createdAt,
@@ -85,6 +87,12 @@ const buildInsertPayload = (movement) => {
       ? Number(previousStock)
       : null,
     new_stock: Number.isFinite(Number(newStock)) ? Number(newStock) : null,
+    unit_cost: Number.isFinite(Number(unitCost))
+      ? Math.max(0, Number(unitCost))
+      : null,
+    total_cost: Number.isFinite(Number(totalCost))
+      ? Math.max(0, Number(totalCost))
+      : null,
     reason: reason ? String(reason).trim() : null,
     user_id: userId || null,
     created_at: createdAt ? String(createdAt) : null,
