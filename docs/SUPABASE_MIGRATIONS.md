@@ -144,9 +144,7 @@ El schema base quedó capturado en `00000000000000_remote_schema_baseline.sql`. 
 
 ## Registro de despliegues
 
-- **23 sep 2026** — `supabase db push` del paquete `20260923130000` (#49), `20260923140000` (#53),
-  `20260923150000` (#5 kits) y `20260923160000` (#5 import). Verificado con `supabase migration list`
-  (25 versiones alineadas Local = Remote, baseline incluido) y por introspección de las 9 funciones
-  transaccionales (`SECURITY DEFINER`, `SET search_path TO 'public'`, ACL sin `anon`/`PUBLIC`). Se
-  regeneró `SCHEMA.md` y se cerraron los estados pendientes de `KNOWN_ISSUES.md` (#5, #21, #29, #49,
-  #53).
+| Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2 oct 2026  | `20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`                                            | Base del Costo Promedio Ponderado: `inventory_movements.unit_cost`/`total_cost` (NULL) y el snapshot `sale_details.cost_price`. Aplicado en remoto con `supabase db push` y verificado con `supabase migration list` (26 versiones alineadas, Local = Remote, baseline incluido)                                                                     |
+| 23 sep 2026 | `20260923130000` (#49), `20260923140000` (#53), `20260923150000` (#5 kits), `20260923160000` (#5 import) | Verificado con `supabase migration list` (25 versiones alineadas, Local = Remote, baseline incluido) y por introspección de las 9 funciones transaccionales (`SECURITY DEFINER`, `SET search_path TO 'public'`, ACL sin `anon`/`PUBLIC`). Se regeneró `SCHEMA.md` y se cerraron los estados pendientes de `KNOWN_ISSUES.md` (#5, #21, #29, #49, #53) |
