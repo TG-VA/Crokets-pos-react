@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (2 oct 2026)
 
-86 archivos de test (**1322 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+89 archivos de test (**1370 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -28,6 +28,8 @@ y el proceso principal de Electron:
 | Reporte de rentabilidad                             | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
 | Reporte de inventario (datos)                       | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                    | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
+| Inventario: alta con CPP                            | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: movimientos (payload de costo)          | `src/utils/inventoryMovements.test.js`                                             |
 | Corte de cajero (cálculos)                          | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
 | Corte de cajero (servicios de datos)                | `src/pages/CashCut/services/cashCutReportService.test.js`                          |
 | Corte de cajero (detalle histórico)                 | `src/pages/CashCut/services/cashCutDetailService.test.js`                          |
@@ -145,8 +147,26 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   y los grants mínimos. Además `transactionalRpcsContract.test.js` se extendió para fijar que la
   definición vigente (la última migración que la redeclara) no altera la firma de la RPC endurecida
   de `20260917200000`, de modo que una redefinición futura no pueda cambiar los parámetros que el
-  cliente envía ni perder el hardening. No hay cobertura del **cálculo** del promedio ponderado: esa
-  lógica (y el llenado de `unit_cost`/`total_cost` en las entradas) es de la fase siguiente.
+  cliente envía ni perder el hardening.
+- **Costo promedio ponderado, calculo y servicios** (2 oct 2026, 48 casos en 3 archivos, rama
+  `feature/cpp-fase-2-servicios-y-calculo`): cierra el hueco de calculo que dejo la fase anterior.
+  `inventoryCostCalculationService.test.js` (25 casos) fija la formula
+  `((stock * costo) + (cantidad * costoEntrante)) / (stock + cantidad)` con el caso real de negocio
+  (10 @ 100 -> +10 @ 400 = 250.00 -> +10 @ 200 = 233.33), los bordes de cantidad (stock 0, entrada 0,
+  entrada negativa, fraccionadas, redondeo a 2 decimales) y la proteccion R2: stock negativo tratado
+  como 0, costo entrante negativo neutralizado a 0 y resultado nunca negativo. Tambien fija la
+  coercion de `NaN`, `Infinity`, `null`, `undefined`, strings numericos y la invocacion sin
+  argumentos. `inventoryAddService.test.js` (17 casos) fija que el alta persista el CPP exacto en
+  `branch_inventory.cost_price`, que respete un `cost_price` ya calculado en 0 frente al fallback del
+  catalogo (el `??` en vez de `||`), que inserte con el costo entrante cuando no hay fila previa, que
+  mande `unitCost`/`totalCost` a `logInventoryMovement` y que propague errores de lectura y escritura
+  sin registrar el movimiento. `inventoryMovements.test.js` (6 casos) fija el mapeo de
+  `unit_cost`/`total_cost` con `Math.max(0, ...)` (R2), que los movimientos que no informan costo
+  (ajustes, ventas, devoluciones) sigan guardando NULL y que el fallback por columna ausente omita
+  ambas columnas en lugar de fallar. Las tres suites son mutacion-verificadas: quitar el clamp de
+  negativos, la rama de `stock <= 0` o el mapeo de columnas rompe casos concretos.
+  El calculo puro vive en `src/services/inventory/` y no importa Supabase (SRP/DIP); el servicio de
+  alta es el unico que persiste.
 - **Smoke de render del renderer** (1 oct 2026, 15 casos en 1 archivo, rama
   `test/renderer-smoke-tests`): `App.test.jsx` monta la jerarquía real de `src/main.jsx`
   (`<BranchProvider><App /></BranchProvider>`) con `supabaseClient` y `productCatalogService`
