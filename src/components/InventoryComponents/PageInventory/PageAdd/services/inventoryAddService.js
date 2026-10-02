@@ -1,5 +1,7 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
+import { calculateWeightedAverageCost } from "../../../../../services/inventory/inventoryCostCalculationService";
+
 import {
   getSystemLocalTimestamp,
   logInventoryMovement,
@@ -9,17 +11,41 @@ const getProductId = (product) => {
   return product?.product_id || product?.id || null;
 };
 
-const getProductPrices = (product) => {
-  return {
-    costPrice: Number(product?.costo || 0),
-    salePrice: Number(product?.precio || 0),
-  };
+const getSalePrice = (product) => {
+  return Number(product?.precio || 0);
+};
+
+/**
+ * Costo unitario de compra del lote entrante.
+ *
+ * Si el flujo no lo provee (altas manuales), se cae al costo del catalogo del
+ * producto como fallback defensivo para no perder el costo de la entrada.
+ */
+const resolveIncomingCostPrice = (product, incomingCostPrice) => {
+  const isProvided =
+    incomingCostPrice !== null && incomingCostPrice !== undefined;
+  const rawCost = isProvided
+    ? incomingCostPrice
+    : product?.costo || product?.cost_price || 0;
+
+  return Number(rawCost) || 0;
+};
+
+/**
+ * Costo promedio vigente de la sucursal. `branch_inventory.cost_price` manda:
+ * el `??` (y no `||`) es deliberado para que un costo ya calculado en 0 no se
+ * reemplace por el del catalogo. Sin fila de inventario se hereda el catalogo.
+ */
+const resolveCurrentCost = (product, inventoryRow) => {
+  return Number(
+    inventoryRow?.cost_price ?? product?.costo ?? product?.cost_price ?? 0
+  );
 };
 
 const findInventoryRow = async ({ branchId, productId }) => {
   const { data, error } = await supabase
     .from("branch_inventory")
-    .select("id, stock, has_been_stocked")
+    .select("id, stock, has_been_stocked, cost_price")
     .eq("branch_id", branchId)
     .eq("product_id", productId)
     .maybeSingle();
@@ -86,6 +112,7 @@ export const addInventoryToProduct = async ({
   branchId,
   product,
   quantity,
+  incomingCostPrice = null,
   userId = null,
 }) => {
   if (!branchId) {
@@ -113,16 +140,27 @@ export const addInventoryToProduct = async ({
   const databaseTimestamp = now.toISOString();
   const movementCreatedAt = getSystemLocalTimestamp(now);
 
-  const { costPrice, salePrice } = getProductPrices(product);
+  const salePrice = getSalePrice(product);
+  const resolvedIncomingCostPrice = resolveIncomingCostPrice(
+    product,
+    incomingCostPrice
+  );
 
   const previousStock = Number(inventoryRow?.stock || 0);
   const newStock = previousStock + normalizedQuantity;
+
+  const newCostPrice = calculateWeightedAverageCost({
+    currentStock: previousStock,
+    currentCost: resolveCurrentCost(product, inventoryRow),
+    incomingQty: normalizedQuantity,
+    incomingCost: resolvedIncomingCostPrice,
+  });
 
   if (inventoryRow?.id) {
     await updateInventoryRow({
       inventoryRowId: inventoryRow.id,
       nextStock: newStock,
-      costPrice,
+      costPrice: newCostPrice,
       salePrice,
       updatedAt: databaseTimestamp,
     });
@@ -131,7 +169,7 @@ export const addInventoryToProduct = async ({
       branchId,
       productId,
       quantity: normalizedQuantity,
-      costPrice,
+      costPrice: newCostPrice,
       salePrice,
       createdAt: databaseTimestamp,
     });
@@ -144,6 +182,8 @@ export const addInventoryToProduct = async ({
     quantity: normalizedQuantity,
     previousStock,
     newStock,
+    unitCost: resolvedIncomingCostPrice,
+    totalCost: Number(resolvedIncomingCostPrice * normalizedQuantity),
     reason: "Alta a inventario (manual)",
     userId,
     createdAt: movementCreatedAt,
@@ -154,5 +194,6 @@ export const addInventoryToProduct = async ({
     previousStock,
     newStock,
     quantity: normalizedQuantity,
+    costPrice: newCostPrice,
   };
 };
