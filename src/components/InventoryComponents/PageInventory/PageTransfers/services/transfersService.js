@@ -189,6 +189,23 @@ export const createTransferOrder = async ({
     {
       p_from_branch_id: originBranch.id,
       p_to_branch_id: destinationBranch.id,
+      // SEGURIDAD DE AUDITORÍA (verificado en Supabase 2026-09-28,
+      // validación unificada Q1/Q2/Q3 = 3 ✅✅✅, parche aplicado en BD):
+      // (a) AUTORÍA: p_user_id se envía como fallback defensivo.
+      //     El RPC server-side hace p_user_id := COALESCE(auth.uid(), p_user_id).
+      //     Bajo flujo normal con JWT authenticated, auth.uid() es non-null
+      //     => NO es spoofeable. Fuente de verdad server-side.
+      // (b) VALORACIÓN (costPrice / salePrice): PARCHE APLICADO 2026-09-28.
+      //     El RPC hace FROM public.products p WHERE id = v_product_id LIMIT 1
+      //     y asigna v_cost_price := v_p_cost_from_tbl, v_sale_price :=
+      //     v_p_sale_from_tbl. Los valores costPrice/salePrice enviados por el
+      //     cliente en p_items.jsonb se IGNORAN COMPLETAMENTE (no spoofable).
+      // (c) ATOMICIDAD: SECURITY DEFINER + SET search_path TO public.
+      //     Bloque BEGIN ... EXCEPTION WHEN OTHERS rollbackea todo.
+      //     Guard anti-stock negativo v_req_qty > v_origin_before RAISE.
+      //     Snapshots origin_before/after en el mismo TX.
+      //   El guard de status PENDING del cliente (transfersService L242-244) NO
+      //   protege contra doble recepción: la guard atómica real vive en el RPC.
       p_user_id: user.id,
       p_notes: notes || "",
       p_folio: folio,

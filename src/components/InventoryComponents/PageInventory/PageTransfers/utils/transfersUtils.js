@@ -2,7 +2,7 @@ const normalizeText = (value, fallback = "") => {
   return String(value ?? "").trim() || fallback;
 };
 
-const parseTransferDate = (value) => {
+export const parseTransferDate = (value) => {
   if (value == null || value === "") return null;
 
   if (value instanceof Date) {
@@ -20,7 +20,7 @@ const parseTransferDate = (value) => {
 
   const hasExplicitTimezone =
     raw.endsWith("Z") ||
-    /[+\-]\d{2}:?\d{2}$/.test(raw);
+    (raw.includes("T") && /[+\-]\d{2}(?::\d{2}|\d{2})$/.test(raw));
 
   if (hasExplicitTimezone) {
     const date = new Date(raw);
@@ -35,6 +35,8 @@ const parseTransferDate = (value) => {
 };
 
 const TRANSFER_META_SEPARATOR = "\n\n##TRANSFER_META##";
+
+export const getTransferMetaSeparator = () => TRANSFER_META_SEPARATOR;
 
 const normalizeInteger = (value, fallback = 0) => {
   const parsedValue = Number(value);
@@ -224,6 +226,15 @@ export const normalizeTransferOrder = (order = {}) => {
       receivedQty = requestedQty;
     }
 
+    const rawOriginBefore =
+      item?.origin_stock_before ?? item?.originStockBefore ?? null;
+    const rawOriginAfter =
+      item?.origin_stock_after ?? item?.originStockAfter ?? null;
+    const rawDestinationBefore =
+      item?.destination_stock_before ?? item?.destinationStockBefore ?? null;
+    const rawDestinationAfter =
+      item?.destination_stock_after ?? item?.destinationStockAfter ?? null;
+
     return {
       productId,
       barcode: normalizeText(
@@ -242,6 +253,14 @@ export const normalizeTransferOrder = (order = {}) => {
         Number(
           item?.salePrice ?? item?.sale_price ?? 0
         ) || 0,
+      origin_stock_before:
+        rawOriginBefore == null ? null : Number(rawOriginBefore),
+      origin_stock_after:
+        rawOriginAfter == null ? null : Number(rawOriginAfter),
+      destination_stock_before:
+        rawDestinationBefore == null ? null : Number(rawDestinationBefore),
+      destination_stock_after:
+        rawDestinationAfter == null ? null : Number(rawDestinationAfter),
     };
   });
 

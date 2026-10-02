@@ -67,8 +67,7 @@ temp_catalogs/
 # Markdowns temporales de debug (ej. debug-movements-week-month.md)
 debug-*.md
 
-# ===== Archivos temporales generales =====
-# Archivos duplicados y temporales accidentales (macOS Finder, Windows, editores)
+# ===== Archivos duplicados y temporales accidentales (macOS Finder, Windows, editores) =====
 * copy.*
 * copy*.*
 * copia.*

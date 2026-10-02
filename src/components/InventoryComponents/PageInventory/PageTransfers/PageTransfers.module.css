@@ -557,6 +557,12 @@
   cursor: pointer;
 }
 
+.clickableRow:focus-visible,
+tbody tr.clickableRow:focus-visible td {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: -2px;
+}
+
 tbody tr.clickableRow:hover td {
   background: #f0fbfd;
   box-shadow: inset 2px 0 0 0 var(--croketsBlue);

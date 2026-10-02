@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { filterTransferProducts } from "../utils/transfersUtils";
 import { createTransferOrder } from "../services/transfersService";
+import useProductLookup from "./useProductLookup";
 
 const useSendForm = ({
   branch,
@@ -21,17 +21,9 @@ const useSendForm = ({
   destinationOptions,
 }) => {
   const [destinationBranchId, setDestinationBranchId] = useState("");
-  const [productSearch, setProductSearch] = useState("");
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [draftItems, setDraftItems] = useState([]);
   const [transferNotes, setTransferNotes] = useState("");
-
-  const searchableProducts = useMemo(() => {
-    return filterTransferProducts({
-      products,
-      searchTerm: "",
-    });
-  }, [products]);
+  const resetLookupRef = useRef(() => {});
 
   const draftTotals = useMemo(() => {
     return draftItems.reduce(
@@ -93,41 +85,8 @@ const useSendForm = ({
     }
   }, [products, draftItems]);
 
-  const openSearchModal = useCallback(() => {
-    setSearchModalOpen(true);
-  }, []);
-
-  const closeSearchModal = useCallback(() => {
-    setSearchModalOpen(false);
-  }, []);
-
-  const clearLookupSelection = useCallback(() => {
-    setProductSearch("");
-  }, []);
-
-  useEffect(() => {
-    const handleGlobalKeyDown = (event) => {
-      if (event.key !== "F10") {
-        return;
-      }
-
-      if (activeTab !== "send") {
-        return;
-      }
-
-      event.preventDefault();
-      openSearchModal();
-    };
-
-    document.addEventListener("keydown", handleGlobalKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleGlobalKeyDown);
-    };
-  }, [activeTab, openSearchModal]);
-
-  const handleLookupProductSearchChange = useCallback((value) => {
-    setProductSearch(value);
+  const resetLookupAfterSelection = useCallback(() => {
+    resetLookupRef.current();
   }, []);
 
   const handleAddDraftItem = useCallback(
@@ -152,10 +111,6 @@ const useSendForm = ({
         return;
       }
 
-      // Cálculo FUERA del updater (puro y sin side-effects en el updater):
-      // Resolvemos la cantidad acumulada y validamos stock antes de tocar el estado.
-      // Strict Mode puede re-ejecutar el updater; con este orden el updater es puro
-      // y el setError se dispara como máximo 1 vez (antes de actualizar draftItems).
       const existingItem = draftItems.find(
         (item) => item.productId === productId
       );
@@ -192,106 +147,32 @@ const useSendForm = ({
         return [...currentItems, nextItem];
       });
 
-      setProductSearch("");
-      setSearchModalOpen(false);
+      resetLookupAfterSelection();
     },
-    [clearFeedback, draftItems, setError]
+    [clearFeedback, draftItems, resetLookupAfterSelection, setError]
   );
 
-  const handleLookupProduct = useCallback(() => {
-    const cleanSearch = String(productSearch || "").trim();
-
-    if (!cleanSearch) {
-      setError("Escanea o escribe un código, o presiona F10 para buscar.");
-      return;
-    }
-
-    const byCode = getProductByCodigo(cleanSearch);
-    if (byCode) {
-      setError("");
-      handleAddDraftItem(byCode, 1);
-      return;
-    }
-
-    const searchKey = cleanSearch.trim().toLowerCase();
-    const searchTokens = searchKey.split(/\s+/).filter(Boolean);
-
-    const exactMatch = searchableProducts.find(
-      (product) =>
-        String(product?.descripcion || "")
-          .trim()
-          .toLowerCase() === searchKey
-    );
-    if (exactMatch) {
-      setError("");
-      handleAddDraftItem(exactMatch, 1);
-      return;
-    }
-
-    const partialMatches = searchableProducts.filter((product) => {
-      const desc = String(product?.descripcion || "")
-        .trim()
-        .toLowerCase();
-      const dept = String(product?.departamento || "")
-        .trim()
-        .toLowerCase();
-      const code = String(product?.codigo || "")
-        .trim()
-        .toLowerCase();
-
-      if (searchTokens.length === 0) return false;
-
-      return searchTokens.every(
-        (token) =>
-          code.includes(token) ||
-          desc.includes(token) ||
-          dept.includes(token)
-      );
-    });
-
-    if (partialMatches.length === 1) {
-      setError("");
-      handleAddDraftItem(partialMatches[0], 1);
-      return;
-    }
-
-    if (partialMatches.length > 1) {
-      setSearchModalOpen(true);
-      setError(
-        `Hay ${partialMatches.length} coincidencias. Selecciona una del modal.`
-      );
-      return;
-    }
-
-    setError(
-      "No se encontró un producto con ese código. Presiona F10 para buscarlo."
-    );
-  }, [
+  const lookup = useProductLookup({
+    products,
+    activeTab,
     getProductByCodigo,
-    handleAddDraftItem,
-    productSearch,
-    searchableProducts,
+    clearFeedback,
     setError,
-  ]);
+    onProductSelected: handleAddDraftItem,
+    resetAfterSelection: resetLookupAfterSelection,
+  });
 
-  const loadProductForTransfer = useCallback(
-    (product) => {
-      if (!product) {
-        return;
-      }
-
-      handleAddDraftItem(product, 1);
-    },
-    [handleAddDraftItem]
-  );
+  useEffect(() => {
+    resetLookupRef.current = () => {
+      lookup.setProductSearch("");
+      lookup.setSearchModalOpen(false);
+    };
+  }, [lookup]);
 
   const handleDraftQuantityChange = useCallback(
     (productId, value) => {
       clearFeedback();
 
-      // ==== PARTE 1: CÁLCULOS FUERA DEL UPDATER (hacemos setError AQUÍ si clamped) ====
-      // Buscamos el item actual y los límites ANTES de setDraftItems, para NO meter
-      // side-effects (setError) dentro del updater de React (Strict Mode safe).
       const currentItem = draftItems.find((item) => item.productId === productId);
       if (!currentItem) {
         return;
@@ -336,8 +217,6 @@ const useSendForm = ({
         return;
       }
 
-      // Clamp calculado FUERA: si se pasa de stock, limitamos y avisamos.
-      // Unifica patrón con handleAddDraftItem (si stock excede → setError).
       let clamped;
       if (floored > availableStock) {
         clamped = availableStock;
@@ -348,7 +227,6 @@ const useSendForm = ({
         clamped = floored;
       }
 
-      // ==== PARTE 2: UPDATER PURO (solo devuelve nuevo estado, sin side-effects) ====
       setDraftItems((currentItems) =>
         currentItems.map((item) => {
           if (item.productId !== productId) {
@@ -446,7 +324,7 @@ const useSendForm = ({
       await reloadOrders();
       setDraftItems([]);
       setTransferNotes("");
-      clearLookupSelection();
+      lookup.clearLookupSelection();
       setSuccess(
         `Traspaso ${createdTransfer.folio} enviado a ${createdTransfer.destinationBranchName}.`
       );
@@ -464,9 +342,9 @@ const useSendForm = ({
     branch,
     branchOptions,
     clearFeedback,
-    clearLookupSelection,
     destinationBranchId,
     draftItems,
+    lookup,
     products,
     refreshProducts,
     reloadOrders,
@@ -481,14 +359,14 @@ const useSendForm = ({
   return {
     destinationBranchId,
     setDestinationBranchId,
-    productSearch,
-    handleLookupProductSearchChange,
-    handleLookupProduct,
-    searchableProducts,
-    searchModalOpen,
-    openSearchModal,
-    closeSearchModal,
-    loadProductForTransfer,
+    productSearch: lookup.productSearch,
+    handleLookupProductSearchChange: lookup.handleLookupProductSearchChange,
+    handleLookupProduct: lookup.handleLookupProduct,
+    searchableProducts: lookup.searchableProducts,
+    searchModalOpen: lookup.searchModalOpen,
+    openSearchModal: lookup.openSearchModal,
+    closeSearchModal: lookup.closeSearchModal,
+    loadProductForTransfer: lookup.loadProductForTransfer,
     draftItems,
     draftTotals,
     handleDraftQuantityChange,

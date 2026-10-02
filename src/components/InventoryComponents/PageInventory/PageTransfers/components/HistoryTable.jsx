@@ -51,8 +51,24 @@ const HistoryTable = ({
               return (
                 <tr
                   key={order.id}
+                  tabIndex={0}
+                  role="row"
+                  aria-label={`Traspaso ${order.folio} de ${order.originBranchName} a ${order.destinationBranchName}. Estado: ${statusMeta.label}. Creado el ${formatTransferDateTime(order.createdAt)}. Presiona Enter o Espacio para ver el detalle.`}
                   className={styles.clickableRow}
                   onClick={(event) => onRowClick(order, event)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") {
+                      return;
+                    }
+
+                    const target = event?.target;
+                    if (target && target.closest("td:last-child")) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    onRowClick(order, event);
+                  }}
                   title="Clic para ver el detalle de productos del traspaso"
                 >
                   <td>
