@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: { from: vi.fn() },
@@ -38,6 +38,17 @@ const getSelectedColumns = () => {
 
   return query.select.mock.calls[0][0];
 };
+
+const getSelectedColumnsAt = (index) =>
+  supabase.from.mock.results[index].value.select.mock.calls[0][0];
+
+/* Error de Postgres con el codigo de undefined_column. */
+const buildMissingColumnCodeError = () =>
+  Object.assign(new Error("undefined column"), { code: "42703" });
+
+/* Mismo fallo descrito solo en el mensaje, sin codigo. */
+const buildMissingColumnMessageError = () =>
+  new Error('column "inventory_movements"."unit_cost" does not exist');
 
 describe("kardexService", () => {
   beforeEach(() => {
@@ -232,6 +243,116 @@ describe("kardexService", () => {
       expect(
         await loadKardexMovements({ productId: "p1", branchId: "b1" })
       ).toEqual([]);
+    });
+  });
+
+  describe("loadKardexMovements con fallback de columnas de valuacion", () => {
+    let consoleErrorSpy;
+
+    beforeEach(() => {
+      consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("reintenta sin las columnas de costo cuando el error es 42703", async () => {
+      supabase.from
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: buildMissingColumnCodeError() })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: [{ id: "m1", quantity: 5 }], error: null })
+        );
+
+      const movements = await loadKardexMovements({
+        productId: "p1",
+        branchId: "b1",
+      });
+
+      expect(supabase.from).toHaveBeenCalledTimes(2);
+
+      const retryColumns = getSelectedColumnsAt(1);
+
+      expect(retryColumns).not.toContain("unit_cost");
+      expect(retryColumns).not.toContain("total_cost");
+      expect(retryColumns).toContain("quantity");
+      expect(retryColumns).toContain("previous_stock");
+      expect(retryColumns).toContain("created_at");
+
+      expect(movements).toEqual([
+        { id: "m1", quantity: 5, unit_cost: null, total_cost: null },
+      ]);
+
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("reintenta cuando el mensaje reporta la columna inexistente", async () => {
+      supabase.from
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: buildMissingColumnMessageError() })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: [{ id: "m1", reason: "LOTE 1" }], error: null })
+        );
+
+      const movements = await loadKardexMovements({
+        productId: "p1",
+        branchId: "b1",
+      });
+
+      expect(supabase.from).toHaveBeenCalledTimes(2);
+      expect(movements).toEqual([
+        { id: "m1", reason: "LOTE 1", unit_cost: null, total_cost: null },
+      ]);
+    });
+
+    it("no reintenta ante un error ajeno y lo propaga", async () => {
+      supabase.from.mockReturnValue(
+        thenableQuery({ data: null, error: new Error("fallo de red") })
+      );
+
+      await expect(
+        loadKardexMovements({ productId: "p1", branchId: "b1" })
+      ).rejects.toThrow("fallo de red");
+
+      expect(supabase.from).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("propaga el error del reintento en vez de degradar en silencio", async () => {
+      supabase.from
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: buildMissingColumnCodeError() })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: new Error("permiso denegado") })
+        );
+
+      await expect(
+        loadKardexMovements({ productId: "p1", branchId: "b1" })
+      ).rejects.toThrow("permiso denegado");
+
+      expect(supabase.from).toHaveBeenCalledTimes(2);
+    });
+
+    it("no reintenta cuando la primera consulta es exitosa", async () => {
+      supabase.from.mockReturnValue(
+        thenableQuery({
+          data: [{ id: "m1", unit_cost: 80, total_cost: 240 }],
+          error: null,
+        })
+      );
+
+      const movements = await loadKardexMovements({
+        productId: "p1",
+        branchId: "b1",
+      });
+
+      expect(supabase.from).toHaveBeenCalledTimes(1);
+      expect(movements[0].unit_cost).toBe(80);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 });

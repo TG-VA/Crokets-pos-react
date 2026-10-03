@@ -8,7 +8,12 @@ const HEADER_ROW_NUMBER = 11;
 
 const DATA_START_ROW_NUMBER = 12;
 
-const CURRENCY_NUMBER_FORMAT = '"$"#,##0.00;[Red]"-$"#,##0.00;"$0.00"';
+/*
+ * Literal duplicado a proposito: fija el formato exacto que Excel debe recibir
+ * en las columnas de valuacion. Si se importara desde el builder la asercion
+ * seria tautologica y un cambio del formato pasaria inadvertido.
+ */
+const CURRENCY_NUMBER_FORMAT = '"$"#,##0.00';
 
 const product = {
   descripcion: "ALIMENTO PERRO ADULTO 15KG",
@@ -197,6 +202,11 @@ describe("kardexWorkbookBuilder", () => {
 
         expect(row.getCell(6).value).toBe("—");
         expect(row.getCell(7).value).toBe("—");
+
+        // Al quedar como texto no reciben numFmt: es lo que permite que el
+        // formato de moneda tenga una sola seccion.
+        expect(row.getCell(6).numFmt).toBeUndefined();
+        expect(row.getCell(7).numFmt).toBeUndefined();
       });
     });
   });

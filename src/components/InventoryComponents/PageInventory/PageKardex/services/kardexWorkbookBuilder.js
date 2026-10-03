@@ -23,7 +23,13 @@ const TABLE_COLUMN_COUNT = 7;
 /* Primera columna de importes: costo de compra (6) e importe total (7). */
 const MONEY_FIRST_COLUMN_NUMBER = 6;
 
-const CURRENCY_NUMBER_FORMAT = '"$"#,##0.00;[Red]"-$"#,##0.00;"$0.00"';
+/*
+ * Formato de una sola seccion porque las columnas de valuacion solo reciben
+ * importes mayores a cero: getKardexCostValue convierte el cero, el negativo y
+ * el dato ausente en el guion largo, que viaja como texto y por lo tanto no
+ * recibe numFmt. Una seccion negativa o de cero aqui seria codigo muerto.
+ */
+const CURRENCY_NUMBER_FORMAT = '"$"#,##0.00';
 
 const EMPTY_VALUE_LABEL = "—";
 
