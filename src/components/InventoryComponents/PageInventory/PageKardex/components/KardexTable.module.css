@@ -17,12 +17,17 @@
   color: var(--errorColor);
 }
 
+/*
+ * Altura estandar: la que ocupan el encabezado y las diez filas iniciales.
+ * Con paginas mas grandes (25 o 50 movimientos) el contenedor conserva esa
+ * altura y navega el resto con scroll vertical, de modo que el encabezado
+ * sticky siga visible.
+ */
 .tableWrap {
   width: 100%;
-  height: 56vh;
-  min-height: 420px;
-  max-height: 56vh;
-  overflow-x: hidden;
+  height: auto;
+  max-height: 440px;
+  overflow-x: auto;
   overflow-y: auto;
   box-sizing: border-box;
   border: 1px solid #e8e8e8;
@@ -32,6 +37,7 @@
 
 .table {
   width: 100%;
+  min-width: 620px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -95,12 +101,12 @@
 /* Distribución de columnas */
 
 .colFecha {
-  width: 15%;
+  width: 16%;
   text-align: center;
 }
 
 .colDescripcion {
-  width: 29%;
+  width: 24%;
   text-align: left;
 }
 
@@ -115,25 +121,24 @@
 }
 
 .colExistencia {
-  width: 11%;
+  width: 10%;
   text-align: center;
 }
 
 .colCostoCompra {
-  width: 13%;
+  width: 16%;
   text-align: right;
 }
 
 .colImporte {
-  width: 14%;
+  width: 16%;
   text-align: right;
 }
 
 .table thead .colEntradas,
 .table thead .colSalidas,
 .table thead .colExistencia {
-  padding-right: 0.25rem;
-  padding-left: 0.25rem;
+  padding: 0.4rem 0.2rem;
   font-size: 0.72rem;
   letter-spacing: 0;
   white-space: nowrap;
@@ -141,28 +146,33 @@
   word-break: normal;
 }
 
+/*
+ * Los encabezados monetarios pueden ocupar dos lineas ("COSTO" / "COMPRA") en
+ * lugar de recortarse, y quedan alineados a la derecha con sus importes.
+ */
 .table thead .colCostoCompra,
 .table thead .colImporte {
-  padding-right: 0.5rem;
-  padding-left: 0.25rem;
+  padding: 0.4rem 0.25rem;
   font-size: 0.72rem;
+  line-height: 1.15;
   letter-spacing: 0;
-  white-space: nowrap;
-  overflow-wrap: normal;
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: break-word;
   word-break: normal;
 }
 
 /* Celdas */
 
+/* La fecha fluye en dos lineas (fecha arriba, hora abajo) en vez de recortarse. */
 .cellFecha {
-  padding: 0.5rem 0.45rem;
-  overflow: hidden;
+  padding: 0.45rem 0.35rem;
   color: #666666;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
   text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .cellDescripcion {
@@ -196,9 +206,9 @@
 
 .cellCostoCompra,
 .cellImporte {
-  padding: 0.5rem 0.5rem;
+  padding: 0.5rem 0.35rem;
   color: var(--textColor);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -227,12 +237,6 @@
 }
 
 @media (max-width: 1250px) {
-  .tableWrap {
-    height: 52vh;
-    min-height: 380px;
-    max-height: 52vh;
-  }
-
   .table thead th {
     font-size: 0.74rem;
   }
@@ -249,12 +253,13 @@
   }
 }
 
+/*
+ * En movil la tabla se dibuja completa y el scroll vertical lo aporta la
+ * pagina, evitando un contenedor de scroll anidado.
+ */
 @media (max-width: 768px) {
   .tableWrap {
-    height: auto;
-    min-height: 0;
     max-height: none;
-    overflow-x: auto;
     overflow-y: visible;
   }
 
