@@ -127,12 +127,12 @@
 
 .colCostoCompra {
   width: 14%;
-  text-align: right;
+  text-align: left;
 }
 
 .colImporte {
   width: 14%;
-  text-align: right;
+  text-align: left;
 }
 
 .table thead .colDescripcion {
@@ -154,15 +154,15 @@
 
 /*
  * Los encabezados monetarios pueden ocupar dos lineas ("COSTO" / "COMPRA") en
- * lugar de recortarse, y quedan alineados a la derecha con sus importes.
+ * lugar de recortarse, y quedan alineados a la izquierda con sus importes.
  */
 .table thead .colCostoCompra,
 .table thead .colImporte {
-  padding: 0.4rem 0.2rem;
+  padding: 0.4rem 0.35rem;
   font-size: 0.7rem;
   line-height: 1.15;
   letter-spacing: 0;
-  text-align: right;
+  text-align: left;
   white-space: normal;
   overflow-wrap: break-word;
   word-break: normal;
@@ -217,7 +217,7 @@
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
 }
 
