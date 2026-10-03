@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
@@ -236,5 +236,91 @@ describe("KardexProductPanel", () => {
     expect(screen.getAllByText("Página 1 de 1")).toHaveLength(1);
     expect(screen.getByText("12 movimiento(s)")).toBeTruthy();
     expect(screen.getByText("3 movimiento(s)")).toBeTruthy();
+  });
+});
+
+describe("KardexProductPanel exportacion sobre el dataset completo", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("invoca onExport con el slot aunque la vista solo muestre la primera pagina", () => {
+    const onExport = vi.fn();
+
+    render(<KardexProductPanel {...panelProps({ onExport })} />);
+
+    expect(getBodyRowReasons()).toHaveLength(10);
+
+    fireEvent.click(screen.getByRole("button", { name: "Exportar" }));
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(onExport).toHaveBeenCalledWith(0);
+  });
+
+  it("mantiene el conteo total y el totalItems de la barra tras exportar", () => {
+    const onExport = vi.fn();
+
+    render(<KardexProductPanel {...panelProps({ onExport })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Exportar" }));
+
+    expect(screen.getByText("25 movimiento(s)")).toBeTruthy();
+    expect(screen.getByText(/Mostrando 1 a 10 de 25 movimientos/)).toBeTruthy();
+    expect(getBodyRowReasons()).toHaveLength(10);
+  });
+
+  it("exporta el mismo slot desde otra pagina sin alterar el dataset subyacente", () => {
+    const onExport = vi.fn();
+
+    render(<KardexProductPanel {...panelProps({ onExport, slot: 1 })} />);
+
+    clickPageButton("Siguiente");
+
+    expect(getBodyRowReasons()).toHaveLength(10);
+    expect(getBodyRowReasons()[0]).toBe("COMPRA — LOTE 10");
+
+    fireEvent.click(screen.getByRole("button", { name: "Exportar" }));
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(onExport).toHaveBeenCalledWith(1);
+
+    expect(screen.getByText("25 movimiento(s)")).toBeTruthy();
+    expect(
+      screen.getByText(/Mostrando 11 a 20 de 25 movimientos/)
+    ).toBeTruthy();
+  });
+
+  it("no habilita la exportacion sin movimientos", () => {
+    const onExport = vi.fn();
+
+    render(<KardexProductPanel {...panelProps({ rows: [], onExport })} />);
+
+    const button = screen.getByRole("button", { name: "Exportar" });
+
+    expect(button.disabled).toBe(true);
+
+    fireEvent.click(button);
+
+    expect(onExport).not.toHaveBeenCalled();
+  });
+
+  it("no habilita la exportacion mientras los movimientos estan en carga", () => {
+    const onExport = vi.fn();
+
+    render(
+      <KardexProductPanel
+        {...panelProps({
+          rows: buildRows(25),
+          movementState: { loading: true, error: "" },
+          onExport,
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Exportar" }).disabled).toBe(
+      true
+    );
+
+    expect(onExport).not.toHaveBeenCalled();
   });
 });
