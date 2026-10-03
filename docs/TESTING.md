@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (3 oct 2026)
 
-99 archivos de test (**1512 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+99 archivos de test (**1517 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -244,13 +244,20 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
   `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
   `RouterComponent` (por omisión `HashRouter`), igual que `App`.
-- **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 62 casos en 6 archivos,
+- **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
-  `kardexService.test.js` (12 casos) fija el contrato de la consulta: que el `select` pida
-  `unit_cost`/`total_cost` ademas de las columnas de movimiento y existencias, el filtro por producto
-  y la propagacion del error de Supabase. `kardexFormatters.test.js` (4 casos) fija los rotulos de
-  rango de fechas y el formato de moneda con los bordes de valor ausente, cero y no numerico, que la
-  tabla y el exportador deben compartir. `KardexTable.test.jsx` (10 casos) fija el render de las
+  `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
+  `unit_cost`/`total_cost` ademas de las columnas de movimiento y existencias, el filtro por producto,
+  la propagacion del error de Supabase y el **reintento defensivo** que degrada la vista a un kardex
+  sin costos cuando la base no tiene esas columnas. Ese reintento se dispara con el codigo de Postgres
+  `42703` (undefined_column) o con el mensaje que reporta la columna inexistente, reintenta una sola
+  vez omitiendo ambas columnas del `select`, mapea `unit_cost`/`total_cost` a `null` para que la tabla
+  y el exportador muestren el guion largo en vez de tratar un dato ausente como costo real, y propaga
+  el error del segundo intento en vez de devolver un kardex vacio. Los casos fijan que el camino feliz
+  consulta una sola vez, que un error ajeno no dispara reintento y que la degradacion queda
+  registrada con `console.error`.
+  `kardexFormatters.test.js` (4 casos) fija los rotulos de rango de fechas y el formato de moneda con
+  los bordes de valor ausente, cero y no numerico, que la tabla y el exportador deben compartir. `KardexTable.test.jsx` (10 casos) fija el render de las
   siete columnas, que las de valuacion diffusan guion largo cuando el movimiento no trae costo y
   que las de cantidad y existencia siguen alineadas al centro. `KardexProductPanel.test.jsx` (18
   casos) fija la paginacion por producto con `usePagination`: que solo se renderice la pagina
@@ -261,8 +268,10 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   `kardexWorkbookBuilder.test.js` (16 casos) fija el reporte de Excel contra un libro real de
   ExcelJS (no un mock): el merge del titulo en siete columnas, los encabezados, el ancho y el
   `numFmt` de moneda de las columnas de valuacion, la alineacion izquierda de los importes numericos
-  frente al centrado de los guiones, y que los movimientos sin costo se exporten como texto y no como
-  `0`.
+  frente al centrado de los guiones, y que los movimientos sin costo, con costo cero o con costo
+  negativo se exporten como texto y **sin** `numFmt`. Esa ultima asercion es lo que sustenta que el
+  formato de moneda tenga una sola seccion: como el cero y el negativo nunca llegan a ser numero, las
+  secciones de negativo y cero del formato serian codigo muerto.
 
   **La exportacion opera sobre el dataset completo, nunca sobre la pagina visible.** Este invariante
   lo fijan `Pagekardex.test.jsx` (2 casos) y el bloque de exportacion de `KardexProductPanel.test.jsx`,
