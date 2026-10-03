@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (2 oct 2026)
 
-89 archivos de test (**1375 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+93 archivos de test (**1447 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -29,6 +29,10 @@ y el proceso principal de Electron:
 | Reporte de inventario (datos)                       | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                    | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
 | Inventario: alta con CPP                            | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: cálculo del CPP móvil                   | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
+| Inventario: proyección de CPP en interfaz           | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
+| Inventario: hook de captura de costo                | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
+| Inventario: componente de captura de costo          | `.../PageAdd/components/InventoryAddCostEntry.test.jsx`                            |
 | Inventario: movimientos (payload de costo)          | `src/utils/inventoryMovements.test.js`                                             |
 | Corte de cajero (cálculos)                          | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
 | Corte de cajero (servicios de datos)                | `src/pages/CashCut/services/cashCutReportService.test.js`                          |
@@ -51,7 +55,6 @@ y el proceso principal de Electron:
 | Navegación protegida                                | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                | `src/config/adminProtectedSections.test.js`                                        |
 | Guard de rutas                                      | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
-| Criptografía de contraseñas locales                 | `src/backend/password.test.js`                                                     |
 | Sucursal por dispositivo (RPC)                      | `src/services/deviceBranchService.test.js`                                         |
 | Caja: sesión y apertura (RPC)                       | `src/services/cashRegisterService.test.js`                                         |
 | Ticket: golden de salida                            | `src/utils/ticket/ticketBuilder.test.js`                                           |
@@ -85,6 +88,20 @@ y el proceso principal de Electron:
 | Facturación: ventas por facturar (datos)            | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
 | Smoke de render del renderer y guardas de ruta      | `src/App.test.jsx`                                                                 |
 
+### Cobertura transitiva del resolver de costo
+
+`src/services/inventory/inventoryCostResolutionService.js` no tiene un archivo de test propio. Se
+prueba **a través de sus dos consumidores**, que es donde importa el comportamiento:
+
+- `.../PageAdd/services/inventoryAddService.test.js` (20 casos) lo ejerce por el camino de persistencia.
+- `.../PageAdd/services/inventoryAddProjectionService.test.js` (18 casos) lo ejerce por el camino de la interfaz.
+
+Es intencional: el módulo no tiene comportamiento propio más allá de `resolveCurrentCost`,
+`resolveIncomingCostPrice` y `toNonNegativeNumber`, y probarlo por separado duplicaría los mismos
+escenarios con nombres distintos. Una mutación que hace que el resolver compartido ignore el
+`cost_price` de `branch_inventory` y herede el de catálogo rompe 26 casos entre ambas suites, lo que
+confirma que ninguna de las dos puede divergir de la regla compartida.
+
 ## Patrones y convenciones
 
 - **Contrato de servicios:** los servicios de datos devuelven `{ success, data, error, partial }`.
@@ -96,6 +113,14 @@ y el proceso principal de Electron:
   - `rpcBuilder({ data, error })` — simula `supabase.rpc(...)`.
     Estos helpers están duplicados por archivo (candidatos a extraerse a un helper compartido).
 - **Hooks:** se prueban con `renderHook`/`act` de `@testing-library/react`.
+  Para cambiar las props en un caso de prueba, `renderHook` necesita `initialProps` y el callback
+  debe recibir ese objeto como parámetro: `renderHook((props) => useX(props), { initialProps })`.
+  Si el callback cierra sobre variables externas, `rerender(...)` no cambia nada y el test pasa sin
+  estar probando lo que cree.
+- **Matchers de DOM:** el proyecto **no** instala `@testing-library/jest-dom`. No existen
+  `toBeInTheDocument`, `toHaveTextContent` ni `toHaveClass`: usarlos lanza
+  `Invalid Chai property`. Para contenido usa `expect(el.textContent).toContain(...)` y para clases
+  `expect(el.className).toContain(...)`.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 
 ## Huecos de cobertura
