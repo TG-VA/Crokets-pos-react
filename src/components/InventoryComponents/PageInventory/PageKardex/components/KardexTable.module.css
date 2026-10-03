@@ -37,7 +37,7 @@
 
 .table {
   width: 100%;
-  min-width: 620px;
+  min-width: 650px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -49,15 +49,15 @@
   top: 0;
   z-index: 2;
   height: 48px;
-  padding: 0.5rem 0.4rem;
+  padding: 0.45rem 0.2rem;
   box-sizing: border-box;
   border-right: 1px solid rgba(255, 255, 255, 0.25);
   background-color: var(--croketsOrange);
   color: var(--white);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
   line-height: 1.15;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   text-align: center;
   white-space: normal;
   overflow-wrap: normal;
@@ -101,45 +101,51 @@
 /* Distribución de columnas */
 
 .colFecha {
-  width: 16%;
+  width: 14%;
   text-align: center;
 }
 
 .colDescripcion {
-  width: 24%;
+  width: 22%;
   text-align: left;
 }
 
 .colEntradas {
-  width: 9%;
+  width: 11%;
   text-align: center;
 }
 
 .colSalidas {
-  width: 9%;
+  width: 11%;
   text-align: center;
 }
 
 .colExistencia {
-  width: 10%;
+  width: 14%;
   text-align: center;
 }
 
 .colCostoCompra {
-  width: 16%;
+  width: 14%;
   text-align: right;
 }
 
 .colImporte {
-  width: 16%;
+  width: 14%;
   text-align: right;
+}
+
+.table thead .colDescripcion {
+  padding: 0.4rem 0.3rem;
+  font-size: 0.7rem;
+  text-align: left;
 }
 
 .table thead .colEntradas,
 .table thead .colSalidas,
 .table thead .colExistencia {
-  padding: 0.4rem 0.2rem;
-  font-size: 0.72rem;
+  padding: 0.4rem 0.15rem;
+  font-size: 0.7rem;
   letter-spacing: 0;
   white-space: nowrap;
   overflow-wrap: normal;
@@ -152,8 +158,8 @@
  */
 .table thead .colCostoCompra,
 .table thead .colImporte {
-  padding: 0.4rem 0.25rem;
-  font-size: 0.72rem;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.7rem;
   line-height: 1.15;
   letter-spacing: 0;
   text-align: right;
@@ -236,20 +242,10 @@
   font-weight: 900;
 }
 
+/* En pantallas angostas el encabezado se reduce, nunca se expande. */
 @media (max-width: 1250px) {
   .table thead th {
-    font-size: 0.74rem;
-  }
-
-  .table thead .colEntradas,
-  .table thead .colSalidas,
-  .table thead .colExistencia {
-    font-size: 0.7rem;
-  }
-
-  .table thead .colCostoCompra,
-  .table thead .colImporte {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
   }
 }
 
