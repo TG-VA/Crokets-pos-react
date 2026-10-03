@@ -1,5 +1,9 @@
 import React from "react";
 
+import InventoryAddCostEntry from "./InventoryAddCostEntry";
+
+import { formatCurrency } from "../utils/inventoryAddFormatters";
+
 import styles from "../PageAdd.module.css";
 
 const InventoryAddForm = ({
@@ -8,6 +12,7 @@ const InventoryAddForm = ({
   quantityToAdd = "",
   newInventory = 0,
   salePrice = 0,
+  costEntry = null,
   submitArmed = false,
   saving = false,
   quantityInputRef,
@@ -20,6 +25,11 @@ const InventoryAddForm = ({
   if (!selectedProduct) {
     return null;
   }
+
+  // El CPP vigente se lee del mismo subdominio que alimenta la tarjeta de
+  // proyeccion: duplicarlo como prop permitiria que el formulario anuncie un
+  // costo y la proyeccion otro.
+  const currentUnitCost = costEntry?.currentCost ?? 0;
 
   const handleQuantityKeyDown = (event) => {
     if (
@@ -91,6 +101,18 @@ const InventoryAddForm = ({
       </div>
 
       <div className={styles.formRow}>
+        <label className={styles.label}>Costo promedio actual (CPP)</label>
+
+        <input
+          className={styles.input}
+          type="text"
+          value={formatCurrency(currentUnitCost)}
+          readOnly
+          tabIndex={-1}
+        />
+      </div>
+
+      <div className={styles.formRow}>
         <label className={styles.label}>Cantidad</label>
 
         <input
@@ -132,6 +154,10 @@ const InventoryAddForm = ({
           tabIndex={-1}
         />
       </div>
+
+      {costEntry ? (
+        <InventoryAddCostEntry costEntry={costEntry} disabled={saving} />
+      ) : null}
 
       <div className={styles.actions}>
         <button

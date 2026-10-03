@@ -17,6 +17,12 @@ const SALE_DETAILS_CONCURRENCY = 4;
 /**
  * Carga un lote de detalles de venta. Aisla el fallo de un lote devolviendo []
  * para no tumbar el reporte completo.
+ *
+ * `sale_details.cost_price` es el snapshot congelado por `create_sale_transaction`
+ * al momento de la venta (Fase 3): es el costo que realmente se confirmo en esa
+ * operacion. Sin esta columna el reporte solo podria leer el costo vivo de
+ * `branch_inventory` o del catalogo, que es justamente lo que reescribia el margen
+ * historico.
  */
 const fetchSaleDetailsChunk = async (chunk) => {
   const { data, error } = await supabase
@@ -30,6 +36,7 @@ const fetchSaleDetailsChunk = async (chunk) => {
       unit_price,
       discount_amount,
       total_price,
+      cost_price,
       products:product_id (
         id,
         name,
