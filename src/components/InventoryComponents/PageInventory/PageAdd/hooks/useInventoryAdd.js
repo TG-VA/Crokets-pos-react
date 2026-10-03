@@ -5,6 +5,7 @@ import { useBranch } from "../../../../../contexts/BranchContext";
 import { useAuth } from "../../../../../contexts/AuthContext";
 
 import { addInventoryToProduct } from "../services/inventoryAddService";
+import useInventoryAddCost from "./useInventoryAddCost";
 
 const INITIAL_APP_MODAL = {
   isOpen: false,
@@ -59,6 +60,13 @@ const useInventoryAdd = () => {
 
     return Number.isFinite(price) ? price : 0;
   }, [selectedProduct?.precio]);
+
+  // Subdominio de la captura de costo: modo de la entrada, validacion del costo
+  // de compra y proyeccion del CPP resultante.
+  const costEntry = useInventoryAddCost({
+    selectedProduct,
+    quantity: parsedQuantityToAdd,
+  });
 
   const focusBarcodeInput = () => {
     window.requestAnimationFrame(() => {
@@ -212,6 +220,19 @@ const useInventoryAdd = () => {
       return;
     }
 
+    // En compra el costo de adquisicion es obligatorio: sin el, el lote se
+    // valoraria al CPP vigente y la operacion se comportaria como una entrada
+    // manual, moviendo el costo de forma silenciosa.
+    if (costEntry.costError) {
+      showAppAlert({
+        type: "warning",
+        title: "Costo de compra inválido",
+        message: costEntry.costError,
+      });
+
+      return;
+    }
+
     const productId = selectedProduct.product_id || selectedProduct.id;
 
     if (!productId) {
@@ -231,6 +252,7 @@ const useInventoryAdd = () => {
         branchId: branch.id,
         product: selectedProduct,
         quantity: parsedQuantityToAdd,
+        incomingCostPrice: costEntry.resolveIncomingCostPriceForSubmit(),
         userId: user?.id || null,
       });
 
@@ -278,6 +300,8 @@ const useInventoryAdd = () => {
     currentInventory,
     newInventory,
     salePrice,
+    currentUnitCost: costEntry.currentCost,
+    costEntry,
 
     quantityInputRef,
     barcodeInputRef,

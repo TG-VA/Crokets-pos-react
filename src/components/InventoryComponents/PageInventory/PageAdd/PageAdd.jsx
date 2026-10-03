@@ -22,6 +22,8 @@ const PageAdd = () => {
     currentInventory,
     newInventory,
     salePrice,
+    currentUnitCost,
+    costEntry,
     quantityInputRef,
     barcodeInputRef,
     bodyRef,
@@ -92,9 +94,11 @@ const PageAdd = () => {
         <InventoryAddForm
           selectedProduct={selectedProduct}
           currentInventory={currentInventory}
+          currentUnitCost={currentUnitCost}
           quantityToAdd={quantityToAdd}
           newInventory={newInventory}
           salePrice={salePrice}
+          costEntry={costEntry}
           submitArmed={submitArmed}
           saving={saving}
           quantityInputRef={quantityInputRef}
