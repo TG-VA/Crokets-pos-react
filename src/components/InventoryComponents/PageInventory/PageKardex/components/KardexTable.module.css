@@ -19,14 +19,15 @@
 
 /*
  * Altura estandar: la que ocupan el encabezado y las diez filas iniciales.
- * Con paginas mas grandes (25 o 50 movimientos) el contenedor conserva esa
- * altura y navega el resto con scroll vertical, de modo que el encabezado
- * sticky siga visible.
+ * En la vista comparativa las celdas de fecha y descripcion ocupan dos lineas,
+ * de modo que diez filas miden cerca de 500px. Con paginas mas grandes (25 o 50
+ * movimientos) el contenedor conserva esa altura y navega el resto con scroll
+ * vertical, de modo que el encabezado sticky siga visible.
  */
 .tableWrap {
   width: 100%;
   height: auto;
-  max-height: 440px;
+  max-height: 520px;
   overflow-x: auto;
   overflow-y: auto;
   box-sizing: border-box;
