@@ -62,6 +62,10 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+.paginationFooter {
+  margin-top: 0.6rem;
+}
+
 .statSobrestock {
   border-color: #7c5ce7;
   background-color: #f5f2ff;
