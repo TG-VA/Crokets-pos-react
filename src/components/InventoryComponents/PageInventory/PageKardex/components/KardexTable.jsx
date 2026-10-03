@@ -2,6 +2,7 @@ import React from "react";
 
 import {
   formatKardexDateTime,
+  formatKardexOptionalCurrency,
   getKardexMovementDescription,
 } from "../utils/kardexFormatters";
 
@@ -52,6 +53,10 @@ const KardexTable = ({
             <th className={styles.colSalidas}>SALIDAS</th>
 
             <th className={styles.colExistencia}>EXISTENCIA</th>
+
+            <th className={styles.colCostoCompra}>COSTO COMPRA</th>
+
+            <th className={styles.colImporte}>IMPORTE TOTAL</th>
           </tr>
         </thead>
 
@@ -98,6 +103,14 @@ const KardexTable = ({
                   }`}
                 >
                   {runningStock ?? "—"}
+                </td>
+
+                <td className={styles.cellCostoCompra}>
+                  {formatKardexOptionalCurrency(row?.unit_cost)}
+                </td>
+
+                <td className={styles.cellImporte}>
+                  {formatKardexOptionalCurrency(row?.total_cost)}
                 </td>
               </tr>
             );

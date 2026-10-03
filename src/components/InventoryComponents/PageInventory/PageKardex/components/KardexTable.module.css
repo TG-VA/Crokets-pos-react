@@ -95,34 +95,55 @@
 /* Distribución de columnas */
 
 .colFecha {
-  width: 20%;
+  width: 15%;
   text-align: center;
 }
 
 .colDescripcion {
-  width: 40%;
+  width: 29%;
   text-align: left;
 }
 
 .colEntradas {
-  width: 13%;
+  width: 9%;
   text-align: center;
 }
 
 .colSalidas {
-  width: 13%;
+  width: 9%;
   text-align: center;
 }
 
 .colExistencia {
-  width: 14%;
+  width: 11%;
   text-align: center;
+}
+
+.colCostoCompra {
+  width: 13%;
+  text-align: right;
+}
+
+.colImporte {
+  width: 14%;
+  text-align: right;
 }
 
 .table thead .colEntradas,
 .table thead .colSalidas,
 .table thead .colExistencia {
   padding-right: 0.25rem;
+  padding-left: 0.25rem;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.table thead .colCostoCompra,
+.table thead .colImporte {
+  padding-right: 0.5rem;
   padding-left: 0.25rem;
   font-size: 0.72rem;
   letter-spacing: 0;
@@ -173,6 +194,25 @@
   background-color: rgba(231, 76, 60, 0.035);
 }
 
+.cellCostoCompra,
+.cellImporte {
+  padding: 0.5rem 0.5rem;
+  color: var(--textColor);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cellCostoCompra {
+  background-color: rgba(39, 174, 96, 0.02);
+}
+
+.cellImporte {
+  background-color: rgba(52, 152, 219, 0.035);
+}
+
 .positive {
   color: var(--successColor);
 }
@@ -202,6 +242,11 @@
   .table thead .colExistencia {
     font-size: 0.7rem;
   }
+
+  .table thead .colCostoCompra,
+  .table thead .colImporte {
+    font-size: 0.7rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -214,6 +259,6 @@
   }
 
   .table {
-    min-width: 620px;
+    min-width: 900px;
   }
 }
