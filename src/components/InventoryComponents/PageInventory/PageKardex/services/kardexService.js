@@ -93,6 +93,8 @@ export const loadKardexMovements = async ({
         user_id,
         branch_id,
         related_branch_id,
+        unit_cost,
+        total_cost,
         created_at
       `
     )

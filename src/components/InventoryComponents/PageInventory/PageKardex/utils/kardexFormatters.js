@@ -36,6 +36,25 @@ export const formatKardexCurrency = (value) => {
   }).format(safeValue);
 };
 
+/**
+ * Formatea un importe monetario opcional del kardex. Los movimientos sin costo
+ * registrado (`null`, `undefined`, vacio o cero) no son presentables como
+ * moneda, por lo que se representan con el guion largo.
+ */
+export const formatKardexOptionalCurrency = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return "—";
+  }
+
+  return formatKardexCurrency(numericValue);
+};
+
 export const normalizeKardexText = (value) => {
   return String(value ?? "").trim();
 };
