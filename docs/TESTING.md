@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (2 oct 2026)
 
-93 archivos de test (**1447 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+93 archivos de test (**1450 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -99,8 +99,11 @@ prueba **a través de sus dos consumidores**, que es donde importa el comportami
 Es intencional: el módulo no tiene comportamiento propio más allá de `resolveCurrentCost`,
 `resolveIncomingCostPrice` y `toNonNegativeNumber`, y probarlo por separado duplicaría los mismos
 escenarios con nombres distintos. Una mutación que hace que el resolver compartido ignore el
-`cost_price` de `branch_inventory` y herede el de catálogo rompe 26 casos entre ambas suites, lo que
-confirma que ninguna de las dos puede divergir de la regla compartida.
+`cost_price` de `branch_inventory` y herede el de catálogo rompe **5 casos, todos en
+`inventoryAddService.test.js` y ninguno en la suite de proyección**: `getCurrentUnitCost` siempre
+resuelve con `inventoryRow = null` (el producto ya trae el costo resuelto para la sucursal), de modo
+que esa rama es inalcanzable desde la interfaz y no puede detectarse por ese camino. La detección
+está donde el servidor sí lee la fila: la suite de persistencia.
 
 ## Patrones y convenciones
 

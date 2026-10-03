@@ -19,13 +19,20 @@ const buildCostEntry = (overrides = {}) => {
   const entryMode = overrides.entryMode ?? ENTRY_MODE.PURCHASE;
   const incomingCostInput = overrides.incomingCostInput ?? "100.00";
 
+  // El helper replica el guard de `useInventoryAddCost`: un campo vacio viaja
+  // como `null`, no como `0`. Si se dejara `Number("")`, esta suite construiria
+  // una proyeccion que el hook jamas produce y dejaria de medir la de la interfaz.
+  const incomingCostPrice = incomingCostInput.trim()
+    ? Number(incomingCostInput)
+    : null;
+
   const projection =
     overrides.projection ??
     projectIncomingCost({
       product,
       quantity: overrides.quantity ?? 10,
       entryMode,
-      incomingCostPrice: Number(incomingCostInput),
+      incomingCostPrice,
     });
 
   return {
@@ -230,6 +237,21 @@ describe("InventoryAddCostEntry", () => {
       );
 
       expect(screen.getByText(/Importe del lote: \$4,000\.00/)).toBeTruthy();
+    });
+
+    it("no colapsa el CPP a cero cuando el campo de costo esta vacio", () => {
+      renderEntry(
+        buildCostEntry({
+          quantity: 10,
+          incomingCostInput: "",
+          costError: "Ingresa el costo",
+        })
+      );
+
+      expect(screen.getByText("$100.00")).toBeTruthy();
+      expect(
+        screen.getByText(/Sin cambio: la entrada entra al costo vigente/)
+      ).toBeTruthy();
     });
   });
 });

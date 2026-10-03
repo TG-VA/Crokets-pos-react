@@ -246,5 +246,36 @@ describe("useInventoryAddCost", () => {
       rerender({ selectedProduct: product, quantity: 30 });
       expect(result.current.projection.projectedCost).toBe(325);
     });
+
+    it("no colapsa el CPP a cero cuando el campo de costo queda vacio", () => {
+      const { result } = renderCostHook({ quantity: 10 });
+
+      typeCost(result, "");
+
+      // `Number("")` es `0`: sin el guard de texto vacio la proyeccion anunciaria
+      // una compra a costo cero que derrumbaba el CPP. Un campo vacio es una
+      // captura ausente, no un cero, asi que la entrada se valua al costo
+      // vigente y el CPP queda intacto mientras el submit sigue bloqueado.
+      expect(result.current.projection.projectedCost).toBe(
+        result.current.currentCost
+      );
+      expect(result.current.projection.projectedCost).toBe(100);
+      expect(result.current.projection.costWillChange).toBe(false);
+      expect(result.current.costError).not.toBeNull();
+      expect(
+        result.current.resolveIncomingCostPriceForSubmit()
+      ).toBeUndefined();
+    });
+
+    it("distingue el cero capturado del campo vacio", () => {
+      const { result } = renderCostHook({ quantity: 10 });
+
+      typeCost(result, "0");
+
+      // ((10*100) + (10*0)) / 20 = 50: un cero deliberado si mueve el CPP.
+      expect(result.current.costError).toBeNull();
+      expect(result.current.projection.projectedCost).toBe(50);
+      expect(result.current.projection.costWillChange).toBe(true);
+    });
   });
 });

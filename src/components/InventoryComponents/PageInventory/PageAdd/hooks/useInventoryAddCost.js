@@ -92,7 +92,15 @@ const useInventoryAddCost = ({ selectedProduct, quantity } = {}) => {
 
   const isPurchase = entryMode === ENTRY_MODE.PURCHASE;
 
+  // El guard de texto vacio va antes de la coercion: `Number("")` es `0`, y sin
+  // el guard un campo en blanco se anunciaria como una compra a costo cero que
+  // derrumba el CPP proyectado. Un campo vacio no es un cero capturado, es una
+  // captura ausente, y se traduce a `null` para que `resolveIncomingCostPrice`
+  // valorice la mercancia al costo vigente y deje el CPP intacto. El submit ya
+  // esta bloqueado por `costError` en ese escenario.
   const parsedIncomingCost = useMemo(() => {
+    if (!incomingCostInput?.trim()) return null;
+
     const parsed = Number(incomingCostInput);
 
     return Number.isFinite(parsed) ? parsed : null;

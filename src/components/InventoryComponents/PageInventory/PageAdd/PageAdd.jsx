@@ -22,7 +22,6 @@ const PageAdd = () => {
     currentInventory,
     newInventory,
     salePrice,
-    currentUnitCost,
     costEntry,
     quantityInputRef,
     barcodeInputRef,
@@ -94,7 +93,6 @@ const PageAdd = () => {
         <InventoryAddForm
           selectedProduct={selectedProduct}
           currentInventory={currentInventory}
-          currentUnitCost={currentUnitCost}
           quantityToAdd={quantityToAdd}
           newInventory={newInventory}
           salePrice={salePrice}

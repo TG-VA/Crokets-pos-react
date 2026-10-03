@@ -300,7 +300,6 @@ const useInventoryAdd = () => {
     currentInventory,
     newInventory,
     salePrice,
-    currentUnitCost: costEntry.currentCost,
     costEntry,
 
     quantityInputRef,

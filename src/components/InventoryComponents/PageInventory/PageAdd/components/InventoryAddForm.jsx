@@ -9,7 +9,6 @@ import styles from "../PageAdd.module.css";
 const InventoryAddForm = ({
   selectedProduct,
   currentInventory = 0,
-  currentUnitCost = 0,
   quantityToAdd = "",
   newInventory = 0,
   salePrice = 0,
@@ -26,6 +25,11 @@ const InventoryAddForm = ({
   if (!selectedProduct) {
     return null;
   }
+
+  // El CPP vigente se lee del mismo subdominio que alimenta la tarjeta de
+  // proyeccion: duplicarlo como prop permitiria que el formulario anuncie un
+  // costo y la proyeccion otro.
+  const currentUnitCost = costEntry?.currentCost ?? 0;
 
   const handleQuantityKeyDown = (event) => {
     if (
