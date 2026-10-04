@@ -34,6 +34,8 @@ export const PendingTransfersProvider = ({ children }) => {
   const currentBranchId = branch?.id || "";
 
   const refresh = useCallback(async () => {
+    setPendingReceiptsCount(0);
+    setIsLoading(true);
     try {
       const orders = await loadTransferOrders();
       const count = getPendingReceiptsCount({
@@ -54,8 +56,6 @@ export const PendingTransfersProvider = ({ children }) => {
   }, [currentBranchId]);
 
   useEffect(() => {
-    setPendingReceiptsCount(0);
-    setIsLoading(true);
     void refresh();
   }, [refresh]);
 
