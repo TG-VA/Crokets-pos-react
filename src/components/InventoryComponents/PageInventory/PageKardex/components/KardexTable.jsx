@@ -77,7 +77,10 @@ const KardexTable = ({
                   {formatKardexDateTime(row?.created_at)}
                 </td>
 
-                <td className={styles.cellDescripcion}>
+                <td
+                  className={styles.cellDescripcion}
+                  title={getKardexMovementDescription(row)}
+                >
                   {getKardexMovementDescription(row)}
                 </td>
 

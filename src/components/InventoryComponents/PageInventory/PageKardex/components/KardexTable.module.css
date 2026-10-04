@@ -27,8 +27,9 @@
  */
 .tableWrap {
   width: 100%;
-  height: auto;
-  max-height: 560px;
+  height: 480px;
+  min-height: 480px;
+  max-height: 480px;
   overflow-x: auto;
   overflow-y: auto;
   box-sizing: border-box;
@@ -76,6 +77,9 @@
 }
 
 .table tbody tr {
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
   transition: background-color 0.1s ease;
 }
 
@@ -108,32 +112,32 @@
 }
 
 .colDescripcion {
-  width: 22%;
+  width: 36%;
   text-align: left;
 }
 
 .colEntradas {
-  width: 11%;
+  width: 9%;
   text-align: center;
 }
 
 .colSalidas {
-  width: 11%;
+  width: 9%;
   text-align: center;
 }
 
 .colExistencia {
-  width: 14%;
+  width: 10%;
   text-align: center;
 }
 
 .colCostoCompra {
-  width: 14%;
+  width: 11%;
   text-align: left;
 }
 
 .colImporte {
-  width: 14%;
+  width: 11%;
   text-align: left;
 }
 
@@ -160,7 +164,7 @@
  */
 .table thead .colCostoCompra,
 .table thead .colImporte {
-  padding: 0.4rem 0.35rem;
+  padding: 0.4rem 0.2rem;
   font-size: 0.7rem;
   line-height: 1.15;
   letter-spacing: 0;
@@ -184,12 +188,14 @@
 }
 
 .cellDescripcion {
-  padding: 0.5rem 0.55rem;
-  overflow-wrap: anywhere;
+  padding: 0 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--textColor);
   font-size: 0.84rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 42px;
   text-align: left;
 }
 
