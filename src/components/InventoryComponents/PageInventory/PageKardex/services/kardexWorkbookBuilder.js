@@ -18,7 +18,20 @@ const HEADER_ROW_NUMBER = 11;
 
 const DATA_START_ROW_NUMBER = HEADER_ROW_NUMBER + 1;
 
-const TABLE_COLUMN_COUNT = 5;
+const TABLE_COLUMN_COUNT = 7;
+
+/* Primera columna de importes: costo de compra (6) e importe total (7). */
+const MONEY_FIRST_COLUMN_NUMBER = 6;
+
+/*
+ * Formato de una sola seccion porque las columnas de valuacion solo reciben
+ * importes mayores a cero: getKardexCostValue convierte el cero, el negativo y
+ * el dato ausente en el guion largo, que viaja como texto y por lo tanto no
+ * recibe numFmt. Una seccion negativa o de cero aqui seria codigo muerto.
+ */
+const CURRENCY_NUMBER_FORMAT = '"$"#,##0.00';
+
+const EMPTY_VALUE_LABEL = "—";
 
 const THIN_BORDER = {
   top: {
@@ -86,11 +99,19 @@ const configureWorksheetColumns = (worksheet) => {
       key: "existencia",
       width: 16,
     },
+    {
+      key: "costoCompra",
+      width: 16,
+    },
+    {
+      key: "importeTotal",
+      width: 16,
+    },
   ];
 };
 
 const configureTitle = (worksheet) => {
-  worksheet.mergeCells("A1:E1");
+  worksheet.mergeCells("A1:G1");
 
   const titleCell = worksheet.getCell("A1");
 
@@ -195,6 +216,8 @@ const configureTableHeader = (worksheet) => {
     "ENTRADAS",
     "SALIDAS",
     "EXISTENCIA",
+    "COSTO COMPRA",
+    "IMPORTE TOTAL",
   ];
 
   headerRow.height = 22;
@@ -226,6 +249,25 @@ const configureTableHeader = (worksheet) => {
   });
 };
 
+/**
+ * Resuelve el importe a exportar de un movimiento. Devuelve el numero cuando
+ * hay costo registrado y el guion largo cuando el dato no aplica, para que en
+ * Excel las celdas numericas reciban el formato de moneda y las vacias no.
+ */
+const getKardexCostValue = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return EMPTY_VALUE_LABEL;
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return EMPTY_VALUE_LABEL;
+  }
+
+  return numericValue;
+};
+
 const renderKardexRows = ({ worksheet, rows }) => {
   rows.forEach((row, index) => {
     const excelRow = worksheet.getRow(DATA_START_ROW_NUMBER + index);
@@ -239,7 +281,11 @@ const renderKardexRows = ({ worksheet, rows }) => {
 
       row?.exitQty > 0 ? -Math.abs(row.exitQty) : null,
 
-      row?.runningStock ?? "—",
+      row?.runningStock ?? EMPTY_VALUE_LABEL,
+
+      getKardexCostValue(row?.unit_cost),
+
+      getKardexCostValue(row?.total_cost),
     ];
 
     excelRow.height = 20;
@@ -251,22 +297,37 @@ const renderKardexRows = ({ worksheet, rows }) => {
     ) {
       const cell = excelRow.getCell(columnNumber);
 
+      const isMoneyColumn = columnNumber >= MONEY_FIRST_COLUMN_NUMBER;
+
+      const isNumericMoney = isMoneyColumn && typeof cell.value === "number";
+
       cell.font = {
         name: "Arial",
       };
 
       cell.border = THIN_BORDER;
 
-      cell.alignment =
-        columnNumber >= 3
-          ? {
-              horizontal: "center",
-              vertical: "middle",
-            }
-          : {
-              vertical: "middle",
-              wrapText: columnNumber === 2,
-            };
+      if (isNumericMoney) {
+        cell.numFmt = CURRENCY_NUMBER_FORMAT;
+      }
+
+      if (isMoneyColumn) {
+        cell.alignment = {
+          horizontal: isNumericMoney ? "left" : "center",
+          vertical: "middle",
+        };
+      } else {
+        cell.alignment =
+          columnNumber >= 3
+            ? {
+                horizontal: "center",
+                vertical: "middle",
+              }
+            : {
+                vertical: "middle",
+                wrapText: columnNumber === 2,
+              };
+      }
 
       if (index % 2 === 0) {
         cell.fill = {
