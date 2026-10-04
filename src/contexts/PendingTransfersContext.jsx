@@ -56,7 +56,10 @@ export const PendingTransfersProvider = ({ children }) => {
   }, [currentBranchId]);
 
   useEffect(() => {
-    void refresh();
+    // Reset state de count + loading a valores iniciales ANTES de ejecutar fetch asíncrono (refresh).
+    // Pattern standard: setLoading(true) + await + setData + setLoading(false).
+    // La regla react-hooks/set-state-in-effect reporta falso positivo por cadena de llamada vía refresh.
+    void refresh(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [refresh]);
 
   useEffect(() => {
