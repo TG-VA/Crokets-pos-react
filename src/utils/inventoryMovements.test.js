@@ -169,3 +169,88 @@ describe("inventoryMovements - columnas de costo", () => {
     expect(result).toEqual({ success: true, skipped: false, error: null });
   });
 });
+
+describe("inventoryMovements - fallback por tipo de movimiento invalido", () => {
+  const INVALID_TYPE_ERROR = {
+    data: null,
+    error: new Error(
+      'new row for relation "inventory_movements" violates check constraint "chk_inventory_movements_movement_type"'
+    ),
+  };
+
+  let retry;
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem(CACHE_KEY, "inventory_movements");
+
+    const first = insertQuery(INVALID_TYPE_ERROR);
+
+    retry = insertQuery({ data: null, error: null });
+
+    supabase.from.mockReset();
+    supabase.auth.getSession.mockReset();
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-1" } } },
+    });
+    supabase.from.mockReturnValueOnce(first).mockReturnValueOnce(retry);
+  });
+
+  const getRetryPayload = () => retry.insert.mock.calls[0][0];
+
+  it("degrada el tipo a adjustment conservando el motivo humano tal cual", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      movementType: "inventory_add",
+      reason: "Alta a inventario (manual)",
+    });
+
+    expect(getRetryPayload()).toEqual(
+      expect.objectContaining({
+        movement_type: "adjustment",
+        reason: "Alta a inventario (manual)",
+      })
+    );
+  });
+
+  it("no antepone el slug tecnico al motivo cuando ya viene informado", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      movementType: "inventory_add",
+      reason: "Alta a inventario (manual)",
+    });
+
+    expect(getRetryPayload().reason).not.toContain("inventory_add");
+    expect(getRetryPayload().reason).not.toContain(":");
+  });
+
+  it("usa el slug original como motivo solo cuando no hay motivo informado", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      movementType: "inventory_add",
+      reason: "",
+    });
+
+    expect(getRetryPayload()).toEqual(
+      expect.objectContaining({
+        movement_type: "adjustment",
+        reason: "inventory_add",
+      })
+    );
+  });
+
+  it("deja el motivo en null cuando no hay motivo ni tipo original", async () => {
+    await logInventoryMovement({
+      ...baseMovement,
+      movementType: "",
+      reason: null,
+    });
+
+    expect(getRetryPayload()).toEqual(
+      expect.objectContaining({
+        movement_type: "adjustment",
+        reason: null,
+      })
+    );
+  });
+});

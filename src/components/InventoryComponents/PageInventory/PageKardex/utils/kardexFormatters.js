@@ -69,16 +69,96 @@ export const getKardexMovementType = (movement) => {
   return normalizeKardexText(movement?.movement_type).toLowerCase();
 };
 
+/**
+ * Slugs de tipo de movimiento que el fallback historico de `logInventoryMovement`
+ * concatenaba al motivo (`"inventory_add: Alta a inventario"`). Un motivo humano
+ * que empieza con cualquiera de ellos se despinta para que la UI nunca exponga
+ * identificadores tecnicos.
+ */
+const TECHNICAL_REASON_PREFIXES = new Set([
+  "adjustment",
+  "canceled",
+  "cancelled",
+  "inventory_activate",
+  "inventory_add",
+  "inventory_deactivate",
+  "product_create",
+  "product_delete",
+  "product_update",
+  "purchase",
+  "redemption",
+  "return",
+  "sale",
+  "sale_redemption",
+  "transfer",
+  "transfer_in",
+  "transfer_out",
+]);
+
+const INVENTORY_ADD_REASON_PATTERN =
+  /alta\s+(?:a|de)\s+inventario|ingreso\s+a\s+inventario|alta\s+de\s+mercancia/i;
+
+/**
+ * Limpia el motivo de los prefijos tecnicos residuales.
+ *
+ * Los registros ya persistidos pueden traer el motivo contaminado por el slug
+ * tecnico (o tener el slug como motivo unico), asi que se eliminan en cascada
+ * hasta encontrar texto descriptivo. El slug mas externo que se logro quitar se
+ * devuelve aparte para que la vista pueda conservar la intencion del movimiento
+ * original cuando el motivo se queda vacio.
+ *
+ * @param {unknown} value
+ * @returns {{ reason: string, strippedTechnicalType: string|null }}
+ */
+export const sanitizeKardexReason = (value) => {
+  let currentReason = normalizeKardexText(value);
+
+  let strippedTechnicalType = null;
+
+  while (currentReason) {
+    const separatorIndex = currentReason.indexOf(":");
+
+    if (separatorIndex <= 0) break;
+
+    const candidate = currentReason
+      .slice(0, separatorIndex)
+      .trim()
+      .toLowerCase();
+
+    if (!TECHNICAL_REASON_PREFIXES.has(candidate)) break;
+
+    strippedTechnicalType = strippedTechnicalType || candidate;
+    currentReason = currentReason.slice(separatorIndex + 1).trim();
+  }
+
+  if (!strippedTechnicalType && currentReason) {
+    const bareCandidate = currentReason.toLowerCase();
+
+    if (TECHNICAL_REASON_PREFIXES.has(bareCandidate)) {
+      strippedTechnicalType = bareCandidate;
+      currentReason = "";
+    }
+  }
+
+  return { reason: currentReason, strippedTechnicalType };
+};
+
 const appendReason = (label, reason) => {
   const normalizedReason = normalizeKardexText(reason);
 
   return normalizedReason ? `${label} — ${normalizedReason}` : label;
 };
 
+const isInventoryAddReason = (reason) => {
+  return INVENTORY_ADD_REASON_PATTERN.test(normalizeKardexText(reason));
+};
+
 export const getKardexMovementDescription = (movement) => {
   const movementType = getKardexMovementType(movement);
 
-  const reason = normalizeKardexText(movement?.reason);
+  const { reason, strippedTechnicalType } = sanitizeKardexReason(
+    movement?.reason
+  );
 
   const saleId = normalizeKardexText(movement?.sale_id);
 
@@ -101,8 +181,17 @@ export const getKardexMovementDescription = (movement) => {
     case "inventory_add":
       return appendReason("ALTA A INVENTARIO", reason);
 
-    case "adjustment":
+    case "adjustment": {
+      const isInventoryAdd =
+        strippedTechnicalType === "inventory_add" ||
+        isInventoryAddReason(reason);
+
+      if (isInventoryAdd && !reason) {
+        return "ALTA A INVENTARIO";
+      }
+
       return appendReason("AJUSTE", reason);
+    }
 
     case "purchase":
       return appendReason("COMPRA", reason);
