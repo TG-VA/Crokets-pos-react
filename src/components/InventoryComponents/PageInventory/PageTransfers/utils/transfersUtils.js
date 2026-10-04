@@ -20,7 +20,7 @@ export const parseTransferDate = (value) => {
 
   const hasExplicitTimezone =
     raw.endsWith("Z") ||
-    (raw.includes("T") && /[+\-]\d{2}(?::\d{2}|\d{2})$/.test(raw));
+    (raw.includes("T") && /[+-]\d{2}(?::\d{2}|\d{2})$/.test(raw));
 
   if (hasExplicitTimezone) {
     const date = new Date(raw);
@@ -54,7 +54,10 @@ const getDetectedSystemTimeZone = () => {
     if (typeof detected === "string" && detected.trim() !== "") {
       return detected.trim();
     }
-  } catch (_error) {}
+  } catch (_error) {
+    // Intl falla en entornos headless/legacy sin locale data; devolvemos undefined
+    // y getAppTimeZone() usa el fallback por default.
+  }
   return undefined;
 };
 
