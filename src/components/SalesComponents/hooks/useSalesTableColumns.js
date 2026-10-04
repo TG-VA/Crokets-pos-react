@@ -13,6 +13,7 @@ const useSalesTableColumns = ({
   const [isInitialized, setIsInitialized] = useState(false);
 
   const tableRef = useRef(null);
+  const handleMouseUpRef = useRef(null);
   const resizeRef = useRef({
     isResizing: false,
     columnIndex: -1,
@@ -21,65 +22,79 @@ const useSalesTableColumns = ({
     nextStartWidth: 0,
   });
 
-  const handleMouseMove = useCallback((event) => {
-    const { isResizing, columnIndex, startX, startWidth, nextStartWidth } = resizeRef.current;
-    if (!isResizing || columnIndex === -1) return;
+  const handleMouseMove = useCallback(
+    (event) => {
+      const { isResizing, columnIndex, startX, startWidth, nextStartWidth } =
+        resizeRef.current;
+      if (!isResizing || columnIndex === -1) return;
 
-    const deltaX = event.clientX - startX;
-    let newWidth = startWidth + deltaX;
-    let newNextWidth = nextStartWidth - deltaX;
+      const deltaX = event.clientX - startX;
+      let newWidth = startWidth + deltaX;
+      let newNextWidth = nextStartWidth - deltaX;
 
-    // Protecciones contra el ancho mínimo
-    if (newWidth < minColumnWidth) {
-      newWidth = minColumnWidth;
-      newNextWidth = startWidth + nextStartWidth - minColumnWidth;
-    }
+      // Protecciones contra el ancho mínimo
+      if (newWidth < minColumnWidth) {
+        newWidth = minColumnWidth;
+        newNextWidth = startWidth + nextStartWidth - minColumnWidth;
+      }
 
-    if (newNextWidth < minColumnWidth) {
-      newNextWidth = minColumnWidth;
-      newWidth = startWidth + nextStartWidth - minColumnWidth;
-    }
+      if (newNextWidth < minColumnWidth) {
+        newNextWidth = minColumnWidth;
+        newWidth = startWidth + nextStartWidth - minColumnWidth;
+      }
 
-    setColumnWidths((prevWidths) => {
-      const updatedWidths = [...prevWidths];
-      updatedWidths[columnIndex] = newWidth;
-      updatedWidths[columnIndex + 1] = newNextWidth;
-      return updatedWidths;
-    });
-  }, [minColumnWidth]);
+      setColumnWidths((prevWidths) => {
+        const updatedWidths = [...prevWidths];
+        updatedWidths[columnIndex] = newWidth;
+        updatedWidths[columnIndex + 1] = newNextWidth;
+        return updatedWidths;
+      });
+    },
+    [minColumnWidth]
+  );
 
   const handleMouseUp = useCallback(() => {
     resizeRef.current.isResizing = false;
     resizeRef.current.columnIndex = -1;
 
     document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
-    
+
+    if (handleMouseUpRef.current) {
+      document.removeEventListener("mouseup", handleMouseUpRef.current);
+    }
+
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
   }, [handleMouseMove]);
 
-  const handleMouseDown = useCallback((event, columnIndex) => {
-    event.preventDefault();
-    event.stopPropagation();
+  useEffect(() => {
+    handleMouseUpRef.current = handleMouseUp;
+  }, [handleMouseUp]);
 
-    // No se puede redimensionar la última columna empujando a la nada
-    if (columnIndex >= columnWidths.length - 1) return;
+  const handleMouseDown = useCallback(
+    (event, columnIndex) => {
+      event.preventDefault();
+      event.stopPropagation();
 
-    resizeRef.current = {
-      isResizing: true,
-      columnIndex,
-      startX: event.clientX,
-      startWidth: columnWidths[columnIndex],
-      nextStartWidth: columnWidths[columnIndex + 1],
-    };
+      // No se puede redimensionar la última columna empujando a la nada
+      if (columnIndex >= columnWidths.length - 1) return;
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+      resizeRef.current = {
+        isResizing: true,
+        columnIndex,
+        startX: event.clientX,
+        startWidth: columnWidths[columnIndex],
+        nextStartWidth: columnWidths[columnIndex + 1],
+      };
 
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, [columnWidths, handleMouseMove, handleMouseUp]);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [columnWidths, handleMouseMove, handleMouseUp]
+  );
 
   // Limpieza global por si el componente se desmonta mientras se arrastra
   useEffect(() => {
@@ -103,7 +118,10 @@ const useSalesTableColumns = ({
     );
 
     const usedWidth = calculatedWidths.reduce((sum, width) => sum + width, 0);
-    const lastColumnWidth = Math.max(minColumnWidth, availableWidth - usedWidth);
+    const lastColumnWidth = Math.max(
+      minColumnWidth,
+      availableWidth - usedWidth
+    );
 
     setColumnWidths([...calculatedWidths, lastColumnWidth]);
     setIsInitialized(true);

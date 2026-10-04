@@ -17,13 +17,13 @@ la consume a través de `src/lib/adminAuthorizationService.js` (modal `AdminAuth
 
 Request body:
 
-| Campo | Requerido | Descripción |
-|---|---|---|
-| `username` | Sí | Username del administrador |
-| `password` | Sí | Contraseña del administrador |
-| `action` | Sí | Acción que se pretende autorizar |
-| `targetId` | No | Identificador del objetivo de la acción |
-| `branchId` | No | Sucursal sobre la que aplica |
+| Campo      | Requerido | Descripción                             |
+| ---------- | --------- | --------------------------------------- |
+| `username` | Sí        | Username del administrador              |
+| `password` | Sí        | Contraseña del administrador            |
+| `action`   | Sí        | Acción que se pretende autorizar        |
+| `targetId` | No        | Identificador del objetivo de la acción |
+| `branchId` | No        | Sucursal sobre la que aplica            |
 
 Response (éxito, HTTP 200):
 

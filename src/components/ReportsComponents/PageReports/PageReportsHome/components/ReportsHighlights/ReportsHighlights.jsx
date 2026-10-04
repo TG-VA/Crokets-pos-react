@@ -29,9 +29,7 @@ const ReportsHighlights = ({
       <div className={styles.grid}>
         <article className={styles.card}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardLabel}>
-              Producto más vendido
-            </span>
+            <span className={styles.cardLabel}>Producto más vendido</span>
 
             <div className={styles.iconBadge}>
               <img
@@ -51,9 +49,7 @@ const ReportsHighlights = ({
             </div>
           ) : topProduct ? (
             <div className={styles.cardContent}>
-              <strong className={styles.mainValue}>
-                {topProduct.name}
-              </strong>
+              <strong className={styles.mainValue}>{topProduct.name}</strong>
 
               <span className={styles.secondaryText}>
                 {topProduct.barcode
@@ -63,9 +59,7 @@ const ReportsHighlights = ({
 
               <div className={styles.metrics}>
                 <div className={styles.metric}>
-                  <span className={styles.metricLabel}>
-                    Unidades netas
-                  </span>
+                  <span className={styles.metricLabel}>Unidades netas</span>
 
                   <strong className={styles.metricValue}>
                     {formatNumber(topProduct.quantity || 0)}
@@ -73,9 +67,7 @@ const ReportsHighlights = ({
                 </div>
 
                 <div className={styles.metric}>
-                  <span className={styles.metricLabel}>
-                    Importe vendido
-                  </span>
+                  <span className={styles.metricLabel}>Importe vendido</span>
 
                   <strong className={styles.metricValue}>
                     {formatCurrency(topProduct.amount)}
@@ -87,18 +79,14 @@ const ReportsHighlights = ({
             <div className={styles.emptyState}>
               <strong>Sin producto destacado</strong>
 
-              <span>
-                No existen ventas de productos en el periodo.
-              </span>
+              <span>No existen ventas de productos en el periodo.</span>
             </div>
           )}
         </article>
 
         <article className={styles.card}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardLabel}>
-              Método de pago principal
-            </span>
+            <span className={styles.cardLabel}>Método de pago principal</span>
 
             <div className={styles.iconBadge}>
               <img
@@ -128,9 +116,7 @@ const ReportsHighlights = ({
 
               <div className={styles.metrics}>
                 <div className={styles.metric}>
-                  <span className={styles.metricLabel}>
-                    Importe acumulado
-                  </span>
+                  <span className={styles.metricLabel}>Importe acumulado</span>
 
                   <strong className={styles.primaryAmount}>
                     {formatCurrency(mainPaymentMethod.amount)}
@@ -138,9 +124,7 @@ const ReportsHighlights = ({
                 </div>
 
                 <div className={styles.metric}>
-                  <span className={styles.metricLabel}>
-                    Participación
-                  </span>
+                  <span className={styles.metricLabel}>Participación</span>
 
                   <strong className={styles.metricValue}>
                     {typeof mainPaymentMethod.sharePercentage === "number"
@@ -154,9 +138,7 @@ const ReportsHighlights = ({
             <div className={styles.emptyState}>
               <strong>Sin método destacado</strong>
 
-              <span>
-                No existen pagos registrados en el periodo.
-              </span>
+              <span>No existen pagos registrados en el periodo.</span>
             </div>
           )}
         </article>
@@ -166,4 +148,3 @@ const ReportsHighlights = ({
 };
 
 export default ReportsHighlights;
-

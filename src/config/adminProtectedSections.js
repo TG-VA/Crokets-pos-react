@@ -120,7 +120,7 @@ export const PROTECTED_INVOICE_SECTIONS = [
  */
 export const withProtectedMetadata = (options, sections) => {
   const sectionsByRoutePath = new Map(
-    sections.map((section) => [section.routePath, section]),
+    sections.map((section) => [section.routePath, section])
   );
 
   return options.map((option) => {

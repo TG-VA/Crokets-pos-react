@@ -89,7 +89,10 @@ const NavbarReports = ({ onProtectedAccessAuthorized }) => {
     pendingNavigation,
   } = useProtectedNavigation(onProtectedAccessAuthorized);
 
-  const options = withProtectedMetadata(REPORT_OPTIONS, PROTECTED_REPORT_SECTIONS);
+  const options = withProtectedMetadata(
+    REPORT_OPTIONS,
+    PROTECTED_REPORT_SECTIONS
+  );
 
   return (
     <div className={styles.navbarReports}>

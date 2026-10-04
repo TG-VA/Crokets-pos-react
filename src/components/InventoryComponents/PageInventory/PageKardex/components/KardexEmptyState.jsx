@@ -17,14 +17,11 @@ const KardexEmptyState = () => {
         </svg>
       </div>
 
-      <div className={styles.emptyTitle}>
-        Selecciona un producto
-      </div>
+      <div className={styles.emptyTitle}>Selecciona un producto</div>
 
       <div className={styles.emptySubtitle}>
-        Escanea un código de barras o presiona{" "}
-        <strong>F10</strong> para buscar un producto y
-        consultar su kardex.
+        Escanea un código de barras o presiona <strong>F10</strong> para buscar
+        un producto y consultar su kardex.
       </div>
     </div>
   );

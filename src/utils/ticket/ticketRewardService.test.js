@@ -55,8 +55,12 @@ describe("ticketRewardService", () => {
   describe("isRewardDiscountItem", () => {
     it("detecta articulos de descuento por recompensa", () => {
       expect(isRewardDiscountItem(discountItem)).toBe(true);
-      expect(isRewardDiscountItem({ reward_type: "product_discount" })).toBe(true);
-      expect(isRewardDiscountItem({ discount_concept: "10% de descuento" })).toBe(true);
+      expect(isRewardDiscountItem({ reward_type: "product_discount" })).toBe(
+        true
+      );
+      expect(
+        isRewardDiscountItem({ discount_concept: "10% de descuento" })
+      ).toBe(true);
       expect(isRewardDiscountItem({ isRewardDiscountItem: true })).toBe(true);
     });
 
@@ -89,8 +93,12 @@ describe("ticketRewardService", () => {
   describe("getRewardItemsFromSale", () => {
     it("encuentra la lista de canjes en varios alias", () => {
       expect(getRewardItemsFromSale({ reward_redemptions: [] })).toEqual([]);
-      expect(getRewardItemsFromSale({ rewardRedemptions: ["a"] })).toEqual(["a"]);
-      expect(getRewardItemsFromSale({ rewards_redeemed: ["b"] })).toEqual(["b"]);
+      expect(getRewardItemsFromSale({ rewardRedemptions: ["a"] })).toEqual([
+        "a",
+      ]);
+      expect(getRewardItemsFromSale({ rewards_redeemed: ["b"] })).toEqual([
+        "b",
+      ]);
       expect(getRewardItemsFromSale({})).toEqual([]);
     });
   });
@@ -153,7 +161,9 @@ describe("ticketRewardService", () => {
     });
 
     it("filtra items que no son recompensas", () => {
-      expect(normalizeRewardRedemptions({}, [{ description: "BOLSA" }])).toEqual([]);
+      expect(
+        normalizeRewardRedemptions({}, [{ description: "BOLSA" }])
+      ).toEqual([]);
     });
   });
 
@@ -178,7 +188,9 @@ describe("ticketRewardService", () => {
   describe("hasRewardActivity", () => {
     it("detecta actividad de recompensas", () => {
       expect(hasRewardActivity({ points_used: 10 }, [])).toBe(true);
-      expect(hasRewardActivity({ isRewardRedemptionOnly: true }, [])).toBe(true);
+      expect(hasRewardActivity({ isRewardRedemptionOnly: true }, [])).toBe(
+        true
+      );
       expect(hasRewardActivity({}, [discountItem])).toBe(true);
       expect(hasRewardActivity({}, [])).toBe(false);
     });
@@ -196,7 +208,9 @@ describe("ticketRewardService", () => {
       expect(findRewardForItem({ description: "snack" }, redemptions)).toBe(
         redemptions[0]
       );
-      expect(findRewardForItem({ description: "OTRO" }, redemptions)).toBeNull();
+      expect(
+        findRewardForItem({ description: "OTRO" }, redemptions)
+      ).toBeNull();
       expect(findRewardForItem({}, [])).toBeNull();
     });
   });
@@ -208,10 +222,9 @@ describe("ticketRewardService", () => {
       );
       expect(getRewardVisualTypeForItem(freeItem, [])).toBe("free_product");
       expect(
-        getRewardVisualTypeForItem(
-          { description: "SNACK", total: 80 },
-          [{ productName: "SNACK", rewardType: "free_product" }]
-        )
+        getRewardVisualTypeForItem({ description: "SNACK", total: 80 }, [
+          { productName: "SNACK", rewardType: "free_product" },
+        ])
       ).toBe("free_product");
       expect(getRewardVisualTypeForItem({}, [])).toBe("");
     });

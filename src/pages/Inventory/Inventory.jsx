@@ -20,14 +20,23 @@ const Inventory = () => {
       <NavbarInventory />
       <main className={styles.pageContent}>
         <Routes>
-          <Route path="/" element={<Navigate to="/inventory/agregar" replace />} />
+          <Route
+            path="/"
+            element={<Navigate to="/inventory/agregar" replace />}
+          />
           <Route path="/agregar" element={<PageAdd />} />
           <Route path="/ajustes" element={<PageAdjustments />} />
           <Route path="/reporte-inventario" element={<PageReport />} />
-          <Route path="/reporte-movimientos" element={<PageMovementsReport />} />
+          <Route
+            path="/reporte-movimientos"
+            element={<PageMovementsReport />}
+          />
           <Route path="/kardex" element={<PageKardex />} />
           <Route path="/traspasos" element={<PageTransfers />} />
-          <Route path="*" element={<Navigate to="/inventory/agregar" replace />} />
+          <Route
+            path="*"
+            element={<Navigate to="/inventory/agregar" replace />}
+          />
         </Routes>
       </main>
       <Footer />

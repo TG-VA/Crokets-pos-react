@@ -13,9 +13,7 @@ const MovementsFilterPopover = ({
   onToggleValue,
   isValueSelected,
 }) => {
-  const normalizedOptions = Array.isArray(options)
-    ? options
-    : [];
+  const normalizedOptions = Array.isArray(options) ? options : [];
 
   return (
     <div
@@ -78,15 +76,10 @@ const MovementsFilterPopover = ({
           </div>
         ) : (
           normalizedOptions.map((option) => {
-            const selected =
-              isValueSelected?.(option.value) ??
-              false;
+            const selected = isValueSelected?.(option.value) ?? false;
 
             return (
-              <label
-                key={option.value}
-                className={styles.filterOption}
-              >
+              <label key={option.value} className={styles.filterOption}>
                 <input
                   type="checkbox"
                   checked={selected}
@@ -95,18 +88,11 @@ const MovementsFilterPopover = ({
                   }}
                 />
 
-                <span
-                  className={styles.filterOptionLabel}
-                  title={option.label}
-                >
+                <span className={styles.filterOptionLabel} title={option.label}>
                   {option.label}
                 </span>
 
-                <span
-                  className={styles.filterOptionCount}
-                >
-                  {option.count}
-                </span>
+                <span className={styles.filterOptionCount}>{option.count}</span>
               </label>
             );
           })

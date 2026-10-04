@@ -1,6 +1,4 @@
-export {
-  buildSalesChart,
-} from "./reportsSalesChartCalculations";
+export { buildSalesChart } from "./reportsSalesChartCalculations";
 
 export {
   buildTopProduct,
@@ -8,7 +6,4 @@ export {
   formatTopProduct,
 } from "./reportsTopProductCalculations";
 
-export {
-  buildMainPaymentMethod,
-} from "./reportsPaymentCalculations";
-
+export { buildMainPaymentMethod } from "./reportsPaymentCalculations";

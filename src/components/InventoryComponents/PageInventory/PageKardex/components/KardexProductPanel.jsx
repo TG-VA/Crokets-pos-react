@@ -1,8 +1,6 @@
 import React from "react";
 
-import {
-  getKardexRangeLabel,
-} from "../utils/kardexFormatters";
+import { getKardexRangeLabel } from "../utils/kardexFormatters";
 
 import KardexProductSummary from "./KardexProductSummary";
 import KardexTable from "./KardexTable";
@@ -30,78 +28,51 @@ const KardexProductPanel = ({
     return null;
   }
 
-  const normalizedRows =
-    Array.isArray(rows)
-      ? rows
-      : [];
+  const normalizedRows = Array.isArray(rows) ? rows : [];
 
-  const loading = Boolean(
-    movementState?.loading
-  );
+  const loading = Boolean(movementState?.loading);
 
-  const error = String(
-    movementState?.error ?? ""
-  );
+  const error = String(movementState?.error ?? "");
 
-  const hasActiveRange = Boolean(
-    appliedDateFrom ||
-    appliedDateTo
-  );
+  const hasActiveRange = Boolean(appliedDateFrom || appliedDateTo);
 
-  const rangeLabel =
-    getKardexRangeLabel({
-      dateFrom: appliedDateFrom,
-      dateTo: appliedDateTo,
-    });
+  const rangeLabel = getKardexRangeLabel({
+    dateFrom: appliedDateFrom,
+    dateTo: appliedDateTo,
+  });
 
-  const canExport =
-    normalizedRows.length > 0 &&
-    !loading &&
-    !error;
+  const canExport = normalizedRows.length > 0 && !loading && !error;
 
   return (
     <div className={styles.panel}>
       <KardexProductSummary
         product={product}
         slot={slot}
-        showAddProduct={
-          showAddProduct
-        }
+        showAddProduct={showAddProduct}
         exporting={exporting}
         canExport={canExport}
-        onChangeProduct={
-          onChangeProduct
-        }
-        onAddProduct={
-          onAddProduct
-        }
-        onRemoveProduct={
-          onRemoveProduct
-        }
+        onChangeProduct={onChangeProduct}
+        onAddProduct={onAddProduct}
+        onRemoveProduct={onRemoveProduct}
         onExport={onExport}
       />
 
       <div className={styles.movementsSection}>
         <div className={styles.movementsHeader}>
           <div>
-            <h2 className={styles.movementsTitle}>
-              Movimientos del producto
-            </h2>
+            <h2 className={styles.movementsTitle}>Movimientos del producto</h2>
 
             {hasActiveRange ? (
               <div className={styles.rangeActive}>
                 Rango activo: {rangeLabel}
               </div>
             ) : (
-              <div className={styles.rangeLabel}>
-                Todas las fechas
-              </div>
+              <div className={styles.rangeLabel}>Todas las fechas</div>
             )}
           </div>
 
           <span className={styles.movementsCount}>
-            {normalizedRows.length}{" "}
-            movimiento(s)
+            {normalizedRows.length} movimiento(s)
           </span>
         </div>
 
@@ -116,4 +87,4 @@ const KardexProductPanel = ({
   );
 };
 
-export default KardexProductPanel;  
+export default KardexProductPanel;

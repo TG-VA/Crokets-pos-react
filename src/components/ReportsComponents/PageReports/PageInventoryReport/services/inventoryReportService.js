@@ -60,3 +60,35 @@ export const fetchInventoryReportData = async (branchId = "ALL") => {
     throw error;
   }
 };
+
+/**
+ * Carga el reporte de inventario y entrega el resultado a traves de callbacks.
+ *
+ * La orquestacion de la carga vive aqui y no en el hook para que el efecto que
+ * la dispara no contenga escrituras de estado propias: todas las actualizaciones
+ * de React ocurren en la continuacion asincrona, ya despues del `await`, de modo
+ * que no se provoca el re-render en cascada que causaba el `setLoading(true)`
+ * sincrono. Los callbacks se invocan siempre, incluido el error, para que el
+ * hook pueda marcar la peticion como resuelta y derivar su estado de carga.
+ *
+ * @param {string} branchId - Sucursal consultada ("ALL" para todas).
+ * @param {{
+ *   onData: (data: object) => void,
+ *   onError: (message: string) => void,
+ *   onSettled: () => void
+ * }} handlers
+ */
+export const loadInventoryReportData = async (
+  branchId,
+  { onData, onError, onSettled }
+) => {
+  try {
+    const data = await fetchInventoryReportData(branchId);
+    onData(data);
+  } catch (err) {
+    console.error("Error en useInventoryReport:", err);
+    onError("No se pudo cargar el reporte de inventario. Intenta nuevamente.");
+  } finally {
+    onSettled();
+  }
+};

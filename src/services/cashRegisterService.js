@@ -20,7 +20,10 @@ export const fetchActiveCashSession = async (branchId) => {
     return {
       success: data?.success !== false,
       data: data?.session || null,
-      error: data?.success === false ? data?.message || "Error verificando caja" : null,
+      error:
+        data?.success === false
+          ? data?.message || "Error verificando caja"
+          : null,
       partial: false,
     };
   } catch (error) {
@@ -58,7 +61,8 @@ export const openCashRegister = async (branchId, openingAmount) => {
     return {
       success: data?.success === true,
       data: data?.session || null,
-      error: data?.success === true ? null : data?.message || "Error al abrir caja",
+      error:
+        data?.success === true ? null : data?.message || "Error al abrir caja",
       code: data?.code || null,
       message: data?.message || null,
       partial: false,

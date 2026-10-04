@@ -26,3 +26,19 @@ export const mapWithConcurrency = async (items = [], limit = 1, mapper) => {
 
   return results;
 };
+
+/**
+ * Ejecuta `task` despues de que React haya confirmado el render actual.
+ *
+ * Sirve para el patron "un efecto arranca un trabajo que escribe estado": si las
+ * escrituras ocurren en el cuerpo del efecto, React confirma un segundo render en
+ * cascada antes de que exista el dato. Envolviendolas en un microtask, el trabajo
+ * corre cuando el commit actual ya esta firme, y las escrituras caen en una
+ * continuacion asincrona legitima.
+ *
+ * No es un IIFE: la tarea se agenda de forma explicita y por eso sigue siendo
+ * cancelable desde el cleanup del efecto.
+ */
+export const afterCommit = (task) => {
+  return Promise.resolve().then(task);
+};

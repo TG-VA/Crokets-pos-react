@@ -18,31 +18,25 @@ export const buildMainPaymentMethod = ({
 
   const amountByMethod = {};
 
-  const paymentMethodMap =
-    getPaymentMethodMap(paymentMethodRows);
+  const paymentMethodMap = getPaymentMethodMap(paymentMethodRows);
 
-  const paymentsBySale =
-    groupPaymentsBySale(paymentRows);
+  const paymentsBySale = groupPaymentsBySale(paymentRows);
 
   for (const sale of salesRows) {
     if (!validSaleIds.has(sale.id)) {
       continue;
     }
 
-    const appliedPayments =
-      getAppliedPaymentsForSale({
-        sale,
-        payments: paymentsBySale[sale.id] || [],
-        paymentMethodMap,
-      });
+    const appliedPayments = getAppliedPaymentsForSale({
+      sale,
+      payments: paymentsBySale[sale.id] || [],
+      paymentMethodMap,
+    });
 
     for (const payment of appliedPayments) {
       amountByMethod[payment.paymentMethodId] =
-        toNumber(
-          amountByMethod[
-            payment.paymentMethodId
-          ]
-        ) + toNumber(payment.amount);
+        toNumber(amountByMethod[payment.paymentMethodId]) +
+        toNumber(payment.amount);
     }
   }
 
@@ -51,22 +45,15 @@ export const buildMainPaymentMethod = ({
     0
   );
 
-  const topMethodId = Object.keys(
-    amountByMethod
-  ).sort(
-    (firstId, secondId) =>
-      amountByMethod[secondId] -
-      amountByMethod[firstId]
+  const topMethodId = Object.keys(amountByMethod).sort(
+    (firstId, secondId) => amountByMethod[secondId] - amountByMethod[firstId]
   )[0];
 
   if (!topMethodId) return null;
 
-  const method =
-    paymentMethodMap[topMethodId] || null;
+  const method = paymentMethodMap[topMethodId] || null;
 
-  const methodAmount = toNumber(
-    amountByMethod[topMethodId]
-  );
+  const methodAmount = toNumber(amountByMethod[topMethodId]);
 
   const sharePercentage =
     totalPaymentsAmount > 0
@@ -75,9 +62,7 @@ export const buildMainPaymentMethod = ({
 
   return {
     id: topMethodId,
-    name:
-      method?.name ||
-      "Método desconocido",
+    name: method?.name || "Método desconocido",
     amount: methodAmount,
     sharePercentage,
   };

@@ -57,28 +57,19 @@ export const exportInventoryReport = async ({
   worksheet.getRow(1).height = 28;
 
   const appliedNameFilter =
-    Array.isArray(facetFilters.nombre) &&
-    facetFilters.nombre.length > 0
-      ? facetFilters.nombre
-          .map((value) => toUpperSafe(value))
-          .join(", ")
+    Array.isArray(facetFilters.nombre) && facetFilters.nombre.length > 0
+      ? facetFilters.nombre.map((value) => toUpperSafe(value)).join(", ")
       : "TODOS";
 
   const appliedDepartmentFilter =
-    Array.isArray(facetFilters.depto) &&
-    facetFilters.depto.length > 0
-      ? facetFilters.depto
-          .map((value) => toUpperSafe(value))
-          .join(", ")
+    Array.isArray(facetFilters.depto) && facetFilters.depto.length > 0
+      ? facetFilters.depto.map((value) => toUpperSafe(value)).join(", ")
       : "TODOS";
 
   const appliedInventoryFilter =
-    Array.isArray(facetFilters.existencia) &&
-    facetFilters.existencia.length > 0
+    Array.isArray(facetFilters.existencia) && facetFilters.existencia.length > 0
       ? facetFilters.existencia
-          .map((value) =>
-            getExistenceFilterLabel(value).toUpperCase()
-          )
+          .map((value) => getExistenceFilterLabel(value).toUpperCase())
           .join(", ")
       : "TODAS";
 
@@ -205,11 +196,7 @@ export const exportInventoryReport = async ({
       formatInventoryValue(row.max),
     ];
 
-    for (
-      let columnNumber = 1;
-      columnNumber <= 6;
-      columnNumber += 1
-    ) {
+    for (let columnNumber = 1; columnNumber <= 6; columnNumber += 1) {
       const cell = excelRow.getCell(columnNumber);
 
       cell.font = {
@@ -257,8 +244,7 @@ export const exportInventoryReport = async ({
   );
 
   const filename =
-    `INVENTARIO ${branchNameForFile} ` +
-    `${formatDateForFilename()}.xlsx`;
+    `INVENTARIO ${branchNameForFile} ` + `${formatDateForFilename()}.xlsx`;
 
   const output = await workbook.xlsx.writeBuffer();
 

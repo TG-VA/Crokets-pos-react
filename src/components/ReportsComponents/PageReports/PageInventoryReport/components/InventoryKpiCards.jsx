@@ -31,7 +31,10 @@ const InventoryKpiCards = ({ kpis = {}, isLoading = false }) => {
       {/* 1. Valor al Costo */}
       <div className={styles.kpiCard}>
         <span className={styles.kpiLabel}>Valor al Costo</span>
-        <span className={styles.kpiValue} title={formatCurrency(totalCostValuation)}>
+        <span
+          className={styles.kpiValue}
+          title={formatCurrency(totalCostValuation)}
+        >
           {formatCurrency(totalCostValuation)}
         </span>
         <span className={styles.kpiSubtext}>Inversión total en existencia</span>
@@ -40,7 +43,10 @@ const InventoryKpiCards = ({ kpis = {}, isLoading = false }) => {
       {/* 2. Valor a la Venta */}
       <div className={styles.kpiCard}>
         <span className={styles.kpiLabel}>Valor Estimado de Venta</span>
-        <span className={styles.kpiValue} title={formatCurrency(totalSaleValuation)}>
+        <span
+          className={styles.kpiValue}
+          title={formatCurrency(totalSaleValuation)}
+        >
           {formatCurrency(totalSaleValuation)}
         </span>
         <span className={styles.kpiSubtext}>
@@ -52,7 +58,8 @@ const InventoryKpiCards = ({ kpis = {}, isLoading = false }) => {
       <div className={styles.kpiCard}>
         <span className={styles.kpiLabel}>Volumen de Inventario</span>
         <span className={styles.kpiValue}>
-          {totalUnits.toLocaleString()} <span className={styles.kpiUnitLabel}>piezas</span>
+          {totalUnits.toLocaleString()}{" "}
+          <span className={styles.kpiUnitLabel}>piezas</span>
         </span>
         <span className={styles.kpiSubtext}>
           {totalSkus.toLocaleString()} productos controlados

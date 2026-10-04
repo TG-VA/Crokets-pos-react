@@ -139,7 +139,9 @@ const ProfitabilityFilters = ({
         </div>
 
         {/* Buscador en tiempo real con botón limpiar búsqueda */}
-        <div className={`${styles.filterField} ${styles.filterFieldGrow}`.trim()}>
+        <div
+          className={`${styles.filterField} ${styles.filterFieldGrow}`.trim()}
+        >
           <label className={styles.filterLabel}>Buscar Producto:</label>
           <div className={styles.searchWrapper}>
             <img src={searchIcon} alt="" className={styles.searchIcon} />
@@ -157,7 +159,11 @@ const ProfitabilityFilters = ({
                 onClick={() => setSearchTerm("")}
                 title="Borrar texto de búsqueda"
               >
-                <img src={xmarkIcon} alt="" className={styles.searchClearIcon} />
+                <img
+                  src={xmarkIcon}
+                  alt=""
+                  className={styles.searchClearIcon}
+                />
               </button>
             )}
           </div>

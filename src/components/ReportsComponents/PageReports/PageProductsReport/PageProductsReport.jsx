@@ -9,22 +9,23 @@ import TopProductsTable from "./components/TopProductsTable";
 import DeadStockTable from "./components/DeadStockTable";
 
 import { useProductsReport } from "./hooks/useProductsReport";
-import { useBranch } from "../../../../contexts/BranchContext"; 
+import { useBranch } from "../../../../contexts/BranchContext";
+import { useDidChange } from "../../../../hooks/useDidChange";
 import { supabase } from "../../../../lib/supabaseClient";
 import { formatSyncTime } from "../../../../utils/formatters";
 
 const PageProductsReport = () => {
   const { branch, setBranch } = useBranch();
-  
+
   const [branchesList, setBranchesList] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
   const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
 
-  useEffect(() => {
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id]);
+  // La sucursal del contexto manda sobre el filtro local: el ajuste se resuelve
+  // durante el render para evitar el re-render en cascada de un efecto.
+  if (useDidChange(branch?.id) && branch?.id) {
+    setSelectedBranchId(branch.id);
+  }
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -53,7 +54,7 @@ const PageProductsReport = () => {
   const handleBranchChange = (e) => {
     const newBranchId = e.target.value;
     setSelectedBranchId(newBranchId);
-    
+
     if (newBranchId !== "ALL") {
       const selectedObj = branchesList.find((b) => b.id === newBranchId);
       if (selectedObj && setBranch) {
@@ -62,14 +63,14 @@ const PageProductsReport = () => {
     }
   };
 
-  const { 
-    dateRange, 
-    setDateRange, 
-    reportData, 
-    isLoading, 
+  const {
+    dateRange,
+    setDateRange,
+    reportData,
+    isLoading,
     error,
     syncedAt,
-    generateReport
+    generateReport,
   } = useProductsReport(selectedBranchId);
 
   return (
@@ -78,7 +79,8 @@ const PageProductsReport = () => {
         <div className={styles.headerTitleGroup}>
           <h1 className={styles.title}>Reporte de Productos</h1>
           <p className={styles.description}>
-            Consulta productos vendidos, ingresos, cantidades totales y rendimiento por departamento.
+            Consulta productos vendidos, ingresos, cantidades totales y
+            rendimiento por departamento.
           </p>
           {syncedAt ? (
             <span className={styles.lastUpdate}>
@@ -89,9 +91,7 @@ const PageProductsReport = () => {
 
         <div className={styles.headerActions}>
           <div className={styles.branchSelectContainer}>
-            <label className={styles.branchSelectLabel}>
-              SUCURSAL:
-            </label>
+            <label className={styles.branchSelectLabel}>SUCURSAL:</label>
             <select
               value={selectedBranchId}
               onChange={handleBranchChange}
@@ -107,12 +107,14 @@ const PageProductsReport = () => {
             </select>
           </div>
 
-          <ProductReportFilters 
-            dateRange={dateRange} 
-            setDateRange={setDateRange} 
+          <ProductReportFilters
+            dateRange={dateRange}
+            setDateRange={setDateRange}
             onGenerate={generateReport}
             onExportPDF={() => window.print()}
-            onExportExcel={() => exportFullReportToExcel(reportData, selectedBranchId)}
+            onExportExcel={() =>
+              exportFullReportToExcel(reportData, selectedBranchId)
+            }
           />
         </div>
       </header>
@@ -128,11 +130,15 @@ const PageProductsReport = () => {
           <div className={styles.cardHeader}>
             <h2>Rendimiento por Departamento</h2>
             <p className={styles.subtitle}>
-              Distribución de unidades e ingresos según la clasificación del catálogo.
+              Distribución de unidades e ingresos según la clasificación del
+              catálogo.
             </p>
           </div>
           <div className={styles.cardBody}>
-            <DepartmentPerformance data={reportData?.byDepartment} isLoading={isLoading} />
+            <DepartmentPerformance
+              data={reportData?.byDepartment}
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
@@ -144,7 +150,10 @@ const PageProductsReport = () => {
             </p>
           </div>
           <div className={styles.cardBody}>
-            <TopProductsTable data={reportData?.topProducts} isLoading={isLoading} />
+            <TopProductsTable
+              data={reportData?.topProducts}
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
@@ -156,7 +165,10 @@ const PageProductsReport = () => {
             </p>
           </div>
           <div className={styles.cardBody}>
-            <TopProductsTable data={reportData?.bottomProducts} isLoading={isLoading} />
+            <TopProductsTable
+              data={reportData?.bottomProducts}
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
@@ -168,7 +180,10 @@ const PageProductsReport = () => {
             </p>
           </div>
           <div className={styles.cardBody}>
-            <DeadStockTable data={reportData?.deadStock} isLoading={isLoading} />
+            <DeadStockTable
+              data={reportData?.deadStock}
+              isLoading={isLoading}
+            />
           </div>
         </div>
       </section>

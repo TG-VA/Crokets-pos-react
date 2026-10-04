@@ -51,10 +51,21 @@
   padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .closeButton:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.closeIcon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .searchModalBody {

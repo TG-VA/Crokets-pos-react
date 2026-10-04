@@ -17,6 +17,12 @@ const SALE_DETAILS_CONCURRENCY = 4;
 /**
  * Carga un lote de detalles de venta. Aisla el fallo de un lote devolviendo []
  * para no tumbar el reporte completo.
+ *
+ * `sale_details.cost_price` es el snapshot congelado por `create_sale_transaction`
+ * al momento de la venta (Fase 3): es el costo que realmente se confirmo en esa
+ * operacion. Sin esta columna el reporte solo podria leer el costo vivo de
+ * `branch_inventory` o del catalogo, que es justamente lo que reescribia el margen
+ * historico.
  */
 const fetchSaleDetailsChunk = async (chunk) => {
   const { data, error } = await supabase
@@ -30,6 +36,7 @@ const fetchSaleDetailsChunk = async (chunk) => {
       unit_price,
       discount_amount,
       total_price,
+      cost_price,
       products:product_id (
         id,
         name,
@@ -282,5 +289,39 @@ export const fetchProfitabilityReportData = async ({
   } catch (err) {
     console.error("Error al obtener datos del reporte de rentabilidad:", err);
     throw err;
+  }
+};
+
+/**
+ * Carga el reporte de rentabilidad y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setIsLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ branchId: string, departmentId: string, startDate: string, endDate: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadProfitabilityReport = async (
+  { branchId, departmentId, startDate, endDate },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(
+      await fetchProfitabilityReportData({
+        branchId,
+        departmentId,
+        startDate,
+        endDate,
+      })
+    );
+  } catch (err) {
+    console.error("Error al cargar reporte de rentabilidad:", err);
+    onError("No se pudieron cargar los datos de rentabilidad.");
+  } finally {
+    onSettled();
   }
 };

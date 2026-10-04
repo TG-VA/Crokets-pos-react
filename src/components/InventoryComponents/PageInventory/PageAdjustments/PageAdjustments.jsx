@@ -49,48 +49,40 @@ const PageAdjustments = () => {
     handleSubmitAdjustment,
   } = useInventoryAdjustment();
 
-  const { handleContentKeyDown } =
-    useInventoryAdjustmentKeyboard({
-      selectedProduct,
-      submitArmed,
-      saving,
-      bodyRef,
-      quantityInputRef,
-      setQuantityToAdjust,
-      setAdjustmentReason,
-      setAdjustmentNotes,
-      setSubmitArmed,
-      openSearchModal,
-      handleSubmitAdjustment,
-    });
+  const { handleContentKeyDown } = useInventoryAdjustmentKeyboard({
+    selectedProduct,
+    submitArmed,
+    saving,
+    bodyRef,
+    quantityInputRef,
+    setQuantityToAdjust,
+    setAdjustmentReason,
+    setAdjustmentNotes,
+    setSubmitArmed,
+    openSearchModal,
+    handleSubmitAdjustment,
+  });
 
   return (
     <div className={styles.container}>
       <div
         className={styles.content}
         onKeyDown={handleContentKeyDown}
-        onFocusCapture={() =>
-          setSubmitArmed(false)
-        }
+        onFocusCapture={() => setSubmitArmed(false)}
       >
         <div className={styles.header}>
-          <h1 className={styles.title}>
-            Ajustes de inventario
-          </h1>
+          <h1 className={styles.title}>Ajustes de inventario</h1>
 
           <p className={styles.subtitle}>
-            Busca un producto y registra una diferencia
-            positiva o negativa para corregir el inventario
-            de la sucursal actual.
+            Busca un producto y registra una diferencia positiva o negativa para
+            corregir el inventario de la sucursal actual.
           </p>
         </div>
 
         {!selectedProduct && (
           <div className={styles.lookup}>
             <div className={styles.formRow}>
-              <label className={styles.label}>
-                Código de barras
-              </label>
+              <label className={styles.label}>Código de barras</label>
 
               <input
                 ref={barcodeInputRef}
@@ -127,9 +119,7 @@ const PageAdjustments = () => {
           onQuantityChange={handleQuantityChange}
           onReasonChange={handleReasonChange}
           onNotesChange={handleNotesChange}
-          onSubmitArmed={() =>
-            setSubmitArmed(true)
-          }
+          onSubmitArmed={() => setSubmitArmed(true)}
           onSubmit={handleSubmitAdjustment}
           onCancel={cancelCurrentOperation}
         />
@@ -150,12 +140,8 @@ const PageAdjustments = () => {
           cancelText={appModal.cancelText}
           showCancel={appModal.showCancel}
           loading={appModal.loading}
-          onConfirm={
-            appModal.onConfirm || closeAppModal
-          }
-          onCancel={
-            appModal.onCancel || closeAppModal
-          }
+          onConfirm={appModal.onConfirm || closeAppModal}
+          onCancel={appModal.onCancel || closeAppModal}
           onClose={closeAppModal}
         />
       </div>

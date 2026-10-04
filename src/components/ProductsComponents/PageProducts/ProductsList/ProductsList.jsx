@@ -2,6 +2,7 @@ import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
 import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const ProductsList = () => {
   const {
@@ -81,7 +82,12 @@ const ProductsList = () => {
                 title="Limpiar búsqueda"
                 type="button"
               >
-                ✕
+                <img
+                  src={XmarkIcon}
+                  alt=""
+                  className={styles.clearSearchIcon}
+                  aria-hidden="true"
+                />
               </button>
             )}
           </div>
@@ -91,8 +97,10 @@ const ProductsList = () => {
               className={[
                 styles.filterButton,
                 selectedDepartment ? styles.filterButtonActive : "",
-                showDepartmentFilter ? styles.filterButtonOpen : ""
-              ].filter(Boolean).join(" ")}
+                showDepartmentFilter ? styles.filterButtonOpen : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setShowDepartmentFilter((prev) => !prev)}
               type="button"
             >
@@ -109,8 +117,10 @@ const ProductsList = () => {
                 <div
                   className={[
                     styles.filterOption,
-                    !selectedDepartment ? styles.filterOptionSelected : ""
-                  ].filter(Boolean).join(" ")}
+                    !selectedDepartment ? styles.filterOptionSelected : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   onClick={() => handleDepartmentSelect("")}
                 >
                   Todo
@@ -120,8 +130,12 @@ const ProductsList = () => {
                     key={dept.id}
                     className={[
                       styles.filterOption,
-                      selectedDepartment === dept.name ? styles.filterOptionSelected : ""
-                    ].filter(Boolean).join(" ")}
+                      selectedDepartment === dept.name
+                        ? styles.filterOptionSelected
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     onClick={() => handleDepartmentSelect(dept.name)}
                   >
                     {formatDept(dept.name)}
@@ -150,8 +164,7 @@ const ProductsList = () => {
           </span>
         ) : (
           <span className={styles.resultsCount}>
-            Mostrando {pageStart + 1} a {pageEnd} de {totalCount}{" "}
-            productos
+            Mostrando {pageStart + 1} a {pageEnd} de {totalCount} productos
             {selectedDepartment &&
               ` en ${formatDept(selectedDepartment).toUpperCase()}`}
           </span>
@@ -180,8 +193,10 @@ const ProductsList = () => {
                   ref={index === selectedRowIndex ? selectedRowRef : null}
                   className={[
                     styles.productRow,
-                    index === selectedRowIndex ? styles.selectedRow : ""
-                  ].filter(Boolean).join(" ")}
+                    index === selectedRowIndex ? styles.selectedRow : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   onClick={() => handleRowClick(index)}
                 >
                   <td>{product.codigo}</td>

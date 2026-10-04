@@ -20,11 +20,7 @@ import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
-const ProductBuyersModal = ({
-  isOpen = false,
-  onClose,
-  product = null,
-}) => {
+const ProductBuyersModal = ({ isOpen = false, onClose, product = null }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Permitir cerrar modal con la tecla ESC mediante hook compartido
@@ -71,7 +67,6 @@ const ProductBuyersModal = ({
 
   if (!isOpen || !product) return null;
 
-
   const totalUnits = product.quantity || 0;
   const totalRevenue = product.revenue || 0;
   const uniqueCount = buyers.length;
@@ -86,15 +81,24 @@ const ProductBuyersModal = ({
         {/* Cabecera del modal */}
         <div className={styles.modalHeader}>
           <div className={styles.modalHeaderInfo}>
-            <div className={styles.modalAvatar} style={{ backgroundColor: "#0284c7" }}>
+            <div
+              className={styles.modalAvatar}
+              style={{ backgroundColor: "#0284c7" }}
+            >
               <img
                 src={boxIcon}
                 alt=""
-                style={{ width: 20, height: 20, filter: "brightness(0) invert(1)" }}
+                style={{
+                  width: 20,
+                  height: 20,
+                  filter: "brightness(0) invert(1)",
+                }}
               />
             </div>
             <div className={styles.modalTitleGroup}>
-              <h2 className={styles.modalTitle}>Clientes que compraron este producto</h2>
+              <h2 className={styles.modalTitle}>
+                Clientes que compraron este producto
+              </h2>
               <div className={styles.modalSubtitle}>
                 <span style={{ fontWeight: 600, color: "#1e293b" }}>
                   {product.productName}
@@ -120,7 +124,8 @@ const ProductBuyersModal = ({
           <div className={styles.buyerStatItem}>
             <span className={styles.buyerStatLabel}>Compradores Únicos</span>
             <span className={styles.buyerStatValue}>
-              {formatNumber(uniqueCount)} {uniqueCount === 1 ? "cliente" : "clientes"}
+              {formatNumber(uniqueCount)}{" "}
+              {uniqueCount === 1 ? "cliente" : "clientes"}
             </span>
           </div>
 
@@ -135,15 +140,26 @@ const ProductBuyersModal = ({
             <span className={styles.buyerStatLabel}>Veces Vendido</span>
             <span className={styles.buyerStatValue}>
               {formatNumber(product.ticketsCount || 0)}{" "}
-              <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  color: "#64748b",
+                }}
+              >
                 {(product.ticketsCount || 0) === 1 ? "ticket" : "tickets"}
               </span>
             </span>
           </div>
 
           <div className={styles.buyerStatItem}>
-            <span className={styles.buyerStatLabel}>Ingreso por este Producto</span>
-            <span className={styles.buyerStatValue} style={{ color: "#0f766e" }}>
+            <span className={styles.buyerStatLabel}>
+              Ingreso por este Producto
+            </span>
+            <span
+              className={styles.buyerStatValue}
+              style={{ color: "#0f766e" }}
+            >
               {formatCurrency(totalRevenue)}
             </span>
           </div>
@@ -182,7 +198,10 @@ const ProductBuyersModal = ({
         {/* Tabla de compradores */}
         <div className={styles.modalBodyScroll}>
           {filteredBuyers.length === 0 ? (
-            <div className={styles.emptyContainer} style={{ padding: "40px 20px" }}>
+            <div
+              className={styles.emptyContainer}
+              style={{ padding: "40px 20px" }}
+            >
               <div className={styles.emptyIconWrapper}>
                 <img src={userIcon} alt="" style={{ width: 22, height: 22 }} />
               </div>
@@ -209,7 +228,9 @@ const ProductBuyersModal = ({
                   <tr key={b.id}>
                     <td>
                       <div className={styles.customerNameCell}>
-                        <span className={styles.customerNameText}>{b.name}</span>
+                        <span className={styles.customerNameText}>
+                          {b.name}
+                        </span>
                         <div className={styles.customerMetaRow}>
                           <span className={styles.customerPhone}>
                             {formatPhoneNumber(b.phone)}
@@ -242,8 +263,16 @@ const ProductBuyersModal = ({
                       <span className={styles.cellPrimaryValue}>
                         {formatNumber(b.ticketsCount || b.purchasesCount || 0)}
                       </span>
-                      <span style={{ fontSize: "0.75rem", color: "#64748b", marginLeft: 4 }}>
-                        {(b.ticketsCount || b.purchasesCount || 0) === 1 ? "ticket" : "tickets"}
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#64748b",
+                          marginLeft: 4,
+                        }}
+                      >
+                        {(b.ticketsCount || b.purchasesCount || 0) === 1
+                          ? "ticket"
+                          : "tickets"}
                       </span>
                     </td>
 
@@ -287,6 +316,5 @@ const ProductBuyersModal = ({
     </div>
   );
 };
-
 
 export default ProductBuyersModal;

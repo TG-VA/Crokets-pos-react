@@ -60,6 +60,14 @@
   color: #ffffff;
 }
 
+.closeIcon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
 .userForm {
   flex: 1;
   overflow-y: auto;
@@ -93,7 +101,9 @@
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .input:focus {

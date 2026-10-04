@@ -14,9 +14,7 @@ const getRewardLabel = (reward) => {
   ).trim();
 };
 
-const getRedemptionPoints = (
-  redemption
-) => {
+const getRedemptionPoints = (redemption) => {
   return (
     redemption?.points_used ??
     redemption?.redeemed_points ??
@@ -26,63 +24,40 @@ const getRedemptionPoints = (
   );
 };
 
-const getRedemptionQuantity = (
-  redemption
-) => {
+const getRedemptionQuantity = (redemption) => {
   const rawQuantity = Number(
     redemption?.quantity ??
       redemption?.qty ??
       redemption?.pieces ??
-      redemption
-        ?.pieces_delivered ??
+      redemption?.pieces_delivered ??
       1
   );
 
-  if (
-    Number.isFinite(rawQuantity) &&
-    rawQuantity !== 0
-  ) {
+  if (Number.isFinite(rawQuantity) && rawQuantity !== 0) {
     return -Math.abs(rawQuantity);
   }
 
   return -1;
 };
 
-const createRewardRowsBySaleProduct =
-  (rewardRows) => {
-    const rewardRowsMap =
-      new Map();
+const createRewardRowsBySaleProduct = (rewardRows) => {
+  const rewardRowsMap = new Map();
 
-    rewardRows.forEach((row) => {
-      const key = buildSaleProductKey(
-        row?.sale_id,
-        row?.product_id
-      );
+  rewardRows.forEach((row) => {
+    const key = buildSaleProductKey(row?.sale_id, row?.product_id);
 
-      if (
-        !key ||
-        rewardRowsMap.has(key)
-      ) {
-        return;
-      }
+    if (!key || rewardRowsMap.has(key)) {
+      return;
+    }
 
-      rewardRowsMap.set(
-        key,
-        row
-      );
-    });
+    rewardRowsMap.set(key, row);
+  });
 
-    return rewardRowsMap;
-  };
+  return rewardRowsMap;
+};
 
-const createRedemptionSaleIds = (
-  rewardRows
-) => {
-  return new Set(
-    rewardRows
-      .map((row) => row?.sale_id)
-      .filter(Boolean)
-  );
+const createRedemptionSaleIds = (rewardRows) => {
+  return new Set(rewardRows.map((row) => row?.sale_id).filter(Boolean));
 };
 
 const reorderTransferReason = (value) => {
@@ -135,216 +110,117 @@ export const hydrateBaseMovements = ({
   salesById,
   rewardsById,
 }) => {
-  const redemptionSaleIds =
-    createRedemptionSaleIds(
-      rewardRows
-    );
+  const redemptionSaleIds = createRedemptionSaleIds(rewardRows);
 
-  const rewardRowsBySaleProduct =
-    createRewardRowsBySaleProduct(
-      rewardRows
-    );
+  const rewardRowsBySaleProduct = createRewardRowsBySaleProduct(rewardRows);
 
   return baseRows.map((row) => {
-    const sale =
-      salesById.get(
-        row?.sale_id
-      ) ?? null;
+    const sale = salesById.get(row?.sale_id) ?? null;
 
-    const saleProductKey =
-      buildSaleProductKey(
-        row?.sale_id,
-        row?.product_id
-      );
+    const saleProductKey = buildSaleProductKey(row?.sale_id, row?.product_id);
 
-    const rewardRow =
-      rewardRowsBySaleProduct.get(
-        saleProductKey
-      ) ?? null;
+    const rewardRow = rewardRowsBySaleProduct.get(saleProductKey) ?? null;
 
     const reward = rewardRow
-      ? rewardsById.get(
-          rewardRow?.reward_id
-        ) ?? null
+      ? (rewardsById.get(rewardRow?.reward_id) ?? null)
       : null;
 
-    const rewardLabel =
-      getRewardLabel(reward);
+    const rewardLabel = getRewardLabel(reward);
 
-    const pointsValue = rewardRow
-      ? getRedemptionPoints(
-          rewardRow
-        )
-      : null;
+    const pointsValue = rewardRow ? getRedemptionPoints(rewardRow) : null;
 
-    const isSaleMovement =
-      getRowMovementTypeKey(row) ===
-      "sale";
+    const isSaleMovement = getRowMovementTypeKey(row) === "sale";
 
     return {
       ...row,
 
-      row_key: `movement-${
-        row?.id ??
-        `${row?.product_id}-${row?.created_at}`
-      }`,
+      row_key: `movement-${row?.id ?? `${row?.product_id}-${row?.created_at}`}`,
 
-      has_sale_redemption:
-        redemptionSaleIds.has(
-          row?.sale_id
-        ),
+      has_sale_redemption: redemptionSaleIds.has(row?.sale_id),
 
       report_sort_at:
-        sale?.sale_date ??
-        row?.created_at ??
-        sale?.created_at ??
-        null,
+        sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null,
 
       reason:
-        rewardRow &&
-        isSaleMovement
-          ? buildRedemptionReason(
-              rewardLabel,
-              pointsValue
-            )
-          : reorderTransferReason(row?.reason),
+        rewardRow && isSaleMovement
+          ? buildRedemptionReason(rewardLabel, pointsValue)
+          : row?.reason,
 
-      products:
-        productsById.get(
-          row?.product_id
-        ) ?? null,
+      products: productsById.get(row?.product_id) ?? null,
 
-      users:
-        usersById.get(
-          row?.user_id
-        ) ?? null,
+      users: usersById.get(row?.user_id) ?? null,
 
       sales: sale,
     };
   });
 };
 
-export const hydrateMissingRedemptions =
-  ({
-    baseRows,
-    rewardRows,
-    productsById,
-    usersById,
-    salesById,
-    rewardsById,
-  }) => {
-    const baseSaleProductKeys =
-      new Set(
-        baseRows
-          .filter(
-            (row) =>
-              getRowMovementTypeKey(
-                row
-              ) === "sale"
-          )
-          .map((row) =>
-            buildSaleProductKey(
-              row?.sale_id,
-              row?.product_id
-            )
-          )
-          .filter(Boolean)
-      );
+export const hydrateMissingRedemptions = ({
+  baseRows,
+  rewardRows,
+  productsById,
+  usersById,
+  salesById,
+  rewardsById,
+}) => {
+  const baseSaleProductKeys = new Set(
+    baseRows
+      .filter((row) => getRowMovementTypeKey(row) === "sale")
+      .map((row) => buildSaleProductKey(row?.sale_id, row?.product_id))
+      .filter(Boolean)
+  );
 
-    const redemptionSaleIds =
-      createRedemptionSaleIds(
-        rewardRows
-      );
+  const redemptionSaleIds = createRedemptionSaleIds(rewardRows);
 
-    return rewardRows
-      .filter((row) => {
-        const key =
-          buildSaleProductKey(
-            row?.sale_id,
-            row?.product_id
-          );
+  return rewardRows
+    .filter((row) => {
+      const key = buildSaleProductKey(row?.sale_id, row?.product_id);
 
-        if (!key) {
-          return true;
-        }
+      if (!key) {
+        return true;
+      }
 
-        return (
-          !baseSaleProductKeys.has(
-            key
-          )
-        );
-      })
-      .map((row) => {
-        const sale =
-          salesById.get(
-            row?.sale_id
-          ) ?? null;
+      return !baseSaleProductKeys.has(key);
+    })
+    .map((row) => {
+      const sale = salesById.get(row?.sale_id) ?? null;
 
-        const product =
-          productsById.get(
-            row?.product_id
-          ) ?? null;
+      const product = productsById.get(row?.product_id) ?? null;
 
-        const reward =
-          rewardsById.get(
-            row?.reward_id
-          ) ?? null;
+      const reward = rewardsById.get(row?.reward_id) ?? null;
 
-        const rewardLabel =
-          getRewardLabel(reward);
+      const rewardLabel = getRewardLabel(reward);
 
-        const pointsValue =
-          getRedemptionPoints(row);
+      const pointsValue = getRedemptionPoints(row);
 
-        return {
-          ...row,
+      return {
+        ...row,
 
-          row_key: `redemption-${
-            row?.id ??
-            `${row?.sale_id}-${row?.product_id}-${row?.created_at}`
-          }`,
+        row_key: `redemption-${
+          row?.id ?? `${row?.sale_id}-${row?.product_id}-${row?.created_at}`
+        }`,
 
-          has_sale_redemption:
-            redemptionSaleIds.has(
-              row?.sale_id
-            ),
+        has_sale_redemption: redemptionSaleIds.has(row?.sale_id),
 
-          report_sort_at:
-            sale?.sale_date ??
-            row?.created_at ??
-            sale?.created_at ??
-            null,
+        report_sort_at:
+          sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null,
 
-          movement_type:
-            "redemption",
+        movement_type: "redemption",
 
-          quantity:
-            getRedemptionQuantity(
-              row
-            ),
+        quantity: getRedemptionQuantity(row),
 
-          previous_stock: null,
-          new_stock: null,
+        previous_stock: null,
+        new_stock: null,
 
-          reason:
-            buildRedemptionReason(
-              rewardLabel,
-              pointsValue
-            ),
+        reason: buildRedemptionReason(rewardLabel, pointsValue),
 
-          products: product,
+        products: product,
 
-          display_product_name:
-            product?.name
-              ? null
-              : rewardLabel || null,
+        display_product_name: product?.name ? null : rewardLabel || null,
 
-          users:
-            usersById.get(
-              row?.user_id
-            ) ?? null,
+        users: usersById.get(row?.user_id) ?? null,
 
-          sales: sale,
-        };
-      });
-  };
+        sales: sale,
+      };
+    });
+};

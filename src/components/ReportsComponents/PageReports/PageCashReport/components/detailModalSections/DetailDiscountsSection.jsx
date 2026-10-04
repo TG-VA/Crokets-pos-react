@@ -1,30 +1,36 @@
 import React from "react";
 import styles from "../CashComponents.module.css";
-import { formatCurrency, formatDynamicDate } from "../../utils/cashReportFormatters";
+import {
+  formatCurrency,
+  formatDynamicDate,
+} from "../../utils/cashReportFormatters";
 import { usePagination } from "../../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../../components/PaginationBar/PaginationBar";
 
 const ITEMS_PER_PAGE = 5;
 
-const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz }) => {
-  const {
-    currentPage,
-    totalPages,
-    pageItems,
-    handlePageChange,
-  } = usePagination({
-    totalItems: discountsList.length,
-    defaultPageSize: ITEMS_PER_PAGE,
-    pageSizeOptions: [ITEMS_PER_PAGE],
-  });
+const DetailDiscountsSection = ({
+  sessionDetail,
+  discountsList = [],
+  branchTz,
+}) => {
+  const { currentPage, totalPages, pageItems, handlePageChange } =
+    usePagination({
+      totalItems: discountsList.length,
+      defaultPageSize: ITEMS_PER_PAGE,
+      pageSizeOptions: [ITEMS_PER_PAGE],
+    });
 
   const paginatedDiscounts = pageItems(discountsList);
 
   return (
     <div className={styles.modalSection}>
-      <h3 className={styles.modalSectionTitle}>Descuentos y Recompensas del Turno</h3>
+      <h3 className={styles.modalSectionTitle}>
+        Descuentos y Recompensas del Turno
+      </h3>
       <p className={styles.modalSectionExplanation}>
-        Auditoría de descuentos comerciales aplicados y puntos de lealtad canjeados en el turno.
+        Auditoría de descuentos comerciales aplicados y puntos de lealtad
+        canjeados en el turno.
       </p>
 
       <div className={styles.detailGrid4}>
@@ -32,7 +38,9 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span className={styles.detailLabel}>Descuentos Otorgados</span>
           <span
             className={`${styles.detailValue} ${
-              sessionDetail.totalDiscounts > 0 ? styles.textWarning : styles.textDark
+              sessionDetail.totalDiscounts > 0
+                ? styles.textWarning
+                : styles.textDark
             }`.trim()}
           >
             {formatCurrency(sessionDetail.totalDiscounts)}
@@ -42,7 +50,8 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
         <div className={styles.detailItem}>
           <span className={styles.detailLabel}>Tickets c/ Descuento</span>
           <span className={styles.detailValue}>
-            {sessionDetail.discountedSalesCount || 0} de {sessionDetail.salesCount || 0}
+            {sessionDetail.discountedSalesCount || 0} de{" "}
+            {sessionDetail.salesCount || 0}
           </span>
         </div>
 
@@ -50,7 +59,9 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span className={styles.detailLabel}>Canjes de Recompensas</span>
           <span
             className={`${styles.detailValue} ${
-              sessionDetail.totalRedemptions > 0 ? styles.textPurple : styles.textDark
+              sessionDetail.totalRedemptions > 0
+                ? styles.textPurple
+                : styles.textDark
             }`.trim()}
           >
             {sessionDetail.totalRedemptions || 0} artículo(s)
@@ -61,7 +72,9 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
           <span className={styles.detailLabel}>Puntos Redimidos</span>
           <span
             className={`${styles.detailValue} ${
-              sessionDetail.totalPointsUsed > 0 ? styles.textPurple : styles.textDark
+              sessionDetail.totalPointsUsed > 0
+                ? styles.textPurple
+                : styles.textDark
             }`.trim()}
           >
             {sessionDetail.totalPointsUsed || 0} pts
@@ -71,7 +84,9 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
 
       {/* Tabla de detalle de descuentos y canjes (paginada de 5 en 5) */}
       {discountsList.length > 0 && (
-        <div className={`${styles.tableResponsive} ${styles.modalTableTopMargin}`}>
+        <div
+          className={`${styles.tableResponsive} ${styles.modalTableTopMargin}`}
+        >
           <table className={styles.dataTable}>
             <thead>
               <tr>
@@ -96,8 +111,8 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
                         item.isReward
                           ? styles.badgePurple
                           : item.discountType.includes("Catálogo")
-                          ? styles.badgeInfo
-                          : styles.badgeWarning
+                            ? styles.badgeInfo
+                            : styles.badgeWarning
                       }`.trim()}
                     >
                       {item.discountType}
@@ -106,12 +121,22 @@ const DetailDiscountsSection = ({ sessionDetail, discountsList = [], branchTz })
                   <td className={`${styles.cellCenter} ${styles.cellSemiBold}`}>
                     {item.quantity}
                   </td>
-                  <td className={item.discountAmount > 0 ? styles.textWarning : styles.textMuted}>
+                  <td
+                    className={
+                      item.discountAmount > 0
+                        ? styles.textWarning
+                        : styles.textMuted
+                    }
+                  >
                     {item.discountAmount > 0
                       ? `-${formatCurrency(item.discountAmount)}`
                       : "—"}
                   </td>
-                  <td className={item.points > 0 ? styles.textPurple : styles.textMuted}>
+                  <td
+                    className={
+                      item.points > 0 ? styles.textPurple : styles.textMuted
+                    }
+                  >
                     {item.points > 0 ? `${item.points} pts` : "—"}
                   </td>
                 </tr>

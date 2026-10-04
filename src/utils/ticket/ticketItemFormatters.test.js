@@ -60,9 +60,15 @@ describe("ticketItemFormatters", () => {
 
   describe("getItemOriginalUnitPrice", () => {
     it("da prioridad al precio original", () => {
-      expect(getItemOriginalUnitPrice({ original_unit_price: 90, price: 80 })).toBe(90);
-      expect(getItemOriginalUnitPrice({ originalUnitPrice: 91, price: 81 })).toBe(91);
-      expect(getItemOriginalUnitPrice({ precioOriginal: 92, precio: 82 })).toBe(92);
+      expect(
+        getItemOriginalUnitPrice({ original_unit_price: 90, price: 80 })
+      ).toBe(90);
+      expect(
+        getItemOriginalUnitPrice({ originalUnitPrice: 91, price: 81 })
+      ).toBe(91);
+      expect(getItemOriginalUnitPrice({ precioOriginal: 92, precio: 82 })).toBe(
+        92
+      );
       expect(getItemOriginalUnitPrice({ unit_price: 83 })).toBe(83);
       expect(getItemOriginalUnitPrice({})).toBe(0);
     });

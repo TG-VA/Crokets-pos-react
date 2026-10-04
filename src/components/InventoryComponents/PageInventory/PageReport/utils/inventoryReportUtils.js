@@ -70,10 +70,7 @@ export const formatDateForFilename = (value = new Date()) => {
   return `${day}-${month}-${year}`;
 };
 
-export const normalizeFilenameSegment = (
-  value,
-  fallback = "POLIGONO"
-) => {
+export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
   const normalized = String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -95,12 +92,9 @@ export const normalizeProductNameForSorting = (value) => {
 };
 
 export const getProductWeightInKg = (productName) => {
-  const normalizedName =
-    normalizeProductNameForSorting(productName);
+  const normalizedName = normalizeProductNameForSorting(productName);
 
-  const kilogramsMatch = normalizedName.match(
-    /(\d+(?:[.,]\d+)?)\s*KG\b/
-  );
+  const kilogramsMatch = normalizedName.match(/(\d+(?:[.,]\d+)?)\s*KG\b/);
 
   if (kilogramsMatch) {
     return Number(kilogramsMatch[1].replace(",", "."));
@@ -120,92 +114,81 @@ export const getProductWeightInKg = (productName) => {
 export const getProductBaseName = (productName) => {
   return normalizeProductNameForSorting(productName)
     .replace(/\b\d+(?:[.,]\d+)?\s*KG\b/g, "")
-    .replace(
-      /\b\d+(?:[.,]\d+)?\s*(?:G|GR|GRAMOS?)\b/g,
-      ""
-    )
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:G|GR|GRAMOS?)\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
 };
 
 export const sortInventoryRows = (list) => {
-  return [...(Array.isArray(list) ? list : [])].sort(
-    (a, b) => {
-      const aTracksInventory = a?.tracksInventory !== false;
-      const bTracksInventory = b?.tracksInventory !== false;
+  return [...(Array.isArray(list) ? list : [])].sort((a, b) => {
+    const aTracksInventory = a?.tracksInventory !== false;
+    const bTracksInventory = b?.tracksInventory !== false;
 
-      if (aTracksInventory !== bTracksInventory) {
-        return aTracksInventory ? -1 : 1;
-      }
-
-      const aName = normalizeProductNameForSorting(a?.nombre);
-      const bName = normalizeProductNameForSorting(b?.nombre);
-
-      const aBaseName = getProductBaseName(aName);
-      const bBaseName = getProductBaseName(bName);
-
-      const byBaseName = aBaseName.localeCompare(
-        bBaseName,
-        "es",
-        {
-          sensitivity: "base",
-          numeric: true,
-        }
-      );
-
-      if (byBaseName !== 0) {
-        return byBaseName;
-      }
-
-      const aWeight = getProductWeightInKg(aName);
-      const bWeight = getProductWeightInKg(bName);
-
-      if (
-        aWeight !== null &&
-        bWeight !== null &&
-        aWeight !== bWeight
-      ) {
-        return aWeight - bWeight;
-      }
-
-      if (aWeight === null && bWeight !== null) {
-        return -1;
-      }
-
-      if (aWeight !== null && bWeight === null) {
-        return 1;
-      }
-
-      const byFullName = aName.localeCompare(bName, "es", {
-        sensitivity: "base",
-        numeric: true,
-      });
-
-      if (byFullName !== 0) {
-        return byFullName;
-      }
-
-      const byDepartment = String(
-        a?.depto || ""
-      ).localeCompare(String(b?.depto || ""), "es", {
-        sensitivity: "base",
-        numeric: true,
-      });
-
-      if (byDepartment !== 0) {
-        return byDepartment;
-      }
-
-      return String(a?.codigo || "").localeCompare(
-        String(b?.codigo || ""),
-        "es",
-        {
-          sensitivity: "base",
-          numeric: true,
-        }
-      );
+    if (aTracksInventory !== bTracksInventory) {
+      return aTracksInventory ? -1 : 1;
     }
-  );
+
+    const aName = normalizeProductNameForSorting(a?.nombre);
+    const bName = normalizeProductNameForSorting(b?.nombre);
+
+    const aBaseName = getProductBaseName(aName);
+    const bBaseName = getProductBaseName(bName);
+
+    const byBaseName = aBaseName.localeCompare(bBaseName, "es", {
+      sensitivity: "base",
+      numeric: true,
+    });
+
+    if (byBaseName !== 0) {
+      return byBaseName;
+    }
+
+    const aWeight = getProductWeightInKg(aName);
+    const bWeight = getProductWeightInKg(bName);
+
+    if (aWeight !== null && bWeight !== null && aWeight !== bWeight) {
+      return aWeight - bWeight;
+    }
+
+    if (aWeight === null && bWeight !== null) {
+      return -1;
+    }
+
+    if (aWeight !== null && bWeight === null) {
+      return 1;
+    }
+
+    const byFullName = aName.localeCompare(bName, "es", {
+      sensitivity: "base",
+      numeric: true,
+    });
+
+    if (byFullName !== 0) {
+      return byFullName;
+    }
+
+    const byDepartment = String(a?.depto || "").localeCompare(
+      String(b?.depto || ""),
+      "es",
+      {
+        sensitivity: "base",
+        numeric: true,
+      }
+    );
+
+    if (byDepartment !== 0) {
+      return byDepartment;
+    }
+
+    return String(a?.codigo || "").localeCompare(
+      String(b?.codigo || ""),
+      "es",
+      {
+        sensitivity: "base",
+        numeric: true,
+      }
+    );
+  });
 };
 
 export const getStockStatus = (row) => {
@@ -244,9 +227,7 @@ export const getStockStatus = (row) => {
 };
 
 export const getExistenceFilterLabel = (filterValue) => {
-  if (
-    String(filterValue).startsWith(QUANTITY_FILTER_PREFIX)
-  ) {
+  if (String(filterValue).startsWith(QUANTITY_FILTER_PREFIX)) {
     return `Cantidad: ${String(filterValue).replace(
       QUANTITY_FILTER_PREFIX,
       ""
@@ -280,12 +261,9 @@ export const getSelectedBranchLabel = ({
 };
 
 export const getActiveFilterCount = (facetFilters = {}) => {
-  return Object.values(facetFilters).reduce(
-    (total, values) => {
-      return total + (Array.isArray(values) && values.length > 0 ? 1 : 0);
-    },
-    0
-  );
+  return Object.values(facetFilters).reduce((total, values) => {
+    return total + (Array.isArray(values) && values.length > 0 ? 1 : 0);
+  }, 0);
 };
 
 export const filterInventoryRows = ({
@@ -310,22 +288,15 @@ export const filterInventoryRows = ({
     if (facetFilters.existencia.length > 0) {
       const stockStatus = getStockStatus(row);
 
-      const matchesExistenceFilter =
-        facetFilters.existencia.some((filterValue) => {
-          if (
-            filterValue.startsWith(STOCK_FILTER_PREFIX)
-          ) {
-            const requiredStatus = filterValue.replace(
-              STOCK_FILTER_PREFIX,
-              ""
-            );
+      const matchesExistenceFilter = facetFilters.existencia.some(
+        (filterValue) => {
+          if (filterValue.startsWith(STOCK_FILTER_PREFIX)) {
+            const requiredStatus = filterValue.replace(STOCK_FILTER_PREFIX, "");
 
             return stockStatus.type === requiredStatus;
           }
 
-          if (
-            filterValue.startsWith(QUANTITY_FILTER_PREFIX)
-          ) {
+          if (filterValue.startsWith(QUANTITY_FILTER_PREFIX)) {
             if (
               row.existencia === null ||
               row.existencia === undefined ||
@@ -335,19 +306,15 @@ export const filterInventoryRows = ({
             }
 
             const requiredQuantity = Number(
-              filterValue.replace(
-                QUANTITY_FILTER_PREFIX,
-                ""
-              )
+              filterValue.replace(QUANTITY_FILTER_PREFIX, "")
             );
 
-            return (
-              Number(row.existencia) === requiredQuantity
-            );
+            return Number(row.existencia) === requiredQuantity;
           }
 
           return false;
-        });
+        }
+      );
 
       if (!matchesExistenceFilter) {
         return false;
@@ -410,18 +377,11 @@ export const buildFacetOptions = (rows = []) => {
 
   rows.forEach((row) => {
     const name = String(row.nombre || "").trim() || "—";
-    const department =
-      String(row.depto || "").trim() || "—";
+    const department = String(row.depto || "").trim() || "—";
 
-    counts.nombre.set(
-      name,
-      (counts.nombre.get(name) || 0) + 1
-    );
+    counts.nombre.set(name, (counts.nombre.get(name) || 0) + 1);
 
-    counts.depto.set(
-      department,
-      (counts.depto.get(department) || 0) + 1
-    );
+    counts.depto.set(department, (counts.depto.get(department) || 0) + 1);
   });
 
   return {

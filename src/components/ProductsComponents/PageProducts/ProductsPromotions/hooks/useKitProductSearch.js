@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
-export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppAlert, appModalIsOpen }) => {
+export const useKitProductSearch = ({
+  isOpen,
+  onClose,
+  onSelectProduct,
+  showAppAlert,
+  appModalIsOpen,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -10,13 +17,17 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
   const inputRef = useRef(null);
   const resultsListRef = useRef(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
+  // Reinicio del estado al abrir el modal, resuelto durante el render para
+  // evitar el re-render en cascada. El foco permanece en el efecto.
+  if (useDidChange(isOpen) && isOpen) {
     setSearchTerm("");
     setResults([]);
     setSelectedIndex(-1);
     setLoading(false);
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     const timer = setTimeout(() => {
       inputRef.current?.focus();
@@ -40,6 +51,12 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
     }
   }, [selectedIndex, isOpen]);
 
+  const handleSelect = (product) => {
+    if (!product) return;
+    onSelectProduct(product);
+    onClose();
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -55,7 +72,9 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
       if (e.key === "ArrowDown") {
         if (results.length === 0) return;
         e.preventDefault();
-        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+        setSelectedIndex((prev) =>
+          prev < results.length - 1 ? prev + 1 : prev
+        );
         return;
       }
 
@@ -101,9 +120,11 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
 
       const data = await fetchActiveNonKitProducts();
       const normalized = normalizeText(cleanValue);
-      
+
       const filtered = data.filter((product) => {
-        const searchable = normalizeText(`${product.name || ""} ${product.barcode || ""}`);
+        const searchable = normalizeText(
+          `${product.name || ""} ${product.barcode || ""}`
+        );
         return searchable.includes(normalized);
       });
 
@@ -121,12 +142,6 @@ export const useKitProductSearch = ({ isOpen, onClose, onSelectProduct, showAppA
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelect = (product) => {
-    if (!product) return;
-    onSelectProduct(product);
-    onClose();
   };
 
   return {

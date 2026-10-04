@@ -24,8 +24,12 @@ const CashMovementsTable = ({
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Bitácora de Movimientos de Efectivo</h2>
-            <p className={styles.tableCardSubtitle}>Cargando entradas y salidas...</p>
+            <h2 className={styles.tableCardTitle}>
+              Bitácora de Movimientos de Efectivo
+            </h2>
+            <p className={styles.tableCardSubtitle}>
+              Cargando entradas y salidas...
+            </p>
           </div>
         </div>
         <div className={styles.tableResponsive}>
@@ -63,17 +67,26 @@ const CashMovementsTable = ({
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Bitácora de Movimientos de Efectivo</h2>
+            <h2 className={styles.tableCardTitle}>
+              Bitácora de Movimientos de Efectivo
+            </h2>
             <p className={styles.tableCardSubtitle}>
               Registro de entradas y retiros manuales fuera del flujo de ventas.
             </p>
           </div>
         </div>
         <div className={styles.emptyState}>
-          <img src={EntryIcon} alt="Sin movimientos" className={styles.emptyStateIcon} />
-          <h3 className={styles.emptyStateTitle}>No se registraron movimientos de efectivo</h3>
+          <img
+            src={EntryIcon}
+            alt="Sin movimientos"
+            className={styles.emptyStateIcon}
+          />
+          <h3 className={styles.emptyStateTitle}>
+            No se registraron movimientos de efectivo
+          </h3>
           <p className={styles.emptyStateText}>
-            No hay ingresos manuales ni retiros de efectivo registrados en el rango de fechas seleccionado.
+            No hay ingresos manuales ni retiros de efectivo registrados en el
+            rango de fechas seleccionado.
           </p>
         </div>
       </div>
@@ -84,7 +97,9 @@ const CashMovementsTable = ({
     <div className={styles.tableCard}>
       <div className={styles.tableCardHeader}>
         <div className={styles.tableCardTitleGroup}>
-          <h2 className={styles.tableCardTitle}>Bitácora de Movimientos de Efectivo</h2>
+          <h2 className={styles.tableCardTitle}>
+            Bitácora de Movimientos de Efectivo
+          </h2>
           <p className={styles.tableCardSubtitle}>
             {totalItems} movimiento(s) registrado(s) en el periodo.
           </p>
@@ -117,7 +132,9 @@ const CashMovementsTable = ({
                   <td>
                     <span
                       className={`${styles.badge} ${
-                        typeInfo.isPositive ? styles.badgeSuccess : styles.badgeDanger
+                        typeInfo.isPositive
+                          ? styles.badgeSuccess
+                          : styles.badgeDanger
                       }`.trim()}
                     >
                       <img
@@ -129,7 +146,11 @@ const CashMovementsTable = ({
                     </span>
                   </td>
                   <td
-                    className={typeInfo.isPositive ? styles.textSuccess : styles.textDanger}
+                    className={
+                      typeInfo.isPositive
+                        ? styles.textSuccess
+                        : styles.textDanger
+                    }
                   >
                     {typeInfo.isPositive ? "+" : "-"}
                     {formatCurrency(mov.amount)}

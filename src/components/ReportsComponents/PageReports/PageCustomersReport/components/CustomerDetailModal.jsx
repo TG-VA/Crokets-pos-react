@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./CustomersComponents.module.css";
 import useEscapeKey from "../hooks/useEscapeKey";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 import {
   formatCurrency,
   formatNumber,
@@ -34,10 +35,11 @@ const CustomerDetailModal = ({
   // Permitir cerrar modal con la tecla ESC mediante hook compartido
   useEscapeKey(isOpen, onClose);
 
-  // Reset de pestaña al cambiar de cliente
-  useEffect(() => {
+  // Reset de pestaña al cambiar de cliente, resuelto durante el render para no
+  // provocar un re-render en cascada al cambiar el cliente inspeccionado.
+  if (useDidChange(customerDetail?.customer?.id)) {
     setModalTab("PRODUCTS");
-  }, [customerDetail?.customer?.id]);
+  }
 
   if (!isOpen) return null;
 
@@ -93,12 +95,16 @@ const CustomerDetailModal = ({
                 {customer.email && <span>| {customer.email}</span>}
                 {customer.rfc && <span>| RFC: {customer.rfc}</span>}
                 {customer.is_points_customer && (
-                  <span className={`${styles.badge} ${styles.badgePoints}`.trim()}>
+                  <span
+                    className={`${styles.badge} ${styles.badgePoints}`.trim()}
+                  >
                     Programa Puntos
                   </span>
                 )}
                 {customer.is_billing_customer && (
-                  <span className={`${styles.badge} ${styles.badgeBilling}`.trim()}>
+                  <span
+                    className={`${styles.badge} ${styles.badgeBilling}`.trim()}
+                  >
                     Facturación
                   </span>
                 )}
@@ -135,19 +141,27 @@ const CustomerDetailModal = ({
               <div className={styles.chipsGrid}>
                 <div className={styles.infoChip}>
                   <span className={styles.chipLabel}>Total Gastado</span>
-                  <span className={styles.chipValue}>{formatCurrency(totalSpent)}</span>
+                  <span className={styles.chipValue}>
+                    {formatCurrency(totalSpent)}
+                  </span>
                 </div>
                 <div className={styles.infoChip}>
                   <span className={styles.chipLabel}>Total Compras</span>
-                  <span className={styles.chipValue}>{formatNumber(totalVisits)} visitas</span>
+                  <span className={styles.chipValue}>
+                    {formatNumber(totalVisits)} visitas
+                  </span>
                 </div>
                 <div className={styles.infoChip}>
                   <span className={styles.chipLabel}>Ticket Promedio</span>
-                  <span className={styles.chipValue}>{formatCurrency(avgTicket)}</span>
+                  <span className={styles.chipValue}>
+                    {formatCurrency(avgTicket)}
+                  </span>
                 </div>
                 <div className={styles.infoChip}>
                   <span className={styles.chipLabel}>Puntos Saldo Actual</span>
-                  <span className={styles.chipValue}>{formatNumber(currentPointsBalance)} pts</span>
+                  <span className={styles.chipValue}>
+                    {formatNumber(currentPointsBalance)} pts
+                  </span>
                 </div>
               </div>
 
@@ -162,7 +176,9 @@ const CustomerDetailModal = ({
                 >
                   <img src={basketIcon} alt="" className={styles.iconSmall} />
                   ¿Qué ha comprado?
-                  <span className={styles.tabBadge}>{favoriteProducts.length}</span>
+                  <span className={styles.tabBadge}>
+                    {favoriteProducts.length}
+                  </span>
                 </button>
 
                 <button
@@ -192,7 +208,9 @@ const CustomerDetailModal = ({
 
               {/* Contenido de la pestaña activa */}
               {modalTab === "PRODUCTS" && (
-                <CustomerDetailProductsTab favoriteProducts={favoriteProducts} />
+                <CustomerDetailProductsTab
+                  favoriteProducts={favoriteProducts}
+                />
               )}
 
               {modalTab === "TICKETS" && (

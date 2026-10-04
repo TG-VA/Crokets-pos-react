@@ -1,30 +1,19 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  loadKardexMovements,
-} from "../services/kardexService";
+import { loadKardexMovements } from "../services/kardexService";
 
-import {
-  getKardexProductId,
-} from "../utils/kardexMovementUtils";
+import { getKardexProductId } from "../utils/kardexMovementUtils";
 
-const createEmptyMovementState =
-  () => ({
-    movements: [],
-    loading: false,
-    error: "",
-  });
+const createEmptyMovementState = () => ({
+  movements: [],
+  loading: false,
+  error: "",
+});
 
-const createInitialMovementState =
-  () => [
-    createEmptyMovementState(),
-    createEmptyMovementState(),
-  ];
+const createInitialMovementState = () => [
+  createEmptyMovementState(),
+  createEmptyMovementState(),
+];
 
 const useKardexMovementSlots = ({
   branchId = null,
@@ -32,258 +21,156 @@ const useKardexMovementSlots = ({
   appliedDateFrom = "",
   appliedDateTo = "",
 } = {}) => {
-  const [
-    movementsState,
-    setMovementsState,
-  ] = useState(
+  const [movementsState, setMovementsState] = useState(
     createInitialMovementState
   );
 
-  const requestIdsRef =
-    useRef([0, 0]);
+  const requestIdsRef = useRef([0, 0]);
 
-  const selectedProductsRef =
-    useRef(selectedProducts);
+  const selectedProductsRef = useRef(selectedProducts);
 
-  const appliedRangeRef =
-    useRef({
-      dateFrom:
-        appliedDateFrom,
-      dateTo:
-        appliedDateTo,
-    });
+  const appliedRangeRef = useRef({
+    dateFrom: appliedDateFrom,
+    dateTo: appliedDateTo,
+  });
 
-  const branchIdRef =
-    useRef(branchId);
+  const branchIdRef = useRef(branchId);
 
   useEffect(() => {
-    selectedProductsRef.current =
-      selectedProducts;
+    selectedProductsRef.current = selectedProducts;
   }, [selectedProducts]);
 
   useEffect(() => {
     appliedRangeRef.current = {
-      dateFrom:
-        appliedDateFrom,
-      dateTo:
-        appliedDateTo,
+      dateFrom: appliedDateFrom,
+      dateTo: appliedDateTo,
     };
-  }, [
-    appliedDateFrom,
-    appliedDateTo,
-  ]);
+  }, [appliedDateFrom, appliedDateTo]);
 
   useEffect(() => {
-    branchIdRef.current =
-      branchId;
+    branchIdRef.current = branchId;
   }, [branchId]);
 
-  const updateMovementState =
-    useCallback(
-      (
-        slot,
-        updater
-      ) => {
-        setMovementsState(
-          (currentState) => {
-            const nextState = [
-              ...currentState,
-            ];
+  const updateMovementState = useCallback((slot, updater) => {
+    setMovementsState((currentState) => {
+      const nextState = [...currentState];
 
-            const currentSlotState =
-              nextState[slot] ??
-              createEmptyMovementState();
+      const currentSlotState = nextState[slot] ?? createEmptyMovementState();
 
-            nextState[slot] =
-              typeof updater ===
-              "function"
-                ? updater(
-                    currentSlotState
-                  )
-                : updater;
+      nextState[slot] =
+        typeof updater === "function" ? updater(currentSlotState) : updater;
 
-            return nextState;
-          }
-        );
-      },
-      []
-    );
+      return nextState;
+    });
+  }, []);
 
-  const clearMovementSlot =
-    useCallback(
-      (slot) => {
-        requestIdsRef.current[
-          slot
-        ] += 1;
+  const clearMovementSlot = useCallback(
+    (slot) => {
+      requestIdsRef.current[slot] += 1;
 
-        updateMovementState(
-          slot,
-          createEmptyMovementState()
-        );
-      },
-      [updateMovementState]
-    );
+      updateMovementState(slot, createEmptyMovementState());
+    },
+    [updateMovementState]
+  );
 
-  const loadSlotMovements =
-    useCallback(
-      async (
-        slot,
-        product,
-        {
-          dateFrom =
-            appliedRangeRef
-              .current.dateFrom,
+  const loadSlotMovements = useCallback(
+    async (
+      slot,
+      product,
+      {
+        dateFrom = appliedRangeRef.current.dateFrom,
 
-          dateTo =
-            appliedRangeRef
-              .current.dateTo,
+        dateTo = appliedRangeRef.current.dateTo,
 
-          silent = false,
-        } = {}
-      ) => {
-        const productId =
-          getKardexProductId(
-            product
-          );
+        silent = false,
+      } = {}
+    ) => {
+      const productId = getKardexProductId(product);
 
-        const currentBranchId =
-          branchIdRef.current;
+      const currentBranchId = branchIdRef.current;
 
-        if (
-          !productId ||
-          !currentBranchId
-        ) {
-          clearMovementSlot(
-            slot
-          );
+      if (!productId || !currentBranchId) {
+        clearMovementSlot(slot);
 
-          return [];
-        }
+        return [];
+      }
 
-        const requestId =
-          requestIdsRef.current[
-            slot
-          ] + 1;
+      const requestId = requestIdsRef.current[slot] + 1;
 
-        requestIdsRef.current[
-          slot
-        ] = requestId;
+      requestIdsRef.current[slot] = requestId;
 
-        if (!silent) {
-          updateMovementState(
-            slot,
-            {
-              movements: [],
-              loading: true,
-              error: "",
-            }
-          );
-        }
+      if (!silent) {
+        updateMovementState(slot, {
+          movements: [],
+          loading: true,
+          error: "",
+        });
+      }
 
-        try {
-          const movements =
-            await loadKardexMovements({
-              productId,
-              branchId:
-                currentBranchId,
-              dateFrom,
-              dateTo,
-            });
+      try {
+        const movements = await loadKardexMovements({
+          productId,
+          branchId: currentBranchId,
+          dateFrom,
+          dateTo,
+        });
 
-          if (
-            requestIdsRef.current[
-              slot
-            ] !== requestId
-          ) {
-            return movements;
-          }
-
-          updateMovementState(
-            slot,
-            (currentState) => ({
-              ...currentState,
-              movements,
-              loading: false,
-              error: "",
-            })
-          );
-
+        if (requestIdsRef.current[slot] !== requestId) {
           return movements;
-        } catch (error) {
-          console.error(
-            "Error cargando movimientos del kardex:",
-            error
-          );
+        }
 
-          if (
-            requestIdsRef.current[
-              slot
-            ] !== requestId
-          ) {
-            return [];
-          }
+        updateMovementState(slot, (currentState) => ({
+          ...currentState,
+          movements,
+          loading: false,
+          error: "",
+        }));
 
-          updateMovementState(
-            slot,
-            (currentState) => ({
-              ...currentState,
+        return movements;
+      } catch (error) {
+        console.error("Error cargando movimientos del kardex:", error);
 
-              movements:
-                silent
-                  ? currentState.movements
-                  : [],
-
-              loading: false,
-
-              error:
-                silent
-                  ? currentState.error
-                  : error?.message ||
-                    "No se pudieron cargar los movimientos del kardex.",
-            })
-          );
-
+        if (requestIdsRef.current[slot] !== requestId) {
           return [];
         }
-      },
-      [
-        clearMovementSlot,
-        updateMovementState,
-      ]
-    );
 
-  const refreshSlotSilently =
-    useCallback(
-      (slot) => {
-        const product =
-          selectedProductsRef.current[
-            slot
-          ];
+        updateMovementState(slot, (currentState) => ({
+          ...currentState,
 
-        if (!product) {
-          return Promise.resolve(
-            []
-          );
-        }
+          movements: silent ? currentState.movements : [],
 
-        return loadSlotMovements(
-          slot,
-          product,
-          {
-            dateFrom:
-              appliedRangeRef
-                .current.dateFrom,
+          loading: false,
 
-            dateTo:
-              appliedRangeRef
-                .current.dateTo,
+          error: silent
+            ? currentState.error
+            : error?.message ||
+              "No se pudieron cargar los movimientos del kardex.",
+        }));
 
-            silent: true,
-          }
-        );
-      },
-      [loadSlotMovements]
-    );
+        return [];
+      }
+    },
+    [clearMovementSlot, updateMovementState]
+  );
+
+  const refreshSlotSilently = useCallback(
+    (slot) => {
+      const product = selectedProductsRef.current[slot];
+
+      if (!product) {
+        return Promise.resolve([]);
+      }
+
+      return loadSlotMovements(slot, product, {
+        dateFrom: appliedRangeRef.current.dateFrom,
+
+        dateTo: appliedRangeRef.current.dateTo,
+
+        silent: true,
+      });
+    },
+    [loadSlotMovements]
+  );
 
   return {
     movementsState,

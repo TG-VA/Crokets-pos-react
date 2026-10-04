@@ -48,6 +48,17 @@
   height: 36px;
   font-size: 18px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeIcon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .errorMessage {

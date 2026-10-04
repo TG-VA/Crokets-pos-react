@@ -52,7 +52,10 @@ export const getTotalPaidInMxn = (payments = [], fallbackAmount = 0) => {
   }, 0);
 };
 
-export const shouldShowReceivedAndChange = (payments = [], fallbackMethod = "") => {
+export const shouldShowReceivedAndChange = (
+  payments = [],
+  fallbackMethod = ""
+) => {
   if (!payments.length) {
     const method = String(fallbackMethod || "").toUpperCase();
     return method.includes("EFECTIVO") || method.includes("USD");

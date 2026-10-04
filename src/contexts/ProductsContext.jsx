@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useBranch } from "./BranchContext";
 import { useProductsRealtime } from "../hooks/useProductsRealtime";
+import { useRequestStatus } from "../hooks/useRequestStatus";
 import {
   fetchDepartments,
   fetchBranchCatalog,
@@ -46,12 +47,9 @@ export const ProductsProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [kardexProducts, setKardexProducts] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
   const [productsError, setProductsError] = useState(null);
 
-  const loadDepartments = useCallback(async () => {
-    const result = await fetchDepartments();
-
+  const applyDepartmentsResult = useCallback((result) => {
     if (result.success) {
       setDepartments(result.data);
       return;
@@ -59,6 +57,36 @@ export const ProductsProvider = ({ children }) => {
 
     console.error("Error cargando departamentos:", result.error);
     setDepartments([]);
+  }, []);
+
+  const loadDepartments = useCallback(async () => {
+    applyDepartmentsResult(await fetchDepartments());
+  }, [applyDepartmentsResult]);
+
+  // La carga del catalogo se deriva de la sucursal pedida en lugar de marcarse
+  // con un setLoadingProducts(true) sincrono, que provocaba un re-render en
+  // cascada. El refresco en tiempo real no cambia la clave, asi que el spinner no
+  // parpadea ante una actualizacion de fondo.
+  const {
+    isLoading: loadingProducts,
+    isStale,
+    markSettled,
+  } = useRequestStatus(branch?.id || null);
+
+  // El error de una carga anterior no debe mostrarse mientras corre la nueva.
+  const visibleProductsError = isStale ? null : productsError;
+
+  const applyCatalogResult = useCallback((result) => {
+    if (result.success) {
+      setKardexProducts(result.data.kardexProducts);
+      setProducts(result.data.products);
+      return;
+    }
+
+    console.error("Error cargando productos:", result.error);
+    setProducts([]);
+    setKardexProducts([]);
+    setProductsError(result.error || "Error al cargar productos");
   }, []);
 
   const loadProducts = useCallback(async () => {
@@ -69,40 +97,63 @@ export const ProductsProvider = ({ children }) => {
     }
 
     try {
-      setLoadingProducts(true);
       setProductsError(null);
-
-      const result = await fetchBranchCatalog(branch.id);
-
-      if (result.success) {
-        setKardexProducts(result.data.kardexProducts);
-        setProducts(result.data.products);
-        return;
-      }
-
-      console.error("Error cargando productos:", result.error);
-      setProducts([]);
-      setKardexProducts([]);
-      setProductsError(result.error || "Error al cargar productos");
+      applyCatalogResult(await fetchBranchCatalog(branch.id));
     } catch (error) {
       console.error("Error cargando productos:", error);
       setProducts([]);
       setKardexProducts([]);
       setProductsError(error.message || "Error al cargar productos");
     } finally {
-      setLoadingProducts(false);
+      markSettled();
     }
-  }, [branch?.id]);
+  }, [branch, applyCatalogResult, markSettled]);
 
   const { markLocalMutation } = useProductsRealtime(branch?.id, loadProducts);
 
   useEffect(() => {
-    loadDepartments();
-  }, [loadDepartments]);
+    let cancelled = false;
 
+    fetchDepartments().then((result) => {
+      if (cancelled) return;
+      applyDepartmentsResult(result);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyDepartmentsResult]);
+
+  // El efecto llama directo a la funcion de datos importada y aplica el estado
+  // en la continuacion asincrona; `loadProducts` queda para el refresco en
+  // tiempo real y para la recarga manual.
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    if (!branch?.id) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    fetchBranchCatalog(branch.id)
+      .then((result) => {
+        if (cancelled) return;
+        setProductsError(null);
+        applyCatalogResult(result);
+        markSettled();
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Error cargando productos:", error);
+        setProducts([]);
+        setKardexProducts([]);
+        setProductsError(error.message || "Error al cargar productos");
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branch?.id, applyCatalogResult, markSettled]);
 
   const refreshProducts = useCallback(async () => {
     await loadProducts();
@@ -224,7 +275,7 @@ export const ProductsProvider = ({ children }) => {
       kardexProducts,
       departments,
       loadingProducts,
-      productsError,
+      productsError: visibleProductsError,
       refreshProducts,
       refreshDepartments,
       getProductByCodigo,
@@ -241,7 +292,7 @@ export const ProductsProvider = ({ children }) => {
       kardexProducts,
       departments,
       loadingProducts,
-      productsError,
+      visibleProductsError,
       refreshProducts,
       refreshDepartments,
       getProductByCodigo,

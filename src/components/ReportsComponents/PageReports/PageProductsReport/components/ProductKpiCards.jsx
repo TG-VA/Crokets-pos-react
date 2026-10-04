@@ -3,10 +3,19 @@ import { formatCurrency } from "../../../../../utils/formatters";
 
 const ProductKpiCards = ({ data, isLoading }) => {
   if (isLoading) {
-    return <div style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Calculando métricas...</div>;
+    return (
+      <div style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>
+        Calculando métricas...
+      </div>
+    );
   }
 
-  const { totalUnits = 0, totalRevenue = 0, topDepartment = "-", bestProduct = "-" } = data || {};
+  const {
+    totalUnits = 0,
+    totalRevenue = 0,
+    topDepartment = "-",
+    bestProduct = "-",
+  } = data || {};
 
   const kpiList = [
     { label: "Unidades Vendidas", value: totalUnits },
@@ -37,7 +46,14 @@ const ProductKpiCards = ({ data, isLoading }) => {
             gap: "6px",
           }}
         >
-          <span style={{ fontSize: "0.775rem", fontWeight: "600", color: "#64748b", textTransform: "uppercase" }}>
+          <span
+            style={{
+              fontSize: "0.775rem",
+              fontWeight: "600",
+              color: "#64748b",
+              textTransform: "uppercase",
+            }}
+          >
             {kpi.label}
           </span>
           <span

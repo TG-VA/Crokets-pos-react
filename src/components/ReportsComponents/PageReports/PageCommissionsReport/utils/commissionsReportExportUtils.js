@@ -4,7 +4,10 @@
  */
 
 import ExcelJS from "exceljs";
-import { formatShortDate, formatDynamicDateTime } from "./commissionsReportFormatters";
+import {
+  formatShortDate,
+  formatDynamicDateTime,
+} from "./commissionsReportFormatters";
 
 /**
  * Exporta el reporte consolidado de comisiones (3 pestañas).
@@ -20,10 +23,14 @@ export const exportCommissionsReportToExcel = async ({
 }) => {
   try {
     const hasData =
-      cashierSummaries.length > 0 || productSummaries.length > 0 || detailedRows.length > 0;
+      cashierSummaries.length > 0 ||
+      productSummaries.length > 0 ||
+      detailedRows.length > 0;
 
     if (!hasData) {
-      alert("No hay datos de comisiones disponibles para exportar en este periodo.");
+      alert(
+        "No hay datos de comisiones disponibles para exportar en este periodo."
+      );
       return;
     }
 
@@ -41,15 +48,28 @@ export const exportCommissionsReportToExcel = async ({
     const title1 = wsCashiers.getCell("A1");
     title1.value = "CROKETS POS - REPORTE DE COMISIONES POR CAJERO";
     title1.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    title1.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     title1.alignment = { horizontal: "center", vertical: "middle" };
     wsCashiers.getRow(1).height = 32;
 
     // Metadatos
-    wsCashiers.addRow(["Periodo:", `${formatShortDate(startDate)} al ${formatShortDate(endDate)}`]);
+    wsCashiers.addRow([
+      "Periodo:",
+      `${formatShortDate(startDate)} al ${formatShortDate(endDate)}`,
+    ]);
     wsCashiers.addRow(["Sucursal:", branchName]);
-    wsCashiers.addRow(["Total Comisiones Periodo:", kpis.totalCommissions || 0]);
-    wsCashiers.addRow(["Venta Total Comisionable:", kpis.totalCommissionableSales || 0]);
+    wsCashiers.addRow([
+      "Total Comisiones Periodo:",
+      kpis.totalCommissions || 0,
+    ]);
+    wsCashiers.addRow([
+      "Venta Total Comisionable:",
+      kpis.totalCommissionableSales || 0,
+    ]);
     wsCashiers.addRow([]);
 
     // Formatos de metadatos
@@ -68,7 +88,11 @@ export const exportCommissionsReportToExcel = async ({
     ]);
 
     headerRow1.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    headerRow1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+    headerRow1.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1E293B" },
+    };
     headerRow1.alignment = { horizontal: "center", vertical: "middle" };
     wsCashiers.getRow(headerRow1.number).height = 24;
 
@@ -107,7 +131,11 @@ export const exportCommissionsReportToExcel = async ({
     const title2 = wsProducts.getCell("A1");
     title2.value = "CROKETS POS - COMISIONES GENERADAS POR PRODUCTO";
     title2.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    title2.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     title2.alignment = { horizontal: "center", vertical: "middle" };
     wsProducts.getRow(1).height = 32;
 
@@ -123,7 +151,11 @@ export const exportCommissionsReportToExcel = async ({
     ]);
 
     headerRow2.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    headerRow2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+    headerRow2.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1E293B" },
+    };
     headerRow2.alignment = { horizontal: "center", vertical: "middle" };
     wsProducts.getRow(headerRow2.number).height = 24;
 
@@ -161,7 +193,11 @@ export const exportCommissionsReportToExcel = async ({
     const title3 = wsAudit.getCell("A1");
     title3.value = "CROKETS POS - AUDITORÍA DETALLADA DE COMISIONES";
     title3.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    title3.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     title3.alignment = { horizontal: "center", vertical: "middle" };
     wsAudit.getRow(1).height = 32;
 
@@ -181,7 +217,11 @@ export const exportCommissionsReportToExcel = async ({
     ]);
 
     headerRow3.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    headerRow3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+    headerRow3.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1E293B" },
+    };
     headerRow3.alignment = { horizontal: "center", vertical: "middle" };
     wsAudit.getRow(headerRow3.number).height = 24;
 
@@ -236,7 +276,7 @@ export const exportCommissionsReportToExcel = async ({
     const anchor = document.createElement("a");
     anchor.href = objectUrl;
 
-    const cleanBranch = branchName.replace(/[\/\\:*?"<>|]/g, "_").slice(0, 20);
+    const cleanBranch = branchName.replace(/[\\/:*?"<>|]/g, "_").slice(0, 20);
     anchor.download = `Reporte_Comisiones_[${cleanBranch}]_[${formatShortDate(startDate).replace(/\//g, "-")}_al_${formatShortDate(endDate).replace(/\//g, "-")}].xlsx`;
     anchor.style.display = "none";
     document.body.appendChild(anchor);
@@ -273,12 +313,19 @@ export const exportCashierStatementToExcel = async ({
     const title = ws.getCell("A1");
     title.value = `COMPROBANTE DE COMISIONES - ${cashierName.toUpperCase()}`;
     title.font = { bold: true, size: 13, color: { argb: "FFFFFFFF" } };
-    title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    title.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     title.alignment = { horizontal: "center", vertical: "middle" };
     ws.getRow(1).height = 30;
 
     ws.addRow(["Cajero:", cashierName]);
-    ws.addRow(["Periodo:", `${formatShortDate(startDate)} al ${formatShortDate(endDate)}`]);
+    ws.addRow([
+      "Periodo:",
+      `${formatShortDate(startDate)} al ${formatShortDate(endDate)}`,
+    ]);
     ws.addRow([]);
 
     const header = ws.addRow([
@@ -292,7 +339,11 @@ export const exportCashierStatementToExcel = async ({
     ]);
 
     header.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+    header.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1E293B" },
+    };
     header.alignment = { horizontal: "center", vertical: "middle" };
 
     let grandTotalCommission = 0;
@@ -315,7 +366,15 @@ export const exportCashierStatementToExcel = async ({
     });
 
     ws.addRow([]);
-    const totalRow = ws.addRow(["TOTAL A PAGAR:", "", "", "", "", "", grandTotalCommission]);
+    const totalRow = ws.addRow([
+      "TOTAL A PAGAR:",
+      "",
+      "",
+      "",
+      "",
+      "",
+      grandTotalCommission,
+    ]);
     totalRow.font = { bold: true, size: 11 };
     totalRow.getCell(7).numFmt = '"$"#,##0.00';
 

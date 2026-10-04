@@ -26,10 +26,22 @@ const CashSessionsTable = ({
   // Lista de referencia para totales consolidados
   const targetSessions = allSessions.length > 0 ? allSessions : sessions;
 
-  const totalOpening = targetSessions.reduce((acc, s) => acc + Number(s.opening_amount || 0), 0);
-  const totalCashSales = targetSessions.reduce((acc, s) => acc + Number(s.cashSales || 0), 0);
-  const totalCardSales = targetSessions.reduce((acc, s) => acc + Number(s.cardSales || 0), 0);
-  const totalSalesVolume = targetSessions.reduce((acc, s) => acc + Number(s.totalSales || 0), 0);
+  const totalOpening = targetSessions.reduce(
+    (acc, s) => acc + Number(s.opening_amount || 0),
+    0
+  );
+  const totalCashSales = targetSessions.reduce(
+    (acc, s) => acc + Number(s.cashSales || 0),
+    0
+  );
+  const totalCardSales = targetSessions.reduce(
+    (acc, s) => acc + Number(s.cardSales || 0),
+    0
+  );
+  const totalSalesVolume = targetSessions.reduce(
+    (acc, s) => acc + Number(s.totalSales || 0),
+    0
+  );
   const totalCountedCash = targetSessions
     .filter((s) => s.status === "closed")
     .reduce((acc, s) => acc + Number(s.closing_amount || 0), 0);
@@ -42,8 +54,12 @@ const CashSessionsTable = ({
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Historial de Turnos y Cortes de Caja</h2>
-            <p className={styles.tableCardSubtitle}>Cargando sesiones registradas...</p>
+            <h2 className={styles.tableCardTitle}>
+              Historial de Turnos y Cortes de Caja
+            </h2>
+            <p className={styles.tableCardSubtitle}>
+              Cargando sesiones registradas...
+            </p>
           </div>
         </div>
         <div className={styles.tableResponsive}>
@@ -85,17 +101,27 @@ const CashSessionsTable = ({
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Historial de Turnos y Cortes de Caja</h2>
+            <h2 className={styles.tableCardTitle}>
+              Historial de Turnos y Cortes de Caja
+            </h2>
             <p className={styles.tableCardSubtitle}>
-              Consulta todas las aperturas, ventas, arqueos y cierres por cajero.
+              Consulta todas las aperturas, ventas, arqueos y cierres por
+              cajero.
             </p>
           </div>
         </div>
         <div className={styles.emptyState}>
-          <img src={ClockIcon} alt="Sin sesiones" className={styles.emptyStateIcon} />
-          <h3 className={styles.emptyStateTitle}>No se encontraron turnos de caja</h3>
+          <img
+            src={ClockIcon}
+            alt="Sin sesiones"
+            className={styles.emptyStateIcon}
+          />
+          <h3 className={styles.emptyStateTitle}>
+            No se encontraron turnos de caja
+          </h3>
           <p className={styles.emptyStateText}>
-            No hay registros de sesiones o cortes de caja en el rango de fechas y filtros seleccionados.
+            No hay registros de sesiones o cortes de caja en el rango de fechas
+            y filtros seleccionados.
           </p>
         </div>
       </div>
@@ -106,7 +132,9 @@ const CashSessionsTable = ({
     <div className={styles.tableCard}>
       <div className={styles.tableCardHeader}>
         <div className={styles.tableCardTitleGroup}>
-          <h2 className={styles.tableCardTitle}>Historial de Turnos y Cortes de Caja</h2>
+          <h2 className={styles.tableCardTitle}>
+            Historial de Turnos y Cortes de Caja
+          </h2>
           <p className={styles.tableCardSubtitle}>
             {totalItems} turno(s) registrado(s) en el periodo consultado.
           </p>
@@ -157,7 +185,13 @@ const CashSessionsTable = ({
                         <strong className={styles.datePrefixLabel}>A: </strong>
                         {formatDynamicDate(session.opened_at, branchTz)}
                       </span>
-                      <span className={session.closed_at ? styles.colDateTimeClose : styles.colDateTimeOngoing}>
+                      <span
+                        className={
+                          session.closed_at
+                            ? styles.colDateTimeClose
+                            : styles.colDateTimeOngoing
+                        }
+                      >
                         <strong className={styles.datePrefixLabel}>C: </strong>
                         {session.closed_at
                           ? formatDynamicDate(session.closed_at, branchTz)
@@ -184,12 +218,20 @@ const CashSessionsTable = ({
                   <td>{formatCurrency(session.opening_amount)}</td>
 
                   {/* Ventas en Efectivo */}
-                  <td className={cashSales > 0 ? styles.textSuccess : styles.textMuted}>
+                  <td
+                    className={
+                      cashSales > 0 ? styles.textSuccess : styles.textMuted
+                    }
+                  >
                     {formatCurrency(cashSales)}
                   </td>
 
                   {/* Ventas en Tarjeta / Digital */}
-                  <td className={cardSales > 0 ? styles.textPrimary : styles.textMuted}>
+                  <td
+                    className={
+                      cardSales > 0 ? styles.textPrimary : styles.textMuted
+                    }
+                  >
                     {formatCurrency(cardSales)}
                   </td>
 
@@ -211,8 +253,8 @@ const CashSessionsTable = ({
                           diffInfo.status === "exact"
                             ? styles.badgeSuccess
                             : diffInfo.status === "surplus"
-                            ? styles.badgeInfo
-                            : styles.badgeDanger
+                              ? styles.badgeInfo
+                              : styles.badgeDanger
                         }`.trim()}
                       >
                         <img
@@ -227,7 +269,9 @@ const CashSessionsTable = ({
                         {diffInfo.formatted}
                       </span>
                     ) : (
-                      <span className={`${styles.badge} ${styles.badgeNeutral}`.trim()}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeNeutral}`.trim()}
+                      >
                         Pendiente
                       </span>
                     )}
@@ -245,7 +289,10 @@ const CashSessionsTable = ({
                   </td>
 
                   {/* Botón de Detalle */}
-                  <td className={styles.cellActionBtn} onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className={styles.cellActionBtn}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
                       className={styles.actionButton}
@@ -263,12 +310,19 @@ const CashSessionsTable = ({
           <tfoot>
             <tr className={styles.tableFooterTotal}>
               <td colSpan={3} className={styles.cellExtraBold}>
-                Totales Consolidados ({targetSessions.length} turno{targetSessions.length !== 1 ? "s" : ""})
+                Totales Consolidados ({targetSessions.length} turno
+                {targetSessions.length !== 1 ? "s" : ""})
               </td>
               <td>{formatCurrency(totalOpening)}</td>
-              <td className={styles.textSuccess}>{formatCurrency(totalCashSales)}</td>
-              <td className={styles.textPrimary}>{formatCurrency(totalCardSales)}</td>
-              <td className={`${styles.cellExtraBold} ${styles.textDark}`}>{formatCurrency(totalSalesVolume)}</td>
+              <td className={styles.textSuccess}>
+                {formatCurrency(totalCashSales)}
+              </td>
+              <td className={styles.textPrimary}>
+                {formatCurrency(totalCardSales)}
+              </td>
+              <td className={`${styles.cellExtraBold} ${styles.textDark}`}>
+                {formatCurrency(totalSalesVolume)}
+              </td>
               <td>{formatCurrency(totalCountedCash)}</td>
               <td>
                 <span
@@ -276,8 +330,8 @@ const CashSessionsTable = ({
                     totalDiffInfo.status === "exact"
                       ? styles.badgeSuccess
                       : totalDiffInfo.status === "surplus"
-                      ? styles.badgeInfo
-                      : styles.badgeDanger
+                        ? styles.badgeInfo
+                        : styles.badgeDanger
                   }`.trim()}
                 >
                   <img

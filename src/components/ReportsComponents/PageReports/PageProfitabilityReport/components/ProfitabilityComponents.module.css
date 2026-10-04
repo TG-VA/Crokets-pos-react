@@ -53,7 +53,9 @@
   width: 210px;
   height: 36px;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .datePickerInput:focus {
@@ -80,7 +82,10 @@
   height: 34px;
   display: inline-flex;
   align-items: center;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .presetPill:hover {
@@ -115,7 +120,10 @@
   min-width: 160px;
   height: 36px;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .selectInput:focus,
@@ -242,7 +250,9 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kpiCard:hover {
@@ -463,7 +473,9 @@
 .sortableTh {
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .sortableTh:hover {
@@ -472,26 +484,62 @@
 }
 
 /* Ancho fijo de columnas para Tabla de Productos y Margen Crítico */
-.colBarcode { width: 125px; }
-.colProduct { width: auto; }
-.colDepartment { width: 130px; }
-.colUnits { width: 95px; }
-.colPrice { width: 135px; }
-.colCost { width: 110px; }
-.colRevenue { width: 125px; }
-.colTotalCost { width: 120px; }
-.colProfit { width: 135px; }
-.colMargin { width: 145px; }
+.colBarcode {
+  width: 125px;
+}
+.colProduct {
+  width: auto;
+}
+.colDepartment {
+  width: 130px;
+}
+.colUnits {
+  width: 95px;
+}
+.colPrice {
+  width: 135px;
+}
+.colCost {
+  width: 110px;
+}
+.colRevenue {
+  width: 125px;
+}
+.colTotalCost {
+  width: 120px;
+}
+.colProfit {
+  width: 135px;
+}
+.colMargin {
+  width: 145px;
+}
 
 /* Ancho porcentual para Tabla de Departamentos (100% proporcional sin scroll) */
-.colDeptName { width: 23%; }
-.colDeptVariedad { width: 11%; }
-.colDeptUnits { width: 9%; }
-.colDeptRevenue { width: 13%; }
-.colDeptCost { width: 12%; }
-.colDeptProfit { width: 13%; }
-.colDeptMargin { width: 9%; }
-.colDeptContrib { width: 10%; }
+.colDeptName {
+  width: 23%;
+}
+.colDeptVariedad {
+  width: 11%;
+}
+.colDeptUnits {
+  width: 9%;
+}
+.colDeptRevenue {
+  width: 13%;
+}
+.colDeptCost {
+  width: 12%;
+}
+.colDeptProfit {
+  width: 13%;
+}
+.colDeptMargin {
+  width: 9%;
+}
+.colDeptContrib {
+  width: 10%;
+}
 
 .thContent {
   display: inline-flex;
@@ -589,7 +637,11 @@
   padding: 1px 7px;
   width: fit-content;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .kitMetaBadgeButton:hover {
@@ -912,4 +964,3 @@
     transform: rotate(360deg);
   }
 }
-

@@ -2,7 +2,11 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
-const AuthGuard = ({ children, requireCashRegister = true, requireNoCashRegister = false }) => {
+const AuthGuard = ({
+  children,
+  requireCashRegister = true,
+  requireNoCashRegister = false,
+}) => {
   const { isAuthenticated, isLocked, cashRegistered } = useAuth();
 
   // 1. Validar Autenticación

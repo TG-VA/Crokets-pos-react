@@ -68,7 +68,7 @@ describe("ticketLayoutFormatters", () => {
       expect(wrapText("abcdefghij", 4)).toEqual(["abcd", "efgh", "ij"]);
     });
 
-    it("devuelve [\"\"] para texto vacio", () => {
+    it('devuelve [""] para texto vacio', () => {
       expect(wrapText("")).toEqual([""]);
       expect(wrapText("   ")).toEqual([""]);
     });

@@ -10,7 +10,10 @@ import {
   calculateCustomersKpis,
   aggregateTopProducts,
 } from "./customersReportCalculationService";
-import { getDaysAgo, getCustomerRiskBadge } from "../utils/customersReportFormatters";
+import {
+  getDaysAgo,
+  getCustomerRiskBadge,
+} from "../utils/customersReportFormatters";
 
 /**
  * Obtiene la lista de sucursales disponibles
@@ -25,7 +28,10 @@ export const fetchBranchesList = async () => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error("Error al consultar sucursales en customersReportService:", err);
+    console.error(
+      "Error al consultar sucursales en customersReportService:",
+      err
+    );
     return [];
   }
 };
@@ -39,9 +45,7 @@ export const fetchCustomersReportData = async ({
 }) => {
   try {
     // 1. Cargar catálogo de clientes
-    const customersQuery = supabase
-      .from("customers")
-      .select(`
+    const customersQuery = supabase.from("customers").select(`
         id,
         name,
         phone,
@@ -56,7 +60,8 @@ export const fetchCustomersReportData = async ({
     // 2. Cargar historial completo de ventas para clientes identificados
     let salesQuery = supabase
       .from("sales")
-      .select(`
+      .select(
+        `
         id,
         sale_date,
         total,
@@ -64,15 +69,14 @@ export const fetchCustomersReportData = async ({
         status,
         customer_id,
         branch_id
-      `)
+      `
+      )
       .not("customer_id", "is", null);
 
     if (branchId !== "ALL") salesQuery = salesQuery.eq("branch_id", branchId);
 
     // 3. Cargar historial completo de movimientos de puntos
-    let pointsQuery = supabase
-      .from("customer_points")
-      .select(`
+    let pointsQuery = supabase.from("customer_points").select(`
         id,
         customer_id,
         points,
@@ -85,9 +89,7 @@ export const fetchCustomersReportData = async ({
     if (branchId !== "ALL") pointsQuery = pointsQuery.eq("branch_id", branchId);
 
     // 4. Cargar historial completo de redenciones de recompensas
-    let redemptionsQuery = supabase
-      .from("sale_reward_redemptions")
-      .select(`
+    let redemptionsQuery = supabase.from("sale_reward_redemptions").select(`
         id,
         sale_id,
         customer_id,
@@ -100,26 +102,22 @@ export const fetchCustomersReportData = async ({
         created_at
       `);
 
-    if (branchId !== "ALL") redemptionsQuery = redemptionsQuery.eq("branch_id", branchId);
+    if (branchId !== "ALL")
+      redemptionsQuery = redemptionsQuery.eq("branch_id", branchId);
 
     const branchesQuery = supabase
       .from("branches")
       .select("id, name, timezone, code");
 
     // Ejecutar consultas principales en paralelo
-    const [
-      customersRes,
-      salesRes,
-      pointsRes,
-      redemptionsRes,
-      branchesRes,
-    ] = await Promise.all([
-      customersQuery,
-      salesQuery,
-      pointsQuery,
-      redemptionsQuery,
-      branchesQuery,
-    ]);
+    const [customersRes, salesRes, pointsRes, redemptionsRes, branchesRes] =
+      await Promise.all([
+        customersQuery,
+        salesQuery,
+        pointsQuery,
+        redemptionsQuery,
+        branchesQuery,
+      ]);
 
     if (customersRes.error) throw customersRes.error;
     if (salesRes.error) throw salesRes.error;
@@ -139,7 +137,7 @@ export const fetchCustomersReportData = async ({
 
     // Mapa general de sucursales para lookup de nombres
     const branchMap = {};
-    for (const b of (branchesRes.data || [])) {
+    for (const b of branchesRes.data || []) {
       branchMap[b.id] = b;
     }
 
@@ -175,7 +173,8 @@ export const fetchCustomersReportData = async ({
         const chunk = saleIdsForDetails.slice(i, i + chunkSize);
         const { data: chunkData, error: chunkErr } = await supabase
           .from("sale_details")
-          .select(`
+          .select(
+            `
             id,
             sale_id,
             product_id,
@@ -192,7 +191,8 @@ export const fetchCustomersReportData = async ({
               sale_date,
               created_at
             )
-          `)
+          `
+          )
           .in("sale_id", chunk);
 
         if (!chunkErr && chunkData) {
@@ -223,56 +223,59 @@ export const fetchCustomersReportData = async ({
     }
 
     // Armar tabla de ranking unificada
-    const rankedCustomers = customersList.map((cust) => {
-      const sData = salesMap[cust.id] || {
-        totalSpent: 0,
-        totalDiscounts: 0,
-        purchasesCount: 0,
-        lastSaleDate: null,
-      };
+    const rankedCustomers = customersList
+      .map((cust) => {
+        const sData = salesMap[cust.id] || {
+          totalSpent: 0,
+          totalDiscounts: 0,
+          purchasesCount: 0,
+          lastSaleDate: null,
+        };
 
-      const pData = pointsMap[cust.id] || {
-        balance: 0,
-        earned: 0,
-        redeemed: 0,
-      };
+        const pData = pointsMap[cust.id] || {
+          balance: 0,
+          earned: 0,
+          redeemed: 0,
+        };
 
-      const rData = redemptionsMap[cust.id] || {
-        count: 0,
-        totalDiscount: 0,
-        pointsUsed: 0,
-      };
+        const rData = redemptionsMap[cust.id] || {
+          count: 0,
+          totalDiscount: 0,
+          pointsUsed: 0,
+        };
 
-      const averageTicket =
-        sData.purchasesCount > 0 ? sData.totalSpent / sData.purchasesCount : 0;
+        const averageTicket =
+          sData.purchasesCount > 0
+            ? sData.totalSpent / sData.purchasesCount
+            : 0;
 
-      const daysAgo = getDaysAgo(sData.lastSaleDate);
-      const riskInfo = getCustomerRiskBadge(daysAgo);
+        const daysAgo = getDaysAgo(sData.lastSaleDate);
+        const riskInfo = getCustomerRiskBadge(daysAgo);
 
-      return {
-        id: cust.id,
-        name: cust.name || "Cliente sin nombre",
-        phone: cust.phone || "",
-        email: cust.email || "",
-        rfc: cust.rfc || "",
-        isBillingCustomer: cust.is_billing_customer || false,
-        isPointsCustomer: cust.is_points_customer || false,
-        status: cust.status !== false,
-        totalSpent: sData.totalSpent,
-        totalDiscounts: sData.totalDiscounts,
-        purchasesCount: sData.purchasesCount,
-        averageTicket,
-        lastSaleDate: sData.lastSaleDate,
-        daysAgo,
-        riskInfo,
-        pointsBalance: pData.balance,
-        pointsEarned: pData.earned,
-        pointsRedeemed: pData.redeemed,
-        rewardsRedeemedCount: rData.count,
-        rewardsDiscountSum: rData.totalDiscount,
-      };
-    })
-    .filter((c) => c.purchasesCount > 0);
+        return {
+          id: cust.id,
+          name: cust.name || "Cliente sin nombre",
+          phone: cust.phone || "",
+          email: cust.email || "",
+          rfc: cust.rfc || "",
+          isBillingCustomer: cust.is_billing_customer || false,
+          isPointsCustomer: cust.is_points_customer || false,
+          status: cust.status !== false,
+          totalSpent: sData.totalSpent,
+          totalDiscounts: sData.totalDiscounts,
+          purchasesCount: sData.purchasesCount,
+          averageTicket,
+          lastSaleDate: sData.lastSaleDate,
+          daysAgo,
+          riskInfo,
+          pointsBalance: pData.balance,
+          pointsEarned: pData.earned,
+          pointsRedeemed: pData.redeemed,
+          rewardsRedeemedCount: rData.count,
+          rewardsDiscountSum: rData.totalDiscount,
+        };
+      })
+      .filter((c) => c.purchasesCount > 0);
 
     // Calcular KPIs
     const kpis = calculateCustomersKpis({
@@ -295,6 +298,32 @@ export const fetchCustomersReportData = async ({
   } catch (err) {
     console.error("Error al obtener datos del reporte de clientes:", err);
     throw err;
+  }
+};
+
+/**
+ * Carga el reporte de clientes y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ branchId: string, customerType: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadCustomersReport = async (
+  { branchId, customerType },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(await fetchCustomersReportData({ branchId, customerType }));
+  } catch (err) {
+    onError("No se pudieron cargar los datos del reporte de clientes.");
+  } finally {
+    onSettled();
   }
 };
 

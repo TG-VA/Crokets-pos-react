@@ -5,7 +5,10 @@ import { processSaleCustomerBenefits } from "../services/salesPostSaleService";
 import { printSaleTicket } from "../services/salesTicketService";
 
 import { isValidUuid } from "../utils/salesCartUtils";
-import { buildPaymentsPayload, buildProductsPayload } from "../utils/salesPaymentUtils";
+import {
+  buildPaymentsPayload,
+  buildProductsPayload,
+} from "../utils/salesPaymentUtils";
 import { buildSaleSuccessPayload } from "../utils/salesSuccessUtils";
 
 const useSalesCheckout = ({
@@ -40,19 +43,29 @@ const useSalesCheckout = ({
       try {
         const canSell = await validateShiftNotCut();
         if (!canSell) {
-          showAppWarning("Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo.");
+          showAppWarning(
+            "Ya realizaste el corte de cajero.\nDebes cerrar turno antes de seguir vendiendo."
+          );
           setShowPaymentModal(false);
           return false;
         }
 
-        if (!user?.id) return showAppWarning("No se detectó el usuario."), false;
-        if (!branch?.id) return showAppWarning("No se detectó la sucursal."), false;
-        if (!Array.isArray(productos) || productos.length === 0) return showAppWarning("No hay productos en la venta."), false;
-        if (!saleToken) return showAppWarning("No se generó el token de venta."), false;
+        if (!user?.id)
+          return (showAppWarning("No se detectó el usuario."), false);
+        if (!branch?.id)
+          return (showAppWarning("No se detectó la sucursal."), false);
+        if (!Array.isArray(productos) || productos.length === 0)
+          return (showAppWarning("No hay productos en la venta."), false);
+        if (!saleToken)
+          return (showAppWarning("No se generó el token de venta."), false);
 
-        const invalidProduct = productos.find((product) => !isValidUuid(product?.id));
+        const invalidProduct = productos.find(
+          (product) => !isValidUuid(product?.id)
+        );
         if (invalidProduct) {
-          showAppWarning("Hay productos sin UUID real. No se puede guardar la venta.");
+          showAppWarning(
+            "Hay productos sin UUID real. No se puede guardar la venta."
+          );
           return false;
         }
 
@@ -65,7 +78,9 @@ const useSalesCheckout = ({
 
         if (kitWithExceededLimit) {
           const maxKits = Number(kitWithExceededLimit.max_kits_per_sale ?? 1);
-          showAppWarning(`Límite de venta excedido: El kit "${kitWithExceededLimit.nombre}" tiene un límite de ${maxKits} unidades por transacción, pero hay ${kitWithExceededLimit.cantidad} en el carrito.`);
+          showAppWarning(
+            `Límite de venta excedido: El kit "${kitWithExceededLimit.nombre}" tiene un límite de ${maxKits} unidades por transacción, pero hay ${kitWithExceededLimit.cantidad} en el carrito.`
+          );
           setShowPaymentModal(false);
           return false;
         }
@@ -77,7 +92,9 @@ const useSalesCheckout = ({
         const paymentsPayload = buildPaymentsPayload(paymentData);
         const saleDate = new Date().toISOString();
         const cleanNotes = paymentData?.notes?.trim() || null;
-        const currentCartItems = Array.isArray(productosRef?.current) ? productosRef.current : productos;
+        const currentCartItems = Array.isArray(productosRef?.current)
+          ? productosRef.current
+          : productos;
 
         // 1. TRANSACCIÓN PRINCIPAL EN BD
         let saleId;
@@ -97,7 +114,9 @@ const useSalesCheckout = ({
           });
         } catch (error) {
           console.error("Error crítico al registrar venta:", error);
-          showAppWarning(error?.message || "Error al registrar la venta en la base de datos.");
+          showAppWarning(
+            error?.message || "Error al registrar la venta en la base de datos."
+          );
           return false;
         }
 
@@ -117,7 +136,10 @@ const useSalesCheckout = ({
           rewardRedemptionResult = benefits.rewardRedemptionResult;
           rewardPointsResult = benefits.rewardPointsResult;
         } catch (error) {
-          console.error("Venta exitosa, pero falló procesar beneficios:", error);
+          console.error(
+            "Venta exitosa, pero falló procesar beneficios:",
+            error
+          );
         }
 
         // 3. IMPRESIÓN DEL TICKET (Protegido para no romper la venta)
@@ -141,7 +163,9 @@ const useSalesCheckout = ({
           }
         } catch (error) {
           console.error("Venta exitosa, pero falló la impresión:", error);
-          showAppWarning("Venta registrada con éxito, pero hubo un problema al imprimir el ticket.");
+          showAppWarning(
+            "Venta registrada con éxito, pero hubo un problema al imprimir el ticket."
+          );
         }
 
         // 4. LIMPIEZA VISUAL SIMULTÁNEA (Elimina el parpadeo)
@@ -163,7 +187,6 @@ const useSalesCheckout = ({
         setSaleSuccessData(saleSuccessPayload);
 
         return true;
-
       } catch (error) {
         console.error("Error general inesperado en flujo de checkout:", error);
         showAppWarning("Ocurrió un error inesperado.");

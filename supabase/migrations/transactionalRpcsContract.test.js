@@ -14,6 +14,30 @@ const MIGRATION = join(
 const rawSql = readFileSync(MIGRATION, "utf8");
 const normalizedSql = rawSql.replace(/\s+/g, " ");
 
+const FIX_SEARCH_PATH_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20260923130000_fix_create_sale_transaction_search_path.sql"
+);
+
+const fixedRawSql = readFileSync(FIX_SEARCH_PATH_MIGRATION, "utf8");
+const fixedNormSql = fixedRawSql.replace(/\s+/g, " ");
+
+const FIX_CANCEL_RETURN_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20260923140000_fix_cancel_and_return_search_path.sql"
+);
+
+const fixedCancelRawSql = readFileSync(FIX_CANCEL_RETURN_MIGRATION, "utf8");
+const fixedCancelNormSql = fixedCancelRawSql.replace(/\s+/g, " ");
+
+const COST_SNAPSHOT_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql"
+);
+
+const costSnapshotRawSql = readFileSync(COST_SNAPSHOT_MIGRATION, "utf8");
+const costSnapshotNormSql = costSnapshotRawSql.replace(/\s+/g, " ");
+
 const FUNCTION_PATTERN =
   /CREATE OR REPLACE FUNCTION public\.(\w+)\s*\(([^)]*)\)\s*RETURNS\s+([a-z ]+?)\s+LANGUAGE plpgsql SECURITY DEFINER/gi;
 
@@ -27,17 +51,26 @@ const parseParams = (paramsString) =>
       return { name, type: typeParts.join(" ") };
     });
 
-const parseFunctions = () =>
-  [...normalizedSql.matchAll(FUNCTION_PATTERN)].map((match) => ({
+const parseFunctions = (sql) =>
+  [...sql.matchAll(FUNCTION_PATTERN)].map((match) => ({
     name: match[1],
     params: parseParams(match[2]),
     returns: match[3].trim(),
   }));
 
-const functions = parseFunctions();
+const functions = parseFunctions(normalizedSql);
+
+const costSnapshotFunctions = parseFunctions(costSnapshotNormSql);
 
 const findByParams = (name, paramNames) =>
   functions.find(
+    (fn) =>
+      fn.name === name &&
+      fn.params.map((param) => param.name).join(",") === paramNames.join(",")
+  );
+
+const findByParamsIn = (list, name, paramNames) =>
+  list.find(
     (fn) =>
       fn.name === name &&
       fn.params.map((param) => param.name).join(",") === paramNames.join(",")
@@ -51,8 +84,19 @@ const hasRevoke = (name, paramsString, role) =>
 const SALE_PARAMS =
   "p_branch_id uuid, p_user_id uuid, p_customer_id uuid, p_subtotal numeric, p_tax numeric, p_total numeric, p_sale_date timestamp with time zone, p_products jsonb, p_payments jsonb, p_client_sale_token uuid, p_notes text";
 
+const SALE_PARAMS_9 =
+  "p_branch_id uuid, p_user_id uuid, p_customer_id uuid, p_subtotal numeric, p_tax numeric, p_total numeric, p_sale_date timestamp with time zone, p_products jsonb, p_payments jsonb";
+
+const SALE_PARAMS_10 = `${SALE_PARAMS_9}, p_client_sale_token uuid`;
+
 const TRANSFER_PARAMS =
   "p_from_branch_id uuid, p_to_branch_id uuid, p_user_id uuid, p_notes text, p_folio text, p_items jsonb";
+
+const CANCEL_PARAMS =
+  "p_sale_id uuid, p_user_id uuid, p_branch_id uuid, p_cancel_reason text, p_refund_method_uuid uuid";
+
+const RETURN_PARAMS =
+  "p_sale_id uuid, p_user_id uuid, p_branch_id uuid, p_return_reason text, p_refund_method_id uuid, p_items jsonb";
 
 describe("contrato SQL de RPCs transaccionales", () => {
   describe("create_sale_transaction", () => {
@@ -133,6 +177,223 @@ describe("contrato SQL de RPCs transaccionales", () => {
       expect(rpcName).toBe("create_sale_transaction");
       expect(Object.keys(params).sort()).toEqual([...sqlParamNames].sort());
     });
+  });
+
+  describe("endurecimiento de search_path de las tres sobrecargas", () => {
+    const overloads = [
+      {
+        label: "9 parámetros",
+        params: SALE_PARAMS_9,
+      },
+      {
+        label: "10 parámetros",
+        params: SALE_PARAMS_10,
+      },
+      {
+        label: "11 parámetros",
+        params: `${SALE_PARAMS_10}, p_notes text DEFAULT NULL::text`,
+      },
+    ];
+
+    it.each(overloads)(
+      "$label — fija SET search_path TO 'public'",
+      ({ params }) => {
+        expect(
+          fixedNormSql.includes(
+            `FUNCTION public.create_sale_transaction(${params}) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'`
+          )
+        ).toBe(true);
+      }
+    );
+
+    it.each(overloads)(
+      "$label — revoca de anon/public y otorga EXECUTE a authenticated y service_role",
+      ({ params }) => {
+        const grantParams = params.replace(/\s+DEFAULT\s+.*$/i, "");
+
+        expect(
+          fixedRawSql.includes(
+            `REVOKE ALL ON FUNCTION public.create_sale_transaction(${grantParams}) FROM public;`
+          )
+        ).toBe(true);
+        expect(
+          fixedRawSql.includes(
+            `REVOKE ALL ON FUNCTION public.create_sale_transaction(${grantParams}) FROM anon;`
+          )
+        ).toBe(true);
+        expect(
+          fixedRawSql.includes(
+            `GRANT EXECUTE ON FUNCTION public.create_sale_transaction(${grantParams}) TO authenticated;`
+          )
+        ).toBe(true);
+        expect(
+          fixedRawSql.includes(
+            `GRANT EXECUTE ON FUNCTION public.create_sale_transaction(${grantParams}) TO service_role;`
+          )
+        ).toBe(true);
+      }
+    );
+  });
+
+  describe("estabilidad de la definicion vigente de create_sale_transaction", () => {
+    // La migracion de snapshot de costo (20261002124615) es la ultima que
+    // redefinio las tres sobrecargas: es la version que el remoto ejecuta hoy.
+    // Se fija aqui para que una futura redefinition no pueda cambiar la firma
+    // (el cliente envia los parametros por nombre) ni perder el hardening.
+    const currentOverloads = [
+      {
+        label: "9 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+        ],
+        sigParams: SALE_PARAMS_9,
+        grantParams: SALE_PARAMS_9,
+      },
+      {
+        label: "10 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+          "p_client_sale_token",
+        ],
+        sigParams: SALE_PARAMS_10,
+        grantParams: SALE_PARAMS_10,
+      },
+      {
+        label: "11 parámetros",
+        paramNames: [
+          "p_branch_id",
+          "p_user_id",
+          "p_customer_id",
+          "p_subtotal",
+          "p_tax",
+          "p_total",
+          "p_sale_date",
+          "p_products",
+          "p_payments",
+          "p_client_sale_token",
+          "p_notes",
+        ],
+        sigParams: `${SALE_PARAMS_10}, p_notes text DEFAULT NULL::text`,
+        grantParams: SALE_PARAMS,
+      },
+    ];
+
+    it.each(currentOverloads)(
+      "$label — la versión vigente conserva firma y retorno de la RPC endurecida",
+      ({ paramNames }) => {
+        const baseline = findByParams("create_sale_transaction", paramNames);
+        const current = findByParamsIn(
+          costSnapshotFunctions,
+          "create_sale_transaction",
+          paramNames
+        );
+
+        expect(
+          baseline,
+          `falta la sobrecarga base de ${paramNames.length} parámetros`
+        ).toBeDefined();
+        expect(
+          current,
+          "la migración vigente no redefine la sobrecarga"
+        ).toBeDefined();
+        expect(current.returns).toBe("uuid");
+        expect(current.params).toEqual(baseline.params);
+      }
+    );
+
+    it.each(currentOverloads)(
+      "$label — la versión vigente mantiene el hardening y los grants mínimos",
+      ({ sigParams, grantParams }) => {
+        const signature = `public.create_sale_transaction(${sigParams})`;
+        const fn = `public.create_sale_transaction(${grantParams})`;
+
+        expect(
+          costSnapshotNormSql.includes(
+            `FUNCTION ${signature} RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'`
+          )
+        ).toBe(true);
+        expect(costSnapshotRawSql).toContain(
+          `REVOKE ALL ON FUNCTION ${fn} FROM public;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `REVOKE ALL ON FUNCTION ${fn} FROM anon;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `GRANT EXECUTE ON FUNCTION ${fn} TO authenticated;`
+        );
+        expect(costSnapshotRawSql).toContain(
+          `GRANT EXECUTE ON FUNCTION ${fn} TO service_role;`
+        );
+      }
+    );
+  });
+
+  describe("endurecimiento de search_path de cancel y devolucion parcial", () => {
+    const hardened = [
+      {
+        label: "cancel_sale_transaction",
+        name: "cancel_sale_transaction",
+        params: CANCEL_PARAMS,
+      },
+      {
+        label: "create_partial_return_transaction",
+        name: "create_partial_return_transaction",
+        params: RETURN_PARAMS,
+      },
+    ];
+
+    it.each(hardened)(
+      "$label — fija SET search_path TO 'public'",
+      ({ name, params }) => {
+        expect(
+          fixedCancelNormSql.includes(
+            `FUNCTION public.${name}(${params}) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'`
+          )
+        ).toBe(true);
+      }
+    );
+
+    it.each(hardened)(
+      "$label — revoca de anon/public y otorga EXECUTE a authenticated y service_role",
+      ({ name, params }) => {
+        expect(
+          fixedCancelRawSql.includes(
+            `REVOKE ALL ON FUNCTION public.${name}(${params}) FROM public;`
+          )
+        ).toBe(true);
+        expect(
+          fixedCancelRawSql.includes(
+            `REVOKE ALL ON FUNCTION public.${name}(${params}) FROM anon;`
+          )
+        ).toBe(true);
+        expect(
+          fixedCancelRawSql.includes(
+            `GRANT EXECUTE ON FUNCTION public.${name}(${params}) TO authenticated;`
+          )
+        ).toBe(true);
+        expect(
+          fixedCancelRawSql.includes(
+            `GRANT EXECUTE ON FUNCTION public.${name}(${params}) TO service_role;`
+          )
+        ).toBe(true);
+      }
+    );
   });
 
   describe("create_transfer_order", () => {

@@ -30,19 +30,34 @@ export const useProductsNew = () => {
       }
     };
     loadSatClaves();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const { appModal, closeAppModal, showAppAlert } = useAppModal();
 
   const {
-    form, touched, usesInventory, ganancia, errors, isFormValid,
-    updateField, markTouched, touchAllRelevantFields, resetForm, showError
+    form,
+    touched,
+    usesInventory,
+    ganancia,
+    errors,
+    isFormValid,
+    updateField,
+    markTouched,
+    touchAllRelevantFields,
+    resetForm,
+    showError,
   } = useProductFormValidation(getProductByCodigo);
 
   const getFriendlySaveError = (errorMessage = "") => {
     const message = String(errorMessage || "").toLowerCase();
-    if (message.includes("products_barcode_key") || message.includes("duplicate key value") || message.includes("barcode")) {
+    if (
+      message.includes("products_barcode_key") ||
+      message.includes("duplicate key value") ||
+      message.includes("barcode")
+    ) {
       return "Ya existe un producto registrado con ese codigo de barras.\n\nAunque el producto haya sido retirado del sistema, su codigo no puede reutilizarse.\nPor favor utiliza otro codigo de barras.";
     }
     return errorMessage || "Error al guardar el producto.";
@@ -51,12 +66,12 @@ export const useProductsNew = () => {
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     touchAllRelevantFields();
-    
+
     if (!isFormValid) {
       focusFirstInvalidField();
       return;
     }
-    
+
     try {
       setSaving(true);
       const payload = {
@@ -80,7 +95,10 @@ export const useProductsNew = () => {
         commission_enabled: !!form.commission_enabled,
         commission_type: form.commission_type || "percent",
         commission_value: parseFloat(form.commission_value) || 0,
-        commission_percent: form.commission_type === "percent" ? (parseFloat(form.commission_value) || 0) : 0,
+        commission_percent:
+          form.commission_type === "percent"
+            ? parseFloat(form.commission_value) || 0
+            : 0,
       };
 
       const result = await addProduct(payload);
@@ -113,7 +131,9 @@ export const useProductsNew = () => {
 
       resetForm();
       setTimeout(() => {
-        const firstInput = bodyRef.current?.querySelector('input[name="codigo"]');
+        const firstInput = bodyRef.current?.querySelector(
+          'input[name="codigo"]'
+        );
         if (firstInput) firstInput.focus();
       }, 0);
     } finally {
@@ -122,19 +142,44 @@ export const useProductsNew = () => {
   };
 
   const {
-    bodyRef, submitArmed, setSubmitArmed, focusFirstInvalidField,
-    preventNumberScrollChange, preventNumberArrows, handleContentKeyDown
+    bodyRef,
+    submitArmed,
+    setSubmitArmed,
+    focusFirstInvalidField,
+    preventNumberScrollChange,
+    preventNumberArrows,
+    handleContentKeyDown,
   } = useProductDOMFocus({
-    isFormValid, errors, usesInventory, form,
+    isFormValid,
+    errors,
+    usesInventory,
+    form,
     appModalIsOpen: appModal.isOpen,
-    onSubmit: handleSubmit
+    onSubmit: handleSubmit,
   });
 
   return {
-    bodyRef, form, errors, touched, saving, appModal, satClaves,
-    loadingSatClaves, activeDepartments, ganancia, usesInventory,
-    isFormValid, submitArmed, setSubmitArmed, updateField, markTouched,
-    handleSubmit, closeAppModal, handleContentKeyDown,
-    preventNumberScrollChange, preventNumberArrows, showError
+    bodyRef,
+    form,
+    errors,
+    touched,
+    saving,
+    appModal,
+    satClaves,
+    loadingSatClaves,
+    activeDepartments,
+    ganancia,
+    usesInventory,
+    isFormValid,
+    submitArmed,
+    setSubmitArmed,
+    updateField,
+    markTouched,
+    handleSubmit,
+    closeAppModal,
+    handleContentKeyDown,
+    preventNumberScrollChange,
+    preventNumberArrows,
+    showError,
   };
 };

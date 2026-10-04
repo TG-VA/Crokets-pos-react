@@ -1,6 +1,10 @@
 import React from "react";
 import styles from "../CashComponents.module.css";
-import { formatCurrency, formatDynamicDate, formatMovementType } from "../../utils/cashReportFormatters";
+import {
+  formatCurrency,
+  formatDynamicDate,
+  formatMovementType,
+} from "../../utils/cashReportFormatters";
 import { usePagination } from "../../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../../components/PaginationBar/PaginationBar";
 
@@ -9,17 +13,18 @@ import ExitIcon from "../../../../../../assets/icons/exitIcon.svg";
 
 const ITEMS_PER_PAGE = 5;
 
-const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, totalManualOut = 0 }) => {
-  const {
-    currentPage,
-    totalPages,
-    pageItems,
-    handlePageChange,
-  } = usePagination({
-    totalItems: movements.length,
-    defaultPageSize: ITEMS_PER_PAGE,
-    pageSizeOptions: [ITEMS_PER_PAGE],
-  });
+const DetailMovementsSection = ({
+  movements = [],
+  branchTz,
+  totalManualIn = 0,
+  totalManualOut = 0,
+}) => {
+  const { currentPage, totalPages, pageItems, handlePageChange } =
+    usePagination({
+      totalItems: movements.length,
+      defaultPageSize: ITEMS_PER_PAGE,
+      pageSizeOptions: [ITEMS_PER_PAGE],
+    });
 
   if (!movements || movements.length === 0) return null;
 
@@ -31,7 +36,8 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
     <div className={styles.modalSection}>
       <h3 className={styles.modalSectionTitle}>Movimientos Registrados</h3>
       <p className={styles.modalSectionExplanation}>
-        Registro exclusivo de entradas/ingresos y retiros/salidas de efectivo fuera del flujo de ventas.
+        Registro exclusivo de entradas/ingresos y retiros/salidas de efectivo
+        fuera del flujo de ventas.
       </p>
       <div className={styles.tableResponsive}>
         <table className={styles.dataTable}>
@@ -67,7 +73,13 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
                       {typeInfo.label}
                     </span>
                   </td>
-                  <td className={typeInfo.isPositive ? styles.textSuccess : styles.textDanger}>
+                  <td
+                    className={
+                      typeInfo.isPositive
+                        ? styles.textSuccess
+                        : styles.textDanger
+                    }
+                  >
                     {typeInfo.isPositive ? "+" : "-"}
                     {formatCurrency(mov.amount)}
                   </td>
@@ -82,12 +94,17 @@ const DetailMovementsSection = ({ movements = [], branchTz, totalManualIn = 0, t
             <tr className={styles.tableFooterTotal}>
               <td className={styles.cellExtraBold}>Balance Neto</td>
               <td></td>
-              <td className={netBalance >= 0 ? styles.textSuccess : styles.textDanger}>
+              <td
+                className={
+                  netBalance >= 0 ? styles.textSuccess : styles.textDanger
+                }
+              >
                 {netBalance >= 0 ? "+" : ""}
                 {formatCurrency(netBalance)}
               </td>
               <td className={styles.textExplanation}>
-                (+{formatCurrency(totalManualIn)} entradas / -{formatCurrency(totalManualOut)} retiros)
+                (+{formatCurrency(totalManualIn)} entradas / -
+                {formatCurrency(totalManualOut)} retiros)
               </td>
             </tr>
           </tfoot>

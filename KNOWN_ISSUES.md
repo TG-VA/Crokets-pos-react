@@ -12,6 +12,7 @@ Severidad: **Crítico** (bloquea funcionalidad o expone datos) / **Alto** (riesg
 ## Crítico
 
 ### 1. El backend local no arranca en producción
+
 **Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 `electron/main.js` llama a `http://localhost:3000/login` (y presumiblemente otros endpoints) para
@@ -41,6 +42,7 @@ exponer en el instalador), ni resolver el ABI de `sqlite3` contra el runtime de 
 `electron/main.js` y el script `npm run dev` se conservan sin cambios para desarrollo local.
 
 ### 2. Contraseña del usuario admin en texto plano
+
 **Estado:** resuelto (14 sep 2026) — rama `fix/production-backend`.
 
 En `src/backend/bd.js`, el usuario `admin` local se crea con contraseña `'1234'` sin hash
@@ -61,6 +63,7 @@ devuelve `needsUpgrade` y el servidor re-hashea). Cubierto por `src/backend/pass
 sesión no se implementó (queda como mejora futura).
 
 ### 43. `useProductsList` con doble declaración rompía el build de producción
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `src/components/.../ProductsList/hooks/useProductsList.js` contenía **dos** bloques de
@@ -82,18 +85,19 @@ instalador. Detectado al verificar esta rama.
 ## Alto
 
 ### 3. Componentes "dios" (god components) que violan SRP
-**Estado:** abierto, documentado en `CODE_STANDARDS.md`.
+
+**Estado:** **100% resuelto (23 sep 2026)** — todos los componentes listados quedaron modularizados; ver tabla y bitácora.
 
 Varios archivos concentran demasiada responsabilidad (UI + lógica de negocio + llamadas a datos)
 en un solo componente:
 
-| Archivo | Líneas | Nota |
-|---|---|---|
-| `src/pages/CashCut/CashCut.jsx` | ~372 | orquesta hooks + vistas; refactor #3 en curso |
-| `src/utils/ticket/` | ~1710 | `ticketBuilder` descompuesto en 8 módulos puros + orquestador |
-| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx` | 280 | refactor Fase 3 completado (servicios + hook + vistas) |
-| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx` | 640 | formulario + validación + datos; PR posterior `refactor/products-modify` |
-| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 345 | no requiere refactor; fuera de alcance |
+| Archivo                                                                                    | Líneas | Nota                                                                                                                 |
+| ------------------------------------------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| `src/pages/CashCut/CashCut.jsx`                                                            | ~372   | orquesta hooks + vistas; refactor #3 en curso                                                                        |
+| `src/utils/ticket/`                                                                        | ~1710  | `ticketBuilder` descompuesto en 8 módulos puros + orquestador                                                        |
+| `src/components/CustomersComponents/Modals/RewardModal/RewardModal.jsx`                    | 280    | refactor Fase 3 completado (servicios + hook + vistas)                                                               |
+| `src/components/ProductsComponents/PageProducts/ProductsModify/ProductsModify.jsx`         | 177    | refactor completado (21 sep 2026, rama `refactor/products-modify`)                                                   |
+| `src/components/ProductsComponents/PageProducts/ProductsPromotions/ProductsPromotions.jsx` | 113    | refactor completado (23 sep 2026, rama `refactor/products-promotions-modularization`; reducido de 346 a <120 líneas) |
 
 **Recomendación:** ver la guía de refactor incremental en `CODE_STANDARDS.md` (sección "Cómo
 dividir un componente grande"). No requiere reescritura de golpe.
@@ -182,11 +186,38 @@ realtime; la auditoría posterior eliminó el doble `fetchSession` del realtime 
 no-flicker same-session vía `resetSalesOnSessionChange`, ver #47). Sigue abierto #45 (llave de
 agrupación de pagos por método en el cálculo del corte — requiere decisión de negocio).
 
+**Actualización (21 sep 2026) — refactor de `ProductsModify.jsx`:** rama `refactor/products-modify`. El
+formulario de modificación se descompuso en dos servicios dentro de `services/`:
+`productModifyCalculationService.js` (puro, sin I/O: `calculateGanancia`, `roundMoney`/`roundPercent`,
+`getDiscountPriceFromPercent`/`getDiscountPercentFromPrice`, `validateProductModifyForm` y los payloads
+`buildProductPayload`/`buildDiscountPayload`) y `productModifyDataService.js` (DIP: `loadProductDiscountData`
+y `saveProductModifications`, recibe los callbacks del contexto `useProducts` y no importa `supabase`).
+Se extrajeron seis vistas presentacionales a `components/` (`ProductModifyLookup`,
+`ProductModifyGeneralSection`, `ProductModifyPricingSection`, `ProductModifyInventorySection`,
+`ProductModifyDiscountSection`, `ProductModifyFooter`) que comparten el mismo `ProductsModify.module.css`
+y reciben `getFieldClassName`/`renderError` como props. `ProductsModify.jsx` bajó de **640 a 177 líneas**
+y quedó como orquestador; los hooks delegan la validación/cálculos al servicio puro y la persistencia al
+servicio de datos. Tests: **48 casos nuevos** (`productModifyCalculationService.test.js` 39 +
+`productModifyDataService.test.js` 9). Sin cambios en `useProductModifyDOM.js` ni en el CSS module.
+
+**Actualización (23 sep 2026) — refactor de `ProductsPromotions.jsx`:** rama
+`refactor/products-promotions-modularization`. El orquestador de Promociones y Kits se descompuso en
+cinco vistas presentacionales en `components/` (`KitFormSection`, `KitSelectedProductsSection`,
+`KitActionsSection`, `KitRegisteredListSection` y `KitProductSearchModal`, este último extraído del
+JSX inline de las líneas 271-343) que comparten el mismo `ProductsPromotions.module.css` y reciben
+únicamente los props que consumen (ISP). `ProductsPromotions.jsx` bajó de **346 a 113 líneas**
+(<120) y quedó como orquestador declarativo: consume `useProductsPromotions()` y ensambla header +
+tarjetas + modales sin lógica de negocio ni imports a `supabase` (DIP). No se alteraron estilos,
+hooks de negocio (`useProductsPromotions.js`, `useKitProductSearch.js`), ni el módulo CSS. Con esto
+cierra el último componente de la tabla del ítem #3: **100% resuelto**.
+
 ### 4. Emojis pendientes de limpiar en el código fuente
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 Más de 20 archivos `.jsx`/`.js` contienen emojis o símbolos Unicode usados como iconos o en logs
 de consola. Ejemplos notables:
+
 - `src/pages/Settings/Settings.jsx` — emojis distintos usados como iconos de categoría
 - `src/components/SalesComponents/SalesProductsTable/SalesProductsTable.jsx` — indicadores de
   color/estado con emoji
@@ -205,9 +236,8 @@ solid — `brush`, `ruler`, `barcode`, `display`, `database`, `rotate`, `broom`,
 registraron en `ICONS.md`. Verificado: `rg` no encuentra emojis en `src/`.
 
 ### 5. Transacciones Atómicas (RPC) faltantes en Supabase
-**Estado:** abierto — parcialmente resuelto.
 
-Actualmente, módulos críticos como Importación Masiva (`productsImportService.js`) y Promociones/Kits (`productKitsService.js`) utilizan múltiples llamadas HTTP independientes con rollbacks manuales desde el frontend (Transacciones Compensatorias).
+**Estado:** resuelto (23 sep 2026) — rama `feature/atomic-products-import-rpc`.
 
 **Actualización (24 ago 2026):** se confirmó por introspección directa del schema (ver `SCHEMA.md`)
 que **ventas y transferencias entre sucursales ya cuentan con RPC atómica**
@@ -216,14 +246,38 @@ que **ventas y transferencias entre sucursales ya cuentan con RPC atómica**
 equivalente para Importación masiva ni para Kits de Productos — el problema descrito sigue vigente
 específicamente para esos dos módulos.
 
-**Impacto:** existe una ventana de riesgo de concurrencia donde un fallo de red puede dejar
-registros huérfanos en Importación o Kits, a pesar de los bloques `try/catch`.
+**Resolución (23 sep 2026) — Kits:** migración `20260923150000_create_product_kits_rpcs.sql`
+implementa RPCs atómicas (PL/pgSQL, `SECURITY DEFINER`, `SET search_path TO 'public'`) para el ciclo
+de vida de Kits, reemplazando los rollbacks compensatorios de `productKitsService.js`:
+`create_kit_transaction` (retorna `uuid`), `update_kit_transaction` (retorna `boolean`) y
+`delete_kit_transaction` (retorna `boolean`; soft-delete del producto + kit). Cada RPC inserta
+producto, kit e items, o revierte con `raise exception` tipado — ACID nativo de PostgreSQL en lugar
+de transacciones compensatorias. El cliente (`createNewKitTransaction`, `updateKitTransaction`,
+`softDeleteKitTransaction`) ahora invoca `supabase.rpc(...)` con payloads tipados; quedan eliminados
+los bloques `try/catch` de rollback y los `console.error("ALERTA CRÍTICA...")` del frontend. El
+contrato SQL cliente↔BD se verifica en `supabase/migrations/productKitsRpcsContract.test.js`.
+Aplicada al remoto el 23 sep 2026 con `supabase db push` (verificado en `supabase migration list` y
+por introspección: ACL de las 3 funciones sin `anon`/`public`).
 
-**Recomendación:** migrar la lógica de inserción masiva de Importación y Kits a Stored Procedures
-(`plpgsql` / RPC) en Supabase, siguiendo el mismo patrón ya usado en `create_sale_transaction` /
-`create_transfer_order`.
+**Resolución (23 sep 2026) — Importación Masiva:** migración
+`20260923160000_create_products_import_rpc.sql` implementa la RPC atómica
+`import_products_transaction(p_rows jsonb, p_branch_id uuid, p_all_branches jsonb) RETURNS jsonb`
+(PL/pgSQL, `SECURITY DEFINER`, `SET search_path TO 'public'`) que inserta productos y su
+`branch_inventory` en una sola transacción de PostgreSQL. Por cada fila inserta el producto y, si
+`tracks_inventory`, el inventario de la sucursal actual (datos reales) y, para productos globales,
+una fila inicial (stock 0) por cada sucursal de `p_all_branches`; cualquier error revierte todo con
+`raise exception` — ACID nativo en lugar de las transacciones compensatorias del frontend.
+`productsImportService.js` ya no hace `.insert()` + rollback manual: invoca
+`supabase.rpc("import_products_transaction", ...)` y devuelve los conteos
+(`created_products_count` / `created_inventories_count`); se eliminaron los bloques `try/catch` de
+rollback y el `console.error("ALERTA CRÍTICA...")`. El contrato SQL cliente↔BD se verifica en
+`supabase/migrations/productsImportRpcContract.test.js`. Con esto queda resuelto el ítem #5 completo
+(Kits `20260923150000` + Importación `20260923160000`). **Aplicadas al remoto el 23 sep 2026 con
+`supabase db push`** (verificado en `supabase migration list` y por introspección: ACL de las 4
+funciones sin `anon`/`public`).
 
 ### 13. Roles de Supabase sin diferenciación real de permisos
+
 **Estado:** decidido (17 sep 2026) — no se habilita RLS ni se diferencia admin vs cajero; riesgo aceptado y documentado en `PERMISSIONS.md`.
 
 El sistema de roles en Supabase (`users → roles → role_permissions → permissions`) existe y está
@@ -260,6 +314,7 @@ a `anon`/`PUBLIC` en las RPCs transaccionales y fija el actor desde `auth.uid()`
 decisión (no como cambio de permisos); ver #38 y #10.
 
 ### 18. RPC de comisiones pagaba comisión por ventas canceladas (filtro `'canceled'`)
+
 **Estado:** resuelto — migración `supabase/migrations/20260910120500_fix_commissions_status_filter.sql`,
 rama `perf/report-optimization`, 10 de septiembre de 2026.
 
@@ -280,11 +335,99 @@ tickets `'cancelled'`/`'cancelada'`. El test contract en
 `commissionsReportService.test.js` cubre que el filtro de canceladas queda delegado al RPC (sin
 `p_status` en cliente).
 
+### 51. Propagación de comisión de departamento no aplicaba a productos con comisión individual propia
+
+**Estado:** resuelto — rama `fix/department-commission-full-propagation`, 21 de septiembre de 2026.
+
+Al actualizar la comisión de un departamento con propagación confirmada (`data.propagateToProducts`),
+`updateDepartment` (`src/services/products/departmentService.js`) filtraba los `products` a actualizar
+por los valores de comisión que el departamento tenía ANTES de la actualización:
+
+```js
+query = query
+  .eq("commission_enabled", !!oldDept.commission_enabled)
+  .eq("commission_type", oldDept.commission_type || "percent")
+  .eq("commission_value", Number(oldDept.commission_value || 0));
+```
+
+Ese filtro se basaba en la comisión previa del departamento, por lo que **todo producto cuya comisión
+individual difería de la anterior del departamento** (ajustada manualmente, exenta con
+`commission_enabled=false`, con otro tipo o valor) quedaba fuera de la actualización masiva y
+conservaba valores obsoletos tras la propagación.
+
+**Regla de negocio corregida:**
+
+- Al confirmar la propagación, **todos** los productos con `department_id = id` adoptan los nuevos
+  valores (`commission_enabled`, `commission_type`, `commission_value`, `commission_percent`).
+- Si un producto se modifica individualmente después, esa decisión individual manda **hasta la próxima
+  propagación** del departamento, que vuelve a imponer la comisión del departamento sobre los productos
+  del departamento.
+
+**Resolución (21 sep 2026):** se eliminó el `select` previo de la comisión del departamento (que
+quedaba como dead code) y el bloque `if (oldDept)`. La actualización masiva quedó limpia:
+`supabase.from("products").update(payload).eq("department_id", id)` — un `.eq` único, sin filtros por
+valores anteriores. Cobertura nueva en `src/services/products/departmentService.test.js` (11 casos):
+propagación a todos los productos sin filtrar por valores previos (verifica que el único `.eq` sobre
+`products` es `department_id`), `propagateToProducts=false` no toca la tabla `products`, defaults con
+campos de comisión ausentes, `commission_percent` en 0 para tipo `amount` y propagación de errores
+(actualización del departamento, actualización masiva y excepciones inesperadas).
+
+### 52. Comisiones históricas de ventas mutaban retroactivamente por recálculo en vivo contra el catálogo
+
+**Estado:** resuelto — migración `supabase/migrations/20260921170000_freeze_sale_details_commissions.sql`, rama `fix/sale-details-commission-snapshot`, 21 de septiembre de 2026.
+
+La RPC `get_commissions_report_data` recalculaba las comisiones devengadas al vuelo mediante un `JOIN products` y `LEFT JOIN departments` contra el catálogo vivo. Si un producto o departamento cambiaba o desactivaba su comisión después de haberse cobrado una venta (p. ej., desmarcar "Genera comisión" en _Nupec Adulto 2kg_), todas las ventas históricas de ese producto pasaban retroactivamente a `commission_amount = 0` y `has_commission = false`, desapareciendo del reporte de comisiones de los cajeros.
+
+**Principio corregido (Inmutabilidad histórica y snapshot en la venta):**
+
+- En un POS, la comisión ganada por el cajero al momento de la venta es un hecho histórico inmutable.
+- Se agregaron 4 columnas de snapshot a `public.sale_details`: `commission_enabled`, `commission_type`, `commission_value` y `commission_amount`.
+- La RPC `create_sale_transaction` (sobrecarga con `p_notes`) consulta la configuración vigente en el instante de la transacción (regla #50) y congela estos valores en la inserción de cada partida en `sale_details`.
+- La migración incluye un backfill histórico para ventas existentes con desactivación y reactivación segura de `trg_prevent_edit_sale_details`.
+- La RPC `get_commissions_report_data` se desacopló del catálogo vivo y ahora lee directamente las columnas congeladas de `sale_details`.
+- Cobertura de tests: contrato SQL en `freezeCommissionsSnapshotContract.test.js` y suites de cálculo en `commissionsCalculationService.test.js` y `commissionsReportService.test.js`.
+
+### 62. Valuación de inventario con Costo Promedio Ponderado (CPP) y congelamiento de costo histórico en ventas
+
+**Estado:** **resuelto en sus tres fases (2 oct 2026).** Fase 1 desplegada: migración `supabase/migrations/20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`, rama `feature/costo-promedio-ponderado`, commit `b96f215`. Fase 2: `feature/cpp-fase-2-servicios-y-calculo` (servicios y cálculo del CPP móvil). Fase 3: `feature/cpp-fase-3-ui-y-rentabilidad` (interfaz del alta y consumo del snapshot en el reporte de rentabilidad).
+
+Es el gemelo de #52 para el costo: allí el historial se mutaba por las comisiones, aquí por el costo.
+
+**Problema resuelto en la Fase 1.** El sistema mantenía un único costo estático (`cost_price`) en el catálogo y por sucursal. Al ingresar un lote con costo distinto (una promoción de compra, un reprecio), actualizar el costo en el catálogo **sobreescribía el costo de todo el inventario previo** y mutaba retroactivamente el margen de utilidad de las ventas ya registradas. El reporte de rentabilidad (`profitabilityReportCalculationService.js`) resolvía el costo contra el catálogo vivo, de modo que un cambio de costo posterior a una venta reescribía el margen histórico de esa venta y distorsionaba los estados financieros. Además, no existía forma de saber a qué costo entró cada lote: el kardex (`inventory_movements`) no registraba valor de adquisición.
+
+**Qué agrega la Fase 1 (ya desplegada):**
+
+- `inventory_movements.unit_cost numeric NULL` y `inventory_movements.total_cost numeric NULL`: costo de adquisición de la entrada y su importe. Quedan en `NULL` en esta fase; su llenado en las entradas corresponde al flujo de compras de la Fase 2.
+- `sale_details.cost_price numeric NOT NULL DEFAULT 0`: snapshot del costo unitario vigente al momento de la venta.
+- Las tres sobrecargas de `create_sale_transaction` (9, 10 y 11 parámetros) se redefinieron para resolver el costo **en el servidor** con `coalesce(branch_inventory.cost_price, products.cost_price)` y congelarlo en el `INSERT` de la partida. Los cuerpos se preservaron: la única adición es `v_cost_price`, su resolución y la columna del `INSERT`; comisiones devengadas, validación de stock y kits quedaron intactos.
+- El snapshot no es falsificable desde el cliente: la RPC ignora cualquier `cost_price` que llegue en `p_products`.
+- La inmabilidad se hereda sin cambios: `trg_prevent_edit_sale_details` es `BEFORE INSERT OR DELETE OR UPDATE` sobre `sale_details`, blanket a nivel tabla, así que cubre la columna nueva.
+- Hardening conservado en las tres sobrecargas: `SECURITY DEFINER`, `SET search_path TO 'public'`, `REVOKE` a `anon` **y** `public`, `GRANT` a `authenticated` y `service_role`.
+
+**Decisiones de auditoría:**
+
+- **R1 — Los kits calculan su rentabilidad por suma de sus componentes.** `create_kit_transaction` inserta kits con `cost_price = 0` hardcodeado y `tracks_inventory = false`, sin fila en `branch_inventory`. Por lo tanto `sale_details.cost_price` de una línea de kit es **0**, mientras que el reporte de rentabilidad actual sí suma el costo de cada componente en `product_kit_items` (`profitabilityReportCalculationService.js`). La Fase 3 **no** debe cambiar a `sd.cost_price` de forma indiscriminada: hacerlo dejaría los kits con costo 0 y margen cercano al 100 %, inflado y falso, y además `hasCostAssigned` (que depende de `unitCost > 0`) passaría a `false` sin que el error fuera visible. La decisión vigente es mantener la rama de kits por componentes.
+- **R2 — Protección estricta de no-negatividad del costo.** El costo se valida con `Math.max(0, costo)` en el servicio de cálculo (Fase 2). Refuerzo complementario recomendado en SQL para la Fase 2: `CHECK (cost_price >= 0)` en `sale_details.cost_price` y en `branch_inventory.cost_price`. El hueco es real y asimétrico — `products.cost_price` ya tiene `chk_products_cost_price_nonneg`, pero `branch_inventory.cost_price`, que es la fuente **preferida** por el `coalesce`, no tiene ninguna restricción; un valor negativo ahí fluiría directo al snapshot y inflaría el margen. `v_unit_price` y `v_total_price` ya se validan contra negativos; el costo era la única magnitud de la partida sin defensa.
+- **Sin backfill — Las ventas anteriores usan fallback a catálogo para no falsear el histórico.** El costo de las partidas anteriores nunca quedó registrado. Rellenarlo con el catálogo vigente fabricaría un costo que no era el de la venta y falsearía el reporte de rentabilidad. Las partidas previas conservan `cost_price = 0` (costo desconocido) y el reporte debe distinguirlas de las que sí tienen costo real, manteniendo el fallback a catálogo para los periodos sin snapshot.
+
+**Qué resolvieron las Fases 2 y 3:**
+
+- **Fase 2 — CPP móvil.** `inventoryCostCalculationService.js` (puro, sin Supabase) calcula el promedio ponderado y redondea a 2 decimales; `inventoryAddService.js` lo persiste en `branch_inventory.cost_price` y escribe `unit_cost`/`total_cost` en el movimiento. El costo de adquisición se redondea **una sola vez** y ese valor canónico alimenta el CPP, el `unit_cost` y la base del `total_cost`, para sostener `total_cost === round(unit_cost × cantidad)`. Las entradas que **no** son compras se valorizan al CPP vigente y no lo mueven. `resolveCurrentCost` y `resolveIncomingCostPrice` se extrajeron a `src/services/inventory/inventoryCostResolutionService.js` en la Fase 3 para que la proyección de interfaz comparta esas reglas y el CPP anunciado no pueda diferir del persistido.
+- **Fase 3a — Interfaz del alta.** El alta de inventario permite elegir "Compra / Recepción de factura" (predeterminada) o "Entrada manual / Ajuste de conteo". La compra captura el costo unitario, precargado con el vigente, y muestra en vivo el CPP resultante con su delta; la entrada manual oculta el costo y advierte que la mercancía entra al CPP vigente sin alterarlo. Solo la compra envía `incomingCostPrice`; la entrada manual envía `undefined`, que es la señal que deja el CPP intacto. El costo es **obligatorio** en compra: sin él el lote se valoraría al promedio vigente y la operación se comportaría como una entrada manual, que es la contaminación silenciosa que R2 evita. Un campo vacío es captura ausente, no un cero capturado: viaja como `null`, la proyección deja el CPP intacto (`costWillChange === false`) y el submit sigue bloqueado por el mensaje de validación.
+- **Fase 3b — Rentabilidad desde el snapshot.** `profitabilityReportService.js` agrega `cost_price` al `select` de `sale_details` y `resolveSaleDetailUnitCost` (exportado y probado por separado) aplica la prioridad: (1) `sale_details.cost_price > 0`, la única fuente inmutable; (2) sin snapshot, `branch_inventory` y en su defecto el catálogo, etiquetado con `isCostEstimated: true`; (3) kits por suma de componentes (R1). El item agregado expone `costSource` y `hasFrozenCost` para distinguir costo congelado de costo reconstruido. **R1 se respetó y quedó cubierta por tests:** `create_kit_transaction` congela `cost_price = 0`, así que tomar el snapshot como costo real habría dejado los kits con margen cercano al 100 % inflado y `hasCostAssigned` en `false` sin error visible.
+
+**Cobertura de tests:** `costSnapshotContract.test.js` (23 casos) fija las columnas con sus tipos y default, la resolución con fallback, la alineación columnas/valores del `INSERT` en las tres sobrecargas, la conservación de las columnas de comisión en la sobrecarga de 11 parámetros, la ausencia de backfill y el hardening. `transactionalRpcsContract.test.js` fija que la definición vigente no altera la firma de la RPC endurecida. El **cálculo** del promedio ponderado quedó cubierto en la Fase 2 con `inventoryCostCalculationService.test.js` (25 casos) e `inventoryAddService.test.js` (20 casos), y la Fase 3 agregó `profitabilityReportCalculationService.test.js` (14 casos), `inventoryAddProjectionService.test.js` (18), `useInventoryAddCost.test.js` (23) e `InventoryAddCostEntry.test.jsx` (19). Dos de los casos del hook y uno del componente fijan el guard de texto vacío del campo de costo (`Number("")` es `0`): sin él, vaciar el campo anunciaba un CPP proyectado a la baja y `costWillChange` en `true`.
+
+**Pendiente recomendado (no bloqueante):** el refuerzo en SQL de R2 (`CHECK (cost_price >= 0)` en `sale_details.cost_price` y `branch_inventory.cost_price`) sigue sin aplicarse. La defensa actual es de aplicación (`toNonNegativeNumber` y `resolveCurrentCost` colapsan a 0), suficiente para cerrar el flujo, pero deja la puerta abierta a un `UPDATE` directo desde SQL.
+
+**Verificación por mutación.** Las tres rutas de resolución se contrastaron mutando el código de producción: eliminar la prioridad del snapshot en el reporte rompe 4 casos; hacer que los kits consuman el snapshot (violando R1) rompe 3; hacer que el resolver compartido ignore el CPP de sucursal y herede el catálogo rompe 26 casos entre el servicio de alta y la proyección de interfaz.
+
 ---
 
 ## Medio
 
 ### 6. Sin migraciones SQL versionadas para Supabase
+
 **Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations`.
 
 El schema completo de las tablas remotas (ver `docs/SCHEMA.md`) vive únicamente en el proyecto de
@@ -320,6 +463,7 @@ el SQL legacy de la raíz a `supabase/legacy/` para no confundirlo con las migra
 `docs/SUPABASE_MIGRATIONS.md`.
 
 ### 7. Discrepancia README vs. dependencias reales (SQLite)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 El `README.MD` mencionaba `better-sqlite3` como ORM, pero `package.json` usa el paquete
@@ -332,6 +476,7 @@ las dependencias; se quitó `src/backend` de la estructura del proyecto; `npm ru
 Vite + Electron y se eliminaron la fila `npm run rebuild` y la opción SQLite3 como prerrequisito.
 
 ### 8. Sin `lint` ni `test` configurados
+
 **Estado:** resuelto (17 sep 2026) — rama `chore/tech-debt-foundations` (test desde el 9 sep; lint
 completado).
 
@@ -358,12 +503,24 @@ líneas agregadas/modificadas del diff, además de `npm test` y `npm run build:f
 preexistente arrastra 684 problemas de lint (140 errores, 544 warnings) que **no** se corrigen en
 esta fase; se saldan incrementalmente conforme se tocan los archivos. Ver `docs/TESTING.md`.
 
+**Mitigación (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):** la mayor parte de esa deuda era
+ruido de `no-unused-vars` y no deuda real. `eslint-plugin-react` estaba en la configuración, pero su
+regla `react/jsx-uses-vars` no se había activado, así que cada componente importado para usarse solo
+como etiqueta JSX (`<ProductsList />`) se reportaba como variable sin usar. Al activar la regla en el
+bloque de `**/*.{js,jsx,mjs}` (declarando el plugin en `plugins`), los warnings de `no-unused-vars`
+bajaron de **564 a 187** y el total del repo de **583 a 206 problemas, con 0 errores**. Los 206
+warnings restantes son deuda real y transversal (parámetros y helpers huérfanos en servicios y
+páginas) que se sigue saldando archivo por archivo; con el paso incremental de CI ya funcionando
+(#60), cada archivo que se toque queda obligado a cumplir el estándar.
+
 ### 9. Falta de Unit Tests para Utilidades Puras
+
 **Estado:** parcialmente resuelto — 9 de septiembre de 2026.
 
 Se aisló con éxito lógica de negocio compleja en funciones puras (ej. `importUtils.js`, validaciones en `productsImportService.js` y `productKitsService.js`), pero no existían pruebas unitarias. Con la configuración de Vitest (punto 8) quedaron cubiertos los formateadores puros del catálogo (`productFormatters.js`, 13 tests: `buildDepartmentMap`, `buildInventoryProductIds`, `formatBranchKardexProducts`, `formatGlobalProductsWithoutInventory`), la suite preexistente de `useSalesTotals`, el hook global `usePagination` (10 tests) y los contratos de CRUD de productos en `productCrudService` (15 tests).
 
 **Actualización 2 (9 sep 2026):** se agregó la cobertura de Importación y Kits con la suite en **83 tests**:
+
 - `importUtils` (14 tests de funciones puras: `normalizeText`, `normalizeHeader`, `parseBoolean`, `parseNumber`, `formatCurrency` y catálogos de columnas).
 - `productsImportService` (11 tests con `supabase` y `validateSatClaves` mockeados: validación de datos, sucursales/departamentos, creación de departamentos faltantes y `processImportTransaction` con inventario por sucursal, productos globales y rollback cuando falla la inserción de inventario).
 - `productKitsService` (13 tests: `fetchKits` filtrando productos inactivos, detección de duplicados por barcode/nombre, alta con rollback, actualización restaurando items previos, baja con reversión, y lecturas de consulta).
@@ -380,6 +537,7 @@ sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo to
 
 **Actualización 4 (17 sep 2026) — Fase 4, rama `test/coverage-gaps`:** la suite pasó a **41 archivos /
 524 casos** (+94) cerrando los huecos priorizados:
+
 - **RPC de ventas:** `salesTransactionService.test.js` (13 tests: guardas, mapeo snake_case, coerción
   numérica, notas, fecha por defecto, propagación de error y falta de id) y
   `supabase/migrations/transactionalRpcsContract.test.js` (8 tests: firma, retorno y grants de
@@ -397,11 +555,33 @@ sección, cancelaciones con puntos y devoluciones parciales). Ningún módulo to
 - Hallazgo de seguridad derivado al fijar el contrato SQL: #49 (`create_sale_transaction` sin
   `search_path` fijado).
 
+**Actualización 5 (1 oct 2026, rama `test/renderer-smoke-tests`):** cerrado el smoke test de render
+del renderer. La suite pasó a **85 archivos / 1,293 casos** (+15) con `src/App.test.jsx`, que monta
+el árbol real de `src/main.jsx` (`<BranchProvider><App /></BranchProvider>`) contra `Supabase` y
+Electron simulados. Cubre:
+
+- **Montaje en frío:** el primer render es `LoadingScreen` y, al resolverse `getSession()` sin
+  sesión, transiciona a `/login`; además verifica que `ProductsProvider` pide `fetchDepartments` y
+  que no dispara ninguna consulta a `supabase.from`.
+- **Rutas y guardas:** `/login` renderiza el contenedor real de login; una ruta operativa con
+  sesión y sin caja rebota a `/cash-register`; con caja abierta entra a `/dashboard`;
+  `/cash-register` con caja abierta rebota a `/dashboard` (rama `requireNoCashRegister`);
+  `isLocked` devuelve a `/login` desde una ruta protegida; `/settings` (ruta administrativa) entra
+  sin caja; y la ruta raíz resuelve a `/dashboard` o `/login` según el estado de sesión.
+- **Wildcard:** una ruta no registrada cae en la raíz y de ahí al destino correcto según el estado.
+- **`useResponsiveScale`:** el montaje tolera la ausencia de `window.electronAPI` sin lanzar
+  errores y, con el puente presente, invoca `configure-zoom` con `baseWidth` 1500 y `baseHeight` 850.
+
+Para poder usar `MemoryRouter` sin colisionar con el `HashRouter` que `App.jsx` renderizaba por
+dentro, `AppRoutes` ahora es un named export y acepta un prop opcional `RouterComponent`
+(`Router` por omisión), igual que `App`. La producción y `src/main.jsx` siguen usando
+`HashRouter`: el smoke test monta además esa ruta por omisión.
+
 **Recomendación:** con esta capa cubierta, la siguiente deuda de testing es el backend Express/SQLite
-(`src/backend/server.js` y `bd.js` requieren un desacople previo) y un smoke test de render del
-renderer.
+(`src/backend/server.js` y `bd.js` requieren un desacople previo).
 
 ### 10. Revisión de Roles y Permisos (Supabase vs Local)
+
 **Estado:** abierto — parcialmente documentado.
 
 Falta confirmar si el rol `admin` en Supabase tiene roles hermanos (ej. cajero, gerente) y definir formalmente si los permisos locales de SQLite deben sincronizarse con los de Supabase, para evitar discrepancias de autorización entre entornos.
@@ -419,6 +599,7 @@ SQLite se elimina en favor de Supabase Auth + RLS o se sincroniza. El detalle de
 sus límites está en #38.
 
 ### 15. Paginación de tablas de reportes duplicada (migrar a usePagination global)
+
 **Estado:** completado — migración de client-side, server-side (Sales) e híbrido (Cash) terminada el 9 de septiembre de 2026 (rama `feature/products-pagination`).
 
 El patrón de paginación (filas por página, selector "Mostrar", botones Anterior/Siguiente) estaba
@@ -430,6 +611,7 @@ Se creó el hook global `src/hooks/usePagination.js` cubriendo ambas variantes �
 productos (`useProductsList`).
 
 **Migrado a `usePagination` (client-side, commit `04cd71f`):**
+
 - Rentabilidad: `ProfitabilityDepartmentsTable`, `ProfitabilityProductsTable`,
   `ProfitabilityCriticalTable` (selector [5,10,20] en departamentos).
 - Inventario: `ReorderSuggestionsTable`, `InventoryValuationTable`, `InventoryDepartmentSummary`.
@@ -442,17 +624,20 @@ productos (`useProductsList`).
 - Productos: `TopProductsTable`, `DeadStockTable` (paginación fija de 50/ítem, sin selector).
 
 **Migrado a `usePagination` (server-side):**
+
 - `PageSalesReport` + `useSalesReport`: el hook centraliza `currentPage`/`totalPages`/`startIndex`/
   `endIndex` derivando de `totalCount` que llega de `getPaginatedSales` (query con `range`); el
   `export default` de `ITEMS_PER_PAGE` se mantiene fijo (sin selector de tamaño de página).
 
 **Migrado a `usePagination` (híbrido):**
+
 - `useCashReport`: dos instancias `usePagination` (sesiones y movimientos) con `pageSizeOptions`
   fijo de 5, compartidas con `CashSessionsTable`/`CashMovementsTable` (UI de paginación por props,
   sin estado propio) y reseteo en `loadReportData` al cambiar filtros.
 - `DetailMovementsSection`/`DetailDiscountsSection` (tamaño fijo 5) del modal de detalle de sesión.
 
 **Unificación visual con `PaginationBar` (extraído):**
+
 - Nuevo `components/PaginationBar/PaginationBar.jsx` (+ `.module.css`) compartido por los ~24
   consumers: cash, comisiones, clientes (incl. modales), inventario, productos (reporte y
   `ProductsList`), rentabilidad (3 tablas) y ventas (server-side). Admite selector de páginas
@@ -467,6 +652,7 @@ página 1 al cambiar el tamaño de página (antes inconsistente en 4 tablas de c
 el estilo y el marcado del footer de paginación en un único componente.
 
 ### 16. Umbral de escalabilidad del catálogo de productos en memoria
+
 **Estado:** resuelto — 9 de septiembre de 2026.
 
 `ProductsContext.loadProducts` cargaba el catálogo global completo (productos + inventario de la
@@ -512,6 +698,7 @@ página es limitado y filtrado en el servidor.
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
 ### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
+
 **Estado:** Resuelto — 17 sep 2026, verificado con datos reales de Supabase; decisión: mantener base neta (sin cambio de código).
 
 La RPC calcula la comisión porcentual sobre `unit_price * quantity` (monto bruto), mientras el
@@ -534,6 +721,7 @@ neta actual; no requiere migración. La premisa original de diferencia bruta/net
 `BACKLOG.md`.
 
 ### 20. Precedencia commission_value/percent y bordes de has_commission y tipo `'percentage'`
+
 **Estado:** Resuelto — 17 sep 2026, decisión YAGNI: no se normaliza (los bordes no ocurren en datos; sin cambio de código).
 
 En la RPC de comisiones: la comisión % usa `COALESCE(commission_percent, commission_value, 0)`
@@ -555,8 +743,9 @@ para el caso de que aparezca el tipo `'percentage'`, productos con ambos campos 
 `commission_enabled = true` con valor 0.
 
 ### 21. RPC de caja: CTE session_payments escanea todo el histórico sin pushdown de fecha
-**Estado:** resuelto en código — rama `perf/reports-scalability` (17 sep 2026); migración pendiente de
-aplicar al remoto.
+
+**Estado:** resuelto en código y aplicado al remoto — rama `perf/reports-scalability` (17 sep 2026;
+`supabase db push` verificado el 23 sep 2026, presente en `supabase migration list`).
 
 `get_cash_report_sessions` (migración `20260910120100`) agregaba `sale_payments` completos en el CTE
 `session_payments` y solo acotaba por ventana de sesión en el JOIN final; no había pushdown del rango
@@ -570,10 +759,11 @@ de fechas dentro del CTE ni un índice acotado para el join por ventana.
 para acotar por `sp.branch_id IN (SELECT branch_id FROM filtered_sessions)` y por el rango
 `MIN(opened_at)`–`MAX(COALESCE(closed_at, now()))` de las sesiones filtradas. Validado contra el remoto
 con `BEGIN/ROLLBACK`: 34 filas, salida idéntica a la versión previa; `sale_payments` sin `branch_id`
-ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Pendiente:** aplicar la
-migración con `supabase db push`.
+ni `created_at` nulos y sin mismatches de `branch_id` respecto a `sales`. **Aplicada al remoto con
+`supabase db push`** (index `idx_sale_payments_branch_created_at` verificado por introspección).
 
 ### 22. Rentabilidad: procesamiento de partidas secuencial por chunks sin concurrencia
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `profitabilityReportService.js` recorría `sale_details` en chunks de `CHUNK_SIZE = 100` con un bucle
@@ -590,6 +780,7 @@ ahora carga `sale_details` en lotes de `SALE_DETAILS_CHUNK_SIZE = 100` con
 `profitabilityReportService.test.js` (verifica 5 lotes para 450 ventas con máximo 4 en vuelo).
 
 ### 25. Agregación del reporte de inventario inline en el service sin CalculationService puro
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `inventoryReportService.fetchInventoryReportData` agrupaba filas, calculaba KPIs/reorder/sugerencias y
@@ -607,6 +798,7 @@ consumido por `fetchInventoryReportData`, que conserva idéntico el contrato de 
 `inventoryReportCalculationService.test.js`.
 
 ### 26. RPCs de reportes concedían EXECUTE a `anon` (exposición de datos sin sesión)
+
 **Estado:** resuelto — migración `20260910120600_restrict_report_rpc_grants.sql`, 10 sep 2026.
 Detectado en el micro-pase de seguridad (skill `security-best-practices`).
 
@@ -626,7 +818,8 @@ RPC base `get_branch_products_paginated` (aplicada con `supabase db push`). `aut
 conserva y `useProductsList` solo lo llama con sesión, sin impacto funcional.
 
 ### 29. RPCs de caja no validan membresía de sucursal (`user_branches`)
-**Estado:** Resuelto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; pendiente `supabase db push`).
+
+**Estado:** Resuelto y aplicado al remoto — 17 sep 2026, migración `20260917190000_cash_register_branch_validation.sql` (rama `fix/security-hardening`; `supabase db push` verificado el 23 sep 2026).
 
 `get_cash_register_session` y `open_cash_register` (migración `20260914120100`) son `SECURITY
 DEFINER` y reciben `p_branch_id` del cliente sin verificar que el usuario autenticado pertenezca a
@@ -642,9 +835,11 @@ key pública y su propia sesión.
 (`SECURITY DEFINER`, exento vía `is_admin()`) y lo aplica en `get_cash_register_session` y
 `open_cash_register`, que ahora lanzan `42501` (`insufficient_privilege`) si el usuario autenticado no
 tiene membresía activa en `user_branches` para esa sucursal. La excepción `SECURITY DEFINER` queda
-documentada en `docs/SUPABASE_MIGRATIONS.md`; pendiente `supabase db push` para aplicarla al remoto.
+documentada en `docs/SUPABASE_MIGRATIONS.md`; **aplicada al remoto el 23 sep 2026** (verificado en
+`supabase migration list` y por introspección de `_user_can_access_branch`).
 
 ### 30. `get_branch_by_device` es anon + `SECURITY DEFINER` (excepción de login pre-auth)
+
 **Estado:** Aceptado y documentado — 17 sep 2026 (excepción de login pre-auth; ver `PERMISSIONS.md` y `docs/SUPABASE_MIGRATIONS.md`).
 
 El login debe resolver la sucursal del equipo **antes** de autenticar, por lo que la RPC
@@ -660,6 +855,7 @@ limiting o a un intercambio one-time; mientras tanto, mantener el retorno mínim
 excepción documentada en `docs/SUPABASE_MIGRATIONS.md`.
 
 ### 44. `supabase/.temp/` registrado en git (estado local del CLI)
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `supabase/.temp/` contiene el estado local del Supabase CLI (`cli-latest`, `gotrue-version`,
@@ -676,6 +872,7 @@ expuestas. Aun así, versionar estado local del CLI no es deseable.
 archivos del índice con `git rm --cached -r supabase/.temp/` (se conservan en disco).
 
 ### 45. Agrupación de pagos por nombre en el cálculo del corte
+
 **Estado:** resuelto — rama `perf/reports-scalability` (17 sep 2026).
 
 `groupPaymentsByMethod` (extraído en la Fase 1 del refactor a
@@ -692,7 +889,10 @@ en `cashCutCalculationService.test.js` (mismo nombre con `id` distinto no se fus
 agrupa por `name`).
 
 ### 49. `create_sale_transaction` es `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
-**Estado:** abierto — 17 sep 2026 (detectado en la Fase 4, rama `test/coverage-gaps`).
+
+**Estado:** resuelto — migración `supabase/migrations/20260923130000_fix_create_sale_transaction_search_path.sql`,
+rama `fix/harden-create-sale-transaction-search-path`, 23 sep 2026 (detectado el 17 sep 2026 en la
+Fase 4, rama `test/coverage-gaps`).
 
 La migración de endurecimiento `20260917200000_harden_transactional_rpcs.sql` fija
 `SET search_path TO 'public'` en las funciones que reescribe (`create_transfer_order`,
@@ -705,16 +905,66 @@ los privilegios del definer (vector clásico de escalada de privilegios). El tes
 `supabase/migrations/transactionalRpcsContract.test.js` fija la firma y los grants de la sobrecarga
 efectiva y deja constancia de que `create_transfer_order` sí fija el `search_path`.
 
-**Recomendación:** crear una migración correctiva que haga `CREATE OR REPLACE` de las tres
-sobrecargas de `create_sale_transaction` añadiendo `SET search_path TO 'public'`, y extender el test
-de contrato para exigir el `search_path` también en `create_sale_transaction`. No se corrige en la
-Fase 4 por ser una fase de testing.
+**Resolución (23 sep 2026):** la migración `20260923130000_fix_create_sale_transaction_search_path.sql`
+hace `CREATE OR REPLACE` de las tres sobrecargas (9, 10 y 11 parámetros) añadiendo
+`SET search_path TO 'public'` a nivel de función, preservando los cuerpos byte a byte. Los grants se
+reafirman por sobrecarga: `REVOKE ALL` de `public` y `anon`, `GRANT EXECUTE` solo a `authenticated` y
+`service_role`. El test de contrato `transactionalRpcsContract.test.js` lee la nueva migración y exige
+el `SET search_path TO 'public'` más los grants de las tres sobrecargas (6 casos nuevos). Cuerpos
+verificados idénticos a las fuentes `20260917200000` (9 y 10 parámetros) y `20260921170000`
+(11 parámetros, con el congelamiento de snapshot de comisión en `sale_details`).
+
+**Despliegue:** la migración se aplicó al remoto el 23 sep 2026 con `supabase db push`; verificado por
+introspección que las 3 sobrecargas quedaron `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL
+solo `authenticated`/`service_role`.
+
+### 50. Comisión de producto exento pisada por la comisión del departamento en la RPC de comisiones
+
+**Estado:** resuelto — migración `supabase/migrations/20260921140000_fix_commissions_product_override.sql`,
+rama `fix/commissions-product-override`, 21 de septiembre de 2026.
+
+La RPC `get_commissions_report_data` implementaba un fallback en cascada:
+
+```
+CASE
+  WHEN dr.commission_enabled THEN ...   (comisión de producto)
+  WHEN dr.dept_commission_enabled THEN ...   (fallback que pisaba la exención)
+  ELSE 0
+END
+```
+
+Si un producto tenía `commission_enabled = false` y pertenecía a un departamento con comisión
+habilitada (p. ej. _Nupec Adulto 2kg_ en el departamento _Nupec_), la primera condición era falsa y el
+CASE saltaba a la rama del departamento, cobrando la comisión pese a la exención explícita del
+producto.
+
+**Regla corregida (precedencia producto > departamento):**
+
+- `p.commission_enabled = true` → el producto genera su propia comisión (`commission_type` /
+  `commission_value`).
+- `p.commission_enabled = false` → exención total: `has_commission = false`, `commission_amount = 0`,
+  `rule_label = 'Sin comision'`, sin heredar nada del departamento.
+- `p.commission_enabled IS NULL` (productos sin configuración explícita) → único caso donde se hereda
+  la comisión del departamento si `d.commission_enabled = true`.
+
+Además, los campos retornados `commission_type` / `commission_value` se sincronizaron para reflejar el
+origen efectivo (producto o departamento) y `rule_label` se mantiene 'Sin comision' para exentos y
+formatea los valores efectivos cuando aplica.
+
+**Impacto:** montos de comisión sobreliquidados para productos exentos cuyo departamento comisiona.
+
+**Verificación:** la migración conserva el `RETURNS TABLE` y el `REVOKE ALL FROM public` +
+`GRANT EXECUTE TO authenticated` de los RPCs de reportes. Tests de contrato en
+`commissionsReportService.test.js` (fila exenta y fila con herencia de departamento) y suite unitaria
+nueva en `commissionsCalculationService.test.js` (exención con prioridad sobre el depto, comisión
+propia, herencia solo con `commission_enabled` null/ausente, producto sin departamento).
 
 ---
 
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod
+
 **Estado:** resuelto (15 sep 2026) — verificado en el barrido de limpieza.
 
 En `electron/main.js`, `getMainWindow()` calculaba `iconPath` con una rama `isDev ? X : X` donde
@@ -725,6 +975,7 @@ un bug funcional, pero era código muerto que se podía simplificar.
 `iconPath` de forma directa (`path.join(__dirname, '../icon.ico')`). No requiere cambios de código.
 
 ### 12. Desarrollo de Vistas Pendientes
+
 **Estado:** resuelto (14 sep 2026).
 
 Las vistas base de la arquitectura ya están implementadas y enrutadas. Evidencia: `src/App.jsx:52-63`
@@ -736,6 +987,7 @@ Nota: la ruta de corte de caja es `/cashcut/*` (no `/cashout`, como figuraba en 
 `TEMPLATE_NUEVA_PAGINA.md`). Ver también `TEMPLATE_NUEVA_PAGINA.md`, actualizado en la misma fecha.
 
 ### 14. Usuario con dominio de correo distinto a la convención interna
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 El usuario `alexander@example.com` (rol `cajero`, activo) no sigue la convención
@@ -751,6 +1003,7 @@ que es una cuenta de prueba.
 `supabase db push` (verificado con `supabase migration list`).
 
 ### 17. Archivos sin salto de línea final (EOF newline)
+
 **Estado:** resuelto (15 sep 2026) — rama `cleanup/quick-win-debt`.
 
 `AGENTS.md` y `CODE_STANDARDS.md` exigen que todos los archivos terminen con un salto de línea final
@@ -771,6 +1024,7 @@ EOF newline. Nota: una verificación previa con `tail | wc -l` había reportado 
 pendientes; la comprobación correcta es por byte final.
 
 ### 23. Migraciones de comisiones re-definidas en cascada (CREATE OR REPLACE correctivo)
+
 **Estado:** no procede (cerrado) — las migraciones ya fueron aplicadas al remoto
 (`supabase db push`, 10 sep 2026), por lo que no se pueden aplastar sin resetear proyectos
 externos.
@@ -785,6 +1039,7 @@ sin efecto porque las tres ya están aplicadas al proyecto remoto.
 por migración propia a partir de aquí).
 
 ### 24. ruleLabel de comisiones cambió de formato vs legacy
+
 **Estado:** abierto — QA visual pendiente (10 sep 2026).
 
 La RPC genera `rule_label` como `percent: 10%` / `<tipo>: <valor>` (migración `20260910120200`),
@@ -798,6 +1053,7 @@ etiquetas distintas a las previas.
 en la RPC (y su test).
 
 ### 28. Guard de autorización de administrador duplicado en módulos (ProtectedRoute)
+
 **Estado:** resuelto (10 sep 2026).
 
 Cada módulo (Productos, Reportes, y originalmente Facturas) mantenía su propia copia del guard:
@@ -814,6 +1070,7 @@ duplicación del guard): el guard `ProtectedRoute` cambia la URL antes de mostra
 que la navbar debe bloquear la navegación ANTES de que ocurra. Ver punto #27.
 
 ### 27. Intercepción de navegación protegida en navbars de módulo (`useProtectedNavigation`)
+
 **Estado:** resuelto (13 sep 2026).
 
 Tras consolidar el guard en `ProtectedRoute` (ver #28), la navbar del módulo dejó de interceptar
@@ -849,6 +1106,7 @@ se re-solicita autorización. Además, las páginas ahora derivan sus rutas prot
 tests de `withProtectedMetadata`, `useProtectedNavigation` y `ProtectedRoute`.
 
 ### 31. Residuo legacy del backend local tras el fix de producción (#1)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (cierre de #10/#34).
 
 Con #1 resuelto, el frontend ya no consumía el backend Express local. En una segunda pasada se
@@ -880,6 +1138,7 @@ retiraron las dependencias `bcryptjs`, `cors`, `express`, `node-fetch`, `sqlite3
 backend local (login y caja 100 % vía RPCs de Supabase).
 
 ### 32. Verificar índice único de sesión de caja abierta por sucursal
+
 **Estado:** resuelto (14 sep 2026).
 
 `open_cash_register` (migración `20260914120100`) traduce un `unique_violation` en la respuesta de
@@ -895,6 +1154,7 @@ Si el `db push` falla por duplicados, el mensaje indica cuántas sucursales hay 
 abiertas (paridad con el backend anterior, que tenía la misma carrera).
 
 ### 33. Tope de apertura de caja sin panel de configuración
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 El tope de efectivo inicial al abrir caja vive en `app_settings`
@@ -910,6 +1170,7 @@ desde la app.
 
 **Resolución (18 sep 2026):** se agregaron dos RPCs en la migración
 `20260918120000_app_settings_cash_rpcs.sql`:
+
 - `get_cash_max_opening_amount()` — lectura para cualquier usuario autenticado (gira sobre
   `_cash_max_opening_amount()`, con el mismo fallback seguro).
 - `update_cash_max_opening_amount(p_amount numeric)` — escritura `SECURITY DEFINER` con
@@ -923,6 +1184,7 @@ apertura) que solo se renderiza cuando `checkUserIsAdmin(user.id)` es verdadero.
 rol en el servidor de todos modos, por lo que el check del panel es solo de UX.
 
 ### 34. Deuda menor de la pasada de producción (no bloqueante)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs` (con #31).
 
 Hallazgos menores de la auditoría que no se corrigieron en el cluster de producción:
@@ -949,6 +1211,7 @@ incluida la dependencia `bcryptjs`). El apunte del bcrypt async era "si el backe
 no aplica.
 
 ### 35. Sesión de Supabase persistida en `localStorage`
+
 **Estado:** aceptado con mitigación parcial (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `src/lib/supabaseClient.js` usa el `createClient` por defecto de `@supabase/supabase-js`, que guarda
@@ -971,6 +1234,7 @@ deja de depender del ref remoto del proyecto. El riesgo residual (token en `loca
 sink XSS) se mantiene documentado y se atacará de fondo al endurecer auth.
 
 ### 36. Assets con ruta absoluta bajo `file://` en el build empaquetado
+
 **Estado:** Resuelto — 14 sep 2026 (validar instalador NSIS en Windows antes de distribuir).
 
 `vite.config.mjs` no define `base`, por lo que Vite emite rutas absolutas
@@ -988,6 +1252,7 @@ sink XSS) se mantiene documentado y se atacará de fondo al endurecer auth.
 Windows (ítem del checklist de `DEPLOYMENT.md`) antes de distribuir.
 
 ### 37. Ausencia de Content-Security-Policy en el renderer (SEC-1)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 `index.html` no definía CSP, por lo que el renderer no tenía una segunda barrera contra inyección de
@@ -1002,6 +1267,7 @@ Supabase, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`). En dev 
 romper el HMR. Verificado en `dist/index.html`. Ver `DEPLOYMENT.md`.
 
 ### 38. Autorización de administrador gateada solo en el cliente (SEC-3)
+
 **Estado:** Mitigado parcialmente — 17 sep 2026. RPCs transaccionales endurecidas; el gateo en el cliente de las mutaciones administrativas se mantiene como **riesgo aceptado** por decisión #10/#13 (ver `PR_REVIEW.md`, `docs/EDGE_FUNCTIONS.md` y `PERMISSIONS.md`).
 
 Las secciones administrativas se protegen en el renderer (`ProtectedRoute` +
@@ -1036,6 +1302,7 @@ validación/auditoría de `reason`/`action`/`targetId`; se resolverían con RLS 
 un token de autorización de un solo uso desde la edge function (ver `docs/EDGE_FUNCTIONS.md`).
 
 ### 39. Endurecimiento de Electron incompleto (SEC-4)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 `electron/main.js` no denegaba ventanas emergentes ni bloqueaba la navegación fuera del origen, y
@@ -1051,6 +1318,7 @@ realmente registrados (`get-device-code`, `close-app`, `set-zoom-factor`, `confi
 `reset-zoom`, `get-zoom-debug`).
 
 ### 40. Bundle único de ~3.2 MB sin code-splitting (PERF-1)
+
 **Estado:** Resuelto — 14 sep 2026.
 
 El build generaba un solo chunk (~3.2 MB, ~907 KB gzip) porque `App.jsx` importaba las 11 páginas de
@@ -1063,6 +1331,7 @@ forma eager y no había `manualChunks`.
 gzip); `spreadsheets` (1.36 MB) solo carga bajo demanda.
 
 ### 41. `get_email_by_username` sin definición en migraciones versionadas
+
 **Estado:** Resuelto — 17 sep 2026, rama `chore/tech-debt-foundations`.
 
 La RPC `get_email_by_username` la usa el login (`src/pages/Login/Login.jsx`) y está documentada en
@@ -1089,6 +1358,7 @@ pre-auth, excepción de #30), `authenticated` y `service_role`. Aplicada al remo
 Con esto el login puede recrearse en un entorno nuevo solo con las migraciones versionadas.
 
 ### 42. `--scroll-distance` usada pero nunca definida (marquee de productos inerte)
+
 **Estado:** Resuelto — 15 sep 2026, rama `cleanup/quick-win-debt`.
 
 `src/components/ProductsComponents/PageProducts/ProductsList/ProductsList.module.css:355` usa
@@ -1110,6 +1380,7 @@ el `@keyframes marqueeScroll` **nunca se aplicaban** — el JSX solo usa `styles
 eliminaron ambas reglas del módulo CSS, con lo que desaparece la variable indefinida.
 
 ### 46. Colisión de nombres `fetchCutsHistory` entre componente y servicio
+
 **Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-reload-unify`.
 
 Tras extraer las consultas a `src/pages/CashCut/services/cashCutReportService.js`, el componente
@@ -1129,6 +1400,7 @@ colisión. Cobertura intacta: los tests siguen asertando `fetchCutsHistory` con 
 ---
 
 ### 47. Flujos de recarga duplicados en `useCashCutReport`
+
 **Estado:** resuelto (15 sep 2026) — commit `267d918`, rama `refactor/cashcut-reload-unify`.
 
 `useCashCutReport.js` implementa tres variantes de "recargar la vista actual": `changeSelectedCut("current")`
@@ -1154,8 +1426,9 @@ de sucursal), y el guard `if (activeSession?.id)` anulaba la rama sin-sesión de
 obsoleto si el turno se cerraba en otro dispositivo). Además, encaminar el realtime por
 `loadCurrentSession` agregaba un `resetSalesState()` previo que el flujo same-session de antes no
 tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashCutReport.js`:
+
 - El realtime ahora colapsa a una llamada única `reloadCurrentView({ refreshHistory: true,
-  resetSalesOnSessionChange: true })`, sin `fetchSession` duplicado y con la rama sin-sesión del
+resetSalesOnSessionChange: true })`, sin `fetchSession` duplicado y con la rama sin-sesión del
   helper de vuelta.
 - `loadCurrentSession(sessionData, { resetSales = true })` y
   `reloadCurrentView({ refreshHistory, resetSales, resetSalesOnSessionChange })`: el realtime solo
@@ -1169,6 +1442,7 @@ tenía (flicker a ceros durante la cadena de fetches). Correcciones en `useCashC
 ---
 
 ### 48. `!important` en módulos CSS (deuda de estilo transversal)
+
 **Estado:** resuelto (18 sep 2026) — rama `cleanup/ui-and-docs`.
 
 `AGENTS.md` prohíbe `!important` en los módulos CSS, pero persiste deuda heredada en varios archivos
@@ -1182,6 +1456,7 @@ específicos u orden de carga en lugar de `!important`. Fuera del alcance del re
 
 **Resolución (18 sep 2026):** barrido completo. Las **128 ocurrencias** en **30 `*.module.css`** se
 resolvieron con:
+
 - **Selectores con prefijo de mayor especificidad** para estados: `.tableRow.selectedRow`,
   `.resultItem.selectedResult`, `.ticketItem.selectedTicket`, `.paymentMethod.paymentMethodSelected`,
   `.infoCard .statusConnected`, `.field .fieldError`, `.fieldGroup input.inputValid`, etc.
@@ -1198,6 +1473,793 @@ resolvieron con:
 - **Limpieza de código muerto**: se eliminó el bloque `.recoveredDraftDiscard` (no usado en ningún JSX).
 
 Verificado: `rg "!important" --glob "*.module.css" src` devuelve **0** resultados.
+
+### 53. `cancel_sale_transaction` y `create_partial_return_transaction` son `SECURITY DEFINER` sin `search_path` fijado (SEC-5)
+
+**Estado:** resuelto — migración `supabase/migrations/20260923140000_fix_cancel_and_return_search_path.sql`,
+rama `fix/harden-cancel-and-return-search-path`, 23 sep 2026 (detectado el 23 sep 2026 durante la
+auditoría externa de #49, rama `fix/harden-create-sale-transaction-search-path`).
+
+`cancel_sale_transaction` y `create_partial_return_transaction` se definen como `SECURITY DEFINER`
+**sin** `SET search_path` en `20260917200000_harden_transactional_rpcs.sql` (líneas 283 y 1136), la
+misma clase de vector que #49: un objeto creado por el llamador en un esquema previo del path puede
+sombrear referencias no calificadas dentro del cuerpo y ejecutarse con los privilegios del definer.
+Ninguna migración posterior las reescribe con `search_path` fijado. Comparten dominio de negocio y
+riesgo con los tres overrides de `create_sale_transaction` corregidos en #49.
+
+**Recomendación:** crear una migración correctiva de seguimiento que haga `CREATE OR REPLACE` de
+`cancel_sale_transaction` y `create_partial_return_transaction` añadiendo
+`SET search_path TO 'public'` a nivel de función, preservando los cuerpos byte a byte (mismo patrón
+que `20260923130000_fix_create_sale_transaction_search_path.sql`), y extender
+`transactionalRpcsContract.test.js` para exigir el `search_path` en ambas.
+
+**Resolución (23 sep 2026):** la migración `20260923140000_fix_cancel_and_return_search_path.sql`
+hace `CREATE OR REPLACE` de ambas funciones (`cancel_sale_transaction` y
+`create_partial_return_transaction`) añadiendo `SET search_path TO 'public'` a nivel de función,
+preservando los cuerpos byte a byte desde `20260917200000_harden_transactional_rpcs.sql`. La
+extracción de los cuerpos fue mecanicista (script de generación, sin transcripción manual) y se
+verificó con diff normalizado y SHA-256: ambos cuerpos (entre `AS $function$` y `$function$;`) son
+byte-idénticos a sus fuentes. Los grants se reafirman por función: `REVOKE ALL` de `public` y `anon`,
+`GRANT EXECUTE` solo a `authenticated` y `service_role`. El test de contrato
+`transactionalRpcsContract.test.js` lee la nueva migración y exige el `SET search_path TO 'public'`
+más los grants de ambas funciones (4 casos nuevos). Con esto se cierra al 100% la familia de vectores
+SEC-5 en todos los procedimientos almacenados transaccionales de venta del proyecto.
+
+**Despliegue:** la migración se aplicó al remoto el 23 sep 2026 con `supabase db push`; verificado por
+introspección que ambas funciones quedaron `SECURITY DEFINER`, `SET search_path TO 'public'` y ACL
+solo `authenticated`/`service_role`.
+
+### 54. Componentes monolíticos y violación de DIP en el módulo de Clientes (`Customers`)
+
+**Estado:** resuelto — rama `refactor/customers-modularization-and-dip`, 28 de septiembre de 2026.
+
+Tras concluir la modularización de los 5 componentes fijados en el ítem #3 (`CashCut`, `ticketBuilder`,
+`RewardModal`, `ProductsModify` y `ProductsPromotions`), el módulo de Clientes (`src/components/CustomersComponents/`)
+conserva una deuda técnica severa de arquitectura que viola los principios SOLID (SRP, ISP y DIP definidos en `AGENTS.md`).
+Seis componentes superan holgadamente el límite de 300-400 líneas:
+
+- `RewardsSettings.jsx` (984 líneas): gestión de recompensas, settings de puntos y realtime, acoplando formularios y queries.
+- `PointsAdjustment.jsx` (933 líneas): búsqueda de clientes, validación de perfil, inserción de movimientos e historial.
+- `PointsHistory.jsx` (754 líneas): consulta de historial, exportación y suscripciones a realtime.
+- `CustomersList.jsx` (710 líneas): tabla principal, filtros, paginación y mutaciones.
+- `RewardsAvailability.jsx` (661 líneas): orquestación de canjes disponibles y cálculo de puntos.
+- `CustomerModal.jsx` (635 líneas): modal CRUD de alta/edición de cliente con llamadas directas a Supabase.
+
+Además, todos estos componentes importan `supabase` directamente desde `src/lib/supabaseClient.js`, violando
+el principio de Inversión de Dependencias (DIP): la lógica de persistencia, queries y mutaciones no está
+abstraída en servicios (`src/services/customers/`) ni hooks dedicados.
+
+**Impacto:** alto riesgo de regresiones al modificar reglas de clientes/puntos, nula reusabilidad de lógica de
+datos y dificultad para añadir pruebas unitarias automatizadas.
+
+**Recomendación:** modularizar cada pantalla en subcomponentes presentacionales puros (< 300 líneas),
+extraer los hooks de orquestación (`useCustomersList`, `useRewardsSettings`, etc.) y desacoplar el acceso a datos
+en servicios puros (`customersService.js`, `rewardsService.js`, `pointsService.js`).
+
+**Resolución (28 sep 2026):** la deuda se cerró en tres commits sobre la rama
+`refactor/customers-modularization-and-dip`.
+
+1. `b9747f5` — extracción de servicios de datos y cálculos por feature (`services/`), más los servicios
+   compartidos `customersRealtimeService.js`, `customerPointsCalculationService.js` y `customerFormatters.js`.
+   Los seis componentes dejaron de importar `supabaseClient` directamente: **cero dependencias de Supabase
+   en componentes y hooks**, toda la persistencia queda encapsulada en la capa de servicios.
+2. `9e5d439` — 224 tests nuevos en 10 archivos para los cálculos extraídos y los contratos de datos de
+   Supabase (`rewardsSettingsService`, `pointsAdjustmentService`).
+3. `1c19419` — descomposición de los seis componentes en subcomponentes presentacionales y hooks.
+
+**Métricas de la descomposición (líneas del componente principal antes → después):**
+
+| Componente                | Antes | Después | Extraído en                                                                                                                                                                                                        |
+| ------------------------- | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RewardsSettings.jsx`     | 984   | 122     | `useRewardsSettings`, `useRewardsPointsRule`, `RewardsSettingsTable`, `RewardsSettingsPointsRule`, `RewardsSettingsFilters`, `RewardsSettingsRewardDetailsModal`                                                   |
+| `PointsAdjustment.jsx`    | 933   | 145     | `usePointsAdjustment`, `usePointsAdjustmentAdminAccess`, `usePointsAdjustmentCustomerSearch`, `usePointsAdjustmentSubmit`, `PointsAdjustmentForm`, `PointsAdjustmentCustomerCards`, `PointsAdjustmentAccessStates` |
+| `PointsHistory.jsx`       | 754   | 89      | `usePointsHistory`, `PointsHistoryTable`, `PointsHistoryFilters`, `PointsHistorySummary`                                                                                                                           |
+| `CustomersList.jsx`       | 710   | 126     | `useCustomersList`, `CustomersListTable`, `CustomersListFilters`, `CustomersListFiscalMatch`                                                                                                                       |
+| `RewardsAvailability.jsx` | 661   | 88      | `useRewardsAvailability`, `RewardsAvailabilityCustomerSearch`, `RewardsAvailabilityCustomerSummary`, `RewardsAvailabilityRewardsGrid`                                                                              |
+| `CustomerModal.jsx`       | 635   | 101     | `useCustomerModal`, `CustomerModalFields`                                                                                                                                                                          |
+
+Ningún componente ni hook del módulo supera las 300 líneas. El archivo más grande es
+`pointsAdjustmentCalculationService.js` (364 líneas), **servicio puro de cálculo sin dependencias de UI ni
+I/O**: supera el umbral de forma deliberada y aceptada, porque partirlo fragmentaría las reglas de negocio
+punitivas que ya cubren sus tests.
+
+**Correcciones detectadas por la contra-auditoría de la rama (28 sep 2026):**
+
+- **Contrato roto del servicio realtime (regresión funcional).** `customersRealtimeService.js` aceptaba
+  `{ channelName, table, filter }` mientras los ocho call-sites de los cinco hooks pasaban
+  `{ tables: [...], rowFilter }`. El payload que llegaba al servidor Realtime quedaba
+  `{"event":"*","schema":"public"}`: sin `table` ni `filter`, por lo que ninguna de las seis pantallas
+  recibía eventos en vivo, se perdía el segundo binding de `customers-list-realtime`
+  (`customers` + `customer_points`, que en `main` eran dos `.on()` sobre el mismo canal) y los filtros
+  `customer_id=eq.<id>`. El servicio ahora recibe `tables` (arreglo o cadena) y `rowFilter`, y registra
+  un binding `postgres_changes` por tabla sobre el mismo canal, replicando el comportamiento de `main`.
+  Cubierto por `customersRealtimeService.test.js` (9 casos) y por una aserción de contrato del call-site
+  en `usePointsAdjustment.test.js`; el test falla contra la versión previa del servicio.
+- **Puerta de CI de lint en rojo.** Los ocho errores `react-hooks/set-state-in-effect` que quedaban en los
+  cinco hooks nuevos están en archivos añadidos por la rama, y `.github/workflows/ci.yml` corre ESLint de
+  forma incremental sobre el diff: la etiqueta de "preexistente" no los exime. Se annotaron los ocho puntos
+  con `eslint-disable-next-line` y su justificación (deuda herdada de #56), dejando `npx eslint` en
+  `EXIT=0` sobre el módulo y sobre el diff. El patrón de la regla no cambia: sigue abierto en #56.
+- **`className` con espacios colgantes.** Cuatro vistas presentacionales nuevas heredaron de `main` el
+  patrón `` `${styles.x} ${cond ? styles.y : ""}` ``, que deja espacios finales o dobles en el DOM
+  (prohibido por `AGENTS.md`). Se migraron a `[...].filter(Boolean).join(" ")`.
+
+**Bugs corregidos en el camino:**
+
+- El `canSubmit` inline y la cascada de ~90 líneas de validaciones de `PointsAdjustment` quedaron
+  reemplazados por `canSubmitPointsAdjustment`, `getAdjustmentValidationMessage` y `getSaveGuardMessage`,
+  conservando la diferenciación de mensajes entre los contextos `review` y `confirm`.
+- `usePointsAdjustment` no devolvía `adjustmentReason`, que el formulario ya enlazaba; detectado por el
+  nuevo test del hook.
+
+**Verificación:** `npm test` en **64 archivos / 930 tests** (antes 51/663) y `npm run build:frontend` en
+`EXIT=0`; ESLint y Prettier incrementales sobre el diff con `EXIT=0` y `git diff --check` limpio; paridad
+de clases de CSS (180 clases en los seis módulos, conjunto idéntico) y de textos visibles comprobada
+clase por clase y cadena por cadena contra `main` para las seis pantallas; las queries conservan selects,
+filtros, orden y límites. Los warnings de `no-unused-vars` sobre imports usados solo en JSX son
+comportamiento heredado de `eslint.config.mjs`, que no habilita `react/jsx-uses-vars`: se aceptan como deuda
+documentada y quedan fuera del alcance de este ítem.
+
+---
+
+### 55. Componentes monolíticos y violación de DIP en el módulo de Facturación (`Invoices`)
+
+**Estado:** resuelto (28 sep 2026) — rama `refactor/invoices-modularization-and-dip`.
+
+De manera idéntica al módulo de Clientes, el módulo de Facturación (`src/components/InvoicesComponents/`)
+contenía componentes monolíticos masivos que concentraban lógica fiscal, catálogos del SAT, validaciones de RFC/CP,
+mutaciones a base de datos y renderizado visual:
+
+- `FiscalCustomerModal.jsx` (884 líneas): validación de datos fiscales, autocompletado de C.P., catálogos SAT y llamadas directas a `customers`.
+- `InvoiceSettings.jsx` (824 líneas): configuración de emisor, certificados y régimen fiscal.
+- `InvoiceSaleModal.jsx` (810 líneas): emisión de factura a partir de venta con múltiples pasos y queries inline.
+- `InvoiceCustomers.jsx` (785 líneas): administración de clientes de facturación con suscripción realtime embebida.
+- `InvoicesHistory.jsx` (624 líneas): historial y descarga de XML/PDF.
+- `InvoicesPending.jsx` (374 líneas): ventas completadas sin factura de la sucursal.
+
+Todos importaban directamente el cliente `supabase`, incumpliendo DIP y dificultando el mocking y testing.
+
+**Impacto:** deuda técnica acumulada en un dominio crítico (facturación y cumplimiento SAT), con componentes
+frágiles y difíciles de auditar o refactorizar.
+
+**Recomendación:** aplicar el mismo patrón de segregación: servicios puros de facturación (`invoiceService.js`,
+`fiscalCustomerService.js`), hooks de estado y subcomponentes visuales desacoplados.
+
+**Bitácora de solución (28 sep 2026, rama `refactor/invoices-modularization-and-dip`):** tres commits atómicos:
+`1fdeded` (servicios), `a2072a3` (tests) y `f0c1e81` (componentes, hooks y subcomponentes).
+
+1. **Servicios.** 16 archivos en `services/` y 3 en `utils/`: por hoja hay un `*Service.js` de datos
+   (único que importa `supabase`), un `*CalculationService.js` puro y, en Clientes, un
+   `*DetailService.js` para las consultas bajo demanda. Los catálogos (usos CFDI, regímenes, códigos
+   postales) y las suscripciones realtime son servicios compartidos por las seis unidades.
+2. **Hooks.** Seis hooks de página y de modal (`useInvoiceSettings`, `useInvoiceCustomers`,
+   `useInvoicesHistory`, `useInvoicesPending`, `useFiscalCustomerModal`, `useInvoiceSaleModal`) que
+   concentran estado, ciclo de vida y coordinación; los modales reutilizan `useAppModal` en lugar de
+   repetir el estado del modal de confirmación.
+3. **Vistas.** 25 subcomponentes presentacionales que solo reciben estado y emiten eventos, más
+   `fiscalCustomerViewUtils.js` y `invoiceSettingsFormatters.js` para las clases de estado y el
+   formateo de fechas.
+
+**Correcciones detectadas en el camino:**
+
+- **Realtime sin `subscribe()` (regresión funcional).** Los canales de `InvoiceCustomers` y
+  `InvoicesPending` se registraban con `.on(...)` pero nunca llamaban a `.subscribe()`, así que no
+  llegaban eventos; además el callback descartaba el payload. Ahora ambos usan
+  `invoicesRealtimeService.js`, que resuelve `table` por binding, llama a `.subscribe()` una vez y
+  entrega el payload a `onChange`, y `InvoiceCustomers` filtra por `shouldRefreshOnCustomerChange`
+  para no recargar los clientes fiscales por altas de ventas o puntos. Es la lección de la auditoría
+  de #54 aplicada desde el diseño. Cubierto por `invoicesRealtimeService.test.js`.
+- **Teléfono vacío tratado como duplicado.** `isPhoneAlreadyFiscalCustomer` compara el teléfono ya
+  ya normalizado, de modo que un cliente con teléfono vacío no bloquea el alta de otro.
+- **Documentación engañosa del total histórico.** El comentario de la suma de facturas anunciaba que
+  las canceladas se excluían del acumulado; el cálculo sí las incluye, igual que antes del refactor.
+  Se corrigió el comentario, no el cálculo.
+- **Imports relativos rotos en los subcomponentes nuevos.** Los componentes de `components/`
+  importaban `./X.module.css` (el CSS vive en la raíz de la unidad) y los iconos con cuatro niveles
+  en lugar de cinco; `InvoicesHistory.jsx` apuntaba a `../../../utils/invoiceFormatters` en lugar de
+  `../../utils/...`, y `InvoiceSettingsTimbresSection.jsx` importaba un `./InvoiceSettingsDateFormatters`
+  inexistente. El build de producción falló y se corrigió lo que reveló.
+
+**Verificación:** `npm test` en **81 archivos / 1225 tests** (antes 64/931; los 16 servicios nuevos
+suman 294 casos en 17 archivos del módulo) y `npm run build:frontend` en `EXIT=0`. ESLint del módulo:
+**9 errores en `e3a8b67` → 0** (los nueve eran `react-hooks/set-state-in-effect`, silenciados con
+`eslint-disable-next-line` y su justificación porque pertenecen a #56); los 37 warnings restantes son
+los `no-unused-vars` sobre imports usados solo en JSX, herencia de `eslint.config.mjs` que no
+habilita `react/jsx-uses-vars`. Paridad comprobada de forma mecánica: 112/112 clases de CSS idénticas,
+todas las cadenas de texto visible comparadas unidad por unidad contra `main` (los únicos agregados son
+literales de etiquetas en descriptores de datos y comentarios de servicio), props padre→hijo validadas
+contra la firma de cada subcomponente, y todas las referencias `styles.*` resueltas contra su módulo.
+Las queries conservan selects, filtros, orden y límites; los padres quedaron entre 79 y 151 líneas y
+ningún `.jsx` del módulo supera las 176.
+
+---
+
+### 56. Errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes)
+
+**Estado:** **resuelto (28 sep 2026)** — rama `fix/react-hooks-and-eslint-zero-errors`. Los cinco puntos
+cerrados y `npx eslint .` deja el repositorio en **0 errores**.
+
+**Estado:** parcialmente resuelto (25 sep 2026) — rama `fix/code-quality-and-runtime-bugs`. Puntos 1 a 4
+cerrados; el punto 5 permanece abierto.
+
+**Estado:** parcialmente resuelto (28 sep 2026, intermedio) — rama `fix/react-hooks-and-eslint-zero-errors`. Los
+puntos 1 a 4 siguen cerrados y el punto 5 baja de 52 a 29 ocurrencias.
+
+La auditoría de linter reveló que, más allá de la deuda cosmética de variables sin usar heredadas (#8),
+existen errores de lógica, compatibilidad con React 19 y control de excepciones:
+
+1. **`no-unsafe-finally` en `useReportsDashboard.js:106`:** un `return;` prematuro dentro de un bloque `finally`
+   descarta silenciosamente cualquier excepción o rechazo originado en `try/catch`.
+2. **`no-constant-binary-expression`:** en `salesRewardsService.js:88` y `salesTicketService.js:14`, la expresión
+   `(unitPrice * quantity) ?? 0` contiene una comprobación de nulidad redundante e inalcanzable.
+3. **`react-hooks/refs`:** mutación directa de `ref.current` durante el ciclo de renderizado en `AppModal.jsx:107`,
+   `useSalesDraft.js:68` y `useSalesKeyboardShortcuts.js:7`, lo que viola la semántica de renderizado puro de React.
+4. **`react-hooks/immutability`:** acceso a funciones antes de su declaración dentro de hooks y efectos en
+   `FiscalCustomerModal.jsx:228`, `useKitProductSearch.js:72` y `Profiles.jsx:35`.
+5. **`react-hooks/set-state-in-effect` (70 ocurrencias):** llamadas síncronas a `setState` en el cuerpo de efectos,
+   provocando re-renderizados en cascada que degradan el rendimiento en React 19.
+
+**Impacto:** posibles excepciones silenciadas, bugs en la persistencia de borradores/atajos de venta y re-renders innecesarios.
+
+**Recomendación:** sanear los errores prioritarios de ejecución (`no-unsafe-finally`, refs en render, binary expressions)
+y ordenar el ciclo de vida de los hooks.
+
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** se corrigieron los puntos 1 a 4
+(los de ejecución y ciclo de vida); el punto 5 permanece abierto por su volumen y requiere una
+pasada propia de refactor por hook.
+
+1. `useReportsDashboard.js`: el bloque `finally` ya no usa `return;`. La actualización de estado quedó encapsulada en
+   `if (mountedRef.current && isCurrentRequest) { setLoading(false); setRefreshing(false); }`, de modo que una excepción
+   lanzada en `try` ya no puede ser suprimida por la salida del bloque `finally`.
+2. `salesRewardsService.js:88` y `salesTicketService.js:14`: se eliminó el `?? 0` inalcanzable, dejando
+   `Number(item.reward_discount_amount ?? item.descuentoMonto ?? (unitPrice * quantity))`. El comportamiento es idéntico
+   (una resta aritmética nunca es `null` ni `undefined`), por lo que no cambia ningún resultado calculado.
+3. `AppModal.jsx`, `useSalesDraft.js` y `useSalesKeyboardShortcuts.js`: la sincronización de `actionStateRef.current`,
+   `callbacksRef.current` y `stateRef.current` se movió a efectos sin arreglo de dependencias, con el valor inicial
+   preservado en `useRef(...)`. Se mantiene la garantía original de leer siempre el callback más reciente sin
+   re-registrar el listener de teclado en cada render.
+4. `FiscalCustomerModal.jsx`, `useKitProductSearch.js` y `Profiles.jsx`: `loadCatalogs`, `handleSelect` y `loadUsers` se
+   declararon antes de los efectos que los invocan. Adicionalmente se corrigió una cuarta ocurrencia de
+   `react-hooks/immutability` detectada por el linter y no contemplada en el reporte original:
+   `useSalesTableColumns.js:56`, donde `handleMouseUp` se auto-referenciaba en su propio `useCallback`. La
+   auto-referencia se sustituyó por un `handleMouseUpRef` sincronizado en un efecto, preservando la identidad exacta
+   de la función entre `addEventListener` y `removeEventListener`.
+
+Verificación: `npm test` y `npm run build:frontend` en verde. Conteo de errores de ESLint sobre los 23 archivos
+`.js/.jsx` intervenidos: **30 en la base (`0c51210`) → 13 al cierre de este ítem**, es decir 17 errores
+eliminados. La composición final son 13 `react-hooks/set-state-in-effect`, todos del punto 5.
+
+Detalle del intercambio 1 a 1 en `Profiles.jsx:81`: al reordenar `loadUsers` antes de su efecto, esa
+ocurrencia dejó de ser `react-hooks/immutability` y pasó a ser `react-hooks/set-state-in-effect`. El saldo
+del punto 4 es neto negativo en una unidad (`immutability` 4 → 3) pero el punto 5 sube de 12 a 13 en estos
+archivos. No es una regresión funcional: la callback se invoca desde el mismo efecto que antes.
+
+**Los 13 errores restantes bloquean el gate de CI**, que corre ESLint por archivo y no por línea
+(`.github/workflows/ci.yml`). Por eso este ítem no puede declararse cerrado mientras el punto 5 siga abierto;
+el ítem equivalente de `BACKLOG.md` queda como `[ ]`.
+
+**Ampliación (25 sep 2026, mismo PR):** además de los puntos 1 a 4 se cerraron los dos errores de los archivos
+intervenidos que **no** pertenecían al punto 5, para dejar el gate de CI con un delta atribuible solo a esa
+deuda conocida:
+
+- `AppModal.jsx:59` (`no-undef` sobre `HTMLButtonElement`): el global existía en el DOM pero faltaba en la
+  lista `globals` de `eslint.config.mjs`. Se añadió junto a `HTMLElement` en lugar de alterar el código.
+- `InvoicesPending.jsx:61` (`react-hooks/preserve-manual-memoization`): el compilador de React infiere
+  `branch` como dependencia de `loadPendingSales`, pero el `useCallback` declaraba `branch?.id`. Se alineó
+  a `[branch, dayRange]`. Es seguro porque `branch` proviene de un `useState` (`BranchContext.jsx:6`), por lo
+  que su identidad solo cambia cuando el usuario elige otra sucursal.
+
+**Bitácora de solución (28 sep 2026, rama `fix/react-hooks-and-eslint-zero-errors`):** el punto 5 se abordó en
+dos frentes. Antes de escribir código se midió qué elimina realmente el re-render en cascada, porque la regla
+admite atajos que no lo hacen:
+
+| variante                                                 | ESLint    | pasadas de render  |
+| -------------------------------------------------------- | --------- | ------------------ |
+| `useEffect(() => { load() })` (estado actual)            | error     | 2                  |
+| `useEffect(() => { const r = async () => load(); r() })` | sin error | **2 (sin cambio)** |
+| `isLoading` inicializado en `true` y sin reset síncrono  | sin error | 1                  |
+
+La segunda fila es la trampa: envolver el cuerpo del efecto en una función async interna silencia la regla y
+deja el re-render en cascada intacto, porque la función se ejecuta de forma síncrona hasta el primer `await`.
+No se aplicó en ningún sitio. La tercera fila es una corrección genuina pero solo cubre el primer montaje: al
+refiltrar o cambiar de sucursal el spinner dejaría de aparecer, así que tampoco se adoptó como solución general.
+
+**Errores no React (18 de 69) resueltos en esta rama:** 4 `no-useless-escape` (barra invertida innecesaria
+dentro de clases de caracteres de saneo de nombre de archivo), 2 `no-undef` (`structuredClone` y `Storage`
+declarados como globals de solo lectura en `eslint.config.mjs`, igual que se hizo con `HTMLButtonElement`) y
+11 `preserve-manual-memoization`. En este último caso el compilador infiere el objeto raíz cuando el cuerpo
+mezcla acceso opcional y no opcional (`branch?.id` junto a `branch.id`), de modo que la lista manual declaraba
+una propiedad más estrecha y la memoización no se podía preservar. El cambio es seguro porque `branch` es un
+`useState` de `BranchContext`, con identidad estable entre cambios de sucursal.
+
+**Punto 5 (40 de 52 ocurrencias) resueltas en esta rama**, con cuatro patrones:
+
+1. _Ajuste durante el render._ Los reinicios que solo existían para compensar un efecto (limpiar un modal al
+   abrirlo, repoblar un formulario, recortar la página o el índice seleccionado) se resuelven ahora con
+   `useDidChange`, que compara la clave con la del render anterior. React descarta la salida y vuelve a
+   renderizar antes de confirmarla, así que se evita el segundo render comprometido y el fotograma con el
+   estado anterior. Donde el efecto observaba un objeto, se pasa a observar su id (`usePartialReturn`,
+   `useDepartments`) para no reajustar cuando el padre recrea el objeto.
+2. _Estado derivado puro._ En `PageReport/hooks/useInventoryReport.js` la sucursal efectiva se deriva
+   (`branchOverride || branch?.id`) en lugar de sincronizar estado. En `usePagination.js` la página se recorta
+   durante el render y se expone `safePage`, con lo que `startIndex`, `endIndex` y `pageItems` nunca quedan
+   fuera de rango.
+3. _Carga derivada de la clave de petición._ `useRequestStatus` sustituye al `setLoading(true)` síncrono:
+   guarda solo la clave ya resuelta y `isLoading` es la comparación contra la clave pedida, de modo que el
+   spinner aparece en la misma pasada de render en la que cambian los filtros. El error se expone también de
+   forma derivada para que el de una petición anterior no se vea mientras corre la nueva.
+4. _Orquestación de la carga en la capa de servicios._ La regla marca cualquier llamada desde el cuerpo de un
+   efecto a una función **del mismo archivo** que termine en `setState`, incluso con todas las escrituras
+   después del `await`. Por eso la carga de `PageInventoryReport` se movió a `loadInventoryReportData` en
+   `inventoryReportService`, que entrega el resultado por callbacks: el efecto no escribe estado y las
+   actualizaciones ocurren en la continuación asíncrona. Este es el patrón pendiente de replicar.
+
+Los efectos sobre el DOM (foco, timeouts, refs, suscripciones) permanecen en efectos: sincronizar con sistemas
+externos es justamente lo que un efecto debe hacer. Se eliminaron además dos `setState` que eran no-ops:
+`Login.jsx` limpiaba un formulario que ya nace vacío, y `UserForm.jsx` (sin importadores) repoblaba usando la
+identidad del objeto en vez de sus datos.
+
+**Cierre del punto 5 (52 → 0).** Las 29 ocurrencias que quedaban se resolvieron replicando los cuatro patrones
+anteriores, con una variante nueva para las dos que exigían una decisión de producto:
+
+5. _Lectura síncrona y caso sin petición._ `useSalesDraft.js` y `CashRegister.jsx` no encajaban en los patrones 1 a 4. En `useSalesDraft` la decisión de qué hacer con el borrador persistido se aísla en `readDraftRestorePlan`, una
+   función pura que solo lee `localStorage`/`sessionStorage` y devuelve qué hay que mostrar; el render aplica ese
+   plan con `useDidChange` y el efecto se queda con los efectos de verdad (avisar al padre, marcar la sesión como
+   viva, abrir el modal de recuperación). En `CashRegister` el caso "no hay sucursal ni usuario, luego no hay
+   petición que resolver" se resuelve con clave nula, que es precisamente el estado inicial de `useRequestStatus`:
+   no hay que escribir `setChecking(false)` para expresar que no hay nada pendiente.
+
+**Un quinto patrón, para el paso que habilita al siguiente.** `useSalesDraft` necesita que el guardado automático
+no corra hasta que el carrito restaurado esté aplicado: si corriera en el mismo commit, escribiría con el carrito
+vacío y borraría el borrador recién recuperado. Para expresar esa secuencia sin un `setState` síncrono en el
+cuerpo del efecto se añadió `afterCommit` a `src/utils/asyncUtils.js`, que agenda la tarea en un microtask. Las
+escrituras pasan así a una continuación asíncrona legítima, el efecto conserva su `cleanup` y el comportamiento de
+dos passes es explícito. No es el atajo de la tabla de arriba (envolver en una async interna): esa variante se
+ejecuta de forma síncrona hasta el primer `await`, mientras que aquí el salto es deliberado y el motivo está
+documentado. `useCashCutReport` usa el mismo helper para arrancar la carga inicial, que si no escribiría estado
+antes de que el commit quedara firme.
+
+**Punto 5 cerrado por módulo (29 → 0).** Reportes (7 hooks), inventario (`useInventoryReport`, `useMovementsReport`),
+catálogo (`useProductsList`, `ProductsContext`), ventas (`useSalesHistory`, `useSearchModal`, `useSalesCashSession`,
+`useSalesDraft`, `useProductDiscountReward`, `useRewardProductSelection`, `useProductsPromotions`,
+`useKardexProductSelection`), caja (`useCashCutReport`, `CashRegister.jsx`) y perfiles (`Profiles.jsx`).
+
+En `useSalesCashSession` y en los dos modales de recompensa la comprobación del turno y la carga de productos se
+movieron a `salesCashService` (`resolveShiftCutStatus`) y al servicio de cada módulo respectivamente, de modo que el
+efecto llama a una función importada y conserva intactos los callbacks imperativos (`validateShiftNotCut`,
+`loadProducts`, `loadRewardProducts`) que usan los eventos del navegador y los temporizadores de tiempo real. En
+`useSalesCashSession` el indicador se siembra además desde `localStorage` durante el render, de modo que un corte ya
+registrado se sigue viendo de inmediato sin la pasada extra síncrona.
+
+**Verificación de esta rama:** `npm test` en verde con 1237 tests (1226 previos más 11 nuevos para
+`useDidChange` y `useRequestStatus`); `npm run build:frontend` con EXIT 0; conteo de errores de ESLint
+**69 → 0** sobre 581 archivos. Quedan 583 warnings, todos preexistentes y fuera del alcance de este ítem
+(siguen en #8 y #57).
+
+Nota sobre cobertura: el error de profundidad de importación en `useSalesCartState.js` (este commit lo corrige)
+no lo detectó la suite, porque ningún test alcanza ese archivo. `npm run build:frontend` sí recorre todo el
+grafo de módulos y lo habría detectado. Para este ítem conviene validar siempre con el build, no solo con
+`npm test`.
+
+---
+
+### 57. Declaraciones de `console.log` residuales en código de producción
+
+**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
+
+`AGENTS.md` estipula la eliminación obligatoria de todos los `console.log` y `console.warn` de depuración antes de commitear
+(permitiendo únicamente `console.error` dentro de bloques `catch` para trazabilidad). Persisten llamadas en:
+
+- `src/utils/ticketPrinter.js:3-5` (3 logs que imprimen el separador y texto completo del ticket en consola).
+- `src/components/InventoryComponents/PageInventory/PageKardex/hooks/useKardexRealtime.js:219` (1 log de evento realtime).
+- `src/components/InvoicesComponents/PageInvoices/InvoiceCustomers/InvoiceCustomers.jsx:312` (1 log).
+- `src/components/InvoicesComponents/PageInvoices/InvoicesPending/InvoicesPending.jsx:163` (1 log).
+
+**Impacto:** ruido en la consola de producción de Electron y violación de las normas de calidad del proyecto.
+
+**Recomendación:** eliminar las llamadas a `console.log` de depuración.
+
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** las 6 llamadas `console.log` se
+eliminaron y la regla `no-console` quedó en cero en todo `src/`. Los `console.error` de los bloques `catch` se
+conservaron intactos.
+
+- `InvoiceCustomers.jsx` e `InvoicesPending.jsx`: el callback de `.subscribe()` solo contenía el log, por lo que se
+  eliminó por completo el argumento; el handler de `.on("postgres_changes", ...)` que recarga los datos se mantiene.
+- `useKardexRealtime.js`: se eliminó la rama `status === "SUBSCRIBED"` y el guard `import.meta.env.DEV` que solo existían
+  para silenciar el log. Se conservó el `console.error` de `CHANNEL_ERROR` / `TIMED_OUT`, que ahora reporta también en
+  producción (antes quedaba suprimido fuera de DEV).
+- `ticketPrinter.js`: al retirar los 3 logs, el cuerpo de `try` quedó sin ninguna operación que pudiera lanzar, por lo que
+  el linter marcó el `catch` como código inalcanzable (`no-unreachable`). Se eliminó el `try/catch` muerto y se conservó
+  el contrato `{ success, message }` que consumen los tres llamadores (`CashCut.jsx`, `salesTicketService.js` y
+  `useSalesHistory.js`); ninguno de ellos lee la propiedad `error`. Como la función ya no puede fallar, la rama de
+  error desaparece del contrato: la ausencia de una implementación real de impresión y el manejo de error
+  muerto en esos tres llamadores quedan registrados como deuda consciente en #59.
+
+Impacto en pruebas: `ticketPrinter.test.js` contenía dos tests acoplados al log eliminado — uno afirmaba que se
+imprimía el texto y otro provocaba el fallo haciendo que el propio `console.log` lanzara. El primero se reescribió para
+verificar el contrato de éxito y que **no** se emita ningún `console.log` (invariante de este ítem); el segundo se retiró
+por depender del comportamiento eliminado, ya que sin una implementación real de impresión no hay forma de provocar
+un fallo de impresión legítimo. La cobertura de esa pérdida se repuso con 21 casos nuevos sobre los ganchos de ciclo de
+vida corregidos en #56 (`useReportsDashboard`, `useSalesTableColumns` y `useSalesKeyboardShortcuts`), dejando la suite
+en 51 archivos / 663 tests, por encima de los 643 de la base.
+
+---
+
+### 58. Caracteres tipográficos (`✓`, `✕`) usados como pseudo-iconos en componentes
+
+**Estado:** resuelto (25 sep 2026) — rama fix/code-quality-and-runtime-bugs.
+
+`AGENTS.md` e `ICONS.md` prohíben el uso de emojis y caracteres tipográficos sueltos como sustitutos de iconos en la UI,
+exigiendo el uso de SVGs estandarizados en `src/assets/icons/`. Se identificaron 12 ocurrencias de caracteres `✓` y `✕`
+hardcodeados como texto en:
+
+- `AppModal.jsx:16`
+- `SaleSuccessModal.jsx:51`
+- `NotesModal.jsx:56`
+- `InventorySearchModal.jsx:77`
+- `InvoicesPending.jsx:254`
+- `InvoicesHistory.jsx:341, 464`
+- `InvoiceSaleModal.jsx:531`
+- `FiscalCustomerModal.jsx:566`
+- `ProductsList.jsx:84`
+- `ProductsSearchModal.jsx:24`
+- `UserForm.jsx:132`
+
+**Impacto:** inconsistencia visual entre plataformas y problemas de accesibilidad con lectores de pantalla.
+
+**Recomendación:** sustituir por componentes SVG (`checkIcon`, `xmarkIcon`) con `aria-hidden="true"` y atributos semánticos.
+
+**Bitácora de solución (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`):** las 12 ocurrencias se sustituyeron por
+los SVG del catálogo, importados como assets de Vite y renderizados con `<img src={...} alt="" aria-hidden="true" />`,
+siguiendo la convención ya establecida en el proyecto (por ejemplo `DeleteTicketModal.jsx`). Se usó
+`xmark-solid-full.svg` para los 10 cierres y descartes, y `circle-check-solid-full.svg` para las 2 confirmaciones
+(`AppModal` y `SaleSuccessModal`). Ningún icono decorativo es anunciado por los lectores de pantalla.
+
+- `AppModal.jsx`: en lugar de codificar el carácter en el descriptor `MODAL_TYPE_CONFIG`, el config ahora expone `iconSrc`
+  (URL del asset) junto a `icon`, y el render decide entre `<img>` y carácter según `config.iconSrc`. Esto mantiene el
+  patrón de extensibilidad por configuración (OCP) sin duplicar JSX. Los descriptores `info`, `warning` y `danger` se
+  mantienen con `iconSrc: null` porque sus glifos (`i` y `!`) no son parte de este ítem.
+- Cada CSS Module recibió la clase del icono con `display: block`, dimensiones proporcionales al contenedor y un `filter`
+  de tinte que reproduce el color previo: `brightness(0) invert(1)` para los cierres blancos y una cadena
+  `brightness(0) saturate(100%) invert(82%) sepia(17%) saturate(3300%) hue-rotate(75deg) brightness(51%) contrast(81%)`
+  para el verde de éxito. Como los SVG del catálogo se sirven en negro, el `color` del botón no los tiñe y el `filter`
+  es el mecanismo vigente en el repositorio. Todas las cadenas de tinte son **nuevas** en este PR: no reusan ninguna
+  preexistente en `origin/main`. Los cierres que en `origin/main` usaban `invert(1)` conservan ese mismo filtro.
+  (Las cadenas de tinte se calibraron después contra el navegador; ver la verificación de tintes más abajo.)
+- `ProductsList.jsx`: el `hover` que cambiaba el color a `--croketsOrange` se preservó con una regla
+  `.clearSearchButton:hover .clearSearchIcon`, de modo que el tinte naranja se mantiene en hover.
+- `SaleSuccessModal.jsx`: de paso se corrigió el `className` dinámico de esa misma línea con `.trim()`, ya que
+  `AGENTS.md` prohíbe los espacios colgantes en el DOM.
+
+Verificación: `rg "✓|✕|✗|✔|✖" src/` sin resultados, `npm run build:frontend` en verde (EXIT 0) con los SVG emitidos
+como data URI en los chunks correspondientes, y las clases CSS compiladas presentes en `dist/`.
+
+**Verificación de los tintes (25 sep 2026, mismo PR):** los colores no se comprobaron a ojo sino
+midiendo el pixel renderizado. Se renderizó cada cadena de `filter` sobre un cuadrado negro en un
+Chromium headless y se comparó el resultado con el color de texto que el glifo heredaba, en CIELAB
+con ΔE2000 (≈2.3 es el umbral de percepción). El color heredado se resolvió por la cascada: los
+`.clearSearchButton` y `.closeButton` de `InvoicesHistory` no declaran `color`, así que toman
+`#333333` de `.content`; `AppModal` tomaba `#15803d` de `.success .iconWrapper`.
+
+El primer pase reveló cuatro desviaciones reales, dos de ellas por copy-paste evidente:
+
+| Ubicación                          | Color original | Cadena entregada                              | Render    | ΔE00 |
+| ---------------------------------- | -------------- | --------------------------------------------- | --------- | ---- |
+| `AppModal .iconGlyph`              | `#15803d`      | `invert(20%) sepia(36%) … hue-rotate(121deg)` | `#0b4a3b` | 21.3 |
+| `InvoicesHistory .clearSearchIcon` | `#333333`      | `brightness(0) invert(0.45)`                  | `#737373` | 22.3 |
+| `InvoicesHistory .closeIcon`       | `#333333`      | `brightness(0) invert(0.25)`                  | `#404040` | 4.2  |
+| `ProductsList .clearSearchIcon`    | `#64748b`      | `brightness(0) invert(0.45)`                  | `#737373` | 10.9 |
+| `ProductsList … :hover`            | `#fc8913`      | `invert(68%) sepia(93%) … hue-rotate(346deg)` | `#edaa24` | 13.7 |
+
+Los otros 8 iconos (7 cierres blancos y `InvoicesPending .clearSearchIcon` sobre `#666666`) ya
+renderizaban con ΔE00 = 0. Las cuatro desviaciones se corrigieron buscando por búsqueda aleatoria
+contra el navegador y redondeando a enteros: las dos de `InvoicesHistory` ahora usan
+`brightness(0) invert(0.2)`, que es la conversión exacta de `#333333`, y `ProductsList` y `AppModal`
+reciben cadenas propias calibradas contra su color objetivo. Re-medido sobre los CSS finales, el
+ΔE00 máximo de los 13 iconos es **1.17**, por debajo del umbral de percepción. No queda verificación
+visual manual pendiente.
+
+**Pendiente fuera de alcance:** cerrado el 29 sep 2026 en la rama `fix/ci-eslint-and-modal-icons` (ver
+"cierre total" más abajo). El `i` y el `!` de `AppModal.jsx` ya no son pseudo-iconos de texto.
+
+**Cierre total (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):** con el CI incremental ya
+funcionando (#60), el reformateo de `AppModal.jsx` con Prettier se hizo obligatorio y el descriptor
+`MODAL_TYPE_CONFIG` quedó enteramente sobre SVG:
+
+- `info` pasó a `circle-info-solid-full.svg` (nuevo en el catálogo, agregado a `ICONS.md` en la tabla de
+  alertas y estado) y `warning` y `danger` a `triangle-exclamation-solid-full.svg` ya existente. El
+  glifo de texto deja de existir por completo: `MODAL_TYPE_CONFIG` conserva solo `className`, que es
+  lo único que el render necesita.
+- El icono es decorativo: el contenedor `.iconWrapper` ya tenía `aria-hidden="true"`, así que ningún
+  lector de pantalla anuncia nada. Al dejar de ser un `<img>`, ya no aplica `alt=""`.
+- Mecanismo de color: **máscara + `currentColor`**, no `filter`. El SVG se aplica como
+  `mask-image` sobre `.iconGlyph` y el relleno se pinta con `background-color: currentColor`, de modo
+  que el glifo hereda sin transformación el `color` que cada estado ya declara en `.iconWrapper`
+  (`#075985`, `#15803d`, `#ea7600`, `#dc2626`). La máscara es lo único que define la forma, así que
+  el color pintado es exactamente el color del estado por construcción CSS, sin aproximación
+  posible y sin cadena de filtros que mantener calibrada. `.warning .iconGlyph, .danger .iconGlyph`
+  comparten la misma máscara (mismo triángulo) y por eso la regla está agrupada.
+- Dimensiones: el círculo de información y el de éxito no ocupan lo mismo en su `viewBox` (el primero
+  es de 512 px a sangre y el segundo de 640 px con margen), y el triángulo de alerta es más bajo que
+  ancho. `.iconGlyph` conserva 30 px de base, `.info .iconGlyph` baja a 25 px y
+  `.warning .iconGlyph, .danger .iconGlyph` suben a 32 px, para que los tres pesos ópticos sean
+  comparables dentro del círculo de 60 px. Ninguna regla usa `!important`.
+- De paso se eliminó el `import React` por defecto de `AppModal.jsx`, que quedó sin uso con el runtime
+  automático de JSX y era el único warning de `no-unused-vars` en el archivo, y las declaraciones de
+  `font-size`/`font-weight`/`line-height` de `.icon`, que quedaron muertas al no renderizarse ya texto.
+
+Verificación: `npm test` en verde (84 archivos / 1,278 tests), `npm run build:frontend` en verde
+(EXIT 0) con los tres SVG emitidos como data URI en el CSS compilado, `npx eslint` sin errores sobre
+el diff y `npx prettier --check` en verde sobre el diff. No queda pendiente de este ítem.
+
+**Corrección de una medición previa (29 sep 2026, contra-auditoría).** Una versión intermedia de este
+cierre calibró los tintes con cadenas `filter` y verificó el resultado **simulando** la cadena en
+JavaScript, declarando ΔE00 de 0.02 a 0.58. Ese simulador no estaba validado contra un motor de
+renderizado y sus cifras no correspondían a lo que el navegador pintaba. Medido sobre el CSS real
+renderizado en Chromium, la regresión era de otra magnitud:
+
+| Estado    | Render real | Objetivo  | ΔE00 real | ΔE00 declarado |
+| --------- | ----------- | --------- | --------- | -------------- |
+| `info`    | `#005184`   | `#075985` | 3.30      | 0.02           |
+| `success` | `#21823f`   | `#15803d` | 1.04      | 0.58           |
+| `warning` | `#7e7012`   | `#ea7600` | **29.19** | 0.14           |
+| `danger`  | `#dc430d`   | `#dc2626` | **8.76**  | 0.11           |
+
+`warning` se pintaba de oliva oscuro en lugar de naranja y `danger` de rojo-naranja en lugar de rojo,
+muy por encima del umbral de percepción (~2.3).
+
+La lección queda registrada como método: un color pintado con `filter` solo se puede verificar
+rasterizando en un motor real; una simulación propia de la especificación no es evidencia suficiente,
+por muchos decimales que devuelva.
+
+**Precisión sobre la línea base (29 sep 2026, segunda contra-auditoría).** Una versión anterior de
+este párrafo afirmaba que en `main` los cuatro glifos eran ΔE00 = 0.00 y que el paso a `filter`
+"empeoraba dos de los cuatro estados". Reconstruyendo `main` y el commit `68a6a52` y midiendo ambos
+en el motor, la línea base era mixta y la regresión afectaba a tres estados, no a dos:
+
+| Estado    | `main` (9d2c3e4)                   | `68a6a52` (con `filter`) | HEAD (con máscara) |
+| --------- | ---------------------------------- | ------------------------ | ------------------ |
+| `info`    | 0.00 — glifo de texto              | 3.30                     | **0.00**           |
+| `success` | 1.04 — ya era `<img>` con `filter` | 1.04                     | **0.00**           |
+| `warning` | 0.00 — glifo de texto              | 29.19                    | **0.00**           |
+| `danger`  | 0.00 — glifo de texto              | 8.76                     | **0.00**           |
+
+Es decir: en `main`, `info`, `warning` y `danger` eran texto que heredaba `color` del contenedor y por
+tanto eran exactos, mientras que `success` **ya usaba un `<img>` con cadena `filter`** y pintaba
+`#21823f` con ΔE00 = 1.04. El paso a `filter` de `68a6a52` empeoró tres estados de cuatro (`info`,
+`warning` y `danger`); `success` no cambió porque su cadena ya existía en `main`, y se arrastró sin
+corregir. Esto no debilita el argumento, lo refuerza: la regresión era más ancha de lo registrado y
+estaba mal cuantificada por el mismo método no validado que se estaba criticando.
+
+La medición definitiva de esta versión se hizo rasterizando el **CSS compilado de `dist/`** con el DOM
+real del modal en Chromium (`--force-color-profile=srgb`, `--force-device-scale-factor=4`, sin
+animación de entrada), y da **ΔE00 = 0.00 en los cuatro estados**. Los tamaños de glifo los reporta el
+propio navegador por `getComputedStyle` (25, 30, 32 y 32 px) y el `filter` computado resulta `none`
+en los cuatro:
+
+| Estado    | Color plano medido | Objetivo  | ΔE00 |
+| --------- | ------------------ | --------- | ---- |
+| `info`    | `#075985`          | `#075985` | 0.00 |
+| `success` | `#15803d`          | `#15803d` | 0.00 |
+| `warning` | `#ea7600`          | `#ea7600` | 0.00 |
+| `danger`  | `#dc2626`          | `#dc2626` | 0.00 |
+
+---
+
+### 59. `printTicket` no implementa impresión y su rama de error se eliminó
+
+**Estado:** Resuelto (29 sep 2026, rama `feature/ticket-printer-ipc-setup`).
+
+El problema registrado el 25 sep 2026 (rama `fix/code-quality-and-runtime-bugs`) era que
+`src/utils/ticketPrinter.js` no imprimía nada, que su único argumento se ignoraba y que, tras retirar
+los `console.log` de #57, el `catch` que devolvía `{ success: false, message, error }` había quedado
+como código inalcanzable. Como consecuencia, el manejo de error de los tres llamadores
+(`CashCut.jsx:184-186`, `salesTicketService.js:227` y `useSalesHistory.js:262`) era código muerto y la
+UI informaba "Corte impreso correctamente" sin que existiera impresión.
+
+**Arquitectura IPC implementada** (cuatro piezas, cada una con una responsabilidad):
+
+1. `electron/preload.js` — `'print-ticket'` se sumó a `allowedInvokeChannels`, junto a los otros seis
+   canales. La lista blanca y los `ipcMain.handle` siguen coincidiendo exactamente.
+2. `electron/mainProcess.js` — el handler `print-ticket` recibe `{ ticketText, options }` y hace una
+   sola cosa antes de imprimir: `resolvePrintAvailability(event.sender, options)`. Si el llamador no
+   eligió `deviceName` y el sistema no reporta ninguna impresora, devuelve
+   `{ success: false, message, error: "NO_PRINTER_AVAILABLE" }` sin abrir la ventana de impresión. No
+   hay lógica de impresión en este archivo: solo registra el canal.
+3. `electron/ticketPrintService.js` (nuevo) — el trabajo de impresión. Envuelve el ticket ya
+   formateado (32 columnas, el ancho útil de un rollo de 58 mm) en un documento HTML monoespaciado, lo
+   carga en una `BrowserWindow` oculta y destruida en `finally`, y llama a `webContents.print` con
+   `silent: true` (impreso sin diálogo: un POS no debe pedirle confirmación al cajero) y márgenes en
+   cero. `BrowserWindow` y el `webContents` emisivo se inyectan, así que el módulo se prueba sin
+   levantar Electron. El ancho de papel está modelado por perfiles (`58mm` / `80mm`) porque un ancho
+   distinto de 32 columnas exigiría tocar los constructores de ticket, y no al revés.
+4. `src/utils/ticketPrinter.js` — el servicio del renderer. Invoca el canal y **nunca lanza**: el
+   rechazo del canal, el error del driver y un payload malformado se normalizan al mismo contrato
+   `{ success, message, error?, simulated }`. `simulated` distingue "se imprimió en el sistema" de
+   "solo se generó el texto": fuera de Electron (navegador de desarrollo) no hay proceso principal y
+   el fallback reporta la simulación en lugar de fingir un trabajo de impresión.
+
+**Ramas de fallo alcanzables y su cobertura:** `EMPTY_TICKET` (texto vacío o ausente, rechazada sin
+abrir ventana), `NO_PRINTER_AVAILABLE` (sin impresora en el sistema), `PRINT_JOB_REJECTED` (el driver
+aceptó la llamada pero devolvió `success: false` sin explicar por qué), `failureReason` del driver
+cuando sí la explica, y el mensaje de la excepción cuando `print` lanza. Están cubiertas en
+`electron/ticketPrintService.test.js` (27 casos) y en el canal de `electron/mainProcess.test.js`.
+
+**Restitución del manejo de error en los llamadores:** los tres vuelven a ramificar sobre
+`!result?.success` con código que puede ejecutarse. `CashCut.jsx` y `useSalesHistory.js` lanzan con
+`{ cause: result?.error }`, de modo que el motivo del driver llega al `console.error` del `catch` sin
+ensuciar el mensaje que ve el usuario; `salesTicketService.js` registra el `error`; y
+`useSalesHistory.js` —que solo mostraba el `alert` sin registrar nada— ahora conserva su
+`console.error` de trazabilidad.
+
+**Configuración de la impresora física (pendiente, sin hardware en el entorno).** La vía quedó
+parametrizada justamente para no requerir un cambio de código cuando exista la impresora:
+
+- `options.profile`: `"58mm"` (por omisión) o `"80mm"`. Define el ancho de `@page` y el tamaño de
+  fuente.
+- `options.deviceName`: nombre exacto que devuelve el sistema. Al pasarlo se omite la consulta de
+  impresoras, lo que permite fijar la impresora por sucursal.
+- `options.pageSize`: `{ width, height }` en micras, para el driver que no respete el ancho declarado
+  en CSS. El alto por omisión es un tramo de rollo de 300 mm y el driver corta al final de la última
+  línea con contenido.
+- `options.copies` y `options.silent`: multiplicity y si se abre el diálogo del sistema.
+
+Los llamadores todavía no pasan opciones (usan el perfil de 58 mm por omisión), así que el ajuste por
+sucursal queda como el siguiente paso natural cuando sepas qué hardware se usará.
+
+---
+
+### 60. Los pasos incrementales de ESLint y Prettier en CI no ejecutan nada
+
+**Estado:** resuelto (29 sep 2026) — rama `fix/ci-eslint-and-modal-icons`.
+
+`.github/workflows/ci.yml` filtra el diff con `rg` en los pasos "ESLint (incremental sobre el diff)" y
+"Prettier (incremental sobre el diff)". `ripgrep` no viene preinstalado en los runners de
+`ubuntu-latest`, así que ambos pasos emiten `rg: command not found`, la tubería se queda sin
+archivos, `xargs -r` no invoca nada y el paso termina en `success` sin haber comprobado un solo archivo.
+
+**Impacto:** el pipeline está en verde sin validar formato ni lint de los archivos tocados. No es una
+regresión funcional —el gate local `npx eslint` y `npm test` siguen siendo válidos—, pero el
+"CI incremental" documentado en `docs/TESTING.md` no existe en la práctica: hoy cualquier archivo
+nuevo o modificado entra al repositorio sin cumplir el estándar y sin que nadie lo note. Por
+ejemplo, `electron/preload.js`, `src/components/SalesComponents/services/salesTicketService.js` y
+`src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js` no cumplen Prettier en
+`main`, y ese desfase se viene arrastrando desde la Fase 0.
+
+**Resolución (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`):**
+
+- `rg` se sustituyó por `grep -E` en los dos pasos incrementales. `grep` es POSIX y está presente en
+  cualquier runner Linux, con lo que la tubería vuelve a devolver nombres de archivo y `xargs -r`
+  invoca `npx eslint` / `npx prettier --check` sobre ellos. La alternativa de instalar `ripgrep` con
+  `apt-get` se descartó por añadir un paso de red a un pipeline que no la necesita.
+- La premisa del ítem se reprodujo antes de tocar nada: con `grep -E` el paso de Prettier falla
+  efectivamente sobre el archivo que esta rama modifica, `src/components/AppModal/AppModal.jsx`, que
+  estaba escrito a mano con un ancho de ~40 columnas y no cumplía `printWidth: 80` ni en `main`. Se
+  corrigió con `npx prettier --write` dentro del commit de iconos; el reformateo es ruido puro (sin
+  cambios de comportamiento) y quedó aislado del resto del PR.
+- Calibración del linter (#8): se activó `react/jsx-uses-vars` en el bloque de `**/*.{js,jsx,mjs}` de
+  `eslint.config.mjs`, declarando `eslint-plugin-react` en `plugins`. Sin esa regla, todo componente
+  importado y usado solo como etiqueta JSX (`<ProductsList />`) se reportaba como variable sin usar:
+  los warnings de `no-unused-vars` bajaron de **564 a 187** y el total del repo de **583 a 206
+  problemas, todos warnings y 0 errores**. `npx eslint .` sobre el diff de la rama queda en 0 errores.
+- Verificación de la premisa del ítem: `npm test` (84 archivos / 1,278 tests), `npm run
+build:frontend` (EXIT 0) y `git diff --name-only origin/main | grep -E '\.(js|jsx|mjs|json|html|css)$'
+| xargs -r npx prettier --check` en verde sobre el diff.
+
+**Deuda que queda (no bloqueante, registrada como #61):** con el paso ya funcional, el pipeline
+empezará a fallar la próxima vez que se toque un archivo que no cumpla Prettier en `main`. El
+alcance real es de **355 archivos** (ver #61), no de tres: una primera versión de este ítem
+subestimaba la deuda y habría dado una falsa idea de que la puerta de formato está casi limpia. La
+decisión tomada en esta fase fue **no** reformatear ninguno aquí: son archivos ajenos al alcance de
+este arreglo de infraestructura y `git blame` atribuiría el reformateo a una línea funcional. Se
+corrigen en un commit `style:` dedicado cuando se toquen.
+
+> **Actualización (29 sep 2026):** esa deuda ya se saldó. #61 se resolvió con una barrida global en
+> la rama `style/global-prettier-format` (370 archivos reformateados, `npx prettier --check .` en 0
+> incidencias), precisamente en el commit `style:` dedicado que este párrafo dejó apuntado para no
+> mezclar el reformateo con líneas funcionales.
+
+---
+
+### 61. Archivos legacy que incumplen Prettier y bloquearán el CI cuando se toquen
+
+**Estado:** Resuelto (registrado 29 sep 2026, corregido en alcance el 29 sep 2026, **resuelto 29 sep
+2026 en la rama `style/global-prettier-format`** con una barrida global).
+
+Consecuencia directa de resolver #60: el paso incremental de Prettier del CI ahora se ejecuta de
+verdad, así que cualquier archivo que se modifique debe cumplir `.prettierrc.json`.
+
+**Resolución:** barrida global en rama propia, tal como recomendaba el punto 3 de la recomendación
+original. `npx prettier --write .` sobre el repositorio completo, con `.prettierignore` respetado
+(`dist/`, `out/`, `release-builds/`, `node_modules/`, `supabase/.temp/`, `supabase/functions/`,
+`package-lock.json`).
+
+**Alcance realmente reformateado (medido, no estimado): 370 archivos**, exactamente los 370 que
+fallaban antes de la barrida, y ninguno más. Desglose por extensión: 195 `.js`, 131 `.jsx`, 27
+`.css`, 14 `.md`, 1 `.mjs`, 1 `.html`, 1 `.MD`. De ellos, 355 matchean el filtro del paso incremental
+del CI (`js|jsx|mjs|json|html|css`) y 15 son markdown. El diff total es de 21,484 inserciones y
+15,436 borrados, casi todos reindentaciones.
+
+El alcance reproduce las cifras medidas al registrar el ítem: 370 en la rama `fix/ci-eslint-and-modal-icons`
+y 371 en `main` (la diferencia de uno es `AppModal.jsx`, ya reformateado por obligación de #60). Esto
+confirma que la barrida no dejó ningún archivo atrás ni reformateó de más.
+
+> Nota de método (29 sep 2026): una versión anterior de este párrafo decía 371, 16 y 372. El error
+> fue contar como archivo la línea de resumen que Prettier emite al final (`Code style issues found
+in 370 files.`), que no es una ruta. Al contar solo rutas reales, `355 + 15 = 370` cierra, y en
+> `main` `356 + 15 = 371`. El número que decide el comportamiento del pipeline, 355, era correcto
+> desde el principio.
+
+Entre los 355 se estaban los tres que motivaron el registro original, y que son los más probables
+de tocarse pronto por estar en el flujo de impresión y de historial de ventas. Los tres quedaron
+reformateados:
+
+- `electron/preload.js`
+- `src/components/SalesComponents/services/salesTicketService.js`
+- `src/components/SalesComponents/Modals/SalesHistoryModal/useSalesHistory.js`
+
+**Impacto resuelto:** `npx prettier --check .` pasa a devolver `All matched files use Prettier code
+style!` con 0 incidencias. El paso incremental del CI ya no puede fallar por formato de un archivo
+legacy, y cualquier PR futuro que toque un archivo de `src/` no tiene que arrastrar un commit
+`style:` previo.
+
+**Salvaguarda de integridad funcional (lo importante de una barrida de este tamaño):** un cambio de
+espaciado y saltos de línea a 370 archivos no se puede dar por bueno con `git diff -w`, porque
+Prettier mueve tokens entre líneas y el diff por líneas sigue reportando diferencias. La verificación
+se hizo comparando el **AST**, no el texto:
+
+- Se parsearon los 327 archivos `.js`/`.jsx`/`.mjs` de `HEAD` y del árbol de trabajo con `espree`
+  (el parser que usa el propio ESLint del proyecto) y se compararon los AST serializados sin datos
+  de posición. Resultado: **327 de 327 con AST idéntico**. Al comparar AST y no texto, las
+  diferencias que sí existen y son inertes quedan excluidas por construcción: los paréntesis que
+  Prettier añade alrededor de elementos JSX y las comas finales que agrega o quita
+  (`trailingComma: "es5"`) no son nodos del AST. No hay cambios de lógica de negocio, de imports ni
+  de contratos.
+- Para el texto JSX se comparó además el valor renderizado, con el algoritmo exacto de Babel
+  (`cleanJSXElementLiteralChild`), porque Prettier convierte un `{" "}` explícito en un espacio
+  literal del texto adyacente y viceversa. Ambas formas renderizan el mismo espacio, y la comparación
+  lo confirma archivo por archivo. Por el mismo motivo se ignoraron los nodos `JSXText` vacíos que
+  Prettier inserta al reflotar líneas: no renderizan nada.
+- Los 27 `.css` son equivalentes tras normalizar el estilo de comillas en `content:` y la escritura
+  de literales numéricos (`0.80rem` → `0.8rem`, mismo valor). `index.html` es equivalente salvo el
+  doctype, que Prettier pasa a minúsculas (`<!DOCTYPE html>` → `<!doctype html>`, sin efecto en
+  HTML5) y la eliminación de un espacio colgante.
+- Los 15 markdown son equivalentes salvo tres cambios, que se declaran aquí en vez de omitirse:
+  1. Marcadores de énfasis `*texto*` → `_texto_` y relleno de celdas de tablas. Renderizan igual.
+  2. `TEMPLATE_NUEVA_PAGINA.md`: el bloque de código de ejemplo pasa de comillas simples a dobles,
+     porque Prettier formatea el código incrustado en los bloques delimitados y
+     `.prettierrc.json` fija `singleQuote: false`. Ahora el ejemplo es consistente con la convención
+     real del repositorio.
+  3. `docs/PR_AUDIT_HISTORY.md`: **corregido a mano.** Prettier reinterpretó el signo `+` aritmético
+     de la línea "573 previos + 13 de X + 2 de Y" como marcador de lista y lo reescribió como `-`,
+     lo que convertía una suma en una resta. Se escapó como `\+`, que CommonMark renderiza como `+`
+     literal y que Prettier ya no toca. Sin esta corrección la barrida habría introducido un error de significado en un informe
+     histórico.
+- Ningún `console.error` se eliminó: el recuento es idéntico antes y después (257 en `src/`, 2 en
+  `scripts/`). Las 55 líneas con `console.error` que aparecen como borradas en el diff están
+  reindentadas o reflotadas, no perdidas. `scripts/importPostalCodes.js` mantiene sus `console.log`
+  preexistentes; no se tocaron porque corregirlo sería un cambio de comportamiento y quedaba fuera
+  del alcance de una barrida de estilo.
+
+**Verificación mecánica final de la rama:**
+
+| Comprobación                 | Resultado                                                               |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `npx prettier --check .`     | EXIT 0, `All matched files use Prettier code style!`, 0 incidencias     |
+| `npm test`                   | EXIT 0, 84 archivos / 1,278 tests, 100% en verde                        |
+| `npm run build:frontend`     | EXIT 0, compilación limpia                                              |
+| `npx eslint .`               | EXIT 0, 0 errores y 206 warnings (mismo total que la línea base de #60) |
+| `git diff --check`           | EXIT 0, sin avisos de whitespace ni espacios colgantes                  |
+| Fin de archivo (EOF newline) | los 370 archivos terminan en salto de línea                             |
+
+El reformateo quedó aislado en un commit `style:` exclusivo, sin cambios funcionales mezclados, que es
+justo lo que este ítem pedía evitar: que `git blame` atribuya el reformateo a una línea funcional. La
+documentación de la resolución va en un commit `docs(debt)` aparte.
+
+**Impacto previo (histórico):** ninguno mientras no se tocaran (el pipeline solo evalúa el diff), pero
+era alto en la práctica: casi cualquier archivo de `src/` que se modificara hacía fallar el PR por
+formato, en archivos cuyo cambio funcional era independiente del estilo. No era un obstáculo que se
+pudiera absorber PR a PR sin una barrida previa.
 
 ---
 

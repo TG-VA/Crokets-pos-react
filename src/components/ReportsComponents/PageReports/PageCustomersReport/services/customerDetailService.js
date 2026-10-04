@@ -25,7 +25,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
     // 2. Historial de ventas del cliente (todas sus ventas cronológicas)
     const { data: sales, error: salesErr } = await supabase
       .from("sales")
-      .select(`
+      .select(
+        `
         id,
         sale_date,
         subtotal,
@@ -43,7 +44,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
           id,
           username
         )
-      `)
+      `
+      )
       .eq("customer_id", customerId)
       .order("sale_date", { ascending: false });
 
@@ -58,7 +60,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
     if (saleIds.length > 0) {
       const { data: detData, error: detErr } = await supabase
         .from("sale_details")
-        .select(`
+        .select(
+          `
           id,
           sale_id,
           product_id,
@@ -71,7 +74,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
             name,
             barcode
           )
-        `)
+        `
+        )
         .in("sale_id", saleIds);
 
       if (!detErr && detData) {
@@ -93,7 +97,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
     try {
       const { data: pLedgerData, error: pointsErr } = await supabase
         .from("customer_points")
-        .select(`
+        .select(
+          `
           id,
           points,
           movement_type,
@@ -113,7 +118,8 @@ export const fetchCustomerDetailReport = async (customerId) => {
             id,
             name
           )
-        `)
+        `
+        )
         .eq("customer_id", customerId)
         .order("created_at", { ascending: false });
 

@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./ProductsSearchModal.module.css";
 import { useProductSearchModal } from "../hooks/useProductSearchModal";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
   const {
@@ -21,7 +22,12 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
         <div className={styles.modalHeader}>
           <h2>Búsqueda de Productos</h2>
           <button className={styles.closeButton} onClick={handleClose}>
-            ✕
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -70,8 +76,10 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                     // Limpieza estricta de clases dinámicas para evitar espacios colgantes
                     const itemClasses = [
                       styles.resultItem,
-                      index === selectedIndex ? styles.selectedResult : ""
-                    ].filter(Boolean).join(" ");
+                      index === selectedIndex ? styles.selectedResult : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
 
                     return (
                       <div
@@ -96,8 +104,12 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
                             <span
                               className={[
                                 styles.productStock,
-                                (product.existencia || 0) > 0 ? styles.inStock : styles.outOfStock
-                              ].filter(Boolean).join(" ")}
+                                (product.existencia || 0) > 0
+                                  ? styles.inStock
+                                  : styles.outOfStock,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                             >
                               Stock: {product.existencia ?? 0}
                             </span>

@@ -1,7 +1,4 @@
-import {
-  formatDateTime,
-  getDateKeyFromValue,
-} from "./movementDateUtils";
+import { formatDateTime, getDateKeyFromValue } from "./movementDateUtils";
 
 export const MOVEMENT_TYPE_LABELS = {
   sale: "Venta",
@@ -39,26 +36,19 @@ export const formatReason = (value) => {
     return "—";
   }
 
-  const match = rawValue.match(
-    /^([a-z_]+):\s*(.*)$/i
-  );
+  const match = rawValue.match(/^([a-z_]+):\s*(.*)$/i);
 
   if (!match) {
     return rawValue.toUpperCase();
   }
 
-  const movementTypeKey = String(
-    match[1] ?? ""
-  )
+  const movementTypeKey = String(match[1] ?? "")
     .trim()
     .toLowerCase();
 
-  const detail = String(
-    match[2] ?? ""
-  ).trim();
+  const detail = String(match[2] ?? "").trim();
 
-  const movementLabel =
-    MOVEMENT_TYPE_LABELS[movementTypeKey];
+  const movementLabel = MOVEMENT_TYPE_LABELS[movementTypeKey];
 
   if (!movementLabel) {
     return rawValue.toUpperCase();
@@ -81,10 +71,7 @@ export const formatTicket = (value) => {
   return ticket.slice(0, 8);
 };
 
-export const normalizeFilenameSegment = (
-  value,
-  fallback = "POLIGONO"
-) => {
+export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
   const normalizedValue = String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -97,24 +84,14 @@ export const normalizeFilenameSegment = (
   return normalizedValue || fallback;
 };
 
-export const toUpperSafe = (
-  value,
-  fallback = "—"
-) => {
-  const normalizedValue = String(
-    value ?? ""
-  ).trim();
+export const toUpperSafe = (value, fallback = "—") => {
+  const normalizedValue = String(value ?? "").trim();
 
-  return (
-    normalizedValue || fallback
-  ).toUpperCase();
+  return (normalizedValue || fallback).toUpperCase();
 };
 
 export const getSalesObject = (row) => {
-  const sale =
-    row?.sales ??
-    row?.sale ??
-    {};
+  const sale = row?.sales ?? row?.sale ?? {};
 
   if (Array.isArray(sale)) {
     return sale[0] ?? {};
@@ -123,65 +100,40 @@ export const getSalesObject = (row) => {
   return sale ?? {};
 };
 
-export const getRowMovementTypeKey = (
-  row
-) => {
-  return String(
-    row?.movement_type ?? ""
-  )
+export const getRowMovementTypeKey = (row) => {
+  return String(row?.movement_type ?? "")
     .trim()
     .toLowerCase();
 };
 
 export const getRowTypeInfo = (row) => {
-  const rawTypeKey =
-    getRowMovementTypeKey(row);
+  const rawTypeKey = getRowMovementTypeKey(row);
 
   const isMixedSaleRedemption =
     row?.has_sale_redemption === true &&
-    (
-      rawTypeKey === "sale" ||
-      rawTypeKey === "redemption"
-    );
+    (rawTypeKey === "sale" || rawTypeKey === "redemption");
 
   if (isMixedSaleRedemption) {
     return {
       typeKey: "sale_redemption",
-      typeLabel: formatMovementType(
-        "sale_redemption"
-      ),
-      typeFilterKeys: [
-        "sale_redemption",
-        "sale",
-        "redemption",
-      ],
+      typeLabel: formatMovementType("sale_redemption"),
+      typeFilterKeys: ["sale_redemption", "sale", "redemption"],
       rawTypeKey,
     };
   }
 
   return {
     typeKey: rawTypeKey,
-    typeLabel: formatMovementType(
-      rawTypeKey || row?.movement_type
-    ),
-    typeFilterKeys: rawTypeKey
-      ? [rawTypeKey]
-      : [],
+    typeLabel: formatMovementType(rawTypeKey || row?.movement_type),
+    typeFilterKeys: rawTypeKey ? [rawTypeKey] : [],
     rawTypeKey,
   };
 };
 
-export const buildSaleProductKey = (
-  saleId,
-  productId
-) => {
-  const saleKey = String(
-    saleId ?? ""
-  ).trim();
+export const buildSaleProductKey = (saleId, productId) => {
+  const saleKey = String(saleId ?? "").trim();
 
-  const productKey = String(
-    productId ?? ""
-  ).trim();
+  const productKey = String(productId ?? "").trim();
 
   if (!saleKey || !productKey) {
     return null;
@@ -190,77 +142,45 @@ export const buildSaleProductKey = (
   return `${saleKey}::${productKey}`;
 };
 
-export const buildRedemptionReason = (
-  rewardLabel,
-  pointsValue
-) => {
+export const buildRedemptionReason = (rewardLabel, pointsValue) => {
   const reasonParts = [];
 
-  const normalizedRewardLabel = String(
-    rewardLabel ?? ""
-  ).trim();
+  const normalizedRewardLabel = String(rewardLabel ?? "").trim();
 
   if (normalizedRewardLabel) {
-    reasonParts.push(
-      normalizedRewardLabel
-    );
+    reasonParts.push(normalizedRewardLabel);
   }
 
-  if (
-    pointsValue !== null &&
-    pointsValue !== undefined &&
-    pointsValue !== ""
-  ) {
-    reasonParts.push(
-      `${pointsValue} PTS`
-    );
+  if (pointsValue !== null && pointsValue !== undefined && pointsValue !== "") {
+    reasonParts.push(`${pointsValue} PTS`);
   }
 
   if (reasonParts.length === 0) {
     return "redemption";
   }
 
-  return `redemption: ${reasonParts.join(
-    " - "
-  )}`;
+  return `redemption: ${reasonParts.join(" - ")}`;
 };
 
 export const buildRowView = (row) => {
-  const product =
-    row?.products ?? {};
+  const product = row?.products ?? {};
 
-  const sale =
-    getSalesObject(row);
+  const sale = getSalesObject(row);
 
-  const user =
-    row?.users ?? {};
+  const user = row?.users ?? {};
 
   const ticketRaw =
-    String(
-      sale?.ticket_number ?? ""
-    ).trim() ||
-    String(
-      sale?.folio ?? ""
-    ).trim() ||
-    String(
-      sale?.ticket ?? ""
-    ).trim() ||
-    String(
-      sale?.receipt_number ?? ""
-    ).trim() ||
-    String(
-      row?.sale_id ?? ""
-    ).trim() ||
-    String(
-      row?.saleId ?? ""
-    ).trim() ||
+    String(sale?.ticket_number ?? "").trim() ||
+    String(sale?.folio ?? "").trim() ||
+    String(sale?.ticket ?? "").trim() ||
+    String(sale?.receipt_number ?? "").trim() ||
+    String(row?.sale_id ?? "").trim() ||
+    String(row?.saleId ?? "").trim() ||
     "";
 
-  const ticket =
-    formatTicket(ticketRaw);
+  const ticket = formatTicket(ticketRaw);
 
-  const useSystemTime =
-    !sale?.sale_date;
+  const useSystemTime = !sale?.sale_date;
 
   const soldAtValue =
     sale?.sale_date ??
@@ -269,63 +189,36 @@ export const buildRowView = (row) => {
     sale?.created_at ??
     null;
 
-  const soldAt = formatDateTime(
-    soldAtValue,
-    {
-      useSystemTime,
-    }
-  );
+  const soldAt = formatDateTime(soldAtValue, {
+    useSystemTime,
+  });
 
-  const soldAtDateKey =
-    getDateKeyFromValue(
-      soldAtValue,
-      {
-        useSystemTime,
-      }
-    );
+  const soldAtDateKey = getDateKeyFromValue(soldAtValue, {
+    useSystemTime,
+  });
 
   const productName = (
-    String(
-      row?.display_product_name ?? ""
-    ).trim() ||
-    String(
-      product?.name ?? ""
-    ).trim() ||
-    String(
-      row?.product_id ?? ""
-    ).trim() ||
+    String(row?.display_product_name ?? "").trim() ||
+    String(product?.name ?? "").trim() ||
+    String(row?.product_id ?? "").trim() ||
     "—"
   ).toUpperCase();
 
   const username = (
-    String(
-      user?.username ?? ""
-    ).trim() ||
-    String(
-      row?.user_id ?? ""
-    ).trim() ||
+    String(user?.username ?? "").trim() ||
+    String(row?.user_id ?? "").trim() ||
     "—"
   ).toUpperCase();
 
-  const {
-    rawTypeKey,
-    typeKey,
-    typeLabel,
-    typeFilterKeys,
-  } = getRowTypeInfo(row);
+  const { rawTypeKey, typeKey, typeLabel, typeFilterKeys } =
+    getRowTypeInfo(row);
 
-  const reason = formatReason(
-    row?.reason
-  );
+  const reason = formatReason(row?.reason);
 
   const shouldForceZeroQuantity =
-    typeKey === "product_update" ||
-    typeKey === "product_delete";
+    typeKey === "product_update" || typeKey === "product_delete";
 
-  const quantity =
-    shouldForceZeroQuantity
-      ? 0
-      : row?.quantity ?? 0;
+  const quantity = shouldForceZeroQuantity ? 0 : (row?.quantity ?? 0);
 
   return {
     soldAtValue,
@@ -343,20 +236,14 @@ export const buildRowView = (row) => {
     typeFilterKeys,
 
     qty: quantity,
-    prev:
-      row?.previous_stock ?? null,
-    next:
-      row?.new_stock ?? null,
+    prev: row?.previous_stock ?? null,
+    next: row?.new_stock ?? null,
 
     reason,
     username,
   };
 };
 
-export const isNoStockMovement = (
-  rowView
-) => {
-  return String(
-    rowView?.reason ?? ""
-  ).includes("(SIN STOCK)");
+export const isNoStockMovement = (rowView) => {
+  return String(rowView?.reason ?? "").includes("(SIN STOCK)");
 };
