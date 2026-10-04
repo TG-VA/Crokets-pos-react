@@ -90,7 +90,10 @@ const PageCustomersReport = () => {
       setIsExporting(true);
 
       const branchObj = branchesList.find((b) => b.id === branchId);
-      const branchName = branchId === "ALL" ? "Todas las sucursales" : branchObj?.name || "Sucursal";
+      const branchName =
+        branchId === "ALL"
+          ? "Todas las sucursales"
+          : branchObj?.name || "Sucursal";
 
       await exportCustomersReportToExcel({
         rankedCustomers: filteredCustomers,
@@ -117,7 +120,8 @@ const PageCustomersReport = () => {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Reporte de Clientes</h1>
           <p className={styles.description}>
-            Historial completo de clientes con mayor gasto, visitas frecuentes, productos preferidos, puntos acumulados y canjes de recompensas.
+            Historial completo de clientes con mayor gasto, visitas frecuentes,
+            productos preferidos, puntos acumulados y canjes de recompensas.
           </p>
         </div>
 
@@ -193,9 +197,7 @@ const PageCustomersReport = () => {
         >
           <img src={giftsIcon} alt="" style={{ width: 14, height: 14 }} />
           Recompensas y Lealtad
-          <span className={styles.tabBadge}>
-            {filteredRedemptions.length}
-          </span>
+          <span className={styles.tabBadge}>{filteredRedemptions.length}</span>
         </button>
       </div>
 

@@ -46,14 +46,27 @@ export const getCustomerCurrentPointsBalance = async (customerId) => {
 
   if (error) throw error;
 
-  return (data || []).reduce((sum, movement) => sum + Number(movement.points || 0), 0);
+  return (data || []).reduce(
+    (sum, movement) => sum + Number(movement.points || 0),
+    0
+  );
 };
 
 export const registerCustomerPointsForSale = async ({
-  saleId, customerId, saleTotal, saleDate, userId = null, branchId = null,
+  saleId,
+  customerId,
+  saleTotal,
+  saleDate,
+  userId = null,
+  branchId = null,
 }) => {
   if (!saleId || !customerId) {
-    return { points: 0, amountPerPoint: DEFAULT_POINTS_AMOUNT, registered: false, newBalance: null };
+    return {
+      points: 0,
+      amountPerPoint: DEFAULT_POINTS_AMOUNT,
+      registered: false,
+      newBalance: null,
+    };
   }
 
   const amountPerPoint = await getCustomerPointsAmountPerPoint();
@@ -61,7 +74,12 @@ export const registerCustomerPointsForSale = async ({
 
   if (earnedPoints <= 0) {
     const currentBalance = await getCustomerCurrentPointsBalance(customerId);
-    return { points: 0, amountPerPoint, registered: false, newBalance: currentBalance };
+    return {
+      points: 0,
+      amountPerPoint,
+      registered: false,
+      newBalance: currentBalance,
+    };
   }
 
   // Candado de Idempotencia: previene puntos duplicados si la red falla y se reintenta
@@ -78,22 +96,31 @@ export const registerCustomerPointsForSale = async ({
 
   if (existingMovement?.id) {
     const currentBalance = await getCustomerCurrentPointsBalance(customerId);
-    return { points: earnedPoints, amountPerPoint, registered: false, newBalance: currentBalance };
+    return {
+      points: earnedPoints,
+      amountPerPoint,
+      registered: false,
+      newBalance: currentBalance,
+    };
   }
 
-  const { error: pointsInsertError } = await supabase.from("customer_points").insert([{
-    id: crypto.randomUUID(),
-    customer_id: customerId,
-    points: earnedPoints,
-    movement_type: "earn",
-    source: "sale",
-    related_sale_id: saleId,
-    reward_id: null,
-    user_id: userId,
-    branch_id: branchId,
-    notes: `PUNTOS GENERADOS POR VENTA. TOTAL DE VENTA: $${Number(saleTotal || 0).toFixed(2)} MXN.`,
-    created_at: saleDate || new Date().toISOString(),
-  }]);
+  const { error: pointsInsertError } = await supabase
+    .from("customer_points")
+    .insert([
+      {
+        id: crypto.randomUUID(),
+        customer_id: customerId,
+        points: earnedPoints,
+        movement_type: "earn",
+        source: "sale",
+        related_sale_id: saleId,
+        reward_id: null,
+        user_id: userId,
+        branch_id: branchId,
+        notes: `PUNTOS GENERADOS POR VENTA. TOTAL DE VENTA: $${Number(saleTotal || 0).toFixed(2)} MXN.`,
+        created_at: saleDate || new Date().toISOString(),
+      },
+    ]);
 
   if (pointsInsertError) throw pointsInsertError;
 

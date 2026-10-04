@@ -9,7 +9,9 @@ import {
 
 describe("withProtectedMetadata", () => {
   it("agrega action/routeLabel/routePath a los items que matchean una sección", () => {
-    const options = [{ id: "ventas", label: "Ventas", path: "/reports/ventas" }];
+    const options = [
+      { id: "ventas", label: "Ventas", path: "/reports/ventas" },
+    ];
 
     const [result] = withProtectedMetadata(options, PROTECTED_REPORT_SECTIONS);
 
@@ -31,7 +33,9 @@ describe("withProtectedMetadata", () => {
   });
 
   it("no muta el arreglo de entrada", () => {
-    const options = [{ id: "ventas", label: "Ventas", path: "/reports/ventas" }];
+    const options = [
+      { id: "ventas", label: "Ventas", path: "/reports/ventas" },
+    ];
 
     withProtectedMetadata(options, PROTECTED_REPORT_SECTIONS);
 

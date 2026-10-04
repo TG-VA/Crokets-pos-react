@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { useBranch } from "../../../../../contexts/BranchContext";
@@ -13,6 +8,7 @@ import {
   fetchInventoryReportRows,
   getBranchOptionsFallback,
 } from "../services/inventoryReportService";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 const REALTIME_REFRESH_DELAY_MS = 250;
 
@@ -20,11 +16,31 @@ const useInventoryReport = () => {
   const { branch } = useBranch();
 
   const [branchOptions, setBranchOptions] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [branchOverride, setBranchOverride] = useState("");
+
+  // La sucursal efectiva se deriva: la seleccion explicita del usuario manda y,
+  // mientras no exista, se usa la sucursal del contexto. Antes esto se resolvia
+  // con un efecto que hacia setSelectedBranchId(branch.id) y provocaba un
+  // re-render en cascada; ahora no hay estado que sincronizar.
+  const selectedBranchId = branchOverride || branch?.id || "";
 
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // La carga se deriva de la sucursal pedida en lugar de marcarse con un
+  // setLoading(true) sincrono, que provocaba un re-render en cascada. Sin
+  // sucursal la clave es null, que es justamente la clave inicial de las
+  // peticiones resueltas, asi que no hay nada pendiente que mostrar.
+  const requestKey = selectedBranchId || null;
+  const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? "" : error;
+
+  // Sin sucursal no hay reporte que mostrar; antes esto se resolvia limpiando
+  // filas y error desde dentro de la carga, con lo que ademas habia que esperar
+  // un turno de render para que la tabla quedara vacia.
+  const visibleRows = selectedBranchId ? rows : [];
 
   const isMountedRef = useRef(true);
   const inventoryRequestIdRef = useRef(0);
@@ -39,16 +55,6 @@ const useInventoryReport = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (selectedBranchId) {
-      return;
-    }
-
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id, selectedBranchId]);
-
   const loadBranches = useCallback(async () => {
     try {
       const options = await fetchBranchOptions(branch);
@@ -59,37 +65,47 @@ const useInventoryReport = () => {
 
       setBranchOptions(options);
     } catch (loadError) {
-      console.error(
-        "Error cargando sucursales:",
-        loadError
-      );
+      console.error("Error cargando sucursales:", loadError);
 
       if (!isMountedRef.current) {
         return;
       }
 
-      setBranchOptions(
-        getBranchOptionsFallback(branch)
-      );
+      setBranchOptions(getBranchOptionsFallback(branch));
     }
   }, [branch]);
 
+  // El efecto llama directo a la funcion de datos importada y aplica el estado
+  // en la continuacion asincrona; `loadBranches` queda para el refresco en
+  // tiempo real disparado por la suscripcion.
   useEffect(() => {
-    loadBranches();
-  }, [loadBranches]);
+    let cancelled = false;
+
+    fetchBranchOptions(branch)
+      .then((options) => {
+        if (cancelled) return;
+        setBranchOptions(options);
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error("Error cargando sucursales:", loadError);
+        setBranchOptions(getBranchOptionsFallback(branch));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branch]);
 
   useEffect(() => {
     const scheduleBranchesRefresh = () => {
       if (branchesRefreshTimeoutRef.current) {
-        window.clearTimeout(
-          branchesRefreshTimeoutRef.current
-        );
+        window.clearTimeout(branchesRefreshTimeoutRef.current);
       }
 
-      branchesRefreshTimeoutRef.current =
-        window.setTimeout(() => {
-          loadBranches();
-        }, REALTIME_REFRESH_DELAY_MS);
+      branchesRefreshTimeoutRef.current = window.setTimeout(() => {
+        loadBranches();
+      }, REALTIME_REFRESH_DELAY_MS);
     };
 
     const channel = supabase
@@ -104,10 +120,7 @@ const useInventoryReport = () => {
         scheduleBranchesRefresh
       )
       .subscribe((status) => {
-        if (
-          status === "CHANNEL_ERROR" ||
-          status === "TIMED_OUT"
-        ) {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error(
             "No se pudo conectar Realtime para sucursales:",
             status
@@ -117,9 +130,7 @@ const useInventoryReport = () => {
 
     return () => {
       if (branchesRefreshTimeoutRef.current) {
-        window.clearTimeout(
-          branchesRefreshTimeoutRef.current
-        );
+        window.clearTimeout(branchesRefreshTimeoutRef.current);
 
         branchesRefreshTimeoutRef.current = null;
       }
@@ -128,83 +139,73 @@ const useInventoryReport = () => {
     };
   }, [loadBranches]);
 
-  const loadInventoryByBranch = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!selectedBranchId) {
-        if (isMountedRef.current) {
-          setRows([]);
-          setError("");
-          setLoading(false);
-        }
+  const loadInventoryByBranch = useCallback(async () => {
+    if (!selectedBranchId) {
+      return;
+    }
 
-        return;
+    const requestId = inventoryRequestIdRef.current + 1;
+
+    inventoryRequestIdRef.current = requestId;
+
+    if (isMountedRef.current) {
+      setError("");
+    }
+
+    try {
+      const inventoryRows = await fetchInventoryReportRows(selectedBranchId);
+
+      const isLatestRequest = inventoryRequestIdRef.current === requestId;
+
+      if (isMountedRef.current && isLatestRequest) {
+        setRows(inventoryRows);
       }
+    } catch (loadError) {
+      console.error("Error cargando reporte de inventario:", loadError);
 
-      const requestId =
-        inventoryRequestIdRef.current + 1;
+      const isLatestRequest = inventoryRequestIdRef.current === requestId;
 
-      inventoryRequestIdRef.current = requestId;
-
-      if (!silent && isMountedRef.current) {
-        setLoading(true);
+      if (isMountedRef.current && isLatestRequest) {
+        setRows([]);
+        setError("No se pudo cargar el reporte de inventario.");
       }
+    } finally {
+      const isLatestRequest = inventoryRequestIdRef.current === requestId;
 
-      if (isMountedRef.current) {
-        setError("");
+      if (isMountedRef.current && isLatestRequest) {
+        markSettled();
       }
-
-      try {
-        const inventoryRows =
-          await fetchInventoryReportRows(
-            selectedBranchId
-          );
-
-        const isLatestRequest =
-          inventoryRequestIdRef.current === requestId;
-
-        if (
-          isMountedRef.current &&
-          isLatestRequest
-        ) {
-          setRows(inventoryRows);
-        }
-      } catch (loadError) {
-        console.error(
-          "Error cargando reporte de inventario:",
-          loadError
-        );
-
-        const isLatestRequest =
-          inventoryRequestIdRef.current === requestId;
-
-        if (
-          isMountedRef.current &&
-          isLatestRequest
-        ) {
-          setRows([]);
-          setError(
-            "No se pudo cargar el reporte de inventario."
-          );
-        }
-      } finally {
-        const isLatestRequest =
-          inventoryRequestIdRef.current === requestId;
-
-        if (
-          !silent &&
-          isMountedRef.current &&
-          isLatestRequest
-        ) {
-          setLoading(false);
-        }
-      }
-    },
-    [selectedBranchId]
-  );
+    }
+  }, [selectedBranchId, markSettled]);
 
   useEffect(() => {
-    loadInventoryByBranch();
-  }, [loadInventoryByBranch]);
+    if (!selectedBranchId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = inventoryRequestIdRef.current + 1;
+    inventoryRequestIdRef.current = requestId;
+
+    fetchInventoryReportRows(selectedBranchId)
+      .then((inventoryRows) => {
+        if (cancelled) return;
+        setRows(inventoryRows);
+        setError("");
+        markSettled();
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error("Error cargando reporte de inventario:", loadError);
+        setRows([]);
+        setError("No se pudo cargar el reporte de inventario.");
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBranchId, markSettled]);
 
   useEffect(() => {
     if (!selectedBranchId) {
@@ -213,23 +214,16 @@ const useInventoryReport = () => {
 
     const scheduleInventoryRefresh = () => {
       if (inventoryRefreshTimeoutRef.current) {
-        window.clearTimeout(
-          inventoryRefreshTimeoutRef.current
-        );
+        window.clearTimeout(inventoryRefreshTimeoutRef.current);
       }
 
-      inventoryRefreshTimeoutRef.current =
-        window.setTimeout(() => {
-          loadInventoryByBranch({
-            silent: true,
-          });
-        }, REALTIME_REFRESH_DELAY_MS);
+      inventoryRefreshTimeoutRef.current = window.setTimeout(() => {
+        loadInventoryByBranch();
+      }, REALTIME_REFRESH_DELAY_MS);
     };
 
     const channel = supabase
-      .channel(
-        `inventory-report-realtime-${selectedBranchId}`
-      )
+      .channel(`inventory-report-realtime-${selectedBranchId}`)
       .on(
         "postgres_changes",
         {
@@ -259,43 +253,32 @@ const useInventoryReport = () => {
         scheduleInventoryRefresh
       )
       .subscribe((status) => {
-        if (
-          status === "CHANNEL_ERROR" ||
-          status === "TIMED_OUT"
-        ) {
-          console.error(
-            "No se pudo conectar Realtime al reporte:",
-            status
-          );
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error("No se pudo conectar Realtime al reporte:", status);
         }
       });
 
     return () => {
       if (inventoryRefreshTimeoutRef.current) {
-        window.clearTimeout(
-          inventoryRefreshTimeoutRef.current
-        );
+        window.clearTimeout(inventoryRefreshTimeoutRef.current);
 
         inventoryRefreshTimeoutRef.current = null;
       }
 
       supabase.removeChannel(channel);
     };
-  }, [
-    selectedBranchId,
-    loadInventoryByBranch,
-  ]);
+  }, [selectedBranchId, loadInventoryByBranch]);
 
   const handleBranchChange = (branchId) => {
-    setSelectedBranchId(branchId);
+    setBranchOverride(branchId);
   };
 
   return {
     branchOptions,
     selectedBranchId,
-    rows,
-    loading,
-    error,
+    rows: visibleRows,
+    loading: isLoading,
+    error: visibleError,
     handleBranchChange,
   };
 };

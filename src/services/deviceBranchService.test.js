@@ -44,7 +44,10 @@ describe("deviceBranchService", () => {
 
   it("propaga el mensaje de negocio cuando el POS no tiene sucursal", async () => {
     supabase.rpc.mockResolvedValue({
-      data: { success: false, message: "Este POS no está asignado a ninguna sucursal" },
+      data: {
+        success: false,
+        message: "Este POS no está asignado a ninguna sucursal",
+      },
       error: null,
     });
 
@@ -68,7 +71,10 @@ describe("deviceBranchService", () => {
   });
 
   it("captura errores de transporte del RPC", async () => {
-    supabase.rpc.mockResolvedValue({ data: null, error: { message: "network" } });
+    supabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "network" },
+    });
 
     const result = await resolveBranchByDevice("device-uuid");
 

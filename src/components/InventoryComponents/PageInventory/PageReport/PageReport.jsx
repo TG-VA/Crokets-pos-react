@@ -38,9 +38,7 @@ const PageReport = () => {
     handleToggleOtherStocks,
   } = useInventoryBranchDetails(selectedBranchId);
 
-  const [facetFilters, setFacetFilters] = useState(
-    INITIAL_FACET_FILTERS
-  );
+  const [facetFilters, setFacetFilters] = useState(INITIAL_FACET_FILTERS);
 
   const [openFacet, setOpenFacet] = useState(null);
   const [facetSearch, setFacetSearch] = useState({});
@@ -91,15 +89,9 @@ const PageReport = () => {
     }
   };
 
-  const toggleFacetValue = (
-    key,
-    value,
-    { close = true } = {}
-  ) => {
+  const toggleFacetValue = (key, value, { close = true } = {}) => {
     setFacetFilters((previous) => {
-      const currentValues = Array.isArray(previous[key])
-        ? previous[key]
-        : [];
+      const currentValues = Array.isArray(previous[key]) ? previous[key] : [];
 
       const valueExists = currentValues.includes(value);
 
@@ -174,8 +166,7 @@ const PageReport = () => {
     if (!cleanQuantity) return;
 
     const normalizedQuantity = String(Number(cleanQuantity));
-    const quantityFilter =
-      `${QUANTITY_FILTER_PREFIX}${normalizedQuantity}`;
+    const quantityFilter = `${QUANTITY_FILTER_PREFIX}${normalizedQuantity}`;
 
     setFacetFilters((previous) => {
       const currentValues = Array.isArray(previous.existencia)
@@ -188,10 +179,7 @@ const PageReport = () => {
 
       return {
         ...previous,
-        existencia: [
-          ...valuesWithoutPreviousQuantities,
-          quantityFilter,
-        ],
+        existencia: [...valuesWithoutPreviousQuantities, quantityFilter],
       };
     });
 
@@ -250,10 +238,7 @@ const PageReport = () => {
         selectedBranchLabel,
       });
     } catch (exportError) {
-      console.error(
-        "Error exportando reporte de inventario:",
-        exportError
-      );
+      console.error("Error exportando reporte de inventario:", exportError);
     }
   };
 
@@ -262,13 +247,10 @@ const PageReport = () => {
       <div className={styles.content}>
         <div className={styles.header}>
           <div className={styles.headingBlock}>
-            <h1 className={styles.title}>
-              Reporte de inventario
-            </h1>
+            <h1 className={styles.title}>Reporte de inventario</h1>
 
             <p className={styles.subtitle}>
-              Consulta existencias, niveles mínimos y máximos por
-              sucursal.
+              Consulta existencias, niveles mínimos y máximos por sucursal.
             </p>
           </div>
 
@@ -279,15 +261,11 @@ const PageReport = () => {
               <select
                 className={styles.select}
                 value={selectedBranchId}
-                onChange={(event) =>
-                  handleBranchChange(event.target.value)
-                }
+                onChange={(event) => handleBranchChange(event.target.value)}
               >
                 {branchOptions.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.code
-                      ? `${item.name} (${item.code})`
-                      : item.name}
+                    {item.code ? `${item.name} (${item.code})` : item.name}
                   </option>
                 ))}
               </select>
@@ -315,9 +293,7 @@ const PageReport = () => {
           <div className={styles.filterSummary}>
             <span
               className={`${styles.filterStatusBadge} ${
-                activeFilterCount > 0
-                  ? styles.filterStatusBadgeActive
-                  : ""
+                activeFilterCount > 0 ? styles.filterStatusBadgeActive : ""
               }`}
             >
               {activeFilterCount === 0
@@ -354,8 +330,7 @@ const PageReport = () => {
 
         <div className={styles.meta}>
           <span>
-            Sucursal seleccionada:{" "}
-            <strong>{selectedBranchLabel}</strong>
+            Sucursal seleccionada: <strong>{selectedBranchLabel}</strong>
           </span>
 
           <span className={styles.metaDivider}>·</span>
@@ -366,9 +341,7 @@ const PageReport = () => {
           </span>
         </div>
 
-        {loading && (
-          <div className={styles.info}>Cargando inventario...</div>
-        )}
+        {loading && <div className={styles.info}>Cargando inventario...</div>}
 
         {!!error && <div className={styles.error}>{error}</div>}
 
@@ -389,9 +362,7 @@ const PageReport = () => {
           onToggleFacet={toggleFacet}
           onSearchFacet={handleSearchFacet}
           onSelectAllFacet={handleSelectAllFacet}
-          onClearFacet={(key) =>
-            clearFacet(key, { close: true })
-          }
+          onClearFacet={(key) => clearFacet(key, { close: true })}
           onToggleFacetValue={toggleFacetValue}
           onQuantityChange={handleExistenceQuantityChange}
           onApplyQuantity={applyExistenceQuantityFilter}

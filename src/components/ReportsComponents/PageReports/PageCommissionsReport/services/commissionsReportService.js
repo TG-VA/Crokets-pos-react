@@ -66,16 +66,15 @@ export const fetchCommissionsData = async ({
   cashierId = "ALL",
   departmentId = "ALL",
 }) => {
-  const { data: rpcRows, error: rpcError } = await supabase.rpc(
-    "get_commissions_report_data",
-    {
+  const { data: rpcRows, error: rpcError } = await supabase
+    .rpc("get_commissions_report_data", {
       p_start_date: startDateIso,
       p_end_date: endDateIso,
       p_branch_id: branchId !== "ALL" ? branchId : null,
       p_cashier_id: cashierId !== "ALL" ? cashierId : null,
       p_department_id: departmentId !== "ALL" ? departmentId : null,
-    }
-  ).limit(100000);
+    })
+    .limit(100000);
 
   if (rpcError) {
     console.error("Error al consultar comisiones via RPC:", rpcError);
@@ -113,4 +112,39 @@ export const fetchCommissionsData = async ({
   }));
 
   return { detailedRows };
+};
+
+/**
+ * Carga el reporte de comisiones y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setIsLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ startDateIso: string, endDateIso: string, branchId: string, cashierId: string, departmentId: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadCommissionsReport = async (
+  { startDateIso, endDateIso, branchId, cashierId, departmentId },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(
+      await fetchCommissionsData({
+        startDateIso,
+        endDateIso,
+        branchId,
+        cashierId,
+        departmentId,
+      })
+    );
+  } catch (err) {
+    console.error("Error al cargar comisiones:", err);
+    onError("No se pudieron cargar los datos de comisiones. Intenta de nuevo.");
+  } finally {
+    onSettled();
+  }
 };

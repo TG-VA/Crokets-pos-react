@@ -122,7 +122,9 @@ describe("cashReportService", () => {
       expect(params.p_session_status).toBe(null);
       expect(params.p_start_date).toBe(localMidnightIso(startInput));
       expect(params.p_end_date).toBe(localEndOfDayIso(endInput));
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(100000);
+      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
+        100000
+      );
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {
@@ -151,7 +153,9 @@ describe("cashReportService", () => {
     });
 
     it("consulta movimientos en lote con los id de sesion y sin cap bajo", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: [sessionRow], error: null })
+      );
       const movQ = thenableQuery({ data: [], error: null });
       supabase.from.mockReturnValue(movQ);
 
@@ -166,7 +170,9 @@ describe("cashReportService", () => {
     });
 
     it("mapea cada sesion al shape del hook con expectedCash", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: [sessionRow], error: null })
+      );
       const movQ = thenableQuery({
         data: [
           { session_id: "s1", movement_type: "ENTRADA", amount: "50" },
@@ -207,10 +213,16 @@ describe("cashReportService", () => {
     });
 
     it("clasifica movimientos por alias de entrada/salida", async () => {
-      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: [sessionRow], error: null })
+      );
       const movQ = thenableQuery({
         data: [
-          { session_id: "s1", movement_type: "ingreso de capital", amount: "10" },
+          {
+            session_id: "s1",
+            movement_type: "ingreso de capital",
+            amount: "10",
+          },
           { session_id: "s1", movement_type: "deposito entrada", amount: "15" },
           { session_id: "s1", movement_type: "retiro", amount: "7" },
           { session_id: "s1", movement_type: "gasto", amount: "3" },
@@ -227,7 +239,9 @@ describe("cashReportService", () => {
 
     it("mantiene sesiones con movimiento 0 si la consulta de movimientos falla", async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-      supabase.rpc.mockReturnValue(rpcBuilder({ data: [sessionRow], error: null }));
+      supabase.rpc.mockReturnValue(
+        rpcBuilder({ data: [sessionRow], error: null })
+      );
       supabase.from.mockReturnValue(
         thenableQuery({ data: null, error: { message: "boom" } })
       );

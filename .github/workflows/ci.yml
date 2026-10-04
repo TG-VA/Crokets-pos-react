@@ -40,13 +40,13 @@ jobs:
       - name: ESLint (incremental sobre el diff)
         run: |
           git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \
-            | { rg '\.(js|jsx|mjs)$' || true; } \
+            | { grep -E '\.(js|jsx|mjs)$' || true; } \
             | xargs -r npx eslint
 
       - name: Prettier (incremental sobre el diff)
         run: |
           git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \
-            | { rg '\.(js|jsx|mjs|json|html|css)$' || true; } \
+            | { grep -E '\.(js|jsx|mjs|json|html|css)$' || true; } \
             | xargs -r npx prettier --check
 
       - name: Test

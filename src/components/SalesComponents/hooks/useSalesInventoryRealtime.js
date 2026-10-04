@@ -31,7 +31,8 @@ const useSalesInventoryRealtime = ({
   const realtimeTimerRef = useRef(null);
 
   const getKitAvailableStock = useCallback(
-    async (kitProductId) => getKitAvailableStockFromService({ kitProductId, branchId }),
+    async (kitProductId) =>
+      getKitAvailableStockFromService({ kitProductId, branchId }),
     [branchId]
   );
 
@@ -77,7 +78,7 @@ const useSalesInventoryRealtime = ({
         if (product.is_kit) {
           const kitAvailability = kitAvailabilityByProduct[product.id];
           // Si el producto se agregó *durante* el await, lo dejamos intacto hasta el próximo ciclo
-          if (!kitAvailability) return product; 
+          if (!kitAvailability) return product;
 
           const stock = Number(kitAvailability?.availableStock || 0);
           const quantity = Number(product.cantidad || 0);
@@ -88,16 +89,21 @@ const useSalesInventoryRealtime = ({
             warning = kitAvailability.message;
           }
 
-          return { ...product, stockReal: stock, existencia: Math.max(stock - quantity, 0) };
+          return {
+            ...product,
+            stockReal: stock,
+            existencia: Math.max(stock - quantity, 0),
+          };
         }
 
         const inventoryRow = inventoryByProduct[product.id];
-        
+
         // Si el producto no estaba en la consulta original, lo devolvemos intacto (evita falsos negativos si se agregó mientras cargaba)
         if (!productIds.includes(product.id)) return product;
 
         if (!inventoryRow || inventoryRow.is_active === false) {
-          if (!warning) warning = `El producto "${product.nombre || product.codigo}" ya no está activo en esta sucursal.`;
+          if (!warning)
+            warning = `El producto "${product.nombre || product.codigo}" ya no está activo en esta sucursal.`;
           return { ...product, stockReal: 0, existencia: 0 };
         }
 
@@ -118,7 +124,7 @@ const useSalesInventoryRealtime = ({
 
       // Actualizamos los estados de forma segura
       const nextProducts = currentProducts.map(updateProductInventory);
-      
+
       if (productosRef) productosRef.current = nextProducts;
       setProductos?.(nextProducts);
 
@@ -153,19 +159,27 @@ const useSalesInventoryRealtime = ({
     if (!enabled || !branchId || !userId) return undefined;
 
     const refreshSafely = async () => {
-      try { await refreshCartInventory(); } 
-      catch (error) { console.error("Error en realtime:", error); }
+      try {
+        await refreshCartInventory();
+      } catch (error) {
+        console.error("Error en realtime:", error);
+      }
     };
 
     const scheduleRealtimeRefresh = () => {
       if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current);
-      realtimeTimerRef.current = setTimeout(refreshSafely, REALTIME_REFRESH_DELAY);
+      realtimeTimerRef.current = setTimeout(
+        refreshSafely,
+        REALTIME_REFRESH_DELAY
+      );
     };
 
     refreshSafely();
 
     const intervalId = setInterval(() => {
-      const hasTrackedProducts = (productosRef?.current || []).some((p) => p?.tracks_inventory);
+      const hasTrackedProducts = (productosRef?.current || []).some(
+        (p) => p?.tracks_inventory
+      );
       if (hasTrackedProducts) refreshCartInventory();
     }, INVENTORY_REFRESH_INTERVAL);
 
@@ -173,7 +187,12 @@ const useSalesInventoryRealtime = ({
       .channel(`sales-inventory-${branchId}-${userId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "branch_inventory", filter: `branch_id=eq.${branchId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "branch_inventory",
+          filter: `branch_id=eq.${branchId}`,
+        },
         scheduleRealtimeRefresh
       )
       .subscribe();

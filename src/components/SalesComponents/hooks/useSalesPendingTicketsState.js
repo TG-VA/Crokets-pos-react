@@ -5,7 +5,9 @@ export const useSalesPendingTicketsState = () => {
   const [pendingTickets, setPendingTickets] = useState([]);
 
   return {
-    ticketNumber, setTicketNumber,
-    pendingTickets, setPendingTickets,
+    ticketNumber,
+    setTicketNumber,
+    pendingTickets,
+    setPendingTickets,
   };
 };

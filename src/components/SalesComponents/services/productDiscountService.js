@@ -15,7 +15,8 @@ export const getRewardDiscountLabel = (reward) => {
   return "Descuento de recompensa";
 };
 
-export const productUsesInventory = (product) => product?.tracks_inventory !== false;
+export const productUsesInventory = (product) =>
+  product?.tracks_inventory !== false;
 
 export const getProductSalePrice = (product, inventoryByProduct = {}) => {
   const row = inventoryByProduct[product?.id];
@@ -25,7 +26,11 @@ export const getProductSalePrice = (product, inventoryByProduct = {}) => {
   return toNumber(product?.sale_price);
 };
 
-export const calculateRewardDiscount = (product, reward, inventoryByProduct = {}) => {
+export const calculateRewardDiscount = (
+  product,
+  reward,
+  inventoryByProduct = {}
+) => {
   const price = getProductSalePrice(product, inventoryByProduct);
   const type = reward?.discount_type;
   const val = toNumber(reward?.discount_value);
@@ -35,19 +40,25 @@ export const calculateRewardDiscount = (product, reward, inventoryByProduct = {}
   if (type === "fixed") rawDiscount = val;
 
   const discountAmount = Math.min(Math.floor(rawDiscount), price);
-  return { price, discountAmount, finalPrice: Math.max(price - discountAmount, 0) };
+  return {
+    price,
+    discountAmount,
+    finalPrice: Math.max(price - discountAmount, 0),
+  };
 };
 
 export const fetchProductsAndInventory = async (branchId) => {
   const { data: prods, error: pErr } = await supabase
     .from("products")
-    .select("id, barcode, name, sale_price, cost_price, status, tracks_inventory, is_kit")
+    .select(
+      "id, barcode, name, sale_price, cost_price, status, tracks_inventory, is_kit"
+    )
     .order("name");
-  
+
   if (pErr) throw pErr;
 
-  const cleanProds = (prods || []).filter(p => p?.id && p?.status !== false);
-  const idsToTrack = cleanProds.filter(productUsesInventory).map(p => p.id);
+  const cleanProds = (prods || []).filter((p) => p?.id && p?.status !== false);
+  const idsToTrack = cleanProds.filter(productUsesInventory).map((p) => p.id);
 
   if (!branchId || !idsToTrack.length) {
     return { cleanProds, inventoryMap: {} };
@@ -55,13 +66,18 @@ export const fetchProductsAndInventory = async (branchId) => {
 
   const { data: inv, error: iErr } = await supabase
     .from("branch_inventory")
-    .select("product_id, stock, is_active, has_been_stocked, sale_price, cost_price")
+    .select(
+      "product_id, stock, is_active, has_been_stocked, sale_price, cost_price"
+    )
     .eq("branch_id", branchId)
     .in("product_id", idsToTrack);
-  
+
   if (iErr) throw iErr;
 
-  const inventoryMap = (inv || []).reduce((acc, row) => ({ ...acc, [row.product_id]: row }), {});
-  
+  const inventoryMap = (inv || []).reduce(
+    (acc, row) => ({ ...acc, [row.product_id]: row }),
+    {}
+  );
+
   return { cleanProds, inventoryMap };
 };

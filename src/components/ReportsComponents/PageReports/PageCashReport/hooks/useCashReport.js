@@ -3,15 +3,46 @@ import { useBranch } from "../../../../../contexts/BranchContext";
 import {
   fetchBranchesList,
   fetchCashiersList,
-  fetchCashSessions,
-  fetchCashMovements,
-  fetchPaymentMethodsSummary,
+  loadCashReportData,
   fetchCashSessionDetail,
   calculateCashReportKpis,
   calculateCashierDiscrepancies,
 } from "../services/cashReportService";
 import { exportCashReportToExcel } from "../utils/cashReportExportUtils";
 import { usePagination } from "../../../../../hooks/usePagination";
+import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
+
+// Agrupa los parametros de las tres consultas del reporte en la forma que
+// espera el servicio, para que la carga manual y la del efecto no se separen.
+const buildCashReportParams = ({
+  selectedBranchId,
+  startDate,
+  endDate,
+  selectedCashierId,
+  sessionStatus,
+  movementType,
+}) => ({
+  sessionsParams: {
+    branchId: selectedBranchId,
+    startDate,
+    endDate,
+    cashierId: selectedCashierId,
+    sessionStatus,
+  },
+  movementsParams: {
+    branchId: selectedBranchId,
+    startDate,
+    endDate,
+    cashierId: selectedCashierId,
+    movementType,
+  },
+  paymentsParams: {
+    branchId: selectedBranchId,
+    startDate,
+    endDate,
+  },
+});
 
 export const ITEMS_PER_PAGE = 5;
 
@@ -39,9 +70,8 @@ export const useCashReport = () => {
   const [sessions, setSessions] = useState([]);
   const [movements, setMovements] = useState([]);
   const [paymentMethodsSummary, setPaymentMethodsSummary] = useState([]);
-  
+
   // Estados de carga y error
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
@@ -74,17 +104,37 @@ export const useCashReport = () => {
   const paginatedSessions = pageSessions(sessions);
   const paginatedMovements = pageMovements(movements);
 
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setLoading(true) sincrono, que provocaba un re-render en cascada.
+  const reportKey = useMemo(
+    () =>
+      `${selectedBranchId}|${startDate}|${endDate}|${selectedCashierId}|${sessionStatus}|${movementType}`,
+    [
+      selectedBranchId,
+      startDate,
+      endDate,
+      selectedCashierId,
+      sessionStatus,
+      movementType,
+    ]
+  );
+  const { isLoading, isStale, markSettled } = useRequestStatus(reportKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? null : error;
+
   // Modal de detalle de sesión
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
   const [loadingModal, setLoadingModal] = useState(false);
 
-  // Sincronizar sucursal del contexto
-  useEffect(() => {
-    if (branch?.id) {
-      setSelectedBranchId(branch.id);
-    }
-  }, [branch?.id]);
+  // Sincronizar sucursal del contexto. El ajuste se hace durante el render en
+  // lugar de en un efecto: React descarta la salida y vuelve a renderizar antes
+  // de confirmarla, de modo que no hay un re-render en cascada. Se conserva la
+  // guarda original que solo sincroniza cuando la sucursal tiene id.
+  if (useDidChange(branch?.id) && branch?.id) {
+    setSelectedBranchId(branch.id);
+  }
 
   // Cargar catálogos iniciales
   useEffect(() => {
@@ -114,51 +164,93 @@ export const useCashReport = () => {
   }, []);
 
   // Cargar datos del reporte
-  const loadReportData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [sessionsData, movementsData, paymentsData] = await Promise.all([
-        fetchCashSessions({
-          branchId: selectedBranchId,
+  const loadReportData = useCallback(
+    () =>
+      loadCashReportData(
+        buildCashReportParams({
+          selectedBranchId,
           startDate,
           endDate,
-          cashierId: selectedCashierId,
+          selectedCashierId,
           sessionStatus,
-        }),
-        fetchCashMovements({
-          branchId: selectedBranchId,
-          startDate,
-          endDate,
-          cashierId: selectedCashierId,
           movementType,
         }),
-        fetchPaymentMethodsSummary({
-          branchId: selectedBranchId,
-          startDate,
-          endDate,
-        }),
-      ]);
-
-      setSessions(sessionsData);
-      setMovements(movementsData);
-      setPaymentMethodsSummary(paymentsData);
-      resetSessionsPagination();
-      resetMovementsPagination();
-      setSyncedAt(new Date().toISOString());
-    } catch (err) {
-      console.error("Error al cargar datos del reporte de caja:", err);
-      setError("No se pudieron cargar los datos del reporte de caja. Intente nuevamente.");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedBranchId, startDate, endDate, selectedCashierId, sessionStatus, movementType, resetSessionsPagination, resetMovementsPagination]);
+        {
+          onData: ({ sessions, movements, paymentMethodsSummary }) => {
+            setSessions(sessions);
+            setMovements(movements);
+            setPaymentMethodsSummary(paymentMethodsSummary);
+            resetSessionsPagination();
+            resetMovementsPagination();
+            setError(null);
+            setSyncedAt(new Date().toISOString());
+          },
+          onError: setError,
+          onSettled: markSettled,
+        }
+      ),
+    [
+      selectedBranchId,
+      startDate,
+      endDate,
+      selectedCashierId,
+      sessionStatus,
+      movementType,
+      resetSessionsPagination,
+      resetMovementsPagination,
+      markSettled,
+    ]
+  );
 
   // Recargar al cambiar filtros clave
   useEffect(() => {
-    loadReportData();
-  }, [loadReportData]);
+    let cancelled = false;
+
+    loadCashReportData(
+      buildCashReportParams({
+        selectedBranchId,
+        startDate,
+        endDate,
+        selectedCashierId,
+        sessionStatus,
+        movementType,
+      }),
+      {
+        onData: ({ sessions, movements, paymentMethodsSummary }) => {
+          if (cancelled) return;
+          setSessions(sessions);
+          setMovements(movements);
+          setPaymentMethodsSummary(paymentMethodsSummary);
+          resetSessionsPagination();
+          resetMovementsPagination();
+          setError(null);
+          setSyncedAt(new Date().toISOString());
+        },
+        onError: (message) => {
+          if (cancelled) return;
+          setError(message);
+        },
+        onSettled: () => {
+          if (cancelled) return;
+          markSettled();
+        },
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selectedBranchId,
+    startDate,
+    endDate,
+    selectedCashierId,
+    sessionStatus,
+    movementType,
+    resetSessionsPagination,
+    resetMovementsPagination,
+    markSettled,
+  ]);
 
   // Presets rápidos de fechas
   const setQuickDatePreset = (preset) => {
@@ -258,7 +350,8 @@ export const useCashReport = () => {
       const branchName =
         selectedBranchId === "ALL"
           ? "Todas las sucursales"
-          : branchesList.find((b) => b.id === selectedBranchId)?.name || "Sucursal seleccionada";
+          : branchesList.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal seleccionada";
 
       const startText = startDate ? startDate.toLocaleDateString("es-MX") : "";
       const endText = endDate ? endDate.toLocaleDateString("es-MX") : startText;
@@ -290,7 +383,14 @@ export const useCashReport = () => {
       movementType !== "ALL" ||
       activeDatePreset !== "today"
     );
-  }, [selectedBranchId, branch?.id, selectedCashierId, sessionStatus, movementType, activeDatePreset]);
+  }, [
+    selectedBranchId,
+    branch?.id,
+    selectedCashierId,
+    sessionStatus,
+    movementType,
+    activeDatePreset,
+  ]);
 
   return {
     // Filtros
@@ -335,8 +435,8 @@ export const useCashReport = () => {
     kpis,
 
     // Estados de carga
-    loading,
-    error,
+    loading: isLoading,
+    error: visibleError,
     syncedAt,
     isExporting,
     loadReportData,

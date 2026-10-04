@@ -43,6 +43,14 @@
   background: #1092b1;
 }
 
+.successIconGlyph {
+  display: block;
+  width: 34px;
+  height: 34px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
 .title {
   margin: 0 0 22px;
   color: #1f2d3d;

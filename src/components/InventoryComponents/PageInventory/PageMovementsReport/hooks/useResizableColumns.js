@@ -1,8 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export const MOVEMENTS_COLUMNS = [
   {
@@ -52,8 +48,7 @@ export const MOVEMENTS_COLUMNS = [
   },
 ];
 
-const COLUMN_WIDTHS_STORAGE_KEY =
-  "movementsReportColWidths_v6";
+const COLUMN_WIDTHS_STORAGE_KEY = "movementsReportColWidths_v6";
 
 const LEGACY_COLUMN_WIDTHS_STORAGE_KEYS = [
   "movementsReportColWidths_v5",
@@ -75,41 +70,28 @@ const DEFAULT_COLUMN_WIDTHS = {
   user: 140,
 };
 
-const getColumnMinimumWidth = (
-  columnKey
-) => {
-  const column = MOVEMENTS_COLUMNS.find(
-    (item) => item.key === columnKey
-  );
+const getColumnMinimumWidth = (columnKey) => {
+  const column = MOVEMENTS_COLUMNS.find((item) => item.key === columnKey);
 
   return column?.min ?? 60;
 };
 
-const normalizeColumnWidths = (
-  sourceWidths = {}
-) => {
+const normalizeColumnWidths = (sourceWidths = {}) => {
   const nextWidths = {
     ...DEFAULT_COLUMN_WIDTHS,
   };
 
-  Object.keys(
-    DEFAULT_COLUMN_WIDTHS
-  ).forEach((key) => {
+  Object.keys(DEFAULT_COLUMN_WIDTHS).forEach((key) => {
     const rawWidth = sourceWidths[key];
 
     const parsedWidth =
-      typeof rawWidth === "number"
-        ? rawWidth
-        : Number(rawWidth);
+      typeof rawWidth === "number" ? rawWidth : Number(rawWidth);
 
     if (!Number.isFinite(parsedWidth)) {
       return;
     }
 
-    nextWidths[key] = Math.max(
-      getColumnMinimumWidth(key),
-      parsedWidth
-    );
+    nextWidths[key] = Math.max(getColumnMinimumWidth(key), parsedWidth);
   });
 
   return nextWidths;
@@ -117,51 +99,29 @@ const normalizeColumnWidths = (
 
 const readStoredColumnWidths = () => {
   try {
-    const currentStoredValue =
-      window.localStorage.getItem(
-        COLUMN_WIDTHS_STORAGE_KEY
-      );
+    const currentStoredValue = window.localStorage.getItem(
+      COLUMN_WIDTHS_STORAGE_KEY
+    );
 
     if (currentStoredValue) {
-      const parsedValue =
-        JSON.parse(currentStoredValue);
+      const parsedValue = JSON.parse(currentStoredValue);
 
-      if (
-        parsedValue &&
-        typeof parsedValue === "object"
-      ) {
-        return normalizeColumnWidths(
-          parsedValue
-        );
+      if (parsedValue && typeof parsedValue === "object") {
+        return normalizeColumnWidths(parsedValue);
       }
     }
 
-    for (
-      const legacyStorageKey of
-      LEGACY_COLUMN_WIDTHS_STORAGE_KEYS
-    ) {
-      const legacyStoredValue =
-        window.localStorage.getItem(
-          legacyStorageKey
-        );
+    for (const legacyStorageKey of LEGACY_COLUMN_WIDTHS_STORAGE_KEYS) {
+      const legacyStoredValue = window.localStorage.getItem(legacyStorageKey);
 
       if (!legacyStoredValue) {
         continue;
       }
 
-      const parsedLegacyValue =
-        JSON.parse(
-          legacyStoredValue
-        );
+      const parsedLegacyValue = JSON.parse(legacyStoredValue);
 
-      if (
-        parsedLegacyValue &&
-        typeof parsedLegacyValue ===
-          "object"
-      ) {
-        return normalizeColumnWidths(
-          parsedLegacyValue
-        );
+      if (parsedLegacyValue && typeof parsedLegacyValue === "object") {
+        return normalizeColumnWidths(parsedLegacyValue);
       }
     }
 
@@ -169,10 +129,7 @@ const readStoredColumnWidths = () => {
       ...DEFAULT_COLUMN_WIDTHS,
     };
   } catch (error) {
-    console.error(
-      "Error leyendo anchos de columnas:",
-      error
-    );
+    console.error("Error leyendo anchos de columnas:", error);
 
     return {
       ...DEFAULT_COLUMN_WIDTHS,
@@ -181,15 +138,9 @@ const readStoredColumnWidths = () => {
 };
 
 const useResizableColumns = () => {
-  const [
-    columnWidths,
-    setColumnWidths,
-  ] = useState(readStoredColumnWidths);
+  const [columnWidths, setColumnWidths] = useState(readStoredColumnWidths);
 
-  const [
-    isResizing,
-    setIsResizing,
-  ] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     try {
@@ -198,19 +149,12 @@ const useResizableColumns = () => {
         JSON.stringify(columnWidths)
       );
     } catch (error) {
-      console.error(
-        "Error guardando anchos de columnas:",
-        error
-      );
+      console.error("Error guardando anchos de columnas:", error);
     }
   }, [columnWidths]);
 
   const startResize = useCallback(
-    (
-      columnKey,
-      minimumWidth = 60,
-      event
-    ) => {
+    (columnKey, minimumWidth = 60, event) => {
       if (!columnKey || !event) {
         return;
       }
@@ -218,84 +162,55 @@ const useResizableColumns = () => {
       event.preventDefault();
       event.stopPropagation();
 
-      const initialMouseX =
-        event.clientX;
+      const initialMouseX = event.clientX;
 
-      const effectiveMinimumWidth =
-        Math.max(
-          minimumWidth,
-          getColumnMinimumWidth(
-            columnKey
-          )
-        );
+      const effectiveMinimumWidth = Math.max(
+        minimumWidth,
+        getColumnMinimumWidth(columnKey)
+      );
 
-      const initialColumnWidth =
-        Number(
-          columnWidths[columnKey] ??
-            DEFAULT_COLUMN_WIDTHS[
-              columnKey
-            ] ??
-            effectiveMinimumWidth
-        );
+      const initialColumnWidth = Number(
+        columnWidths[columnKey] ??
+          DEFAULT_COLUMN_WIDTHS[columnKey] ??
+          effectiveMinimumWidth
+      );
 
       setIsResizing(true);
 
-      const handleMouseMove = (
-        mouseEvent
-      ) => {
-        const movement =
-          mouseEvent.clientX -
-          initialMouseX;
+      const handleMouseMove = (mouseEvent) => {
+        const movement = mouseEvent.clientX - initialMouseX;
 
         const nextWidth = Math.max(
           effectiveMinimumWidth,
-          Math.round(
-            initialColumnWidth +
-              movement
-          )
+          Math.round(initialColumnWidth + movement)
         );
 
-        setColumnWidths(
-          (currentWidths) => ({
-            ...currentWidths,
-            [columnKey]: nextWidth,
-          })
-        );
+        setColumnWidths((currentWidths) => ({
+          ...currentWidths,
+          [columnKey]: nextWidth,
+        }));
       };
 
       const handleMouseUp = () => {
-        window.removeEventListener(
-          "mousemove",
-          handleMouseMove
-        );
+        window.removeEventListener("mousemove", handleMouseMove);
 
-        window.removeEventListener(
-          "mouseup",
-          handleMouseUp
-        );
+        window.removeEventListener("mouseup", handleMouseUp);
 
         setIsResizing(false);
       };
 
-      window.addEventListener(
-        "mousemove",
-        handleMouseMove
-      );
+      window.addEventListener("mousemove", handleMouseMove);
 
-      window.addEventListener(
-        "mouseup",
-        handleMouseUp
-      );
+      window.addEventListener("mouseup", handleMouseUp);
     },
     [columnWidths]
   );
 
-  const resetColumnWidths =
-    useCallback(() => {
-      setColumnWidths({
-        ...DEFAULT_COLUMN_WIDTHS,
-      });
-    }, []);
+  const resetColumnWidths = useCallback(() => {
+    setColumnWidths({
+      ...DEFAULT_COLUMN_WIDTHS,
+    });
+  }, []);
 
   return {
     columns: MOVEMENTS_COLUMNS,

@@ -16,6 +16,7 @@ const IPC_CHANNELS = [
   "configure-zoom",
   "reset-zoom",
   "get-zoom-debug",
+  "print-ticket",
 ];
 
 const originalPlatform = process.platform;
@@ -253,7 +254,7 @@ describe("electron mainProcess", () => {
   });
 
   describe("registerIpcHandlers", () => {
-    it("registra los seis canales esperados", () => {
+    it("registra los siete canales esperados", () => {
       const { handlers } = buildIpcHarness();
 
       expect(Object.keys(handlers).sort()).toEqual([...IPC_CHANNELS].sort());
@@ -385,6 +386,147 @@ describe("electron mainProcess", () => {
         zoomFactor: null,
         contentBounds: null,
         state: null,
+      });
+    });
+
+    describe("print-ticket", () => {
+      const buildPrintHarness = ({ printers = [{ name: "Termica" }] } = {}) => {
+        const printWindow = {
+          webContents: {
+            print: vi.fn(() => Promise.resolve({ success: true })),
+            once: vi.fn((event, callback) => {
+              if (event === "did-finish-load") callback();
+            }),
+            removeListener: vi.fn(),
+          },
+          loadURL: vi.fn(() => Promise.resolve()),
+          isDestroyed: vi.fn(() => false),
+          destroy: vi.fn(),
+        };
+        // Electron usa BrowserWindow como constructor (`new`) y tambien como fabrica de
+        // ventanas por webContents (`BrowserWindow.fromWebContents`).
+        const BrowserWindow = Object.assign(
+          vi.fn(function BrowserWindowMock() {
+            return printWindow;
+          }),
+          { fromWebContents: vi.fn(() => null) }
+        );
+        const sender = createWebContents({
+          getPrintersAsync: vi.fn(() => Promise.resolve(printers)),
+        });
+        const { handlers } = buildIpcHarness({ BrowserWindow });
+
+        return { handlers, BrowserWindow, printWindow, sender };
+      };
+
+      it("imprime el ticket recibido y devuelve el contrato de exito", async () => {
+        const { handlers, BrowserWindow, printWindow, sender } =
+          buildPrintHarness();
+
+        await expect(
+          handlers["print-ticket"](
+            { sender },
+            { ticketText: "TICKET DE PRUEBA", options: { profile: "80mm" } }
+          )
+        ).resolves.toEqual({
+          success: true,
+          message: "Ticket impreso correctamente.",
+        });
+
+        expect(sender.getPrintersAsync).toHaveBeenCalled();
+        expect(BrowserWindow).toHaveBeenCalledWith(
+          expect.objectContaining({ show: false })
+        );
+        expect(
+          decodeURIComponent(printWindow.loadURL.mock.calls[0][0])
+        ).toContain("<pre>TICKET DE PRUEBA</pre>");
+        expect(printWindow.webContents.print).toHaveBeenCalledWith(
+          expect.objectContaining({
+            silent: true,
+            pageSize: { width: 80000, height: 300000 },
+          })
+        );
+        expect(printWindow.destroy).toHaveBeenCalled();
+      });
+
+      it("propaga el fallo del driver sin lanzar hacia el renderer", async () => {
+        const { handlers, printWindow, sender } = buildPrintHarness();
+        printWindow.webContents.print = vi.fn(() =>
+          Promise.resolve({
+            success: false,
+            failureReason: "Printer not found",
+          })
+        );
+
+        await expect(
+          handlers["print-ticket"]({ sender }, { ticketText: "TICKET" })
+        ).resolves.toEqual({
+          success: false,
+          message: "El sistema no pudo imprimir el ticket.",
+          error: "Printer not found",
+        });
+      });
+
+      it("captura la excepcion del driver y la traduce al contrato", async () => {
+        const { handlers, printWindow, sender } = buildPrintHarness();
+        printWindow.webContents.print = vi.fn(() => {
+          throw new Error("Spooler stopped");
+        });
+
+        await expect(
+          handlers["print-ticket"]({ sender }, { ticketText: "TICKET" })
+        ).resolves.toEqual({
+          success: false,
+          message: "No se pudo imprimir el ticket.",
+          error: "Spooler stopped",
+        });
+      });
+
+      it("rechaza sin abrir la ventana utilitaria cuando no hay impresora", async () => {
+        const { handlers, BrowserWindow, sender } = buildPrintHarness({
+          printers: [],
+        });
+
+        await expect(
+          handlers["print-ticket"]({ sender }, { ticketText: "TICKET" })
+        ).resolves.toEqual({
+          success: false,
+          message: "No hay ninguna impresora configurada en el sistema.",
+          error: "NO_PRINTER_AVAILABLE",
+        });
+        expect(BrowserWindow).not.toHaveBeenCalled();
+      });
+
+      it("omite la consulta de impresoras cuando el llamador eligio una", async () => {
+        const { handlers, printWindow, sender } = buildPrintHarness({
+          printers: [],
+        });
+
+        await expect(
+          handlers["print-ticket"](
+            { sender },
+            { ticketText: "TICKET", options: { deviceName: "Termica" } }
+          )
+        ).resolves.toMatchObject({ success: true });
+
+        expect(sender.getPrintersAsync).not.toHaveBeenCalled();
+        expect(printWindow.webContents.print).toHaveBeenCalledWith(
+          expect.objectContaining({ deviceName: "Termica" })
+        );
+      });
+
+      it("rechaza un payload vacio sin tocar el sistema de impresion", async () => {
+        const { handlers, BrowserWindow, sender } = buildPrintHarness();
+
+        await expect(handlers["print-ticket"]({ sender })).resolves.toEqual({
+          success: false,
+          message: "El ticket a imprimir esta vacio.",
+          error: "EMPTY_TICKET",
+        });
+        await expect(
+          handlers["print-ticket"]({ sender }, { ticketText: "  " })
+        ).resolves.toMatchObject({ error: "EMPTY_TICKET" });
+        expect(BrowserWindow).not.toHaveBeenCalled();
       });
     });
   });

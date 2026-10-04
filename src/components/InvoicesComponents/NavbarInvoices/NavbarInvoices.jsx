@@ -55,7 +55,7 @@ const NavbarInvoices = ({ onProtectedAccessAuthorized }) => {
 
   const options = withProtectedMetadata(
     NAVBAR_OPTIONS,
-    PROTECTED_INVOICE_SECTIONS,
+    PROTECTED_INVOICE_SECTIONS
   );
 
   return (

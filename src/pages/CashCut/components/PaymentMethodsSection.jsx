@@ -60,7 +60,12 @@ const PaymentMethodsSection = ({
           />
         )}
 
-        <DataRow label="Total bruto" value={fmt(ventasTotales)} bold borderTop />
+        <DataRow
+          label="Total bruto"
+          value={fmt(ventasTotales)}
+          bold
+          borderTop
+        />
 
         <DataRow
           label="Total neto"

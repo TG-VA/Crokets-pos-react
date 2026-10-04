@@ -1,18 +1,18 @@
-import styles from './UserList.module.css';
-import userIcon from '../../assets/icons/user-solid.svg';
+import styles from "./UserList.module.css";
+import userIcon from "../../assets/icons/user-solid.svg";
 
 const UserList = ({ users, loading, error, onReload }) => {
   const formatDate = (dateString) => {
     try {
-      return new Date(dateString).toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      return new Date(dateString).toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (error) {
-      return 'Fecha no válida';
+      return "Fecha no válida";
     }
   };
 
@@ -31,7 +31,8 @@ const UserList = ({ users, loading, error, onReload }) => {
         <div className={styles.listTitle}>
           <h2>Usuarios de Supabase</h2>
           <span className={styles.userCount}>
-            {users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}
+            {users.length} usuario{users.length !== 1 ? "s" : ""} registrado
+            {users.length !== 1 ? "s" : ""}
           </span>
         </div>
         <button className={styles.createButton} onClick={onReload}>
@@ -55,7 +56,7 @@ const UserList = ({ users, loading, error, onReload }) => {
             <div className={styles.headerCell}>Rol / Estado</div>
             <div className={styles.headerCell}>Fecha de Creación</div>
           </div>
-          
+
           <div className={styles.tableBody}>
             {users.map((user) => (
               <div key={user.id} className={styles.tableRow}>
@@ -68,13 +69,15 @@ const UserList = ({ users, loading, error, onReload }) => {
                     <span className={styles.userId}>ID: {user.id}</span>
                   </div>
                 </div>
-                
+
                 <div className={styles.emailCell}>
-                  {user.email || 'SIN CORREO'}
+                  {user.email || "SIN CORREO"}
                 </div>
-                
+
                 <div className={styles.metaCell}>
-                  <span className={styles.permissionTag}>{user.roleName || 'SIN ROL'}</span>
+                  <span className={styles.permissionTag}>
+                    {user.roleName || "SIN ROL"}
+                  </span>
                   <span
                     className={`${styles.statusBadge} ${
                       user.status === true
@@ -85,15 +88,15 @@ const UserList = ({ users, loading, error, onReload }) => {
                     }`}
                   >
                     {user.status === true
-                      ? 'ACTIVO'
+                      ? "ACTIVO"
                       : user.status === false
-                        ? 'INACTIVO'
-                        : 'SIN ESTADO'}
+                        ? "INACTIVO"
+                        : "SIN ESTADO"}
                   </span>
                 </div>
-                
+
                 <div className={styles.dateCell}>
-                  {user.createdAt ? formatDate(user.createdAt) : 'N/A'}
+                  {user.createdAt ? formatDate(user.createdAt) : "N/A"}
                 </div>
               </div>
             ))}

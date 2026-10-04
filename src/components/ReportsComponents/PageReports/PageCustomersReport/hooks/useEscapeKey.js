@@ -15,7 +15,11 @@ import { useEffect, useCallback } from "react";
 export const useEscapeKey = (isOpen, onClose) => {
   const handleKeyDown = useCallback(
     (event) => {
-      if (event.key === "Escape" || event.key === "Esc" || event.keyCode === 27) {
+      if (
+        event.key === "Escape" ||
+        event.key === "Esc" ||
+        event.keyCode === 27
+      ) {
         onClose?.();
       }
     },

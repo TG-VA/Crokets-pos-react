@@ -7,7 +7,9 @@ export const authorizeAdminAction = async ({
   targetId = null,
   branchId = null,
 }) => {
-  const cleanUsername = String(username || "").trim().toLowerCase();
+  const cleanUsername = String(username || "")
+    .trim()
+    .toLowerCase();
   const cleanPassword = String(password || "").trim();
   const cleanAction = String(action || "").trim();
 

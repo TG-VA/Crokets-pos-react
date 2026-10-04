@@ -86,9 +86,19 @@
 .icon {
   position: relative;
   z-index: 1;
-  font-size: 31px;
-  font-weight: 950;
-  line-height: 1;
+}
+
+/* La forma del SVG se aplica como máscara y el relleno toma currentColor, así el glifo
+   hereda el color exacto del estado sin cadenas de filter que aproximan el tinte. */
+.iconGlyph {
+  display: block;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  background-color: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
 }
 
 .content {
@@ -196,6 +206,14 @@
     0 0 0 8px rgba(16, 146, 177, 0.08);
 }
 
+/* Los viewBox no coinciden (512 a sangre frente a 640 con margen): se ajusta el tamaño
+   para igualar el peso óptico dentro del círculo de 60 px. */
+.info .iconGlyph {
+  width: 25px;
+  height: 25px;
+  mask-image: url("../../assets/icons/circle-info-solid-full.svg");
+}
+
 .info .confirmButton {
   background: #1092b1;
   box-shadow: none;
@@ -230,6 +248,10 @@
   box-shadow:
     0 0 0 1px #86efac inset,
     0 0 0 9px rgba(34, 197, 94, 0.12);
+}
+
+.success .iconGlyph {
+  mask-image: url("../../assets/icons/circle-check-solid-full.svg");
 }
 
 .success .title {
@@ -268,6 +290,14 @@
   box-shadow:
     0 0 0 1px #fed7aa inset,
     0 0 0 8px rgba(252, 137, 19, 0.08);
+}
+
+/* El triángulo ocupa casi toda su caja: se amplía para igualar el peso óptico. */
+.warning .iconGlyph,
+.danger .iconGlyph {
+  width: 32px;
+  height: 32px;
+  mask-image: url("../../assets/icons/triangle-exclamation-solid-full.svg");
 }
 
 .warning .confirmButton {

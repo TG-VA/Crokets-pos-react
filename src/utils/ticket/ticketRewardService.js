@@ -43,25 +43,23 @@ export const isRewardDiscountItem = (item = {}) => {
 
   const hasRewardIdentifier = Boolean(
     item.reward_id ||
-      item.rewardId ||
-      item.sale_reward_redemption_id ||
-      item.saleRewardRedemptionId
+    item.rewardId ||
+    item.sale_reward_redemption_id ||
+    item.saleRewardRedemptionId
   );
 
   return Boolean(
     item.is_reward_discount_item ||
-      item.isRewardDiscountItem ||
-      item.reward_discount_item ||
-      item.rewardDiscountItem ||
-      rewardType === "product_discount" ||
-      rewardName.includes("DESCUENTO") ||
-      rewardName.includes("DESC") ||
-      rewardName.includes("%") ||
-      rewardName.includes("OFF") ||
-      (hasRewardIdentifier && lineTotal > 0 && discountAmount > 0) ||
-      (hasRewardIdentifier &&
-        lineTotal > 0 &&
-        originalUnitPrice > paidUnitPrice)
+    item.isRewardDiscountItem ||
+    item.reward_discount_item ||
+    item.rewardDiscountItem ||
+    rewardType === "product_discount" ||
+    rewardName.includes("DESCUENTO") ||
+    rewardName.includes("DESC") ||
+    rewardName.includes("%") ||
+    rewardName.includes("OFF") ||
+    (hasRewardIdentifier && lineTotal > 0 && discountAmount > 0) ||
+    (hasRewardIdentifier && lineTotal > 0 && originalUnitPrice > paidUnitPrice)
   );
 };
 
@@ -72,16 +70,16 @@ export const isFreeRewardItem = (item = {}) => {
 
   return Boolean(
     item.is_reward_item ||
-      item.isRewardItem ||
-      item.reward_item ||
-      item.rewardItem ||
-      item.is_reward ||
-      item.isReward ||
-      rewardType === "free_product" ||
-      item.reward_id ||
-      item.rewardId ||
-      item.sale_reward_redemption_id ||
-      item.saleRewardRedemptionId
+    item.isRewardItem ||
+    item.reward_item ||
+    item.rewardItem ||
+    item.is_reward ||
+    item.isReward ||
+    rewardType === "free_product" ||
+    item.reward_id ||
+    item.rewardId ||
+    item.sale_reward_redemption_id ||
+    item.saleRewardRedemptionId
   );
 };
 
@@ -139,10 +137,10 @@ export const detectRewardType = (reward = {}) => {
 
   const looksLikeDiscount = Boolean(
     rewardName.includes("DESCUENTO") ||
-      rewardName.includes("DESC") ||
-      rewardName.includes("%") ||
-      rewardName.includes("OFF") ||
-      discountAmount > 0
+    rewardName.includes("DESC") ||
+    rewardName.includes("%") ||
+    rewardName.includes("OFF") ||
+    discountAmount > 0
   );
 
   if (explicitType === "product_discount") return "product_discount";
@@ -240,8 +238,7 @@ export const normalizeRewardRedemptions = (sale = {}, items = []) => {
             reward.reversalDate ||
             null,
           reversedBy: reward.reversed_by || reward.reversedBy || null,
-          reversalReason:
-            reward.reversal_reason || reward.reversalReason || "",
+          reversalReason: reward.reversal_reason || reward.reversalReason || "",
         };
       })
       .filter((reward) => reward.rewardName);
@@ -266,7 +263,9 @@ export const normalizeRewardRedemptions = (sale = {}, items = []) => {
         item.nombre ||
         "PRODUCTO";
 
-      const quantity = toNumber(item.quantity ?? item.qty ?? item.cantidad ?? 1);
+      const quantity = toNumber(
+        item.quantity ?? item.qty ?? item.cantidad ?? 1
+      );
 
       const pointsPerUnit = Math.abs(
         toNumber(
@@ -358,14 +357,14 @@ export const getRewardCount = (sale = {}, items = []) => {
 export const hasRewardActivity = (sale = {}, items = []) => {
   return Boolean(
     sale.is_reward_redemption_only ||
-      sale.isRewardRedemptionOnly ||
-      sale.is_zero_total_sale ||
-      sale.isZeroTotalSale ||
-      sale.has_reward_redemptions ||
-      sale.hasRewardRedemptions ||
-      getRewardPointsUsed(sale, items) > 0 ||
-      getRewardCount(sale, items) > 0 ||
-      (items || []).some((item) => isRewardItem(item))
+    sale.isRewardRedemptionOnly ||
+    sale.is_zero_total_sale ||
+    sale.isZeroTotalSale ||
+    sale.has_reward_redemptions ||
+    sale.hasRewardRedemptions ||
+    getRewardPointsUsed(sale, items) > 0 ||
+    getRewardCount(sale, items) > 0 ||
+    (items || []).some((item) => isRewardItem(item))
   );
 };
 
@@ -398,18 +397,21 @@ export const findRewardForItem = (item = {}, rewardRedemptions = []) => {
   return null;
 };
 
-export const getRewardVisualTypeForItem = (item = {}, rewardRedemptions = []) => {
+export const getRewardVisualTypeForItem = (
+  item = {},
+  rewardRedemptions = []
+) => {
   if (isRewardDiscountItem(item)) return "product_discount";
 
   const matchedReward = findRewardForItem(item, rewardRedemptions);
   const matchedRewardName = normalizeUpper(matchedReward?.rewardName || "");
   const matchedLooksLikeDiscount = Boolean(
     matchedReward?.rewardType === "product_discount" ||
-      matchedRewardName.includes("DESCUENTO") ||
-      matchedRewardName.includes("DESC") ||
-      matchedRewardName.includes("%") ||
-      matchedRewardName.includes("OFF") ||
-      toNumber(matchedReward?.discountAmount) > 0
+    matchedRewardName.includes("DESCUENTO") ||
+    matchedRewardName.includes("DESC") ||
+    matchedRewardName.includes("%") ||
+    matchedRewardName.includes("OFF") ||
+    toNumber(matchedReward?.discountAmount) > 0
   );
 
   if (matchedLooksLikeDiscount) return "product_discount";

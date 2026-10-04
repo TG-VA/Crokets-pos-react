@@ -48,11 +48,7 @@ export const fetchActiveSession = async ({ userId }) =>
  * Nombre de la sucursal por id.
  */
 export const fetchBranchName = async ({ branchId }) =>
-  supabase
-    .from("branches")
-    .select("name")
-    .eq("id", branchId)
-    .maybeSingle();
+  supabase.from("branches").select("name").eq("id", branchId).maybeSingle();
 
 /**
  * Historial de cortes de turno de la sucursal (con usuario y sesion embebidos).
@@ -211,7 +207,9 @@ export const fetchRewardRedemptions = async ({ saleIds = [] } = {}) => {
 export const fetchPaymentsByMethod = async ({ saleIds, branchId }) =>
   supabase
     .from("sale_payments")
-    .select("amount, payment_method_id, payment_methods(id, name, affects_cash)")
+    .select(
+      "amount, payment_method_id, payment_methods(id, name, affects_cash)"
+    )
     .in("sale_id", saleIds)
     .eq("branch_id", branchId);
 

@@ -5,7 +5,10 @@
 
 import React from "react";
 import styles from "./CustomersComponents.module.css";
-import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
+import {
+  formatCurrency,
+  formatNumber,
+} from "../utils/customersReportFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
@@ -53,9 +56,7 @@ const CustomerDetailProductsTab = ({ favoriteProducts = [] }) => {
             <tbody>
               {paginatedProducts.map((p) => (
                 <tr key={p.productId}>
-                  <td className={styles.monospaceCell}>
-                    {p.barcode || "S/C"}
-                  </td>
+                  <td className={styles.monospaceCell}>{p.barcode || "S/C"}</td>
                   <td>
                     <span className={styles.cellPrimaryValue}>
                       {p.productName}

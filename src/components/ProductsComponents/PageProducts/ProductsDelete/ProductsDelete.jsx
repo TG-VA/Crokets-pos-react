@@ -23,7 +23,7 @@ const ProductsDelete = () => {
     handleCancel,
     handleDelete,
     canDelete,
-    CONFIRM_TEXT
+    CONFIRM_TEXT,
   } = useProductsDelete();
 
   return (
@@ -112,7 +112,8 @@ const ProductsDelete = () => {
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Existencia</span>
                       <span className={styles.infoValue}>
-                        {selectedProduct.use_inventory || selectedProduct.tracks_inventory
+                        {selectedProduct.use_inventory ||
+                        selectedProduct.tracks_inventory
                           ? Number(selectedProduct.existencia || 0)
                           : "Sin control de inventario"}
                       </span>
@@ -141,8 +142,8 @@ const ProductsDelete = () => {
                   </div>
 
                   <div className={styles.warningBox}>
-                    Esta acción es irreversible. Las ventas anteriores y
-                    tickets seguirán conservando la información histórica.
+                    Esta acción es irreversible. Las ventas anteriores y tickets
+                    seguirán conservando la información histórica.
                   </div>
 
                   <div className={styles.formRow}>

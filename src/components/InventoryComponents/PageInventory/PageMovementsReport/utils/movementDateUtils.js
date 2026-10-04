@@ -1,16 +1,9 @@
-export const MOVEMENTS_TIME_ZONE =
-  "America/Cancun";
+export const MOVEMENTS_TIME_ZONE = "America/Cancun";
 
-export const formatDateTime = (
-  value,
-  { useSystemTime = false } = {}
-) => {
+export const formatDateTime = (value, { useSystemTime = false } = {}) => {
   if (!value) return "—";
 
-  const date =
-    value instanceof Date
-      ? value
-      : new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return "—";
@@ -26,26 +19,16 @@ export const formatDateTime = (
   };
 
   if (!useSystemTime) {
-    options.timeZone =
-      MOVEMENTS_TIME_ZONE;
+    options.timeZone = MOVEMENTS_TIME_ZONE;
   }
 
-  return new Intl.DateTimeFormat(
-    "es-MX",
-    options
-  ).format(date);
+  return new Intl.DateTimeFormat("es-MX", options).format(date);
 };
 
-export const getDateParts = (
-  value,
-  { useSystemTime = false } = {}
-) => {
+export const getDateParts = (value, { useSystemTime = false } = {}) => {
   if (!value) return null;
 
-  const date =
-    value instanceof Date
-      ? value
-      : new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -58,27 +41,16 @@ export const getDateParts = (
   };
 
   if (!useSystemTime) {
-    options.timeZone =
-      MOVEMENTS_TIME_ZONE;
+    options.timeZone = MOVEMENTS_TIME_ZONE;
   }
 
-  const parts = new Intl.DateTimeFormat(
-    "en-CA",
-    options
-  ).formatToParts(date);
+  const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
 
   const partsMap = Object.fromEntries(
-    parts.map((part) => [
-      part.type,
-      part.value,
-    ])
+    parts.map((part) => [part.type, part.value])
   );
 
-  if (
-    !partsMap.year ||
-    !partsMap.month ||
-    !partsMap.day
-  ) {
+  if (!partsMap.year || !partsMap.month || !partsMap.day) {
     return null;
   }
 
@@ -89,38 +61,22 @@ export const getDateParts = (
   };
 };
 
-export const getDateKeyFromValue = (
-  value,
-  options
-) => {
-  const parts = getDateParts(
-    value,
-    options
-  );
+export const getDateKeyFromValue = (value, options) => {
+  const parts = getDateParts(value, options);
 
   if (!parts) return null;
 
-  return [
-    parts.year,
-    parts.month,
-    parts.day,
-  ].join("-");
+  return [parts.year, parts.month, parts.day].join("-");
 };
 
 export const getTodayDateKey = () => {
-  return (
-    getDateKeyFromValue(new Date()) ||
-    "0000-00-00"
-  );
+  return getDateKeyFromValue(new Date()) || "0000-00-00";
 };
 
-export const formatDateKeyLabel = (
-  value
-) => {
+export const formatDateKeyLabel = (value) => {
   if (!value) return "—";
 
-  const [year, month, day] =
-    String(value).split("-");
+  const [year, month, day] = String(value).split("-");
 
   if (!year || !month || !day) {
     return "—";
@@ -129,15 +85,10 @@ export const formatDateKeyLabel = (
   return `${day}/${month}/${year}`;
 };
 
-export const dateKeyToDate = (
-  value
-) => {
+export const dateKeyToDate = (value) => {
   if (!value) return null;
 
-  const [year, month, day] =
-    String(value)
-      .split("-")
-      .map(Number);
+  const [year, month, day] = String(value).split("-").map(Number);
 
   if (
     !Number.isFinite(year) ||
@@ -147,11 +98,7 @@ export const dateKeyToDate = (
     return null;
   }
 
-  const date = new Date(
-    year,
-    month - 1,
-    day
-  );
+  const date = new Date(year, month - 1, day);
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -160,13 +107,8 @@ export const dateKeyToDate = (
   return date;
 };
 
-export const dateToLocalKey = (
-  value
-) => {
-  const date =
-    value instanceof Date
-      ? value
-      : new Date(value);
+export const dateToLocalKey = (value) => {
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return getTodayDateKey();
@@ -174,78 +116,46 @@ export const dateToLocalKey = (
 
   const year = date.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
 
-export const formatDateForFilename = (
-  value = new Date()
-) => {
-  const date =
-    value instanceof Date
-      ? value
-      : new Date(value);
+export const formatDateForFilename = (value = new Date()) => {
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return "00-00-00";
   }
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  const year = String(
-    date.getFullYear()
-  ).slice(-2);
+  const year = String(date.getFullYear()).slice(-2);
 
   return `${day}-${month}-${year}`;
 };
 
-export const createDateRange = (
-  startDateKey,
-  endDateKey
-) => {
-  const fallbackDateKey =
-    getTodayDateKey();
+export const createDateRange = (startDateKey, endDateKey) => {
+  const fallbackDateKey = getTodayDateKey();
 
-  let normalizedStartKey =
-    startDateKey || fallbackDateKey;
+  let normalizedStartKey = startDateKey || fallbackDateKey;
 
-  let normalizedEndKey =
-    endDateKey ||
-    normalizedStartKey;
+  let normalizedEndKey = endDateKey || normalizedStartKey;
 
-  if (
-    normalizedStartKey >
-    normalizedEndKey
-  ) {
-    [
-      normalizedStartKey,
-      normalizedEndKey,
-    ] = [
+  if (normalizedStartKey > normalizedEndKey) {
+    [normalizedStartKey, normalizedEndKey] = [
       normalizedEndKey,
       normalizedStartKey,
     ];
   }
 
-  const start = dateKeyToDate(
-    normalizedStartKey
-  );
+  const start = dateKeyToDate(normalizedStartKey);
 
-  const end = dateKeyToDate(
-    normalizedEndKey
-  );
+  const end = dateKeyToDate(normalizedEndKey);
 
   if (!start || !end) {
     return null;
@@ -259,69 +169,38 @@ export const createDateRange = (
   };
 };
 
-export const getDateRangeForPreset = (
-  dateKey,
-  preset = "day"
-) => {
-  const baseKey =
-    dateKey || getTodayDateKey();
+export const getDateRangeForPreset = (dateKey, preset = "day") => {
+  const baseKey = dateKey || getTodayDateKey();
 
-  const baseDate =
-    dateKeyToDate(baseKey);
+  const baseDate = dateKeyToDate(baseKey);
 
   if (!baseDate) {
     return null;
   }
 
   if (preset === "month") {
-    const start = new Date(
-      baseDate.getFullYear(),
-      baseDate.getMonth(),
-      1
-    );
+    const start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
 
-    const end = new Date(
-      baseDate.getFullYear(),
-      baseDate.getMonth() + 1,
-      0
-    );
+    const end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
 
-    return createDateRange(
-      dateToLocalKey(start),
-      dateToLocalKey(end)
-    );
+    return createDateRange(dateToLocalKey(start), dateToLocalKey(end));
   }
 
   if (preset === "week") {
     const start = new Date(baseDate);
 
-    const dayOfWeek =
-      start.getDay();
+    const dayOfWeek = start.getDay();
 
-    const daysFromMonday =
-      dayOfWeek === 0
-        ? 6
-        : dayOfWeek - 1;
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
-    start.setDate(
-      start.getDate() -
-        daysFromMonday
-    );
+    start.setDate(start.getDate() - daysFromMonday);
 
     const end = new Date(start);
 
-    end.setDate(
-      start.getDate() + 6
-    );
+    end.setDate(start.getDate() + 6);
 
-    return createDateRange(
-      dateToLocalKey(start),
-      dateToLocalKey(end)
-    );
+    return createDateRange(dateToLocalKey(start), dateToLocalKey(end));
   }
 
-  return createDateRange(
-    baseKey,
-    baseKey
-  );
+  return createDateRange(baseKey, baseKey);
 };

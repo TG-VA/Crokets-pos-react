@@ -154,7 +154,10 @@ describe("formatBranchKardexProducts", () => {
   });
 
   it("asigna departamento por defecto cuando no existe el id", () => {
-    const noDept = { ...inventoryRow, products: { ...inventoryRow.products, department_id: "dept-x" } };
+    const noDept = {
+      ...inventoryRow,
+      products: { ...inventoryRow.products, department_id: "dept-x" },
+    };
     const result = formatBranchKardexProducts([noDept], departmentsMap);
 
     expect(result[0].departamento).toBe("Sin departamento");
@@ -246,6 +249,13 @@ describe("formatGlobalProductsWithoutInventory", () => {
   });
 
   it("devuelve un arreglo vacío si no recibe productos globales", () => {
-    expect(formatGlobalProductsWithoutInventory(null, inventoryProductIds, departmentsMap, "branch-1")).toEqual([]);
+    expect(
+      formatGlobalProductsWithoutInventory(
+        null,
+        inventoryProductIds,
+        departmentsMap,
+        "branch-1"
+      )
+    ).toEqual([]);
   });
 });

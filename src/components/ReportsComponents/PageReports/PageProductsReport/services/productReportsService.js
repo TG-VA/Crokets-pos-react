@@ -1,14 +1,19 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
-export const fetchProductsReportData = async ({ startDate, endDate, branchId }) => {
+export const fetchProductsReportData = async ({
+  startDate,
+  endDate,
+  branchId,
+}) => {
   if (!startDate || !endDate || !branchId) {
     throw new Error("Parámetros de consulta incompletos.");
   }
 
-  // 1. CONSULTAR VENTAS DEL PERIODO  
+  // 1. CONSULTAR VENTAS DEL PERIODO
   let salesQuery = supabase
     .from("sale_details")
-    .select(`
+    .select(
+      `
       quantity,
       total_price,
       product_id,
@@ -19,7 +24,8 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
         department:departments ( name ) 
       ),
       sales!inner ( status, branch_id, created_at )
-    `)
+    `
+    )
     .eq("sales.status", "completed")
     .gte("sales.created_at", startDate)
     .lte("sales.created_at", endDate);
@@ -44,8 +50,11 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
     const revenue = Number(detail.total_price || 0);
     const productId = detail.product_id;
     const productName = detail.products?.name || "Producto Desconocido";
-    
-    const deptName = detail.products?.department?.name || detail.products?.departments?.name || "Sin Departamento";
+
+    const deptName =
+      detail.products?.department?.name ||
+      detail.products?.departments?.name ||
+      "Sin Departamento";
 
     if (productId) {
       soldProductIds.add(productId);
@@ -76,7 +85,8 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
   // 3. CONSULTAR INVENTARIO (CRUZAR STOCK Y MUERTOS)
   let inventoryQuery = supabase
     .from("branch_inventory")
-    .select(`
+    .select(
+      `
       stock,
       product_id,
       products (
@@ -85,7 +95,8 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
         barcode,
         department:departments ( name ) 
       )
-    `)
+    `
+    )
     .eq("is_active", true); // Quitamos el > 0 temporalmente para ver todo el panorama
 
   if (branchId !== "ALL") {
@@ -115,7 +126,10 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
           id: pId,
           barcode: inv.products?.barcode || "N/A",
           name: inv.products?.name || "Producto Sin Nombre",
-          departmentName: inv.products?.department?.name || inv.products?.departments?.name || "Sin Depto.",
+          departmentName:
+            inv.products?.department?.name ||
+            inv.products?.departments?.name ||
+            "Sin Depto.",
           stock: 0,
         };
       }
@@ -123,22 +137,28 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
     }
   });
 
-  const deadStock = Object.values(deadStockMap).sort((a, b) => b.stock - a.stock);
+  const deadStock = Object.values(deadStockMap).sort(
+    (a, b) => b.stock - a.stock
+  );
 
   // 4. ORDENAMIENTO FINAL Y CRUCE
-  const productsArray = Object.values(productMap).map(prod => ({
+  const productsArray = Object.values(productMap).map((prod) => ({
     ...prod,
-    stock: globalStockMap[prod.id] || 0 // Si no hay registro, asumimos 0
+    stock: globalStockMap[prod.id] || 0, // Si no hay registro, asumimos 0
   }));
-  
-  const departmentsArray = Object.values(departmentMap).sort((a, b) => b.revenue - a.revenue);
+
+  const departmentsArray = Object.values(departmentMap).sort(
+    (a, b) => b.revenue - a.revenue
+  );
 
   // Top Productos (Todos)
-  const topProducts = [...productsArray].sort((a, b) => b.quantity - a.quantity);
-  
+  const topProducts = [...productsArray].sort(
+    (a, b) => b.quantity - a.quantity
+  );
+
   // Peor Rotación (Solo menos de 3 ventas)
   const bottomProducts = [...productsArray]
-    .filter(item => item.quantity < 3)
+    .filter((item) => item.quantity < 3)
     .sort((a, b) => a.quantity - b.quantity);
 
   const topDepartment = departmentsArray[0] || { name: "N/A", revenue: 0 };
@@ -156,4 +176,31 @@ export const fetchProductsReportData = async ({ startDate, endDate, branchId }) 
     bottomProducts,
     deadStock,
   };
+};
+
+/**
+ * Carga el reporte de productos y entrega el resultado por callbacks.
+ *
+ * La orquestacion vive en el servicio para que el efecto que dispara la consulta
+ * no escriba estado: todas las actualizaciones de React ocurren en la
+ * continuacion asincrona, ya despues del `await`, de modo que no se provoca el
+ * re-render en cascada del `setIsLoading(true)` sincrono. `onSettled` se invoca
+ * siempre, incluido el error, para que el hook pueda marcar la peticion como
+ * resuelta y derivar su estado de carga.
+ *
+ * @param {{ startDate: string, endDate: string, branchId: string }} params
+ * @param {{ onData: Function, onError: Function, onSettled: Function }} handlers
+ */
+export const loadProductsReport = async (
+  { startDate, endDate, branchId },
+  { onData, onError, onSettled }
+) => {
+  try {
+    onData(await fetchProductsReportData({ startDate, endDate, branchId }));
+  } catch (err) {
+    console.error("Error consultando reporte de productos:", err);
+    onError("Ocurrió un error al extraer los datos de la base de datos.");
+  } finally {
+    onSettled();
+  }
 };

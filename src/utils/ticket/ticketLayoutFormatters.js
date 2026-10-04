@@ -17,9 +17,12 @@ export const money = (value) => {
 };
 
 export const normalizeSpaces = (text = "") =>
-  String(text ?? "").replace(/\s+/g, " ").trim();
+  String(text ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 
-export const normalizeUpper = (text = "") => normalizeSpaces(text).toUpperCase();
+export const normalizeUpper = (text = "") =>
+  normalizeSpaces(text).toUpperCase();
 
 export const wrapText = (text = "", width = TICKET_WIDTH) => {
   const clean = normalizeSpaces(text);

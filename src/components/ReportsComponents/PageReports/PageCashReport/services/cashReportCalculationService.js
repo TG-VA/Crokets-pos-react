@@ -6,7 +6,11 @@
 /**
  * Calcula los KPIs ejecutivos del reporte de caja para el periodo consultado
  */
-export const calculateCashReportKpis = (sessions = [], movements = [], paymentSummary = []) => {
+export const calculateCashReportKpis = (
+  sessions = [],
+  movements = [],
+  paymentSummary = []
+) => {
   let totalOpening = 0;
   let totalCountedCash = 0;
   let totalDifference = 0;
@@ -34,7 +38,12 @@ export const calculateCashReportKpis = (sessions = [], movements = [], paymentSu
   movements.forEach((m) => {
     const type = String(m.movement_type || "").toLowerCase();
     const amt = Number(m.amount || 0);
-    if (type.includes("entry") || type.includes("in") || type.includes("ingreso") || type.includes("entrada")) {
+    if (
+      type.includes("entry") ||
+      type.includes("in") ||
+      type.includes("ingreso") ||
+      type.includes("entrada")
+    ) {
       totalManualInflow += amt;
     } else {
       totalManualOutflow += amt;
@@ -42,16 +51,26 @@ export const calculateCashReportKpis = (sessions = [], movements = [], paymentSu
   });
 
   // Ventas en efectivo consolidadas (suma de todas las sesiones de la tabla)
-  let totalCashSales = sessions.reduce((acc, s) => acc + Number(s.cashSales || 0), 0);
+  let totalCashSales = sessions.reduce(
+    (acc, s) => acc + Number(s.cashSales || 0),
+    0
+  );
 
   // Si no hubiera sesiones cargadas pero sí resumen de métodos de pago
   if (totalCashSales === 0 && paymentSummary.length > 0) {
     totalCashSales = paymentSummary
-      .filter((p) => p.affectsCash || String(p.methodName || "").toLowerCase().includes("efectivo"))
+      .filter(
+        (p) =>
+          p.affectsCash ||
+          String(p.methodName || "")
+            .toLowerCase()
+            .includes("efectivo")
+      )
       .reduce((acc, p) => acc + Number(p.amount || 0), 0);
   }
 
-  const totalExpectedCash = totalOpening + totalCashSales + totalManualInflow - totalManualOutflow;
+  const totalExpectedCash =
+    totalOpening + totalCashSales + totalManualInflow - totalManualOutflow;
 
   return {
     totalOpening,
@@ -112,8 +131,11 @@ export const calculateCashierDiscrepancies = (sessions = []) => {
     }
   });
 
-  return Object.values(cashierMap).map((c) => ({
-    ...c,
-    accuracyRate: c.closedSessions > 0 ? (c.exactSessions / c.closedSessions) * 100 : 100,
-  })).sort((a, b) => a.netDifference - b.netDifference);
+  return Object.values(cashierMap)
+    .map((c) => ({
+      ...c,
+      accuracyRate:
+        c.closedSessions > 0 ? (c.exactSessions / c.closedSessions) * 100 : 100,
+    }))
+    .sort((a, b) => a.netDifference - b.netDifference);
 };

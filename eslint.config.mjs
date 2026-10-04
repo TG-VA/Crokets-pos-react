@@ -20,6 +20,9 @@ export default [
   reactHooks.configs.flat.recommended,
   {
     files: ["**/*.{js,jsx,mjs}"],
+    plugins: {
+      react,
+    },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -59,7 +62,12 @@ export default [
         cancelAnimationFrame: "readonly",
         Event: "readonly",
         CustomEvent: "readonly",
+        KeyboardEvent: "readonly",
+        MouseEvent: "readonly",
         HTMLElement: "readonly",
+        HTMLButtonElement: "readonly",
+        Storage: "readonly",
+        structuredClone: "readonly",
       },
       parserOptions: {
         ecmaFeatures: {
@@ -78,6 +86,7 @@ export default [
         "warn",
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
+      "react/jsx-uses-vars": "error",
     },
   },
   {

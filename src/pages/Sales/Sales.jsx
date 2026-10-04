@@ -70,26 +70,86 @@ const Sales = () => {
   const barcodeInputRef = useRef(null);
 
   // --- 1. ESTADO CENTRAL DE LA VENTA (SEGREGADO) ---
-  const { productos, setProductos, selectedProduct, setSelectedProduct, stockWarningMsg, setStockWarningMsg, productosRef } = useSalesCartState();
-  const { saleToken, setSaleToken, saleNotes, setSaleNotes, processingSale, setProcessingSale } = useSalesTransactionState();
-  const { currentSaleClient, setCurrentSaleClient, currentSaleReward, setCurrentSaleReward, pendingFreeProductRewards, setPendingFreeProductRewards, pendingProductDiscountRewards, setPendingProductDiscountRewards, activeProductDiscountReward, setActiveProductDiscountReward } = useSalesRewardsState();
-  const { ticketNumber, setTicketNumber, pendingTickets, setPendingTickets } = useSalesPendingTicketsState();
-  const { barcode, setBarcode, cashMovements, setCashMovements } = useSalesTerminalState();
+  const {
+    productos,
+    setProductos,
+    selectedProduct,
+    setSelectedProduct,
+    stockWarningMsg,
+    setStockWarningMsg,
+    productosRef,
+  } = useSalesCartState();
+  const {
+    saleToken,
+    setSaleToken,
+    saleNotes,
+    setSaleNotes,
+    processingSale,
+    setProcessingSale,
+  } = useSalesTransactionState();
+  const {
+    currentSaleClient,
+    setCurrentSaleClient,
+    currentSaleReward,
+    setCurrentSaleReward,
+    pendingFreeProductRewards,
+    setPendingFreeProductRewards,
+    pendingProductDiscountRewards,
+    setPendingProductDiscountRewards,
+    activeProductDiscountReward,
+    setActiveProductDiscountReward,
+  } = useSalesRewardsState();
+  const { ticketNumber, setTicketNumber, pendingTickets, setPendingTickets } =
+    useSalesPendingTicketsState();
+  const { barcode, setBarcode, cashMovements, setCashMovements } =
+    useSalesTerminalState();
 
   // --- 2. ALERTAS (APP MODAL) ---
-  const { appModal, closeAppModal, showAppModal, showAppWarning, showAppSuccess } = useSalesAppModal();
+  const {
+    appModal,
+    closeAppModal,
+    showAppModal,
+    showAppWarning,
+    showAppSuccess,
+  } = useSalesAppModal();
 
   // --- 3. ESTADOS DE MODALES DE UI ---
   const {
-    isExitModalOpen, setExitModalOpen, handleCloseExitModal,
-    isExitAuthModalOpen, setExitAuthModalOpen, handleExitAuthorized, handleCloseExitAuth,
-    isEntryModalOpen, setEntryModalOpen, showPaymentModal, setShowPaymentModal,
-    isClientModalOpen, setClientModalOpen, isVerifierModalOpen, setVerifierModalOpen,
-    isSearchModalOpen, setSearchModalOpen, isDiscountModalOpen, setDiscountModalOpen,
-    isPendingModalOpen, setPendingModalOpen, isChangeModalOpen, setChangeModalOpen,
-    isDeleteModalOpen, setDeleteModalOpen, isDeleteItemModalOpen, setDeleteItemModalOpen,
-    isSalesHistoryModalOpen, setSalesHistoryModalOpen, saleSuccessData, setSaleSuccessData,
-    isRewardProductModalOpen, setRewardProductModalOpen, isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
+    isExitModalOpen,
+    setExitModalOpen,
+    handleCloseExitModal,
+    isExitAuthModalOpen,
+    setExitAuthModalOpen,
+    handleExitAuthorized,
+    handleCloseExitAuth,
+    isEntryModalOpen,
+    setEntryModalOpen,
+    showPaymentModal,
+    setShowPaymentModal,
+    isClientModalOpen,
+    setClientModalOpen,
+    isVerifierModalOpen,
+    setVerifierModalOpen,
+    isSearchModalOpen,
+    setSearchModalOpen,
+    isDiscountModalOpen,
+    setDiscountModalOpen,
+    isPendingModalOpen,
+    setPendingModalOpen,
+    isChangeModalOpen,
+    setChangeModalOpen,
+    isDeleteModalOpen,
+    setDeleteModalOpen,
+    isDeleteItemModalOpen,
+    setDeleteItemModalOpen,
+    isSalesHistoryModalOpen,
+    setSalesHistoryModalOpen,
+    saleSuccessData,
+    setSaleSuccessData,
+    isRewardProductModalOpen,
+    setRewardProductModalOpen,
+    isProductDiscountRewardModalOpen,
+    setProductDiscountRewardModalOpen,
   } = useSalesModals();
 
   const { tableRef, gridTemplate, handleMouseDown } = useSalesTableColumns();
@@ -100,117 +160,315 @@ const Sales = () => {
 
   // B) Reseteo de Estado
   const {
-    restoreSalesDraft, discardSalesDraftState, openSalesDraftRecoveryModal, resetCurrentSale,
+    restoreSalesDraft,
+    discardSalesDraftState,
+    openSalesDraftRecoveryModal,
+    resetCurrentSale,
   } = useSalesStateActions({
-    setProductos, productosRef, setSelectedProduct, setCurrentSaleClient, setCurrentSaleReward, setTicketNumber,
-    setSaleToken, setSaleNotes, setBarcode, setPendingTickets, setPendingFreeProductRewards, setRewardProductModalOpen,
-    setPendingProductDiscountRewards, setActiveProductDiscountReward, setProductDiscountRewardModalOpen, setStockWarningMsg,
-    showAppModal, closeAppModal,
+    setProductos,
+    productosRef,
+    setSelectedProduct,
+    setCurrentSaleClient,
+    setCurrentSaleReward,
+    setTicketNumber,
+    setSaleToken,
+    setSaleNotes,
+    setBarcode,
+    setPendingTickets,
+    setPendingFreeProductRewards,
+    setRewardProductModalOpen,
+    setPendingProductDiscountRewards,
+    setActiveProductDiscountReward,
+    setProductDiscountRewardModalOpen,
+    setStockWarningMsg,
+    showAppModal,
+    closeAppModal,
   });
 
   // --- 5. ORQUESTACIÓN DE LOGICA DE NEGOCIO ---
   const { draftReady, clearSalesDraft } = useSalesDraft({
-    branchId: branch?.id, userId: user?.id, productos, pendingTickets, currentSaleClient, currentSaleReward,
-    ticketNumber, saleToken, saleNotes, barcode, subtotal, discountTotal, total,
-    onRestoreDraft: restoreSalesDraft, onDiscardDraft: discardSalesDraftState, onOpenRecoveryModal: openSalesDraftRecoveryModal,
+    branchId: branch?.id,
+    userId: user?.id,
+    productos,
+    pendingTickets,
+    currentSaleClient,
+    currentSaleReward,
+    ticketNumber,
+    saleToken,
+    saleNotes,
+    barcode,
+    subtotal,
+    discountTotal,
+    total,
+    onRestoreDraft: restoreSalesDraft,
+    onDiscardDraft: discardSalesDraftState,
+    onOpenRecoveryModal: openSalesDraftRecoveryModal,
   });
 
-  const { shiftAlreadyCut, getOpenSession: getOpenCashSession, validateShiftNotCut } = useSalesCashSession({
-    branchId: branch?.id, userId: user?.id, enabled: draftReady,
+  const {
+    shiftAlreadyCut,
+    getOpenSession: getOpenCashSession,
+    validateShiftNotCut,
+  } = useSalesCashSession({
+    branchId: branch?.id,
+    userId: user?.id,
+    enabled: draftReady,
   });
 
   const { handleSaveEntry, handleSaveExit } = useSalesCashMovements({
-    userId: user?.id, branchId: branch?.id, shiftAlreadyCut, getOpenCashSession, setCashMovements, showAppModal, showAppWarning, showAppSuccess,
+    userId: user?.id,
+    branchId: branch?.id,
+    shiftAlreadyCut,
+    getOpenCashSession,
+    setCashMovements,
+    showAppModal,
+    showAppWarning,
+    showAppSuccess,
   });
 
   // --- 6. HANDLERS DE FLUJO SUELTOS ---
-  const { getBranchInventoryRow, openClientModal, openExitFlow } = useSalesFlowHandlers({
-    user, branch, shiftAlreadyCut, setPendingFreeProductRewards, setRewardProductModalOpen, setPendingProductDiscountRewards,
-    setActiveProductDiscountReward, setProductDiscountRewardModalOpen, setClientModalOpen, setExitModalOpen, setExitAuthModalOpen, showAppWarning,
-  });
+  const { getBranchInventoryRow, openClientModal, openExitFlow } =
+    useSalesFlowHandlers({
+      user,
+      branch,
+      shiftAlreadyCut,
+      setPendingFreeProductRewards,
+      setRewardProductModalOpen,
+      setPendingProductDiscountRewards,
+      setActiveProductDiscountReward,
+      setProductDiscountRewardModalOpen,
+      setClientModalOpen,
+      setExitModalOpen,
+      setExitAuthModalOpen,
+      showAppWarning,
+    });
 
-  const { refreshCartInventory: refreshCartInventoryFromRealtime, getKitAvailableStock } = useSalesInventoryRealtime({
-    branchId: branch?.id, userId: user?.id, enabled: draftReady, productosRef, setProductos, setSelectedProduct, setStockWarningMsg,
+  const {
+    refreshCartInventory: refreshCartInventoryFromRealtime,
+    getKitAvailableStock,
+  } = useSalesInventoryRealtime({
+    branchId: branch?.id,
+    userId: user?.id,
+    enabled: draftReady,
+    productosRef,
+    setProductos,
+    setSelectedProduct,
+    setStockWarningMsg,
   });
 
   const { openPaymentFlow } = useSalesPaymentFlow({
-    productos, processingSale, validateShiftNotCut, pendingProductDiscountRewards, activeProductDiscountReward, setSaleToken, setShowPaymentModal, showAppWarning,
+    productos,
+    processingSale,
+    validateShiftNotCut,
+    pendingProductDiscountRewards,
+    activeProductDiscountReward,
+    setSaleToken,
+    setShowPaymentModal,
+    showAppWarning,
   });
 
   const {
-    currentSaleRewards, currentSaleRewardsLabel, syncCurrentSaleRewardsWithCart, handleAssignClient, handleConfirmRewardProducts,
-    handleCloseRewardProductModal, handleConfirmProductDiscountReward, handleCloseProductDiscountRewardModal,
+    currentSaleRewards,
+    currentSaleRewardsLabel,
+    syncCurrentSaleRewardsWithCart,
+    handleAssignClient,
+    handleConfirmRewardProducts,
+    handleCloseRewardProductModal,
+    handleConfirmProductDiscountReward,
+    handleCloseProductDiscountRewardModal,
   } = useSalesRewards({
-    productos, productosRef, currentSaleReward, setCurrentSaleReward, setCurrentSaleClient, pendingProductDiscountRewards, setPendingProductDiscountRewards,
-    setPendingFreeProductRewards, setActiveProductDiscountReward, setRewardProductModalOpen, setProductDiscountRewardModalOpen,
-    setProductos, selectedProduct, setSelectedProduct, getBranchInventoryRow, showAppWarning,
+    productos,
+    productosRef,
+    currentSaleReward,
+    setCurrentSaleReward,
+    setCurrentSaleClient,
+    pendingProductDiscountRewards,
+    setPendingProductDiscountRewards,
+    setPendingFreeProductRewards,
+    setActiveProductDiscountReward,
+    setRewardProductModalOpen,
+    setProductDiscountRewardModalOpen,
+    setProductos,
+    selectedProduct,
+    setSelectedProduct,
+    getBranchInventoryRow,
+    showAppWarning,
   });
 
   const {
-    addProductToCart, increaseSelectedProductQuantity, decreaseSelectedProductQuantity, handleDeleteSelectedProduct,
+    addProductToCart,
+    increaseSelectedProductQuantity,
+    decreaseSelectedProductQuantity,
+    handleDeleteSelectedProduct,
   } = useSalesCart({
-    productosRef, selectedProduct, setProductos, setSelectedProduct, getBranchInventoryRow, getKitAvailableStock, showAppWarning, syncCurrentSaleRewardsWithCart, branchId: branch?.id,
+    productosRef,
+    selectedProduct,
+    setProductos,
+    setSelectedProduct,
+    getBranchInventoryRow,
+    getKitAvailableStock,
+    showAppWarning,
+    syncCurrentSaleRewardsWithCart,
+    branchId: branch?.id,
   });
 
-  const { handleBarcodeSearch, handleAddProductFromVerifier } = useSalesProductSearch({
-    barcode, setBarcode, branchId: branch?.id, shiftAlreadyCut, addProductToCart, showAppWarning,
-  });
+  const { handleBarcodeSearch, handleAddProductFromVerifier } =
+    useSalesProductSearch({
+      barcode,
+      setBarcode,
+      branchId: branch?.id,
+      shiftAlreadyCut,
+      addProductToCart,
+      showAppWarning,
+    });
 
   const handleProductSelect = (producto) => {
-    if (selectedProduct && isSameCartItem(selectedProduct, producto)) setSelectedProduct(null);
+    if (selectedProduct && isSameCartItem(selectedProduct, producto))
+      setSelectedProduct(null);
     else setSelectedProduct(producto);
   };
 
   const { handleApplyDiscount, handleOpenDiscountModal } = useSalesDiscount({
-    productosRef, selectedProduct, setProductos, setSelectedProduct, setDiscountModalOpen, showAppWarning,
+    productosRef,
+    selectedProduct,
+    setProductos,
+    setSelectedProduct,
+    setDiscountModalOpen,
+    showAppWarning,
   });
 
   const { validateCartStockBeforeSale } = useSalesStockValidation({
-    productosRef, refreshCartInventoryFromRealtime, getKitAvailableStock, getBranchInventoryRow, showAppWarning,
+    productosRef,
+    refreshCartInventoryFromRealtime,
+    getKitAvailableStock,
+    getBranchInventoryRow,
+    showAppWarning,
   });
 
   const { handleProcessPayment } = useSalesCheckout({
-    user, branch, productos, productosRef, subtotal, discountTotal, total, saleToken, processingSale, currentSaleClient,
-    validateShiftNotCut, validateCartStockBeforeSale, clearSalesDraft, resetCurrentSale, setProcessingSale, setShowPaymentModal, setSaleSuccessData, showAppWarning,
+    user,
+    branch,
+    productos,
+    productosRef,
+    subtotal,
+    discountTotal,
+    total,
+    saleToken,
+    processingSale,
+    currentSaleClient,
+    validateShiftNotCut,
+    validateCartStockBeforeSale,
+    clearSalesDraft,
+    resetCurrentSale,
+    setProcessingSale,
+    setShowPaymentModal,
+    setSaleSuccessData,
+    showAppWarning,
   });
 
   const {
-    handleSavePendingTicket, handleChangeToTicket, handleDeleteTicket, handleOpenChangeModal, handleOpenDeleteModal,
+    handleSavePendingTicket,
+    handleChangeToTicket,
+    handleDeleteTicket,
+    handleOpenChangeModal,
+    handleOpenDeleteModal,
   } = useSalesPendingTickets({
-    pendingTickets, setPendingTickets, ticketNumber, setTicketNumber,
-    currentSaleData: { productos, currentSaleClient, currentSaleReward, subtotal, discountTotal, total },
-    onClearSale: resetCurrentSale, 
+    pendingTickets,
+    setPendingTickets,
+    ticketNumber,
+    setTicketNumber,
+    currentSaleData: {
+      productos,
+      currentSaleClient,
+      currentSaleReward,
+      subtotal,
+      discountTotal,
+      total,
+    },
+    onClearSale: resetCurrentSale,
     onLoadSale: (ticketData) => {
       setProductos(ticketData.productos);
       if (productosRef) productosRef.current = ticketData.productos;
       setCurrentSaleClient(ticketData.client);
       setCurrentSaleReward(ticketData.reward);
-      
+
       setBarcode("");
       setSaleToken(null);
       setPendingFreeProductRewards([]);
       setPendingProductDiscountRewards([]);
       setActiveProductDiscountReward(null);
     },
-    setChangeModalOpen, setDeleteModalOpen, showAppWarning,
+    setChangeModalOpen,
+    setDeleteModalOpen,
+    showAppWarning,
   });
 
   useSalesKeyboardShortcuts({
-    productos, selectedProduct, setSelectedProduct, processingSale, shiftAlreadyCut, showPaymentModal, isEntryModalOpen, isExitModalOpen,
-    isExitAuthModalOpen, isClientModalOpen, isRewardProductModalOpen, isProductDiscountRewardModalOpen, isVerifierModalOpen, isSearchModalOpen,
-    isDiscountModalOpen, isPendingModalOpen, isChangeModalOpen, isDeleteModalOpen, isDeleteItemModalOpen, isSalesHistoryModalOpen,
-    saleSuccessData, setShowPaymentModal, setEntryModalOpen, setExitModalOpen, setExitAuthModalOpen, setClientModalOpen, setVerifierModalOpen,
-    setSearchModalOpen, setDiscountModalOpen, setPendingModalOpen, setChangeModalOpen, setDeleteModalOpen, setDeleteItemModalOpen, setSalesHistoryModalOpen,
-    setSaleSuccessData, openPaymentFlow, handleOpenChangeModal, handleOpenDeleteModal, handleOpenDiscountModal, handleCloseRewardProductModal,
-    handleCloseProductDiscountRewardModal, increaseSelectedProductQuantity, decreaseSelectedProductQuantity, openExitFlow, showAppWarning,
+    productos,
+    selectedProduct,
+    setSelectedProduct,
+    processingSale,
+    shiftAlreadyCut,
+    showPaymentModal,
+    isEntryModalOpen,
+    isExitModalOpen,
+    isExitAuthModalOpen,
+    isClientModalOpen,
+    isRewardProductModalOpen,
+    isProductDiscountRewardModalOpen,
+    isVerifierModalOpen,
+    isSearchModalOpen,
+    isDiscountModalOpen,
+    isPendingModalOpen,
+    isChangeModalOpen,
+    isDeleteModalOpen,
+    isDeleteItemModalOpen,
+    isSalesHistoryModalOpen,
+    saleSuccessData,
+    setShowPaymentModal,
+    setEntryModalOpen,
+    setExitModalOpen,
+    setExitAuthModalOpen,
+    setClientModalOpen,
+    setVerifierModalOpen,
+    setSearchModalOpen,
+    setDiscountModalOpen,
+    setPendingModalOpen,
+    setChangeModalOpen,
+    setDeleteModalOpen,
+    setDeleteItemModalOpen,
+    setSalesHistoryModalOpen,
+    setSaleSuccessData,
+    openPaymentFlow,
+    handleOpenChangeModal,
+    handleOpenDeleteModal,
+    handleOpenDiscountModal,
+    handleCloseRewardProductModal,
+    handleCloseProductDiscountRewardModal,
+    increaseSelectedProductQuantity,
+    decreaseSelectedProductQuantity,
+    openExitFlow,
+    showAppWarning,
   });
 
   useSalesAutofocus(barcodeInputRef, [
-    appModal.isOpen, isExitModalOpen, isExitAuthModalOpen, isEntryModalOpen, 
-    showPaymentModal, isClientModalOpen, isVerifierModalOpen, isSearchModalOpen, 
-    isDiscountModalOpen, isPendingModalOpen, isChangeModalOpen, isDeleteModalOpen, 
-    isDeleteItemModalOpen, isSalesHistoryModalOpen, !!saleSuccessData, 
-    isRewardProductModalOpen, isProductDiscountRewardModalOpen
+    appModal.isOpen,
+    isExitModalOpen,
+    isExitAuthModalOpen,
+    isEntryModalOpen,
+    showPaymentModal,
+    isClientModalOpen,
+    isVerifierModalOpen,
+    isSearchModalOpen,
+    isDiscountModalOpen,
+    isPendingModalOpen,
+    isChangeModalOpen,
+    isDeleteModalOpen,
+    isDeleteItemModalOpen,
+    isSalesHistoryModalOpen,
+    !!saleSuccessData,
+    isRewardProductModalOpen,
+    isProductDiscountRewardModalOpen,
   ]);
 
   return (
@@ -235,12 +493,12 @@ const Sales = () => {
         showAppWarning={showAppWarning}
       />
 
-      <SalesProductInput 
-        barcode={barcode} 
-        setBarcode={setBarcode} 
-        shiftAlreadyCut={shiftAlreadyCut} 
-        onAddProduct={handleBarcodeSearch} 
-        inputRef={barcodeInputRef} 
+      <SalesProductInput
+        barcode={barcode}
+        setBarcode={setBarcode}
+        shiftAlreadyCut={shiftAlreadyCut}
+        onAddProduct={handleBarcodeSearch}
+        inputRef={barcodeInputRef}
       />
 
       <SalesProductsTable
@@ -253,70 +511,153 @@ const Sales = () => {
       />
 
       <SalesFooterActions
-        subtotal={subtotal} discountTotal={discountTotal} total={total} shiftAlreadyCut={shiftAlreadyCut}
-        onOpenChange={handleOpenChangeModal} onOpenPending={() => setPendingModalOpen(true)} onOpenDelete={handleOpenDeleteModal}
-        onOpenDiscount={handleOpenDiscountModal} onOpenClient={openClientModal} onOpenHistory={() => setSalesHistoryModalOpen(true)} onPay={openPaymentFlow}
+        subtotal={subtotal}
+        discountTotal={discountTotal}
+        total={total}
+        shiftAlreadyCut={shiftAlreadyCut}
+        onOpenChange={handleOpenChangeModal}
+        onOpenPending={() => setPendingModalOpen(true)}
+        onOpenDelete={handleOpenDeleteModal}
+        onOpenDiscount={handleOpenDiscountModal}
+        onOpenClient={openClientModal}
+        onOpenHistory={() => setSalesHistoryModalOpen(true)}
+        onPay={openPaymentFlow}
       />
 
-      <EntryModal isOpen={isEntryModalOpen} onClose={() => setEntryModalOpen(false)} onSaveEntry={handleSaveEntry} />
-      <ExitModal isOpen={isExitModalOpen} onClose={handleCloseExitModal} onSave={handleSaveExit} />
+      <EntryModal
+        isOpen={isEntryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+        onSaveEntry={handleSaveEntry}
+      />
+      <ExitModal
+        isOpen={isExitModalOpen}
+        onClose={handleCloseExitModal}
+        onSave={handleSaveExit}
+      />
 
       <AdminAuthorizationModal
-        isOpen={isExitAuthModalOpen} onClose={handleCloseExitAuth} onAuthorized={handleExitAuthorized}
-        action="cash_exit_access" title="Acceso restringido" message='Para realizar una "Salida" de efectivo, se requiere autorización de un administrador.'
-        targetId="sales_cash_exit" branchId={branch?.id || null}
+        isOpen={isExitAuthModalOpen}
+        onClose={handleCloseExitAuth}
+        onAuthorized={handleExitAuthorized}
+        action="cash_exit_access"
+        title="Acceso restringido"
+        message='Para realizar una "Salida" de efectivo, se requiere autorización de un administrador.'
+        targetId="sales_cash_exit"
+        branchId={branch?.id || null}
       />
 
       <PaymentModal
         isOpen={showPaymentModal}
-        onClose={() => { if (!processingSale) setShowPaymentModal(false); }}
+        onClose={() => {
+          if (!processingSale) setShowPaymentModal(false);
+        }}
         total={total}
         onProcessPayment={handleProcessPayment}
         processingSale={processingSale}
       />
 
       <ClientModal
-        isOpen={isClientModalOpen} onClose={() => setClientModalOpen(false)} onAssignClient={handleAssignClient}
-        currentSaleClient={currentSaleClient} currentSaleReward={EMPTY_REWARDS}
+        isOpen={isClientModalOpen}
+        onClose={() => setClientModalOpen(false)}
+        onAssignClient={handleAssignClient}
+        currentSaleClient={currentSaleClient}
+        currentSaleReward={EMPTY_REWARDS}
       />
 
       <RewardProductSelectionModal
-        isOpen={isRewardProductModalOpen} onClose={handleCloseRewardProductModal} onConfirm={handleConfirmRewardProducts}
-        rewards={pendingFreeProductRewards} branchId={branch?.id || null} cartProducts={productos}
+        isOpen={isRewardProductModalOpen}
+        onClose={handleCloseRewardProductModal}
+        onConfirm={handleConfirmRewardProducts}
+        rewards={pendingFreeProductRewards}
+        branchId={branch?.id || null}
+        cartProducts={productos}
       />
 
       <ProductDiscountRewardModal
-        isOpen={isProductDiscountRewardModalOpen} onClose={handleCloseProductDiscountRewardModal} onConfirm={handleConfirmProductDiscountReward}
-        reward={activeProductDiscountReward} branchId={branch?.id || null} cartProducts={productos}
+        isOpen={isProductDiscountRewardModalOpen}
+        onClose={handleCloseProductDiscountRewardModal}
+        onConfirm={handleConfirmProductDiscountReward}
+        reward={activeProductDiscountReward}
+        branchId={branch?.id || null}
+        cartProducts={productos}
       />
 
-      <VerifierModal isOpen={isVerifierModalOpen} onClose={() => setVerifierModalOpen(false)} onAddToSale={handleAddProductFromVerifier} />
+      <VerifierModal
+        isOpen={isVerifierModalOpen}
+        onClose={() => setVerifierModalOpen(false)}
+        onAddToSale={handleAddProductFromVerifier}
+      />
 
-      <SearchModal isOpen={isSearchModalOpen} onClose={() => setSearchModalOpen(false)} onAddToSale={handleAddProductFromVerifier} productosEnVenta={productos} />
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onAddToSale={handleAddProductFromVerifier}
+        productosEnVenta={productos}
+      />
 
-      <DiscountModal isOpen={isDiscountModalOpen} onClose={() => setDiscountModalOpen(false)} onApplyDiscount={handleApplyDiscount} selectedProduct={selectedProduct} />
+      <DiscountModal
+        isOpen={isDiscountModalOpen}
+        onClose={() => setDiscountModalOpen(false)}
+        onApplyDiscount={handleApplyDiscount}
+        selectedProduct={selectedProduct}
+      />
 
-      <PendingTicketModal isOpen={isPendingModalOpen} onClose={() => setPendingModalOpen(false)} onAccept={handleSavePendingTicket} currentTicketNumber={ticketNumber} nextTicketNumber={ticketNumber + 1} />
+      <PendingTicketModal
+        isOpen={isPendingModalOpen}
+        onClose={() => setPendingModalOpen(false)}
+        onAccept={handleSavePendingTicket}
+        currentTicketNumber={ticketNumber}
+        nextTicketNumber={ticketNumber + 1}
+      />
 
-      <ChangeTicketModal isOpen={isChangeModalOpen} onClose={() => setChangeModalOpen(false)} onSelectTicket={handleChangeToTicket} pendingTickets={pendingTickets} />
+      <ChangeTicketModal
+        isOpen={isChangeModalOpen}
+        onClose={() => setChangeModalOpen(false)}
+        onSelectTicket={handleChangeToTicket}
+        pendingTickets={pendingTickets}
+      />
 
-      <DeleteTicketModal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} onDeleteTicket={handleDeleteTicket} pendingTickets={pendingTickets} />
+      <DeleteTicketModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onDeleteTicket={handleDeleteTicket}
+        pendingTickets={pendingTickets}
+      />
 
-      <DeleteItemModal isOpen={isDeleteItemModalOpen} onClose={() => setDeleteItemModalOpen(false)} onConfirmDelete={handleDeleteSelectedProduct} selectedProduct={selectedProduct} />
+      <DeleteItemModal
+        isOpen={isDeleteItemModalOpen}
+        onClose={() => setDeleteItemModalOpen(false)}
+        onConfirmDelete={handleDeleteSelectedProduct}
+        selectedProduct={selectedProduct}
+      />
 
       <SaleSuccessModal
         isOpen={!!saleSuccessData}
         saleData={saleSuccessData}
         onClose={() => setSaleSuccessData(null)}
-        onViewSalesHistory={() => { setSaleSuccessData(null); setSalesHistoryModalOpen(true); }}
+        onViewSalesHistory={() => {
+          setSaleSuccessData(null);
+          setSalesHistoryModalOpen(true);
+        }}
       />
 
-      <SalesHistoryModal isOpen={isSalesHistoryModalOpen} onClose={() => setSalesHistoryModalOpen(false)} />
+      <SalesHistoryModal
+        isOpen={isSalesHistoryModalOpen}
+        onClose={() => setSalesHistoryModalOpen(false)}
+      />
 
       <AppModal
-        isOpen={appModal.isOpen} type={appModal.type} title={appModal.title} message={appModal.message} confirmText={appModal.confirmText}
-        cancelText={appModal.cancelText} showCancel={appModal.showCancel} loading={appModal.loading} onClose={closeAppModal}
-        onConfirm={appModal.onConfirm || closeAppModal} onCancel={appModal.onCancel || closeAppModal}
+        isOpen={appModal.isOpen}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        confirmText={appModal.confirmText}
+        cancelText={appModal.cancelText}
+        showCancel={appModal.showCancel}
+        loading={appModal.loading}
+        onClose={closeAppModal}
+        onConfirm={appModal.onConfirm || closeAppModal}
+        onCancel={appModal.onCancel || closeAppModal}
       />
     </div>
   );

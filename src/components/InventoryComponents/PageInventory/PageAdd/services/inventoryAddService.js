@@ -1,6 +1,15 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
 import {
+  calculateWeightedAverageCost,
+  roundCost,
+} from "../../../../../services/inventory/inventoryCostCalculationService";
+import {
+  resolveCurrentCost,
+  resolveIncomingCostPrice,
+} from "../../../../../services/inventory/inventoryCostResolutionService";
+
+import {
   getSystemLocalTimestamp,
   logInventoryMovement,
 } from "../../../../../utils/inventoryMovements";
@@ -9,17 +18,14 @@ const getProductId = (product) => {
   return product?.product_id || product?.id || null;
 };
 
-const getProductPrices = (product) => {
-  return {
-    costPrice: Number(product?.costo || 0),
-    salePrice: Number(product?.precio || 0),
-  };
+const getSalePrice = (product) => {
+  return Number(product?.precio || 0);
 };
 
 const findInventoryRow = async ({ branchId, productId }) => {
   const { data, error } = await supabase
     .from("branch_inventory")
-    .select("id, stock, has_been_stocked")
+    .select("id, stock, has_been_stocked, cost_price")
     .eq("branch_id", branchId)
     .eq("product_id", productId)
     .maybeSingle();
@@ -63,21 +69,19 @@ const insertInventoryRow = async ({
   salePrice,
   createdAt,
 }) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .insert({
-      branch_id: branchId,
-      product_id: productId,
-      stock: quantity,
-      min_stock: 0,
-      max_stock: 0,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      sale_price: salePrice,
-      created_at: createdAt,
-      updated_at: createdAt,
-    });
+  const { error } = await supabase.from("branch_inventory").insert({
+    branch_id: branchId,
+    product_id: productId,
+    stock: quantity,
+    min_stock: 0,
+    max_stock: 0,
+    is_active: true,
+    has_been_stocked: true,
+    cost_price: costPrice,
+    sale_price: salePrice,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
 
   if (error) {
     throw error;
@@ -88,12 +92,11 @@ export const addInventoryToProduct = async ({
   branchId,
   product,
   quantity,
+  incomingCostPrice = null,
   userId = null,
 }) => {
   if (!branchId) {
-    throw new Error(
-      "No hay una sucursal activa para registrar el inventario."
-    );
+    throw new Error("No hay una sucursal activa para registrar el inventario.");
   }
 
   const productId = getProductId(product);
@@ -104,10 +107,7 @@ export const addInventoryToProduct = async ({
 
   const normalizedQuantity = Number(quantity);
 
-  if (
-    !Number.isFinite(normalizedQuantity) ||
-    normalizedQuantity <= 0
-  ) {
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
     throw new Error("La cantidad debe ser mayor a 0.");
   }
 
@@ -120,16 +120,28 @@ export const addInventoryToProduct = async ({
   const databaseTimestamp = now.toISOString();
   const movementCreatedAt = getSystemLocalTimestamp(now);
 
-  const { costPrice, salePrice } = getProductPrices(product);
+  const salePrice = getSalePrice(product);
+  const currentCost = resolveCurrentCost(product, inventoryRow);
+  const resolvedIncomingCostPrice = resolveIncomingCostPrice(
+    incomingCostPrice,
+    currentCost
+  );
 
   const previousStock = Number(inventoryRow?.stock || 0);
   const newStock = previousStock + normalizedQuantity;
+
+  const newCostPrice = calculateWeightedAverageCost({
+    currentStock: previousStock,
+    currentCost,
+    incomingQty: normalizedQuantity,
+    incomingCost: resolvedIncomingCostPrice,
+  });
 
   if (inventoryRow?.id) {
     await updateInventoryRow({
       inventoryRowId: inventoryRow.id,
       nextStock: newStock,
-      costPrice,
+      costPrice: newCostPrice,
       salePrice,
       updatedAt: databaseTimestamp,
     });
@@ -138,7 +150,7 @@ export const addInventoryToProduct = async ({
       branchId,
       productId,
       quantity: normalizedQuantity,
-      costPrice,
+      costPrice: newCostPrice,
       salePrice,
       createdAt: databaseTimestamp,
     });
@@ -151,6 +163,8 @@ export const addInventoryToProduct = async ({
     quantity: normalizedQuantity,
     previousStock,
     newStock,
+    unitCost: resolvedIncomingCostPrice,
+    totalCost: roundCost(resolvedIncomingCostPrice * normalizedQuantity),
     reason: "Alta a inventario (manual)",
     userId,
     createdAt: movementCreatedAt,
@@ -161,5 +175,6 @@ export const addInventoryToProduct = async ({
     previousStock,
     newStock,
     quantity: normalizedQuantity,
+    costPrice: newCostPrice,
   };
 };

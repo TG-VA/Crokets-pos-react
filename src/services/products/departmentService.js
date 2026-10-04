@@ -52,14 +52,6 @@ export const updateDepartment = async (id, data) => {
   }
 
   try {
-    const { data: oldDept, error: oldDeptError } = await supabase
-      .from("departments")
-      .select("commission_enabled, commission_type, commission_value")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (oldDeptError) throw oldDeptError;
-
     const payload = {};
 
     if (typeof data.name === "string") {
@@ -102,7 +94,7 @@ export const updateDepartment = async (id, data) => {
       const comType = data.commission_type || "percent";
       const comVal = Number(data.commission_value || 0);
 
-      let query = supabase
+      const { error: productsUpdateError } = await supabase
         .from("products")
         .update({
           commission_enabled: comEnabled,
@@ -113,14 +105,6 @@ export const updateDepartment = async (id, data) => {
         })
         .eq("department_id", id);
 
-      if (oldDept) {
-        query = query
-          .eq("commission_enabled", !!oldDept.commission_enabled)
-          .eq("commission_type", oldDept.commission_type || "percent")
-          .eq("commission_value", Number(oldDept.commission_value || 0));
-      }
-
-      const { error: productsUpdateError } = await query;
       if (productsUpdateError) throw productsUpdateError;
     }
 

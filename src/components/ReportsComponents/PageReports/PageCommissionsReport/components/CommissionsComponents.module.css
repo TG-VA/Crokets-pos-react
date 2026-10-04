@@ -71,7 +71,10 @@
   outline: none;
   background-color: #f8fafc;
   height: 36px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .datePickerInput:focus,
@@ -101,7 +104,10 @@
   height: 34px;
   display: inline-flex;
   align-items: center;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .presetPill:hover {
@@ -252,7 +258,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kpiCard:hover {
@@ -360,7 +368,9 @@
   font-weight: 600;
   color: #64748b;
   cursor: pointer;
-  transition: color 0.15s ease, border-bottom-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-bottom-color 0.15s ease;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -531,7 +541,8 @@
   font-size: 0.725rem;
   color: #64748b;
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .productCellStacked {
@@ -557,7 +568,8 @@
   font-size: 0.725rem;
   color: #d97706;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   white-space: nowrap;
 }
 
@@ -650,7 +662,6 @@
 .btnDetail:hover .btnDetailIcon {
   filter: brightness(0) invert(1);
 }
-
 
 /* --------------------------------------------------------------------------
    PAGINACIÓN
@@ -761,7 +772,9 @@
 .modalContainer {
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 950px;
   height: 720px;
@@ -890,7 +903,9 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
   height: 38px;
 }
 
@@ -910,4 +925,3 @@
   height: 15px;
   filter: brightness(0) invert(1);
 }
-

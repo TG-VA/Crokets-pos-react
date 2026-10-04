@@ -1,5 +1,10 @@
 import React, { Suspense, lazy } from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 const Login = lazy(() => import("./pages/Login/Login"));
 const CashRegister = lazy(() => import("./pages/CashRegister/CashRegister"));
@@ -21,24 +26,42 @@ import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
 import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 
-function AppRoutes() {
-  const { isAuthenticated, cashRegistered, setCashRegistered, loading, isLocked } = useAuth();
+/*
+  `RouterComponent` permite inyectar el router en los tests (por ejemplo
+  `MemoryRouter` con `initialEntries`). Por omision sigue siendo `HashRouter`,
+  que es lo que usa `src/main.jsx` en produccion. React Router 7 no admite dos
+  routers anidados, asi que `AppRoutes` no puede renderizar el suyo propio cuando
+  el test ya envuelve el arbol en uno.
+*/
+export function AppRoutes({ RouterComponent = Router }) {
+  const {
+    isAuthenticated,
+    cashRegistered,
+    setCashRegistered,
+    loading,
+    isLocked,
+  } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
   return (
-    <Router>
+    <RouterComponent>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
           {/* RUTA PÚBLICA / LOGIN */}
           <Route
             path="/login"
             element={
-              !isAuthenticated || isLocked
-                ? <Login />
-                : <Navigate to={cashRegistered ? "/dashboard" : "/cash-register"} replace />
+              !isAuthenticated || isLocked ? (
+                <Login />
+              ) : (
+                <Navigate
+                  to={cashRegistered ? "/dashboard" : "/cash-register"}
+                  replace
+                />
+              )
             }
           />
 
@@ -46,51 +69,122 @@ function AppRoutes() {
           <Route
             path="/cash-register"
             element={
-              <AuthGuard requireCashRegister={false} requireNoCashRegister={true}>
+              <AuthGuard
+                requireCashRegister={false}
+                requireNoCashRegister={true}
+              >
                 <CashRegister setCashRegistered={setCashRegistered} />
               </AuthGuard>
             }
           />
 
           {/* RUTAS OPERATIVAS (Requieren sesión y caja abierta) */}
-          <Route path="/dashboard" element={<AuthGuard><Dashboard setCashRegistered={setCashRegistered} /></AuthGuard>} />
-          <Route path="/products/*" element={<AuthGuard><Products /></AuthGuard>} />
-          <Route path="/cashcut/*" element={<AuthGuard><CashCut /></AuthGuard>} />
-          <Route path="/inventory/*" element={<AuthGuard><Inventory /></AuthGuard>} />
-          <Route path="/invoices/*" element={<AuthGuard><Invoices /></AuthGuard>} />
-          <Route path="/customers/*" element={<AuthGuard><Customers /></AuthGuard>} />
-          <Route path="/reports/*" element={<AuthGuard><Reports /></AuthGuard>} />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthGuard>
+                <Dashboard setCashRegistered={setCashRegistered} />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/products/*"
+            element={
+              <AuthGuard>
+                <Products />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/cashcut/*"
+            element={
+              <AuthGuard>
+                <CashCut />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/inventory/*"
+            element={
+              <AuthGuard>
+                <Inventory />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/invoices/*"
+            element={
+              <AuthGuard>
+                <Invoices />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/customers/*"
+            element={
+              <AuthGuard>
+                <Customers />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/reports/*"
+            element={
+              <AuthGuard>
+                <Reports />
+              </AuthGuard>
+            }
+          />
 
           {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
-          <Route path="/settings" element={<AuthGuard requireCashRegister={false}><Settings /></AuthGuard>} />
-          <Route path="/profiles" element={<AuthGuard requireCashRegister={false}><Profiles /></AuthGuard>} />
+          <Route
+            path="/settings"
+            element={
+              <AuthGuard requireCashRegister={false}>
+                <Settings />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profiles"
+            element={
+              <AuthGuard requireCashRegister={false}>
+                <Profiles />
+              </AuthGuard>
+            }
+          />
 
           {/* FALLBACK ROOT */}
           <Route
             path="/"
             element={
-              <Navigate to={!isAuthenticated || isLocked ? "/login" : !cashRegistered ? "/cash-register" : "/dashboard"} replace />
+              <Navigate
+                to={
+                  !isAuthenticated || isLocked
+                    ? "/login"
+                    : !cashRegistered
+                      ? "/cash-register"
+                      : "/dashboard"
+                }
+                replace
+              />
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </Router>
+    </RouterComponent>
   );
 }
 
-function App() {
+function App({ RouterComponent = Router } = {}) {
   useResponsiveScale(1500, 850);
 
   return (
     <AuthProvider>
-      <BranchProvider>
-        <PendingTransfersProvider>
-          <ProductsProvider>
-            <AppRoutes />
-          </ProductsProvider>
-        </PendingTransfersProvider>
-      </BranchProvider>
+      <ProductsProvider>
+        <AppRoutes RouterComponent={RouterComponent} />
+      </ProductsProvider>
     </AuthProvider>
   );
 }

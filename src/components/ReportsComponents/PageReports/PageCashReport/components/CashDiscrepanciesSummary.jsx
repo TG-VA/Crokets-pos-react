@@ -1,6 +1,10 @@
 import React from "react";
 import styles from "./CashComponents.module.css";
-import { formatCurrency, formatNumber, getDifferenceStatus } from "../utils/cashReportFormatters";
+import {
+  formatCurrency,
+  formatNumber,
+  getDifferenceStatus,
+} from "../utils/cashReportFormatters";
 
 import UserIcon from "../../../../../assets/icons/user-solid.svg";
 import CircleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
@@ -12,8 +16,12 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Auditoría de Discrepancias por Cajero</h2>
-            <p className={styles.tableCardSubtitle}>Analizando registros de arqueo...</p>
+            <h2 className={styles.tableCardTitle}>
+              Auditoría de Discrepancias por Cajero
+            </h2>
+            <p className={styles.tableCardSubtitle}>
+              Analizando registros de arqueo...
+            </p>
           </div>
         </div>
         <div className={styles.tableResponsive}>
@@ -51,14 +59,20 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
       <div className={styles.tableCard}>
         <div className={styles.tableCardHeader}>
           <div className={styles.tableCardTitleGroup}>
-            <h2 className={styles.tableCardTitle}>Auditoría de Discrepancias por Cajero</h2>
+            <h2 className={styles.tableCardTitle}>
+              Auditoría de Discrepancias por Cajero
+            </h2>
             <p className={styles.tableCardSubtitle}>
               Identificación de descuadres y precisión de arqueo por usuario.
             </p>
           </div>
         </div>
         <div className={styles.emptyState}>
-          <img src={UserIcon} alt="Sin datos" className={styles.emptyStateIcon} />
+          <img
+            src={UserIcon}
+            alt="Sin datos"
+            className={styles.emptyStateIcon}
+          />
           <h3 className={styles.emptyStateTitle}>Sin registros de auditoría</h3>
           <p className={styles.emptyStateText}>
             No hay turnos cerrados para auditar en el periodo seleccionado.
@@ -72,9 +86,12 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
     <div className={styles.tableCard}>
       <div className={styles.tableCardHeader}>
         <div className={styles.tableCardTitleGroup}>
-          <h2 className={styles.tableCardTitle}>Auditoría de Discrepancias por Cajero</h2>
+          <h2 className={styles.tableCardTitle}>
+            Auditoría de Discrepancias por Cajero
+          </h2>
           <p className={styles.tableCardSubtitle}>
-            Comparativa de exactitud en cierres y acumulación de diferencias por empleado.
+            Comparativa de exactitud en cierres y acumulación de diferencias por
+            empleado.
           </p>
         </div>
       </div>
@@ -109,11 +126,23 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                   <td className={styles.textSuccess}>
                     {formatNumber(c.exactSessions)}
                   </td>
-                  <td className={c.shortageCount > 0 ? styles.textDanger : styles.textMuted}>
-                    {formatNumber(c.shortageCount)} {c.shortageCount > 0 && `(-${formatCurrency(c.totalShortage)})`}
+                  <td
+                    className={
+                      c.shortageCount > 0 ? styles.textDanger : styles.textMuted
+                    }
+                  >
+                    {formatNumber(c.shortageCount)}{" "}
+                    {c.shortageCount > 0 &&
+                      `(-${formatCurrency(c.totalShortage)})`}
                   </td>
-                  <td className={c.surplusCount > 0 ? styles.textPrimary : styles.textMuted}>
-                    {formatNumber(c.surplusCount)} {c.surplusCount > 0 && `(+${formatCurrency(c.totalSurplus)})`}
+                  <td
+                    className={
+                      c.surplusCount > 0 ? styles.textPrimary : styles.textMuted
+                    }
+                  >
+                    {formatNumber(c.surplusCount)}{" "}
+                    {c.surplusCount > 0 &&
+                      `(+${formatCurrency(c.totalSurplus)})`}
                   </td>
                   <td>
                     <span
@@ -121,8 +150,8 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                         diffInfo.status === "exact"
                           ? styles.badgeSuccess
                           : diffInfo.status === "surplus"
-                          ? styles.badgeInfo
-                          : styles.badgeDanger
+                            ? styles.badgeInfo
+                            : styles.badgeDanger
                       }`.trim()}
                     >
                       <img
@@ -145,8 +174,8 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                             accuracy >= 90
                               ? styles.progressFillSuccess
                               : accuracy >= 70
-                              ? styles.progressFillWarning
-                              : styles.progressFillDanger
+                                ? styles.progressFillWarning
+                                : styles.progressFillDanger
                           }`.trim()}
                           style={{ width: `${Math.min(accuracy, 100)}%` }}
                         />
@@ -163,21 +192,47 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
           <tfoot>
             <tr className={styles.tableFooterTotal}>
               <td className={styles.cellExtraBold}>
-                Totales ({cashierAudit.length} usuario{cashierAudit.length !== 1 ? "s" : ""})
+                Totales ({cashierAudit.length} usuario
+                {cashierAudit.length !== 1 ? "s" : ""})
               </td>
-              <td>{formatNumber(cashierAudit.reduce((acc, c) => acc + (c.closedSessions || 0), 0))}</td>
+              <td>
+                {formatNumber(
+                  cashierAudit.reduce(
+                    (acc, c) => acc + (c.closedSessions || 0),
+                    0
+                  )
+                )}
+              </td>
               <td className={styles.textSuccess}>
-                {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.exactSessions || 0), 0))}
+                {formatNumber(
+                  cashierAudit.reduce(
+                    (acc, c) => acc + (c.exactSessions || 0),
+                    0
+                  )
+                )}
               </td>
               <td className={styles.textDanger}>
-                {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.shortageCount || 0), 0))}
+                {formatNumber(
+                  cashierAudit.reduce(
+                    (acc, c) => acc + (c.shortageCount || 0),
+                    0
+                  )
+                )}
               </td>
               <td className={styles.textPrimary}>
-                {formatNumber(cashierAudit.reduce((acc, c) => acc + (c.surplusCount || 0), 0))}
+                {formatNumber(
+                  cashierAudit.reduce(
+                    (acc, c) => acc + (c.surplusCount || 0),
+                    0
+                  )
+                )}
               </td>
               <td>
                 {(() => {
-                  const net = cashierAudit.reduce((acc, c) => acc + (c.netDifference || 0), 0);
+                  const net = cashierAudit.reduce(
+                    (acc, c) => acc + (c.netDifference || 0),
+                    0
+                  );
                   const info = getDifferenceStatus(net);
                   return (
                     <span
@@ -185,8 +240,8 @@ const CashDiscrepanciesSummary = ({ cashierAudit = [], loading = false }) => {
                         info.status === "exact"
                           ? styles.badgeSuccess
                           : info.status === "surplus"
-                          ? styles.badgeInfo
-                          : styles.badgeDanger
+                            ? styles.badgeInfo
+                            : styles.badgeDanger
                       }`.trim()}
                     >
                       <img

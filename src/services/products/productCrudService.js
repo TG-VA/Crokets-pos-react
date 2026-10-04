@@ -95,10 +95,7 @@ export const createProduct = async (branchId, departments, payload) => {
         });
 
       if (inventoryError) {
-        console.error(
-          "Error creando inventario de sucursal:",
-          inventoryError
-        );
+        console.error("Error creando inventario de sucursal:", inventoryError);
 
         return {
           success: false,
@@ -168,12 +165,11 @@ export const updateProductByCodigo = async (
       };
     }
 
-    const { data: currentProduct, error: currentProductError } =
-      await supabase
-        .from("products")
-        .select("id, barcode")
-        .eq("barcode", cleanCodigoOriginal)
-        .maybeSingle();
+    const { data: currentProduct, error: currentProductError } = await supabase
+      .from("products")
+      .select("id, barcode")
+      .eq("barcode", cleanCodigoOriginal)
+      .maybeSingle();
 
     if (currentProductError) throw currentProductError;
 
@@ -187,13 +183,12 @@ export const updateProductByCodigo = async (
     }
 
     if (cleanCodigo !== cleanCodigoOriginal) {
-      const { data: duplicatedProduct, error: duplicatedError } =
-        await supabase
-          .from("products")
-          .select("id")
-          .eq("barcode", cleanCodigo)
-          .neq("id", currentProduct.id)
-          .maybeSingle();
+      const { data: duplicatedProduct, error: duplicatedError } = await supabase
+        .from("products")
+        .select("id")
+        .eq("barcode", cleanCodigo)
+        .neq("id", currentProduct.id)
+        .maybeSingle();
 
       if (duplicatedError) throw duplicatedError;
 
@@ -242,13 +237,12 @@ export const updateProductByCodigo = async (
 
     if (productUpdateError) throw productUpdateError;
 
-    const { data: inventoryRow, error: inventoryFetchError } =
-      await supabase
-        .from("branch_inventory")
-        .select("id, stock, has_been_stocked")
-        .eq("branch_id", branchId)
-        .eq("product_id", currentProduct.id)
-        .maybeSingle();
+    const { data: inventoryRow, error: inventoryFetchError } = await supabase
+      .from("branch_inventory")
+      .select("id, stock, has_been_stocked")
+      .eq("branch_id", branchId)
+      .eq("product_id", currentProduct.id)
+      .maybeSingle();
 
     if (inventoryFetchError) throw inventoryFetchError;
 
@@ -261,8 +255,7 @@ export const updateProductByCodigo = async (
         min_stock: Number(payload.minimo || 0),
         max_stock: Number(payload.maximo || 0),
         is_active: payload.status === "activo",
-        has_been_stocked:
-          !!inventoryRow?.has_been_stocked || currentStock > 0,
+        has_been_stocked: !!inventoryRow?.has_been_stocked || currentStock > 0,
         cost_price: costPrice,
         sale_price: salePrice,
         updated_at: new Date().toISOString(),

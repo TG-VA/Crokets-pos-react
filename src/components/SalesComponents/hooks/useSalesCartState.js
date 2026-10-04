@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useDidChange } from "../../../hooks/useDidChange";
 
 export const useSalesCartState = () => {
   const [productos, setProductos] = useState([]);
@@ -6,17 +7,25 @@ export const useSalesCartState = () => {
   const [stockWarningMsg, setStockWarningMsg] = useState("");
   const productosRef = useRef([]);
 
+  // El aviso de stock se limpia en la misma pasada en que el carrito queda
+  // vacio, en lugar de desde un efecto. El ref sigue sincronizandose en un
+  // efecto porque es un valor externo que otros hooks leen.
+  const cartIsEmpty = productos.length === 0;
+  if (useDidChange(cartIsEmpty) && cartIsEmpty) {
+    setStockWarningMsg("");
+  }
+
   useEffect(() => {
     productosRef.current = productos;
-    if (productos.length === 0) {
-      setStockWarningMsg("");
-    }
   }, [productos]);
 
   return {
-    productos, setProductos,
-    selectedProduct, setSelectedProduct,
-    stockWarningMsg, setStockWarningMsg,
+    productos,
+    setProductos,
+    selectedProduct,
+    setSelectedProduct,
+    stockWarningMsg,
+    setStockWarningMsg,
     productosRef,
   };
 };

@@ -54,7 +54,9 @@ const CutCashSummarySection = ({
       color="#c62828"
     />
     <DataRow
-      label={isHistoricalView || hasShiftCut ? "Total esperado" : "Total en caja"}
+      label={
+        isHistoricalView || hasShiftCut ? "Total esperado" : "Total en caja"
+      }
       value={fmt(expectedDisplay)}
       bold
       borderTop

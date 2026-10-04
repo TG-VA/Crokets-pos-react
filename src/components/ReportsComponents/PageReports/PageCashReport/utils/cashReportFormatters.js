@@ -96,7 +96,9 @@ export const getShortFolio = (id, prefix = "TURNO") => {
  * Formatea el tipo de movimiento de caja para visualización
  */
 export const formatMovementType = (type) => {
-  const normalized = String(type || "").toLowerCase().trim();
+  const normalized = String(type || "")
+    .toLowerCase()
+    .trim();
   switch (normalized) {
     case "entry":
     case "cash_in":

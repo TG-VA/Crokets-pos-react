@@ -39,9 +39,7 @@ describe("cashCutDetailService", () => {
       expect(q.select).toHaveBeenCalledWith(
         expect.stringContaining("cash_register_sessions")
       );
-      expect(q.select).toHaveBeenCalledWith(
-        expect.stringContaining("users")
-      );
+      expect(q.select).toHaveBeenCalledWith(expect.stringContaining("users"));
       expect(q.eq).toHaveBeenCalledWith("id", "c1");
       expect(q.maybeSingle).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ data: row, error: null });

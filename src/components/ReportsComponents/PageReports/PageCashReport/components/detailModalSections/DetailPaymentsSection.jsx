@@ -5,8 +5,14 @@ import { formatCurrency } from "../../utils/cashReportFormatters";
 const DetailPaymentsSection = ({ paymentsByMethod = [] }) => {
   if (!paymentsByMethod || paymentsByMethod.length === 0) return null;
 
-  const totalTransactions = paymentsByMethod.reduce((acc, p) => acc + (p.count || 0), 0);
-  const totalAmount = paymentsByMethod.reduce((acc, p) => acc + (p.total || 0), 0);
+  const totalTransactions = paymentsByMethod.reduce(
+    (acc, p) => acc + (p.count || 0),
+    0
+  );
+  const totalAmount = paymentsByMethod.reduce(
+    (acc, p) => acc + (p.total || 0),
+    0
+  );
 
   return (
     <div className={styles.modalSection}>

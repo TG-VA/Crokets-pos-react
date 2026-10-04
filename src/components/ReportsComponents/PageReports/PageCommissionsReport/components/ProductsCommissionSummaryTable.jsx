@@ -8,9 +8,7 @@ import {
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
-export const ProductsCommissionSummaryTable = ({
-  productSummaries = [],
-}) => {
+export const ProductsCommissionSummaryTable = ({ productSummaries = [] }) => {
   const totalItems = productSummaries.length;
 
   const {
@@ -51,7 +49,9 @@ export const ProductsCommissionSummaryTable = ({
     <div className={styles.tableCard}>
       <div className={styles.tableHeaderBar}>
         <div>
-          <h3 className={styles.tableTitle}>Desglose por Producto Comisionable</h3>
+          <h3 className={styles.tableTitle}>
+            Desglose por Producto Comisionable
+          </h3>
           <span className={styles.tableSubtitle}>
             Rendimiento y costo total de incentivos por artículo
           </span>
@@ -83,7 +83,8 @@ export const ProductsCommissionSummaryTable = ({
             {paginatedProducts.length === 0 ? (
               <tr>
                 <td colSpan={7} className={styles.emptyState}>
-                  No se registraron ventas de productos comisionables en este periodo.
+                  No se registraron ventas de productos comisionables en este
+                  periodo.
                 </td>
               </tr>
             ) : (
@@ -113,7 +114,10 @@ export const ProductsCommissionSummaryTable = ({
                     </td>
                     <td className={styles.textCenter}>
                       <span className={badgeClass}>
-                        {formatCommissionRule(item.commissionType, item.commissionValue)}
+                        {formatCommissionRule(
+                          item.commissionType,
+                          item.commissionValue
+                        )}
                       </span>
                     </td>
                     <td className={`${styles.textCenter} ${styles.fontMono}`}>
@@ -151,7 +155,8 @@ export const ProductsCommissionSummaryTable = ({
                 return (
                   <tr className={styles.tableFooterTotal}>
                     <td colSpan={4} className={styles.footerTotalLabel}>
-                      Totales Consolidados ({totalItems} producto{totalItems !== 1 ? "s" : ""})
+                      Totales Consolidados ({totalItems} producto
+                      {totalItems !== 1 ? "s" : ""})
                     </td>
                     <td className={`${styles.textCenter} ${styles.fontMono}`}>
                       {formatInteger(totals.units)}

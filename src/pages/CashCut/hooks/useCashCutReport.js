@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useDidChange } from "../../../hooks/useDidChange";
+import { afterCommit } from "../../../utils/asyncUtils";
+
 import { supabase } from "../../../lib/supabaseClient";
 
 import {
@@ -76,8 +79,10 @@ export const useCashCutReport = ({ user }) => {
 
   const [devolucionesParcialesTotales, setDevolucionesParcialesTotales] =
     useState(0);
-  const [devolucionesParcialesAfectanCaja, setDevolucionesParcialesAfectanCaja] =
-    useState(0);
+  const [
+    devolucionesParcialesAfectanCaja,
+    setDevolucionesParcialesAfectanCaja,
+  ] = useState(0);
   const [devolucionesParciales, setDevolucionesParciales] = useState([]);
 
   const [rewardSummary, setRewardSummary] = useState(createEmptyRewardSummary);
@@ -151,20 +156,6 @@ export const useCashCutReport = ({ user }) => {
     resetSalesState();
   };
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    setErrorMsg("");
-
-    try {
-      await reloadCurrentView({ refreshHistory: true });
-    } catch (err) {
-      console.error("Error cargando datos del corte:", err);
-      setErrorMsg("No se pudieron cargar los datos del turno.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchSession = async () => {
     setUsername(getDisplayUsername());
 
@@ -217,7 +208,10 @@ export const useCashCutReport = ({ user }) => {
     );
   };
 
-  const loadCurrentSession = async (sessionData, { resetSales = true } = {}) => {
+  const loadCurrentSession = async (
+    sessionData,
+    { resetSales = true } = {}
+  ) => {
     setSelectedCutId("current");
     setHistoricalCut(null);
     setUsername(getDisplayUsername());
@@ -305,8 +299,8 @@ export const useCashCutReport = ({ user }) => {
         cutData.users?.username
           ? String(cutData.users.username).toUpperCase()
           : cutData.user_id
-          ? String(cutData.user_id).slice(0, 8).toUpperCase()
-          : "USUARIO"
+            ? String(cutData.user_id).slice(0, 8).toUpperCase()
+            : "USUARIO"
       );
 
       if (cutData.branch_id) {
@@ -551,8 +545,34 @@ export const useCashCutReport = ({ user }) => {
 
   const refreshAfterCut = () => reloadCurrentView({ refreshHistory: true });
 
+  // El error de un usuario anterior no debe mostrarse mientras se carga el
+  // reporte del nuevo usuario.
+  if (useDidChange(user?.id ?? null)) {
+    setErrorMsg("");
+  }
+
+  // Carga inicial: `loading` arranca en true, asi que no hace falta volver a
+  // marcarlo desde el efecto. El error se aplica en la continuacion asincrona,
+  // que es donde corresponde.
   useEffect(() => {
-    if (user?.id) fetchAllData();
+    if (!user?.id) return undefined;
+
+    let cancelled = false;
+
+    afterCommit(() => reloadCurrentView({ refreshHistory: true }))
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Error cargando datos del corte:", err);
+        setErrorMsg("No se pudieron cargar los datos del turno.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 

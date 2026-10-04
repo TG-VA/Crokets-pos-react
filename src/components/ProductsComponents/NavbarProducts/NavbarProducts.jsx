@@ -77,7 +77,7 @@ const NavbarProducts = ({ onProtectedAccessAuthorized }) => {
 
   const options = withProtectedMetadata(
     NAVBAR_OPTIONS,
-    PROTECTED_PRODUCT_SECTIONS,
+    PROTECTED_PRODUCT_SECTIONS
   );
 
   return (

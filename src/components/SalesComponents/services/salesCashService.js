@@ -7,10 +7,12 @@ const toNumber = (value) => {
 
 const convertPaymentToMxn = (payment) => {
   const amount = toNumber(payment?.amount);
-  const currency = String(payment?.currency || "MXN").trim().toUpperCase();
+  const currency = String(payment?.currency || "MXN")
+    .trim()
+    .toUpperCase();
 
   if (currency === "MXN") return amount;
-  
+
   const exchangeRate = toNumber(payment?.exchange_rate);
   if (currency === "USD" && exchangeRate > 0) return amount * exchangeRate;
 
@@ -39,7 +41,8 @@ const getSessionCashSales = async ({ branchId, userId, openedAt }) => {
   // OPTIMIZACIÓN: JOIN nativo en Supabase para evitar doble consulta
   const { data: sales, error } = await supabase
     .from("sales")
-    .select(`
+    .select(
+      `
       id,
       sale_payments (
         amount,
@@ -47,7 +50,8 @@ const getSessionCashSales = async ({ branchId, userId, openedAt }) => {
         exchange_rate,
         payment_methods!inner ( affects_cash )
       )
-    `)
+    `
+    )
     .eq("branch_id", branchId)
     .eq("user_id", userId)
     .in("status", ["completed", "cancelled", "refunded"])
@@ -56,10 +60,15 @@ const getSessionCashSales = async ({ branchId, userId, openedAt }) => {
   if (error) throw error;
 
   return (sales || []).reduce((totalSum, sale) => {
-    const saleCash = (sale.sale_payments || []).reduce((paymentSum, payment) => {
-      const affectsCash = payment?.payment_methods?.affects_cash ?? false;
-      return affectsCash ? paymentSum + convertPaymentToMxn(payment) : paymentSum;
-    }, 0);
+    const saleCash = (sale.sale_payments || []).reduce(
+      (paymentSum, payment) => {
+        const affectsCash = payment?.payment_methods?.affects_cash ?? false;
+        return affectsCash
+          ? paymentSum + convertPaymentToMxn(payment)
+          : paymentSum;
+      },
+      0
+    );
     return totalSum + saleCash;
   }, 0);
 };
@@ -67,7 +76,10 @@ const getSessionCashSales = async ({ branchId, userId, openedAt }) => {
 const getSessionCashRefunds = async ({ branchId, userId, openedAt }) => {
   if (!branchId || !userId || !openedAt) return 0;
 
-  const [ { data: cancellations, error: cancelError }, { data: partialReturns, error: returnError } ] = await Promise.all([
+  const [
+    { data: cancellations, error: cancelError },
+    { data: partialReturns, error: returnError },
+  ] = await Promise.all([
     supabase
       .from("canceled_sales")
       .select("refund_amount, payment_methods!inner(affects_cash)")
@@ -86,18 +98,23 @@ const getSessionCashRefunds = async ({ branchId, userId, openedAt }) => {
   if (returnError) throw returnError;
 
   const cancellationImpact = (cancellations || []).reduce((sum, c) => {
-    return c?.payment_methods?.affects_cash ? sum + toNumber(c?.refund_amount) : sum;
+    return c?.payment_methods?.affects_cash
+      ? sum + toNumber(c?.refund_amount)
+      : sum;
   }, 0);
 
   const returnImpact = (partialReturns || []).reduce((sum, r) => {
-    return r?.payment_methods?.affects_cash ? sum + toNumber(r?.total_refund) : sum;
+    return r?.payment_methods?.affects_cash
+      ? sum + toNumber(r?.total_refund)
+      : sum;
   }, 0);
 
   return cancellationImpact + returnImpact;
 };
 
 export const getOpenCashSession = async ({ branchId, userId }) => {
-  if (!branchId || !userId) throw new Error("No se detectó la sucursal o el usuario.");
+  if (!branchId || !userId)
+    throw new Error("No se detectó la sucursal o el usuario.");
 
   const { data, error } = await supabase
     .from("cash_register_sessions")
@@ -109,7 +126,8 @@ export const getOpenCashSession = async ({ branchId, userId }) => {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new Error("No hay una sesión de caja abierta para este usuario.");
+  if (!data)
+    throw new Error("No hay una sesión de caja abierta para este usuario.");
 
   return data;
 };
@@ -139,11 +157,23 @@ export const getAvailableCash = async ({ sessionId }) => {
 
   if (sessionError) throw sessionError;
 
-  const [ { data: movements, error: movementsError }, cashSales, cashRefunds ] = await Promise.all([
-    supabase.from("cash_movements").select("movement_type, amount").eq("session_id", sessionId),
-    getSessionCashSales({ branchId: session?.branch_id, userId: session?.user_id, openedAt: session?.opened_at }),
-    getSessionCashRefunds({ branchId: session?.branch_id, userId: session?.user_id, openedAt: session?.opened_at }),
-  ]);
+  const [{ data: movements, error: movementsError }, cashSales, cashRefunds] =
+    await Promise.all([
+      supabase
+        .from("cash_movements")
+        .select("movement_type, amount")
+        .eq("session_id", sessionId),
+      getSessionCashSales({
+        branchId: session?.branch_id,
+        userId: session?.user_id,
+        openedAt: session?.opened_at,
+      }),
+      getSessionCashRefunds({
+        branchId: session?.branch_id,
+        userId: session?.user_id,
+        openedAt: session?.opened_at,
+      }),
+    ]);
 
   if (movementsError) throw movementsError;
 
@@ -153,17 +183,27 @@ export const getAvailableCash = async ({ sessionId }) => {
   return openingAmount + entries + cashSales - exits - cashRefunds;
 };
 
-export const createCashMovement = async ({ sessionId, userId, branchId, movementType, amount, description }) => {
+export const createCashMovement = async ({
+  sessionId,
+  userId,
+  branchId,
+  movementType,
+  amount,
+  description,
+}) => {
   if (!sessionId) throw new Error("No se detectó la sesión de caja.");
   if (!userId) throw new Error("No se detectó el usuario.");
   if (!branchId) throw new Error("No se detectó la sucursal.");
 
   const normalizedAmount = toNumber(amount);
-  if (normalizedAmount <= 0) throw new Error("El monto del movimiento debe ser mayor a cero.");
+  if (normalizedAmount <= 0)
+    throw new Error("El monto del movimiento debe ser mayor a cero.");
 
   const validTypes = ["entrada", "salida"];
   if (!validTypes.includes(movementType)) {
-    throw new Error(`El tipo de movimiento no es válido. Opciones: ${validTypes.join(", ")}`);
+    throw new Error(
+      `El tipo de movimiento no es válido. Opciones: ${validTypes.join(", ")}`
+    );
   }
 
   const payload = {
@@ -175,8 +215,35 @@ export const createCashMovement = async ({ sessionId, userId, branchId, movement
     description: String(description || "").trim() || null,
   };
 
-  const { data, error } = await supabase.from("cash_movements").insert([payload]).select().single();
+  const { data, error } = await supabase
+    .from("cash_movements")
+    .insert([payload])
+    .select()
+    .single();
 
   if (error) throw error;
   return data;
+};
+
+/**
+ * Resuelve si el turno actual ya tiene un corte de caja registrado.
+ *
+ * Se compone en el servicio, y no en el hook, porque el efecto que dispara la
+ * comprobacion no debe escribir estado: la regla de set-state-in-effect marca
+ * cualquier llamada desde el cuerpo de un efecto a una funcion del mismo archivo
+ * que termine en setState. Devolver el valor permite que el estado se escriba en
+ * la continuacion asincrona, que es donde corresponde.
+ *
+ * @param {{ branchId: string, userId: string }} params
+ * @returns {Promise<boolean>} `true` si el turno ya fue cortado.
+ */
+export const resolveShiftCutStatus = async ({ branchId, userId }) => {
+  const session = await getOpenCashSession({ branchId, userId });
+
+  // Validación defensiva: si no existe sesión activa o no tiene ID, asumimos que no hay corte efectuado.
+  if (!session || !session.id) {
+    return false;
+  }
+
+  return getShiftCutStatus({ sessionId: session.id });
 };

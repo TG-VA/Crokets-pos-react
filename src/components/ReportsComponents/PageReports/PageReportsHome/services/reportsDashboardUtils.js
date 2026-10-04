@@ -84,13 +84,9 @@ export const shiftDateInput = (dateInput, offsetDays = 0) => {
 
 export const getCancunDayRange = (dateInput) => {
   return {
-    start: new Date(
-      `${dateInput}T00:00:00${CANCUN_OFFSET}`,
-    ).toISOString(),
+    start: new Date(`${dateInput}T00:00:00${CANCUN_OFFSET}`).toISOString(),
 
-    end: new Date(
-      `${dateInput}T23:59:59.999${CANCUN_OFFSET}`,
-    ).toISOString(),
+    end: new Date(`${dateInput}T23:59:59.999${CANCUN_OFFSET}`).toISOString(),
   };
 };
 
@@ -100,10 +96,7 @@ export const getDashboardDateRanges = () => {
   const todayInput = getDateInputValue(today);
   const todayRange = getCancunDayRange(todayInput);
 
-  const firstChartDayInput = shiftDateInput(
-    todayInput,
-    -(DASHBOARD_DAYS - 1)
-  );
+  const firstChartDayInput = shiftDateInput(todayInput, -(DASHBOARD_DAYS - 1));
 
   return {
     todayInput,
@@ -128,9 +121,7 @@ export const getDateInputFromIso = (isoDate) => {
 };
 
 export const formatChartDayLabel = (dateInput) => {
-  const date = new Date(
-    `${dateInput}T12:00:00${CANCUN_OFFSET}`,
-  );
+  const date = new Date(`${dateInput}T12:00:00${CANCUN_OFFSET}`);
 
   return date
     .toLocaleDateString("es-MX", {
@@ -162,9 +153,7 @@ export const getMxnPaymentAmount = (payment) => {
 
   const exchangeRate = toNumber(payment?.exchange_rate);
 
-  return exchangeRate > 0
-    ? amount * exchangeRate
-    : 0;
+  return exchangeRate > 0 ? amount * exchangeRate : 0;
 };
 
 export const getEmptyReportsDashboard = () => {

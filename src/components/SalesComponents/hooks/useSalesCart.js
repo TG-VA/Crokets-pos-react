@@ -6,12 +6,19 @@ import { getSoldKitsCountInBranch } from "../services/salesProductService";
 // --- FUNCIONES PURAS (SIN ESTADO) ---
 const calculateDiscountedProduct = (basePrice, product) => {
   const originalPrice = Number(basePrice || 0);
-  const discountEnabled = Boolean(product?.discount_enabled) && Number(product?.discount_percent || 0) > 0;
+  const discountEnabled =
+    Boolean(product?.discount_enabled) &&
+    Number(product?.discount_percent || 0) > 0;
 
   if (!discountEnabled) {
     return {
-      precioOriginal: originalPrice, precioFinal: originalPrice, descuentoTipo: null,
-      descuentoValor: 0, descuentoMontoUnitario: 0, discountPercent: 0, discountConcept: "",
+      precioOriginal: originalPrice,
+      precioFinal: originalPrice,
+      descuentoTipo: null,
+      descuentoValor: 0,
+      descuentoMontoUnitario: 0,
+      discountPercent: 0,
+      discountConcept: "",
     };
   }
 
@@ -21,8 +28,11 @@ const calculateDiscountedProduct = (basePrice, product) => {
   return {
     precioOriginal: originalPrice,
     precioFinal: Math.max(originalPrice - descuentoMontoUnitario, 0),
-    descuentoTipo: "percent", descuentoValor: discountPercent,
-    descuentoMontoUnitario, discountPercent, discountConcept: product.discount_concept || "",
+    descuentoTipo: "percent",
+    descuentoValor: discountPercent,
+    descuentoMontoUnitario,
+    discountPercent,
+    discountConcept: product.discount_concept || "",
   };
 };
 
@@ -31,7 +41,8 @@ const updateCartItemQuantity = ({ item, quantity, stock }) => {
   const precioFinal = Number(item.precio ?? 0);
   const descuentoUnitario = Math.max(precioOriginal - precioFinal, 0);
   const tracksInventory = Boolean(item.tracks_inventory);
-  const resolvedStock = stock !== undefined ? Number(stock || 0) : Number(item.stockReal || 0);
+  const resolvedStock =
+    stock !== undefined ? Number(stock || 0) : Number(item.stockReal || 0);
 
   return {
     ...item,
@@ -55,132 +66,202 @@ const useSalesCart = ({
   syncCurrentSaleRewardsWithCart,
   branchId,
 }) => {
-  
-  const commitCart = useCallback((nextProducts, nextSelectedProduct) => {
-    productosRef.current = nextProducts;
-    setProductos(nextProducts);
-    if (nextSelectedProduct !== undefined) {
-      setSelectedProduct(nextSelectedProduct);
-    }
-  }, [productosRef, setProductos, setSelectedProduct]);
+  const commitCart = useCallback(
+    (nextProducts, nextSelectedProduct) => {
+      productosRef.current = nextProducts;
+      setProductos(nextProducts);
+      if (nextSelectedProduct !== undefined) {
+        setSelectedProduct(nextSelectedProduct);
+      }
+    },
+    [productosRef, setProductos, setSelectedProduct]
+  );
 
-  const createCartProduct = useCallback(({ product, salePrice, costPrice, stock, tracksInventory, isKit }) => {
-    const discountData = calculateDiscountedProduct(salePrice, product);
-    return {
-      id: product.id, codigo: product.barcode, nombre: product.name,
-      precioOriginal: discountData.precioOriginal, precio: discountData.precioFinal, costo: costPrice,
-      cantidad: 1, importe: discountData.precioFinal, descuentoTipo: discountData.descuentoTipo,
-      descuentoValor: discountData.descuentoValor, descuentoMonto: discountData.descuentoMontoUnitario,
-      discountPercent: discountData.discountPercent, discountConcept: discountData.discountConcept,
-      stockReal: tracksInventory ? Number(stock || 0) : null,
-      existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
-      is_kit: Boolean(isKit), tracks_inventory: Boolean(tracksInventory),
-      max_kits_per_sale: product.max_kits_per_sale,
-    };
-  }, []);
+  const createCartProduct = useCallback(
+    ({ product, salePrice, costPrice, stock, tracksInventory, isKit }) => {
+      const discountData = calculateDiscountedProduct(salePrice, product);
+      return {
+        id: product.id,
+        codigo: product.barcode,
+        nombre: product.name,
+        precioOriginal: discountData.precioOriginal,
+        precio: discountData.precioFinal,
+        costo: costPrice,
+        cantidad: 1,
+        importe: discountData.precioFinal,
+        descuentoTipo: discountData.descuentoTipo,
+        descuentoValor: discountData.descuentoValor,
+        descuentoMonto: discountData.descuentoMontoUnitario,
+        discountPercent: discountData.discountPercent,
+        discountConcept: discountData.discountConcept,
+        stockReal: tracksInventory ? Number(stock || 0) : null,
+        existencia: tracksInventory ? Math.max(Number(stock || 0) - 1, 0) : "∞",
+        is_kit: Boolean(isKit),
+        tracks_inventory: Boolean(tracksInventory),
+        max_kits_per_sale: product.max_kits_per_sale,
+      };
+    },
+    []
+  );
 
-  const applyProductToCart = useCallback((product, stock, salePrice, costPrice, tracksInventory) => {
-    const currentProducts = productosRef.current || [];
-    const existingProduct = currentProducts.find((item) => item.id === product.id && !isRewardCartItem(item));
+  const applyProductToCart = useCallback(
+    (product, stock, salePrice, costPrice, tracksInventory) => {
+      const currentProducts = productosRef.current || [];
+      const existingProduct = currentProducts.find(
+        (item) => item.id === product.id && !isRewardCartItem(item)
+      );
 
-    if (existingProduct) {
-      const nextQuantity = Number(existingProduct.cantidad || 0) + 1;
+      if (existingProduct) {
+        const nextQuantity = Number(existingProduct.cantidad || 0) + 1;
 
-      if (tracksInventory && nextQuantity > stock) {
-        showAppWarning(product.is_kit ? "No hay suficiente inventario para vender otro kit." : "No hay suficiente inventario.");
-        return false;
+        if (tracksInventory && nextQuantity > stock) {
+          showAppWarning(
+            product.is_kit
+              ? "No hay suficiente inventario para vender otro kit."
+              : "No hay suficiente inventario."
+          );
+          return false;
+        }
+
+        const nextProducts = currentProducts.map((item) => {
+          if (item.id !== product.id || isRewardCartItem(item)) return item;
+          return updateCartItemQuantity({
+            item,
+            quantity: nextQuantity,
+            stock,
+          });
+        });
+
+        const nextSelected =
+          nextProducts.find(
+            (item) => item.id === product.id && !isRewardCartItem(item)
+          ) || null;
+        commitCart(
+          nextProducts,
+          selectedProduct?.id === product.id ? nextSelected : undefined
+        );
+        return true;
       }
 
-      const nextProducts = currentProducts.map((item) => {
-        if (item.id !== product.id || isRewardCartItem(item)) return item;
-        return updateCartItemQuantity({ item, quantity: nextQuantity, stock });
+      const newProduct = createCartProduct({
+        product,
+        salePrice: Number(salePrice ?? 0),
+        costPrice: Number(costPrice ?? 0),
+        stock,
+        tracksInventory,
+        isKit: product.is_kit,
       });
 
-      const nextSelected = nextProducts.find((item) => item.id === product.id && !isRewardCartItem(item)) || null;
-      commitCart(nextProducts, selectedProduct?.id === product.id ? nextSelected : undefined);
+      commitCart([...currentProducts, newProduct]);
       return true;
-    }
-
-    const newProduct = createCartProduct({
-      product, salePrice: Number(salePrice ?? 0), costPrice: Number(costPrice ?? 0),
-      stock, tracksInventory, isKit: product.is_kit,
-    });
-
-    commitCart([...currentProducts, newProduct]);
-    return true;
-  }, [commitCart, createCartProduct, productosRef, selectedProduct, showAppWarning]);
+    },
+    [
+      commitCart,
+      createCartProduct,
+      productosRef,
+      selectedProduct,
+      showAppWarning,
+    ]
+  );
 
   // =======================================================================
   // ORQUESTADOR PRINCIPAL (Ahora limpio de reglas de negocio)
   // =======================================================================
-  const addProductToCart = useCallback(async (product) => {
-    // 1. Delegamos la validación dura al servicio
-    const validation = await validateProductForCart({ 
-      product, 
-      getKitAvailableStock, 
-      getBranchInventoryRow 
-    });
+  const addProductToCart = useCallback(
+    async (product) => {
+      // 1. Delegamos la validación dura al servicio
+      const validation = await validateProductForCart({
+        product,
+        getKitAvailableStock,
+        getBranchInventoryRow,
+      });
 
-    // 2. Si el dominio dice que NO, le avisamos al usuario y abortamos
-    if (!validation.isValid) {
-      showAppWarning(validation.message);
-      return false;
-    }
-
-    // 2b. Validar límite de kits por sucursal acumulado en la base de datos
-    if (product.is_kit && branchId) {
-      const soldCount = await getSoldKitsCountInBranch(product.id, branchId);
-      const currentProducts = productosRef.current || [];
-      const existingProduct = currentProducts.find((item) => item.id === product.id && !isRewardCartItem(item));
-      const nextQuantity = (existingProduct ? Number(existingProduct.cantidad || 0) : 0) + 1;
-      const totalQuantity = soldCount + nextQuantity;
-      const maxKits = Number(product.max_kits_per_sale ?? 1);
-
-      if (totalQuantity > maxKits) {
-        if (soldCount >= maxKits) {
-          showAppWarning(`Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`);
-        } else {
-          showAppWarning(`Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`);
-        }
+      // 2. Si el dominio dice que NO, le avisamos al usuario y abortamos
+      if (!validation.isValid) {
+        showAppWarning(validation.message);
         return false;
       }
-    }
 
-    // 3. Si el dominio dice que SÍ, modificamos el estado de React
-    return applyProductToCart(
-      product, 
-      validation.stock, 
-      validation.salePrice, 
-      validation.costPrice, 
-      validation.tracksInventory
-    );
-  }, [applyProductToCart, getBranchInventoryRow, getKitAvailableStock, showAppWarning, branchId]);
+      // 2b. Validar límite de kits por sucursal acumulado en la base de datos
+      if (product.is_kit && branchId) {
+        const soldCount = await getSoldKitsCountInBranch(product.id, branchId);
+        const currentProducts = productosRef.current || [];
+        const existingProduct = currentProducts.find(
+          (item) => item.id === product.id && !isRewardCartItem(item)
+        );
+        const nextQuantity =
+          (existingProduct ? Number(existingProduct.cantidad || 0) : 0) + 1;
+        const totalQuantity = soldCount + nextQuantity;
+        const maxKits = Number(product.max_kits_per_sale ?? 1);
+
+        if (totalQuantity > maxKits) {
+          if (soldCount >= maxKits) {
+            showAppWarning(
+              `Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`
+            );
+          } else {
+            showAppWarning(
+              `Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`
+            );
+          }
+          return false;
+        }
+      }
+
+      // 3. Si el dominio dice que SÍ, modificamos el estado de React
+      return applyProductToCart(
+        product,
+        validation.stock,
+        validation.salePrice,
+        validation.costPrice,
+        validation.tracksInventory
+      );
+    },
+    [
+      applyProductToCart,
+      getBranchInventoryRow,
+      getKitAvailableStock,
+      showAppWarning,
+      branchId,
+    ]
+  );
   // =======================================================================
 
   const increaseSelectedProductQuantity = useCallback(async () => {
     if (!selectedProduct) return;
     if (isRewardCartItem(selectedProduct)) {
-      showAppWarning("No puedes modificar la cantidad de un producto aplicado como recompensa.");
+      showAppWarning(
+        "No puedes modificar la cantidad de un producto aplicado como recompensa."
+      );
       return;
     }
     const currentProducts = productosRef.current || [];
-    const currentProduct = currentProducts.find((item) => isSameCartItem(item, selectedProduct));
+    const currentProduct = currentProducts.find((item) =>
+      isSameCartItem(item, selectedProduct)
+    );
     if (!currentProduct) return;
 
     const currentQuantity = Number(currentProduct.cantidad || 0);
     const stock = Number(currentProduct.stockReal || 0);
 
     if (currentProduct.is_kit && branchId) {
-      const soldCount = await getSoldKitsCountInBranch(currentProduct.id, branchId);
+      const soldCount = await getSoldKitsCountInBranch(
+        currentProduct.id,
+        branchId
+      );
       const nextQuantity = currentQuantity + 1;
       const totalQuantity = soldCount + nextQuantity;
       const maxKits = Number(currentProduct.max_kits_per_sale ?? 1);
 
       if (totalQuantity > maxKits) {
         if (soldCount >= maxKits) {
-          showAppWarning(`Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`);
+          showAppWarning(
+            `Límite de venta alcanzado: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal, y ya se han vendido ${soldCount} unidades anteriormente.`
+          );
         } else {
-          showAppWarning(`Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`);
+          showAppWarning(
+            `Límite de venta excedido: Este kit tiene un límite de ${maxKits} unidades en total para esta sucursal (ya se vendieron ${soldCount} y tienes ${nextQuantity} en el carrito).`
+          );
         }
         return;
       }
@@ -196,24 +277,39 @@ const useSalesCart = ({
       if (!isSameCartItem(item, selectedProduct)) return item;
       return updateCartItemQuantity({ item, quantity: nextQuantity });
     });
-    const nextSelected = nextProducts.find((item) => isSameCartItem(item, selectedProduct)) || null;
+    const nextSelected =
+      nextProducts.find((item) => isSameCartItem(item, selectedProduct)) ||
+      null;
     commitCart(nextProducts, nextSelected);
-  }, [commitCart, productosRef, selectedProduct, showAppWarning, branchId, updateCartItemQuantity]);
+  }, [
+    commitCart,
+    productosRef,
+    selectedProduct,
+    showAppWarning,
+    branchId,
+    updateCartItemQuantity,
+  ]);
 
   const decreaseSelectedProductQuantity = useCallback(() => {
     if (!selectedProduct) return;
     if (isRewardCartItem(selectedProduct)) {
-      showAppWarning("No puedes modificar la cantidad de un producto aplicado como recompensa.");
+      showAppWarning(
+        "No puedes modificar la cantidad de un producto aplicado como recompensa."
+      );
       return;
     }
     const currentProducts = productosRef.current || [];
-    const currentProduct = currentProducts.find((item) => isSameCartItem(item, selectedProduct));
+    const currentProduct = currentProducts.find((item) =>
+      isSameCartItem(item, selectedProduct)
+    );
     if (!currentProduct) return;
 
     const currentQuantity = Number(currentProduct.cantidad || 0);
 
     if (currentQuantity <= 1) {
-      const nextProducts = currentProducts.filter((item) => !isSameCartItem(item, selectedProduct));
+      const nextProducts = currentProducts.filter(
+        (item) => !isSameCartItem(item, selectedProduct)
+      );
       commitCart(nextProducts, null);
       syncCurrentSaleRewardsWithCart?.(nextProducts);
       return;
@@ -224,17 +320,32 @@ const useSalesCart = ({
       if (!isSameCartItem(item, selectedProduct)) return item;
       return updateCartItemQuantity({ item, quantity: nextQuantity });
     });
-    const nextSelected = nextProducts.find((item) => isSameCartItem(item, selectedProduct)) || null;
+    const nextSelected =
+      nextProducts.find((item) => isSameCartItem(item, selectedProduct)) ||
+      null;
     commitCart(nextProducts, nextSelected);
-  }, [commitCart, productosRef, selectedProduct, showAppWarning, syncCurrentSaleRewardsWithCart]);
+  }, [
+    commitCart,
+    productosRef,
+    selectedProduct,
+    showAppWarning,
+    syncCurrentSaleRewardsWithCart,
+  ]);
 
   const handleDeleteSelectedProduct = useCallback(() => {
     if (!selectedProduct) return;
     const currentProducts = productosRef.current || [];
-    const nextProducts = currentProducts.filter((item) => !isSameCartItem(item, selectedProduct));
+    const nextProducts = currentProducts.filter(
+      (item) => !isSameCartItem(item, selectedProduct)
+    );
     commitCart(nextProducts, null);
     syncCurrentSaleRewardsWithCart?.(nextProducts);
-  }, [commitCart, productosRef, selectedProduct, syncCurrentSaleRewardsWithCart]);
+  }, [
+    commitCart,
+    productosRef,
+    selectedProduct,
+    syncCurrentSaleRewardsWithCart,
+  ]);
 
   return {
     addProductToCart,

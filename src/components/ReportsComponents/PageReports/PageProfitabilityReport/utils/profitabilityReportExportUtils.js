@@ -20,11 +20,12 @@ export const exportProfitabilityReportToExcel = async ({
 }) => {
   try {
     const hasData =
-      productsProfitability.length > 0 ||
-      departmentsProfitability.length > 0;
+      productsProfitability.length > 0 || departmentsProfitability.length > 0;
 
     if (!hasData) {
-      alert("No hay datos de rentabilidad disponibles para exportar con los filtros seleccionados.");
+      alert(
+        "No hay datos de rentabilidad disponibles para exportar con los filtros seleccionados."
+      );
       return;
     }
 
@@ -62,7 +63,11 @@ export const exportProfitabilityReportToExcel = async ({
     const title1 = wsProducts.getCell("A1");
     title1.value = "CROKETS POS - REPORTE DE RENTABILIDAD POR PRODUCTO";
     title1.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    title1.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     title1.alignment = { horizontal: "center", vertical: "middle" };
     wsProducts.getRow(1).height = 30;
 
@@ -77,7 +82,11 @@ export const exportProfitabilityReportToExcel = async ({
 
     // Resumen de KPIs
     wsProducts.addRow(["RESUMEN DE RENTABILIDAD"]);
-    wsProducts.getRow(4).font = { bold: true, size: 11, color: { argb: "FF1E293B" } };
+    wsProducts.getRow(4).font = {
+      bold: true,
+      size: 11,
+      color: { argb: "FF1E293B" },
+    };
 
     wsProducts.addRow([
       "Venta Neta (Ingresos):",
@@ -119,7 +128,11 @@ export const exportProfitabilityReportToExcel = async ({
     prodHeaderRow.height = 24;
 
     prodHeaderRow.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1E293B" },
+      };
       cell.alignment = { vertical: "middle", horizontal: "center" };
       cell.border = {
         top: { style: "thin", color: { argb: "FFE2E8F0" } },
@@ -195,7 +208,11 @@ export const exportProfitabilityReportToExcel = async ({
     const title2 = wsDept.getCell("A1");
     title2.value = "CROKETS POS - RENTABILIDAD POR DEPARTAMENTO";
     title2.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0284C7" } };
+    title2.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0284C7" },
+    };
     title2.alignment = { horizontal: "center", vertical: "middle" };
     wsDept.getRow(1).height = 30;
 
@@ -223,7 +240,11 @@ export const exportProfitabilityReportToExcel = async ({
     deptHeaderRow.height = 24;
 
     deptHeaderRow.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0369A1" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0369A1" },
+      };
       cell.alignment = { vertical: "middle", horizontal: "center" };
     });
 
@@ -264,9 +285,14 @@ export const exportProfitabilityReportToExcel = async ({
 
     wsCritical.mergeCells("A1:G1");
     const title3 = wsCritical.getCell("A1");
-    title3.value = "CROKETS POS - PRODUCTOS CON MARGEN CRÍTICO (< 15% O PÉRDIDA)";
+    title3.value =
+      "CROKETS POS - PRODUCTOS CON MARGEN CRÍTICO (< 15% O PÉRDIDA)";
     title3.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    title3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDC2626" } };
+    title3.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFDC2626" },
+    };
     title3.alignment = { horizontal: "center", vertical: "middle" };
     wsCritical.getRow(1).height = 30;
 
@@ -294,14 +320,25 @@ export const exportProfitabilityReportToExcel = async ({
     critHeaderRow.height = 24;
 
     critHeaderRow.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF991B1B" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF991B1B" },
+      };
       cell.alignment = { vertical: "middle", horizontal: "center" };
     });
 
     for (const c of criticalProducts) {
       const row = wsCritical.addRow([
         c.barcode || "S/C",
-        c.productName + (c.isPureReward ? " (Promoción / Regalo)" : c.hasPartialReward ? ` (Incluye ${c.redeemedUnits} en promo/regalo)` : c.isKit ? " (Kit)" : ""),
+        c.productName +
+          (c.isPureReward
+            ? " (Promoción / Regalo)"
+            : c.hasPartialReward
+              ? ` (Incluye ${c.redeemedUnits} en promo/regalo)`
+              : c.isKit
+                ? " (Kit)"
+                : ""),
         c.departmentName || "Sin Departamento",
         c.totalUnits,
         c.totalRevenue,

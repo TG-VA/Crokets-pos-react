@@ -32,9 +32,7 @@ const SalesTopActions = ({
 
   const handleOpenDeleteItem = () => {
     if (!selectedProduct) {
-      showAppWarning(
-        "Por favor, selecciona un producto primero",
-      );
+      showAppWarning("Por favor, selecciona un producto primero");
       return;
     }
 
@@ -43,107 +41,57 @@ const SalesTopActions = ({
 
   return (
     <div className={styles.topActionBar}>
-      <div
-        className={styles.horizontalActionButton}
-        onClick={onOpenSearch}
-      >
-        <span className={styles.actionKey}>
-          F10
-        </span>
+      <div className={styles.horizontalActionButton} onClick={onOpenSearch}>
+        <span className={styles.actionKey}>F10</span>
 
-        <img
-          src={searchIcon}
-          alt="Buscar"
-          className={styles.buttonIcon}
-        />
+        <img src={searchIcon} alt="Buscar" className={styles.buttonIcon} />
 
-        <span className={styles.actionText}>
-          Buscar
-        </span>
+        <span className={styles.actionText}>Buscar</span>
       </div>
 
       <div
         className={`${styles.horizontalActionButton} ${
-          shiftAlreadyCut
-            ? styles.actionButtonDisabled
-            : ""
+          shiftAlreadyCut ? styles.actionButtonDisabled : ""
         }`}
         onClick={handleOpenEntry}
       >
-        <span className={styles.actionKey}>
-          F7
-        </span>
+        <span className={styles.actionKey}>F7</span>
 
-        <img
-          src={entryIcon}
-          alt="Entradas"
-          className={styles.buttonIcon}
-        />
+        <img src={entryIcon} alt="Entradas" className={styles.buttonIcon} />
 
-        <span className={styles.actionText}>
-          Entradas
-        </span>
+        <span className={styles.actionText}>Entradas</span>
       </div>
 
       <div
         className={`${styles.horizontalActionButton} ${
-          shiftAlreadyCut
-            ? styles.actionButtonDisabled
-            : ""
+          shiftAlreadyCut ? styles.actionButtonDisabled : ""
         }`}
         onClick={onOpenExit}
       >
-        <span className={styles.actionKey}>
-          F8
-        </span>
+        <span className={styles.actionKey}>F8</span>
 
-        <img
-          src={exitIcon}
-          alt="Salidas"
-          className={styles.buttonIcon}
-        />
+        <img src={exitIcon} alt="Salidas" className={styles.buttonIcon} />
 
-        <span className={styles.actionText}>
-          Salidas
-        </span>
+        <span className={styles.actionText}>Salidas</span>
       </div>
 
       <div
         className={styles.horizontalActionButton}
         onClick={handleOpenDeleteItem}
       >
-        <span className={styles.actionKey}>
-          DEL
-        </span>
+        <span className={styles.actionKey}>DEL</span>
 
-        <img
-          src={deleteIcon}
-          alt="Borrar"
-          className={styles.buttonIcon}
-        />
+        <img src={deleteIcon} alt="Borrar" className={styles.buttonIcon} />
 
-        <span className={styles.actionText}>
-          Borrar Art.
-        </span>
+        <span className={styles.actionText}>Borrar Art.</span>
       </div>
 
-      <div
-        className={styles.horizontalActionButton}
-        onClick={onOpenVerifier}
-      >
-        <span className={styles.actionKey}>
-          F9
-        </span>
+      <div className={styles.horizontalActionButton} onClick={onOpenVerifier}>
+        <span className={styles.actionKey}>F9</span>
 
-        <img
-          src={verifyIcon}
-          alt="Verificador"
-          className={styles.buttonIcon}
-        />
+        <img src={verifyIcon} alt="Verificador" className={styles.buttonIcon} />
 
-        <span className={styles.actionText}>
-          Verificador
-        </span>
+        <span className={styles.actionText}>Verificador</span>
       </div>
     </div>
   );

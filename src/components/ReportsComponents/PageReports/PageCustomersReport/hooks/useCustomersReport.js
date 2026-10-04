@@ -4,7 +4,9 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { fetchCustomersReportData } from "../services/customersReportService";
+import { loadCustomersReport } from "../services/customersReportService";
+import { useDidChange } from "../../../../../hooks/useDidChange";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 export const useCustomersReport = (initialBranchId = "ALL") => {
   const [branchId, setBranchId] = useState(initialBranchId);
@@ -34,40 +36,70 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
     salesCount: 0,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [syncedAt, setSyncedAt] = useState(null);
 
-  // Sincronizar branchId si cambia desde fuera
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setIsLoading(true) sincrono, que provocaba un re-render en cascada.
+  const requestKey = useMemo(
+    () => `${branchId}|${customerType}`,
+    [branchId, customerType]
+  );
+  const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? null : error;
+
+  // Sincronizar branchId si cambia desde fuera. Se ajusta durante el render
+  // para no encadenar un re-render adicional desde un efecto.
+  if (useDidChange(initialBranchId) && initialBranchId) {
+    setBranchId(initialBranchId);
+  }
+
+  const loadData = useCallback(
+    () =>
+      loadCustomersReport(
+        { branchId, customerType },
+        {
+          onData: (data) => {
+            setReportData(data);
+            setError(null);
+            setSyncedAt(new Date().toISOString());
+          },
+          onError: setError,
+          onSettled: markSettled,
+        }
+      ),
+    [branchId, customerType, markSettled]
+  );
+
   useEffect(() => {
-    if (initialBranchId) {
-      setBranchId(initialBranchId);
-    }
-  }, [initialBranchId]);
+    let cancelled = false;
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    loadCustomersReport(
+      { branchId, customerType },
+      {
+        onData: (data) => {
+          if (cancelled) return;
+          setReportData(data);
+          setError(null);
+          setSyncedAt(new Date().toISOString());
+        },
+        onError: (message) => {
+          if (cancelled) return;
+          setError(message);
+        },
+        onSettled: () => {
+          if (cancelled) return;
+          markSettled();
+        },
+      }
+    );
 
-    try {
-      const data = await fetchCustomersReportData({
-        branchId,
-        customerType,
-      });
-
-      setReportData(data);
-      setSyncedAt(new Date().toISOString());
-    } catch (err) {
-      console.error("Error al cargar reporte de clientes:", err);
-      setError("No se pudieron cargar los datos del reporte de clientes.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [branchId, customerType]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId, customerType, markSettled]);
 
   // Manejo de ordenamiento
   const handleSort = useCallback((columnKey) => {
@@ -143,7 +175,13 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
       }
       return valB - valA;
     });
-  }, [reportData.rankedCustomers, searchTerm, riskFilter, sortBy, sortDirection]);
+  }, [
+    reportData.rankedCustomers,
+    searchTerm,
+    riskFilter,
+    sortBy,
+    sortDirection,
+  ]);
 
   // Productos filtrados por búsqueda
   const filteredTopProducts = useMemo(() => {
@@ -203,9 +241,8 @@ export const useCustomersReport = (initialBranchId = "ALL") => {
     filteredRedemptions,
     kpis: reportData.kpis,
     isLoading,
-    error,
+    error: visibleError,
     syncedAt,
     refresh: loadData,
   };
 };
-

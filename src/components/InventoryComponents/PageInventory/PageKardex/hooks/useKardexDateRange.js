@@ -1,103 +1,56 @@
-import {
-  useCallback,
-  useState,
-} from "react";
+import { useCallback, useState } from "react";
 
-import {
-  validateKardexDateRange,
-} from "../services/kardexService";
+import { validateKardexDateRange } from "../services/kardexService";
 
 const useKardexDateRange = () => {
-  const [
-    draftDateFrom,
-    setDraftDateFrom,
-  ] = useState("");
+  const [draftDateFrom, setDraftDateFrom] = useState("");
 
-  const [
-    draftDateTo,
-    setDraftDateTo,
-  ] = useState("");
+  const [draftDateTo, setDraftDateTo] = useState("");
 
-  const [
-    appliedDateFrom,
-    setAppliedDateFrom,
-  ] = useState("");
+  const [appliedDateFrom, setAppliedDateFrom] = useState("");
 
-  const [
-    appliedDateTo,
-    setAppliedDateTo,
-  ] = useState("");
+  const [appliedDateTo, setAppliedDateTo] = useState("");
 
-  const [
-    dateFilterError,
-    setDateFilterError,
-  ] = useState("");
+  const [dateFilterError, setDateFilterError] = useState("");
 
-  const [
-    filterVersion,
-    setFilterVersion,
-  ] = useState(0);
+  const [filterVersion, setFilterVersion] = useState(0);
 
-  const applyDateFilter =
-    useCallback(() => {
-      const validation =
-        validateKardexDateRange({
-          dateFrom:
-            draftDateFrom,
-          dateTo:
-            draftDateTo,
-        });
+  const applyDateFilter = useCallback(() => {
+    const validation = validateKardexDateRange({
+      dateFrom: draftDateFrom,
+      dateTo: draftDateTo,
+    });
 
-      if (!validation.valid) {
-        setDateFilterError(
-          validation.message
-        );
+    if (!validation.valid) {
+      setDateFilterError(validation.message);
 
-        return false;
-      }
+      return false;
+    }
 
-      setDateFilterError("");
+    setDateFilterError("");
 
-      setAppliedDateFrom(
-        draftDateFrom
-      );
+    setAppliedDateFrom(draftDateFrom);
 
-      setAppliedDateTo(
-        draftDateTo
-      );
+    setAppliedDateTo(draftDateTo);
 
-      setFilterVersion(
-        (currentVersion) =>
-          currentVersion + 1
-      );
+    setFilterVersion((currentVersion) => currentVersion + 1);
 
-      return true;
-    }, [
-      draftDateFrom,
-      draftDateTo,
-    ]);
+    return true;
+  }, [draftDateFrom, draftDateTo]);
 
-  const clearDateFilter =
-    useCallback(() => {
-      setDraftDateFrom("");
-      setDraftDateTo("");
+  const clearDateFilter = useCallback(() => {
+    setDraftDateFrom("");
+    setDraftDateTo("");
 
-      setAppliedDateFrom("");
-      setAppliedDateTo("");
+    setAppliedDateFrom("");
+    setAppliedDateTo("");
 
-      setDateFilterError("");
+    setDateFilterError("");
 
-      setFilterVersion(
-        (currentVersion) =>
-          currentVersion + 1
-      );
-    }, []);
+    setFilterVersion((currentVersion) => currentVersion + 1);
+  }, []);
 
-  const isDateFilterActive =
-    Boolean(
-      appliedDateFrom ||
-      appliedDateTo
-    );
+  const isDateFilterActive = Boolean(appliedDateFrom || appliedDateTo);
 
   return {
     draftDateFrom,

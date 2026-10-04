@@ -5,7 +5,10 @@
 
 import React, { useState, useEffect } from "react";
 import styles from "./CustomersComponents.module.css";
-import { formatCurrency, formatNumber } from "../utils/customersReportFormatters";
+import {
+  formatCurrency,
+  formatNumber,
+} from "../utils/customersReportFormatters";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
 import ProductBuyersModal from "./ProductBuyersModal";
@@ -13,7 +16,8 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../../components/PaginationBar/PaginationBar";
 
 const CustomersProductsSummaryTable = ({ products = [] }) => {
-  const [selectedProductForBuyers, setSelectedProductForBuyers] = useState(null);
+  const [selectedProductForBuyers, setSelectedProductForBuyers] =
+    useState(null);
 
   const {
     currentPage,
@@ -42,9 +46,12 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
     <div className={styles.tableCard}>
       <div className={styles.tableCardHeader}>
         <div className={styles.tableCardTitleGroup}>
-          <span className={styles.tableCardTitle}>Productos Más Comprados por Clientes</span>
+          <span className={styles.tableCardTitle}>
+            Productos Más Comprados por Clientes
+          </span>
           <span className={styles.tableCardSubtitle}>
-            Preferencia y consumo histórico de artículos ({totalItems} productos registrados)
+            Preferencia y consumo histórico de artículos ({totalItems} productos
+            registrados)
           </span>
         </div>
       </div>
@@ -57,7 +64,8 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
             </div>
             <h3 className={styles.emptyTitle}>No hay datos de productos</h3>
             <p className={styles.emptyDescription}>
-              No se registraron ventas con detalle de productos a clientes identificados.
+              No se registraron ventas con detalle de productos a clientes
+              identificados.
             </p>
           </div>
         ) : (
@@ -67,7 +75,12 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
                 <th>Código</th>
                 <th>Producto</th>
                 <th className={styles.alignCenter}>Unidades Vendidas</th>
-                <th className={styles.alignCenter} title="Número de tickets en los que se vendió">Veces Vendido</th>
+                <th
+                  className={styles.alignCenter}
+                  title="Número de tickets en los que se vendió"
+                >
+                  Veces Vendido
+                </th>
                 <th className={styles.alignRight}>Ingreso Acumulado</th>
                 <th className={styles.alignCenter}>Clientes Únicos</th>
                 <th className={styles.alignRight}>Promedio por Cliente</th>
@@ -82,11 +95,19 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
 
                 return (
                   <tr key={p.productId}>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#64748b" }}>
+                    <td
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: "0.8rem",
+                        color: "#64748b",
+                      }}
+                    >
                       {p.barcode || "S/C"}
                     </td>
                     <td>
-                      <span className={styles.cellPrimaryValue}>{p.productName}</span>
+                      <span className={styles.cellPrimaryValue}>
+                        {p.productName}
+                      </span>
                     </td>
                     <td className={styles.alignCenter}>
                       <span className={styles.cellPrimaryValue}>
@@ -97,7 +118,13 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
                       <span className={styles.cellPrimaryValue}>
                         {formatNumber(p.ticketsCount || 0)}
                       </span>
-                      <span style={{ fontSize: "0.75rem", color: "#64748b", marginLeft: 4 }}>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#64748b",
+                          marginLeft: 4,
+                        }}
+                      >
                         {(p.ticketsCount || 0) === 1 ? "ticket" : "tickets"}
                       </span>
                     </td>
@@ -121,7 +148,9 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
                           />
                           <span>
                             {formatNumber(p.uniqueCustomersCount)}{" "}
-                            {p.uniqueCustomersCount === 1 ? "cliente" : "clientes"}
+                            {p.uniqueCustomersCount === 1
+                              ? "cliente"
+                              : "clientes"}
                           </span>
                         </button>
                       ) : (
@@ -129,7 +158,6 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
                           0 clientes
                         </span>
                       )}
-
                     </td>
 
                     <td className={styles.alignRight}>
@@ -167,10 +195,8 @@ const CustomersProductsSummaryTable = ({ products = [] }) => {
         onClose={() => setSelectedProductForBuyers(null)}
         product={selectedProductForBuyers}
       />
-
     </div>
   );
 };
 
 export default CustomersProductsSummaryTable;
-

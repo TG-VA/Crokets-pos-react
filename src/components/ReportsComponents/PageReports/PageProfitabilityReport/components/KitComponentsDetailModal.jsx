@@ -6,7 +6,11 @@
 import React from "react";
 import styles from "./KitComponentsDetailModal.module.css";
 import useEscapeKey from "../hooks/useEscapeKey";
-import { formatCurrency, formatNumber, formatPercent } from "../utils/profitabilityReportFormatters";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+} from "../utils/profitabilityReportFormatters";
 
 import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import boxesIcon from "../../../../../assets/icons/boxes-stacked-solid-full.svg";
@@ -40,7 +44,8 @@ export const KitComponentsDetailModal = ({
             <div>
               <h3 className={styles.modalTitle}>{kitProduct.productName}</h3>
               <p className={styles.modalSubtitle}>
-                Código: {kitProduct.barcode || "S/C"} · Desglose de componentes del kit
+                Código: {kitProduct.barcode || "S/C"} · Desglose de componentes
+                del kit
               </p>
             </div>
           </div>

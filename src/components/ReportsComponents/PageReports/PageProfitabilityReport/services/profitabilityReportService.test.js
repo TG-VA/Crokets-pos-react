@@ -74,4 +74,42 @@ describe("profitabilityReportService (concurrencia acotada)", () => {
     expect(maxActive).toBe(4);
     expect(result.totalSalesCount).toBe(450);
   });
+
+  it("selecciona cost_price de sale_details para leer el costo congelado", async () => {
+    const sales = makeSales(1);
+    const tableData = {
+      departments: [{ id: "d1", name: "Alimentos" }],
+      products: [],
+      product_kits: [],
+      branch_inventory: [],
+      sales,
+    };
+    let selectedColumns = null;
+
+    supabase.from.mockImplementation((table) => {
+      if (table === "sale_details") {
+        const q = {};
+        q.select = vi.fn((columns) => {
+          selectedColumns = columns;
+          return q;
+        });
+        q.in = vi.fn(() => q);
+        q.limit = vi.fn(() => Promise.resolve({ data: [], error: null }));
+        return q;
+      }
+
+      return thenable({ data: tableData[table] ?? [], error: null });
+    });
+
+    await fetchProfitabilityReportData({ branchId: "ALL" });
+
+    // El snapshot vive en sale_details.cost_price. Sin esta columna el calculo
+    // solo veria el costo vivo y el margen historico seria reescribible.
+    expect(selectedColumns).not.toBeNull();
+    expect(selectedColumns).toMatch(/^\s*id,/);
+    expect(selectedColumns).toMatch(/\bcost_price,/);
+    expect(selectedColumns).toMatch(/total_price,/);
+    // La columna del catalogo anidado se conserva para el fallback sin snapshot.
+    expect(selectedColumns).toMatch(/products:product_id/);
+  });
 });

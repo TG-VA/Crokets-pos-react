@@ -67,4 +67,3 @@ export const formatCommissionRule = (type, value) => {
   }
   return `${formatCurrency(num)} / pz`;
 };
-

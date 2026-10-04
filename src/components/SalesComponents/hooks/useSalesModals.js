@@ -15,9 +15,10 @@ const useSalesModals = () => {
   const [isDeleteItemModalOpen, setDeleteItemModalOpen] = useState(false);
   const [isSalesHistoryModalOpen, setSalesHistoryModalOpen] = useState(false);
   const [saleSuccessData, setSaleSuccessData] = useState(null);
-  
+
   const [isRewardProductModalOpen, setRewardProductModalOpen] = useState(false);
-  const [isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen] = useState(false);
+  const [isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen] =
+    useState(false);
 
   const handleCloseExitModal = useCallback(() => {
     setExitModalOpen(false);
@@ -33,22 +34,41 @@ const useSalesModals = () => {
   }, []);
 
   return {
-    isExitModalOpen, setExitModalOpen, handleCloseExitModal,
-    isExitAuthModalOpen, setExitAuthModalOpen, handleExitAuthorized, handleCloseExitAuth,
-    isEntryModalOpen, setEntryModalOpen,
-    showPaymentModal, setShowPaymentModal,
-    isClientModalOpen, setClientModalOpen,
-    isVerifierModalOpen, setVerifierModalOpen,
-    isSearchModalOpen, setSearchModalOpen,
-    isDiscountModalOpen, setDiscountModalOpen,
-    isPendingModalOpen, setPendingModalOpen,
-    isChangeModalOpen, setChangeModalOpen,
-    isDeleteModalOpen, setDeleteModalOpen,
-    isDeleteItemModalOpen, setDeleteItemModalOpen,
-    isSalesHistoryModalOpen, setSalesHistoryModalOpen,
-    saleSuccessData, setSaleSuccessData,
-    isRewardProductModalOpen, setRewardProductModalOpen,
-    isProductDiscountRewardModalOpen, setProductDiscountRewardModalOpen,
+    isExitModalOpen,
+    setExitModalOpen,
+    handleCloseExitModal,
+    isExitAuthModalOpen,
+    setExitAuthModalOpen,
+    handleExitAuthorized,
+    handleCloseExitAuth,
+    isEntryModalOpen,
+    setEntryModalOpen,
+    showPaymentModal,
+    setShowPaymentModal,
+    isClientModalOpen,
+    setClientModalOpen,
+    isVerifierModalOpen,
+    setVerifierModalOpen,
+    isSearchModalOpen,
+    setSearchModalOpen,
+    isDiscountModalOpen,
+    setDiscountModalOpen,
+    isPendingModalOpen,
+    setPendingModalOpen,
+    isChangeModalOpen,
+    setChangeModalOpen,
+    isDeleteModalOpen,
+    setDeleteModalOpen,
+    isDeleteItemModalOpen,
+    setDeleteItemModalOpen,
+    isSalesHistoryModalOpen,
+    setSalesHistoryModalOpen,
+    saleSuccessData,
+    setSaleSuccessData,
+    isRewardProductModalOpen,
+    setRewardProductModalOpen,
+    isProductDiscountRewardModalOpen,
+    setProductDiscountRewardModalOpen,
   };
 };
 

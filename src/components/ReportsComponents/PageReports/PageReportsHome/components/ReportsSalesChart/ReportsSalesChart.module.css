@@ -144,11 +144,7 @@
   width: 100%;
   height: 100%;
 
-  background: linear-gradient(
-    180deg,
-    #1aa6c5 0%,
-    #1092b1 100%
-  );
+  background: linear-gradient(180deg, #1aa6c5 0%, #1092b1 100%);
 
   border-radius: 8px 8px 2px 2px;
 
@@ -369,12 +365,7 @@
   width: min(54px, 74%);
   min-height: 8px;
 
-  background: linear-gradient(
-    90deg,
-    #edf0f2 25%,
-    #f7f8f9 50%,
-    #edf0f2 75%
-  );
+  background: linear-gradient(90deg, #edf0f2 25%, #f7f8f9 50%, #edf0f2 75%);
 
   background-size: 200% 100%;
   border-radius: 8px 8px 2px 2px;

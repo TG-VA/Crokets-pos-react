@@ -54,7 +54,10 @@
   min-width: 150px;
   height: 36px;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .selectInput:focus,
@@ -135,7 +138,9 @@
   flex-direction: column;
   gap: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kpiCard:hover {
@@ -209,7 +214,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
   position: relative;
 }
 
@@ -325,7 +332,9 @@
 .dataTable thSortable {
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .dataTable thSortable:hover {
@@ -468,11 +477,9 @@
   box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
 }
 
-
 .clickableBadge:hover img {
   filter: brightness(0) invert(1);
 }
-
 
 .customerNameCell {
   display: flex;
@@ -559,7 +566,9 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .btnExport:hover {
@@ -645,7 +654,9 @@
 .modalContainer {
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 920px;
   height: 85vh;
@@ -716,7 +727,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .modalCloseBtn:hover {
@@ -1022,7 +1035,6 @@
   display: flex;
   flex-direction: column;
 }
-
 
 .modalFooter {
   padding: 12px 22px;

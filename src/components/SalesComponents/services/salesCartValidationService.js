@@ -15,13 +15,19 @@ export const validateProductForCart = async ({
     const stock = Number(kitAvailability?.availableStock || 0);
 
     if (!kitAvailability?.isValid || stock <= 0) {
-      return { 
-        isValid: false, 
-        message: kitAvailability?.message || "Este kit no tiene inventario suficiente en sus componentes." 
+      return {
+        isValid: false,
+        message:
+          kitAvailability?.message ||
+          "Este kit no tiene inventario suficiente en sus componentes.",
       };
     }
-    return { 
-      isValid: true, stock, salePrice: product.sale_price, costPrice: product.cost_price, tracksInventory: true 
+    return {
+      isValid: true,
+      stock,
+      salePrice: product.sale_price,
+      costPrice: product.cost_price,
+      tracksInventory: true,
     };
   }
 
@@ -30,31 +36,42 @@ export const validateProductForCart = async ({
     const inventoryRow = await getBranchInventoryRow(product.id);
 
     if (!inventoryRow || inventoryRow.is_active === false) {
-      return { isValid: false, message: "Este producto no está activo en el inventario de esta sucursal." };
+      return {
+        isValid: false,
+        message:
+          "Este producto no está activo en el inventario de esta sucursal.",
+      };
     }
 
     const stock = Number(inventoryRow.stock || 0);
     const hasBeenStocked = Boolean(inventoryRow.has_been_stocked);
 
     if (!hasBeenStocked && stock <= 0) {
-      return { isValid: false, message: "Este producto aún no tiene inventario inicial registrado." };
+      return {
+        isValid: false,
+        message: "Este producto aún no tiene inventario inicial registrado.",
+      };
     }
 
     if (stock <= 0) {
       return { isValid: false, message: "No hay existencia disponible." };
     }
 
-    return { 
-      isValid: true, 
-      stock, 
-      salePrice: inventoryRow.sale_price ?? product.sale_price, 
-      costPrice: inventoryRow.cost_price ?? product.cost_price, 
-      tracksInventory: true 
+    return {
+      isValid: true,
+      stock,
+      salePrice: inventoryRow.sale_price ?? product.sale_price,
+      costPrice: inventoryRow.cost_price ?? product.cost_price,
+      tracksInventory: true,
     };
   }
 
   // 3. REGLAS PARA PRODUCTOS SIN INVENTARIO (Servicios, genéricos, etc.)
-  return { 
-    isValid: true, stock: null, salePrice: product.sale_price, costPrice: product.cost_price, tracksInventory: false 
+  return {
+    isValid: true,
+    stock: null,
+    salePrice: product.sale_price,
+    costPrice: product.cost_price,
+    tracksInventory: false,
   };
 };

@@ -90,13 +90,15 @@ const NavbarCustomers = () => {
 
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select(`
+      .select(
+        `
         id,
         status,
         roles (
           name
         )
-      `)
+      `
+      )
       .eq("id", authUser.id)
       .maybeSingle();
 

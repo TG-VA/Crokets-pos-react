@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import { useDidChange } from "../../../../../hooks/useDidChange";
 
 export const useDepartments = () => {
   const { departments, addDepartment, updateDepartment } = useProducts();
-  const { appModal, closeAppModal, showAppAlert, showAppConfirm } = useAppModal();
+  const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
+    useAppModal();
 
   const [selectedId, setSelectedId] = useState("new");
   const [saving, setSaving] = useState(false);
@@ -40,7 +42,13 @@ export const useDepartments = () => {
     });
   }, [departments]);
 
-  useEffect(() => {
+  // El formulario se puebla desde la seleccion. Se resuelve durante el render
+  // para no disparar un setState sincrono desde un efecto. La clave combina la
+  // seleccion con el departamento resuelto, de modo que recrear el arreglo de
+  // departamentos no vuelve a vaciar lo que el usuario ya esta escribiendo.
+  const selectionKey = `${selectedId}|${selectedDept?.id || ""}`;
+
+  if (useDidChange(selectionKey)) {
     if (selectedId === "new") {
       setFormData({
         name: "",
@@ -49,21 +57,22 @@ export const useDepartments = () => {
         commission_type: "percent",
         commission_value: "",
       });
-      return;
-    }
-
-    if (selectedDept) {
+    } else if (selectedDept) {
       setFormData({
         name: selectedDept.name || "",
         status: selectedDept.status !== false,
         commission_enabled: !!selectedDept.commission_enabled,
         commission_type: selectedDept.commission_type || "percent",
-        commission_value: selectedDept.commission_value !== undefined && selectedDept.commission_value !== null ? selectedDept.commission_value.toString() : "",
+        commission_value:
+          selectedDept.commission_value !== undefined &&
+          selectedDept.commission_value !== null
+            ? selectedDept.commission_value.toString()
+            : "",
       });
     } else {
       setSelectedId("new");
     }
-  }, [selectedId, selectedDept]);
+  }
 
   const handleCreate = () => setSelectedId("new");
   const handleSelect = (id) => setSelectedId(id);
@@ -100,11 +109,15 @@ export const useDepartments = () => {
       return;
     }
 
-    if (formData.commission_enabled && (!formData.commission_value || parseFloat(formData.commission_value) < 0)) {
+    if (
+      formData.commission_enabled &&
+      (!formData.commission_value || parseFloat(formData.commission_value) < 0)
+    ) {
       showAppAlert({
         type: "warning",
         title: "Comisión inválida",
-        message: "Por favor, captura un valor de comisión válido (no negativo).",
+        message:
+          "Por favor, captura un valor de comisión válido (no negativo).",
       });
       return;
     }
@@ -162,7 +175,10 @@ export const useDepartments = () => {
           });
 
           if (!result?.success) {
-            console.error("Error al actualizar el departamento:", result?.error);
+            console.error(
+              "Error al actualizar el departamento:",
+              result?.error
+            );
             showAppAlert({
               type: "danger",
               title: "No se pudo actualizar",
@@ -183,24 +199,28 @@ export const useDepartments = () => {
           showAppAlert({
             type: "danger",
             title: "Error de red",
-            message: "Ocurrió un error al intentar comunicarse con el servidor.",
+            message:
+              "Ocurrió un error al intentar comunicarse con el servidor.",
           });
         } finally {
           setSaving(false);
         }
       };
 
-      const hasCommissionChanged = selectedDept && (
-        !!selectedDept.commission_enabled !== !!formData.commission_enabled ||
-        (selectedDept.commission_type || "percent") !== formData.commission_type ||
-        Number(selectedDept.commission_value || 0) !== (parseFloat(formData.commission_value) || 0)
-      );
+      const hasCommissionChanged =
+        selectedDept &&
+        (!!selectedDept.commission_enabled !== !!formData.commission_enabled ||
+          (selectedDept.commission_type || "percent") !==
+            formData.commission_type ||
+          Number(selectedDept.commission_value || 0) !==
+            (parseFloat(formData.commission_value) || 0));
 
       if (hasCommissionChanged) {
         showAppConfirm({
           type: "info",
           title: "Actualizar comisión de productos",
-          message: "¿Deseas aplicar los cambios de comisión de este departamento a todos los productos que pertenecen a él? Ten en cuenta que esto sobrescribirá cualquier comisión individual que tengan configurada.",
+          message:
+            "¿Deseas aplicar los cambios de comisión de este departamento a todos los productos que pertenecen a él? Ten en cuenta que esto sobrescribirá cualquier comisión individual que tengan configurada.",
           confirmText: "Sí, aplicar a productos",
           cancelText: "No, solo guardar departamento",
           onConfirm: () => saveData(true),
@@ -225,7 +245,10 @@ export const useDepartments = () => {
       });
 
       if (!result?.success) {
-        console.error("Error al cambiar el estatus del departamento:", result?.error);
+        console.error(
+          "Error al cambiar el estatus del departamento:",
+          result?.error
+        );
         showAppAlert({
           type: "danger",
           title: "No se pudo cambiar el estatus",
@@ -238,7 +261,9 @@ export const useDepartments = () => {
 
       showAppAlert({
         type: "success",
-        title: nextStatus ? "Departamento activado" : "Departamento desactivado",
+        title: nextStatus
+          ? "Departamento activado"
+          : "Departamento desactivado",
         message: nextStatus
           ? "Departamento activado correctamente."
           : "Departamento desactivado correctamente.",

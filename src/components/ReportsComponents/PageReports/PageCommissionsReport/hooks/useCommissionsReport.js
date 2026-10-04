@@ -8,8 +8,19 @@ import {
   getBranchesList,
   getCashiersList,
   getDepartmentsList,
-  fetchCommissionsData,
+  loadCommissionsReport,
 } from "../services/commissionsReportService";
+import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
+
+// El rango se acota a los extremos del día, como antes de extraer la orquestacion
+// de la carga al servicio.
+const toIsoRange = (startDate, endDate) => {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return { startDateIso: start.toISOString(), endDateIso: end.toISOString() };
+};
 import {
   aggregateCashierCommissions,
   aggregateProductCommissions,
@@ -42,7 +53,6 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
 
   // Datos
   const [rawData, setRawData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
@@ -69,7 +79,10 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
           setDepartmentsList(depts);
         }
       } catch (err) {
-        console.error("Error al cargar catálogos en useCommissionsReport:", err);
+        console.error(
+          "Error al cargar catálogos en useCommissionsReport:",
+          err
+        );
       }
     };
     loadCatalogs();
@@ -144,40 +157,98 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     setDateRange(update);
   }, []);
 
+  // La carga se deriva de la clave pedida en lugar de marcarse con un
+  // setIsLoading(true) sincrono, que provocaba un re-render en cascada.
+  const requestKey = useMemo(
+    () =>
+      `${startDate}|${endDate}|${selectedBranchId}|${selectedCashierId}|${selectedDepartmentId}`,
+    [
+      startDate,
+      endDate,
+      selectedBranchId,
+      selectedCashierId,
+      selectedDepartmentId,
+    ]
+  );
+  const { isLoading, isStale, markSettled } = useRequestStatus(requestKey);
+
+  // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
+  const visibleError = isStale ? null : error;
+
   // Carga de datos de ventas comisionables
-  const loadCommissions = useCallback(async () => {
-    if (!startDate || !endDate) return;
+  const loadCommissions = useCallback(
+    () =>
+      loadCommissionsReport(
+        {
+          startDateIso: toIsoRange(startDate, endDate).startDateIso,
+          endDateIso: toIsoRange(startDate, endDate).endDateIso,
+          branchId: selectedBranchId,
+          cashierId: selectedCashierId,
+          departmentId: selectedDepartmentId,
+        },
+        {
+          onData: (result) => {
+            setRawData(result.detailedRows || []);
+            setError(null);
+            setSyncedAt(new Date().toISOString());
+          },
+          onError: setError,
+          onSettled: markSettled,
+        }
+      ),
+    [
+      startDate,
+      endDate,
+      selectedBranchId,
+      selectedCashierId,
+      selectedDepartmentId,
+      markSettled,
+    ]
+  );
 
-    try {
-      setIsLoading(true);
-      setError(null);
+  useEffect(() => {
+    if (!startDate || !endDate) return undefined;
 
-      const startDateIso = new Date(startDate);
-      startDateIso.setHours(0, 0, 0, 0);
-      const endDateIso = new Date(endDate);
-      endDateIso.setHours(23, 59, 59, 999);
+    let cancelled = false;
+    const { startDateIso, endDateIso } = toIsoRange(startDate, endDate);
 
-      const result = await fetchCommissionsData({
-        startDateIso: startDateIso.toISOString(),
-        endDateIso: endDateIso.toISOString(),
+    loadCommissionsReport(
+      {
+        startDateIso,
+        endDateIso,
         branchId: selectedBranchId,
         cashierId: selectedCashierId,
         departmentId: selectedDepartmentId,
-      });
+      },
+      {
+        onData: (result) => {
+          if (cancelled) return;
+          setRawData(result.detailedRows || []);
+          setError(null);
+          setSyncedAt(new Date().toISOString());
+        },
+        onError: (message) => {
+          if (cancelled) return;
+          setError(message);
+        },
+        onSettled: () => {
+          if (cancelled) return;
+          markSettled();
+        },
+      }
+    );
 
-      setRawData(result.detailedRows || []);
-      setSyncedAt(new Date().toISOString());
-    } catch (err) {
-      console.error("Error al cargar comisiones:", err);
-      setError("No se pudieron cargar los datos de comisiones. Intenta de nuevo.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [startDate, endDate, selectedBranchId, selectedCashierId, selectedDepartmentId]);
-
-  useEffect(() => {
-    loadCommissions();
-  }, [loadCommissions]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    startDate,
+    endDate,
+    selectedBranchId,
+    selectedCashierId,
+    selectedDepartmentId,
+    markSettled,
+  ]);
 
   // Filtrado reactivo en memoria por descuento y término de búsqueda
   const filteredRows = useMemo(() => {
@@ -262,7 +333,8 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
       const branchName =
         selectedBranchId === "ALL"
           ? "Todas las sucursales"
-          : branchesList.find((b) => b.id === selectedBranchId)?.name || "Sucursal";
+          : branchesList.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal";
 
       await exportCommissionsReportToExcel({
         cashierSummaries,
@@ -307,7 +379,7 @@ export const useCommissionsReport = (initialBranchId = "ALL") => {
     productSummaries,
     kpis,
     isLoading,
-    error,
+    error: visibleError,
     syncedAt,
     isExporting,
     hasActiveFilters,

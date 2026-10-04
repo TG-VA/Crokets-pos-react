@@ -45,7 +45,9 @@ const DetailCashBalanceSection = ({ sessionDetail, isClosed }) => {
         <div className={`${styles.detailItem} ${styles.detailItemMuted}`}>
           <span className={styles.detailLabel}>Efectivo Contado</span>
           <span className={styles.detailValue}>
-            {isClosed ? formatCurrency(sessionDetail.closing_amount) : "Pendiente"}
+            {isClosed
+              ? formatCurrency(sessionDetail.closing_amount)
+              : "Pendiente"}
           </span>
         </div>
       </div>
