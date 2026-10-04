@@ -50,7 +50,7 @@ const useSendForm = ({
       }
     }
 
-    setDestinationBranchId(destinationOptions[0]?.id || "");
+    setDestinationBranchId(destinationOptions[0]?.id || ""); // eslint-disable-line react-hooks/set-state-in-effect -- default sincrono a primera sucursal destino cuando cambian options
   }, [destinationBranchId, destinationOptions]);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const useSendForm = ({
     });
 
     if (changed) {
-      setDraftItems(nextItems);
+      setDraftItems(nextItems); // eslint-disable-line react-hooks/set-state-in-effect -- sync actualizacion de stock disponible por item cuando cambia products[] o draftItems
     }
   }, [products, draftItems]);
 

@@ -20,7 +20,7 @@ const useReceiveForm = ({
 
   useEffect(() => {
     if (pendingReceiptOrders.length === 0) {
-      setSelectedReceiptOrderId("");
+      setSelectedReceiptOrderId(""); // eslint-disable-line react-hooks/set-state-in-effect -- reset sincrono de seleccion cuando la lista se vacía
       return;
     }
 
@@ -45,7 +45,7 @@ const useReceiveForm = ({
 
   useEffect(() => {
     if (!selectedReceiptOrderId || !selectedReceiptOrder) {
-      setReceiptQuantities({});
+      setReceiptQuantities({}); // eslint-disable-line react-hooks/set-state-in-effect -- reset sincrono de cantidades cuando no hay orden seleccionada
       return;
     }
 
