@@ -8,7 +8,12 @@ import { MemoryRouter, useLocation } from "react-router-dom";
   filtros lo devuelve a "ALL" sin tocar la sucursal operativa del cajero.
 */
 
-const { useBranch } = vi.hoisted(() => ({ useBranch: vi.fn() }));
+const { useBranch } = vi.hoisted(() => ({
+  useBranch: vi.fn(() => ({
+    branch: { id: "b9", name: "Merida" },
+    setBranch: vi.fn(),
+  })),
+}));
 
 vi.mock("../../../../contexts/BranchContext", () => ({ useBranch }));
 
@@ -71,6 +76,10 @@ const getBranchSelect = () => screen.getAllByRole("combobox")[0];
 describe("PageInventoryReport selector de sucursal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useBranch.mockReturnValue({
+      branch: { id: "b9", name: "Merida" },
+      setBranch: vi.fn(),
+    });
     fetchBranchesList.mockResolvedValue(BRANCHES);
     useInventoryReport.mockImplementation(() => stubInventoryReport());
   });

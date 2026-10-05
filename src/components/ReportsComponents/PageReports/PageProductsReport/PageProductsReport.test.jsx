@@ -7,7 +7,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
   operativa del cajero desde `BranchContext`.
 */
 
-const { useBranch } = vi.hoisted(() => ({ useBranch: vi.fn() }));
+const { useBranch } = vi.hoisted(() => ({
+  useBranch: vi.fn(() => ({
+    branch: { id: "b9", name: "Merida" },
+    setBranch: vi.fn(),
+  })),
+}));
 
 vi.mock("../../../../contexts/BranchContext", () => ({ useBranch }));
 
@@ -54,6 +59,10 @@ const getBranchSelect = () => screen.getByRole("combobox");
 describe("PageProductsReport selector de sucursal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useBranch.mockReturnValue({
+      branch: { id: "b9", name: "Merida" },
+      setBranch: vi.fn(),
+    });
     useProductsReport.mockImplementation(() => stubReport);
   });
 
