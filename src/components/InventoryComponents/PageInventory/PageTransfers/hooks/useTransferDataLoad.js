@@ -71,7 +71,7 @@ const useTransferDataLoad = ({
   }, [loadBranches]);
 
   useEffect(() => {
-    reloadOrders();
+     reloadOrders(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial asincrona de ordenes (setLoading/setData inside useCallback pattern standard)
   }, [reloadOrders]);
 
   useEffect(() => {
