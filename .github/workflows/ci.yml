@@ -47,7 +47,14 @@ jobs:
         run: |
           git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \
             | { grep -E '\.(js|jsx|mjs|json|html|css)$' || true; } \
-            | xargs -r npx prettier --check
+            | xargs -r npx prettier --check \
+              --tab-width=2 \
+              --no-use-tabs \
+              --no-single-quote \
+              --trailing-comma=es5 \
+              --semi \
+              --print-width=80 \
+              --end-of-line=lf
 
       - name: Test
         run: npm test
