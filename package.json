@@ -28,6 +28,15 @@
   "engines": {
     "node": ">=22.22.2"
   },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": false,
+    "trailingComma": "es5",
+    "semi": true,
+    "printWidth": 80,
+    "endOfLine": "lf"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
     "dotenv": "^17.4.2",
