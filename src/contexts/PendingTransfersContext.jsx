@@ -34,23 +34,23 @@ export const PendingTransfersProvider = ({ children }) => {
   const currentBranchId = branch?.id || "";
 
   const refresh = useCallback(async () => {
-  if (!currentBranchId) {
-    setPendingReceiptsCount(0);
-    setIsLoading(false);
-    return;
-  }
+    if (!currentBranchId) {
+      setPendingReceiptsCount(0);
+      setIsLoading(false);
+      return;
+    }
 
-  setPendingReceiptsCount(0);
-  setIsLoading(true);
-  try {
-    const orders = await loadTransferOrders();
-    // ...resto igual
-  } catch (err) {
-    // ...igual
-  } finally {
-    setIsLoading(false);
-  }
-}, [currentBranchId]);
+    setPendingReceiptsCount(0);
+    setIsLoading(true);
+    try {
+      const orders = await loadTransferOrders();
+      // ...resto igual
+    } catch (err) {
+      // ...igual
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentBranchId]);
 
   useEffect(() => {
     // Reset state de count + loading a valores iniciales ANTES de ejecutar fetch asíncrono (refresh).

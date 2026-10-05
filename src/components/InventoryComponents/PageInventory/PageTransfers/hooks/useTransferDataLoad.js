@@ -67,11 +67,11 @@ const useTransferDataLoad = ({
   }, [refreshProducts]);
 
   useEffect(() => {
-     loadBranches(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial...
+    loadBranches(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial...
   }, [loadBranches]);
 
   useEffect(() => {
-     reloadOrders(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial asincrona de ordenes (setLoading/setData inside useCallback pattern standard)
+    reloadOrders(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial asincrona de ordenes (setLoading/setData inside useCallback pattern standard)
   }, [reloadOrders]);
 
   useEffect(() => {
