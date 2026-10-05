@@ -5,7 +5,6 @@
 
 import React, { useState } from "react";
 import styles from "./PageProfitabilityReport.module.css";
-import { useBranch } from "../../../../contexts/BranchContext";
 import { useProfitabilityReport } from "./hooks/useProfitabilityReport";
 import { exportProfitabilityReportToExcel } from "./utils/profitabilityReportExportUtils";
 import { formatSyncTime } from "../../../../utils/formatters";
@@ -22,7 +21,6 @@ import tagIcon from "../../../../assets/icons/tag-solid-full.svg";
 import warningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const PageProfitabilityReport = () => {
-  const { branch } = useBranch();
   const [isExporting, setIsExporting] = useState(false);
 
   const {
@@ -53,10 +51,10 @@ const PageProfitabilityReport = () => {
     error,
     syncedAt,
     refresh,
-  } = useProfitabilityReport(branch?.id || "ALL");
+  } = useProfitabilityReport("ALL");
 
   const handleClearFilters = () => {
-    setBranchId(branch?.id || "ALL");
+    setBranchId("ALL");
     setDepartmentId("ALL");
     setSearchTerm("");
     setQuickDatePreset("this_month");

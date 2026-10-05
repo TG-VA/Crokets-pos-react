@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (3 oct 2026)
+## Cobertura actual (5 oct 2026)
 
-99 archivos de test (**1517 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+106 archivos de test (**1557 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -24,7 +24,14 @@ y el proceso principal de Electron:
 | Utilidades de importación                           | `.../ProductsImport/utils/importUtils.test.js`                                     |
 | Kits / promociones                                  | `.../ProductsPromotions/services/productKitsService.test.js`                       |
 | Reporte de caja                                     | `.../PageCashReport/services/cashReportService.test.js`                            |
+| Reporte de caja (hook y filtro de sucursal)         | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
 | Reporte de comisiones                               | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |
+| Reporte de productos (consulta y sucursal "ALL")    | `.../PageProductsReport/services/productReportsService.test.js`                    |
+| Reporte de productos (selector desacoplado)         | `.../PageProductsReport/PageProductsReport.test.jsx`                               |
+| Reporte de clientes (consulta y sucursal "ALL")     | `.../PageCustomersReport/services/customersReportService.test.js`                  |
+| Reporte de clientes (selector desacoplado)          | `.../PageCustomersReport/PageCustomersReport.test.jsx`                             |
+| Reporte de inventario (selector y url)              | `.../PageInventoryReport/PageInventoryReport.test.jsx`                             |
+| Reporte de rentabilidad (selector y reset)          | `.../PageProfitabilityReport/PageProfitabilityReport.test.jsx`                     |
 | Reporte de rentabilidad                             | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
 | Reporte de inventario (datos)                       | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                    | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |

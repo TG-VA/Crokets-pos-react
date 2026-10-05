@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useBranch } from "../../../../../contexts/BranchContext";
 import {
   fetchBranchesList,
   fetchCashiersList,
@@ -10,7 +9,6 @@ import {
 } from "../services/cashReportService";
 import { exportCashReportToExcel } from "../utils/cashReportExportUtils";
 import { usePagination } from "../../../../../hooks/usePagination";
-import { useDidChange } from "../../../../../hooks/useDidChange";
 import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 // Agrupa los parametros de las tres consultas del reporte en la forma que
@@ -47,12 +45,13 @@ const buildCashReportParams = ({
 export const ITEMS_PER_PAGE = 5;
 
 export const useCashReport = () => {
-  const { branch } = useBranch();
-
   // Estados de filtros
   const [branchesList, setBranchesList] = useState([]);
   const [cashiersList, setCashiersList] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
+
+  // El reporte es analitico y global: el filtro de sucursal arranca en todas las
+  // sucursales y no sigue a la sucursal operativa del cajero.
+  const [selectedBranchId, setSelectedBranchId] = useState("ALL");
   const [selectedCashierId, setSelectedCashierId] = useState("ALL");
   const [sessionStatus, setSessionStatus] = useState("ALL");
   const [movementType, setMovementType] = useState("ALL");
@@ -127,14 +126,6 @@ export const useCashReport = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
   const [loadingModal, setLoadingModal] = useState(false);
-
-  // Sincronizar sucursal del contexto. El ajuste se hace durante el render en
-  // lugar de en un efecto: React descarta la salida y vuelve a renderizar antes
-  // de confirmarla, de modo que no hay un re-render en cascada. Se conserva la
-  // guarda original que solo sincroniza cuando la sucursal tiene id.
-  if (useDidChange(branch?.id) && branch?.id) {
-    setSelectedBranchId(branch.id);
-  }
 
   // Cargar catálogos iniciales
   useEffect(() => {
@@ -305,7 +296,7 @@ export const useCashReport = () => {
     const now = new Date();
     setActiveDatePreset("today");
     setDateRange([now, now]);
-    setSelectedBranchId(branch?.id || "ALL");
+    setSelectedBranchId("ALL");
     setSelectedCashierId("ALL");
     setSessionStatus("ALL");
     setMovementType("ALL");
@@ -377,7 +368,7 @@ export const useCashReport = () => {
   // Saber si hay filtros activos no por defecto
   const hasActiveFilters = useMemo(() => {
     return (
-      (selectedBranchId !== "ALL" && selectedBranchId !== branch?.id) ||
+      selectedBranchId !== "ALL" ||
       selectedCashierId !== "ALL" ||
       sessionStatus !== "ALL" ||
       movementType !== "ALL" ||
@@ -385,7 +376,6 @@ export const useCashReport = () => {
     );
   }, [
     selectedBranchId,
-    branch?.id,
     selectedCashierId,
     sessionStatus,
     movementType,

@@ -4,7 +4,6 @@ import styles from "./PageInventoryReport.module.css";
 import subStyles from "./components/InventoryComponents.module.css";
 import { exportInventoryReportToExcel } from "../../../../utils/exportUtils";
 import { formatSyncTime } from "../../../../utils/formatters";
-import { useBranch } from "../../../../contexts/BranchContext";
 import { fetchBranchesList } from "./services/inventoryReportService";
 
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
@@ -19,7 +18,6 @@ import { useInventoryReport } from "./hooks/useInventoryReport";
 import { useDidChange } from "../../../../hooks/useDidChange";
 
 const PageInventoryReport = () => {
-  const { branch, setBranch } = useBranch();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
@@ -27,16 +25,18 @@ const PageInventoryReport = () => {
 
   const [branchesList, setBranchesList] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
+
+  // El reporte es analitico y global: solo la navegacion profunda con
+  // `branchId` acota el filtro, por lo que el valor inicial es "ALL".
   const [selectedBranchId, setSelectedBranchId] = useState(
-    branchParam || branch?.id || "ALL"
+    branchParam || "ALL"
   );
   const [isExporting, setIsExporting] = useState(false);
 
-  // La sucursal efectiva (parametro de ruta o contexto) manda sobre el filtro
-  // local. Se resuelve durante el render para no encadenar un re-render extra.
-  const effectiveBranchId = branchParam || branch?.id;
-  if (useDidChange(effectiveBranchId) && effectiveBranchId) {
-    setSelectedBranchId(effectiveBranchId);
+  // La navegacion profunda manda sobre el filtro local. Se resuelve durante el
+  // render para no encadenar un re-render extra.
+  if (useDidChange(branchParam) && branchParam) {
+    setSelectedBranchId(branchParam);
   }
 
   useEffect(() => {
@@ -58,14 +58,9 @@ const PageInventoryReport = () => {
   const handleBranchChange = (e) => {
     const newBranchId = e.target.value;
     setSelectedBranchId(newBranchId);
-    setSearchParams(newBranchId ? { branchId: newBranchId } : {});
-
-    if (newBranchId !== "ALL") {
-      const selectedObj = branchesList.find((b) => b.id === newBranchId);
-      if (selectedObj && setBranch) {
-        setBranch(selectedObj);
-      }
-    }
+    setSearchParams(
+      newBranchId && newBranchId !== "ALL" ? { branchId: newBranchId } : {}
+    );
   };
 
   const {
@@ -166,7 +161,8 @@ const PageInventoryReport = () => {
           setSelectedDepartment("ALL");
           setSelectedStockStatus("ALL");
           setSearchTerm("");
-          setSelectedBranchId(branch?.id || "ALL");
+          setSelectedBranchId("ALL");
+          setSearchParams({});
         }}
         isLoading={isLoading}
       />
