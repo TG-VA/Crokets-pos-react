@@ -29,7 +29,8 @@ vi.mock("../../../../lib/supabaseClient", () => ({
       const query = {
         select: vi.fn(),
         order: vi.fn(),
-        then: (resolve) => Promise.resolve({ data: branches, error: null }).then(resolve),
+        then: (resolve) =>
+          Promise.resolve({ data: branches, error: null }).then(resolve),
       };
       query.select.mockReturnValue(query);
       query.order.mockReturnValue(query);
@@ -84,9 +85,7 @@ describe("PageProductsReport selector de sucursal", () => {
     expect(useProductsReport.mock.calls[0][0]).toBe("ALL");
 
     await waitFor(() =>
-      expect(
-        screen.getByRole("option", { name: "Torres" })
-      ).toBeTruthy()
+      expect(screen.getByRole("option", { name: "Torres" })).toBeTruthy()
     );
     expect(getBranchSelect().value).toBe("ALL");
   });

@@ -87,20 +87,46 @@ describe("fetchProductsReportData filtro de sucursal", () => {
           quantity: 2,
           total_price: 100,
           product_id: "p1",
-          products: { name: "ALIMENTO", barcode: "111", department: { name: "Alimentos" } },
+          products: {
+            name: "ALIMENTO",
+            barcode: "111",
+            department: { name: "Alimentos" },
+          },
           sales: { status: "completed", branch_id: "b1" },
         },
         {
           quantity: 3,
           total_price: 150,
           product_id: "p1",
-          products: { name: "ALIMENTO", barcode: "111", department: { name: "Alimentos" } },
+          products: {
+            name: "ALIMENTO",
+            barcode: "111",
+            department: { name: "Alimentos" },
+          },
           sales: { status: "completed", branch_id: "b2" },
         },
       ],
       branch_inventory: [
-        { stock: 4, product_id: "p1", products: { id: "p1", name: "ALIMENTO", barcode: "111", department: { name: "Alimentos" } } },
-        { stock: 6, product_id: "p1", products: { id: "p1", name: "ALIMENTO", barcode: "111", department: { name: "Alimentos" } } },
+        {
+          stock: 4,
+          product_id: "p1",
+          products: {
+            id: "p1",
+            name: "ALIMENTO",
+            barcode: "111",
+            department: { name: "Alimentos" },
+          },
+        },
+        {
+          stock: 6,
+          product_id: "p1",
+          products: {
+            id: "p1",
+            name: "ALIMENTO",
+            barcode: "111",
+            department: { name: "Alimentos" },
+          },
+        },
       ],
     };
 

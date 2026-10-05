@@ -113,7 +113,9 @@ describe("useCashReport filtro de sucursal", () => {
 
     const { result } = renderHook(() => useCashReport());
 
-    await waitFor(() => expect(result.current.error).toBe("Sin sesion abierta"));
+    await waitFor(() =>
+      expect(result.current.error).toBe("Sin sesion abierta")
+    );
 
     loadCashReportData.mockImplementation((params, handlers) => {
       handlers.onData({

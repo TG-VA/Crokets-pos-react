@@ -84,7 +84,12 @@ describe("PageCustomersReport selector de sucursal", () => {
       sortBy: "spent",
       sortDirection: "desc",
       handleSort: vi.fn(),
-      reportData: { rankedCustomers: [], topProducts: [], redemptionsList: [], kpis: EMPTY_KPIS },
+      reportData: {
+        rankedCustomers: [],
+        topProducts: [],
+        redemptionsList: [],
+        kpis: EMPTY_KPIS,
+      },
       filteredCustomers: [],
       filteredTopProducts: [],
       filteredRedemptions: [],
@@ -140,7 +145,9 @@ describe("PageCustomersReport selector de sucursal", () => {
     );
     expect(getBranchSelect().value).toBe("b1");
 
-    fireEvent.click(screen.getByRole("button", { name: /Restablecer|limpiar/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Restablecer|limpiar/i })
+    );
 
     expect(setBranchIdSpy).toHaveBeenCalledWith("ALL");
     expect(useBranch).not.toHaveBeenCalled();

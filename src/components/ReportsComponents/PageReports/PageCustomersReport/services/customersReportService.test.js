@@ -12,11 +12,7 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchCustomersReportData } from "./customersReportService";
 
-const BRANCH_TABLES = [
-  "sales",
-  "customer_points",
-  "sale_reward_redemptions",
-];
+const BRANCH_TABLES = ["sales", "customer_points", "sale_reward_redemptions"];
 
 const queryFor = (resolve, registry, table) => {
   const q = { table, eqCalls: [] };
