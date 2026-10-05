@@ -12,7 +12,7 @@
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "TZ=America/Cancun vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
