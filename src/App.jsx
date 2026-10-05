@@ -183,7 +183,11 @@ function App({ RouterComponent = Router } = {}) {
   return (
     <AuthProvider>
       <ProductsProvider>
-        <AppRoutes RouterComponent={RouterComponent} />
+        <BranchProvider>
+          <PendingTransfersProvider>
+            <AppRoutes RouterComponent={RouterComponent} />
+          </PendingTransfersProvider>
+        </BranchProvider>
       </ProductsProvider>
     </AuthProvider>
   );
