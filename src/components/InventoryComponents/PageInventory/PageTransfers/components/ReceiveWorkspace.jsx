@@ -34,16 +34,12 @@ const ReceiveWorkspace = ({
               </div>
               <div>
                 <span className={styles.metaLabel}>Origen</span>
-                <strong>
-                  {selectedReceiptOrder.originBranchName}
-                </strong>
+                <strong>{selectedReceiptOrder.originBranchName}</strong>
               </div>
               <div>
                 <span className={styles.metaLabel}>Creado</span>
                 <strong>
-                  {formatTransferDateTime(
-                    selectedReceiptOrder.createdAt
-                  )}
+                  {formatTransferDateTime(selectedReceiptOrder.createdAt)}
                 </strong>
               </div>
             </div>
@@ -62,12 +58,9 @@ const ReceiveWorkspace = ({
                   {selectedReceiptOrder.items.map((item) => {
                     const requestedQty = Number(item.requestedQty ?? 0);
                     const receivedQty = Number(
-                      receiptQuantities[item.productId] ??
-                        requestedQty
+                      receiptQuantities[item.productId] ?? requestedQty
                     );
-                    const normalizedReceivedQty = Number.isFinite(
-                      receivedQty
-                    )
+                    const normalizedReceivedQty = Number.isFinite(receivedQty)
                       ? receivedQty
                       : 0;
                     const returnedQty = Math.max(
@@ -112,8 +105,8 @@ const ReceiveWorkspace = ({
 
             <div className={styles.actionRow}>
               <div className={styles.actionText}>
-                La recepción genera entradas automáticas en destino y
-                reingresa el faltante a origen.
+                La recepción genera entradas automáticas en destino y reingresa
+                el faltante a origen.
               </div>
 
               <button
@@ -128,8 +121,7 @@ const ReceiveWorkspace = ({
           </>
         ) : (
           <div className={styles.emptyState}>
-            Selecciona una orden pendiente para abrir el detalle de
-            recepción.
+            Selecciona una orden pendiente para abrir el detalle de recepción.
           </div>
         )}
       </div>
@@ -174,8 +166,7 @@ const ReceiveWorkspace = ({
 
           {pendingReceiptOrders.length === 0 ? (
             <div className={styles.emptyState}>
-              No tienes órdenes pendientes por recibir en esta
-              sucursal.
+              No tienes órdenes pendientes por recibir en esta sucursal.
             </div>
           ) : null}
         </div>

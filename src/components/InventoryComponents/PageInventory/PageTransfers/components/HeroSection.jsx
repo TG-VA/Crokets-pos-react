@@ -1,11 +1,7 @@
 import React from "react";
 import styles from "../PageTransfers.module.css";
 
-const HeroSection = ({
-  branch,
-  pendingReceiptsCount,
-  transferMetrics,
-}) => {
+const HeroSection = ({ branch, pendingReceiptsCount, transferMetrics }) => {
   return (
     <section className={styles.hero}>
       <div className={styles.heroMain}>
@@ -36,9 +32,7 @@ const HeroSection = ({
       <div className={styles.heroAside}>
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Enviados</span>
-          <strong className={styles.metricValue}>
-            {transferMetrics.sent}
-          </strong>
+          <strong className={styles.metricValue}>{transferMetrics.sent}</strong>
         </div>
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Pendientes</span>
@@ -53,9 +47,7 @@ const HeroSection = ({
           </strong>
         </div>
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>
-            Cancelados / En tránsito
-          </span>
+          <span className={styles.metricLabel}>Cancelados / En tránsito</span>
           <strong className={styles.metricValue}>
             {transferMetrics.cancelled} / {transferMetrics.unitsInTransit}
           </strong>

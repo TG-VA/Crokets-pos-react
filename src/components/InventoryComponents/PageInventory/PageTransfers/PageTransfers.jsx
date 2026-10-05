@@ -109,9 +109,7 @@ const PageTransfers = () => {
       isOpen: true,
       orderId: order.id,
       folio: String(order.folio || order.id).toUpperCase(),
-      originBranchName: String(
-        order.originBranchName || "la sucursal origen"
-      ),
+      originBranchName: String(order.originBranchName || "la sucursal origen"),
       requestedUnits: Number(order.totals?.requestedUnits ?? 0),
       loading: false,
     });

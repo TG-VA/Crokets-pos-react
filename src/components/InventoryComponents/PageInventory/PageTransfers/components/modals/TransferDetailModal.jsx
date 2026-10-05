@@ -6,12 +6,7 @@ import {
   getTransferStatusMetaForBranch,
 } from "../../utils/transfersUtils";
 
-const TransferDetailModal = ({
-  order,
-  branch,
-  products,
-  onClose,
-}) => {
+const TransferDetailModal = ({ order, branch, products, onClose }) => {
   if (!order) return null;
 
   const items = Array.isArray(order?.items) ? order.items : [];
@@ -28,8 +23,7 @@ const TransferDetailModal = ({
   const orderStatus = String(order?.status || "");
   const isCancelled = orderStatus === "cancelled";
   const isPending = orderStatus === "pending_receipt";
-  const isOriginRoute =
-    String(order?.originBranchId) === String(branch?.id);
+  const isOriginRoute = String(order?.originBranchId) === String(branch?.id);
   const isDestinationRoute =
     String(order?.destinationBranchId) === String(branch?.id);
 
@@ -96,9 +90,7 @@ const TransferDetailModal = ({
           <div className={styles.detailField}>
             <span className={styles.detailLabel}>Creado por</span>
             <span className={styles.detailValue}>
-              {order?.createdByUsername ||
-                order?.createdByEmail ||
-                "SISTEMA"}
+              {order?.createdByUsername || order?.createdByEmail || "SISTEMA"}
             </span>
           </div>
           <div className={styles.detailField}>
@@ -160,14 +152,11 @@ const TransferDetailModal = ({
               const requestedQty = Number(item?.requestedQty ?? 0) || 0;
               const receivedQty = Number(item?.receivedQty ?? 0) || 0;
               const returnedQty = Number(item?.returnedQty ?? 0) || 0;
-              const difference =
-                requestedQty - receivedQty - returnedQty;
+              const difference = requestedQty - receivedQty - returnedQty;
 
               const productId = String(item?.productId || item?.id || "");
-              const inventoryRow =
-                inventoryByProductId.get(productId) || {};
-              const currentStock =
-                Number(inventoryRow?.currentStock ?? 0) || 0;
+              const inventoryRow = inventoryByProductId.get(productId) || {};
+              const currentStock = Number(inventoryRow?.currentStock ?? 0) || 0;
 
               // --- Lectura de snapshots historicos (NULLABLE).
               // Si el dato no existe (NULL) mostramos guion — SIN retro-calculo.
@@ -187,16 +176,16 @@ const TransferDetailModal = ({
                 }
               }
 
-              const hasBefore =
-                rawBefore !== null && rawBefore !== undefined;
+              const hasBefore = rawBefore !== null && rawBefore !== undefined;
               const hasAfter = rawAfter !== null && rawAfter !== undefined;
 
               const previousStock = hasBefore ? Number(rawBefore) : null;
               const postEventStock = hasAfter ? Number(rawAfter) : null;
 
-              const stockCellTitle = hasBefore || hasAfter
-                ? "Foto historica del evento, tomada por el RPC. 100% real e inamovible."
-                : "Sin snapshot historico para este traspaso (creado antes de la migracion o evento aun no ocurrido).";
+              const stockCellTitle =
+                hasBefore || hasAfter
+                  ? "Foto historica del evento, tomada por el RPC. 100% real e inamovible."
+                  : "Sin snapshot historico para este traspaso (creado antes de la migracion o evento aun no ocurrido).";
 
               return (
                 <tr key={item?.id || item?.productId || index}>
@@ -217,9 +206,7 @@ const TransferDetailModal = ({
                     </div>
                   </td>
                   <td>
-                    {item?.barcode && item.barcode !== "—"
-                      ? item.barcode
-                      : "—"}
+                    {item?.barcode && item.barcode !== "—" ? item.barcode : "—"}
                   </td>
                   <td className={styles.alignRight}>{requestedQty}</td>
                   <td className={styles.alignRight}>{receivedQty}</td>
@@ -244,19 +231,16 @@ const TransferDetailModal = ({
                     }
                   >
                     {isOriginRoute || isDestinationRoute
-                      ? (previousStock !== null
-                          ? previousStock
-                          : dashPlaceholder)
+                      ? previousStock !== null
+                        ? previousStock
+                        : dashPlaceholder
                       : dashPlaceholder}
                   </td>
-                  <td
-                    className={styles.alignRight}
-                    title={stockCellTitle}
-                  >
+                  <td className={styles.alignRight} title={stockCellTitle}>
                     {isOriginRoute || isDestinationRoute
-                      ? (postEventStock !== null
-                          ? postEventStock
-                          : dashPlaceholder)
+                      ? postEventStock !== null
+                        ? postEventStock
+                        : dashPlaceholder
                       : dashPlaceholder}
                   </td>
                 </tr>

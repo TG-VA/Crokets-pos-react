@@ -82,10 +82,7 @@ const useTransferDataLoad = ({
       try {
         await Promise.all([reloadOrders(), reloadProductsSilently()]);
       } catch (err) {
-        console.error(
-          "Polling automático traspasos/inventario falló:",
-          err
-        );
+        console.error("Polling automático traspasos/inventario falló:", err);
       }
     };
 
@@ -168,8 +165,7 @@ const useTransferDataLoad = ({
       } catch (cancelError) {
         console.error("No se pudo cancelar el traspaso:", cancelError);
         setError(
-          cancelError?.message ||
-            "No se pudo cancelar la orden de traspaso."
+          cancelError?.message || "No se pudo cancelar la orden de traspaso."
         );
         throw cancelError;
       } finally {

@@ -133,7 +133,10 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
 
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("No se pudieron cargar las sucursales para traspasos:", error);
+    console.error(
+      "No se pudieron cargar las sucursales para traspasos:",
+      error
+    );
     const fallback = getBranchFallback(currentBranch);
     if (import.meta.env.MODE !== "production") {
       // Dev/Staging: re-lanzar el error para que QA detecte fallos RLS/permisos
@@ -142,7 +145,7 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
       // throw error;
     }
     return fallback;
-  } 
+  }
 };
 
 export const loadTransferOrders = async () => {
@@ -339,9 +342,7 @@ export const cancelTransferOrder = async ({
   }
 
   if (transferOrder.status !== "pending_receipt") {
-    throw new Error(
-      "Solo se pueden cancelar órdenes pendientes de recepción."
-    );
+    throw new Error("Solo se pueden cancelar órdenes pendientes de recepción.");
   }
 
   const { data: rpcResult, error: rpcError } = await supabase.rpc(

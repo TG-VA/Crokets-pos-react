@@ -92,7 +92,11 @@
   gap: 12px;
   padding: 16px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(16, 146, 177, 0.08), rgba(255, 138, 0, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba(16, 146, 177, 0.08),
+    rgba(255, 138, 0, 0.08)
+  );
   border: 1px solid rgba(16, 146, 177, 0.12);
 }
 
@@ -162,7 +166,10 @@
   padding: 16px;
   background: #ffffff;
   text-align: left;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
   cursor: pointer;
 }
 
@@ -301,7 +308,9 @@
   padding: 0 12px;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .input,
@@ -421,7 +430,10 @@
   border: 0;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .secondaryButton:hover,
@@ -485,7 +497,10 @@
   gap: 6px;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .orderCard:hover {

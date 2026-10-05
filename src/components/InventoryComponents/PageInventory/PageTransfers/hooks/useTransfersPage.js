@@ -10,20 +10,11 @@ import useReceiveForm from "./useReceiveForm";
 const useTransfersPage = ({ isActive = true } = {}) => {
   const { branch } = useBranch();
   const { user } = useAuth();
-  const {
-    getProductByCodigo,
-    products,
-    loadingProducts,
-    refreshProducts,
-  } = useProducts();
+  const { getProductByCodigo, products, loadingProducts, refreshProducts } =
+    useProducts();
 
-  const {
-    error,
-    success,
-    setError,
-    setSuccess,
-    clearFeedback,
-  } = useTransferFeedback();
+  const { error, success, setError, setSuccess, clearFeedback } =
+    useTransferFeedback();
 
   const dataLoad = useTransferDataLoad({
     branch,

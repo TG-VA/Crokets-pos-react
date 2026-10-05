@@ -5,33 +5,23 @@ const TRANSFER_TABS = [
   {
     id: "send",
     label: "Enviar",
-    description:
-      "Preparar y descontar existencias de la sucursal origen.",
+    description: "Preparar y descontar existencias de la sucursal origen.",
   },
   {
     id: "receive",
     label: "Recibir",
-    description:
-      "Registrar llegada, diferencias y devoluciones automáticas.",
+    description: "Registrar llegada, diferencias y devoluciones automáticas.",
   },
   {
     id: "history",
     label: "Historial",
-    description:
-      "Consultar todos los traspasos emitidos y recibidos.",
+    description: "Consultar todos los traspasos emitidos y recibidos.",
   },
 ];
 
-const RouteTabs = ({
-  activeTab,
-  pendingReceiptsCount,
-  onTabChange,
-}) => {
+const RouteTabs = ({ activeTab, pendingReceiptsCount, onTabChange }) => {
   return (
-    <nav
-      className={styles.tabBar}
-      aria-label="Subnavegación de traspasos"
-    >
+    <nav className={styles.tabBar} aria-label="Subnavegación de traspasos">
       {TRANSFER_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
 
@@ -47,14 +37,10 @@ const RouteTabs = ({
             <span className={styles.tabLabelRow}>
               <span>{tab.label}</span>
               {tab.id === "receive" && pendingReceiptsCount > 0 ? (
-                <span className={styles.tabBadge}>
-                  {pendingReceiptsCount}
-                </span>
+                <span className={styles.tabBadge}>{pendingReceiptsCount}</span>
               ) : null}
             </span>
-            <span className={styles.tabDescription}>
-              {tab.description}
-            </span>
+            <span className={styles.tabDescription}>{tab.description}</span>
           </button>
         );
       })}

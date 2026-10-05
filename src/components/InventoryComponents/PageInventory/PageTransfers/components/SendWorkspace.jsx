@@ -26,8 +26,8 @@ const SendWorkspace = ({
           <div>
             <h2 className={styles.panelTitle}>Preparar envío</h2>
             <p className={styles.panelText}>
-              Selecciona la sucursal destino y agrega productos con
-              existencia disponible en la sucursal actual.
+              Selecciona la sucursal destino y agrega productos con existencia
+              disponible en la sucursal actual.
             </p>
           </div>
         </div>
@@ -60,9 +60,7 @@ const SendWorkspace = ({
                 type="text"
                 className={styles.input}
                 value={productSearch}
-                onChange={(event) =>
-                  onProductSearchChange(event.target.value)
-                }
+                onChange={(event) => onProductSearchChange(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -147,12 +145,9 @@ const SendWorkspace = ({
                       onKeyDown={(event) => {
                         if (event.key === "0") {
                           const target = event.currentTarget;
-                          const cursorStart =
-                            target.selectionStart ?? 0;
+                          const cursorStart = target.selectionStart ?? 0;
                           const cursorEnd = target.selectionEnd ?? 0;
-                          const currentValue = String(
-                            target.value ?? ""
-                          );
+                          const currentValue = String(target.value ?? "");
                           const nextValue =
                             currentValue.slice(0, cursorStart) +
                             "0" +
@@ -160,10 +155,7 @@ const SendWorkspace = ({
                           const numeric = Number(
                             nextValue.replace(/[^0-9]/g, "")
                           );
-                          if (
-                            !Number.isNaN(numeric) &&
-                            numeric === 0
-                          ) {
+                          if (!Number.isNaN(numeric) && numeric === 0) {
                             event.preventDefault();
                           }
                         }
@@ -204,9 +196,7 @@ const SendWorkspace = ({
             className={styles.primaryButton}
             onClick={onSubmitTransfer}
             disabled={
-              submitting ||
-              draftItems.length === 0 ||
-              !destinationBranchId
+              submitting || draftItems.length === 0 || !destinationBranchId
             }
           >
             {submitting ? "Generando..." : "Generar traspaso"}

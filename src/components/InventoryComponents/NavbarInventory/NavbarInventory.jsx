@@ -67,7 +67,11 @@ const NavbarInventory = () => {
                 `${styles.navButton} ${isActive ? styles.active : ""}`
               }
             >
-              <img src={option.icon} alt={option.label} className={styles.icon} />
+              <img
+                src={option.icon}
+                alt={option.label}
+                className={styles.icon}
+              />
               <span>{option.label}</span>
               {option.id === "traspasos" && badgeCount > 0 ? (
                 <span

@@ -67,9 +67,7 @@ const reorderTransferReason = (value) => {
     return value;
   }
 
-  const match = text.match(
-    /^TRASPASO\s+(.*?)\s+(TR-\d{6}-\d{6})\s+(.+)$/i
-  );
+  const match = text.match(/^TRASPASO\s+(.*?)\s+(TR-\d{6}-\d{6})\s+(.+)$/i);
 
   if (!match) {
     return value;
@@ -77,10 +75,9 @@ const reorderTransferReason = (value) => {
 
   const [, actionPhrase, folio, rest] = match;
 
-  const restMatch =
-    rest.match(
-      /^([A-Za-zÁÉÍÓÚáéíóúÑñ0-9_\- ]+?)(?:\s*-\s*(.+))?$/
-    );
+  const restMatch = rest.match(
+    /^([A-Za-zÁÉÍÓÚáéíóúÑñ0-9_\- ]+?)(?:\s*-\s*(.+))?$/
+  );
 
   let branchName;
   let notes;

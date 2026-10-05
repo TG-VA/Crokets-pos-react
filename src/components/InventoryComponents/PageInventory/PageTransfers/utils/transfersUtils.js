@@ -92,8 +92,7 @@ const getAppTimezoneParts = (date) => {
     year: String(parts.year ?? "").slice(-2),
     month: String(parts.month ?? ""),
     day: String(parts.day ?? ""),
-    hour:
-      parts.hour === "24" ? "00" : String(parts.hour ?? ""),
+    hour: parts.hour === "24" ? "00" : String(parts.hour ?? ""),
     minute: String(parts.minute ?? ""),
     second: String(parts.second ?? ""),
   };
@@ -115,9 +114,7 @@ export const createTransferFolio = (date = new Date()) => {
       ? date
       : parseTransferDate(date)) ?? new Date();
 
-  return `TR-${formatDatePart(referenceDate)}-${formatTimePart(
-    referenceDate
-  )}`;
+  return `TR-${formatDatePart(referenceDate)}-${formatTimePart(referenceDate)}`;
 };
 
 export const buildTransferTotals = (items = []) => {
@@ -170,10 +167,7 @@ const parseTransferNotesPayload = (value) => {
   }
 };
 
-export const buildTransferNotesPayload = ({
-  noteText = "",
-  metadata = {},
-}) => {
+export const buildTransferNotesPayload = ({ noteText = "", metadata = {} }) => {
   const normalizedNoteText = normalizeText(noteText);
   const normalizedMetadata =
     metadata && typeof metadata === "object" ? metadata : {};
@@ -214,8 +208,12 @@ export const normalizeTransferOrder = (order = {}) => {
     const itemOutcome = getItemOutcome(metadata, productId);
     const requestedQty = normalizeInteger(item?.requestedQty ?? item?.quantity);
 
-    let receivedQty = normalizeInteger(item?.receivedQty ?? itemOutcome?.receivedQty);
-    let returnedQty = normalizeInteger(item?.returnedQty ?? itemOutcome?.returnedQty);
+    let receivedQty = normalizeInteger(
+      item?.receivedQty ?? itemOutcome?.receivedQty
+    );
+    let returnedQty = normalizeInteger(
+      item?.returnedQty ?? itemOutcome?.returnedQty
+    );
 
     if (normalizedStatus === "received_complete" && receivedQty === 0) {
       receivedQty = requestedQty;
@@ -252,10 +250,7 @@ export const normalizeTransferOrder = (order = {}) => {
       receivedQty,
       returnedQty,
       costPrice: Number(item?.costPrice ?? item?.cost_price ?? 0) || 0,
-      salePrice:
-        Number(
-          item?.salePrice ?? item?.sale_price ?? 0
-        ) || 0,
+      salePrice: Number(item?.salePrice ?? item?.sale_price ?? 0) || 0,
       origin_stock_before:
         rawOriginBefore == null ? null : Number(rawOriginBefore),
       origin_stock_after:
@@ -269,12 +264,16 @@ export const normalizeTransferOrder = (order = {}) => {
 
   return {
     id: normalizeText(order?.id),
-    folio: normalizeText(order?.folio ?? metadata?.folio, createTransferFolio()),
+    folio: normalizeText(
+      order?.folio ?? metadata?.folio,
+      createTransferFolio()
+    ),
     status: normalizedStatus,
     notes: noteText,
     rawNotes: order?.notes ?? order?.rawNotes ?? "",
     metadata,
-    createdAt: order?.createdAt || order?.created_at || new Date().toISOString(),
+    createdAt:
+      order?.createdAt || order?.created_at || new Date().toISOString(),
     receivedAt:
       order?.receivedAt ||
       metadata?.receivedAt ||
@@ -291,12 +290,11 @@ export const normalizeTransferOrder = (order = {}) => {
     completedAt: order?.completedAt || order?.completed_at || null,
     createdByUserId: order?.createdByUserId || order?.user_id || null,
     createdByUsername: normalizeText(
-      order?.createdByUsername ??
-        order?.user?.username ??
-        order?.user?.email,
+      order?.createdByUsername ?? order?.user?.username ?? order?.user?.email,
       "SISTEMA"
     ),
-    receivedByUserId: order?.receivedByUserId || metadata?.receivedByUserId || null,
+    receivedByUserId:
+      order?.receivedByUserId || metadata?.receivedByUserId || null,
     receivedByUsername: normalizeText(
       order?.receivedByUsername ?? metadata?.receivedByUsername
     ),
@@ -310,8 +308,11 @@ export const normalizeTransferOrder = (order = {}) => {
       order?.originBranchName ?? order?.from_branch?.name,
       "SUCURSAL ORIGEN"
     ),
-    originBranchCode: normalizeText(order?.originBranchCode ?? order?.from_branch?.code),
-    destinationBranchId: order?.destinationBranchId || order?.to_branch_id || null,
+    originBranchCode: normalizeText(
+      order?.originBranchCode ?? order?.from_branch?.code
+    ),
+    destinationBranchId:
+      order?.destinationBranchId || order?.to_branch_id || null,
     destinationBranchName: normalizeText(
       order?.destinationBranchName ?? order?.to_branch?.name,
       "SUCURSAL DESTINO"
@@ -354,7 +355,10 @@ export const getTransferStatusMeta = (status) => {
   };
 };
 
-export const getTransferStatusMetaForBranch = (order = {}, currentBranchId = "") => {
+export const getTransferStatusMetaForBranch = (
+  order = {},
+  currentBranchId = ""
+) => {
   const baseMeta = getTransferStatusMeta(order?.status);
   const normalizedStatus = normalizeText(order?.status, "pending_receipt");
   const normalizedCurrentBranchId = normalizeText(currentBranchId);
@@ -443,10 +447,7 @@ export const getPendingReceiptOrders = ({
   );
 };
 
-export const getTransfersHistory = ({
-  orders = [],
-  currentBranchId = "",
-}) => {
+export const getTransfersHistory = ({ orders = [], currentBranchId = "" }) => {
   return sortTransfersByDate(orders).filter(
     (order) =>
       order.originBranchId === currentBranchId ||
@@ -454,10 +455,7 @@ export const getTransfersHistory = ({
   );
 };
 
-export const filterTransferProducts = ({
-  products = [],
-  searchTerm = "",
-}) => {
+export const filterTransferProducts = ({ products = [], searchTerm = "" }) => {
   const normalizedTerm = normalizeText(searchTerm).toUpperCase();
 
   const sendableProducts = (Array.isArray(products) ? products : [])
@@ -488,16 +486,12 @@ export const filterTransferProducts = ({
   });
 };
 
-export const getTransferMetrics = ({
-  orders = [],
-  currentBranchId = "",
-}) => {
+export const getTransferMetrics = ({ orders = [], currentBranchId = "" }) => {
   const currentBranch = String(currentBranchId || "");
 
   return orders.reduce(
     (summary, order) => {
-      const isOrigin =
-        String(order?.originBranchId || "") === currentBranch;
+      const isOrigin = String(order?.originBranchId || "") === currentBranch;
       const isDestination =
         String(order?.destinationBranchId || "") === currentBranch;
       const participates = isOrigin || isDestination;

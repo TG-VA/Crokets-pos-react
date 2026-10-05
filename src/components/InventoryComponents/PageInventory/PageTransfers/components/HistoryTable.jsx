@@ -20,8 +20,8 @@ const HistoryTable = ({
         <div>
           <h2 className={styles.panelTitle}>Historial de traspasos</h2>
           <p className={styles.panelText}>
-            Consulta envíos, recepciones completas y órdenes con
-            diferencias relacionadas con esta sucursal.
+            Consulta envíos, recepciones completas y órdenes con diferencias
+            relacionadas con esta sucursal.
           </p>
         </div>
       </div>
@@ -78,8 +78,7 @@ const HistoryTable = ({
                     </div>
                   </td>
                   <td>
-                    {order.originBranchName} →{" "}
-                    {order.destinationBranchName}
+                    {order.originBranchName} → {order.destinationBranchName}
                   </td>
                   <td>
                     <span
@@ -116,8 +115,7 @@ const HistoryTable = ({
             {transferHistory.length === 0 ? (
               <tr>
                 <td colSpan="9" className={styles.emptyRow}>
-                  Todavía no hay traspasos registrados para esta
-                  sucursal.
+                  Todavía no hay traspasos registrados para esta sucursal.
                 </td>
               </tr>
             ) : null}

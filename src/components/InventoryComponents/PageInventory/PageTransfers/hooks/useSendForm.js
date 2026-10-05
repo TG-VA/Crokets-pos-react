@@ -114,8 +114,7 @@ const useSendForm = ({
       const existingItem = draftItems.find(
         (item) => item.productId === productId
       );
-      const existingQuantity =
-        Number(existingItem?.quantity ?? 0) || 0;
+      const existingQuantity = Number(existingItem?.quantity ?? 0) || 0;
       const nextQuantity = existingQuantity + quantity;
 
       if (nextQuantity > availableStock) {
@@ -173,7 +172,9 @@ const useSendForm = ({
     (productId, value) => {
       clearFeedback();
 
-      const currentItem = draftItems.find((item) => item.productId === productId);
+      const currentItem = draftItems.find(
+        (item) => item.productId === productId
+      );
       if (!currentItem) {
         return;
       }
@@ -184,9 +185,7 @@ const useSendForm = ({
       if (value === "" || value === null || value === undefined) {
         setDraftItems((currentItems) =>
           currentItems.map((item) =>
-            item.productId === productId
-              ? { ...item, quantity: "" }
-              : item
+            item.productId === productId ? { ...item, quantity: "" } : item
           )
         );
         return;
@@ -196,9 +195,7 @@ const useSendForm = ({
       if (rawNumeric === "") {
         setDraftItems((currentItems) =>
           currentItems.map((item) =>
-            item.productId === productId
-              ? { ...item, quantity: "" }
-              : item
+            item.productId === productId ? { ...item, quantity: "" } : item
           )
         );
         return;
@@ -332,8 +329,7 @@ const useSendForm = ({
     } catch (submitError) {
       console.error("No se pudo generar el traspaso:", submitError);
       setError(
-        submitError?.message ||
-          "No se pudo generar la orden de traspaso."
+        submitError?.message || "No se pudo generar la orden de traspaso."
       );
     } finally {
       setSubmitting(false);

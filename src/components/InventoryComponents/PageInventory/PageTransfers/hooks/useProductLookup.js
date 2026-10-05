@@ -109,9 +109,7 @@ const useProductLookup = ({
 
       return searchTokens.every(
         (token) =>
-          code.includes(token) ||
-          desc.includes(token) ||
-          dept.includes(token)
+          code.includes(token) || desc.includes(token) || dept.includes(token)
       );
     });
 
