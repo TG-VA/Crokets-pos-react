@@ -9,23 +9,16 @@ import TopProductsTable from "./components/TopProductsTable";
 import DeadStockTable from "./components/DeadStockTable";
 
 import { useProductsReport } from "./hooks/useProductsReport";
-import { useBranch } from "../../../../contexts/BranchContext";
-import { useDidChange } from "../../../../hooks/useDidChange";
 import { supabase } from "../../../../lib/supabaseClient";
 import { formatSyncTime } from "../../../../utils/formatters";
 
 const PageProductsReport = () => {
-  const { branch, setBranch } = useBranch();
-
   const [branchesList, setBranchesList] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
-  const [selectedBranchId, setSelectedBranchId] = useState(branch?.id || "ALL");
 
-  // La sucursal del contexto manda sobre el filtro local: el ajuste se resuelve
-  // durante el render para evitar el re-render en cascada de un efecto.
-  if (useDidChange(branch?.id) && branch?.id) {
-    setSelectedBranchId(branch.id);
-  }
+  // El reporte es analitico y global: el filtro arranca en todas las sucursales
+  // y no se acopla a la sucursal operativa del cajero.
+  const [selectedBranchId, setSelectedBranchId] = useState("ALL");
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -52,15 +45,7 @@ const PageProductsReport = () => {
   }, []);
 
   const handleBranchChange = (e) => {
-    const newBranchId = e.target.value;
-    setSelectedBranchId(newBranchId);
-
-    if (newBranchId !== "ALL") {
-      const selectedObj = branchesList.find((b) => b.id === newBranchId);
-      if (selectedObj && setBranch) {
-        setBranch(selectedObj);
-      }
-    }
+    setSelectedBranchId(e.target.value);
   };
 
   const {
