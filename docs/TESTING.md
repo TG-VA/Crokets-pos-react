@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (2 oct 2026)
+## Cobertura actual (3 oct 2026)
 
-93 archivos de test (**1450 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+99 archivos de test (**1517 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                | Archivo                                                                            |
@@ -67,6 +67,12 @@ y el proceso principal de Electron:
 | Ticket: servicios de puntos                         | `src/utils/ticket/ticketPointsService.test.js`                                     |
 | Ticket: secciones                                   | `src/utils/ticket/ticketSections.test.js`                                          |
 | Reportes: ciclo de vida del dashboard               | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
+| Kardex: lectura de movimientos                      | `.../PageKardex/services/kardexService.test.js`                                    |
+| Kardex: formateadores                               | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
+| Kardex: tabla (columnas de valuacion)               | `.../PageKardex/components/KardexTable.test.jsx`                                   |
+| Kardex: panel con paginacion                        | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
+| Kardex: exportador Excel                            | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
+| Kardex: exportacion sobre el dataset completo       | `.../PageKardex/Pagekardex.test.jsx`                                               |
 | Ventas: sincronización de columnas                  | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                           | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
 | Facturación: validación fiscal                      | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
@@ -238,14 +244,54 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
   `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
   `RouterComponent` (por omisión `HashRouter`), igual que `App`.
+- **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
+  rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
+  `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
+  `unit_cost`/`total_cost` ademas de las columnas de movimiento y existencias, el filtro por producto,
+  la propagacion del error de Supabase y el **reintento defensivo** que degrada la vista a un kardex
+  sin costos cuando la base no tiene esas columnas. Ese reintento se dispara con el codigo de Postgres
+  `42703` (undefined_column) o con el mensaje que reporta la columna inexistente, reintenta una sola
+  vez omitiendo ambas columnas del `select`, mapea `unit_cost`/`total_cost` a `null` para que la tabla
+  y el exportador muestren el guion largo en vez de tratar un dato ausente como costo real, y propaga
+  el error del segundo intento en vez de devolver un kardex vacio. Los casos fijan que el camino feliz
+  consulta una sola vez, que un error ajeno no dispara reintento y que la degradacion queda
+  registrada con `console.error`.
+  `kardexFormatters.test.js` (4 casos) fija los rotulos de rango de fechas y el formato de moneda con
+  los bordes de valor ausente, cero y no numerico, que la tabla y el exportador deben compartir. `KardexTable.test.jsx` (10 casos) fija el render de las
+  siete columnas, que las de valuacion diffusan guion largo cuando el movimiento no trae costo y
+  que las de cantidad y existencia siguen alineadas al centro. `KardexProductPanel.test.jsx` (18
+  casos) fija la paginacion por producto con `usePagination`: que solo se renderice la pagina
+  visible mientras el encabezado, el `totalItems` de la barra y el exportable siguen reflejando el
+  total, el avance y retroceso, el cambio de tamano de pagina, el reinicio al cambiar de producto o
+  de rango de fechas, el acodo cuando el conjunto se reduce, la independencia entre los dos slots de
+  la vista comparativa y que la exportacion emita el slot sin que la pagina altere el total.
+  `kardexWorkbookBuilder.test.js` (16 casos) fija el reporte de Excel contra un libro real de
+  ExcelJS (no un mock): el merge del titulo en siete columnas, los encabezados, el ancho y el
+  `numFmt` de moneda de las columnas de valuacion, la alineacion izquierda de los importes numericos
+  frente al centrado de los guiones, y que los movimientos sin costo, con costo cero o con costo
+  negativo se exporten como texto y **sin** `numFmt`. Esa ultima asercion es lo que sustenta que el
+  formato de moneda tenga una sola seccion: como el cero y el negativo nunca llegan a ser numero, las
+  secciones de negativo y cero del formato serian codigo muerto.
+
+  **La exportacion opera sobre el dataset completo, nunca sobre la pagina visible.** Este invariante
+  lo fijan `Pagekardex.test.jsx` (2 casos) y el bloque de exportacion de `KardexProductPanel.test.jsx`,
+  y es la razon de que el panel no exponga las filas paginadas hacia arriba: `pageItems` produce una
+  rebanada derivada que no se guarda en estado ni se eleva, mientras `rowsBySlot` conserva el conjunto
+  completo. La comprobacion es una mutacion: al recortar `handleExport` a las diez filas visibles la
+  suite fallaba con `expected ... to have a length of 25 but got 10`, y antes de existir estos casos
+  pasaba en verde. Un reporte de kardex se usa para auditar el conteo fisico contra el teorico, asi
+  que un truncamiento silencioso es el peor modo de fallo posible; por eso la prueba vive en el
+  call-site de `Pagekardex.jsx` y no solo en el panel, que nunca ve las filas del reporte.
 
 No hay todavía:
 
-- Tests de componentes/UI ni de flujos de integración. Las vistas presentacionales del corte
+- Tests de flujos de integración de punta a punta. Las vistas presentacionales del corte
   (`src/pages/CashCut/components/`) son puramente de render y no están cubiertas. Lo mismo aplica a
   los 25 subcomponentes de Facturación (`.../InvoicesComponents/**/components/`): son de render y
-  reciben el estado ya resuelto del hook. La única capa de UI cubierta es el smoke del renderer: las
-  páginas que monta siguen siendo stubs.
+  reciben el estado ya resuelto del hook. La capa de UI cubierta es el smoke del renderer (las
+  páginas que monta siguen siendo stubs) mas la vista de kardex, que es la primera en cubrirse con
+  render e interaccion sobre la pagina real: `KardexTable.test.jsx`, `KardexProductPanel.test.jsx` y
+  `Pagekardex.test.jsx` con los hooks de datos simulados. El resto de las vistas sigue sin cubrir.
 - Tests del backend Express/SQLite (`src/backend/server.js` y `bd.js`): `app.listen()` y la apertura
   de SQLite ocurren al importar el módulo, por lo que requieren un desacople previo. La
   inicialización de Express/SQLite **no** vive en `electron/main.js`.

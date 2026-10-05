@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
+
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
+
+import { usePagination } from "../../../../../hooks/usePagination";
 
 import { getKardexRangeLabel } from "../utils/kardexFormatters";
 
@@ -6,6 +10,11 @@ import KardexProductSummary from "./KardexProductSummary";
 import KardexTable from "./KardexTable";
 
 import styles from "./KardexProductPanel.module.css";
+
+const KARDEX_PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+const getKardexProductKey = (product) =>
+  String(product?.id ?? product?.product_id ?? "");
 
 const KardexProductPanel = ({
   slot = 0,
@@ -24,11 +33,35 @@ const KardexProductPanel = ({
   onRemoveProduct,
   onExport,
 }) => {
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: normalizedRows.length,
+    defaultPageSize: KARDEX_PAGE_SIZE_OPTIONS[0],
+    pageSizeOptions: KARDEX_PAGE_SIZE_OPTIONS,
+  });
+
+  const productKey = getKardexProductKey(product);
+
+  // Cambiar de producto o de rango de fechas reinicia la pagina para que el
+  // panel no abra en una pagina vacia o fuera del nuevo conjunto de datos.
+  useEffect(() => {
+    resetPagination();
+  }, [productKey, appliedDateFrom, appliedDateTo, resetPagination]);
+
   if (!product) {
     return null;
   }
-
-  const normalizedRows = Array.isArray(rows) ? rows : [];
 
   const loading = Boolean(movementState?.loading);
 
@@ -42,6 +75,8 @@ const KardexProductPanel = ({
   });
 
   const canExport = normalizedRows.length > 0 && !loading && !error;
+
+  const paginatedRows = pageItems(normalizedRows);
 
   return (
     <div className={styles.panel}>
@@ -77,11 +112,28 @@ const KardexProductPanel = ({
         </div>
 
         <KardexTable
-          rows={normalizedRows}
+          rows={paginatedRows}
           product={product}
           loading={loading}
           error={error}
         />
+
+        {normalizedRows.length > 0 && (
+          <div className={styles.paginationFooter}>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={normalizedRows.length}
+              pageSize={pageSize}
+              pageSizeOptions={KARDEX_PAGE_SIZE_OPTIONS}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="movimientos"
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
