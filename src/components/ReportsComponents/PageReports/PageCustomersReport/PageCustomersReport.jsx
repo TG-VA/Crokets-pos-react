@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from "react";
 import styles from "./PageCustomersReport.module.css";
-import { useBranch } from "../../../../contexts/BranchContext";
 
 // Componentes modulares
 import CustomersReportFilters from "./components/CustomersReportFilters";
@@ -29,8 +28,6 @@ import basketIcon from "../../../../assets/icons/basket-shopping-solid-full.svg"
 import giftsIcon from "../../../../assets/icons/gifts-solid-full.svg";
 
 const PageCustomersReport = () => {
-  const { branch } = useBranch();
-
   const [branchesList, setBranchesList] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -58,7 +55,7 @@ const PageCustomersReport = () => {
     error,
     syncedAt,
     refresh,
-  } = useCustomersReport(branch?.id || "ALL");
+  } = useCustomersReport("ALL");
 
   // Hook del modal de detalle 360°
   const {
