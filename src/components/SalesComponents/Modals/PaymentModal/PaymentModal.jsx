@@ -344,12 +344,15 @@ const PaymentModal = memo(
         setMixedPayments((p) => ({ ...p, [key]: val === "." ? "0." : val }));
     };
 
-    const ExchangeRateInput = () => (
+    // Se construye como elemento (y no como componente anidado) para que el
+    // input conserve el foco entre renders mientras se escribe.
+    const exchangeRateRow = (
       <div className={styles.paymentRow}>
-        <span>Tipo de cambio:</span>
+        <label htmlFor="payment-exchange-rate">Tipo de cambio:</label>
         <div className={styles.inputWithSymbol}>
           <span className={styles.currencySymbol}>$</span>
           <input
+            id="payment-exchange-rate"
             type="text"
             className={styles.paymentInput}
             value={exchangeRate}
@@ -436,10 +439,11 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Efectivo" ? (
               <>
                 <div className={styles.paymentRow}>
-                  <span>Pagó Con:</span>
+                  <label htmlFor="payment-cash-amount">Pagó Con:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-cash-amount"
                       type="text"
                       className={styles.paymentInput}
                       value={paidAmount}
@@ -457,12 +461,13 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                <ExchangeRateInput />
+                {exchangeRateRow}
                 <div className={styles.paymentRow}>
-                  <span>Pagó Con (USD):</span>
+                  <label htmlFor="payment-usd-amount">Pagó Con (USD):</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-usd-amount"
                       type="text"
                       className={styles.paymentInput}
                       value={dollarAmount}
@@ -487,12 +492,13 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Mixto" ? (
               <div className={styles.mixedPaymentSection}>
                 <h3>Desglose de Pago</h3>
-                <ExchangeRateInput />
+                {exchangeRateRow}
                 <div className={styles.paymentRow}>
-                  <span>Efectivo:</span>
+                  <label htmlFor="payment-mixed-cash">Efectivo:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-mixed-cash"
                       type="text"
                       className={styles.paymentInput}
                       value={mixedPayments.efectivo}
@@ -504,10 +510,11 @@ const PaymentModal = memo(
                   </div>
                 </div>
                 <div className={styles.paymentRow}>
-                  <span>Tarjeta:</span>
+                  <label htmlFor="payment-mixed-card">Tarjeta:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-mixed-card"
                       type="text"
                       className={styles.paymentInput}
                       value={mixedPayments.tarjeta}
@@ -518,10 +525,11 @@ const PaymentModal = memo(
                   </div>
                 </div>
                 <div className={styles.paymentRow}>
-                  <span>Dólares (USD):</span>
+                  <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-mixed-usd"
                       type="text"
                       className={styles.paymentInput}
                       value={mixedPayments.dolares}
@@ -554,16 +562,23 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Transferencia" ? (
               <div className={styles.transferSection}>
                 <div className={styles.paymentRow}>
-                  <span>Información de Transferencia:</span>
+                  <label htmlFor="payment-tracking-code">
+                    Información de Transferencia:
+                  </label>
                   <input
+                    id="payment-tracking-code"
                     type="text"
                     className={styles.trackingInput}
                     value={trackingCode}
                     onChange={(e) => setTrackingCode(e.target.value)}
                     placeholder="Clave de rastreo, referencia, etc."
+                    aria-describedby="payment-tracking-hint"
                     disabled={effectiveProcessing}
                   />
                 </div>
+                <p id="payment-tracking-hint" className={styles.trackingHint}>
+                  Se guardará como referencia de la transferencia.
+                </p>
                 <div className={styles.paymentRow}>
                   <span>Total a Cobrar:</span>
                   <span className={styles.totalAmount}>
