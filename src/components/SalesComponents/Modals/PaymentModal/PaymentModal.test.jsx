@@ -61,7 +61,9 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
 
     await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Confirmar impresión" })).toBeNull()
+      expect(
+        screen.queryByRole("dialog", { name: "Confirmar impresión" })
+      ).toBeNull()
     );
     expect(onProcessPayment).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
