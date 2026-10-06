@@ -126,17 +126,6 @@ const CashSessionDetailModal = ({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className={styles.modalFooter}>
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={onClose}
-          >
-            Cerrar
-          </button>
-        </div>
       </div>
     </div>
   );
