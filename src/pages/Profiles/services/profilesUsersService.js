@@ -1,13 +1,13 @@
 import { supabase } from "../../../lib/supabaseClient";
 
-const normalizeRoleName = (rolesValue) => {
+export const normalizeRoleName = (rolesValue) => {
   if (Array.isArray(rolesValue)) {
     return rolesValue[0]?.name || null;
   }
   return rolesValue?.name || null;
 };
 
-const normalizeUserRow = (row) => {
+export const normalizeUserRow = (row) => {
   const roleName = normalizeRoleName(row?.roles);
   const username = (row?.username || row?.email || "SIN USUARIO")
     .toString()
