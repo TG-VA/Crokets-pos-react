@@ -61,6 +61,11 @@
   transform: translateY(0);
 }
 
+.navButton:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
 .logoutButton {
   background-color: var(--croketsBlue);
   color: var(--white);

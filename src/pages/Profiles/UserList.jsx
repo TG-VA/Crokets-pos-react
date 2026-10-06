@@ -11,7 +11,7 @@ const UserList = ({ users, loading, error, onReload }) => {
         hour: "2-digit",
         minute: "2-digit",
       });
-    } catch (error) {
+    } catch {
       return "Fecha no válida";
     }
   };
@@ -35,12 +35,20 @@ const UserList = ({ users, loading, error, onReload }) => {
             {users.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <button className={styles.createButton} onClick={onReload}>
+        <button
+          type="button"
+          className={styles.createButton}
+          onClick={onReload}
+        >
           Recargar
         </button>
       </div>
 
-      {error ? <div className={styles.errorBanner}>{error}</div> : null}
+      {error ? (
+        <div className={styles.errorBanner} role="alert">
+          {error}
+        </div>
+      ) : null}
 
       {users.length === 0 ? (
         <div className={styles.emptyState}>
@@ -49,59 +57,79 @@ const UserList = ({ users, loading, error, onReload }) => {
           <p>No se encontraron registros en la tabla `users`.</p>
         </div>
       ) : (
-        <div className={styles.userTable}>
-          <div className={styles.tableHeader}>
-            <div className={styles.headerCell}>Usuario</div>
-            <div className={styles.headerCell}>Correo</div>
-            <div className={styles.headerCell}>Rol / Estado</div>
-            <div className={styles.headerCell}>Fecha de Creación</div>
-          </div>
-
-          <div className={styles.tableBody}>
+        <table className={styles.userTable}>
+          <caption className={styles.tableCaption}>
+            Listado de usuarios registrados con su rol y estado
+          </caption>
+          <thead>
+            <tr className={styles.tableHeader}>
+              <th className={styles.headerCell} scope="col">
+                Usuario
+              </th>
+              <th className={styles.headerCell} scope="col">
+                Correo
+              </th>
+              <th className={styles.headerCell} scope="col">
+                Rol / Estado
+              </th>
+              <th className={styles.headerCell} scope="col">
+                Fecha de Creación
+              </th>
+            </tr>
+          </thead>
+          <tbody>
             {users.map((user) => (
-              <div key={user.id} className={styles.tableRow}>
-                <div className={styles.userInfo}>
-                  <div className={styles.userAvatar}>
-                    {user.username.charAt(0).toUpperCase()}
+              <tr key={user.id} className={styles.tableRow}>
+                <td>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userAvatar}>
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={styles.userDetails}>
+                      <span className={styles.userName}>{user.username}</span>
+                      <span className={styles.userId}>ID: {user.id}</span>
+                    </div>
                   </div>
-                  <div className={styles.userDetails}>
-                    <span className={styles.userName}>{user.username}</span>
-                    <span className={styles.userId}>ID: {user.id}</span>
+                </td>
+
+                <td>
+                  <div className={styles.emailCell}>
+                    {user.email || "SIN CORREO"}
                   </div>
-                </div>
+                </td>
 
-                <div className={styles.emailCell}>
-                  {user.email || "SIN CORREO"}
-                </div>
-
-                <div className={styles.metaCell}>
-                  <span className={styles.permissionTag}>
-                    {user.roleName || "SIN ROL"}
-                  </span>
-                  <span
-                    className={`${styles.statusBadge} ${
-                      user.status === true
-                        ? styles.statusActive
+                <td>
+                  <div className={styles.metaCell}>
+                    <span className={styles.permissionTag}>
+                      {user.roleName || "SIN ROL"}
+                    </span>
+                    <span
+                      className={`${styles.statusBadge} ${
+                        user.status === true
+                          ? styles.statusActive
+                          : user.status === false
+                            ? styles.statusInactive
+                            : styles.statusUnknown
+                      }`}
+                    >
+                      {user.status === true
+                        ? "ACTIVO"
                         : user.status === false
-                          ? styles.statusInactive
-                          : styles.statusUnknown
-                    }`}
-                  >
-                    {user.status === true
-                      ? "ACTIVO"
-                      : user.status === false
-                        ? "INACTIVO"
-                        : "SIN ESTADO"}
-                  </span>
-                </div>
+                          ? "INACTIVO"
+                          : "SIN ESTADO"}
+                    </span>
+                  </div>
+                </td>
 
-                <div className={styles.dateCell}>
-                  {user.createdAt ? formatDate(user.createdAt) : "N/A"}
-                </div>
-              </div>
+                <td>
+                  <div className={styles.dateCell}>
+                    {user.createdAt ? formatDate(user.createdAt) : "N/A"}
+                  </div>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
+          </tbody>
+        </table>
       )}
     </div>
   );

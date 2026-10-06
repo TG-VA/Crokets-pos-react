@@ -69,7 +69,7 @@ Los iconos son archivos `.svg` sueltos en `src/assets/icons/`. Se importan como 
 
 | Archivo                | Uso sugerido     |
 | ---------------------- | ---------------- |
-| `user-solid-full.svg`  | Usuario / perfil |
+| `user-solid.svg`       | Usuario / perfil |
 | `assignClientIcon.svg` | Asignar cliente  |
 
 ##### Ubicación y accesos

@@ -12,7 +12,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const Products = lazy(() => import("./pages/Products/Products"));
 const Inventory = lazy(() => import("./pages/Inventory/Inventory"));
 const Settings = lazy(() => import("./pages/Settings/Settings"));
-const Profiles = lazy(() => import("./pages/Profiles/Profiles"));
 const CashCut = lazy(() => import("./pages/CashCut/CashCut"));
 const Invoices = lazy(() => import("./pages/Invoices/Invoices"));
 const Customers = lazy(() => import("./pages/Customers/Customers"));
@@ -136,20 +135,17 @@ export function AppRoutes({ RouterComponent = Router }) {
 
           {/* RUTAS ADMINISTRATIVAS (Requieren sesión, pero NO exigen caja abierta) */}
           <Route
-            path="/settings"
+            path="/settings/*"
             element={
               <AuthGuard requireCashRegister={false}>
                 <Settings />
               </AuthGuard>
             }
           />
+          {/* Retrocompatibilidad: /profiles ahora vive dentro de /settings */}
           <Route
             path="/profiles"
-            element={
-              <AuthGuard requireCashRegister={false}>
-                <Profiles />
-              </AuthGuard>
-            }
+            element={<Navigate to="/settings/usuarios" replace />}
           />
 
           {/* FALLBACK ROOT */}
