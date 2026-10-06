@@ -1,0 +1,224 @@
+.page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.pageHeader {
+  margin-bottom: 1.25rem;
+}
+
+.pageTitle {
+  color: #0b6d85;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pageSubtitle {
+  color: #333333;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-sizing: border-box;
+}
+
+.cardTitle {
+  color: #333333;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.cardDescription {
+  color: #555555;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #333333;
+}
+
+.input {
+  min-width: 180px;
+  max-width: 260px;
+  flex: 1;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.95rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #333333;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.input:focus-visible {
+  border-color: #0b6d85;
+  outline: 3px solid #05313d;
+  outline-offset: 1px;
+}
+
+.button {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #0b6d85;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: #08556a;
+}
+
+.button:disabled {
+  background: #7aa9b7;
+  cursor: not-allowed;
+}
+
+.button:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.buttonSecondary {
+  background: #ffffff;
+  color: #0b6d85;
+  border: 2px solid #0b6d85;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: #eef7fa;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.statusMessage {
+  color: #166534;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
+.errorMessage {
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
+.hint {
+  color: #555555;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0.75rem 0 0;
+}
+
+.fieldset {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 1rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #333333;
+  padding: 0 0.35rem;
+}
+
+.radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.radioOption {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: #333333;
+}
+
+.radioOption input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0b6d85;
+}
+
+.radioOption input:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333333;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0b6d85;
+}
+
+.checkboxRow input:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.definitionList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.6rem 1.25rem;
+  margin: 0;
+}
+
+.definitionTerm {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+}
+
+.definitionValue {
+  font-size: 0.9rem;
+  color: #333333;
+  margin: 0;
+  word-break: break-word;
+}

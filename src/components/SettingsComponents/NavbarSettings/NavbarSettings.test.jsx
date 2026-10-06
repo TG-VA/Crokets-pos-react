@@ -36,9 +36,9 @@ describe("NavbarSettings", () => {
     renderAt("/settings/usuarios");
 
     expect(
-      screen.getByRole("link", { name: "Usuarios y Permisos" }).getAttribute(
-        "aria-current"
-      )
+      screen
+        .getByRole("link", { name: "Usuarios y Permisos" })
+        .getAttribute("aria-current")
     ).toBe("page");
 
     TAB_LABELS.filter((label) => label !== "Usuarios y Permisos").forEach(
@@ -54,16 +54,18 @@ describe("NavbarSettings", () => {
     renderAt("/settings/caja");
 
     expect(
-      screen.getByRole("link", { name: "Caja y Operación" }).getAttribute(
-        "aria-current"
-      )
+      screen
+        .getByRole("link", { name: "Caja y Operación" })
+        .getAttribute("aria-current")
     ).toBe("page");
   });
 
   it("enlaza el acceso rápido fiscal fuera del submenú", () => {
     renderAt("/settings/caja");
 
-    const fiscalLink = screen.getByRole("link", { name: "Acceso rápido fiscal" });
+    const fiscalLink = screen.getByRole("link", {
+      name: "Acceso rápido fiscal",
+    });
     expect(fiscalLink.getAttribute("href")).toBe("/invoices/configuracion");
     expect(fiscalLink.getAttribute("aria-current")).toBeNull();
   });
