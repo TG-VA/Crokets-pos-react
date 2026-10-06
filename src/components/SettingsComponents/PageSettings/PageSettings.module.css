@@ -108,6 +108,15 @@
 }
 
 .buttonSecondary {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
   background: #ffffff;
   color: #0b6d85;
   border: 2px solid #0b6d85;
@@ -115,6 +124,17 @@
 
 .buttonSecondary:hover:not(:disabled) {
   background: #eef7fa;
+}
+
+.buttonSecondary:disabled {
+  color: #7aa9b7;
+  border-color: #7aa9b7;
+  cursor: not-allowed;
+}
+
+.buttonSecondary:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
 }
 
 .buttonRow {
