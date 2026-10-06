@@ -104,10 +104,24 @@
 
 /* Tabla de usuarios */
 .userTable {
+  width: 100%;
+  border-collapse: collapse;
   background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+.tableCaption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .tableContainer {
@@ -140,36 +154,47 @@
 }
 
 .tableHeader {
-  display: grid;
-  grid-template-columns: 2fr 2fr 2fr 1.5fr;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
   background: #1092b1;
   color: #ffffff;
+}
+
+.headerCell {
+  padding: 1rem 1.5rem;
+  text-align: left;
   font-weight: 600;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.headerCell {
-  display: flex;
-  align-items: center;
+.userTable th:nth-child(1),
+.userTable td:nth-child(1) {
+  width: 32%;
 }
 
-.tableBody {
-  display: flex;
-  flex-direction: column;
+.userTable th:nth-child(2),
+.userTable td:nth-child(2) {
+  width: 22%;
+}
+
+.userTable th:nth-child(3),
+.userTable td:nth-child(3) {
+  width: 26%;
+}
+
+.userTable th:nth-child(4),
+.userTable td:nth-child(4) {
+  width: 20%;
+}
+
+.userTable td {
+  padding: 1.25rem 1.5rem;
+  vertical-align: middle;
 }
 
 .tableRow {
-  display: grid;
-  grid-template-columns: 2fr 2fr 2fr 1.5fr;
-  gap: 1rem;
-  padding: 1.5rem;
   border-bottom: 1px solid #e0e0e0;
-  align-items: center;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .tableRow:hover {
