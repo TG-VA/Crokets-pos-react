@@ -78,7 +78,7 @@ const NAV_ITEMS = [
     label: "Configuración",
     icon: SettingsIcon,
     path: "/settings",
-    matchPaths: ["/settings"],
+    matchPaths: ["/settings", "/profiles"],
   },
 ];
 

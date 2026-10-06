@@ -68,11 +68,13 @@ vi.mock("./pages/Products/Products", () => {
 vi.mock("./pages/Inventory/Inventory", () => {
   return pageStub("page-inventory");
 });
-vi.mock("./pages/Settings/Settings", () => {
-  return pageStub("page-settings");
-});
-vi.mock("./pages/Profiles/Profiles", () => {
-  return pageStub("page-profiles");
+vi.mock("./pages/Settings/Settings", async () => {
+  const { useLocation } = await import("react-router-dom");
+  function SettingsStub() {
+    const location = useLocation();
+    return <div data-testid="page-settings" data-path={location.pathname} />;
+  }
+  return { default: SettingsStub };
 });
 vi.mock("./pages/CashCut/CashCut", () => {
   return pageStub("page-cashcut");
@@ -301,6 +303,26 @@ describe("App: rutas administrativas y wildcard", () => {
 
     expect(await screen.findByTestId("page-settings")).toBeTruthy();
     expect(screen.queryByTestId("page-cash-register")).toBeNull();
+  });
+
+  it("acepta las subrutas de /settings sin caja abierta", async () => {
+    signIn();
+
+    renderAppAt("/settings/caja");
+
+    const page = await screen.findByTestId("page-settings");
+    expect(page.getAttribute("data-path")).toBe("/settings/caja");
+    expect(screen.queryByTestId("page-cash-register")).toBeNull();
+  });
+
+  it("redirige /profiles a /settings/usuarios para mantener la retrocompatibilidad", async () => {
+    signIn();
+
+    renderAppAt("/profiles");
+
+    const page = await screen.findByTestId("page-settings");
+    expect(page.getAttribute("data-path")).toBe("/settings/usuarios");
+    expect(screen.queryByLabelText("Usuario")).toBeNull();
   });
 
   it("resuelve la ruta raiz a /dashboard con sesion y caja abierta", async () => {
