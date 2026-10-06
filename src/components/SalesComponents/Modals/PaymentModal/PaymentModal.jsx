@@ -9,6 +9,7 @@ import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
 import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import { getPrintMode } from "../../../../services/printSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -49,13 +50,22 @@ const PaymentModal = memo(
       confirmText: "Entendido",
     });
 
+    // Preferencia local de impresion: `confirm` exige una confirmacion previa
+    // antes de enviar el ticket a la impresora.
+    const [printMode] = useState(getPrintMode);
+
     const effectiveProcessing = processing || processingSale;
     const safeTotal = Number(total || 0);
     const isZeroTotalSale = safeTotal <= 0;
     const numericExchangeRate = toNumber(exchangeRate);
 
     const closeAppModal = useCallback(
-      () => setAppModal((p) => ({ ...p, isOpen: false })),
+      () =>
+        setAppModal((prev) => ({
+          ...prev,
+          isOpen: false,
+          onConfirmAction: undefined,
+        })),
       []
     );
     const showAppWarning = useCallback(
@@ -250,6 +260,26 @@ const PaymentModal = memo(
       ]
     );
 
+    // Segun la preferencia de impresion guardada en Configuracion, el cobro con
+    // impresion puede pedir una confirmacion previa antes de enviar el ticket.
+    const startPaymentWithPrint = useCallback(() => {
+      if (printMode !== "confirm") {
+        processPayment(true);
+        return;
+      }
+
+      setAppModal({
+        isOpen: true,
+        type: "info",
+        title: "Confirmar impresión",
+        message: "¿Cobrar la venta e imprimir el ticket?",
+        confirmText: "Cobrar e imprimir",
+        cancelText: "Cancelar",
+        showCancel: true,
+        onConfirmAction: () => processPayment(true),
+      });
+    }, [printMode, processPayment]);
+
     useEffect(() => {
       if (!isOpen) return;
       const handleKeyDown = (e) => {
@@ -266,7 +296,7 @@ const PaymentModal = memo(
           setNotesModalOpen(true);
         } else if (e.key === "F1") {
           stop();
-          processPayment(true);
+          startPaymentWithPrint();
         } else if (e.key === "F2") {
           stop();
           processPayment(false);
@@ -281,6 +311,7 @@ const PaymentModal = memo(
       effectiveProcessing,
       closePaymentModal,
       processPayment,
+      startPaymentWithPrint,
     ]);
 
     useEffect(() => {
@@ -547,7 +578,7 @@ const PaymentModal = memo(
             <button
               type="button"
               className={styles.modalActionBtn}
-              onClick={() => processPayment(true)}
+              onClick={startPaymentWithPrint}
               disabled={effectiveProcessing}
             >
               {effectiveProcessing
@@ -599,8 +630,15 @@ const PaymentModal = memo(
           title={appModal.title}
           message={appModal.message}
           confirmText={appModal.confirmText}
+          cancelText={appModal.cancelText || "Cancelar"}
+          showCancel={Boolean(appModal.showCancel)}
           onClose={closeAppModal}
-          onConfirm={closeAppModal}
+          onConfirm={() => {
+            const action = appModal.onConfirmAction;
+            closeAppModal();
+            if (typeof action === "function") action();
+          }}
+          onCancel={closeAppModal}
         />
       </div>
     );

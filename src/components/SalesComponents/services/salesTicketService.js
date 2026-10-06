@@ -1,6 +1,7 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
 import { printTicket } from "../../../utils/ticketPrinter";
+import { getTicketPrintProfile } from "../../../services/printSettingsService";
 import {
   getRewardCartItems,
   getRewardItemPointsPerUnit,
@@ -341,7 +342,9 @@ export const printSaleTicket = async ({
       isReprint: false,
     });
 
-    const printResult = await printTicket(ticketText);
+    const printResult = await printTicket(ticketText, {
+      profile: getTicketPrintProfile(),
+    });
     if (!printResult?.success)
       console.error(
         "No se pudo imprimir el ticket automáticamente:",

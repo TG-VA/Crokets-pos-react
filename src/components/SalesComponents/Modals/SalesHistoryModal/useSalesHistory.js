@@ -23,6 +23,7 @@ import {
 import { useDidChange } from "../../../../hooks/useDidChange";
 import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 import { printTicket } from "../../../../utils/ticketPrinter";
+import { getTicketPrintProfile } from "../../../../services/printSettingsService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 
 export const useSalesHistory = ({
@@ -653,7 +654,9 @@ export const useSalesHistory = ({
         reprintedAt: new Date(),
       });
 
-      const result = await printTicket(ticketText);
+      const result = await printTicket(ticketText, {
+        profile: getTicketPrintProfile(),
+      });
       if (!result?.success)
         throw new Error(result?.message || "No se pudo imprimir la copia.", {
           cause: result?.error,

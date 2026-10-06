@@ -11,6 +11,7 @@ import AppModal from "../../components/AppModal/AppModal";
 
 import { buildCashCutText } from "../../utils/cashCutBuilder";
 import { printTicket } from "../../utils/ticketPrinter";
+import { getTicketPrintProfile } from "../../services/printSettingsService";
 
 import { useCashCutReport } from "./hooks/useCashCutReport";
 import { useCashCutDetail } from "./hooks/useCashCutDetail";
@@ -179,7 +180,9 @@ const CashCut = () => {
         rewardPuntosDevueltos: rewardSummary.puntosDevueltos,
       });
 
-      const result = await printTicket(text);
+      const result = await printTicket(text, {
+        profile: getTicketPrintProfile(),
+      });
 
       if (!result?.success) {
         throw new Error(result?.message || "No se pudo imprimir el corte.", {
