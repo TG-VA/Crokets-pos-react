@@ -9,7 +9,10 @@ import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
 import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
-import { getPrintMode } from "../../../../services/printSettingsService";
+import {
+  getPrintMode,
+  PRINT_MODE_CONFIRM,
+} from "../../../../services/printSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -49,10 +52,6 @@ const PaymentModal = memo(
       message: "",
       confirmText: "Entendido",
     });
-
-    // Preferencia local de impresion: `confirm` exige una confirmacion previa
-    // antes de enviar el ticket a la impresora.
-    const [printMode] = useState(getPrintMode);
 
     const effectiveProcessing = processing || processingSale;
     const safeTotal = Number(total || 0);
@@ -262,8 +261,9 @@ const PaymentModal = memo(
 
     // Segun la preferencia de impresion guardada en Configuracion, el cobro con
     // impresion puede pedir una confirmacion previa antes de enviar el ticket.
+    // Se lee en el momento del cobro para reflejar cambios hechos en Settings.
     const startPaymentWithPrint = useCallback(() => {
-      if (printMode !== "confirm") {
+      if (getPrintMode() !== PRINT_MODE_CONFIRM) {
         processPayment(true);
         return;
       }
@@ -278,7 +278,7 @@ const PaymentModal = memo(
         showCancel: true,
         onConfirmAction: () => processPayment(true),
       });
-    }, [printMode, processPayment]);
+    }, [processPayment]);
 
     useEffect(() => {
       if (!isOpen) return;
