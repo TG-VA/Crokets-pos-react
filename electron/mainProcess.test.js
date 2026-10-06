@@ -17,6 +17,7 @@ const IPC_CHANNELS = [
   "reset-zoom",
   "get-zoom-debug",
   "print-ticket",
+  "open-cash-drawer",
 ];
 
 const originalPlatform = process.platform;

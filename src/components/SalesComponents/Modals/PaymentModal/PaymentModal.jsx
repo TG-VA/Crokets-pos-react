@@ -13,6 +13,7 @@ import {
   getPrintMode,
   PRINT_MODE_CONFIRM,
 } from "../../../../services/printSettingsService";
+import { getCashOperationSettings, triggerCashDrawerKick } from "../../../../services/cashOperationSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -45,6 +46,10 @@ const PaymentModal = memo(
     const [isNotesModalOpen, setNotesModalOpen] = useState(false);
     const [saleNotes, setSaleNotes] = useState("");
     const [processing, setProcessing] = useState(false);
+    const [cashOpSettings, setCashOpSettings] = useState({
+      cashDrawerEnabled: false,
+      cashDrawerTrigger: "cash_only",
+    });
     const [appModal, setAppModal] = useState({
       isOpen: false,
       type: "warning",
@@ -229,6 +234,31 @@ const PaymentModal = memo(
         try {
           setProcessing(true);
           if (onProcessPayment ? await onProcessPayment(paymentData) : true) {
+            try {
+              const settings = cashOpSettings || (await (async () => getCashOperationSettings())());
+              const enabled = settings.cashDrawerEnabled;
+              const trigger = settings.cashDrawerTrigger || "cash_only";
+              const method = selectedPaymentMethod;
+              let shouldTrigger = false;
+              if (enabled) {
+                if (trigger === "all_sales") {
+                  shouldTrigger = true;
+                } else if (trigger === "cash_only") {
+                  if (method === "Efectivo" || method === "Mixto") {
+                    shouldTrigger = true;
+                  }
+                } else if (trigger === "cash_and_movements") {
+                  if (method === "Efectivo" || method === "Mixto") {
+                    shouldTrigger = true;
+                  }
+                }
+              }
+              if (shouldTrigger) {
+                triggerCashDrawerKick().catch(() => {});
+              }
+            } catch (e) {
+              // ignore drawer errors
+            }
             resetModalState();
             onClose();
           }

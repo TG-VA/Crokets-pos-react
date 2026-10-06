@@ -10,6 +10,7 @@ const allowedInvokeChannels = [
   "reset-zoom",
   "get-zoom-debug",
   "print-ticket",
+  "open-cash-drawer",
 ];
 
 // API expuesta al proceso de renderizado

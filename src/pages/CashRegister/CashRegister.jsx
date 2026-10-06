@@ -9,11 +9,16 @@ import {
   openCashRegister,
 } from "../../services/cashRegisterService";
 import { useRequestStatus } from "../../hooks/useRequestStatus";
+import { getCashOperationSettings } from "../../services/cashOperationSettingsService";
 
 const CashRegister = ({ setCashRegistered }) => {
   const [initialCash, setInitialCash] = useState("");
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState("");
+  const [cashOpSettings, setCashOpSettings] = useState({
+    defaultOpeningCash: 0,
+    allowZeroOpening: true,
+  });
 
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -86,10 +91,19 @@ const CashRegister = ({ setCashRegistered }) => {
   }, [branch?.id, user?.id, navigate, setCashRegistered, markSettled]);
 
   useEffect(() => {
+    const settings = getCashOperationSettings();
+    setCashOpSettings(settings);
+  }, []);
+
+  useEffect(() => {
     if (!checking) {
+      const defaultCash = cashOpSettings.defaultOpeningCash || 0;
+      if (defaultCash > 0 && initialCash === "") {
+        setInitialCash(String(defaultCash));
+      }
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [checking]);
+  }, [checking, cashOpSettings, initialCash]);
 
   const handleKeyDown = (e) => {
     const cursorPos = e.target.selectionStart;
@@ -141,6 +155,12 @@ const CashRegister = ({ setCashRegistered }) => {
     if (Number.isNaN(value) || value < 0) {
       setError("Ingrese un monto válido.");
       setInitialCash("");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (value === 0 && cashOpSettings.allowZeroOpening === false) {
+      setError("La política de la tienda no permite aperturas con monto cero.");
       inputRef.current?.focus();
       return;
     }
