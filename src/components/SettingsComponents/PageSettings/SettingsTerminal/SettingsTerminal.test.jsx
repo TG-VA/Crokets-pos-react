@@ -109,4 +109,23 @@ describe("SettingsTerminal", () => {
       await screen.findByText("Zoom de la ventana restablecido.")
     ).toBeTruthy();
   });
+
+  it("revisa la conexión al pulsar el botón correspondiente", async () => {
+    render(<SettingsTerminal />);
+
+    await screen.findByText("Conectado a Supabase");
+
+    checkSupabaseConnection.mockClear();
+    checkSupabaseConnection.mockResolvedValue({
+      success: true,
+      connected: true,
+      error: null,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar conexión" }));
+
+    await waitFor(() => {
+      expect(checkSupabaseConnection).toHaveBeenCalledTimes(1);
+    });
+  });
 });
