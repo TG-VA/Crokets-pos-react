@@ -2463,3 +2463,42 @@ el navegador, y se contrasta contra la versión previa del código en lugar de c
 
 **APROBADO POR UNANIMIDAD (Auditoría Interna y Contra-auditoría Externa).**
 La rama cumple rigurosamente con todos los gates de calidad y el protocolo estricto de dos fases. Cierra formalmente el issue #61 del repositorio sin ninguna regresión funcional.
+
+---
+
+## Informe de Auditoría — RAMA `feature/remove-redundant-close-btn-cash-modal` (5 de octubre de 2026)
+
+**Base:** `origin/main` (`bb941c7`) · **HEAD:** `8fdf160` (rama `feature/remove-redundant-close-btn-cash-modal`)
+**Commits en la rama:**
+
+1. `1730287` — `refactor(reports): remove redundant close button and footer in cash session detail modal` (2 archivos, 39 eliminaciones, 0 inserciones)
+2. `8fdf160` — `fix(reports): enhance close button a11y and clean unused React import in cash detail modal` (1 archivo, 2 inserciones, 2 eliminaciones)
+
+**Alcance:** Remoción del botón redundante "Cerrar" y purga de su contenedor `.modalFooter` en el modal de detalle de turnos de caja (`CashSessionDetailModal.jsx` y `CashComponents.module.css`), más el refuerzo de accesibilidad del botón de cierre que queda como único control visible.
+**Decisión de diseño ratificada:** `.modalContainer` conserva `border-radius: 14px` (valor original del proyecto). No se altera el radio para no mezclar un ajuste cosmético en un PR de limpieza; el criterio funcional se cumple con `overflow: hidden` del contenedor y `padding: 20px` de `.modalBody`.
+
+### 1. Comprobaciones mecánicas y estado de calidad
+
+| #   | Verificación                      | Comando / Método                                                                                    | Resultado                                                                              | Estado |
+| --- | --------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | :----: |
+| 1   | Suite de pruebas                  | `npm test -- --run`                                                                                 | 106 archivos pasados / 1557 tests en verde (0 fallos, 14.28s)                          |  PASS  |
+| 2   | Compilación frontend              | `npm run build:frontend`                                                                            | `exit 0`, `built in 3.89s` (main: 3.78s)                                               |  PASS  |
+| 3   | Linter de archivos tocados        | `npx eslint .../CashSessionDetailModal.jsx`                                                         | 0 errores, 0 warnings (`exit 0`)                                                       |  PASS  |
+| 4   | Ausencia de CSS huérfano          | Búsqueda `modalFooter` / `secondaryBtn` en `PageCashReport`                                         | 0 coincidencias                                                                        |  PASS  |
+| 5   | Mecanismos de cierre              | Verificación de botón X, `useEscapeKey` y backdrop click                                            | 3 mecanismos intactos (`useEscapeKey` L23, backdrop L33, `stopPropagation` L36, X L54) |  PASS  |
+| 6   | Higiene de diff y formato         | Prettier + ausencia de emojis + EOF newline                                                         | Conforme a `AGENTS.md`                                                                 |  PASS  |
+| 7   | Accesibilidad del botón de cierre | `alt=""` en la imagen decorativa + `aria-label="Cerrar modal"` en el botón (`CODE_STANDARDS.md`:43) | Nombre accesible único, sin redundancia en lector de pantalla                          |  PASS  |
+| 8   | Importaciones sin uso             | `rg "React" CashSessionDetailModal.jsx`                                                             | 0 referencias; import `React` eliminado (warning ESLint preexistente resuelto)         |  PASS  |
+
+**Salvedad registrada (preexistente, no atribuible a la rama):** `npm run build:frontend` emite un único aviso de Vite por chunks superiores a 500 kB (`dist/assets/spreadsheets-*.js`, 1.36 MB). Se reprodujo idéntico sobre `main` (`built in 3.78s`, mismo aviso), por lo que es deuda de tamaño de bundle preexistente y ajena a este diff, que no toca importaciones ni `vite.config.mjs`.
+
+### 2. Verificación de ausencia de regresión en la interfaz
+
+- **Sin elementos DOM vacíos:** el modal conserva como únicos hijos de `.modalContainer` el header (`.modalHeader`) y el cuerpo (`.modalBody`); el `</div>` de cierre del body sigue inmediatamente al del contenedor, sin contadores desbalanceados.
+- **Sin estilos muertos:** `.modalFooter`, `.secondaryBtn` y `.secondaryBtn:hover` se eliminaron del CSS Module y no quedaban referencias en ningún otro archivo del submódulo. Los `.modalFooter` de otros módulos CSS (`PageCommissionsReport`, `PageCustomersReport`, `PageProfitabilityReport`, `SalesComponents/Modals/DeleteItemModal`) pertenecen a sus propios CSS Modules y no fueron tocados.
+- **Resolución de clases:** los 20 selectores `styles.*` que referencia el componente existen en `CashComponents.module.css`; ninguno quedó sin definir tras la purga.
+- **Espaciado inferior armónico:** `.modalBody` mantiene `padding: 20px` y `.modalContainer` mantiene `overflow: hidden` con `border-radius`, de modo que el cuerpo recorta correctamente contra las esquinas redondeadas sin la franja gris ni el borde superior que imponía el footer.
+
+### 3. Veredicto final
+
+**APROBADO.** La interfaz queda limpia, sin elementos DOM vacíos, sin estilos muertos y con accesibilidad reforzada: el cierre del modal conserva tres mecanismos (botón X con nombre accesible explícito, tecla Escape y clic en el backdrop), el componente quedó en 134 líneas y las tres verificaciones automáticas (pruebas, compilación y linter) pasan en verde.

@@ -629,34 +629,6 @@
   color: #0f172a;
 }
 
-.modalFooter {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
-  border-top: 1px solid #e2e8f0;
-  background-color: #f8fafc;
-  flex-shrink: 0;
-}
-
-.secondaryBtn {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 7px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.secondaryBtn:hover {
-  background-color: #f1f5f9;
-  color: #1e293b;
-}
-
 /* =========================================================
    UTILIDADES SEMÁNTICAS Y ESTRUCTURALES DEL MODAL
    ========================================================= */

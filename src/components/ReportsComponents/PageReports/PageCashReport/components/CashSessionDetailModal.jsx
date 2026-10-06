@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./CashComponents.module.css";
 import { useEscapeKey } from "../../../../../hooks/useEscapeKey";
 import {
@@ -55,8 +54,9 @@ const CashSessionDetailModal = ({
             className={styles.closeModalBtn}
             onClick={onClose}
             title="Cerrar modal"
+            aria-label="Cerrar modal"
           >
-            <img src={XMarkIcon} alt="Cerrar" className={styles.closeIcon} />
+            <img src={XMarkIcon} alt="" className={styles.closeIcon} />
           </button>
         </div>
 
@@ -125,17 +125,6 @@ const CashSessionDetailModal = ({
               </p>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className={styles.modalFooter}>
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={onClose}
-          >
-            Cerrar
-          </button>
         </div>
       </div>
     </div>
