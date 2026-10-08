@@ -31,6 +31,7 @@
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-decoration: none;
+  position: relative;
 }
 
 .navButton:hover {
@@ -54,4 +55,39 @@
   transition: filter 0.2s ease;
   filter: invert(42%) sepia(56%) saturate(665%) hue-rotate(152deg)
     brightness(92%) contrast(91%);
+}
+
+.badgePendientes {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  z-index: 3;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--croketsOrange, #fc8913);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.22),
+    0 0 0 2px #ffffff;
+  user-select: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.navButton.active .badgePendientes,
+.navButton:hover .badgePendientes {
+  background: #ffffff;
+  color: var(--croketsOrange, #fc8913);
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.18),
+    0 0 0 2px var(--croketsOrange, #fc8913);
 }

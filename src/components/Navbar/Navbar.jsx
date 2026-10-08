@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
+import { usePendingTransfers } from "../../contexts/PendingTransfersContext";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import AppModal from "../AppModal/AppModal";
 
@@ -87,8 +88,8 @@ const Navbar = () => {
   const location = useLocation();
   const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
+  const { pendingReceiptsCount } = usePendingTransfers();
 
-  // Inyectamos la lógica separada para atajos (F1, F2, etc.)
   useKeyboardShortcuts(NAV_ITEMS);
 
   const [appModal, setAppModal] = useState({

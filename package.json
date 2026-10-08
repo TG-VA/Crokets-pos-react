@@ -12,7 +12,7 @@
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "TZ=America/Cancun vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -27,6 +27,15 @@
   "license": "ISC",
   "engines": {
     "node": ">=22.22.2"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": false,
+    "trailingComma": "es5",
+    "semi": true,
+    "printWidth": 80,
+    "endOfLine": "lf"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
@@ -57,7 +66,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^30.0.1",
     "node-gyp": "^11.3.0",
-    "prettier": "^3.9.8",
+    "prettier": "3.9.8",
     "vite": "^7.1.0",
     "vitest": "^5.0.0",
     "wait-on": "^8.0.4"
