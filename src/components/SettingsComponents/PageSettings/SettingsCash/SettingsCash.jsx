@@ -238,7 +238,7 @@ const SettingsCash = () => {
             <div className={styles.settingsRow}>
               <div className={styles.settingsRowLeft}>
                 <h3 className={styles.settingsRowTitle}>
-                  Limitar monto máximo de apertura (Tope Admin)
+                  Limitar monto máximo de apertura
                 </h3>
                 <p className={styles.settingsRowDescription}>
                   Impide abrir caja con un fondo inicial que supere el límite
