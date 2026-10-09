@@ -3,6 +3,10 @@ import {
   createCashMovement,
   getAvailableCash,
 } from "../services/salesCashService";
+import {
+  getCashOperationSettings,
+  triggerCashDrawerKick,
+} from "../../../services/cashOperationSettingsService";
 
 const useSalesCashMovements = ({
   userId,
@@ -42,6 +46,17 @@ const useSalesCashMovements = ({
     [setCashMovements]
   );
 
+  const maybeTriggerDrawerKick = useCallback(() => {
+    const cashOps = getCashOperationSettings();
+    if (
+      cashOps.cashDrawerEnabled &&
+      cashOps.cashDrawerConnection !== "manual" &&
+      cashOps.cashDrawerTrigger === "cash_and_movements"
+    ) {
+      triggerCashDrawerKick().catch(() => {});
+    }
+  }, []);
+
   const handleSaveEntry = useCallback(
     async (newMovement) => {
       if (!validateCashMovementContext()) return false;
@@ -62,6 +77,7 @@ const useSalesCashMovements = ({
           "Entrada de efectivo registrada correctamente.",
           "Entrada registrada"
         );
+        maybeTriggerDrawerKick();
         return true;
       } catch (error) {
         console.error("Error al guardar entrada de efectivo:", error);
@@ -77,6 +93,7 @@ const useSalesCashMovements = ({
       userId,
       branchId,
       appendCashMovement,
+      maybeTriggerDrawerKick,
       showAppSuccess,
       showAppWarning,
     ]
@@ -125,6 +142,7 @@ const useSalesCashMovements = ({
           confirmText: "Entendido",
         });
 
+        maybeTriggerDrawerKick();
         return true;
       } catch (error) {
         console.error("Error al guardar salida de efectivo:", error);
@@ -140,6 +158,7 @@ const useSalesCashMovements = ({
       userId,
       branchId,
       appendCashMovement,
+      maybeTriggerDrawerKick,
       showAppModal,
       showAppWarning,
     ]

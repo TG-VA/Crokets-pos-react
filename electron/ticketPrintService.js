@@ -269,6 +269,7 @@ module.exports = {
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
+  openCashDrawer,
 };
 
 
