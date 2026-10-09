@@ -539,25 +539,12 @@ const SettingsCash = () => {
         <div className={styles.settingsRow}>
           <div className={styles.settingsRowLeft}>
             <h3 className={styles.settingsRowTitle}>
-              Tolerancia máxima de descuadre sin autorización de administrador
-            </h3>
-          </div>
-          <div className={styles.settingsRowRight}>
-            <MonetaryInput
-              id="cut-tolerance-amount"
-              value={settings.cutToleranceAmount}
-              onChange={(event) =>
-                handleSettingChange("cutToleranceAmount", event.target.value)
-              }
-            />
-          </div>
-        </div>
-
-        <div className={styles.settingsRow}>
-          <div className={styles.settingsRowLeft}>
-            <h3 className={styles.settingsRowTitle}>
               Exigir nota obligatoria si existe faltante o sobrante en el corte
             </h3>
+            <p className={styles.settingsRowDescription}>
+              Obliga al cajero a capturar una justificación antes de confirmar
+              el corte si el conteo físico no coincide con el saldo esperado.
+            </p>
           </div>
           <div className={styles.settingsRowRight}>
             <ToggleSwitch
