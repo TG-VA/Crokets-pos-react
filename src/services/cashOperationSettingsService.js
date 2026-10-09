@@ -63,6 +63,18 @@ function sanitizeString(value, allowed, defaultValue) {
   return defaultValue;
 }
 
+/**
+ * Deriva si se permite abrir caja con monto cero.
+ *
+ * Un fondo minimo obligatorio mayor a cero exige capturar efectivo, mientras
+ * que con el minimo desactivado o en cero la apertura en cero sigue permitida.
+ * Se resuelve aqui para que get y save compartan exactamente la misma regla.
+ */
+function deriveAllowZeroOpening(minOpeningCashEnabled, minOpeningCash) {
+  if (!minOpeningCashEnabled) return true;
+  return minOpeningCash <= 0;
+}
+
 function getStoredSettings() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -89,15 +101,10 @@ export function getCashOperationSettings() {
     DEFAULTS.minOpeningCash,
     0
   );
-  let allowZeroOpening = sanitizeBoolean(
-    merged.allowZeroOpening,
-    DEFAULTS.allowZeroOpening
+  const allowZeroOpening = deriveAllowZeroOpening(
+    minOpeningCashEnabled,
+    minOpeningCash
   );
-  if (minOpeningCashEnabled && minOpeningCash > 0) {
-    allowZeroOpening = false;
-  } else if (!minOpeningCashEnabled) {
-    allowZeroOpening = true;
-  }
 
   const settings = {
     defaultOpeningCash: sanitizeNumber(
@@ -181,15 +188,10 @@ export function saveCashOperationSettings(partialSettings = {}) {
       DEFAULTS.minOpeningCash,
       0
     );
-    let allowZeroOpening = sanitizeBoolean(
-      next.allowZeroOpening,
-      DEFAULTS.allowZeroOpening
+    const allowZeroOpening = deriveAllowZeroOpening(
+      minOpeningCashEnabled,
+      minOpeningCash
     );
-    if (minOpeningCashEnabled && minOpeningCash > 0) {
-      allowZeroOpening = false;
-    } else if (!minOpeningCashEnabled) {
-      allowZeroOpening = true;
-    }
 
     const toStore = {
       defaultOpeningCash: sanitizeNumber(

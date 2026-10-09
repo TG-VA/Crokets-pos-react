@@ -105,7 +105,11 @@ const CashRegister = ({ setCashRegistered }) => {
       }
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [checking, cashOpSettings, initialCash]);
+    // `initialCash` se omite a proposito: incluirlo reenfocaria el input en cada
+    // pulsacion de tecla. El efecto solo necesita correr cuando termina el
+    // chequeo o llega la configuracion de caja.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checking, cashOpSettings]);
 
   const handleKeyDown = (e) => {
     const cursorPos = e.target.selectionStart;

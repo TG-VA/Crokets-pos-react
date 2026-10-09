@@ -141,6 +141,19 @@ describe("cashOperationSettingsService", () => {
     expect(withoutMin.allowZeroOpening).toBe(true);
   });
 
+  it("permite apertura en cero cuando el minimo obligatorio es cero", () => {
+    saveCashOperationSettings({
+      minOpeningCashEnabled: true,
+      minOpeningCash: 0,
+      allowZeroOpening: false,
+    });
+
+    const result = getCashOperationSettings();
+    expect(result.minOpeningCashEnabled).toBe(true);
+    expect(result.minOpeningCash).toBe(0);
+    expect(result.allowZeroOpening).toBe(true);
+  });
+
   it("sanea configuracion de dolares en get y save", () => {
     window.localStorage.setItem(
       STORAGE_KEY,
