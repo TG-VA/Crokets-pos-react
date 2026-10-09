@@ -357,6 +357,20 @@ const PaymentModal = memo(
       if (!isOpen) resetModalState();
     }, [isOpen, resetModalState]);
 
+    // Refresca la configuracion de caja en cada apertura para reflejar de
+    // inmediato cualquier cambio hecho en SettingsCash.
+    useEffect(() => {
+      if (isOpen) {
+        const freshOps = getCashOperationSettings();
+        setCashOpSettings(freshOps);
+        setExchangeRate(
+          freshOps.defaultExchangeRate
+            ? String(freshOps.defaultExchangeRate)
+            : "18.50"
+        );
+      }
+    }, [isOpen]);
+
     // EFECTO DE AUTORELLENADO DE PAGO
     useEffect(() => {
       if (!isOpen) return;
@@ -382,26 +396,6 @@ const PaymentModal = memo(
       if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1)
         setMixedPayments((p) => ({ ...p, [key]: val === "." ? "0." : val }));
     };
-
-    // Se construye como elemento (y no como componente anidado) para que el
-    // input conserve el foco entre renders mientras se escribe.
-    const exchangeRateRow = (
-      <div className={styles.paymentRow}>
-        <label htmlFor="payment-exchange-rate">Tipo de cambio:</label>
-        <div className={styles.inputWithSymbol}>
-          <span className={styles.currencySymbol}>$</span>
-          <input
-            id="payment-exchange-rate"
-            type="text"
-            className={styles.paymentInput}
-            value={exchangeRate}
-            onChange={onDecimalInput(setExchangeRate)}
-            placeholder="0.00"
-            disabled={effectiveProcessing}
-          />
-        </div>
-      </div>
-    );
 
     if (!isOpen) return null;
 
@@ -503,7 +497,14 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                {exchangeRateRow}
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <div className={styles.paymentRow}>
+                    <span>Tipo de cambio:</span>
+                    <span className={styles.exchangeRateBadge}>
+                      ${numericExchangeRate.toFixed(2)} MXN
+                    </span>
+                  </div>
+                ) : null}
                 <div className={styles.paymentRow}>
                   <label htmlFor="payment-usd-amount">Pagó Con (USD):</label>
                   <div className={styles.inputWithSymbol}>
@@ -534,7 +535,6 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Mixto" ? (
               <div className={styles.mixedPaymentSection}>
                 <h3>Desglose de Pago</h3>
-                {exchangeRateRow}
                 <div className={styles.paymentRow}>
                   <label htmlFor="payment-mixed-cash">Efectivo:</label>
                   <div className={styles.inputWithSymbol}>
@@ -567,21 +567,26 @@ const PaymentModal = memo(
                   </div>
                 </div>
                 {cashOpSettings.acceptUsdPayments !== false ? (
-                  <div className={styles.paymentRow}>
-                    <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
-                    <div className={styles.inputWithSymbol}>
-                      <span className={styles.currencySymbol}>$</span>
-                      <input
-                        id="payment-mixed-usd"
-                        type="text"
-                        className={styles.paymentInput}
-                        value={mixedPayments.dolares}
-                        onChange={onMixedInput("dolares")}
-                        placeholder="0.00"
-                        disabled={effectiveProcessing}
-                      />
+                  <>
+                    <div className={styles.paymentRow}>
+                      <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
+                      <div className={styles.inputWithSymbol}>
+                        <span className={styles.currencySymbol}>$</span>
+                        <input
+                          id="payment-mixed-usd"
+                          type="text"
+                          className={styles.paymentInput}
+                          value={mixedPayments.dolares}
+                          onChange={onMixedInput("dolares")}
+                          placeholder="0.00"
+                          disabled={effectiveProcessing}
+                        />
+                      </div>
                     </div>
-                  </div>
+                    <p className={styles.exchangeRateHint}>
+                      (T.C. ${numericExchangeRate.toFixed(2)} MXN)
+                    </p>
+                  </>
                 ) : null}
                 <div className={styles.totalMixedRow}>
                   <span>Total Pagado:</span>

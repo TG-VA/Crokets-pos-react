@@ -111,5 +111,27 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByLabelText("Efectivo:")).toBeTruthy();
     expect(screen.getByLabelText("Tarjeta:")).toBeTruthy();
     expect(screen.queryByLabelText("Dólares (USD):")).toBeNull();
+    expect(screen.queryByText(/T\.C\./)).toBeNull();
+  });
+
+  it("muestra el tipo de cambio de configuracion como badge informativo en cobros en Dolares", () => {
+    window.localStorage.setItem(
+      "cash_operation_settings",
+      JSON.stringify({ defaultExchangeRate: 20 })
+    );
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dólares" }));
+
+    expect(screen.getByText("$20.00 MXN")).toBeTruthy();
+    expect(screen.queryByLabelText("Tipo de cambio:")).toBeNull();
+  });
+
+  it("muestra el indicador de conversion T.C. en el desglose mixto cuando hay dolares habilitados", () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
+
+    expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
   });
 });
