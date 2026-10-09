@@ -12,15 +12,13 @@ import { useRequestStatus } from "../../hooks/useRequestStatus";
 import { getCashOperationSettings } from "../../services/cashOperationSettingsService";
 
 const CashRegister = ({ setCashRegistered }) => {
-  const [initialCash, setInitialCash] = useState("");
+  const [initialCash, setInitialCash] = useState(() => {
+    const defaultCash = getCashOperationSettings().defaultOpeningCash || 0;
+    return defaultCash > 0 ? String(defaultCash) : "";
+  });
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState("");
-  const [cashOpSettings, setCashOpSettings] = useState({
-    defaultOpeningCash: 0,
-    allowZeroOpening: true,
-    minOpeningCashEnabled: false,
-    minOpeningCash: 0,
-  });
+  const [cashOpSettings] = useState(() => getCashOperationSettings());
 
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -93,23 +91,10 @@ const CashRegister = ({ setCashRegistered }) => {
   }, [branch?.id, user?.id, navigate, setCashRegistered, markSettled]);
 
   useEffect(() => {
-    const settings = getCashOperationSettings();
-    setCashOpSettings(settings);
-  }, []);
-
-  useEffect(() => {
     if (!checking) {
-      const defaultCash = cashOpSettings.defaultOpeningCash || 0;
-      if (defaultCash > 0 && initialCash === "") {
-        setInitialCash(String(defaultCash));
-      }
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-    // `initialCash` se omite a proposito: incluirlo reenfocaria el input en cada
-    // pulsacion de tecla. El efecto solo necesita correr cuando termina el
-    // chequeo o llega la configuracion de caja.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checking, cashOpSettings]);
+  }, [checking]);
 
   const handleKeyDown = (e) => {
     const cursorPos = e.target.selectionStart;

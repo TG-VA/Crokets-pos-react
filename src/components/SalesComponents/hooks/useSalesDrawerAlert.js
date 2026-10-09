@@ -24,7 +24,6 @@ const useSalesDrawerAlert = ({
 
   useEffect(() => {
     if (!enabled || !branchId || !userId) {
-      setDrawerAlert(EMPTY_ALERT);
       return undefined;
     }
 
@@ -32,7 +31,6 @@ const useSalesDrawerAlert = ({
     const limit = Number(settings.drawerCashLimit || 0);
 
     if (!settings.drawerAlertEnabled || limit <= 0) {
-      setDrawerAlert(EMPTY_ALERT);
       return undefined;
     }
 
@@ -41,7 +39,9 @@ const useSalesDrawerAlert = ({
     const syncAlert = async () => {
       try {
         const session = await getOpenCashSession();
-        const availableCash = await getAvailableCash({ sessionId: session?.id });
+        const availableCash = await getAvailableCash({
+          sessionId: session?.id,
+        });
         if (cancelled) return;
 
         setDrawerAlert({
@@ -63,7 +63,18 @@ const useSalesDrawerAlert = ({
     return () => {
       cancelled = true;
     };
-  }, [branchId, userId, enabled, getOpenCashSession, refreshKey]);
+  }, [enabled, branchId, userId, getOpenCashSession, refreshKey]);
+
+  const currentSettings = getCashOperationSettings();
+  const currentLimit = Number(currentSettings.drawerCashLimit || 0);
+
+  if (!enabled || !branchId || !userId) {
+    return EMPTY_ALERT;
+  }
+
+  if (!currentSettings.drawerAlertEnabled || currentLimit <= 0) {
+    return EMPTY_ALERT;
+  }
 
   return drawerAlert;
 };
