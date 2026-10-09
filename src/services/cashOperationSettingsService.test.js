@@ -37,6 +37,8 @@ describe("cashOperationSettingsService", () => {
     expect(result.cashDrawerEnabled).toBe(false);
     expect(result.cashDrawerTrigger).toBe("cash_only");
     expect(result.cashDrawerConnection).toBe("printer_rj11");
+    expect(result.acceptUsdPayments).toBe(true);
+    expect(result.defaultExchangeRate).toBe(18.5);
   });
 
   it("sanitiza valores inválidos y aplica límites", () => {
@@ -54,6 +56,8 @@ describe("cashOperationSettingsService", () => {
         cashDrawerEnabled: "true",
         cashDrawerTrigger: "invalid",
         cashDrawerConnection: "usb",
+        acceptUsdPayments: "yes",
+        defaultExchangeRate: -2,
       })
     );
 
@@ -73,6 +77,8 @@ describe("cashOperationSettingsService", () => {
     expect(result.cashDrawerEnabled).toBe(false);
     expect(result.cashDrawerTrigger).toBe("cash_only");
     expect(result.cashDrawerConnection).toBe("printer_rj11");
+    expect(result.acceptUsdPayments).toBe(true);
+    expect(result.defaultExchangeRate).toBe(18.5);
   });
 
   it("guarda y recupera configuraciones válidas", () => {
@@ -91,6 +97,8 @@ describe("cashOperationSettingsService", () => {
       cashDrawerEnabled: true,
       cashDrawerTrigger: "all_sales",
       cashDrawerConnection: "manual",
+      acceptUsdPayments: false,
+      defaultExchangeRate: 20,
     });
 
     expect(saved.success).toBe(true);
@@ -111,6 +119,8 @@ describe("cashOperationSettingsService", () => {
     expect(loaded.cashDrawerEnabled).toBe(true);
     expect(loaded.cashDrawerTrigger).toBe("all_sales");
     expect(loaded.cashDrawerConnection).toBe("manual");
+    expect(loaded.acceptUsdPayments).toBe(false);
+    expect(loaded.defaultExchangeRate).toBe(20);
   });
 
   it("deriva allowZeroOpening a partir del fondo mínimo obligatorio", () => {
@@ -129,6 +139,29 @@ describe("cashOperationSettingsService", () => {
     const withoutMin = getCashOperationSettings();
     expect(withoutMin.minOpeningCashEnabled).toBe(false);
     expect(withoutMin.allowZeroOpening).toBe(true);
+  });
+
+  it("sanea configuracion de dolares en get y save", () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ acceptUsdPayments: false, defaultExchangeRate: 20.5 })
+    );
+
+    const loaded = getCashOperationSettings();
+    expect(loaded.acceptUsdPayments).toBe(false);
+    expect(loaded.defaultExchangeRate).toBe(20.5);
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ acceptUsdPayments: 1, defaultExchangeRate: 0 })
+    );
+
+    const invalid = getCashOperationSettings();
+    expect(invalid.acceptUsdPayments).toBe(true);
+    expect(invalid.defaultExchangeRate).toBe(18.5);
+
+    const saved = saveCashOperationSettings({ defaultExchangeRate: 21 });
+    expect(saved.defaultExchangeRate).toBe(21);
   });
 
   it("acepta solo los triggers cash_only y all_sales", () => {
@@ -195,5 +228,7 @@ describe("cashOperationSettingsService", () => {
     expect(DEFAULT_CASH_OPERATION_SETTINGS.minOpeningCashEnabled).toBe(false);
     expect(DEFAULT_CASH_OPERATION_SETTINGS.minOpeningCash).toBe(0);
     expect(DEFAULT_CASH_OPERATION_SETTINGS.cashDrawerTrigger).toBe("cash_only");
+    expect(DEFAULT_CASH_OPERATION_SETTINGS.acceptUsdPayments).toBe(true);
+    expect(DEFAULT_CASH_OPERATION_SETTINGS.defaultExchangeRate).toBe(18.5);
   });
 });

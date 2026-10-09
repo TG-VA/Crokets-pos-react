@@ -36,7 +36,12 @@ const PaymentModal = memo(
       useState("Efectivo");
     const [paidAmount, setPaidAmount] = useState("");
     const [dollarAmount, setDollarAmount] = useState("");
-    const [exchangeRate, setExchangeRate] = useState("18.50");
+    const [exchangeRate, setExchangeRate] = useState(() => {
+      const cashOps = getCashOperationSettings();
+      return cashOps.defaultExchangeRate
+        ? String(cashOps.defaultExchangeRate)
+        : "18.50";
+    });
     const [mixedPayments, setMixedPayments] = useState({
       efectivo: "",
       tarjeta: "",
@@ -132,9 +137,15 @@ const PaymentModal = memo(
     const changeLabel = change < 0 ? "Faltante:" : "Su Cambio:";
 
     const resetModalState = useCallback(() => {
+      const cashOps = getCashOperationSettings();
       setPaidAmount("");
       setDollarAmount("");
-      setExchangeRate("18.50");
+      setExchangeRate(
+        cashOps.defaultExchangeRate
+          ? String(cashOps.defaultExchangeRate)
+          : "18.50"
+      );
+      setCashOpSettings(cashOps);
       setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
       setTrackingCode("");
       setSaleNotes("");
@@ -422,7 +433,10 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {PAYMENT_METHODS.map((m) => (
+              {PAYMENT_METHODS.filter(
+                (m) =>
+                  !(m.id === "Dolares" && cashOpSettings.acceptUsdPayments === false)
+              ).map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -552,21 +566,23 @@ const PaymentModal = memo(
                     />
                   </div>
                 </div>
-                <div className={styles.paymentRow}>
-                  <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
-                  <div className={styles.inputWithSymbol}>
-                    <span className={styles.currencySymbol}>$</span>
-                    <input
-                      id="payment-mixed-usd"
-                      type="text"
-                      className={styles.paymentInput}
-                      value={mixedPayments.dolares}
-                      onChange={onMixedInput("dolares")}
-                      placeholder="0.00"
-                      disabled={effectiveProcessing}
-                    />
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <div className={styles.paymentRow}>
+                    <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
+                    <div className={styles.inputWithSymbol}>
+                      <span className={styles.currencySymbol}>$</span>
+                      <input
+                        id="payment-mixed-usd"
+                        type="text"
+                        className={styles.paymentInput}
+                        value={mixedPayments.dolares}
+                        onChange={onMixedInput("dolares")}
+                        placeholder="0.00"
+                        disabled={effectiveProcessing}
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : null}
                 <div className={styles.totalMixedRow}>
                   <span>Total Pagado:</span>
                   <span className={styles.totalMixedAmount}>

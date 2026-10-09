@@ -97,4 +97,19 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByLabelText("Tarjeta:")).toBeTruthy();
     expect(screen.getByLabelText("Dólares (USD):")).toBeTruthy();
   });
+
+  it("oculta el metodo Dolares y el campo mixto en dolares cuando se desactiva acceptUsdPayments", () => {
+    window.localStorage.setItem(
+      "cash_operation_settings",
+      JSON.stringify({ acceptUsdPayments: false })
+    );
+    renderModal();
+
+    expect(screen.queryByRole("button", { name: "Dólares" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
+    expect(screen.getByLabelText("Efectivo:")).toBeTruthy();
+    expect(screen.getByLabelText("Tarjeta:")).toBeTruthy();
+    expect(screen.queryByLabelText("Dólares (USD):")).toBeNull();
+  });
 });

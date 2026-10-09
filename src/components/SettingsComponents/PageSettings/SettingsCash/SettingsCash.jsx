@@ -36,6 +36,8 @@ const SettingsCash = () => {
     cashDrawerEnabled: false,
     cashDrawerTrigger: "cash_only",
     cashDrawerConnection: "printer_rj11",
+    acceptUsdPayments: true,
+    defaultExchangeRate: 18.5,
   });
   const [testingDrawer, setTestingDrawer] = useState(false);
   const [drawerFeedback, setDrawerFeedback] = useState(null);
@@ -156,6 +158,7 @@ const SettingsCash = () => {
     placeholder = "0.00",
     ariaDescribedby,
     disabled = false,
+    min = "0",
   }) => (
     <div
       className={`${styles.monetaryInputWrapper} ${
@@ -166,7 +169,7 @@ const SettingsCash = () => {
       <input
         id={id}
         type="number"
-        min="0"
+        min={min}
         step="0.01"
         inputMode="decimal"
         disabled={disabled}
@@ -555,6 +558,62 @@ const SettingsCash = () => {
                 handleSettingChange("requireCutDifferenceNote", value)
               }
               ariaLabel="Exigir nota obligatoria si existe faltante o sobrante en el corte"
+            />
+          </div>
+        </div>
+      </article>
+
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>Cobros en Dólares (USD)</h2>
+        <p className={styles.cardDescription}>
+          Reglas operativas para la recepción de moneda extranjera en punto de
+          venta.
+        </p>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Aceptar pagos en dólares (USD)
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Permite a los cajeros recibir billetes de dólares
+              estadounidenses en ventas directas y cobros mixtos.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.acceptUsdPayments}
+              onChange={(value) =>
+                handleSettingChange("acceptUsdPayments", value)
+              }
+              ariaLabel="Aceptar pagos en dólares (USD)"
+            />
+          </div>
+        </div>
+
+        <div
+          className={`${styles.settingsRow} ${
+            !settings.acceptUsdPayments ? styles.fieldDisabled : ""
+          }`}
+        >
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Tipo de cambio predeterminado
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Valor de conversión en pesos mexicanos (MXN) sugerido por cada 1
+              USD al registrar un cobro.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <MonetaryInput
+              id="default-exchange-rate"
+              value={settings.defaultExchangeRate}
+              disabled={!settings.acceptUsdPayments}
+              min="1"
+              onChange={(event) =>
+                handleSettingChange("defaultExchangeRate", event.target.value)
+              }
             />
           </div>
         </div>

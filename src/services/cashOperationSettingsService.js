@@ -15,6 +15,8 @@ const DEFAULTS = {
   cashDrawerEnabled: false,
   cashDrawerTrigger: "cash_only",
   cashDrawerConnection: "printer_rj11",
+  acceptUsdPayments: true,
+  defaultExchangeRate: 18.5,
 };
 
 const ALLOWED_TRIGGERS = ["cash_only", "all_sales"];
@@ -147,6 +149,15 @@ export function getCashOperationSettings() {
       ALLOWED_CONNECTIONS,
       DEFAULTS.cashDrawerConnection
     ),
+    acceptUsdPayments: sanitizeBoolean(
+      merged.acceptUsdPayments,
+      DEFAULTS.acceptUsdPayments
+    ),
+    defaultExchangeRate: sanitizeNumber(
+      merged.defaultExchangeRate,
+      DEFAULTS.defaultExchangeRate,
+      1
+    ),
   };
 
   return {
@@ -229,6 +240,15 @@ export function saveCashOperationSettings(partialSettings = {}) {
         next.cashDrawerConnection,
         ALLOWED_CONNECTIONS,
         DEFAULTS.cashDrawerConnection
+      ),
+      acceptUsdPayments: sanitizeBoolean(
+        next.acceptUsdPayments,
+        DEFAULTS.acceptUsdPayments
+      ),
+      defaultExchangeRate: sanitizeNumber(
+        next.defaultExchangeRate,
+        DEFAULTS.defaultExchangeRate,
+        1
       ),
     };
 
