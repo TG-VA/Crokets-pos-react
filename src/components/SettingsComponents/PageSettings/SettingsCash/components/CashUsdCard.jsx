@@ -13,7 +13,9 @@ const CashUsdCard = ({ settings, onSettingChange }) => (
 
     <div className={styles.settingsRow}>
       <div className={styles.settingsRowLeft}>
-        <h3 className={styles.settingsRowTitle}>Aceptar pagos en dólares (USD)</h3>
+        <h3 className={styles.settingsRowTitle}>
+          Aceptar pagos en dólares (USD)
+        </h3>
         <p className={styles.settingsRowDescription}>
           Permite a los cajeros recibir billetes de dólares estadounidenses en
           ventas directas y cobros mixtos.
@@ -38,8 +40,8 @@ const CashUsdCard = ({ settings, onSettingChange }) => (
           Tipo de cambio predeterminado
         </h3>
         <p className={styles.settingsRowDescription}>
-          Valor de conversión en pesos mexicanos (MXN) sugerido por cada 1 USD al
-          registrar un cobro.
+          Valor de conversión en pesos mexicanos (MXN) sugerido por cada 1 USD
+          al registrar un cobro.
         </p>
       </div>
       <div className={styles.settingsRowRight}>

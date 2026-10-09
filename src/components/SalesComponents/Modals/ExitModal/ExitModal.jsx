@@ -37,7 +37,9 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
 
     const cashOps = getCashOperationSettings();
     if (cashOps.requireExitReason && !exitDescription.trim())
-      return setExitError("Por favor, ingresa una justificación para la salida.");
+      return setExitError(
+        "Por favor, ingresa una justificación para la salida."
+      );
 
     try {
       setIsSaving(true);

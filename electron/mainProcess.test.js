@@ -535,9 +535,7 @@ describe("electron mainProcess", () => {
       it("confirma la apertura cuando hay impresora conectada", async () => {
         const { handlers } = buildIpcHarness();
         const sender = createWebContents({
-          getPrintersAsync: vi.fn(() =>
-            Promise.resolve([{ name: "Termica" }])
-          ),
+          getPrintersAsync: vi.fn(() => Promise.resolve([{ name: "Termica" }])),
         });
 
         await expect(

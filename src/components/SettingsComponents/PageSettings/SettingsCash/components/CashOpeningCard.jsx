@@ -101,8 +101,8 @@ const CashOpeningCard = ({
           Exigir fondo inicial mínimo obligatorio
         </h3>
         <p className={styles.settingsRowDescription}>
-          Impide abrir caja con un monto inferior al establecido (evita aperturas
-          en ceros).
+          Impide abrir caja con un monto inferior al establecido (evita
+          aperturas en ceros).
         </p>
       </div>
       <div className={styles.settingsRowRight}>

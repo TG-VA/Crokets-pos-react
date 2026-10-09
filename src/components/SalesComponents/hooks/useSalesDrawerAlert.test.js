@@ -62,9 +62,7 @@ describe("useSalesDrawerAlert", () => {
 
     const { result } = renderHook(() => useSalesDrawerAlert(baseProps()));
 
-    await waitFor(() =>
-      expect(getCashOperationSettings).toHaveBeenCalled()
-    );
+    await waitFor(() => expect(getCashOperationSettings).toHaveBeenCalled());
     expect(getAvailableCash).not.toHaveBeenCalled();
     expect(result.current.show).toBe(false);
   });

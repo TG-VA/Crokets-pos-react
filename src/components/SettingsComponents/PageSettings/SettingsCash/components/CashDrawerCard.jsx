@@ -104,9 +104,7 @@ const CashDrawerCard = ({
             <RadioOption
               selected={settings.cashDrawerConnection === "manual"}
               disabled={isDrawerDisabled}
-              onSelect={() =>
-                onSettingChange("cashDrawerConnection", "manual")
-              }
+              onSelect={() => onSettingChange("cashDrawerConnection", "manual")}
               title="Manual"
               description="Apertura física tradicional mediante llave. No requiere cables ni pulsos eléctricos."
             />

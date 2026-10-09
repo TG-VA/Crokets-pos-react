@@ -50,7 +50,9 @@ describe("CashCutModal", () => {
 
     renderModal({ expectedAmount: 1000 });
 
-    expect(screen.getByText("Captura el conteo físico de efectivo en caja")).toBeTruthy();
+    expect(
+      screen.getByText("Captura el conteo físico de efectivo en caja")
+    ).toBeTruthy();
     expect(screen.queryByText("MONTO ESPERADO")).toBeNull();
     expect(screen.queryByText("$1,000.00")).toBeNull();
 

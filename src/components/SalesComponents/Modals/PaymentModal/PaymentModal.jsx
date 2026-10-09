@@ -13,7 +13,10 @@ import {
   getPrintMode,
   PRINT_MODE_CONFIRM,
 } from "../../../../services/printSettingsService";
-import { getCashOperationSettings, triggerCashDrawerKick } from "../../../../services/cashOperationSettingsService";
+import {
+  getCashOperationSettings,
+  triggerCashDrawerKick,
+} from "../../../../services/cashOperationSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -438,7 +441,10 @@ const PaymentModal = memo(
             <div className={styles.paymentMethods}>
               {PAYMENT_METHODS.filter(
                 (m) =>
-                  !(m.id === "Dolares" && cashOpSettings.acceptUsdPayments === false)
+                  !(
+                    m.id === "Dolares" &&
+                    cashOpSettings.acceptUsdPayments === false
+                  )
               ).map((m) => (
                 <button
                   key={m.id}
