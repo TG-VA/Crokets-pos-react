@@ -369,21 +369,45 @@
 }
 
 .statusMessage {
-  color: #166534;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 0.75rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.85rem 1.15rem;
+  margin: 0.5rem 0 1.5rem;
+  box-sizing: border-box;
 }
 
 .errorMessage {
-  color: #b91c1c;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 0.75rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.85rem 1.15rem;
+  margin: 0.5rem 0 1.5rem;
+  box-sizing: border-box;
+}
+
+.feedbackIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
 }
 
 .feedbackInline {
-  margin-top: 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
 }
 
 .adminHint {

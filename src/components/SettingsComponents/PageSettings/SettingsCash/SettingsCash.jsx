@@ -10,6 +10,8 @@ import {
   saveCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../../services/cashOperationSettingsService";
+import CircleCheckIcon from "../../../../assets/icons/circle-check-solid-full.svg";
+import TriangleExclamationIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import styles from "./SettingsCash.module.css";
 
 const SettingsCash = () => {
@@ -210,15 +212,27 @@ const SettingsCash = () => {
       </header>
 
       {feedback?.type === "error" ? (
-        <p role="alert" className={styles.errorMessage}>
-          {feedback.message}
-        </p>
+        <div role="alert" className={styles.errorMessage}>
+          <img
+            src={TriangleExclamationIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{feedback.message}</span>
+        </div>
       ) : null}
 
       {feedback?.type === "success" ? (
-        <p role="status" className={styles.statusMessage}>
-          {feedback.message}
-        </p>
+        <div role="status" className={styles.statusMessage}>
+          <img
+            src={CircleCheckIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{feedback.message}</span>
+        </div>
       ) : null}
 
       <article className={styles.card}>
@@ -837,15 +851,27 @@ const SettingsCash = () => {
         </div>
 
         {drawerFeedback?.type === "error" ? (
-          <p role="alert" className={`${styles.errorMessage} ${styles.feedbackInline}`}>
-            {drawerFeedback.message}
-          </p>
+          <div role="alert" className={`${styles.errorMessage} ${styles.feedbackInline}`}>
+            <img
+              src={TriangleExclamationIcon}
+              alt=""
+              className={styles.feedbackIcon}
+              aria-hidden="true"
+            />
+            <span>{drawerFeedback.message}</span>
+          </div>
         ) : null}
 
         {drawerFeedback?.type === "success" ? (
-          <p role="status" className={`${styles.statusMessage} ${styles.feedbackInline}`}>
-            {drawerFeedback.message}
-          </p>
+          <div role="status" className={`${styles.statusMessage} ${styles.feedbackInline}`}>
+            <img
+              src={CircleCheckIcon}
+              alt=""
+              className={styles.feedbackIcon}
+              aria-hidden="true"
+            />
+            <span>{drawerFeedback.message}</span>
+          </div>
         ) : null}
       </article>
     </section>
