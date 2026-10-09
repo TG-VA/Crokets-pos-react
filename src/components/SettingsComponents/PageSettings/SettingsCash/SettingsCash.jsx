@@ -10,7 +10,7 @@ import {
   saveCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../../services/cashOperationSettingsService";
-import shared from "../PageSettings.module.css";
+import styles from "./SettingsCash.module.css";
 
 const SettingsCash = () => {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ const SettingsCash = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const [cashMax, setCashMax] = useState("");
+  const [cashMaxEdited, setCashMaxEdited] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [settings, setSettings] = useState({
@@ -60,6 +61,7 @@ const SettingsCash = () => {
 
       if (res.success) {
         setCashMax(res.amount == null ? "" : String(res.amount));
+        setCashMaxEdited(false);
       } else {
         setFeedback({ type: "error", message: res.error });
       }
@@ -72,43 +74,46 @@ const SettingsCash = () => {
     };
   }, [user?.id]);
 
-  const handleSaveCashMax = async () => {
-    setFeedback(null);
-    setSaving(true);
-
-    const res = await updateCashMaxOpeningAmount(cashMax);
-
-    setSaving(false);
-
-    if (!res.success) {
-      setFeedback({ type: "error", message: res.error });
-      return;
-    }
-
-    setCashMax(String(res.amount));
-    setFeedback({
-      type: "success",
-      message: "Tope de apertura de caja actualizado.",
-    });
-  };
-
   const handleSettingChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveSettings = () => {
+  const handleSave = async () => {
     setDrawerFeedback(null);
     setFeedback(null);
-    const res = saveCashOperationSettings(settings);
-    if (!res.success) {
-      setFeedback({ type: "error", message: res.error });
-      return;
+    setSaving(true);
+
+    let consolidatedMessage = null;
+    let hasError = false;
+
+    try {
+      if (isAdmin) {
+        const resCashMax = await updateCashMaxOpeningAmount(cashMax);
+        if (!resCashMax.success) {
+          setFeedback({ type: "error", message: resCashMax.error });
+          hasError = true;
+          return;
+        }
+        setCashMax(String(resCashMax.amount));
+        setCashMaxEdited(false);
+        consolidatedMessage = "Tope de apertura de caja actualizado.";
+      }
+
+      const resSettings = saveCashOperationSettings(settings);
+      if (!resSettings.success) {
+        setFeedback({ type: "error", message: resSettings.error });
+        hasError = true;
+        return;
+      }
+      setSettings((prev) => ({ ...prev, ...resSettings }));
+
+      const message = consolidatedMessage
+        ? `${consolidatedMessage} Configuración de caja y operación guardada.`
+        : "Configuración de caja y operación guardada.";
+      setFeedback({ type: "success", message });
+    } finally {
+      setSaving(false);
     }
-    setSettings((prev) => ({ ...prev, ...res }));
-    setFeedback({
-      type: "success",
-      message: "Configuración de caja y operación guardada.",
-    });
   };
 
   const handleTestDrawer = async () => {
@@ -123,375 +128,570 @@ const SettingsCash = () => {
     setDrawerFeedback({ type: "success", message: res.message });
   };
 
+  const ToggleSwitch = ({ checked, onChange, disabled = false, id, ariaLabel }) => (
+    <button
+      type="button"
+      id={id}
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      className={styles.toggleSwitch}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+    >
+      <span className={styles.toggleThumb} />
+    </button>
+  );
+
+  const MonetaryInput = ({ id, value, onChange, placeholder = "0.00", ariaDescribedby }) => (
+    <div className={styles.monetaryInputWrapper}>
+      <span className={styles.monetaryPrefix}>$</span>
+      <input
+        id={id}
+        type="number"
+        min="0"
+        step="0.01"
+        inputMode="decimal"
+        className={styles.monetaryInput}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        aria-describedby={ariaDescribedby}
+      />
+      <span className={styles.monetarySuffix}>MXN</span>
+    </div>
+  );
+
+  const isDrawerDisabled = !settings.cashDrawerEnabled;
+
   return (
-    <section className={shared.page} aria-labelledby="settings-cash-title">
-      <header className={shared.pageHeader}>
-        <h1 id="settings-cash-title" className={shared.pageTitle}>
-          Caja y Operación
-        </h1>
-        <p className={shared.pageSubtitle}>
-          Parámetros operativos de la caja registradora
-        </p>
-      </header>
-
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>Políticas de Apertura de Caja</h2>
-        <p className={shared.cardDescription}>
-          Configuración para el proceso de apertura de caja registradora.
-        </p>
-
-        {adminLoading ? (
-          <p role="status" className={shared.hint}>
-            Cargando configuración de caja...
-          </p>
-        ) : !isAdmin ? (
-          <p role="status" className={shared.hint}>
-            Se requiere un perfil de administrador para modificar este valor.
-          </p>
-        ) : (
-          <>
-            <div className={shared.field}>
-              <label className={shared.label} htmlFor="cash-max-amount">
-                Monto máximo
-              </label>
-              <input
-                id="cash-max-amount"
-                type="number"
-                min="0"
-                step="1"
-                inputMode="numeric"
-                className={shared.input}
-                value={cashMax}
-                onChange={(event) => setCashMax(event.target.value)}
-                placeholder="Ej. 1000000"
-                aria-describedby="cash-max-amount-hint"
-              />
-            </div>
-            <p id="cash-max-amount-hint" className={shared.hint}>
-              Expresado en pesos mexicanos. El valor se aplica al momento de
-              abrir caja.
-            </p>
-          </>
-        )}
-
-        <div className={shared.field}>
-          <label className={shared.label} htmlFor="default-opening-cash">
-            Monto predeterminado de fondo inicial
-          </label>
-          <input
-            id="default-opening-cash"
-            type="number"
-            min="0"
-            step="0.01"
-            inputMode="decimal"
-            className={shared.input}
-            value={settings.defaultOpeningCash}
-            onChange={(event) =>
-              handleSettingChange("defaultOpeningCash", event.target.value)
-            }
-            placeholder="0.00"
-            aria-describedby="default-opening-cash-hint"
-          />
-          <p id="default-opening-cash-hint" className={shared.hint}>
-            Expresado en pesos mexicanos.
+    <section className={styles.settingsSection} aria-labelledby="settings-cash-title">
+      <header className={styles.settingsHeader}>
+        <div>
+          <h1 id="settings-cash-title" className={styles.settingsTitle}>
+            Caja y Operación
+          </h1>
+          <p className={styles.settingsSubtitle}>
+            Parámetros operativos de la caja registradora
           </p>
         </div>
-
-        <div className={shared.field}>
-          <label className={shared.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={settings.allowZeroOpening}
-              onChange={(event) =>
-                handleSettingChange("allowZeroOpening", event.target.checked)
-              }
-            />
-            Permitir apertura de caja con monto cero ($0.00)
-          </label>
-        </div>
-
-        {isAdmin && (
-          <div className={shared.field}>
-            <button
-              type="button"
-              className={shared.button}
-              onClick={handleSaveCashMax}
-              disabled={saving}
-            >
-              {saving ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
-        )}
-      </article>
-
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>
-          Control de Efectivo y Seguridad en Cajón
-        </h2>
-        <p className={shared.cardDescription}>
-          Reglas para prevenir retiros excesivos y exigir justificación.
-        </p>
-
-        <div className={shared.field}>
-          <label className={shared.label} htmlFor="drawer-cash-limit">
-            Límite de efectivo acumulado en cajón
-          </label>
-          <input
-            id="drawer-cash-limit"
-            type="number"
-            min="0"
-            step="0.01"
-            inputMode="decimal"
-            className={shared.input}
-            value={settings.drawerCashLimit}
-            onChange={(event) =>
-              handleSettingChange("drawerCashLimit", event.target.value)
-            }
-            placeholder="0.00"
-            aria-describedby="drawer-cash-limit-hint"
-          />
-          <p id="drawer-cash-limit-hint" className={shared.hint}>
-            $0.00 desactiva la alerta.
-          </p>
-        </div>
-
-        <div className={shared.field}>
-          <label className={shared.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={settings.drawerAlertEnabled}
-              onChange={(event) =>
-                handleSettingChange("drawerAlertEnabled", event.target.checked)
-              }
-            />
-            Activar alerta preventiva de retiro en la pantalla de ventas al
-            superar este monto
-          </label>
-        </div>
-
-        <div className={shared.field}>
-          <label className={shared.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={settings.requireExitReason}
-              onChange={(event) =>
-                handleSettingChange("requireExitReason", event.target.checked)
-              }
-            />
-            Exigir concepto o justificación obligatoria en salidas de dinero
-          </label>
-        </div>
-      </article>
-
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>Políticas de Corte y Arqueo de Turno</h2>
-        <p className={shared.cardDescription}>
-          Configuración para el arqueo y control de descuadres.
-        </p>
-
-        <fieldset className={shared.fieldset}>
-          <legend className={shared.legend}>Modalidad de arqueo</legend>
-          <div className={shared.radioGroup}>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="blindCountCut"
-                value="false"
-                checked={!settings.blindCountCut}
-                onChange={() => handleSettingChange("blindCountCut", false)}
-              />
-              Arqueo abierto (Estándar): El operador visualiza el saldo teórico
-              esperado
-            </label>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="blindCountCut"
-                value="true"
-                checked={settings.blindCountCut}
-                onChange={() => handleSettingChange("blindCountCut", true)}
-              />
-              Arqueo ciego (Recomendado): El operador captura su conteo físico
-              sin ver el saldo esperado del sistema
-            </label>
-          </div>
-        </fieldset>
-
-        <div className={shared.field}>
-          <label className={shared.label} htmlFor="cut-tolerance-amount">
-            Tolerancia máxima de descuadre sin autorización de administrador
-          </label>
-          <input
-            id="cut-tolerance-amount"
-            type="number"
-            min="0"
-            step="0.01"
-            inputMode="decimal"
-            className={shared.input}
-            value={settings.cutToleranceAmount}
-            onChange={(event) =>
-              handleSettingChange("cutToleranceAmount", event.target.value)
-            }
-            placeholder="0.00"
-          />
-        </div>
-
-        <div className={shared.field}>
-          <label className={shared.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={settings.requireCutDifferenceNote}
-              onChange={(event) =>
-                handleSettingChange(
-                  "requireCutDifferenceNote",
-                  event.target.checked
-                )
-              }
-            />
-            Exigir nota obligatoria si existe faltante o sobrante en el corte
-          </label>
-        </div>
-      </article>
-
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>Dispositivo: Cajón de Dinero (Gaveta)</h2>
-        <p className={shared.cardDescription}>
-          Configuración del hardware para apertura automática del cajón.
-        </p>
-
-        <div className={shared.field}>
-          <label className={shared.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={settings.cashDrawerEnabled}
-              onChange={(event) =>
-                handleSettingChange("cashDrawerEnabled", event.target.checked)
-              }
-            />
-            Habilitar cajón registrador físico
-          </label>
-        </div>
-
-        <fieldset className={shared.fieldset}>
-          <legend className={shared.legend}>Momento de disparo</legend>
-          <div className={shared.radioGroup}>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="cashDrawerTrigger"
-                value="cash_only"
-                checked={settings.cashDrawerTrigger === "cash_only"}
-                onChange={() =>
-                  handleSettingChange("cashDrawerTrigger", "cash_only")
-                }
-              />
-              Solo al cobrar en efectivo o mixto
-            </label>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="cashDrawerTrigger"
-                value="all_sales"
-                checked={settings.cashDrawerTrigger === "all_sales"}
-                onChange={() =>
-                  handleSettingChange("cashDrawerTrigger", "all_sales")
-                }
-              />
-              En todas las ventas (Efectivo, Tarjeta, Transferencia)
-            </label>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="cashDrawerTrigger"
-                value="cash_and_movements"
-                checked={settings.cashDrawerTrigger === "cash_and_movements"}
-                onChange={() =>
-                  handleSettingChange(
-                    "cashDrawerTrigger",
-                    "cash_and_movements"
-                  )
-                }
-              />
-              En ventas en efectivo y en movimientos de caja (Entradas/Salidas)
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset className={shared.fieldset}>
-          <legend className={shared.legend}>Método de conexión</legend>
-          <div className={shared.radioGroup}>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="cashDrawerConnection"
-                value="printer_rj11"
-                checked={settings.cashDrawerConnection === "printer_rj11"}
-                onChange={() =>
-                  handleSettingChange("cashDrawerConnection", "printer_rj11")
-                }
-              />
-              A través de la impresora térmica (Puerto RJ11 / Drawer Kick)
-            </label>
-            <label className={shared.radioLabel}>
-              <input
-                type="radio"
-                name="cashDrawerConnection"
-                value="manual"
-                checked={settings.cashDrawerConnection === "manual"}
-                onChange={() =>
-                  handleSettingChange("cashDrawerConnection", "manual")
-                }
-              />
-              Manual
-            </label>
-          </div>
-        </fieldset>
-
-        <div className={shared.field}>
-          <button
-            type="button"
-            className={shared.button}
-            onClick={handleTestDrawer}
-            disabled={testingDrawer}
-          >
-            {testingDrawer ? "Probando..." : "Probar apertura del cajón"}
-          </button>
-        </div>
-
-        {drawerFeedback?.type === "error" ? (
-          <p role="alert" className={shared.errorMessage}>
-            {drawerFeedback.message}
-          </p>
-        ) : null}
-
-        {drawerFeedback?.type === "success" ? (
-          <p role="status" className={shared.statusMessage}>
-            {drawerFeedback.message}
-          </p>
-        ) : null}
-      </article>
-
-      <div className={shared.field}>
         <button
           type="button"
-          className={shared.button}
-          onClick={handleSaveSettings}
+          className={styles.button}
+          onClick={handleSave}
+          disabled={saving}
         >
-          Guardar configuración de caja y operación
+          {saving ? "Guardando..." : "Guardar configuración"}
         </button>
-      </div>
+      </header>
 
       {feedback?.type === "error" ? (
-        <p role="alert" className={shared.errorMessage}>
+        <p role="alert" className={styles.errorMessage}>
           {feedback.message}
         </p>
       ) : null}
 
       {feedback?.type === "success" ? (
-        <p role="status" className={shared.statusMessage}>
+        <p role="status" className={styles.statusMessage}>
           {feedback.message}
         </p>
       ) : null}
+
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>Políticas de Apertura de Caja</h2>
+        <p className={styles.cardDescription}>
+          Configuración para el proceso de apertura de caja registradora.
+        </p>
+
+        {adminLoading ? (
+          <p role="status" className={styles.adminHint}>
+            Cargando configuración de caja...
+          </p>
+        ) : !isAdmin ? (
+          <p role="status" className={styles.adminHint}>
+            Se requiere un perfil de administrador para modificar este valor.
+          </p>
+        ) : (
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowLeft}>
+              <h3 className={styles.settingsRowTitle}>Monto máximo</h3>
+              <p className={styles.settingsRowDescription}>
+                Expresado en pesos mexicanos. El valor se aplica al momento de
+                abrir caja.
+              </p>
+              <p id="cash-max-amount-hint" className={styles.adminHint}>
+                Solo guardado para usuarios administradores.
+              </p>
+            </div>
+            <div className={styles.settingsRowRight}>
+              <label htmlFor="cash-max-amount" className={styles.visuallyHidden}>Monto máximo</label>
+              <div className={styles.monetaryInputWrapper}>
+                <span className={styles.monetaryPrefix}>$</span>
+                <input
+                  id="cash-max-amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className={styles.monetaryInput}
+                  value={cashMax}
+                  onChange={(event) => {
+                    setCashMax(event.target.value);
+                    setCashMaxEdited(true);
+                  }}
+                  placeholder="Ej. 1000000"
+                  aria-describedby="cash-max-amount-hint"
+                />
+                <span className={styles.monetarySuffix}>MXN</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Monto predeterminado de fondo inicial
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Expresado en pesos mexicanos.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <MonetaryInput
+              id="default-opening-cash"
+              value={settings.defaultOpeningCash}
+              onChange={(event) =>
+                handleSettingChange("defaultOpeningCash", event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Permitir apertura de caja con monto cero ($0.00)
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.allowZeroOpening}
+              onChange={(value) =>
+                handleSettingChange("allowZeroOpening", value)
+              }
+              ariaLabel="Permitir apertura de caja con monto cero"
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Límite de efectivo permitido en cajón
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Al superar este monto, el sistema podrá emitir una alerta
+              preventiva.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <MonetaryInput
+              id="drawer-cash-limit"
+              value={settings.drawerCashLimit}
+              onChange={(event) =>
+                handleSettingChange("drawerCashLimit", event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Activar alerta preventiva de retiro al superar este monto
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.drawerAlertEnabled}
+              onChange={(value) =>
+                handleSettingChange("drawerAlertEnabled", value)
+              }
+              ariaLabel="Activar alerta preventiva de retiro al superar este monto"
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Exigir concepto o justificación obligatoria en salidas de dinero
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.requireExitReason}
+              onChange={(value) =>
+                handleSettingChange("requireExitReason", value)
+              }
+              ariaLabel="Exigir concepto o justificación obligatoria en salidas de dinero"
+            />
+          </div>
+        </div>
+      </article>
+
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>Políticas de Corte y Arqueo de Turno</h2>
+        <p className={styles.cardDescription}>
+          Configuración para el arqueo y control de descuadres.
+        </p>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>Modalidad de arqueo</h3>
+          </div>
+          <div className={`${styles.settingsRowRight} ${styles.settingsRowRightFull}`}>
+            <div
+              role="radiogroup"
+              aria-label="Modalidad de arqueo"
+              className={styles.arqueoGrid}
+            >
+              <div
+                role="radio"
+                aria-checked={!settings.blindCountCut}
+                tabIndex={!settings.blindCountCut ? 0 : -1}
+                className={styles.radioCard}
+                onClick={() => handleSettingChange("blindCountCut", false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSettingChange("blindCountCut", false);
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={!settings.blindCountCut}
+                  readOnly
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>
+                    Arqueo abierto (Estándar)
+                  </h4>
+                  <p className={styles.radioCardDescription}>
+                    El operador visualiza el saldo teórico esperado
+                  </p>
+                </div>
+              </div>
+              <div
+                role="radio"
+                aria-checked={settings.blindCountCut}
+                tabIndex={settings.blindCountCut ? 0 : -1}
+                className={styles.radioCard}
+                onClick={() => handleSettingChange("blindCountCut", true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSettingChange("blindCountCut", true);
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.blindCountCut}
+                  readOnly
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <div className={styles.radioCardTitleRow}>
+                    <h4 className={styles.radioCardTitle}>
+                      Arqueo ciego (Recomendado)
+                    </h4>
+                    <span className={styles.recommendedBadge}>Recomendado</span>
+                  </div>
+                  <p className={styles.radioCardDescription}>
+                    El operador captura su conteo físico sin ver el saldo
+                    esperado del sistema
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Tolerancia máxima de descuadre sin autorización de administrador
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <MonetaryInput
+              id="cut-tolerance-amount"
+              value={settings.cutToleranceAmount}
+              onChange={(event) =>
+                handleSettingChange("cutToleranceAmount", event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Exigir nota obligatoria si existe faltante o sobrante en el corte
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.requireCutDifferenceNote}
+              onChange={(value) =>
+                handleSettingChange("requireCutDifferenceNote", value)
+              }
+              ariaLabel="Exigir nota obligatoria si existe faltante o sobrante en el corte"
+            />
+          </div>
+        </div>
+      </article>
+
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>Dispositivo: Cajón de Dinero (Gaveta)</h2>
+        <p className={styles.cardDescription}>
+          Configuración del hardware para apertura automática del cajón.
+        </p>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Habilitar cajón registrador físico
+            </h3>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.cashDrawerEnabled}
+              onChange={(value) =>
+                handleSettingChange("cashDrawerEnabled", value)
+              }
+              ariaLabel="Habilitar cajón registrador físico"
+            />
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>Momento de disparo</h3>
+          </div>
+          <div className={`${styles.settingsRowRight} ${styles.settingsRowRightFull}`}>
+            <div
+              role="radiogroup"
+              aria-label="Momento de disparo"
+              className={styles.radioCardGroup}
+            >
+              <div
+                role="radio"
+                aria-checked={settings.cashDrawerTrigger === "cash_only"}
+                aria-disabled={isDrawerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "cash_only" && !isDrawerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                onClick={() => {
+                  if (!isDrawerDisabled) {
+                    handleSettingChange("cashDrawerTrigger", "cash_only");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleSettingChange("cashDrawerTrigger", "cash_only");
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.cashDrawerTrigger === "cash_only"}
+                  readOnly
+                  disabled={isDrawerDisabled}
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>
+                    Solo al cobrar en efectivo o mixto
+                  </h4>
+                </div>
+              </div>
+              <div
+                role="radio"
+                aria-checked={settings.cashDrawerTrigger === "all_sales"}
+                aria-disabled={isDrawerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "all_sales" && !isDrawerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                onClick={() => {
+                  if (!isDrawerDisabled) {
+                    handleSettingChange("cashDrawerTrigger", "all_sales");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleSettingChange("cashDrawerTrigger", "all_sales");
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.cashDrawerTrigger === "all_sales"}
+                  readOnly
+                  disabled={isDrawerDisabled}
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>
+                    En todas las ventas (Efectivo, Tarjeta, Transferencia)
+                  </h4>
+                </div>
+              </div>
+              <div
+                role="radio"
+                aria-checked={settings.cashDrawerTrigger === "cash_and_movements"}
+                aria-disabled={isDrawerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "cash_and_movements" && !isDrawerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                onClick={() => {
+                  if (!isDrawerDisabled) {
+                    handleSettingChange("cashDrawerTrigger", "cash_and_movements");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleSettingChange("cashDrawerTrigger", "cash_and_movements");
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.cashDrawerTrigger === "cash_and_movements"}
+                  readOnly
+                  disabled={isDrawerDisabled}
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>
+                    En ventas en efectivo y en movimientos de caja
+                    (Entradas/Salidas)
+                  </h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>Método de conexión</h3>
+          </div>
+          <div className={`${styles.settingsRowRight} ${styles.settingsRowRightFull}`}>
+            <div
+              role="radiogroup"
+              aria-label="Método de conexión"
+              className={styles.radioCardGroup}
+            >
+              <div
+                role="radio"
+                aria-checked={settings.cashDrawerConnection === "printer_rj11"}
+                aria-disabled={isDrawerDisabled}
+                tabIndex={settings.cashDrawerConnection === "printer_rj11" && !isDrawerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                onClick={() => {
+                  if (!isDrawerDisabled) {
+                    handleSettingChange("cashDrawerConnection", "printer_rj11");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleSettingChange("cashDrawerConnection", "printer_rj11");
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.cashDrawerConnection === "printer_rj11"}
+                  readOnly
+                  disabled={isDrawerDisabled}
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>
+                    A través de la impresora térmica (Puerto RJ11 / Drawer Kick)
+                  </h4>
+                </div>
+              </div>
+              <div
+                role="radio"
+                aria-checked={settings.cashDrawerConnection === "manual"}
+                aria-disabled={isDrawerDisabled}
+                tabIndex={settings.cashDrawerConnection === "manual" && !isDrawerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                onClick={() => {
+                  if (!isDrawerDisabled) {
+                    handleSettingChange("cashDrawerConnection", "manual");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleSettingChange("cashDrawerConnection", "manual");
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  checked={settings.cashDrawerConnection === "manual"}
+                  readOnly
+                  disabled={isDrawerDisabled}
+                  className={styles.radioCardInput}
+                />
+                <div className={styles.radioCardContent}>
+                  <h4 className={styles.radioCardTitle}>Manual</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>Prueba de cajón</h3>
+            <p className={styles.settingsRowDescription}>
+              Verifica que el cajón registrador abra correctamente
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <button
+              type="button"
+              className={styles.buttonSecondary}
+              onClick={handleTestDrawer}
+              disabled={testingDrawer || isDrawerDisabled}
+            >
+              {testingDrawer ? "Probando..." : "Probar apertura del cajón"}
+            </button>
+          </div>
+        </div>
+
+        {drawerFeedback?.type === "error" ? (
+          <p role="alert" className={`${styles.errorMessage} ${styles.feedbackInline}`}>
+            {drawerFeedback.message}
+          </p>
+        ) : null}
+
+        {drawerFeedback?.type === "success" ? (
+          <p role="status" className={`${styles.statusMessage} ${styles.feedbackInline}`}>
+            {drawerFeedback.message}
+          </p>
+        ) : null}
+      </article>
     </section>
   );
 };
