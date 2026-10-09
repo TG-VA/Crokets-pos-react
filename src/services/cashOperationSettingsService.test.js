@@ -25,6 +25,9 @@ describe("cashOperationSettingsService", () => {
     expect(result.error).toBeNull();
     expect(result.defaultOpeningCash).toBe(0);
     expect(result.allowZeroOpening).toBe(true);
+    expect(result.maxOpeningCashEnabled).toBe(true);
+    expect(result.minOpeningCashEnabled).toBe(false);
+    expect(result.minOpeningCash).toBe(0);
     expect(result.drawerCashLimit).toBe(0);
     expect(result.drawerAlertEnabled).toBe(false);
     expect(result.requireExitReason).toBe(true);
@@ -58,6 +61,9 @@ describe("cashOperationSettingsService", () => {
 
     expect(result.defaultOpeningCash).toBe(0);
     expect(result.allowZeroOpening).toBe(true);
+    expect(result.maxOpeningCashEnabled).toBe(true);
+    expect(result.minOpeningCashEnabled).toBe(false);
+    expect(result.minOpeningCash).toBe(0);
     expect(result.drawerCashLimit).toBe(0);
     expect(result.drawerAlertEnabled).toBe(false);
     expect(result.requireExitReason).toBe(true);
@@ -73,6 +79,9 @@ describe("cashOperationSettingsService", () => {
     const saved = saveCashOperationSettings({
       defaultOpeningCash: 500,
       allowZeroOpening: false,
+      maxOpeningCashEnabled: false,
+      minOpeningCashEnabled: true,
+      minOpeningCash: 100,
       drawerCashLimit: 10000,
       drawerAlertEnabled: true,
       requireExitReason: false,
@@ -90,6 +99,9 @@ describe("cashOperationSettingsService", () => {
     const loaded = getCashOperationSettings();
     expect(loaded.defaultOpeningCash).toBe(500);
     expect(loaded.allowZeroOpening).toBe(false);
+    expect(loaded.maxOpeningCashEnabled).toBe(false);
+    expect(loaded.minOpeningCashEnabled).toBe(true);
+    expect(loaded.minOpeningCash).toBe(100);
     expect(loaded.drawerCashLimit).toBe(10000);
     expect(loaded.drawerAlertEnabled).toBe(true);
     expect(loaded.requireExitReason).toBe(false);
@@ -99,6 +111,24 @@ describe("cashOperationSettingsService", () => {
     expect(loaded.cashDrawerEnabled).toBe(true);
     expect(loaded.cashDrawerTrigger).toBe("all_sales");
     expect(loaded.cashDrawerConnection).toBe("manual");
+  });
+
+  it("deriva allowZeroOpening a partir del fondo mínimo obligatorio", () => {
+    saveCashOperationSettings({
+      minOpeningCashEnabled: true,
+      minOpeningCash: 250,
+    });
+
+    const withMin = getCashOperationSettings();
+    expect(withMin.minOpeningCashEnabled).toBe(true);
+    expect(withMin.minOpeningCash).toBe(250);
+    expect(withMin.allowZeroOpening).toBe(false);
+
+    saveCashOperationSettings({ minOpeningCashEnabled: false });
+
+    const withoutMin = getCashOperationSettings();
+    expect(withoutMin.minOpeningCashEnabled).toBe(false);
+    expect(withoutMin.allowZeroOpening).toBe(true);
   });
 
   it("acepta triggers válidos alternativos", () => {
@@ -148,6 +178,9 @@ describe("cashOperationSettingsService", () => {
 
   it("expone defaults constantes", () => {
     expect(DEFAULT_CASH_OPERATION_SETTINGS.defaultOpeningCash).toBe(0);
+    expect(DEFAULT_CASH_OPERATION_SETTINGS.maxOpeningCashEnabled).toBe(true);
+    expect(DEFAULT_CASH_OPERATION_SETTINGS.minOpeningCashEnabled).toBe(false);
+    expect(DEFAULT_CASH_OPERATION_SETTINGS.minOpeningCash).toBe(0);
     expect(DEFAULT_CASH_OPERATION_SETTINGS.cashDrawerTrigger).toBe("cash_only");
   });
 });

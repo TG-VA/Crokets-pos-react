@@ -18,6 +18,8 @@ const CashRegister = ({ setCashRegistered }) => {
   const [cashOpSettings, setCashOpSettings] = useState({
     defaultOpeningCash: 0,
     allowZeroOpening: true,
+    minOpeningCashEnabled: false,
+    minOpeningCash: 0,
   });
 
   const inputRef = useRef(null);
@@ -159,6 +161,20 @@ const CashRegister = ({ setCashRegistered }) => {
       return;
     }
 
+    if (
+      cashOpSettings.minOpeningCashEnabled &&
+      value < (cashOpSettings.minOpeningCash || 0)
+    ) {
+      setError(
+        `La política de la tienda exige un fondo inicial mínimo de $${Number(
+          cashOpSettings.minOpeningCash || 0
+        ).toFixed(2)}.`
+      );
+      inputRef.current?.focus();
+      return;
+    }
+
+    // Fallback de retrocompatibilidad
     if (value === 0 && cashOpSettings.allowZeroOpening === false) {
       setError("La política de la tienda no permite aperturas con monto cero.");
       inputRef.current?.focus();

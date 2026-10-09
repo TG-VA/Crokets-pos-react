@@ -3,6 +3,9 @@ const STORAGE_KEY = "cash_operation_settings";
 const DEFAULTS = {
   defaultOpeningCash: 0,
   allowZeroOpening: true,
+  maxOpeningCashEnabled: true,
+  minOpeningCashEnabled: false,
+  minOpeningCash: 0,
   drawerCashLimit: 0,
   drawerAlertEnabled: false,
   requireExitReason: true,
@@ -68,16 +71,38 @@ export function getCashOperationSettings() {
   const stored = getStoredSettings();
   const merged = { ...DEFAULTS, ...(stored || {}) };
 
+  const minOpeningCashEnabled = sanitizeBoolean(
+    merged.minOpeningCashEnabled,
+    DEFAULTS.minOpeningCashEnabled
+  );
+  const minOpeningCash = sanitizeNumber(
+    merged.minOpeningCash,
+    DEFAULTS.minOpeningCash,
+    0
+  );
+  let allowZeroOpening = sanitizeBoolean(
+    merged.allowZeroOpening,
+    DEFAULTS.allowZeroOpening
+  );
+  if (minOpeningCashEnabled && minOpeningCash > 0) {
+    allowZeroOpening = false;
+  } else if (!minOpeningCashEnabled) {
+    allowZeroOpening = true;
+  }
+
   const settings = {
     defaultOpeningCash: sanitizeNumber(
       merged.defaultOpeningCash,
       DEFAULTS.defaultOpeningCash,
       0
     ),
-    allowZeroOpening: sanitizeBoolean(
-      merged.allowZeroOpening,
-      DEFAULTS.allowZeroOpening
+    allowZeroOpening,
+    maxOpeningCashEnabled: sanitizeBoolean(
+      merged.maxOpeningCashEnabled,
+      DEFAULTS.maxOpeningCashEnabled
     ),
+    minOpeningCashEnabled,
+    minOpeningCash,
     drawerCashLimit: sanitizeNumber(
       merged.drawerCashLimit,
       DEFAULTS.drawerCashLimit,
@@ -128,16 +153,39 @@ export function saveCashOperationSettings(partialSettings = {}) {
   try {
     const current = getCashOperationSettings();
     const next = { ...current, ...partialSettings };
+
+    const minOpeningCashEnabled = sanitizeBoolean(
+      next.minOpeningCashEnabled,
+      DEFAULTS.minOpeningCashEnabled
+    );
+    const minOpeningCash = sanitizeNumber(
+      next.minOpeningCash,
+      DEFAULTS.minOpeningCash,
+      0
+    );
+    let allowZeroOpening = sanitizeBoolean(
+      next.allowZeroOpening,
+      DEFAULTS.allowZeroOpening
+    );
+    if (minOpeningCashEnabled && minOpeningCash > 0) {
+      allowZeroOpening = false;
+    } else if (!minOpeningCashEnabled) {
+      allowZeroOpening = true;
+    }
+
     const toStore = {
       defaultOpeningCash: sanitizeNumber(
         next.defaultOpeningCash,
         DEFAULTS.defaultOpeningCash,
         0
       ),
-      allowZeroOpening: sanitizeBoolean(
-        next.allowZeroOpening,
-        DEFAULTS.allowZeroOpening
+      allowZeroOpening,
+      maxOpeningCashEnabled: sanitizeBoolean(
+        next.maxOpeningCashEnabled,
+        DEFAULTS.maxOpeningCashEnabled
       ),
+      minOpeningCashEnabled,
+      minOpeningCash,
       drawerCashLimit: sanitizeNumber(
         next.drawerCashLimit,
         DEFAULTS.drawerCashLimit,
