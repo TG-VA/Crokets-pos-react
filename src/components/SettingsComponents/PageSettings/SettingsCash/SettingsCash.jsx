@@ -286,6 +286,16 @@ const SettingsCash = () => {
             />
           </div>
         </div>
+      </article>
+
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>
+          Control de Efectivo y Seguridad en Turno
+        </h2>
+        <p className={styles.cardDescription}>
+          Reglas para prevenir retiros excesivos y exigir justificación en
+          salidas.
+        </p>
 
         <div className={styles.settingsRow}>
           <div className={styles.settingsRowLeft}>
