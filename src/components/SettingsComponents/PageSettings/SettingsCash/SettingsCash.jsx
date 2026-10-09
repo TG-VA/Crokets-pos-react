@@ -182,6 +182,8 @@ const SettingsCash = () => {
   );
 
   const isDrawerDisabled = !settings.cashDrawerEnabled;
+  const isManualConnection = settings.cashDrawerConnection === "manual";
+  const isElectricTriggerDisabled = isDrawerDisabled || isManualConnection;
 
   return (
     <section className={styles.settingsSection} aria-labelledby="settings-cash-title">
@@ -581,9 +583,16 @@ const SettingsCash = () => {
           </div>
         </div>
 
-        <div className={styles.settingsRow}>
+        <div
+          className={`${styles.settingsRow} ${isElectricTriggerDisabled ? styles.fieldDisabled : ""}`}
+        >
           <div className={styles.settingsRowLeft}>
             <h3 className={styles.settingsRowTitle}>Momento de disparo</h3>
+            {isManualConnection && !isDrawerDisabled ? (
+              <p className={styles.settingsRowDescription}>
+                No aplica en modo manual (el cajón se opera exclusivamente con llave).
+              </p>
+            ) : null}
           </div>
           <div className={`${styles.settingsRowRight} ${styles.settingsRowRightFull}`}>
             <div
@@ -594,16 +603,16 @@ const SettingsCash = () => {
               <div
                 role="radio"
                 aria-checked={settings.cashDrawerTrigger === "cash_only"}
-                aria-disabled={isDrawerDisabled}
-                tabIndex={settings.cashDrawerTrigger === "cash_only" && !isDrawerDisabled ? 0 : -1}
-                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                aria-disabled={isElectricTriggerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "cash_only" && !isElectricTriggerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isElectricTriggerDisabled ? styles.fieldDisabled : ""}`}
                 onClick={() => {
-                  if (!isDrawerDisabled) {
+                  if (!isElectricTriggerDisabled) {
                     handleSettingChange("cashDrawerTrigger", "cash_only");
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                  if (!isElectricTriggerDisabled && (e.key === "Enter" || e.key === " ")) {
                     e.preventDefault();
                     handleSettingChange("cashDrawerTrigger", "cash_only");
                   }
@@ -613,7 +622,7 @@ const SettingsCash = () => {
                   type="radio"
                   checked={settings.cashDrawerTrigger === "cash_only"}
                   readOnly
-                  disabled={isDrawerDisabled}
+                  disabled={isElectricTriggerDisabled}
                   className={styles.radioCardInput}
                 />
                 <div className={styles.radioCardContent}>
@@ -625,16 +634,16 @@ const SettingsCash = () => {
               <div
                 role="radio"
                 aria-checked={settings.cashDrawerTrigger === "all_sales"}
-                aria-disabled={isDrawerDisabled}
-                tabIndex={settings.cashDrawerTrigger === "all_sales" && !isDrawerDisabled ? 0 : -1}
-                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                aria-disabled={isElectricTriggerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "all_sales" && !isElectricTriggerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isElectricTriggerDisabled ? styles.fieldDisabled : ""}`}
                 onClick={() => {
-                  if (!isDrawerDisabled) {
+                  if (!isElectricTriggerDisabled) {
                     handleSettingChange("cashDrawerTrigger", "all_sales");
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                  if (!isElectricTriggerDisabled && (e.key === "Enter" || e.key === " ")) {
                     e.preventDefault();
                     handleSettingChange("cashDrawerTrigger", "all_sales");
                   }
@@ -644,7 +653,7 @@ const SettingsCash = () => {
                   type="radio"
                   checked={settings.cashDrawerTrigger === "all_sales"}
                   readOnly
-                  disabled={isDrawerDisabled}
+                  disabled={isElectricTriggerDisabled}
                   className={styles.radioCardInput}
                 />
                 <div className={styles.radioCardContent}>
@@ -656,16 +665,16 @@ const SettingsCash = () => {
               <div
                 role="radio"
                 aria-checked={settings.cashDrawerTrigger === "cash_and_movements"}
-                aria-disabled={isDrawerDisabled}
-                tabIndex={settings.cashDrawerTrigger === "cash_and_movements" && !isDrawerDisabled ? 0 : -1}
-                className={`${styles.radioCard} ${isDrawerDisabled ? styles.fieldDisabled : ""}`}
+                aria-disabled={isElectricTriggerDisabled}
+                tabIndex={settings.cashDrawerTrigger === "cash_and_movements" && !isElectricTriggerDisabled ? 0 : -1}
+                className={`${styles.radioCard} ${isElectricTriggerDisabled ? styles.fieldDisabled : ""}`}
                 onClick={() => {
-                  if (!isDrawerDisabled) {
+                  if (!isElectricTriggerDisabled) {
                     handleSettingChange("cashDrawerTrigger", "cash_and_movements");
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (!isDrawerDisabled && (e.key === "Enter" || e.key === " ")) {
+                  if (!isElectricTriggerDisabled && (e.key === "Enter" || e.key === " ")) {
                     e.preventDefault();
                     handleSettingChange("cashDrawerTrigger", "cash_and_movements");
                   }
@@ -675,7 +684,7 @@ const SettingsCash = () => {
                   type="radio"
                   checked={settings.cashDrawerTrigger === "cash_and_movements"}
                   readOnly
-                  disabled={isDrawerDisabled}
+                  disabled={isElectricTriggerDisabled}
                   className={styles.radioCardInput}
                 />
                 <div className={styles.radioCardContent}>
@@ -728,6 +737,9 @@ const SettingsCash = () => {
                   <h4 className={styles.radioCardTitle}>
                     A través de la impresora térmica (Puerto RJ11 / Drawer Kick)
                   </h4>
+                  <p className={styles.radioCardDescription}>
+                    El cajón debe estar conectado con cable RJ11 a la impresora térmica de tickets.
+                  </p>
                 </div>
               </div>
               <div
@@ -757,6 +769,9 @@ const SettingsCash = () => {
                 />
                 <div className={styles.radioCardContent}>
                   <h4 className={styles.radioCardTitle}>Manual</h4>
+                  <p className={styles.radioCardDescription}>
+                    Apertura física tradicional mediante llave. No requiere cables ni pulsos eléctricos.
+                  </p>
                 </div>
               </div>
             </div>
@@ -767,7 +782,9 @@ const SettingsCash = () => {
           <div className={styles.settingsRowLeft}>
             <h3 className={styles.settingsRowTitle}>Prueba de cajón</h3>
             <p className={styles.settingsRowDescription}>
-              Verifica que el cajón registrador abra correctamente
+              {isManualConnection && !isDrawerDisabled
+                ? "Prueba no requerida en modo manual (con llave)."
+                : "Verifica que el cajón registrador abra correctamente"}
             </p>
           </div>
           <div className={styles.settingsRowRight}>
@@ -775,7 +792,7 @@ const SettingsCash = () => {
               type="button"
               className={styles.buttonSecondary}
               onClick={handleTestDrawer}
-              disabled={testingDrawer || isDrawerDisabled}
+              disabled={testingDrawer || isElectricTriggerDisabled}
             >
               {testingDrawer ? "Probando..." : "Probar apertura del cajón"}
             </button>
