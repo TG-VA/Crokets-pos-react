@@ -102,7 +102,7 @@ describe("SettingsCash", () => {
 
     expect(
       await screen.findByText(
-        "Se requiere un perfil de administrador para modificar este valor."
+        "Se requiere un perfil de administrador para modificar el tope de apertura."
       )
     ).toBeTruthy();
     expect(screen.queryByLabelText("Monto máximo")).toBeNull();

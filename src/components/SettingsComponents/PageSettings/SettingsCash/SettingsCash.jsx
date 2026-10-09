@@ -24,6 +24,9 @@ const SettingsCash = () => {
   const [settings, setSettings] = useState({
     defaultOpeningCash: 0,
     allowZeroOpening: true,
+    maxOpeningCashEnabled: true,
+    minOpeningCashEnabled: false,
+    minOpeningCash: 0,
     drawerCashLimit: 0,
     drawerAlertEnabled: false,
     requireExitReason: true,
@@ -88,7 +91,10 @@ const SettingsCash = () => {
 
     try {
       if (isAdmin) {
-        const resCashMax = await updateCashMaxOpeningAmount(cashMax);
+        const cashMaxValue = settings.maxOpeningCashEnabled
+          ? cashMax
+          : "1000000";
+        const resCashMax = await updateCashMaxOpeningAmount(cashMaxValue);
         if (!resCashMax.success) {
           setFeedback({ type: "error", message: resCashMax.error });
           hasError = true;
@@ -213,62 +219,151 @@ const SettingsCash = () => {
       <article className={styles.card}>
         <h2 className={styles.cardTitle}>Políticas de Apertura de Caja</h2>
         <p className={styles.cardDescription}>
-          Configuración para el proceso de apertura de caja registradora.
+          Configuración de topes, fondos mínimos y valores sugeridos al iniciar
+          turno.
         </p>
 
+        {/* BLOQUE 1: Tope Máximo (Admin) */}
         {adminLoading ? (
           <p role="status" className={styles.adminHint}>
             Cargando configuración de caja...
           </p>
         ) : !isAdmin ? (
           <p role="status" className={styles.adminHint}>
-            Se requiere un perfil de administrador para modificar este valor.
+            Se requiere un perfil de administrador para modificar el tope de
+            apertura.
           </p>
         ) : (
-          <div className={styles.settingsRow}>
-            <div className={styles.settingsRowLeft}>
-              <h3 className={styles.settingsRowTitle}>Monto máximo</h3>
-              <p className={styles.settingsRowDescription}>
-                Expresado en pesos mexicanos. El valor se aplica al momento de
-                abrir caja.
-              </p>
-              <p id="cash-max-amount-hint" className={styles.adminHint}>
-                Solo guardado para usuarios administradores.
-              </p>
-            </div>
-            <div className={styles.settingsRowRight}>
-              <label htmlFor="cash-max-amount" className={styles.visuallyHidden}>Monto máximo</label>
-              <div className={styles.monetaryInputWrapper}>
-                <span className={styles.monetaryPrefix}>$</span>
-                <input
-                  id="cash-max-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="numeric"
-                  className={styles.monetaryInput}
-                  value={cashMax}
-                  onChange={(event) => {
-                    setCashMax(event.target.value);
-                    setCashMaxEdited(true);
-                  }}
-                  onWheel={(e) => e.currentTarget.blur()}
-                  placeholder="Ej. 1000000"
-                  aria-describedby="cash-max-amount-hint"
+          <>
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowLeft}>
+                <h3 className={styles.settingsRowTitle}>
+                  Limitar monto máximo de apertura (Tope Admin)
+                </h3>
+                <p className={styles.settingsRowDescription}>
+                  Impide abrir caja con un fondo inicial que supere el límite
+                  establecido.
+                </p>
+              </div>
+              <div className={styles.settingsRowRight}>
+                <ToggleSwitch
+                  checked={settings.maxOpeningCashEnabled}
+                  onChange={(value) =>
+                    handleSettingChange("maxOpeningCashEnabled", value)
+                  }
+                  ariaLabel="Limitar monto máximo de apertura"
                 />
-                <span className={styles.monetarySuffix}>MXN</span>
               </div>
             </div>
-          </div>
+            <div
+              className={`${styles.settingsRow} ${
+                !settings.maxOpeningCashEnabled ? styles.fieldDisabled : ""
+              }`}
+            >
+              <div className={styles.settingsRowLeft}>
+                <h3 className={styles.settingsRowTitle}>
+                  Monto máximo permitido
+                </h3>
+                <p className={styles.settingsRowDescription}>
+                  Expresado en pesos mexicanos. El valor se aplica al momento de
+                  abrir caja.
+                </p>
+                <p id="cash-max-amount-hint" className={styles.adminHint}>
+                  Solo guardado para usuarios administradores.
+                </p>
+              </div>
+              <div className={styles.settingsRowRight}>
+                <label
+                  htmlFor="cash-max-amount"
+                  className={styles.visuallyHidden}
+                >
+                  Monto máximo
+                </label>
+                <div
+                  className={`${styles.monetaryInputWrapper} ${
+                    !settings.maxOpeningCashEnabled
+                      ? styles.fieldDisabled
+                      : ""
+                  }`}
+                >
+                  <span className={styles.monetaryPrefix}>$</span>
+                  <input
+                    id="cash-max-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    disabled={!settings.maxOpeningCashEnabled}
+                    className={styles.monetaryInput}
+                    value={cashMax}
+                    onChange={(event) => {
+                      setCashMax(event.target.value);
+                      setCashMaxEdited(true);
+                    }}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    placeholder="1000000"
+                    aria-describedby="cash-max-amount-hint"
+                  />
+                  <span className={styles.monetarySuffix}>MXN</span>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
+        {/* BLOQUE 2: Fondo Mínimo Obligatorio */}
         <div className={styles.settingsRow}>
           <div className={styles.settingsRowLeft}>
             <h3 className={styles.settingsRowTitle}>
-              Monto predeterminado de fondo inicial
+              Exigir fondo inicial mínimo obligatorio
             </h3>
             <p className={styles.settingsRowDescription}>
-              Expresado en pesos mexicanos.
+              Impide abrir caja con un monto inferior al establecido (evita
+              aperturas en ceros).
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.minOpeningCashEnabled}
+              onChange={(value) =>
+                handleSettingChange("minOpeningCashEnabled", value)
+              }
+              ariaLabel="Exigir fondo inicial mínimo obligatorio"
+            />
+          </div>
+        </div>
+        <div
+          className={`${styles.settingsRow} ${
+            !settings.minOpeningCashEnabled ? styles.fieldDisabled : ""
+          }`}
+        >
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>Monto mínimo requerido</h3>
+            <p className={styles.settingsRowDescription}>
+              Monto mínimo de efectivo en caja para poder iniciar operaciones.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <MonetaryInput
+              id="min-opening-cash"
+              value={settings.minOpeningCash}
+              disabled={!settings.minOpeningCashEnabled}
+              onChange={(event) =>
+                handleSettingChange("minOpeningCash", event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        {/* BLOQUE 3: Fondo Sugerido Predeterminado */}
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Fondo inicial sugerido al abrir caja
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Monto que se prellena automáticamente en la pantalla de apertura
+              para agilizar el inicio de turno.
             </p>
           </div>
           <div className={styles.settingsRowRight}>
@@ -278,23 +373,6 @@ const SettingsCash = () => {
               onChange={(event) =>
                 handleSettingChange("defaultOpeningCash", event.target.value)
               }
-            />
-          </div>
-        </div>
-
-        <div className={styles.settingsRow}>
-          <div className={styles.settingsRowLeft}>
-            <h3 className={styles.settingsRowTitle}>
-              Permitir apertura de caja con monto cero ($0.00)
-            </h3>
-          </div>
-          <div className={styles.settingsRowRight}>
-            <ToggleSwitch
-              checked={settings.allowZeroOpening}
-              onChange={(value) =>
-                handleSettingChange("allowZeroOpening", value)
-              }
-              ariaLabel="Permitir apertura de caja con monto cero"
             />
           </div>
         </div>
