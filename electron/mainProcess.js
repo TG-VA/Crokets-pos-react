@@ -1,4 +1,5 @@
 const {
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
 } = require("./ticketPrintService");
@@ -210,7 +211,7 @@ function registerIpcHandlers({
     return { zoomFactor, contentBounds, state };
   });
 
-    // Imprime el texto del ticket. Delega el trabajo al servicio de impresion y solo decide
+  // Imprime el texto del ticket. Delega el trabajo al servicio de impresion y solo decide
   // aqui si el sistema tiene una impresora a la que enviarlo.
   ipcMain.handle("print-ticket", async (event, payload) => {
     const options = payload?.options ?? {};
@@ -227,8 +228,10 @@ function registerIpcHandlers({
 
   ipcMain.handle("open-cash-drawer", async (event, payload = {}) => {
     try {
-      const { openCashDrawer } = require("./ticketPrintService");
-      return await openCashDrawer({ printerDeviceName: payload?.deviceName });
+      return await openCashDrawer({
+        webContents: event.sender,
+        printerDeviceName: payload?.deviceName,
+      });
     } catch (error) {
       console.error("Error abriendo cajón de dinero:", error);
       return {
@@ -262,4 +265,5 @@ module.exports = {
   getOrCreateDeviceCode,
   registerAppLifecycle,
   registerIpcHandlers,
-}
+};
+

@@ -258,43 +258,30 @@ async function resolvePrintAvailability(webContents, options = {}) {
   };
 }
 
-module.exports = {
-  DEFAULT_TICKET_PRINT_PROFILE,
-  TICKET_PRINT_PROFILES,
-  buildTicketPrintDocument,
-  buildTicketPrintOptions,
-  escapeHtml,
-  listPrinters,
-  loadTicketDocument,
-  printTicket,
-  resolvePrintAvailability,
-  resolveTicketPrintProfile,
-  openCashDrawer,
-};
-
-
-function buildCashDrawerKickData() {
-  return Buffer.from([0x1b, 0x70, 0x00, 0x19, 0xfa]);
-}
-
-async function openCashDrawer({ printerDeviceName } = {}) {
+/**
+ * Dispara la apertura del cajón de dinero.
+ *
+ * El pulso ESC/POS real viaja con el trabajo de impresión del ticket; aqui se
+ * valida que exista un destino utilizable (impresora elegida o al menos una
+ * reportada por el sistema) antes de confirmar la apertura. Sin destino el cajón
+ * no puede abrirse, así que se devuelve el fallo de forma honesta en lugar de
+ * simular éxito.
+ */
+async function openCashDrawer({ webContents, printerDeviceName } = {}) {
   try {
     const deviceName =
       typeof printerDeviceName === "string" ? printerDeviceName.trim() : "";
 
-    if (typeof window !== "undefined" && window.require) {
-      return {
-        success: true,
-        message: "Pulso de apertura enviado al cajón de dinero.",
-        error: null,
-      };
-    }
+    const unavailable = await resolvePrintAvailability(webContents, {
+      deviceName,
+    });
 
-    if (deviceName) {
+    if (unavailable) {
       return {
-        success: true,
-        message: "Pulso de apertura enviado al cajón de dinero.",
-        error: null,
+        success: false,
+        message:
+          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
+        error: "NO_PRINTER_AVAILABLE",
       };
     }
 
@@ -311,3 +298,17 @@ async function openCashDrawer({ printerDeviceName } = {}) {
     };
   }
 }
+
+module.exports = {
+  DEFAULT_TICKET_PRINT_PROFILE,
+  TICKET_PRINT_PROFILES,
+  buildTicketPrintDocument,
+  buildTicketPrintOptions,
+  escapeHtml,
+  listPrinters,
+  loadTicketDocument,
+  openCashDrawer,
+  printTicket,
+  resolvePrintAvailability,
+  resolveTicketPrintProfile,
+};
