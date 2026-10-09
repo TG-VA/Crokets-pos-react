@@ -155,6 +155,7 @@ const SettingsCash = () => {
         className={styles.monetaryInput}
         value={value}
         onChange={onChange}
+        onWheel={(e) => e.currentTarget.blur()}
         placeholder={placeholder}
         aria-describedby={ariaDescribedby}
       />
@@ -231,7 +232,7 @@ const SettingsCash = () => {
                   id="cash-max-amount"
                   type="number"
                   min="0"
-                  step="1"
+                  step="0.01"
                   inputMode="numeric"
                   className={styles.monetaryInput}
                   value={cashMax}
@@ -239,6 +240,7 @@ const SettingsCash = () => {
                     setCashMax(event.target.value);
                     setCashMaxEdited(true);
                   }}
+                  onWheel={(e) => e.currentTarget.blur()}
                   placeholder="Ej. 1000000"
                   aria-describedby="cash-max-amount-hint"
                 />

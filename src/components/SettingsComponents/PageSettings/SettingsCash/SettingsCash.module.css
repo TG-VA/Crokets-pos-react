@@ -120,7 +120,16 @@
   user-select: none;
 }
 
+/* Ocultar botones incrementales nativos (spinners) en WebKit/Chromium y Firefox */
+.monetaryInput::-webkit-outer-spin-button,
+.monetaryInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .monetaryInput {
+  -moz-appearance: textfield;
+  appearance: textfield;
   width: 100%;
   padding: 0.6rem 3.5rem 0.6rem 1.75rem;
   font-size: 0.9rem;
