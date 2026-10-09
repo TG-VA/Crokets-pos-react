@@ -17,9 +17,16 @@ const DEFAULTS = {
   cashDrawerConnection: "printer_rj11",
 };
 
-const ALLOWED_TRIGGERS = ["cash_only", "all_sales", "cash_and_movements"];
+const ALLOWED_TRIGGERS = ["cash_only", "all_sales"];
 
 const ALLOWED_CONNECTIONS = ["printer_rj11", "manual"];
+
+function normalizeDrawerTrigger(value) {
+  if (typeof value === "string" && value.trim() === "cash_and_movements") {
+    return "cash_only";
+  }
+  return value;
+}
 
 function isValidNumber(value) {
   const num = Number(value);
@@ -131,7 +138,7 @@ export function getCashOperationSettings() {
       DEFAULTS.cashDrawerEnabled
     ),
     cashDrawerTrigger: sanitizeString(
-      merged.cashDrawerTrigger,
+      normalizeDrawerTrigger(merged.cashDrawerTrigger),
       ALLOWED_TRIGGERS,
       DEFAULTS.cashDrawerTrigger
     ),
@@ -214,7 +221,7 @@ export function saveCashOperationSettings(partialSettings = {}) {
         DEFAULTS.cashDrawerEnabled
       ),
       cashDrawerTrigger: sanitizeString(
-        next.cashDrawerTrigger,
+        normalizeDrawerTrigger(next.cashDrawerTrigger),
         ALLOWED_TRIGGERS,
         DEFAULTS.cashDrawerTrigger
       ),

@@ -48,11 +48,7 @@ const useSalesCashMovements = ({
 
   const maybeTriggerDrawerKick = useCallback(() => {
     const cashOps = getCashOperationSettings();
-    if (
-      cashOps.cashDrawerEnabled &&
-      cashOps.cashDrawerConnection !== "manual" &&
-      cashOps.cashDrawerTrigger === "cash_and_movements"
-    ) {
+    if (cashOps.cashDrawerEnabled && cashOps.cashDrawerConnection !== "manual") {
       triggerCashDrawerKick().catch(() => {});
     }
   }, []);

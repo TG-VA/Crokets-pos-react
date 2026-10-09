@@ -627,8 +627,13 @@ const SettingsCash = () => {
                 />
                 <div className={styles.radioCardContent}>
                   <h4 className={styles.radioCardTitle}>
-                    Solo al cobrar en efectivo o mixto
+                    Solo al recibir dinero físico (Efectivo, Dólares o Mixto)
                   </h4>
+                  <p className={styles.radioCardDescription}>
+                    Abre el cajón en cobros con efectivo o divisas y en
+                    movimientos de caja (entradas y salidas). No abre en pagos
+                    exclusivos con tarjeta o transferencia.
+                  </p>
                 </div>
               </div>
               <div
@@ -658,40 +663,13 @@ const SettingsCash = () => {
                 />
                 <div className={styles.radioCardContent}>
                   <h4 className={styles.radioCardTitle}>
-                    En todas las ventas (Efectivo, Tarjeta, Transferencia)
+                    En todas las ventas (Efectivo, Dólares, Tarjeta, Transferencia o Mixto)
                   </h4>
-                </div>
-              </div>
-              <div
-                role="radio"
-                aria-checked={settings.cashDrawerTrigger === "cash_and_movements"}
-                aria-disabled={isElectricTriggerDisabled}
-                tabIndex={settings.cashDrawerTrigger === "cash_and_movements" && !isElectricTriggerDisabled ? 0 : -1}
-                className={`${styles.radioCard} ${isElectricTriggerDisabled ? styles.fieldDisabled : ""}`}
-                onClick={() => {
-                  if (!isElectricTriggerDisabled) {
-                    handleSettingChange("cashDrawerTrigger", "cash_and_movements");
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (!isElectricTriggerDisabled && (e.key === "Enter" || e.key === " ")) {
-                    e.preventDefault();
-                    handleSettingChange("cashDrawerTrigger", "cash_and_movements");
-                  }
-                }}
-              >
-                <input
-                  type="radio"
-                  checked={settings.cashDrawerTrigger === "cash_and_movements"}
-                  readOnly
-                  disabled={isElectricTriggerDisabled}
-                  className={styles.radioCardInput}
-                />
-                <div className={styles.radioCardContent}>
-                  <h4 className={styles.radioCardTitle}>
-                    En ventas en efectivo y en movimientos de caja
-                    (Entradas/Salidas)
-                  </h4>
+                  <p className={styles.radioCardDescription}>
+                    Abre el cajón al finalizar cualquier cobro (para resguardo
+                    de vouchers o comprobantes) y en todos los movimientos de
+                    caja.
+                  </p>
                 </div>
               </div>
             </div>

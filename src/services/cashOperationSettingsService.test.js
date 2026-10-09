@@ -131,14 +131,27 @@ describe("cashOperationSettingsService", () => {
     expect(withoutMin.allowZeroOpening).toBe(true);
   });
 
-  it("acepta triggers válidos alternativos", () => {
-    const saved = saveCashOperationSettings({
-      cashDrawerTrigger: "cash_and_movements",
-    });
-    expect(saved.cashDrawerTrigger).toBe("cash_and_movements");
+  it("acepta solo los triggers cash_only y all_sales", () => {
+    const saved = saveCashOperationSettings({ cashDrawerTrigger: "all_sales" });
+    expect(saved.cashDrawerTrigger).toBe("all_sales");
 
     const saved2 = saveCashOperationSettings({ cashDrawerTrigger: "cash_only" });
     expect(saved2.cashDrawerTrigger).toBe("cash_only");
+
+    const savedInvalid = saveCashOperationSettings({
+      cashDrawerTrigger: "cash_and_movements",
+    });
+    expect(savedInvalid.cashDrawerTrigger).toBe("cash_only");
+  });
+
+  it("normaliza el trigger legacy cash_and_movements a cash_only al recuperar", () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ cashDrawerTrigger: "cash_and_movements" })
+    );
+
+    const result = getCashOperationSettings();
+    expect(result.cashDrawerTrigger).toBe("cash_only");
   });
 
   it("devuelve contrato exitoso al disparar cajón en navegador web", async () => {
