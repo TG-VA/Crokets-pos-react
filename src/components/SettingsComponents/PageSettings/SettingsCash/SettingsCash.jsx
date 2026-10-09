@@ -143,8 +143,19 @@ const SettingsCash = () => {
     </button>
   );
 
-  const MonetaryInput = ({ id, value, onChange, placeholder = "0.00", ariaDescribedby }) => (
-    <div className={styles.monetaryInputWrapper}>
+  const MonetaryInput = ({
+    id,
+    value,
+    onChange,
+    placeholder = "0.00",
+    ariaDescribedby,
+    disabled = false,
+  }) => (
+    <div
+      className={`${styles.monetaryInputWrapper} ${
+        disabled ? styles.fieldDisabled : ""
+      }`}
+    >
       <span className={styles.monetaryPrefix}>$</span>
       <input
         id={id}
@@ -152,6 +163,7 @@ const SettingsCash = () => {
         min="0"
         step="0.01"
         inputMode="decimal"
+        disabled={disabled}
         className={styles.monetaryInput}
         value={value}
         onChange={onChange}
@@ -300,11 +312,36 @@ const SettingsCash = () => {
         <div className={styles.settingsRow}>
           <div className={styles.settingsRowLeft}>
             <h3 className={styles.settingsRowTitle}>
-              Límite de efectivo permitido en cajón
+              Activar alerta preventiva por límite de efectivo en cajón
             </h3>
             <p className={styles.settingsRowDescription}>
-              Al superar este monto, el sistema podrá emitir una alerta
-              preventiva.
+              Emite una notificación en la pantalla de cobro cuando el efectivo
+              acumulado supere el monto sugerido.
+            </p>
+          </div>
+          <div className={styles.settingsRowRight}>
+            <ToggleSwitch
+              checked={settings.drawerAlertEnabled}
+              onChange={(value) =>
+                handleSettingChange("drawerAlertEnabled", value)
+              }
+              ariaLabel="Activar alerta preventiva por límite de efectivo en cajón"
+            />
+          </div>
+        </div>
+
+        <div
+          className={`${styles.settingsRow} ${
+            !settings.drawerAlertEnabled ? styles.fieldDisabled : ""
+          }`}
+        >
+          <div className={styles.settingsRowLeft}>
+            <h3 className={styles.settingsRowTitle}>
+              Monto límite de efectivo permitido en cajón
+            </h3>
+            <p className={styles.settingsRowDescription}>
+              Umbral de efectivo a partir del cual se sugiere realizar un retiro
+              parcial.
             </p>
           </div>
           <div className={styles.settingsRowRight}>
@@ -314,23 +351,7 @@ const SettingsCash = () => {
               onChange={(event) =>
                 handleSettingChange("drawerCashLimit", event.target.value)
               }
-            />
-          </div>
-        </div>
-
-        <div className={styles.settingsRow}>
-          <div className={styles.settingsRowLeft}>
-            <h3 className={styles.settingsRowTitle}>
-              Activar alerta preventiva de retiro al superar este monto
-            </h3>
-          </div>
-          <div className={styles.settingsRowRight}>
-            <ToggleSwitch
-              checked={settings.drawerAlertEnabled}
-              onChange={(value) =>
-                handleSettingChange("drawerAlertEnabled", value)
-              }
-              ariaLabel="Activar alerta preventiva de retiro al superar este monto"
+              disabled={!settings.drawerAlertEnabled}
             />
           </div>
         </div>
@@ -340,6 +361,10 @@ const SettingsCash = () => {
             <h3 className={styles.settingsRowTitle}>
               Exigir concepto o justificación obligatoria en salidas de dinero
             </h3>
+            <p className={styles.settingsRowDescription}>
+              Obliga a capturar un motivo antes de registrar cualquier retiro o
+              egreso de caja.
+            </p>
           </div>
           <div className={styles.settingsRowRight}>
             <ToggleSwitch

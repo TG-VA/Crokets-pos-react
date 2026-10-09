@@ -141,6 +141,12 @@
   box-sizing: border-box;
 }
 
+.monetaryInput:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .monetaryInput:focus-visible {
   border-color: #0b6d85;
   outline: 3px solid #05313d;
