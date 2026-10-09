@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import styles from "./ExitModal.module.css";
 import ExitIcon from "../../../../assets/icons/exitIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import { getCashOperationSettings } from "../../../../services/cashOperationSettingsService";
 
 const ExitModal = memo(({ isOpen, onClose, onSave }) => {
   const [exitAmount, setExitAmount] = useState("");
@@ -34,8 +35,9 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
       return amountInputRef.current?.focus();
     }
 
-    if (!exitDescription.trim())
-      return setExitError("Por favor, ingresa una descripción.");
+    const cashOps = getCashOperationSettings();
+    if (cashOps.requireExitReason && !exitDescription.trim())
+      return setExitError("Por favor, ingresa una justificación para la salida.");
 
     try {
       setIsSaving(true);
@@ -107,6 +109,8 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
 
   if (!isOpen) return null;
 
+  const requireExitReason = getCashOperationSettings().requireExitReason;
+
   return (
     <div
       className={styles.modalOverlay}
@@ -164,7 +168,9 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="exitDescription">Descripción:</label>
+            <label htmlFor="exitDescription">
+              Descripción ({requireExitReason ? "obligatoria" : "opcional"}):
+            </label>
             <textarea
               id="exitDescription"
               value={exitDescription}
