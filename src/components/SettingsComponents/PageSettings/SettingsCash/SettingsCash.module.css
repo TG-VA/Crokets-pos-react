@@ -1,0 +1,429 @@
+.settingsSection {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.settingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.settingsTitle {
+  color: #0b6d85;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.settingsSubtitle {
+  color: #333333;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-sizing: border-box;
+}
+
+.cardTitle {
+  color: #333333;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.cardDescription {
+  color: #555555;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.settingsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settingsRow:last-of-type {
+  border-bottom: none;
+}
+
+.settingsRowLeft {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+
+.settingsRowTitle {
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  line-height: 1.4;
+}
+
+.settingsRowDescription {
+  color: #6b7280;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.settingsRowRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  min-width: 220px;
+  gap: 0.75rem;
+}
+
+.settingsRowRightFull {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+}
+
+.monetaryInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 260px;
+}
+
+.monetaryPrefix {
+  position: absolute;
+  left: 0.7rem;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Ocultar botones incrementales nativos (spinners) en WebKit/Chromium y Firefox */
+.monetaryInput::-webkit-outer-spin-button,
+.monetaryInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.monetaryInput {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  width: 100%;
+  padding: 0.6rem 3.5rem 0.6rem 1.75rem;
+  font-size: 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #333333;
+  background: #ffffff;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.monetaryInput:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.monetaryInput:focus-visible {
+  border-color: #0b6d85;
+  outline: 3px solid #05313d;
+  outline-offset: 1px;
+}
+
+.monetarySuffix {
+  position: absolute;
+  right: 0.7rem;
+  color: #374151;
+  font-size: 0.8rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.toggleSwitch[aria-checked="true"] {
+  background: #0b6d85;
+}
+
+.toggleSwitch:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.toggleThumb {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggleSwitch[aria-checked="true"] .toggleThumb {
+  transform: translateX(20px);
+}
+
+.toggleSwitch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radioCardGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.radioCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.radioCard:hover:not([aria-disabled="true"]) {
+  border-color: #0b6d85;
+  background: #f8fbfc;
+}
+
+.radioCard[aria-checked="true"] {
+  border-color: #0b6d85;
+  background: #eef7fa;
+  box-shadow: 0 0 0 1px #0b6d85 inset;
+}
+
+.radioCard[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.radioCardInput {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.125rem;
+  accent-color: #0b6d85;
+}
+
+.radioCardInput:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.radioCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.radioCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.radioCardTitle {
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.recommendedBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.radioCardDescription {
+  color: #6b7280;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.button {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #0b6d85;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: #08556a;
+}
+
+.button:disabled {
+  background: #7aa9b7;
+  cursor: not-allowed;
+}
+
+.button:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.buttonSecondary {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+  background: #ffffff;
+  color: #0b6d85;
+  border: 2px solid #0b6d85;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: #eef7fa;
+}
+
+.buttonSecondary:disabled {
+  color: #7aa9b7;
+  border-color: #7aa9b7;
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.buttonSecondary:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
+.statusMessage {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.85rem 1.15rem;
+  margin: 0.5rem 0 1.5rem;
+  box-sizing: border-box;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.85rem 1.15rem;
+  margin: 0.5rem 0 1.5rem;
+  box-sizing: border-box;
+}
+
+.feedbackIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.feedbackInline {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.adminHint {
+  color: #555555;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
+.fieldDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.arqueoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}

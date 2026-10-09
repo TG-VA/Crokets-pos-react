@@ -6,6 +6,7 @@ import {
   escapeHtml,
   listPrinters,
   loadTicketDocument,
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
@@ -416,6 +417,49 @@ describe("electron ticketPrintService", () => {
         message: "No hay ninguna impresora configurada en el sistema.",
         error: "NO_PRINTER_AVAILABLE",
       });
+    });
+  });
+
+  describe("openCashDrawer", () => {
+    it("falla honestamente cuando el sistema no reporta impresoras", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([])),
+      };
+
+      await expect(openCashDrawer({ webContents })).resolves.toEqual({
+        success: false,
+        message:
+          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
+        error: "NO_PRINTER_AVAILABLE",
+      });
+      expect(webContents.getPrintersAsync).toHaveBeenCalled();
+    });
+
+    it("confirma la apertura cuando hay una impresora conectada", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([{ name: "Termica" }])),
+      };
+
+      await expect(openCashDrawer({ webContents })).resolves.toEqual({
+        success: true,
+        message: "Pulso de apertura enviado al cajón de dinero.",
+        error: null,
+      });
+    });
+
+    it("omite la consulta al sistema cuando se elige una impresora explicita", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([])),
+      };
+
+      await expect(
+        openCashDrawer({ webContents, printerDeviceName: "  Termica  " })
+      ).resolves.toEqual({
+        success: true,
+        message: "Pulso de apertura enviado al cajón de dinero.",
+        error: null,
+      });
+      expect(webContents.getPrintersAsync).not.toHaveBeenCalled();
     });
   });
 });

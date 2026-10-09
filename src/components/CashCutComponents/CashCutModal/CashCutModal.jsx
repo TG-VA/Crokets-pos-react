@@ -3,6 +3,7 @@ import styles from "./CashCutModal.module.css";
 import AppModal from "../../AppModal/AppModal";
 import receiptIcon from "../../../assets/icons/receipt-solid-full.svg";
 import { useDidChange } from "../../../hooks/useDidChange";
+import { getCashOperationSettings } from "../../../services/cashOperationSettingsService";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
@@ -13,6 +14,9 @@ const fmt = (n) =>
 const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
   const [counted, setCounted] = useState("");
   const [notes, setNotes] = useState("");
+  const [cashSettings, setCashSettings] = useState(() =>
+    getCashOperationSettings()
+  );
   const [appModal, setAppModal] = useState({
     isOpen: false,
     type: "warning",
@@ -57,6 +61,18 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
     const expected = Number(expectedAmount) || 0;
     const countedNumber = Number(counted) || 0;
 
+    const hasDiff = Math.abs(countedNumber - expected) > 0.001;
+    if (cashSettings.requireCutDifferenceNote && hasDiff && !notes.trim()) {
+      showAppAlert({
+        type: "warning",
+        title: "Justificación requerida",
+        message:
+          "Existe una diferencia en el corte. Debes ingresar un motivo o justificación en las notas.",
+        confirmText: "Entendido",
+      });
+      return;
+    }
+
     onConfirm({
       counted: countedNumber,
       notes,
@@ -69,6 +85,7 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
   if (useDidChange(isOpen) && isOpen) {
     setCounted("");
     setNotes("");
+    setCashSettings(getCashOperationSettings());
     closeAppModal();
   }
 
@@ -139,13 +156,17 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
         </h2>
 
         <p className={styles.modalSubtitle}>
-          Confirma el monto contado en caja
+          {cashSettings.blindCountCut
+            ? "Captura el conteo físico de efectivo en caja"
+            : "Confirma el monto contado en caja"}
         </p>
 
-        <div className={styles.modalField}>
-          <label className={styles.modalLabel}>MONTO ESPERADO</label>
-          <div className={styles.expectedAmount}>{fmt(expected)}</div>
-        </div>
+        {!cashSettings.blindCountCut && (
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>MONTO ESPERADO</label>
+            <div className={styles.expectedAmount}>{fmt(expected)}</div>
+          </div>
+        )}
 
         <div className={styles.modalField}>
           <label className={styles.modalLabel}>MONTO CONTADO EN CAJA</label>
@@ -160,7 +181,7 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
           />
         </div>
 
-        {hasCounted && (
+        {hasCounted && !cashSettings.blindCountCut && (
           <div
             className={`${styles.diffBadge} ${
               diff >= 0 ? styles.diffPositive : styles.diffNegative
@@ -171,7 +192,13 @@ const CorteModal = ({ isOpen, expectedAmount, onClose, onConfirm }) => {
         )}
 
         <div className={styles.modalField}>
-          <label className={styles.modalLabel}>NOTAS (opcional)</label>
+          <label className={styles.modalLabel}>
+            {cashSettings.requireCutDifferenceNote &&
+            hasCounted &&
+            Math.abs(diff) > 0.001
+              ? "NOTAS (obligatorio por diferencia)"
+              : "NOTAS (opcional)"}
+          </label>
           <textarea
             placeholder="Observaciones del corte..."
             value={notes}

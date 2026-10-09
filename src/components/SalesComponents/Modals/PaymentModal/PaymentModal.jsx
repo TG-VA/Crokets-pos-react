@@ -13,6 +13,10 @@ import {
   getPrintMode,
   PRINT_MODE_CONFIRM,
 } from "../../../../services/printSettingsService";
+import {
+  getCashOperationSettings,
+  triggerCashDrawerKick,
+} from "../../../../services/cashOperationSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -35,7 +39,12 @@ const PaymentModal = memo(
       useState("Efectivo");
     const [paidAmount, setPaidAmount] = useState("");
     const [dollarAmount, setDollarAmount] = useState("");
-    const [exchangeRate, setExchangeRate] = useState("18.50");
+    const [exchangeRate, setExchangeRate] = useState(() => {
+      const cashOps = getCashOperationSettings();
+      return cashOps.defaultExchangeRate
+        ? String(cashOps.defaultExchangeRate)
+        : "18.50";
+    });
     const [mixedPayments, setMixedPayments] = useState({
       efectivo: "",
       tarjeta: "",
@@ -45,6 +54,9 @@ const PaymentModal = memo(
     const [isNotesModalOpen, setNotesModalOpen] = useState(false);
     const [saleNotes, setSaleNotes] = useState("");
     const [processing, setProcessing] = useState(false);
+    const [cashOpSettings, setCashOpSettings] = useState(() =>
+      getCashOperationSettings()
+    );
     const [appModal, setAppModal] = useState({
       isOpen: false,
       type: "warning",
@@ -125,12 +137,32 @@ const PaymentModal = memo(
     // Variables dinámicas para la UI del cambio/faltante
     const formattedChange =
       change < 0 ? `-$${Math.abs(change).toFixed(2)}` : `$${change.toFixed(2)}`;
-    const changeLabel = change < 0 ? "Faltante:" : "Su Cambio:";
+    const changeLabel =
+      change < 0
+        ? "Faltante:"
+        : ["Dolares", "Mixto"].includes(selectedPaymentMethod)
+          ? "Su Cambio (MXN):"
+          : "Su Cambio:";
+
+    // En Mixto el cajón solo debe abrirse si entra dinero fisico; un cobro
+    // 100% con tarjeta no lo dispara bajo la politica `cash_only`.
+    const hasPhysicalCash =
+      selectedPaymentMethod === "Efectivo" ||
+      selectedPaymentMethod === "Dolares" ||
+      (selectedPaymentMethod === "Mixto" &&
+        (toNumber(mixedPayments.efectivo) > 0 ||
+          toNumber(mixedPayments.dolares) > 0));
 
     const resetModalState = useCallback(() => {
+      const cashOps = getCashOperationSettings();
       setPaidAmount("");
       setDollarAmount("");
-      setExchangeRate("18.50");
+      setExchangeRate(
+        cashOps.defaultExchangeRate
+          ? String(cashOps.defaultExchangeRate)
+          : "18.50"
+      );
+      setCashOpSettings(cashOps);
       setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
       setTrackingCode("");
       setSaleNotes("");
@@ -229,6 +261,24 @@ const PaymentModal = memo(
         try {
           setProcessing(true);
           if (onProcessPayment ? await onProcessPayment(paymentData) : true) {
+            try {
+              const settings = cashOpSettings || getCashOperationSettings();
+              const enabled = settings.cashDrawerEnabled;
+              const trigger = settings.cashDrawerTrigger || "cash_only";
+              let shouldTrigger = false;
+              if (enabled) {
+                if (trigger === "all_sales") {
+                  shouldTrigger = true;
+                } else if (trigger === "cash_only") {
+                  shouldTrigger = hasPhysicalCash;
+                }
+              }
+              if (shouldTrigger) {
+                triggerCashDrawerKick().catch(() => {});
+              }
+            } catch (error) {
+              console.error("Error al disparar apertura de cajon:", error);
+            }
             resetModalState();
             onClose();
           }
@@ -247,6 +297,7 @@ const PaymentModal = memo(
         paidAmount,
         dollarAmount,
         mixedPayments,
+        hasPhysicalCash,
         safeTotal,
         trackingCode,
         change,
@@ -318,6 +369,20 @@ const PaymentModal = memo(
       if (!isOpen) resetModalState();
     }, [isOpen, resetModalState]);
 
+    // Refresca la configuracion de caja en cada apertura para reflejar de
+    // inmediato cualquier cambio hecho en SettingsCash.
+    useEffect(() => {
+      if (isOpen) {
+        const freshOps = getCashOperationSettings();
+        setCashOpSettings(freshOps);
+        setExchangeRate(
+          freshOps.defaultExchangeRate
+            ? String(freshOps.defaultExchangeRate)
+            : "18.50"
+        );
+      }
+    }, [isOpen]);
+
     // EFECTO DE AUTORELLENADO DE PAGO
     useEffect(() => {
       if (!isOpen) return;
@@ -343,26 +408,6 @@ const PaymentModal = memo(
       if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1)
         setMixedPayments((p) => ({ ...p, [key]: val === "." ? "0." : val }));
     };
-
-    // Se construye como elemento (y no como componente anidado) para que el
-    // input conserve el foco entre renders mientras se escribe.
-    const exchangeRateRow = (
-      <div className={styles.paymentRow}>
-        <label htmlFor="payment-exchange-rate">Tipo de cambio:</label>
-        <div className={styles.inputWithSymbol}>
-          <span className={styles.currencySymbol}>$</span>
-          <input
-            id="payment-exchange-rate"
-            type="text"
-            className={styles.paymentInput}
-            value={exchangeRate}
-            onChange={onDecimalInput(setExchangeRate)}
-            placeholder="0.00"
-            disabled={effectiveProcessing}
-          />
-        </div>
-      </div>
-    );
 
     if (!isOpen) return null;
 
@@ -394,7 +439,13 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {PAYMENT_METHODS.map((m) => (
+              {PAYMENT_METHODS.filter(
+                (m) =>
+                  !(
+                    m.id === "Dolares" &&
+                    cashOpSettings.acceptUsdPayments === false
+                  )
+              ).map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -461,7 +512,14 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                {exchangeRateRow}
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <div className={styles.paymentRow}>
+                    <span>Tipo de cambio:</span>
+                    <span className={styles.exchangeRateBadge}>
+                      ${numericExchangeRate.toFixed(2)} MXN
+                    </span>
+                  </div>
+                ) : null}
                 <div className={styles.paymentRow}>
                   <label htmlFor="payment-usd-amount">Pagó Con (USD):</label>
                   <div className={styles.inputWithSymbol}>
@@ -492,7 +550,6 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Mixto" ? (
               <div className={styles.mixedPaymentSection}>
                 <h3>Desglose de Pago</h3>
-                {exchangeRateRow}
                 <div className={styles.paymentRow}>
                   <label htmlFor="payment-mixed-cash">Efectivo:</label>
                   <div className={styles.inputWithSymbol}>
@@ -524,21 +581,28 @@ const PaymentModal = memo(
                     />
                   </div>
                 </div>
-                <div className={styles.paymentRow}>
-                  <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
-                  <div className={styles.inputWithSymbol}>
-                    <span className={styles.currencySymbol}>$</span>
-                    <input
-                      id="payment-mixed-usd"
-                      type="text"
-                      className={styles.paymentInput}
-                      value={mixedPayments.dolares}
-                      onChange={onMixedInput("dolares")}
-                      placeholder="0.00"
-                      disabled={effectiveProcessing}
-                    />
-                  </div>
-                </div>
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <>
+                    <div className={styles.paymentRow}>
+                      <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
+                      <div className={styles.inputWithSymbol}>
+                        <span className={styles.currencySymbol}>$</span>
+                        <input
+                          id="payment-mixed-usd"
+                          type="text"
+                          className={styles.paymentInput}
+                          value={mixedPayments.dolares}
+                          onChange={onMixedInput("dolares")}
+                          placeholder="0.00"
+                          disabled={effectiveProcessing}
+                        />
+                      </div>
+                    </div>
+                    <p className={styles.exchangeRateHint}>
+                      (T.C. ${numericExchangeRate.toFixed(2)} MXN)
+                    </p>
+                  </>
+                ) : null}
                 <div className={styles.totalMixedRow}>
                   <span>Total Pagado:</span>
                   <span className={styles.totalMixedAmount}>

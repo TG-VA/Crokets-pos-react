@@ -17,6 +17,7 @@ const IPC_CHANNELS = [
   "reset-zoom",
   "get-zoom-debug",
   "print-ticket",
+  "open-cash-drawer",
 ];
 
 const originalPlatform = process.platform;
@@ -527,6 +528,37 @@ describe("electron mainProcess", () => {
           handlers["print-ticket"]({ sender }, { ticketText: "  " })
         ).resolves.toMatchObject({ error: "EMPTY_TICKET" });
         expect(BrowserWindow).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("open-cash-drawer", () => {
+      it("confirma la apertura cuando hay impresora conectada", async () => {
+        const { handlers } = buildIpcHarness();
+        const sender = createWebContents({
+          getPrintersAsync: vi.fn(() => Promise.resolve([{ name: "Termica" }])),
+        });
+
+        await expect(
+          handlers["open-cash-drawer"]({ sender }, {})
+        ).resolves.toEqual({
+          success: true,
+          message: "Pulso de apertura enviado al cajón de dinero.",
+          error: null,
+        });
+      });
+
+      it("falla cuando no hay ninguna impresora disponible", async () => {
+        const { handlers } = buildIpcHarness();
+        const sender = createWebContents({
+          getPrintersAsync: vi.fn(() => Promise.resolve([])),
+        });
+
+        await expect(
+          handlers["open-cash-drawer"]({ sender }, {})
+        ).resolves.toMatchObject({
+          success: false,
+          error: "NO_PRINTER_AVAILABLE",
+        });
       });
     });
   });

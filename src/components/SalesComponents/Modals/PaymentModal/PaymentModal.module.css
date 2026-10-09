@@ -290,6 +290,23 @@
   color: #0078d7;
 }
 
+.exchangeRateBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0078d7;
+}
+
+.exchangeRateHint {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #555555;
+  text-align: right;
+}
+
 .totalAmount {
   font-size: 1.2rem;
   font-weight: 900;

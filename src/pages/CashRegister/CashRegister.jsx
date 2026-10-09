@@ -9,11 +9,16 @@ import {
   openCashRegister,
 } from "../../services/cashRegisterService";
 import { useRequestStatus } from "../../hooks/useRequestStatus";
+import { getCashOperationSettings } from "../../services/cashOperationSettingsService";
 
 const CashRegister = ({ setCashRegistered }) => {
-  const [initialCash, setInitialCash] = useState("");
+  const [initialCash, setInitialCash] = useState(() => {
+    const defaultCash = getCashOperationSettings().defaultOpeningCash || 0;
+    return defaultCash > 0 ? String(defaultCash) : "";
+  });
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState("");
+  const [cashOpSettings] = useState(() => getCashOperationSettings());
 
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -141,6 +146,26 @@ const CashRegister = ({ setCashRegistered }) => {
     if (Number.isNaN(value) || value < 0) {
       setError("Ingrese un monto válido.");
       setInitialCash("");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (
+      cashOpSettings.minOpeningCashEnabled &&
+      value < (cashOpSettings.minOpeningCash || 0)
+    ) {
+      setError(
+        `La política de la tienda exige un fondo inicial mínimo de $${Number(
+          cashOpSettings.minOpeningCash || 0
+        ).toFixed(2)}.`
+      );
+      inputRef.current?.focus();
+      return;
+    }
+
+    // Fallback de retrocompatibilidad
+    if (value === 0 && cashOpSettings.allowZeroOpening === false) {
+      setError("La política de la tienda no permite aperturas con monto cero.");
       inputRef.current?.focus();
       return;
     }

@@ -61,7 +61,7 @@ describe("SettingsCash", () => {
 
     const input = await screen.findByLabelText("Monto máximo");
     fireEvent.change(input, { target: { value: "2500" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar/i }));
 
     const status = await screen.findByRole("status");
     expect(status.textContent).toContain(
@@ -87,7 +87,7 @@ describe("SettingsCash", () => {
     render(<SettingsCash />);
 
     await screen.findByLabelText("Monto máximo");
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar/i }));
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(
@@ -102,7 +102,7 @@ describe("SettingsCash", () => {
 
     expect(
       await screen.findByText(
-        "Se requiere un perfil de administrador para modificar este valor."
+        "Se requiere un perfil de administrador para modificar el tope de apertura."
       )
     ).toBeTruthy();
     expect(screen.queryByLabelText("Monto máximo")).toBeNull();

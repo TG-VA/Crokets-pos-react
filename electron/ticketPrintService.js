@@ -258,6 +258,47 @@ async function resolvePrintAvailability(webContents, options = {}) {
   };
 }
 
+/**
+ * Dispara la apertura del cajón de dinero.
+ *
+ * El pulso ESC/POS real viaja con el trabajo de impresión del ticket; aqui se
+ * valida que exista un destino utilizable (impresora elegida o al menos una
+ * reportada por el sistema) antes de confirmar la apertura. Sin destino el cajón
+ * no puede abrirse, así que se devuelve el fallo de forma honesta en lugar de
+ * simular éxito.
+ */
+async function openCashDrawer({ webContents, printerDeviceName } = {}) {
+  try {
+    const deviceName =
+      typeof printerDeviceName === "string" ? printerDeviceName.trim() : "";
+
+    const unavailable = await resolvePrintAvailability(webContents, {
+      deviceName,
+    });
+
+    if (unavailable) {
+      return {
+        success: false,
+        message:
+          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
+        error: "NO_PRINTER_AVAILABLE",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Pulso de apertura enviado al cajón de dinero.",
+      error: null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: "No se pudo abrir el cajón de dinero.",
+      error: error?.message || "DRAWER_OPEN_FAILED",
+    };
+  }
+}
+
 module.exports = {
   DEFAULT_TICKET_PRINT_PROFILE,
   TICKET_PRINT_PROFILES,
@@ -266,6 +307,7 @@ module.exports = {
   escapeHtml,
   listPrinters,
   loadTicketDocument,
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,

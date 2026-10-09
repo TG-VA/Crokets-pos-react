@@ -1,4 +1,5 @@
 const {
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
 } = require("./ticketPrintService");
@@ -223,6 +224,22 @@ function registerIpcHandlers({
       ticketText: payload?.ticketText,
       options,
     });
+  });
+
+  ipcMain.handle("open-cash-drawer", async (event, payload = {}) => {
+    try {
+      return await openCashDrawer({
+        webContents: event.sender,
+        printerDeviceName: payload?.deviceName,
+      });
+    } catch (error) {
+      console.error("Error abriendo cajón de dinero:", error);
+      return {
+        success: false,
+        message: "No se pudo abrir el cajón de dinero.",
+        error: error?.message || "DRAWER_OPEN_FAILED",
+      };
+    }
   });
 }
 
