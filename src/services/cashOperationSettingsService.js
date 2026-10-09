@@ -10,7 +10,6 @@ const DEFAULTS = {
   drawerAlertEnabled: false,
   requireExitReason: true,
   blindCountCut: false,
-  cutToleranceAmount: 0,
   requireCutDifferenceNote: true,
   cashDrawerEnabled: false,
   cashDrawerTrigger: "cash_only",
@@ -132,11 +131,9 @@ export function getCashOperationSettings() {
       merged.requireExitReason,
       DEFAULTS.requireExitReason
     ),
-    blindCountCut: sanitizeBoolean(merged.blindCountCut, DEFAULTS.blindCountCut),
-    cutToleranceAmount: sanitizeNumber(
-      merged.cutToleranceAmount,
-      DEFAULTS.cutToleranceAmount,
-      0
+    blindCountCut: sanitizeBoolean(
+      merged.blindCountCut,
+      DEFAULTS.blindCountCut
     ),
     requireCutDifferenceNote: sanitizeBoolean(
       merged.requireCutDifferenceNote,
@@ -219,11 +216,9 @@ export function saveCashOperationSettings(partialSettings = {}) {
         next.requireExitReason,
         DEFAULTS.requireExitReason
       ),
-      blindCountCut: sanitizeBoolean(next.blindCountCut, DEFAULTS.blindCountCut),
-      cutToleranceAmount: sanitizeNumber(
-        next.cutToleranceAmount,
-        DEFAULTS.cutToleranceAmount,
-        0
+      blindCountCut: sanitizeBoolean(
+        next.blindCountCut,
+        DEFAULTS.blindCountCut
       ),
       requireCutDifferenceNote: sanitizeBoolean(
         next.requireCutDifferenceNote,
@@ -276,7 +271,8 @@ export async function triggerCashDrawerKick() {
       const result = await window.electronAPI.invoke("open-cash-drawer");
       return {
         success: result?.success !== false,
-        message: result?.message || "Pulso de apertura enviado al cajón de dinero.",
+        message:
+          result?.message || "Pulso de apertura enviado al cajón de dinero.",
         error: result?.error || null,
       };
     }

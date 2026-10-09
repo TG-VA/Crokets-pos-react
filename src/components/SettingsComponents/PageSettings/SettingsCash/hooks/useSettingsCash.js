@@ -7,29 +7,11 @@ import {
   updateCashMaxOpeningAmount,
 } from "../../../../../pages/Settings/services/cashSettingsService";
 import {
+  DEFAULT_CASH_OPERATION_SETTINGS,
   getCashOperationSettings,
   saveCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../../../services/cashOperationSettingsService";
-
-const DEFAULT_SETTINGS = {
-  defaultOpeningCash: 0,
-  allowZeroOpening: true,
-  maxOpeningCashEnabled: true,
-  minOpeningCashEnabled: false,
-  minOpeningCash: 0,
-  drawerCashLimit: 0,
-  drawerAlertEnabled: false,
-  requireExitReason: true,
-  blindCountCut: false,
-  cutToleranceAmount: 0,
-  requireCutDifferenceNote: true,
-  cashDrawerEnabled: false,
-  cashDrawerTrigger: "cash_only",
-  cashDrawerConnection: "printer_rj11",
-  acceptUsdPayments: true,
-  defaultExchangeRate: 18.5,
-};
 
 /**
  * Estado y ciclo de vida de la configuracion de caja.
@@ -46,7 +28,7 @@ const useSettingsCash = () => {
   const [cashMax, setCashMax] = useState("");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState(DEFAULT_CASH_OPERATION_SETTINGS);
   const [testingDrawer, setTestingDrawer] = useState(false);
   const [drawerFeedback, setDrawerFeedback] = useState(null);
 

@@ -32,7 +32,6 @@ describe("cashOperationSettingsService", () => {
     expect(result.drawerAlertEnabled).toBe(false);
     expect(result.requireExitReason).toBe(true);
     expect(result.blindCountCut).toBe(false);
-    expect(result.cutToleranceAmount).toBe(0);
     expect(result.requireCutDifferenceNote).toBe(true);
     expect(result.cashDrawerEnabled).toBe(false);
     expect(result.cashDrawerTrigger).toBe("cash_only");
@@ -51,7 +50,6 @@ describe("cashOperationSettingsService", () => {
         drawerAlertEnabled: 1,
         requireExitReason: 0,
         blindCountCut: "yes",
-        cutToleranceAmount: -5,
         requireCutDifferenceNote: null,
         cashDrawerEnabled: "true",
         cashDrawerTrigger: "invalid",
@@ -72,7 +70,6 @@ describe("cashOperationSettingsService", () => {
     expect(result.drawerAlertEnabled).toBe(false);
     expect(result.requireExitReason).toBe(true);
     expect(result.blindCountCut).toBe(false);
-    expect(result.cutToleranceAmount).toBe(0);
     expect(result.requireCutDifferenceNote).toBe(true);
     expect(result.cashDrawerEnabled).toBe(false);
     expect(result.cashDrawerTrigger).toBe("cash_only");
@@ -92,7 +89,6 @@ describe("cashOperationSettingsService", () => {
       drawerAlertEnabled: true,
       requireExitReason: false,
       blindCountCut: true,
-      cutToleranceAmount: 50,
       requireCutDifferenceNote: false,
       cashDrawerEnabled: true,
       cashDrawerTrigger: "all_sales",
@@ -114,7 +110,6 @@ describe("cashOperationSettingsService", () => {
     expect(loaded.drawerAlertEnabled).toBe(true);
     expect(loaded.requireExitReason).toBe(false);
     expect(loaded.blindCountCut).toBe(true);
-    expect(loaded.cutToleranceAmount).toBe(50);
     expect(loaded.requireCutDifferenceNote).toBe(false);
     expect(loaded.cashDrawerEnabled).toBe(true);
     expect(loaded.cashDrawerTrigger).toBe("all_sales");
@@ -181,7 +176,9 @@ describe("cashOperationSettingsService", () => {
     const saved = saveCashOperationSettings({ cashDrawerTrigger: "all_sales" });
     expect(saved.cashDrawerTrigger).toBe("all_sales");
 
-    const saved2 = saveCashOperationSettings({ cashDrawerTrigger: "cash_only" });
+    const saved2 = saveCashOperationSettings({
+      cashDrawerTrigger: "cash_only",
+    });
     expect(saved2.cashDrawerTrigger).toBe("cash_only");
 
     const savedInvalid = saveCashOperationSettings({

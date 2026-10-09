@@ -17,10 +17,28 @@ const {
   getCashOperationSettings,
   saveCashOperationSettings,
   triggerCashDrawerKick,
+  DEFAULT_CASH_OPERATION_SETTINGS,
 } = vi.hoisted(() => ({
   getCashOperationSettings: vi.fn(),
   saveCashOperationSettings: vi.fn(),
   triggerCashDrawerKick: vi.fn(),
+  DEFAULT_CASH_OPERATION_SETTINGS: {
+    defaultOpeningCash: 0,
+    allowZeroOpening: true,
+    maxOpeningCashEnabled: true,
+    minOpeningCashEnabled: false,
+    minOpeningCash: 0,
+    drawerCashLimit: 0,
+    drawerAlertEnabled: false,
+    requireExitReason: true,
+    blindCountCut: false,
+    requireCutDifferenceNote: true,
+    cashDrawerEnabled: false,
+    cashDrawerTrigger: "cash_only",
+    cashDrawerConnection: "printer_rj11",
+    acceptUsdPayments: true,
+    defaultExchangeRate: 18.5,
+  },
 }));
 
 vi.mock("../../../../../contexts/AuthContext", () => ({ useAuth }));
@@ -35,6 +53,7 @@ vi.mock("../../../../../services/cashOperationSettingsService", () => ({
   getCashOperationSettings,
   saveCashOperationSettings,
   triggerCashDrawerKick,
+  DEFAULT_CASH_OPERATION_SETTINGS,
 }));
 
 const baseSettings = {
@@ -46,7 +65,10 @@ describe("useSettingsCash", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: { id: "user-1" } });
-    getCashOperationSettings.mockReturnValue({ success: true, ...baseSettings });
+    getCashOperationSettings.mockReturnValue({
+      success: true,
+      ...baseSettings,
+    });
     saveCashOperationSettings.mockReturnValue({
       success: true,
       ...baseSettings,
