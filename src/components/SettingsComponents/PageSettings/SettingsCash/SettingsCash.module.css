@@ -162,25 +162,6 @@
   user-select: none;
 }
 
-.input {
-  min-width: 180px;
-  max-width: 260px;
-  flex: 1;
-  padding: 0.6rem 0.7rem;
-  font-size: 0.95rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #333333;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.input:focus-visible {
-  border-color: #0b6d85;
-  outline: 3px solid #05313d;
-  outline-offset: 1px;
-}
-
 .toggleSwitch {
   position: relative;
   display: inline-flex;
