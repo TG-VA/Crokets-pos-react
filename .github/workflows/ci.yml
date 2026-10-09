@@ -37,6 +37,9 @@ jobs:
           fi
           echo "BASE=${BASE}" >> "$GITHUB_OUTPUT"
 
+      - name: AGENTS.md compliance check (incremental sobre el diff)
+        run: node scripts/checkAgentsCompliance.mjs "${{ steps.base.outputs.BASE }}"
+
       - name: ESLint (incremental sobre el diff)
         run: |
           git diff --name-only --diff-filter=ACM "${{ steps.base.outputs.BASE }}" \

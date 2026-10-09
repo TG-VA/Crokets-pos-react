@@ -120,8 +120,9 @@ npm run dev
 | `npm run watch`          | Compila el frontend en modo watch                                                                           |
 | `npm run preview`        | Sirve localmente el build de Vite                                                                           |
 | `npm test`               | Ejecuta la suite de tests (Vitest). Ver `docs/TESTING.md`                                                   |
-
-> El linter (ESLint/Prettier) todavía no está configurado — ver `KNOWN_ISSUES.md` punto 8.
+| `npm run lint`           | Ejecuta ESLint sobre el proyecto                                                                            |
+| `npm run format:check`   | Verifica el formateo con Prettier                                                                           |
+| `npm run check:agents`   | Verifica el cumplimiento de reglas de `AGENTS.md` (cero emojis, cero !important, logs)                      |
 
 #### Documentación relacionada
 

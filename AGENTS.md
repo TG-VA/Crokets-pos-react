@@ -45,12 +45,18 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 - **Utilidades especializadas:**
   - Separar funciones puras de formateo visual (`*Formatters.js`) de generadores pesados de archivos externos (`*ExportUtils.js`).
 
-## Testing
+## Testing y Calidad de Código
 
 - El proyecto usa **Vitest**; correr **`npm test`** antes de commitear.
 - Agregar tests para lógica nueva no trivial (cálculos, contratos de servicios, hooks). Ver
   `docs/TESTING.md` para el runner, patrones de mock y huecos de cobertura.
-- Aún no hay linter configurado (ver `KNOWN_ISSUES.md` #8).
+- **Pipeline de CI y Verificaciones Incrementales:** Cada PR corre automáticamente en `.github/workflows/ci.yml`:
+  - `npm run check:agents`: Valida cero emojis, cero `!important` en CSS, cero `console.log`/`warn` y EOF newlines sobre el diff.
+  - `ESLint incremental`: Ejecuta `xargs npx eslint` sobre los archivos modificados del diff.
+  - `Prettier incremental`: Ejecuta `xargs npx prettier --check` sobre el diff.
+  - `Vitest`: Ejecuta la suite de pruebas completa (`npm test`).
+  - `Vite build`: Comprueba compilación limpia de producción (`npm run build:frontend`).
+- Antes de abrir un PR o solicitar revisión, asegurar que `npm run check:agents`, `npm test` y el formateo pasen sin errores.
 
 ## Secretos y credenciales
 
