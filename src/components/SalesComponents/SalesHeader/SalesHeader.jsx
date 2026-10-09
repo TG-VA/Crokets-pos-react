@@ -8,6 +8,7 @@ const SalesHeader = ({
   currentSaleRewardsLabel,
   shiftAlreadyCut,
   stockWarningMsg,
+  drawerAlert,
 }) => {
   return (
     <>
@@ -40,6 +41,13 @@ const SalesHeader = ({
         <div className={styles.shiftCutWarning}>
           <span>{stockWarningMsg}</span>
           <span>REVISAR STOCK</span>
+        </div>
+      )}
+
+      {drawerAlert?.show && (
+        <div className={styles.drawerLimitWarning}>
+          <span>{drawerAlert.message}</span>
+          <span>REVISAR EFECTIVO</span>
         </div>
       )}
     </>

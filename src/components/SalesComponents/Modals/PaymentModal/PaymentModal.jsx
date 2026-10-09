@@ -134,7 +134,21 @@ const PaymentModal = memo(
     // Variables dinámicas para la UI del cambio/faltante
     const formattedChange =
       change < 0 ? `-$${Math.abs(change).toFixed(2)}` : `$${change.toFixed(2)}`;
-    const changeLabel = change < 0 ? "Faltante:" : "Su Cambio:";
+    const changeLabel =
+      change < 0
+        ? "Faltante:"
+        : ["Dolares", "Mixto"].includes(selectedPaymentMethod)
+          ? "Su Cambio (MXN):"
+          : "Su Cambio:";
+
+    // En Mixto el cajón solo debe abrirse si entra dinero fisico; un cobro
+    // 100% con tarjeta no lo dispara bajo la politica `cash_only`.
+    const hasPhysicalCash =
+      selectedPaymentMethod === "Efectivo" ||
+      selectedPaymentMethod === "Dolares" ||
+      (selectedPaymentMethod === "Mixto" &&
+        (toNumber(mixedPayments.efectivo) > 0 ||
+          toNumber(mixedPayments.dolares) > 0));
 
     const resetModalState = useCallback(() => {
       const cashOps = getCashOperationSettings();
@@ -245,28 +259,22 @@ const PaymentModal = memo(
           setProcessing(true);
           if (onProcessPayment ? await onProcessPayment(paymentData) : true) {
             try {
-              const settings =
-                cashOpSettings || (await (async () => getCashOperationSettings())());
+              const settings = cashOpSettings || getCashOperationSettings();
               const enabled = settings.cashDrawerEnabled;
               const trigger = settings.cashDrawerTrigger || "cash_only";
-              const method = selectedPaymentMethod;
-              const isPhysicalMoney =
-                method === "Efectivo" ||
-                method === "Dolares" ||
-                method === "Mixto";
               let shouldTrigger = false;
               if (enabled) {
                 if (trigger === "all_sales") {
                   shouldTrigger = true;
                 } else if (trigger === "cash_only") {
-                  shouldTrigger = isPhysicalMoney;
+                  shouldTrigger = hasPhysicalCash;
                 }
               }
               if (shouldTrigger) {
                 triggerCashDrawerKick().catch(() => {});
               }
-            } catch (e) {
-              // ignore drawer errors
+            } catch (error) {
+              console.error("Error al disparar apertura de cajon:", error);
             }
             resetModalState();
             onClose();
@@ -286,6 +294,7 @@ const PaymentModal = memo(
         paidAmount,
         dollarAmount,
         mixedPayments,
+        hasPhysicalCash,
         safeTotal,
         trackingCode,
         change,

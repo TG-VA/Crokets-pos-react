@@ -46,6 +46,7 @@ import useSalesPendingTickets from "../../components/SalesComponents/hooks/useSa
 import useSalesRewards from "../../components/SalesComponents/hooks/useSalesRewards";
 import useSalesTableColumns from "../../components/SalesComponents/hooks/useSalesTableColumns";
 import useSalesCashMovements from "../../components/SalesComponents/hooks/useSalesCashMovements";
+import useSalesDrawerAlert from "../../components/SalesComponents/hooks/useSalesDrawerAlert";
 import useSalesProductSearch from "../../components/SalesComponents/hooks/useSalesProductSearch";
 import useSalesKeyboardShortcuts from "../../components/SalesComponents/hooks/useSalesKeyboardShortcuts";
 import useSalesFlowHandlers from "../../components/SalesComponents/hooks/useSalesFlowHandlers";
@@ -224,6 +225,14 @@ const Sales = () => {
     showAppModal,
     showAppWarning,
     showAppSuccess,
+  });
+
+  const drawerAlert = useSalesDrawerAlert({
+    branchId: branch?.id,
+    userId: user?.id,
+    enabled: draftReady,
+    getOpenCashSession,
+    refreshKey: `${cashMovements.length}|${saleSuccessData ? "sale" : "no-sale"}`,
   });
 
   // --- 6. HANDLERS DE FLUJO SUELTOS ---
@@ -480,6 +489,7 @@ const Sales = () => {
         currentSaleRewardsLabel={currentSaleRewardsLabel}
         shiftAlreadyCut={shiftAlreadyCut}
         stockWarningMsg={stockWarningMsg}
+        drawerAlert={drawerAlert}
       />
 
       <SalesTopActions
