@@ -176,12 +176,12 @@ const SendWorkspace = ({
 
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Notas del envío</span>
-          <textarea
-            className={styles.textarea}
+          <input
+            type="text"
+            className={styles.input}
             value={transferNotes}
             onChange={(event) => onTransferNotesChange(event.target.value)}
-            placeholder="Observaciones internas del traspaso"
-            rows={2}
+            placeholder="Observaciones internas del traspaso (opcional)"
           />
         </label>
 

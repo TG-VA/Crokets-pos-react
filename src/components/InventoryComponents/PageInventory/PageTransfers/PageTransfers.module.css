@@ -322,7 +322,6 @@
 
 .input,
 .select,
-.textarea,
 .quantityInput {
   width: 100%;
   border: 1px solid #d9e4eb;
@@ -343,15 +342,8 @@
   height: 42px;
 }
 
-.textarea {
-  min-height: 72px;
-  padding-top: 10px;
-  resize: vertical;
-}
-
 .input:focus,
 .select:focus,
-.textarea:focus,
 .quantityInput:focus {
   border-color: rgba(16, 146, 177, 0.45);
   box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
