@@ -43,7 +43,8 @@ describe("ReceiveWorkspace", () => {
     });
 
     const position = listHeading.compareDocumentPosition(detailHeading);
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // 4 = DOCUMENT_POSITION_FOLLOWING: el detalle debe ir tras la lista.
+    expect(position & 4).toBeTruthy();
   });
 
   it("muestra estado vacío del detalle cuando no hay orden seleccionada", () => {
