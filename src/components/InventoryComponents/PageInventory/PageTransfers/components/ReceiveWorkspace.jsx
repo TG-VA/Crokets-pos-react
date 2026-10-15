@@ -1,6 +1,8 @@
 import React from "react";
 import styles from "../PageTransfers.module.css";
 import { formatTransferDateTime } from "../utils/transfersUtils";
+import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
+import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
 
 const ReceiveWorkspace = ({
   submitting,
@@ -54,7 +56,15 @@ const ReceiveWorkspace = ({
 
           {pendingReceiptOrders.length === 0 ? (
             <div className={styles.emptyState}>
-              No tienes órdenes pendientes por recibir en esta sucursal.
+              <img
+                src={boxIcon}
+                alt=""
+                aria-hidden="true"
+                className={styles.emptyStateIcon}
+              />
+              <span>
+                No tienes órdenes pendientes por recibir en esta sucursal.
+              </span>
             </div>
           ) : null}
         </div>
@@ -167,7 +177,15 @@ const ReceiveWorkspace = ({
           </>
         ) : (
           <div className={styles.emptyState}>
-            Selecciona una orden pendiente para abrir el detalle de recepción.
+            <img
+              src={tableListIcon}
+              alt=""
+              aria-hidden="true"
+              className={styles.emptyStateIcon}
+            />
+            <span>
+              Selecciona una orden pendiente para abrir el detalle de recepción.
+            </span>
           </div>
         )}
       </div>
