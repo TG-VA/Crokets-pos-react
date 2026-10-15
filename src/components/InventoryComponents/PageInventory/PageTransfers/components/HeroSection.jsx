@@ -4,52 +4,43 @@ import styles from "../PageTransfers.module.css";
 const HeroSection = ({ branch, pendingReceiptsCount, transferMetrics }) => {
   return (
     <section className={styles.hero}>
-      <div className={styles.heroMain}>
+      <div className={styles.heroHeading}>
         <p className={styles.eyebrow}>Inventario / Traspasos</p>
-        <h1 className={styles.title}>TRASPASOS ENTRE SUCURSALES</h1>
+        <h1 className={styles.title}>Traspasos entre sucursales</h1>
         <p className={styles.description}>
-          Controla envios internos, recepciones pendientes y diferencias de
-          entrega desde un mismo flujo operativo.
+          Envíos internos, recepciones y diferencias en un solo flujo operativo.
         </p>
-
-        <div className={styles.routeCard}>
-          <div>
-            <span className={styles.routeLabel}>Sucursal activa</span>
-            <strong className={styles.routeValue}>
-              {branch?.name || "Sin sucursal"}
-            </strong>
-          </div>
-
-          <div>
-            <span className={styles.routeLabel}>Recepciones pendientes</span>
-            <strong className={styles.routeValue}>
-              {pendingReceiptsCount}
-            </strong>
-          </div>
-        </div>
       </div>
 
-      <div className={styles.heroAside}>
+      <div className={styles.heroStats}>
+        <div className={styles.routeChip}>
+          <span className={styles.metricLabel}>Sucursal activa</span>
+          <strong className={styles.routeValue}>
+            {branch?.name || "Sin sucursal"}
+          </strong>
+        </div>
+
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Enviados</span>
           <strong className={styles.metricValue}>{transferMetrics.sent}</strong>
         </div>
+
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Pendientes</span>
+          <span className={styles.metricLabel}>En tránsito</span>
           <strong className={styles.metricValue}>
-            {transferMetrics.pendingReceipts}
+            {transferMetrics.unitsInTransit}
           </strong>
         </div>
+
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Recepciones cerradas</span>
-          <strong className={styles.metricValue}>
-            {transferMetrics.completedReceipts}
-          </strong>
+          <span className={styles.metricLabel}>Por recibir</span>
+          <strong className={styles.metricValue}>{pendingReceiptsCount}</strong>
         </div>
+
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Cancelados / En tránsito</span>
+          <span className={styles.metricLabel}>Cancelados</span>
           <strong className={styles.metricValue}>
-            {transferMetrics.cancelled} / {transferMetrics.unitsInTransit}
+            {transferMetrics.cancelled}
           </strong>
         </div>
       </div>
