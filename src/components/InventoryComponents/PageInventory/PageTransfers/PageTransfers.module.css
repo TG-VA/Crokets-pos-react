@@ -245,7 +245,7 @@
 
 .sendWorkspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
   gap: 18px;
   min-height: 0;
 }
@@ -295,7 +295,7 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -344,8 +344,8 @@
 }
 
 .textarea {
-  min-height: 92px;
-  padding-top: 12px;
+  min-height: 72px;
+  padding-top: 10px;
   resize: vertical;
 }
 
@@ -488,6 +488,15 @@
   background: linear-gradient(135deg, var(--croketsOrange), #ff9d2f);
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(255, 138, 0, 0.24);
+}
+
+.primaryButton:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .actionRow {
@@ -755,14 +764,14 @@ td.alignRight.detailErrorText {
 }
 
 @media (max-width: 1180px) {
-  .workspace {
+  .workspace,
+  .sendWorkspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 900px) {
   .segmentedControl,
-  .formRow,
   .receiptMeta,
   .detailHeaderGrid,
   .detailTotalsInline {
