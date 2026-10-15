@@ -96,7 +96,7 @@ const SendWorkspace = ({
           </div>
         </div>
 
-        <div className={styles.tableWrapper}>
+        <div className={`${styles.tableWrapper} ${styles.draftTableWrapper}`}>
           <table className={styles.table}>
             <thead>
               <tr>
