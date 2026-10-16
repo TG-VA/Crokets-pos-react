@@ -4,7 +4,9 @@
   bottom: 0;
   left: 0;
   width: 100%;
+  align-items: center;
   justify-content: flex-end;
+  gap: 16px;
   background-color: #f1f1f1;
   color: #333;
   text-align: center;
@@ -12,4 +14,50 @@
   font-size: 12px;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+}
+
+.dateTime {
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+.statusGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.updateButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #1d6f42;
+  border-radius: 999px;
+  background-color: #e6f4ea;
+  color: #14532d;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.updateButton:hover {
+  background-color: #d3ebdb;
+}
+
+.updateButton:focus-visible {
+  outline: 2px solid #14532d;
+  outline-offset: 2px;
+}
+
+.updateIcon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.85;
+}
+
+.appVersion {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
 }
