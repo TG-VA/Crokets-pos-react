@@ -9,6 +9,7 @@ const {
   registerAppLifecycle,
   registerIpcHandlers,
 } = require("./mainProcess");
+const { initAutoUpdater } = require("./updaterService");
 
 // Store para guardar datos persistentes del dispositivo.
 const store = new Store();
@@ -39,3 +40,9 @@ const openMainWindow = () =>
   });
 
 registerAppLifecycle({ app, BrowserWindow, createWindow: openMainWindow });
+
+// Actualizaciones desatendidas: se inicializa tras crear la ventana principal.
+// El servicio registra los canales IPC y agenda una consulta silenciosa diferida.
+app.whenReady().then(() => {
+  initAutoUpdater({ app, isDev, ipcMain, BrowserWindow });
+});

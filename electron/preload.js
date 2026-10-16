@@ -1,7 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 // Lista blanca de canales permitidos para comunicación bidireccional (solicitud-respuesta).
-// Debe reflejar exactamente los ipcMain.handle registrados en electron/mainProcess.js.
+// Debe reflejar exactamente los ipcMain.handle registrados en electron/mainProcess.js y
+// electron/updaterService.js.
 const allowedInvokeChannels = [
   "get-device-code",
   "close-app",
@@ -13,7 +14,14 @@ const allowedInvokeChannels = [
   "get-printers",
   "print-ticket",
   "open-cash-drawer",
+  "get-app-version",
+  "check-for-updates",
+  "get-update-status",
+  "quit-and-install-update",
 ];
+
+// Canales push (proceso principal -> renderer) que el renderer puede escuchar.
+const allowedListenerChannels = ["update-status"];
 
 // API expuesta al proceso de renderizado
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -28,5 +36,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
     // Si el canal no está permitido, lanza un error para detener la ejecución.
     throw new Error(`Channel ${channel} is not allowed for invoke`);
+  },
+
+  /**
+   * Suscripción a notificaciones del proceso principal.
+   * Devuelve una función para cancelar la suscripción.
+   */
+  on: (channel, listener) => {
+    if (!allowedListenerChannels.includes(channel)) {
+      throw new Error(`Channel ${channel} is not allowed for listening`);
+    }
+
+    const subscription = (_event, payload) => listener(payload);
+    ipcRenderer.on(channel, subscription);
+
+    return () => ipcRenderer.removeListener(channel, subscription);
   },
 });
