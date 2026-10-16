@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import rotateIcon from "../../assets/icons/rotate-solid-full.svg";
 import useAppUpdater from "../../hooks/useAppUpdater";
 import styles from "./Footer.module.css";
