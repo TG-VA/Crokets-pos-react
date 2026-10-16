@@ -16,6 +16,11 @@
   z-index: 1000;
 }
 
+.dateTime {
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
 .statusGroup {
   display: inline-flex;
   align-items: center;
