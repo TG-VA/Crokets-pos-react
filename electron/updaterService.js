@@ -1,4 +1,6 @@
-const { autoUpdater } = require("electron-updater");
+function getAutoUpdater() {
+  return require("electron-updater").autoUpdater;
+}
 
 // Verificacion diferida para no competir con el arranque del POS ni con la carga
 // inicial de ventas.
@@ -22,15 +24,19 @@ function resolveReadToken(env) {
   return env[READ_TOKEN_ENV_VAR] || null;
 }
 
-function configureAutoUpdater(env) {
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.allowPrerelease = false;
+function configureAutoUpdater(env, updater = getAutoUpdater()) {
+  if (!updater) {
+    return;
+  }
+
+  updater.autoDownload = true;
+  updater.autoInstallOnAppQuit = true;
+  updater.allowPrerelease = false;
 
   const token = resolveReadToken(env);
   if (token) {
-    autoUpdater.requestHeaders = {
-      ...(autoUpdater.requestHeaders ?? {}),
+    updater.requestHeaders = {
+      ...(updater.requestHeaders ?? {}),
       Authorization: `token ${token}`,
     };
   }
@@ -47,7 +53,7 @@ function broadcastStatus(BrowserWindow, state) {
   return payload;
 }
 
-function registerUpdaterIpc({ app, ipcMain, state, checkForUpdates }) {
+function registerUpdaterIpc({ app, ipcMain, state, checkForUpdates, updater }) {
   const getStatus = () => ({ ...state });
 
   ipcMain.handle("get-app-version", async () => app.getVersion());
@@ -56,7 +62,9 @@ function registerUpdaterIpc({ app, ipcMain, state, checkForUpdates }) {
 
   ipcMain.handle("check-for-updates", async () => {
     try {
-      await checkForUpdates();
+      if (typeof checkForUpdates === "function") {
+        await checkForUpdates();
+      }
       return { success: true, ...getStatus() };
     } catch (error) {
       console.error("Error al consultar actualizaciones:", error);
@@ -73,29 +81,35 @@ function registerUpdaterIpc({ app, ipcMain, state, checkForUpdates }) {
       return { success: false, message: "No hay una actualizacion lista." };
     }
 
+    const resolvedUpdater = updater || getAutoUpdater();
     // Diferir el reinicio para que la respuesta IPC alcance al renderer.
-    setTimeout(() => autoUpdater.quitAndInstall(false, true), 0);
+    setTimeout(() => resolvedUpdater?.quitAndInstall(false, true), 0);
     return { success: true };
   });
 
   return getStatus;
 }
 
-function registerUpdaterEvents({ BrowserWindow, state }) {
-  autoUpdater.on("update-available", (info) => {
+function registerUpdaterEvents({ BrowserWindow, state, updater }) {
+  const targetUpdater = updater || getAutoUpdater();
+  if (!targetUpdater?.on) {
+    return;
+  }
+
+  targetUpdater.on("update-available", (info) => {
     state.available = true;
     state.version = info?.version ?? null;
     broadcastStatus(BrowserWindow, state);
   });
 
-  autoUpdater.on("update-downloaded", (info) => {
+  targetUpdater.on("update-downloaded", (info) => {
     state.available = true;
     state.downloaded = true;
     state.version = info?.version ?? state.version;
     broadcastStatus(BrowserWindow, state);
   });
 
-  autoUpdater.on("error", (error) => {
+  targetUpdater.on("error", (error) => {
     console.error("Error en auto-updater:", error);
   });
 }
@@ -119,9 +133,16 @@ function initAutoUpdater({
   ipcMain,
   BrowserWindow,
   env = process.env,
+  updater,
 }) {
   const state = createUpdaterState();
-  const checkForUpdates = () => autoUpdater.checkForUpdates();
+  const getResolvedUpdater = () => updater || (isDev ? null : getAutoUpdater());
+  const checkForUpdates = () => {
+    const targetUpdater = getResolvedUpdater();
+    return targetUpdater?.checkForUpdates
+      ? targetUpdater.checkForUpdates()
+      : Promise.resolve();
+  };
 
   // Los handlers IPC se registran siempre: en desarrollo el Footer necesita la
   // version y el estado (vacio) para renderizar sin romperse.
@@ -130,6 +151,7 @@ function initAutoUpdater({
     ipcMain,
     state,
     checkForUpdates,
+    updater: updater || null,
   });
 
   // En desarrollo no se consulta ni descarga nada: el bundle corre desde Vite.
@@ -137,8 +159,9 @@ function initAutoUpdater({
     return { getStatus };
   }
 
-  configureAutoUpdater(env);
-  registerUpdaterEvents({ BrowserWindow, state });
+  const activeUpdater = getResolvedUpdater();
+  configureAutoUpdater(env, activeUpdater);
+  registerUpdaterEvents({ BrowserWindow, state, updater: activeUpdater });
 
   const cancelInitialCheck = scheduleInitialCheck(checkForUpdates);
 
@@ -149,7 +172,9 @@ module.exports = {
   INITIAL_CHECK_DELAY_MS,
   UPDATE_STATUS_EVENT,
   broadcastStatus,
+  configureAutoUpdater,
   createUpdaterState,
+  getAutoUpdater,
   initAutoUpdater,
   registerUpdaterEvents,
   registerUpdaterIpc,
