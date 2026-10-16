@@ -16,6 +16,21 @@ privilegiadas.
 | `VITE_SUPABASE_ANON_KEY`         | Sí        | Anon key pública de Supabase                                                                                 | `src/lib/supabaseClient.js:4`        |
 | `VITE_INVENTORY_MOVEMENTS_TABLE` | No        | Fuerza el nombre de la tabla de movimientos de inventario (si no se define, se autodetecta entre candidatos) | `src/utils/inventoryMovements.js:20` |
 
+## Secretos de GitHub Actions (build del instalador)
+
+El workflow `.github/workflows/release-windows.yml` compila el frontend en CI con los mismos
+nombres de variable. Se configuran en
+`Settings -> Secrets and variables -> Actions` del repositorio de GitHub:
+
+| Secreto                  | Corresponde a            | Valor                                      |
+| ------------------------ | ------------------------ | ------------------------------------------ |
+| `VITE_SUPABASE_URL`      | `VITE_SUPABASE_URL`      | URL del proyecto de producción de Supabase |
+| `VITE_SUPABASE_ANON_KEY` | `VITE_SUPABASE_ANON_KEY` | Anon key pública de producción de Supabase |
+
+Son los valores que el paso `Build frontend` inyecta en el entorno antes de `npm run build:frontend`.
+Nunca exponer `SUPABASE_SERVICE_ROLE_KEY` como secreto con prefijo `VITE_`. Ver `DEPLOYMENT.md`
+(sección "Release automático con GitHub Actions") para el flujo completo de generación del `.exe`.
+
 ## Backend Node (Express local)
 
 Tras migrar los flujos de dispositivo y caja a RPCs de Supabase (14 sep 2026), `src/backend/server.js`
