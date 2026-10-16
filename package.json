@@ -6,9 +6,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -k \"cross-env NODE_ENV=development vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
-    "build": "vite build && electron-builder",
+    "build": "vite build && electron-builder --publish never",
     "build:frontend": "vite build",
-    "build:electron": "electron-builder",
+    "build:electron": "electron-builder --publish never",
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
@@ -75,6 +75,7 @@
   "build": {
     "appId": "com.crokets.pos",
     "productName": "POS CROKETS",
+    "publish": null,
     "files": [
       "dist/**/*",
       "electron/**/*",
