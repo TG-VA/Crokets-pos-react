@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "../PageTransfers.module.css";
 
 const TRANSFER_TABS = [

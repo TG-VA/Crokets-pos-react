@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "../PageTransfers.module.css";
 import { formatTransferDateTime } from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";

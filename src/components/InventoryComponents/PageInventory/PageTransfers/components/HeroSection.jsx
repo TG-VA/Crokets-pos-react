@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "../PageTransfers.module.css";
 
 const HeroSection = ({ branch, pendingReceiptsCount, transferMetrics }) => {
