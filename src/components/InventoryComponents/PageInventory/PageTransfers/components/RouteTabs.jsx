@@ -1,49 +1,58 @@
-import React from "react";
 import styles from "../PageTransfers.module.css";
 
 const TRANSFER_TABS = [
   {
     id: "send",
     label: "Enviar",
-    description: "Preparar y descontar existencias de la sucursal origen.",
+    hint: "Descuenta existencias de la sucursal origen.",
   },
   {
     id: "receive",
     label: "Recibir",
-    description: "Registrar llegada, diferencias y devoluciones automáticas.",
+    hint: "Captura la llegada, diferencias y devoluciones.",
   },
   {
     id: "history",
     label: "Historial",
-    description: "Consultar todos los traspasos emitidos y recibidos.",
+    hint: "Consulta los traspasos emitidos y recibidos.",
   },
 ];
 
 const RouteTabs = ({ activeTab, pendingReceiptsCount, onTabChange }) => {
+  const activeTabMeta = TRANSFER_TABS.find((tab) => tab.id === activeTab);
+
   return (
     <nav className={styles.tabBar} aria-label="Subnavegación de traspasos">
-      {TRANSFER_TABS.map((tab) => {
-        const isActive = activeTab === tab.id;
+      <div className={styles.segmentedControl}>
+        {TRANSFER_TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
 
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            className={`${styles.tabButton} ${
-              isActive ? styles.tabButtonActive : ""
-            }`}
-            onClick={() => onTabChange(tab.id)}
-          >
-            <span className={styles.tabLabelRow}>
-              <span>{tab.label}</span>
-              {tab.id === "receive" && pendingReceiptsCount > 0 ? (
-                <span className={styles.tabBadge}>{pendingReceiptsCount}</span>
-              ) : null}
-            </span>
-            <span className={styles.tabDescription}>{tab.description}</span>
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={`${styles.tabButton}${
+                isActive ? ` ${styles.tabButtonActive}` : ""
+              }`}
+              aria-current={isActive ? "true" : undefined}
+              onClick={() => onTabChange(tab.id)}
+            >
+              <span className={styles.tabLabelRow}>
+                <span>{tab.label}</span>
+                {tab.id === "receive" && pendingReceiptsCount > 0 ? (
+                  <span className={styles.tabBadge}>
+                    {pendingReceiptsCount}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTabMeta ? (
+        <p className={styles.tabHint}>{activeTabMeta.hint}</p>
+      ) : null}
     </nav>
   );
 };

@@ -42,31 +42,37 @@
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr);
-  gap: 16px;
-}
-
-.heroMain,
-.heroAside,
-.panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
   background: var(--white);
   border-radius: 16px;
   box-shadow: var(--shadow);
+  padding: 14px 20px;
 }
 
-.heroMain {
-  padding: 24px;
+.heroHeading {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.heroStats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .eyebrow {
   margin: 0;
   color: var(--croketsBlueDark);
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -74,74 +80,81 @@
 .title {
   margin: 0;
   color: var(--croketsOrange);
-  font-size: 2rem;
-  line-height: 1.05;
+  font-size: 1.5rem;
+  line-height: 1.1;
 }
 
 .description {
   margin: 0;
   color: #5c6b77;
-  max-width: 760px;
-  font-size: 0.97rem;
+  max-width: 640px;
+  font-size: 0.88rem;
 }
 
-.routeCard {
-  margin-top: 6px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding: 16px;
-  border-radius: 14px;
+.routeChip,
+.metricCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 14px;
+  min-width: 104px;
+  border-radius: 12px;
+  border: 1px solid #edf2f5;
+  background: #fbfdfe;
+}
+
+.routeChip {
   background: linear-gradient(
     135deg,
     rgba(16, 146, 177, 0.08),
     rgba(255, 138, 0, 0.08)
   );
-  border: 1px solid rgba(16, 146, 177, 0.12);
+  border-color: rgba(16, 146, 177, 0.12);
 }
 
-.routeLabel,
 .metricLabel,
 .metaLabel {
   display: block;
-  margin-bottom: 4px;
   color: #6d7b86;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
+.metricLabel {
+  margin-bottom: 0;
+}
+
+.metaLabel {
+  margin-bottom: 4px;
+}
+
 .routeValue {
   color: var(--darkGray);
-  font-size: 1rem;
-}
-
-.heroAside {
-  padding: 18px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-content: start;
-}
-
-.metricCard {
-  padding: 16px;
-  border-radius: 14px;
-  border: 1px solid #edf2f5;
-  background: #fbfdfe;
+  font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .metricValue {
   display: block;
-  margin-top: 8px;
-  font-size: 1.65rem;
+  font-size: 1.2rem;
+  line-height: 1.2;
   color: var(--croketsBlueDark);
 }
 
 .feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 13px 16px;
   border-radius: 12px;
   font-weight: 600;
+}
+
+.feedbackIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .feedbackError {
@@ -155,41 +168,59 @@
 }
 
 .tabBar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.segmentedControl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 4px;
+  padding: 4px;
+  background: #eef2f6;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
 .tabButton {
-  border: 1px solid #e8eef2;
-  border-radius: 14px;
-  padding: 16px;
-  background: #ffffff;
-  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 9px 14px;
+  background: transparent;
+  color: #475569;
+  text-align: center;
   transition:
-    transform 0.18s ease,
+    background 0.18s ease,
     box-shadow 0.18s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    color 0.18s ease;
   cursor: pointer;
 }
 
 .tabButton:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
-  border-color: rgba(16, 146, 177, 0.18);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--darkGray);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 1px;
 }
 
 .tabButtonActive {
-  border-color: rgba(16, 146, 177, 0.28);
-  background: linear-gradient(180deg, #ffffff 0%, #f4fbfd 100%);
+  background: var(--white);
+  color: var(--darkGray);
+  border-color: rgba(16, 146, 177, 0.45);
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.12);
 }
 
 .tabLabelRow {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  color: var(--darkGray);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -207,29 +238,31 @@
   justify-content: center;
 }
 
-.tabDescription {
-  display: block;
-  margin-top: 8px;
+.tabHint {
+  margin: 0;
   color: #6d7b86;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   line-height: 1.4;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(300px, 1fr) minmax(0, 2fr);
   gap: 18px;
   min-height: 0;
 }
 
 .sendWorkspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
   gap: 18px;
   min-height: 0;
 }
 
 .panel {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -271,7 +304,7 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -298,7 +331,6 @@
 
 .input,
 .select,
-.textarea,
 .quantityInput {
   width: 100%;
   border: 1px solid #d9e4eb;
@@ -319,15 +351,8 @@
   height: 42px;
 }
 
-.textarea {
-  min-height: 92px;
-  padding-top: 12px;
-  resize: vertical;
-}
-
 .input:focus,
 .select:focus,
-.textarea:focus,
 .quantityInput:focus {
   border-color: rgba(16, 146, 177, 0.45);
   box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
@@ -359,6 +384,21 @@
   background: #ffffff;
 }
 
+.draftTableWrapper {
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.draftTableWrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fafc;
+}
+
 .table {
   width: 100%;
   border-collapse: separate;
@@ -367,14 +407,15 @@
 }
 
 .table thead th {
-  background: var(--croketsBlue);
-  color: #ffffff;
-  font-size: 0.78rem;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
-  padding: 14px 16px;
+  padding: 12px 16px;
   text-align: left;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .table thead th + th,
@@ -398,11 +439,33 @@
   background: #f4fafc;
 }
 
-.emptyRow,
-.emptyState {
+.emptyRow {
   padding: 24px 18px;
   color: #6d7b86;
   text-align: center;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 140px;
+  padding: 24px 18px;
+  color: #6d7b86;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  border: 1px dashed #d9e4eb;
+  border-radius: 12px;
+  background: #fbfdfe;
+}
+
+.emptyStateIcon {
+  width: 32px;
+  height: 32px;
+  opacity: 0.6;
 }
 
 .productCell {
@@ -460,10 +523,42 @@
   color: #546574;
 }
 
+.cancelRowButton {
+  background: rgba(177, 56, 56, 0.08);
+  color: var(--errorText);
+  border: 1px solid rgba(177, 56, 56, 0.2);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.cancelRowButton:hover {
+  background: rgba(177, 56, 56, 0.16);
+}
+
+.cancelRowButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .primaryButton {
   background: linear-gradient(135deg, var(--croketsOrange), #ff9d2f);
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(255, 138, 0, 0.24);
+}
+
+.primaryButton:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .actionRow {
@@ -685,7 +780,11 @@ td.alignRight.detailErrorText {
 .detailTableWrapper {
   border: 1px solid #edf2f5;
   border-radius: 14px;
-  overflow: auto;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
   background: #ffffff;
 }
 
@@ -697,16 +796,18 @@ td.alignRight.detailErrorText {
 }
 
 .detailTable thead th {
-  background: var(--croketsBlue);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #334155;
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
   padding: 12px 14px;
   text-align: left;
+  border-bottom: 1px solid #e2e8f0;
   position: sticky;
   top: 0;
+  z-index: 2;
 }
 
 .detailTable thead th + th,
@@ -731,18 +832,15 @@ td.alignRight.detailErrorText {
 }
 
 @media (max-width: 1180px) {
-  .hero,
-  .workspace {
+  .workspace,
+  .sendWorkspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 900px) {
-  .tabBar,
-  .formRow,
+  .segmentedControl,
   .receiptMeta,
-  .routeCard,
-  .heroAside,
   .detailHeaderGrid,
   .detailTotalsInline {
     grid-template-columns: 1fr;

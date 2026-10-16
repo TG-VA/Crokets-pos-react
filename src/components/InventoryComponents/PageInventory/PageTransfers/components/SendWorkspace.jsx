@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "../PageTransfers.module.css";
 
 const SendWorkspace = ({
@@ -79,17 +78,6 @@ const SendWorkspace = ({
             </div>
           </label>
         </div>
-
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>Notas del envío</span>
-          <textarea
-            className={styles.textarea}
-            value={transferNotes}
-            onChange={(event) => onTransferNotesChange(event.target.value)}
-            placeholder="Observaciones internas del traspaso"
-            rows={3}
-          />
-        </label>
       </div>
 
       <div className={styles.panel}>
@@ -107,7 +95,7 @@ const SendWorkspace = ({
           </div>
         </div>
 
-        <div className={styles.tableWrapper}>
+        <div className={`${styles.tableWrapper} ${styles.draftTableWrapper}`}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -184,6 +172,17 @@ const SendWorkspace = ({
             </tbody>
           </table>
         </div>
+
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Notas del envío</span>
+          <input
+            type="text"
+            className={styles.input}
+            value={transferNotes}
+            onChange={(event) => onTransferNotesChange(event.target.value)}
+            placeholder="Observaciones internas del traspaso (opcional)"
+          />
+        </label>
 
         <div className={styles.actionRow}>
           <div className={styles.actionText}>
