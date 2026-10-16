@@ -41,7 +41,7 @@ jobs:
       - name: Build Electron Windows installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:electron
+        run: npx electron-builder --publish never
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
