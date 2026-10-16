@@ -37,6 +37,10 @@ Según la configuración `build` en `package.json`:
   que Windows SmartScreen puede mostrar una advertencia al usuario. Documentar/aceptar ese aviso o
   configurar firma de código antes de distribución masiva.
 - **Solo Windows:** no hay target para macOS/Linux configurado.
+- **Publicación (`publish`):** `provider: github`, `owner: TG-VA`, `repo: Crokets-pos-react`,
+  `private: true`. Con esta configuración electron-builder genera en `dist/` el descriptor
+  `latest.yml` (con el hash SHA-512 del instalador) además del `.exe` y su `.blockmap`, que son los
+  artefactos que consumen las auto-actualizaciones.
 
 El instalador se genera típicamente en una carpeta `dist/` o `release/` (según la versión de
 electron-builder).
@@ -100,8 +104,12 @@ instalador NSIS en `windows-latest` y publica el `.exe`:
     (útil para probar). El `.exe` queda como artefacto descargable del workflow.
 - **Pasos del job `build-windows`:** checkout completo, Node 22 con caché de npm, `npm ci`,
   `npm test`, `npm run build:frontend` (con los secretos de producción inyectados),
-  `npm run build:electron` y subida del `dist/*.exe` como artefacto (retención: 14 días).
+  `npm run build:electron` y subida de `dist/*.exe`, `dist/*.blockmap` y `dist/latest.yml` como
+  artefacto (retención: 14 días).
 - **Permisos:** `contents: write` para poder crear el Release con el `GITHUB_TOKEN` del repo.
+- **Artefactos del Release:** además del instalador, el Release de un tag `v*` adjunta los mapas
+  `*.blockmap` y `latest.yml`. Los tres son obligatorios para que `electron-updater` pueda detectar y
+  descargar la actualización (ver "Ciclo de Vida de Actualizaciones Automáticas").
 
 ### Secretos requeridos en GitHub
 
@@ -135,6 +143,57 @@ git push origin v1.0.0
 
 La ejecución resultante publica automáticamente un GitHub Release con el instalador adjunto.
 
+## Ciclo de Vida de Actualizaciones Automáticas
+
+Las terminales de producción se actualizan solas en segundo plano con `electron-updater` contra los
+GitHub Releases del repositorio (`TG-VA/Crokets-pos-react`). No hay que reinstalar a mano en cada
+sucursal.
+
+### Cómo funciona
+
+- **Servicio del proceso principal** (`electron/updaterService.js`, inicializado desde
+  `electron/main.js` tras crear la ventana): configura `autoDownload = true`,
+  `autoInstallOnAppQuit = true` y `allowPrerelease = false`. Diez segundos después del arranque
+  dispara una consulta silenciosa, de modo que no compite con la carga inicial de ventas. En
+  desarrollo (`isDev`) no consulta ni descarga nada.
+- **Descarga desatendida:** si el Release tiene una versión mayor que la instalada, el `.exe`
+  diferencial (`.blockmap`) se descarga en segundo plano. El cajero no ve interrupciones ni diálogos
+  del sistema; la app sigue operable.
+- **Aviso discreto y reinicio:** al completarse la descarga, el proceso principal avisa al renderer
+  y `src/components/Footer/Footer.jsx` muestra un botón `Actualización vX.X.X lista (Reiniciar)`
+  junto a la versión instalada. Al pulsarlo, o al cerrar la app (`autoInstallOnAppQuit`), la
+  actualización se aplica en segundos.
+- **Datos preservados:** el `device_code` y el resto de la configuración de `electron-store` viven
+  fuera del bundle actualizado (en `%APPDATA%`), por lo que sobreviven al reinicio.
+- **Repositorio privado:** `publish.private = true` hace que el provider de GitHub lea
+  `GH_TOKEN`/`GITHUB_TOKEN` del entorno. Como alternativa se puede definir
+  `CROKETS_GH_READ_TOKEN` (token de lectura acotado); se lee solo en el proceso principal y nunca
+  debe usar prefijo `VITE_` (Vite lo incrustaría en el bundle del renderer). Ver
+  `docs/ENV_VARIABLES.md`.
+
+### Canales IPC
+
+`electron/preload.js` expone, dentro de su lista blanca, `get-app-version`, `check-for-updates`,
+`get-update-status` y `quit-and-install-update`, más el listener push `update-status`. El hook
+`src/hooks/useAppUpdater.js` consume ese contrato y degrada a sondeo periódico si el preload no
+expone listener.
+
+### Cómo publicar una actualización
+
+```bash
+# 1. Incrementar version en package.json (ej. 1.0.1)
+# 2. Hacer commit y push a main
+# 3. Crear y subir el tag:
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+El tag dispara el workflow `Release Windows Installer`, que compila el instalador NSIS y publica un
+GitHub Release con el `.exe`, los `*.blockmap` y `latest.yml`. Las terminales con una versión anterior
+lo detectan en el siguiente arranque. Un `workflow_dispatch` (Opción A) **no** publica Release ni
+`latest.yml` en Releases: solo deja el artefacto descargable del workflow, por lo que no alimenta el
+auto-updater.
+
 ## Checklist antes de distribuir a un cliente
 
 - [x] El bloqueante de login (#1) está verificado/resuelto (frontend sin dependencia del server local).
@@ -156,8 +215,12 @@ La ejecución resultante publica automáticamente un GitHub Release con el insta
   (KNOWN_ISSUES #36).
 - **Electron** (`electron/main.js`): `setWindowOpenHandler` deniega ventanas emergentes y
   `will-navigate` bloquea la navegación fuera del origen de la app.
-- **Preload** (`electron/preload.js`): solo expone `invoke` con los canales realmente registrados en
-  el proceso principal; se eliminaron `send`/`on` y canales sin handler.
+- **Preload** (`electron/preload.js`): expone `invoke` (con la lista blanca de canales realmente
+  registrados en el proceso principal) y un `on` restringido a los canales push permitidos
+  (`update-status`); se eliminaron `send` y los canales sin handler.
+- **Auto-actualizaciones** (`electron/updaterService.js`): el token de lectura del feed privado se
+  lee solo en el proceso principal; nunca se expone al renderer (ver "Ciclo de Vida de
+  Actualizaciones Automáticas").
 
 ## Datos y respaldo
 

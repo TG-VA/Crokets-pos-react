@@ -31,6 +31,17 @@ Son los valores que el paso `Build frontend` inyecta en el entorno antes de `npm
 Nunca exponer `SUPABASE_SERVICE_ROLE_KEY` como secreto con prefijo `VITE_`. Ver `DEPLOYMENT.md`
 (sección "Release automático con GitHub Actions") para el flujo completo de generación del `.exe`.
 
+## Proceso principal de Electron (auto-updater)
+
+Se leen en tiempo de ejecución desde el proceso principal (`electron/updaterService.js`), **no** se
+inyectan en el bundle del renderer. Nunca usar prefijo `VITE_` con estas variables.
+
+| Variable                | Requerida | Uso                                                                                                                              | Referencia                             |
+| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `GH_TOKEN`              | No        | Token de lectura del feed privado de GitHub Releases; lo consume el provider de GitHub de `electron-updater` con `private: true` | `electron-updater` (`providerFactory`) |
+| `GITHUB_TOKEN`          | No        | Alternativa a `GH_TOKEN`                                                                                                         | `electron-updater` (`providerFactory`) |
+| `CROKETS_GH_READ_TOKEN` | No        | Token de lectura dedicado que se envía como header `Authorization` del feed                                                      | `electron/updaterService.js:21`        |
+
 ## Backend Node (Express local)
 
 Tras migrar los flujos de dispositivo y caja a RPCs de Supabase (14 sep 2026), `src/backend/server.js`
