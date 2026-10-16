@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
+import rotateIcon from "../../assets/icons/rotate-solid-full.svg";
+import useAppUpdater from "../../hooks/useAppUpdater";
 import styles from "./Footer.module.css";
 
 const Footer = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const { appVersion, updateReady, newVersion, installUpdate } =
+    useAppUpdater();
 
   useEffect(() => {
     //Actualiza la hora y la fecha cada segundo
@@ -28,9 +32,35 @@ const Footer = () => {
     return date.toLocaleString("es-ES", options).toUpperCase();
   };
 
+  const updateLabel = newVersion
+    ? `Actualización v${newVersion} lista (Reiniciar)`
+    : "Actualización lista (Reiniciar)";
+
   return (
     <footer className={styles.footer}>
-      <span>{formatDateTime(currentDateTime)}</span>
+      <span className={styles.dateTime}>{formatDateTime(currentDateTime)}</span>
+
+      <div className={styles.statusGroup}>
+        {updateReady ? (
+          <button
+            type="button"
+            className={styles.updateButton}
+            onClick={() => installUpdate()}
+          >
+            <img
+              src={rotateIcon}
+              alt=""
+              aria-hidden="true"
+              className={styles.updateIcon}
+            />
+            {updateLabel}
+          </button>
+        ) : null}
+
+        {appVersion ? (
+          <span className={styles.appVersion}>v{appVersion}</span>
+        ) : null}
+      </div>
     </footer>
   );
 };
