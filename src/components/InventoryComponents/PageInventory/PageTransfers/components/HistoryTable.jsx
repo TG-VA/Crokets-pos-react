@@ -97,7 +97,7 @@ const HistoryTable = ({
                     {cancellableTransferIds.has(order.id) ? (
                       <button
                         type="button"
-                        className={styles.ghostButton}
+                        className={styles.cancelRowButton}
                         onClick={() => onCancelClick(order)}
                         disabled={submitting || cancelConfirmLoading}
                       >

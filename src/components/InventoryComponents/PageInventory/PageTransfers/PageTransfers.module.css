@@ -143,9 +143,18 @@
 }
 
 .feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 13px 16px;
   border-radius: 12px;
   font-weight: 600;
+}
+
+.feedbackIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .feedbackError {
@@ -514,6 +523,29 @@
   color: #546574;
 }
 
+.cancelRowButton {
+  background: rgba(177, 56, 56, 0.08);
+  color: var(--errorText);
+  border: 1px solid rgba(177, 56, 56, 0.2);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.cancelRowButton:hover {
+  background: rgba(177, 56, 56, 0.16);
+}
+
+.cancelRowButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .primaryButton {
   background: linear-gradient(135deg, var(--croketsOrange), #ff9d2f);
   color: #ffffff;
@@ -748,7 +780,11 @@ td.alignRight.detailErrorText {
 .detailTableWrapper {
   border: 1px solid #edf2f5;
   border-radius: 14px;
-  overflow: auto;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
   background: #ffffff;
 }
 
@@ -771,6 +807,7 @@ td.alignRight.detailErrorText {
   border-bottom: 1px solid #e2e8f0;
   position: sticky;
   top: 0;
+  z-index: 2;
 }
 
 .detailTable thead th + th,
