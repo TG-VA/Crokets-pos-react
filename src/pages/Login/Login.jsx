@@ -5,6 +5,7 @@ import { useBranch } from "../../contexts/BranchContext";
 import styles from "./Login.module.css";
 import { supabase } from "../../lib/supabaseClient";
 import { resolveBranchByDevice } from "../../services/deviceBranchService";
+import DeviceActivationModal from "../../components/DeviceActivationModal/DeviceActivationModal";
 
 // Recursos gráficos
 import logo from "../../assets/images/LOGOCROKETS.png";
@@ -24,6 +25,8 @@ const prefetchPostLoginRoutes = () => {
   import("../Dashboard/Dashboard").catch(() => {});
 };
 
+const UNASSIGNED_POS_ERROR = "Este POS no está asignado a ninguna sucursal";
+
 const Login = () => {
   const { login, unlockScreen } = useAuth();
   const { setBranch } = useBranch();
@@ -34,6 +37,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recoverableSession, setRecoverableSession] = useState(null);
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
+  const [unassignedDeviceCode, setUnassignedDeviceCode] = useState(null);
+  const [notice, setNotice] = useState("");
 
   const navigate = useNavigate();
   const usernameRef = useRef(null);
@@ -134,9 +140,13 @@ const Login = () => {
       const branchResult = await resolveBranchByDevice(deviceCode);
 
       if (!branchResult.success || !branchResult.data?.id) {
-        setError(
-          branchResult.error || "Este POS no está asignado a ninguna sucursal"
-        );
+        const branchError = branchResult.error || UNASSIGNED_POS_ERROR;
+
+        if (branchError === UNASSIGNED_POS_ERROR) {
+          setUnassignedDeviceCode(deviceCode);
+        }
+
+        setError(branchError);
         return;
       }
 
@@ -319,12 +329,29 @@ const Login = () => {
     }
   };
 
+  const handleActivated = (newBranch) => {
+    setBranch(newBranch);
+    setError("");
+    setUnassignedDeviceCode(null);
+    setIsActivationModalOpen(false);
+    setNotice(
+      `Punto de venta vinculado exitosamente a ${newBranch.name}. Ahora puedes ingresar con tu usuario.`
+    );
+  };
+
   useEffect(() => {
     if (!error) return;
 
     const timer = setTimeout(() => setError(""), 5000);
     return () => clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    if (!notice) return;
+
+    const timer = setTimeout(() => setNotice(""), 8000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   return (
     <div className={styles.loginWrapper}>
@@ -396,6 +423,19 @@ const Login = () => {
 
         {error && <div className={styles.errorMessage}>{error}</div>}
 
+        {unassignedDeviceCode && (
+          <button
+            type="button"
+            className={styles.activateButton}
+            onClick={() => setIsActivationModalOpen(true)}
+            disabled={loading}
+          >
+            Vincular este equipo a una sucursal
+          </button>
+        )}
+
+        {notice && <div className={styles.noticeMessage}>{notice}</div>}
+
         {recoverableSession && (
           <div className={styles.recoveryBox}>
             <div className={styles.recoveryTitle}>
@@ -431,6 +471,15 @@ const Login = () => {
           Salir
         </button>
       </form>
+
+      {isActivationModalOpen && (
+        <DeviceActivationModal
+          isOpen
+          deviceCode={unassignedDeviceCode}
+          onClose={() => setIsActivationModalOpen(false)}
+          onActivated={handleActivated}
+        />
+      )}
     </div>
   );
 };

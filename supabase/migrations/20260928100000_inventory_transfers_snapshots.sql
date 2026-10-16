@@ -47,6 +47,87 @@ CREATE TABLE IF NOT EXISTS public.inventory_transfers (
         CHECK (from_branch_id <> to_branch_id)
 );
 
+-- -----------------------------------------------------------------------------
+-- Camino legacy: instalaciones que ya tenian inventory_transfers con el esquema
+-- anterior (sin folio ni columnas de recepcion/cancelacion, status VARCHAR(20)).
+-- En base nueva el CREATE TABLE de arriba ya define todo y estos ALTER son no-op
+-- (IF NOT EXISTS / DO guard); en base legacy aportan las columnas que exigen los
+-- indexes y constraints de abajo. Nota: en legacy folio queda NULLABLE porque las
+-- filas existentes conservan el folio en el meta JSON de notes (los RPCs nunca
+-- escriben esta columna); unico index admite multiples NULL.
+-- -----------------------------------------------------------------------------
+ALTER TABLE public.inventory_transfers
+    ADD COLUMN IF NOT EXISTS folio VARCHAR(64);
+
+ALTER TABLE public.inventory_transfers
+    ADD COLUMN IF NOT EXISTS received_by_user_id UUID
+        REFERENCES public.users(id) ON DELETE SET NULL;
+
+ALTER TABLE public.inventory_transfers
+    ADD COLUMN IF NOT EXISTS cancelled_by_user_id UUID
+        REFERENCES public.users(id) ON DELETE SET NULL;
+
+ALTER TABLE public.inventory_transfers
+    ADD COLUMN IF NOT EXISTS received_at TIMESTAMPTZ;
+
+ALTER TABLE public.inventory_transfers
+    ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ;
+
+-- status VARCHAR(20) del esquema legacy no contiene 'received_with_difference'
+-- (23 chars) que escribe receive_transfer_order; se amplia al tamaño declarado
+-- arriba. El default legacy 'pending' equivale al vigente 'pending_receipt'.
+ALTER TABLE public.inventory_transfers
+    ALTER COLUMN status TYPE VARCHAR(32);
+
+ALTER TABLE public.inventory_transfers
+    ALTER COLUMN status SET DEFAULT 'pending_receipt';
+
+UPDATE public.inventory_transfers
+   SET status = 'pending_receipt'
+ WHERE status = 'pending';
+
+-- Los CHECK del CREATE TABLE solo se agregan en legacy si aun no existen y si
+-- los datos heredados los cumplen (si no, el DDL rechazaria el push completo).
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'public.inventory_transfers'::regclass
+           AND conname = 'inventory_transfers_status_ck'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM public.inventory_transfers
+         WHERE status NOT IN (
+             'pending_receipt', 'received_complete',
+             'received_with_difference', 'cancelled'
+         )
+    ) THEN
+        ALTER TABLE public.inventory_transfers
+            ADD CONSTRAINT inventory_transfers_status_ck
+            CHECK (status IN (
+                'pending_receipt', 'received_complete',
+                'received_with_difference', 'cancelled'
+            ));
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'public.inventory_transfers'::regclass
+           AND conname = 'inventory_transfers_branches_diff_ck'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM public.inventory_transfers
+         WHERE from_branch_id = to_branch_id
+    ) THEN
+        ALTER TABLE public.inventory_transfers
+            ADD CONSTRAINT inventory_transfers_branches_diff_ck
+            CHECK (from_branch_id <> to_branch_id);
+    END IF;
+END $$;
+
+-- Divergencia conocida del camino legacy: created_at / approved_at /
+-- completed_at permanecen `timestamp without time zone` (el esquema nuevo usa
+-- TIMESTAMPTZ); convertirlos reescribe datos ya desplegados y queda fuera del
+-- alcance de esta migracion.
+
 CREATE INDEX IF NOT EXISTS idx_inventory_transfers_from_branch
     ON public.inventory_transfers(from_branch_id);
 
@@ -111,6 +192,61 @@ ALTER TABLE public.inventory_transfer_items
     ADD COLUMN IF NOT EXISTS destination_stock_before NUMERIC(18,4);
 ALTER TABLE public.inventory_transfer_items
     ADD COLUMN IF NOT EXISTS destination_stock_after  NUMERIC(18,4);
+
+-- Columnas del detalle declaradas arriba solo en el CREATE TABLE: en base
+-- legacy se agregan aqui (IF NOT EXISTS las salta si ya existen).
+ALTER TABLE public.inventory_transfer_items
+    ADD COLUMN IF NOT EXISTS sale_price NUMERIC(18,4) NOT NULL DEFAULT 0;
+
+ALTER TABLE public.inventory_transfer_items
+    ADD COLUMN IF NOT EXISTS barcode VARCHAR(128);
+
+ALTER TABLE public.inventory_transfer_items
+    ADD COLUMN IF NOT EXISTS product_name VARCHAR(256);
+
+-- CHECK de cantidades: mismo criterio guardado que arriba (solo en legacy y solo
+-- si los datos existentes los cumplen).
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'public.inventory_transfer_items'::regclass
+           AND conname = 'inventory_transfer_items_qty_positive_ck'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM public.inventory_transfer_items
+         WHERE quantity < 0
+    ) THEN
+        ALTER TABLE public.inventory_transfer_items
+            ADD CONSTRAINT inventory_transfer_items_qty_positive_ck
+            CHECK (quantity >= 0);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'public.inventory_transfer_items'::regclass
+           AND conname = 'inventory_transfer_items_received_positive_ck'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM public.inventory_transfer_items
+         WHERE received_qty < 0
+    ) THEN
+        ALTER TABLE public.inventory_transfer_items
+            ADD CONSTRAINT inventory_transfer_items_received_positive_ck
+            CHECK (received_qty >= 0);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conrelid = 'public.inventory_transfer_items'::regclass
+           AND conname = 'inventory_transfer_items_returned_positive_ck'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM public.inventory_transfer_items
+         WHERE returned_qty < 0
+    ) THEN
+        ALTER TABLE public.inventory_transfer_items
+            ADD CONSTRAINT inventory_transfer_items_returned_positive_ck
+            CHECK (returned_qty >= 0);
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_inventory_transfer_items_transfer
     ON public.inventory_transfer_items(transfer_id);

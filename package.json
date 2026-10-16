@@ -78,11 +78,18 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "node_modules/**/*",
-      "icon.ico"
+      "icon.ico",
+      "package.json"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "icon.ico",
       "signAndEditExecutable": false
     },
@@ -92,7 +99,8 @@
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "POS CROKETS"
     }
   }
 }

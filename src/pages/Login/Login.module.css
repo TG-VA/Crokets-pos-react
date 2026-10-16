@@ -151,6 +151,43 @@
   min-height: 20px;
 }
 
+.activateButton {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #1092b1;
+  color: var(--color-white);
+  box-shadow: var(--shadow-button);
+  transition: background-color var(--transition-normal);
+}
+
+.activateButton:hover:not(:disabled) {
+  background: #0d7a94;
+}
+
+.activateButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.noticeMessage {
+  width: 100%;
+  box-sizing: border-box;
+  background: #e7f6eb;
+  color: #1f7a3d;
+  border: 1px solid #b6e2c4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
 .loginButton,
 .exitButton {
   width: 120px;

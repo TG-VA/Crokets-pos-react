@@ -1,0 +1,239 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  animation: overlayFadeIn 0.18s ease-out;
+}
+
+.modal {
+  width: 460px;
+  max-width: 92vw;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  animation: modalEnter 0.22s ease-out;
+  transform-origin: center;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header {
+  background: #fc8913;
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.closeButton {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.closeButton img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+}
+
+.closeButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deviceBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 20px 4px;
+  padding: 12px 14px;
+  background: #f4f7f9;
+  border: 1px solid #d9e2e8;
+  border-radius: 10px;
+}
+
+.deviceIcon {
+  width: 26px;
+  height: 26px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.deviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.deviceLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #5b6b74;
+}
+
+.deviceCode {
+  font-family: monospace;
+  font-size: 14px;
+  color: #1f2d33;
+  word-break: break-all;
+}
+
+.form {
+  padding: 14px 20px 20px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.fieldGroup label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333333;
+}
+
+.fieldGroup input,
+.fieldGroup select {
+  width: 100%;
+  border: 1px solid #d6d6d6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  outline: none;
+  background: #ffffff;
+}
+
+.fieldGroup input:focus,
+.fieldGroup select:focus {
+  border-color: #fc8913;
+  box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.18);
+}
+
+.fieldGroup input:disabled,
+.fieldGroup select:disabled {
+  background: #f2f2f2;
+  cursor: not-allowed;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffe8e8;
+  color: #b00020;
+  border: 1px solid #ffb8b8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.errorIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  filter: invert(16%) sepia(72%) saturate(3271%) hue-rotate(341deg)
+    brightness(89%) contrast(105%);
+}
+
+.primaryButton {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #1092b1;
+  color: #ffffff;
+  transition:
+    background-color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.12s ease;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #0d7a94;
+  transform: translateY(-1px);
+}
+
+.primaryButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.primaryButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.successBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 24px 26px;
+}
+
+.successIcon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  filter: invert(48%) sepia(72%) saturate(1018%) hue-rotate(126deg)
+    brightness(95%) contrast(92%);
+}
+
+.successTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f7a3d;
+  margin-bottom: 8px;
+}
+
+.successText {
+  font-size: 14px;
+  color: #445057;
+  line-height: 1.45;
+  margin-bottom: 20px;
+}

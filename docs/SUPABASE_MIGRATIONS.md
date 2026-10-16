@@ -43,6 +43,7 @@ Migraciones existentes (al 2 oct 2026):
 | `20260923150000_create_product_kits_rpcs.sql`                  | RPCs atómicas del ciclo de vida de Kits de Productos: `create_kit_transaction` (uuid), `update_kit_transaction` (boolean) y `delete_kit_transaction` (boolean, soft-delete producto + kit) — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productKitsService.js` con ACID nativo (#5)                                                                                                                                                                                                              |
 | `20260923160000_create_products_import_rpc.sql`                | RPC atómica de Importación Masiva: `import_products_transaction(p_rows jsonb, p_branch_id uuid, p_all_branches jsonb)` retorna `jsonb` (`created_products_count` / `created_inventories_count`); inserta producto + `branch_inventory` (sucursal actual y, para globales, una fila inicial por sucursal de `p_all_branches`) en una sola transacción — `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role`. Reemplaza los rollbacks compensatorios de `productsImportService.js` con ACID nativo (#5)                                                 |
 | `20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`  | Base del costo promedio ponderado: agrega `inventory_movements.unit_cost` / `total_cost` (costo de adquisición de la entrada, ambos NULL) y `sale_details.cost_price` (numeric NOT NULL DEFAULT 0). Redefine las 3 sobrecargas de `create_sale_transaction` para congelar el snapshot del costo unitario vigente, resuelto desde `branch_inventory.cost_price` con fallback a `products.cost_price` — cuerpos preservados (adición única: `v_cost_price`, su resolución y la columna del INSERT), `SECURITY DEFINER`, `SET search_path TO 'public'`, REVOKE `anon`/`PUBLIC` + GRANT `authenticated`/`service_role` |
+| `20261016000000_register_pos_device.sql`                       | RPC anon `register_pos_device(p_device_code, p_branch_id, p_admin_id)`: vincula un equipo nuevo a una sucursal (alta del asistente de vinculación). Valida sucursal existente y administrador activo (`users.status = true` + `roles.name = 'admin'`), hace UPSERT idempotente en `pos_devices` (`ON CONFLICT (device_code)`) y devuelve `{ success, branch }` — `SECURITY DEFINER`, `SET search_path = public`, REVOKE `PUBLIC` + GRANT `anon`/`authenticated`/`service_role`                                                                                                                                     |
 
 ## Alcance de la migración de costo (`20261002124615`)
 
@@ -55,6 +56,22 @@ Migraciones existentes (al 2 oct 2026):
   deben distinguirlas de las que sí tienen costo real.
 - **Inmabilidad:** `sale_details.cost_price` queda cubierto por `trg_prevent_edit_sale_details`, igual
   que el resto de la partida.
+
+## Nota legacy de traspasos (`20260928100000`)
+
+La migración de tablas/snapshots de traspasos es **incremental sobre una base legacy**: el proyecto
+remoto ya tenía `inventory_transfers` y `inventory_transfer_items` con el esquema anterior (heredado
+del baseline), por lo que su `CREATE TABLE IF NOT EXISTS` se salta y el resto del DDL se aplica como
+upgrade guardado (`ADD COLUMN IF NOT EXISTS`, `DO` blocks que agregan los `CHECK` solo si no existen y
+si los datos heredados los cumplen). Consecuencias documentadas del estado legacy:
+
+- `inventory_transfers.folio` queda **nullable** en el remoto: las 21 filas previas conservan el folio
+  en el meta JSON de `notes` y ningún RPC escribe la columna (el índice único admite múltiples `NULL`).
+- `created_at` / `approved_at` / `completed_at` siguen siendo `timestamp without time zone` (el
+  esquema nuevo usa `TIMESTAMPTZ`); convertirlos reescribe datos desplegados y no es parte de esta
+  migración.
+- El detalle conserva `quantity NUMERIC(10,3)` / `cost_price NUMERIC(10,2)` (el esquema nuevo declara
+  `NUMERIC(18,4)`) y `received_qty` / `returned_qty` como `integer` nullable.
 
 ## Convención de nombres
 
@@ -109,6 +126,13 @@ supabase db push
     exigen `authenticated` y, desde `20260917190000`, validan que el usuario autenticado tenga
     membresía activa en `user_branches` para esa sucursal o sea `is_admin()`. No devuelven más que la
     sesión de caja. Ver `KNOWN_ISSUES.md` #29.
+  - `register_pos_device` (`20261016000000`) es `SECURITY DEFINER` y se concede a `anon` porque el
+    asistente de vinculación corre en la pantalla de login, **antes** de tener sesión. Mitiga la
+    elevación validando que `p_admin_id` sea un usuario activo con rol `admin` (el `authorizedBy`
+    que devuelve la edge function `authorize-admin-action` tras validar usuario/contraseña) y
+    apoyándose en que `device_code` es un UUID generado con `crypto.randomUUID()` en
+    `electron/main.js`, por lo que no es enumerable. Solo escribe/lee `pos_devices` y la sucursal
+    destino. Misma familia de riesgo que `get_branch_by_device` (ver `KNOWN_ISSUES.md` #30).
 
 ## Edge functions
 
@@ -144,7 +168,9 @@ El schema base quedó capturado en `00000000000000_remote_schema_baseline.sql`. 
 
 ## Registro de despliegues
 
-| Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                               |
-| ----------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2 oct 2026  | `20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`                                            | Base del Costo Promedio Ponderado: `inventory_movements.unit_cost`/`total_cost` (NULL) y el snapshot `sale_details.cost_price`. Aplicado en remoto con `supabase db push` y verificado con `supabase migration list` (26 versiones alineadas, Local = Remote, baseline incluido)                                                                     |
-| 23 sep 2026 | `20260923130000` (#49), `20260923140000` (#53), `20260923150000` (#5 kits), `20260923160000` (#5 import) | Verificado con `supabase migration list` (25 versiones alineadas, Local = Remote, baseline incluido) y por introspección de las 9 funciones transaccionales (`SECURITY DEFINER`, `SET search_path TO 'public'`, ACL sin `anon`/`PUBLIC`). Se regeneró `SCHEMA.md` y se cerraron los estados pendientes de `KNOWN_ISSUES.md` (#5, #21, #29, #49, #53) |
+| Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 16 oct 2026 | `20260928100000`, `20261012150000`, `20261016000000`                                                     | Push de las 3 migraciones pendientes. `20260928100000` se reescribió con camino legacy idempotente (columnas `IF NOT EXISTS`, `status VARCHAR(32)`, `CHECK` guardados) porque el remoto conservaba el esquema previo de traspasos (21 filas, sin `folio`). `20261016000000` publica la RPC `register_pos_device`. Verificado con `supabase migration list` (Local = Remote en todas las versiones) e introspección de los objetos creados (`folio`, 5 `CHECK`, RLS activo, `SECURITY DEFINER` + `search_path=public` + `EXECUTE` a `anon`/`authenticated`/`service_role`) |
+| 16 oct 2026 | `20261016000000_register_pos_device.sql`                                                                 | RPC de vinculación de dispositivos nuevos (asistente de onboarding en login). Aplicar con `supabase db push` y verificar con `supabase migration list`                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 2 oct 2026  | `20261002124615_add_cost_tracking_and_sale_cost_snapshot.sql`                                            | Base del Costo Promedio Ponderado: `inventory_movements.unit_cost`/`total_cost` (NULL) y el snapshot `sale_details.cost_price`. Aplicado en remoto con `supabase db push` y verificado con `supabase migration list` (26 versiones alineadas, Local = Remote, baseline incluido)                                                                                                                                                                                                                                                                                          |
+| 23 sep 2026 | `20260923130000` (#49), `20260923140000` (#53), `20260923150000` (#5 kits), `20260923160000` (#5 import) | Verificado con `supabase migration list` (25 versiones alineadas, Local = Remote, baseline incluido) y por introspección de las 9 funciones transaccionales (`SECURITY DEFINER`, `SET search_path TO 'public'`, ACL sin `anon`/`PUBLIC`). Se regeneró `SCHEMA.md` y se cerraron los estados pendientes de `KNOWN_ISSUES.md` (#5, #21, #29, #49, #53)                                                                                                                                                                                                                      |
