@@ -43,6 +43,7 @@
     "dotenv": "^17.4.2",
     "electron-is-dev": "^2.0.0",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.3.9",
     "exceljs": "^4.4.0",
     "react": "^19.1.1",
     "react-datepicker": "^9.1.0",
@@ -75,7 +76,14 @@
   "build": {
     "appId": "com.crokets.pos",
     "productName": "POS CROKETS",
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TG-VA",
+        "repo": "Crokets-pos-react",
+        "private": true
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",
