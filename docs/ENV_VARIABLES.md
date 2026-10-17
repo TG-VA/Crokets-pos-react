@@ -40,7 +40,7 @@ inyectan en el bundle del renderer. Nunca usar prefijo `VITE_` con estas variabl
 | ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | `GH_TOKEN`              | No        | Token de lectura del feed privado de GitHub Releases; lo consume el provider de GitHub de `electron-updater` con `private: true` | `electron-updater` (`providerFactory`) |
 | `GITHUB_TOKEN`          | No        | Alternativa a `GH_TOKEN`                                                                                                         | `electron-updater` (`providerFactory`) |
-| `CROKETS_GH_READ_TOKEN` | No        | Token de lectura dedicado que se envía como header `Authorization` del feed                                                      | `electron/updaterService.js:21`        |
+| `CROKETS_GH_READ_TOKEN` | No        | Token de lectura dedicado que se envía como header `Authorization` del feed                                                      | `electron/updaterService.js:20`        |
 
 ## Backend Node (Express local)
 
