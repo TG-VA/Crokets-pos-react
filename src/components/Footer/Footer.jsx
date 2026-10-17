@@ -38,9 +38,11 @@ const Footer = () => {
 
   return (
     <footer className={styles.footer}>
-      <span className={styles.dateTime}>{formatDateTime(currentDateTime)}</span>
+      <div className={styles.updaterGroup}>
+        {appVersion ? (
+          <span className={styles.appVersion}>v{appVersion}</span>
+        ) : null}
 
-      <div className={styles.statusGroup}>
         {updateReady ? (
           <button
             type="button"
@@ -56,11 +58,9 @@ const Footer = () => {
             {updateLabel}
           </button>
         ) : null}
-
-        {appVersion ? (
-          <span className={styles.appVersion}>v{appVersion}</span>
-        ) : null}
       </div>
+
+      <span className={styles.dateTime}>{formatDateTime(currentDateTime)}</span>
     </footer>
   );
 };
