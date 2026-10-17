@@ -44,9 +44,9 @@ jobs:
           GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
         run: |
           if [ -n "$GH_READ_TOKEN" ]; then
-            printf '{"ghReadToken": "%s"}' "$GH_READ_TOKEN" > electron/updaterConfig.json
+            printf '{"ghReadToken": "%s"}\n' "$GH_READ_TOKEN" > electron/updaterConfig.json
           else
-            printf '{}' > electron/updaterConfig.json
+            printf '{}\n' > electron/updaterConfig.json
           fi
 
       - name: Build Electron Windows installer
