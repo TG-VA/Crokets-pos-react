@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const { fakeAutoUpdater } = vi.hoisted(() => {
   const listeners = new Map();
@@ -122,10 +125,33 @@ describe("electron/updaterService", () => {
       expect(resolveReadToken({}, {})).toBeNull();
     });
 
-    it("debe manejar archivos de configuración corruptos o inexistentes sin arrojar excepciones", () => {
+    it("debe manejar archivos de configuracion inexistentes sin arrojar excepciones", () => {
       expect(() => resolveReadToken({}, { ghReadToken: null })).not.toThrow();
       expect(() => resolveReadToken({})).not.toThrow();
       expect(loadEmbeddedUpdaterToken("/tmp/no-existe-config.json")).toBeNull();
+    });
+
+    it("lee el token desde un archivo valido y devuelve null ante JSON corrupto o token vacio", () => {
+      const dir = mkdtempSync(join(tmpdir(), "updater-config-"));
+      try {
+        const validPath = join(dir, "valid.json");
+        writeFileSync(validPath, '{"ghReadToken": "  tok-file-456  "}\n');
+        expect(loadEmbeddedUpdaterToken(validPath)).toBe("tok-file-456");
+
+        const corruptPath = join(dir, "corrupt.json");
+        writeFileSync(corruptPath, "{not-json");
+        expect(loadEmbeddedUpdaterToken(corruptPath)).toBeNull();
+
+        const blankTokenPath = join(dir, "blank-token.json");
+        writeFileSync(blankTokenPath, '{"ghReadToken": "   "}\n');
+        expect(loadEmbeddedUpdaterToken(blankTokenPath)).toBeNull();
+
+        const emptyObjectPath = join(dir, "empty-object.json");
+        writeFileSync(emptyObjectPath, "{}\n");
+        expect(loadEmbeddedUpdaterToken(emptyObjectPath)).toBeNull();
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     });
   });
 
