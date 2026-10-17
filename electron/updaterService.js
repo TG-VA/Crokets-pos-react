@@ -53,8 +53,9 @@ function loadEmbeddedUpdaterToken(configPath = EMBEDDED_UPDATER_CONFIG_PATH) {
 // Token de lectura dedicado para el feed del repositorio privado.
 // Jerarquía: 1) Variable de entorno, 2) Token embebido, 3) null
 function resolveReadToken(env, embeddedConfig) {
-  if (env && (env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN)) {
-    return env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN || null;
+  const envToken = env?.[READ_TOKEN_ENV_VAR] || env?.GH_TOKEN || null;
+  if (envToken) {
+    return envToken;
   }
   if (typeof embeddedConfig !== "undefined") {
     if (
@@ -66,11 +67,7 @@ function resolveReadToken(env, embeddedConfig) {
     }
     return null;
   }
-  const embedded = loadEmbeddedUpdaterToken();
-  if (embedded) {
-    return embedded;
-  }
-  return null;
+  return loadEmbeddedUpdaterToken();
 }
 
 function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
