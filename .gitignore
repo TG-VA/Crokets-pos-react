@@ -74,3 +74,6 @@ debug-*.md
 * copia*.*
 * (1).*
 *~
+
+# Auto-updater: token embebido generado en CI durante el build del instalador.
+electron/updaterConfig.json

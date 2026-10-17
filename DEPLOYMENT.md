@@ -232,3 +232,17 @@ migración:
 - Las migraciones se aplican con `supabase db push` (ver `docs/SUPABASE_MIGRATIONS.md`); no hay
   rollback automático, por lo que el respaldo es la red de seguridad.
 - **Nunca** commitear respaldos ni archivos `.sqlite`/`.env` (ver `.gitignore`).
+
+### Auto-updater desatendido (token embebido)
+
+Los clientes de Windows ya **no necesitan configurar variables de entorno** para recibir actualizaciones automáticas, incluso cuando el repositorio es privado. Esto es posible gracias a la inyección automática del token de lectura durante el build en CI/CD:
+
+1. En el workflow `release-windows.yml`, el paso **"Inject embedded updater read token"** crea `electron/updaterConfig.json` con el contenido `{ "ghReadToken": "<GH_READ_TOKEN>" }`, tomando el valor del secreto `GH_READ_TOKEN` de GitHub Actions.
+2. El archivo `electron/updaterConfig.json` está añadido a `.gitignore` para evitar que el token sea commiteado por accidente.
+3. En tiempo de ejecución, `electron/updaterService.js` resuelve el token siguiendo esta jerarquía:
+   - **Prioridad 1:** Variable de entorno del sistema (`CROKETS_GH_READ_TOKEN` o `GH_TOKEN`). Útil para desarrollo, pruebas locales o configuraciones personalizadas.
+   - **Prioridad 2:** Token embebido desde `electron/updaterConfig.json` (`ghReadToken`). Generado en CI y empaquetado dentro del `.exe`. Esta es la ruta que permite el funcionamiento desatendido en las máquinas cliente.
+   - **Prioridad 3:** `null` (sin autenticación). Solo aplicable si el repositorio fuera público o el feed de releases no requiriera autenticación.
+4. `electron-updater` añade la cabecera `Authorization: token <token>` a las peticiones al feed de GitHub Releases, permitiendo descargar actualizaciones del repositorio privado.
+
+**Requisito de configuración en GitHub Actions:** el repositorio debe tener definido el secreto `GH_READ_TOKEN` con un Personal Access Token (classic o fine-grained) que tenga, como mínimo, el permiso **`Contents: Read-only`** sobre `TG-VA/Crokets-pos-react`. Este secreto solo se utiliza en tiempo de build del instalador de Windows y **no se incluye en el bundle del renderer**.

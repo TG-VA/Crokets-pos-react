@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const { fakeAutoUpdater } = vi.hoisted(() => {
   const listeners = new Map();
@@ -54,6 +57,7 @@ const {
   createUpdaterState,
   resolveReadToken,
   broadcastStatus,
+  loadEmbeddedUpdaterToken,
   registerUpdaterIpc,
   registerUpdaterEvents,
   scheduleInitialCheck,
@@ -100,6 +104,54 @@ describe("electron/updaterService", () => {
       expect(resolveReadToken({ CROKETS_GH_READ_TOKEN: "secret-token" })).toBe(
         "secret-token"
       );
+    });
+
+    it("debe preferir el token de variable de entorno sobre el embebido", () => {
+      expect(
+        resolveReadToken(
+          { CROKETS_GH_READ_TOKEN: "env-token" },
+          { ghReadToken: "embedded-token" }
+        )
+      ).toBe("env-token");
+    });
+
+    it("debe devolver el token embebido si no hay variable de entorno", () => {
+      expect(resolveReadToken({}, { ghReadToken: "embedded-token" })).toBe(
+        "embedded-token"
+      );
+    });
+
+    it("debe devolver null si no hay variable de entorno ni token embebido", () => {
+      expect(resolveReadToken({}, {})).toBeNull();
+    });
+
+    it("debe manejar archivos de configuracion inexistentes sin arrojar excepciones", () => {
+      expect(() => resolveReadToken({}, { ghReadToken: null })).not.toThrow();
+      expect(() => resolveReadToken({})).not.toThrow();
+      expect(loadEmbeddedUpdaterToken("/tmp/no-existe-config.json")).toBeNull();
+    });
+
+    it("lee el token desde un archivo valido y devuelve null ante JSON corrupto o token vacio", () => {
+      const dir = mkdtempSync(join(tmpdir(), "updater-config-"));
+      try {
+        const validPath = join(dir, "valid.json");
+        writeFileSync(validPath, '{"ghReadToken": "  tok-file-456  "}\n');
+        expect(loadEmbeddedUpdaterToken(validPath)).toBe("tok-file-456");
+
+        const corruptPath = join(dir, "corrupt.json");
+        writeFileSync(corruptPath, "{not-json");
+        expect(loadEmbeddedUpdaterToken(corruptPath)).toBeNull();
+
+        const blankTokenPath = join(dir, "blank-token.json");
+        writeFileSync(blankTokenPath, '{"ghReadToken": "   "}\n');
+        expect(loadEmbeddedUpdaterToken(blankTokenPath)).toBeNull();
+
+        const emptyObjectPath = join(dir, "empty-object.json");
+        writeFileSync(emptyObjectPath, "{}\n");
+        expect(loadEmbeddedUpdaterToken(emptyObjectPath)).toBeNull();
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     });
   });
 
@@ -357,6 +409,28 @@ describe("electron/updaterService", () => {
       expect(fakeAutoUpdater.autoInstallOnAppQuit).toBe(true);
       expect(fakeAutoUpdater.requestHeaders.Authorization).toBe("token tok123");
       expect(fakeAutoUpdater.on).toHaveBeenCalled();
+
+      result.cancelInitialCheck();
+    });
+
+    it("en produccion (isDev: false) configura autoUpdater usando token embebido si no hay variable de entorno", () => {
+      vi.useFakeTimers();
+      const fakeBrowserWindow = { getAllWindows: () => [] };
+
+      const result = initAutoUpdater({
+        app: fakeApp,
+        isDev: false,
+        ipcMain: fakeIpcMain,
+        BrowserWindow: fakeBrowserWindow,
+        env: {},
+        embeddedConfig: { ghReadToken: "tok-embedded-123" },
+        updater: fakeAutoUpdater,
+      });
+
+      expect(typeof result.getStatus).toBe("function");
+      expect(fakeAutoUpdater.requestHeaders.Authorization).toBe(
+        "token tok-embedded-123"
+      );
 
       result.cancelInitialCheck();
     });
