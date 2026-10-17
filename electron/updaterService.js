@@ -56,12 +56,15 @@ function resolveReadToken(env, embeddedConfig) {
   if (env && (env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN)) {
     return env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN || null;
   }
-  if (
-    embeddedConfig &&
-    typeof embeddedConfig.ghReadToken === "string" &&
-    embeddedConfig.ghReadToken.trim()
-  ) {
-    return embeddedConfig.ghReadToken.trim();
+  if (typeof embeddedConfig !== "undefined") {
+    if (
+      embeddedConfig &&
+      typeof embeddedConfig.ghReadToken === "string" &&
+      embeddedConfig.ghReadToken.trim()
+    ) {
+      return embeddedConfig.ghReadToken.trim();
+    }
+    return null;
   }
   const embedded = loadEmbeddedUpdaterToken();
   if (embedded) {
@@ -180,6 +183,7 @@ function initAutoUpdater({
   BrowserWindow,
   env = process.env,
   updater,
+  embeddedConfig,
 }) {
   const state = createUpdaterState();
   const getResolvedUpdater = () => updater || (isDev ? null : getAutoUpdater());
@@ -206,7 +210,7 @@ function initAutoUpdater({
   }
 
   const activeUpdater = getResolvedUpdater();
-  configureAutoUpdater(env, activeUpdater);
+  configureAutoUpdater(env, activeUpdater, embeddedConfig);
   registerUpdaterEvents({ BrowserWindow, state, updater: activeUpdater });
 
   const cancelInitialCheck = scheduleInitialCheck(checkForUpdates);

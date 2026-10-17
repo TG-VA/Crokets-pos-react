@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const { fakeAutoUpdater } = vi.hoisted(() => {
   const listeners = new Map();
@@ -383,6 +383,28 @@ describe("electron/updaterService", () => {
       expect(fakeAutoUpdater.autoInstallOnAppQuit).toBe(true);
       expect(fakeAutoUpdater.requestHeaders.Authorization).toBe("token tok123");
       expect(fakeAutoUpdater.on).toHaveBeenCalled();
+
+      result.cancelInitialCheck();
+    });
+
+    it("en produccion (isDev: false) configura autoUpdater usando token embebido si no hay variable de entorno", () => {
+      vi.useFakeTimers();
+      const fakeBrowserWindow = { getAllWindows: () => [] };
+
+      const result = initAutoUpdater({
+        app: fakeApp,
+        isDev: false,
+        ipcMain: fakeIpcMain,
+        BrowserWindow: fakeBrowserWindow,
+        env: {},
+        embeddedConfig: { ghReadToken: "tok-embedded-123" },
+        updater: fakeAutoUpdater,
+      });
+
+      expect(typeof result.getStatus).toBe("function");
+      expect(fakeAutoUpdater.requestHeaders.Authorization).toBe(
+        "token tok-embedded-123"
+      );
 
       result.cancelInitialCheck();
     });
