@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 import AppModal from "../../../AppModal/AppModal";
@@ -69,6 +69,15 @@ const PaymentModal = memo(
     const safeTotal = Number(total || 0);
     const isZeroTotalSale = safeTotal <= 0;
     const numericExchangeRate = toNumber(exchangeRate);
+
+    const visiblePaymentMethods = useMemo(
+      () =>
+        PAYMENT_METHODS.filter(
+          (m) =>
+            !(m.id === "Dolares" && cashOpSettings.acceptUsdPayments === false)
+        ),
+      [cashOpSettings.acceptUsdPayments]
+    );
 
     const closeAppModal = useCallback(
       () =>
@@ -310,6 +319,23 @@ const PaymentModal = memo(
       ]
     );
 
+    const navigatePaymentMethod = useCallback(
+      (direction) => {
+        if (isZeroTotalSale) return;
+        setSelectedPaymentMethod((current) => {
+          const index = visiblePaymentMethods.findIndex(
+            (m) => m.id === current
+          );
+          if (index === -1) return current;
+          const nextIndex = index + direction;
+          if (nextIndex < 0 || nextIndex >= visiblePaymentMethods.length)
+            return current;
+          return visiblePaymentMethods[nextIndex].id;
+        });
+      },
+      [isZeroTotalSale, visiblePaymentMethods]
+    );
+
     // Segun la preferencia de impresion guardada en Configuracion, el cobro con
     // impresion puede pedir una confirmacion previa antes de enviar el ticket.
     // Se lee en el momento del cobro para reflejar cambios hechos en Settings.
@@ -351,6 +377,12 @@ const PaymentModal = memo(
         } else if (e.key === "F2") {
           stop();
           processPayment(false);
+        } else if (e.key === "ArrowRight") {
+          stop();
+          navigatePaymentMethod(1);
+        } else if (e.key === "ArrowLeft") {
+          stop();
+          navigatePaymentMethod(-1);
         }
       };
       document.addEventListener("keydown", handleKeyDown);
@@ -363,6 +395,7 @@ const PaymentModal = memo(
       closePaymentModal,
       processPayment,
       startPaymentWithPrint,
+      navigatePaymentMethod,
     ]);
 
     useEffect(() => {
@@ -439,13 +472,7 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {PAYMENT_METHODS.filter(
-                (m) =>
-                  !(
-                    m.id === "Dolares" &&
-                    cashOpSettings.acceptUsdPayments === false
-                  )
-              ).map((m) => (
+              {visiblePaymentMethods.map((m) => (
                 <button
                   key={m.id}
                   type="button"
