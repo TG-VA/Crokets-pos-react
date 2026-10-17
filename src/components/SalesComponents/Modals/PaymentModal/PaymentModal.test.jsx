@@ -134,4 +134,49 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
 
     expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
   });
+
+  describe("navegacion por flechas entre formas de pago", () => {
+    it("avanza con ArrowRight desde Efectivo y da foco al input del metodo", () => {
+      renderModal();
+
+      expect(screen.getByLabelText("Pagó Con:")).toBeTruthy();
+
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+
+      expect(screen.getByLabelText("Pagó Con (USD):")).toBeTruthy();
+    });
+
+    it("retrocede con ArrowLeft y no da la vuelta en el primer metodo", () => {
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowLeft" });
+
+      expect(screen.getByLabelText("Pagó Con:")).toBeTruthy();
+    });
+
+    it("no da la vuelta en el ultimo metodo al presionar ArrowRight", () => {
+      renderModal();
+
+      for (let i = 0; i < 5; i += 1) {
+        fireEvent.keyDown(document, { key: "ArrowRight" });
+      }
+
+      expect(
+        screen.getByLabelText("Información de Transferencia:")
+      ).toBeTruthy();
+    });
+
+    it("omite Dolares al navegar cuando acceptUsdPayments esta desactivado", () => {
+      window.localStorage.setItem(
+        "cash_operation_settings",
+        JSON.stringify({ acceptUsdPayments: false })
+      );
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+
+      expect(screen.getByLabelText("Efectivo:")).toBeTruthy();
+      expect(screen.queryByLabelText("Pagó Con (USD):")).toBeNull();
+    });
+  });
 });
