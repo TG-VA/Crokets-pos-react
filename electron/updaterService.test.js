@@ -54,6 +54,7 @@ const {
   createUpdaterState,
   resolveReadToken,
   broadcastStatus,
+  loadEmbeddedUpdaterToken,
   registerUpdaterIpc,
   registerUpdaterEvents,
   scheduleInitialCheck,
@@ -100,6 +101,31 @@ describe("electron/updaterService", () => {
       expect(resolveReadToken({ CROKETS_GH_READ_TOKEN: "secret-token" })).toBe(
         "secret-token"
       );
+    });
+
+    it("debe preferir el token de variable de entorno sobre el embebido", () => {
+      expect(
+        resolveReadToken(
+          { CROKETS_GH_READ_TOKEN: "env-token" },
+          { ghReadToken: "embedded-token" }
+        )
+      ).toBe("env-token");
+    });
+
+    it("debe devolver el token embebido si no hay variable de entorno", () => {
+      expect(resolveReadToken({}, { ghReadToken: "embedded-token" })).toBe(
+        "embedded-token"
+      );
+    });
+
+    it("debe devolver null si no hay variable de entorno ni token embebido", () => {
+      expect(resolveReadToken({}, {})).toBeNull();
+    });
+
+    it("debe manejar archivos de configuración corruptos o inexistentes sin arrojar excepciones", () => {
+      expect(() => resolveReadToken({}, { ghReadToken: null })).not.toThrow();
+      expect(() => resolveReadToken({})).not.toThrow();
+      expect(loadEmbeddedUpdaterToken("/tmp/no-existe-config.json")).toBeNull();
     });
   });
 
