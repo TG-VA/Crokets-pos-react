@@ -38,6 +38,17 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build:frontend
 
+      - name: Inject embedded updater read token
+        shell: bash
+        env:
+          GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
+        run: |
+          if [ -n "$GH_READ_TOKEN" ]; then
+            printf '{"ghReadToken": "%s"}' "$GH_READ_TOKEN" > electron/updaterConfig.json
+          else
+            printf '{}' > electron/updaterConfig.json
+          fi
+
       - name: Build Electron Windows installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
