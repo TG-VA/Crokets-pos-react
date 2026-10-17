@@ -19,12 +19,58 @@ function createUpdaterState() {
 // del entorno; esta variable permite usar un token de lectura acotado.
 const READ_TOKEN_ENV_VAR = "CROKETS_GH_READ_TOKEN";
 
-// Token de lectura dedicado para el feed del repositorio privado.
-function resolveReadToken(env) {
-  return env[READ_TOKEN_ENV_VAR] || null;
+// Ruta del archivo de configuración embebido para el token del auto-updater.
+const EMBEDDED_UPDATER_CONFIG_PATH = "./updaterConfig.json";
+
+// Carga el token de lectura embebido desde el archivo de configuración.
+// Debe ser tolerante a errores: si el archivo no existe o está corrupto,
+// devuelve null sin arrojar excepciones.
+function loadEmbeddedUpdaterToken(configPath = EMBEDDED_UPDATER_CONFIG_PATH) {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const resolvedPath = path.isAbsolute(configPath)
+      ? configPath
+      : path.resolve(__dirname, configPath);
+    if (!fs.existsSync(resolvedPath)) {
+      return null;
+    }
+    const raw = fs.readFileSync(resolvedPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed.ghReadToken === "string" &&
+      parsed.ghReadToken.trim()
+    ) {
+      return parsed.ghReadToken.trim();
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
-function configureAutoUpdater(env, updater = getAutoUpdater()) {
+// Token de lectura dedicado para el feed del repositorio privado.
+// Jerarquía: 1) Variable de entorno, 2) Token embebido, 3) null
+function resolveReadToken(env, embeddedConfig) {
+  if (env && (env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN)) {
+    return env[READ_TOKEN_ENV_VAR] || env.GH_TOKEN || null;
+  }
+  if (
+    embeddedConfig &&
+    typeof embeddedConfig.ghReadToken === "string" &&
+    embeddedConfig.ghReadToken.trim()
+  ) {
+    return embeddedConfig.ghReadToken.trim();
+  }
+  const embedded = loadEmbeddedUpdaterToken();
+  if (embedded) {
+    return embedded;
+  }
+  return null;
+}
+
+function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
   if (!updater) {
     return;
   }
@@ -33,7 +79,7 @@ function configureAutoUpdater(env, updater = getAutoUpdater()) {
   updater.autoInstallOnAppQuit = true;
   updater.allowPrerelease = false;
 
-  const token = resolveReadToken(env);
+  const token = resolveReadToken(env, embeddedConfig);
   if (token) {
     updater.requestHeaders = {
       ...(updater.requestHeaders ?? {}),
@@ -176,6 +222,7 @@ module.exports = {
   createUpdaterState,
   getAutoUpdater,
   initAutoUpdater,
+  loadEmbeddedUpdaterToken,
   registerUpdaterEvents,
   registerUpdaterIpc,
   resolveReadToken,
