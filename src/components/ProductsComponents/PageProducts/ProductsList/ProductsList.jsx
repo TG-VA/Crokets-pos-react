@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
 import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
