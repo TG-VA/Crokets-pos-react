@@ -24,6 +24,7 @@ const { fakeAutoUpdater } = vi.hoisted(() => {
         Promise.resolve({ updateInfo: { version: "1.0.1" } })
       ),
       quitAndInstall: vi.fn(),
+      setFeedURL: vi.fn(),
     },
   };
 });
@@ -175,7 +176,7 @@ describe("electron/updaterService", () => {
   });
 
   describe("configureAutoUpdater", () => {
-    it("configura flags y cabecera de autorizacion con token", () => {
+    it("configura flags, cabecera de autorizacion, feedURL y GH_TOKEN", () => {
       configureAutoUpdater(
         { CROKETS_GH_READ_TOKEN: "abc123" },
         fakeAutoUpdater
@@ -184,6 +185,14 @@ describe("electron/updaterService", () => {
       expect(fakeAutoUpdater.autoInstallOnAppQuit).toBe(true);
       expect(fakeAutoUpdater.allowPrerelease).toBe(false);
       expect(fakeAutoUpdater.requestHeaders.Authorization).toBe("token abc123");
+      expect(process.env.GH_TOKEN).toBe("abc123");
+      expect(fakeAutoUpdater.setFeedURL).toHaveBeenCalledWith({
+        provider: "github",
+        owner: "TG-VA",
+        repo: "Crokets-pos-react",
+        private: true,
+        token: "abc123",
+      });
     });
   });
 

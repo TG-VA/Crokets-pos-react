@@ -81,10 +81,28 @@ function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
 
   const token = resolveReadToken(env, embeddedConfig);
   if (token) {
+    // electron-updater requiere GH_TOKEN en el entorno para instanciar PrivateGitHubProvider
+    // en lugar del GitHubProvider publico para repositorios privados.
+    process.env.GH_TOKEN = process.env.GH_TOKEN || token;
+
     updater.requestHeaders = {
       ...(updater.requestHeaders ?? {}),
       Authorization: `token ${token}`,
     };
+
+    if (typeof updater.setFeedURL === "function") {
+      try {
+        updater.setFeedURL({
+          provider: "github",
+          owner: "TG-VA",
+          repo: "Crokets-pos-react",
+          private: true,
+          token,
+        });
+      } catch (err) {
+        console.error("Error al configurar feed URL del auto-updater:", err);
+      }
+    }
   }
 }
 
