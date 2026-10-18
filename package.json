@@ -109,7 +109,8 @@
       "uninstallerIcon": "icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "POS CROKETS"
+      "shortcutName": "POS CROKETS",
+      "artifactName": "POS-CROKETS-Setup-${version}.${ext}"
     }
   }
 }

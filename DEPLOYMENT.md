@@ -147,29 +147,44 @@ La ejecución resultante publica automáticamente un GitHub Release con el insta
 
 Las terminales de producción se actualizan solas en segundo plano con `electron-updater` contra los
 GitHub Releases del repositorio (`TG-VA/Crokets-pos-react`). No hay que reinstalar a mano en cada
-sucursal.
+sucursal ni configurar variables de entorno en las máquinas de los clientes.
 
 ### Cómo funciona
 
+- **Token embebido para repositorio privado:** al compilar el instalador en GitHub Actions, el secreto
+  `GH_READ_TOKEN` (token de GitHub con permiso de lectura de contenidos sobre el repositorio privado) se
+  inyecta en `electron/updaterConfig.json`. El archivo está en `.gitignore` y se empaqueta dentro del
+  instalador. Al iniciar, `electron/updaterService.js` lee el token e inicializa el auto-updater.
+- **Activación de `PrivateGitHubProvider`:** `electron-updater` requiere que el token esté presente en
+  `process.env.GH_TOKEN` y configurado en `updater.setFeedURL(...)` para instanciar `PrivateGitHubProvider`
+  en lugar del provider público (que devolvería 404 al consultar un repositorio privado).
+- **Jerarquía de resolución del token:**
+  1. Variable de entorno del sistema (`CROKETS_GH_READ_TOKEN` o `GH_TOKEN`), si existiera.
+  2. Token embebido en `electron/updaterConfig.json` (inyectado durante el build en CI).
+  3. `null` (modo público o sin autenticación).
+- **Convención de nombres de artefacto (`artifactName`):** en `package.json`, la sección `build.nsis`
+  define `"artifactName": "POS-CROKETS-Setup-${version}.${ext}"`. Es indispensable que el nombre no
+  contenga espacios: al subir artefactos a GitHub Releases, la API de GitHub reemplaza automáticamente los
+  espacios por puntos (`POS.CROKETS.Setup.X.X.X.exe`), mientras que el descriptor `latest.yml` genera
+  nombres con guiones (`POS-CROKETS-Setup-X.X.X.exe`). Al usar guiones directos en el `artifactName`, el
+  nombre subido a GitHub coincide de forma exacta con el de `latest.yml`, evitando el fallo
+  `ERR_UPDATER_ASSET_NOT_FOUND` al resolver archivos en `PrivateGitHubProvider`.
 - **Servicio del proceso principal** (`electron/updaterService.js`, inicializado desde
   `electron/main.js` tras crear la ventana): configura `autoDownload = true`,
   `autoInstallOnAppQuit = true` y `allowPrerelease = false`. Diez segundos después del arranque
-  dispara una consulta silenciosa, de modo que no compite con la carga inicial de ventas. En
-  desarrollo (`isDev`) no consulta ni descarga nada.
+  (`INITIAL_CHECK_DELAY_MS`) dispara una consulta silenciosa a GitHub Releases, de modo que no
+  compite con la carga inicial de ventas. En desarrollo (`isDev`) no consulta ni descarga nada.
 - **Descarga desatendida:** si el Release tiene una versión mayor que la instalada, el `.exe`
-  diferencial (`.blockmap`) se descarga en segundo plano. El cajero no ve interrupciones ni diálogos
-  del sistema; la app sigue operable.
-- **Aviso discreto y reinicio:** al completarse la descarga, el proceso principal avisa al renderer
-  y `src/components/Footer/Footer.jsx` muestra un botón `Actualización vX.X.X lista (Reiniciar)`
-  junto a la versión instalada. Al pulsarlo, o al cerrar la app (`autoInstallOnAppQuit`), la
-  actualización se aplica en segundos.
-- **Datos preservados:** el `device_code` y el resto de la configuración de `electron-store` viven
-  fuera del bundle actualizado (en `%APPDATA%`), por lo que sobreviven al reinicio.
-- **Repositorio privado:** `publish.private = true` hace que el provider de GitHub lea
-  `GH_TOKEN`/`GITHUB_TOKEN` del entorno. Como alternativa se puede definir
-  `CROKETS_GH_READ_TOKEN` (token de lectura acotado); se lee solo en el proceso principal y nunca
-  debe usar prefijo `VITE_` (Vite lo incrustaría en el bundle del renderer). Ver
-  `docs/ENV_VARIABLES.md`.
+  diferencial (`.blockmap`) se descarga automáticamente en segundo plano. El cajero no ve interrupciones
+  ni diálogos del sistema; la app sigue operable durante todo el proceso.
+- **Aviso discreto y reinicio:** al completarse la descarga, el proceso principal notifica al renderer
+  vía IPC (`update-status`) y `src/components/Footer/Footer.jsx` muestra el botón verde
+  `Actualización vX.X.X lista (Reiniciar)` en la esquina inferior izquierda, junto al indicador de versión.
+  Al hacer clic en el botón, o al cerrar la app (`autoInstallOnAppQuit`), la actualización se aplica en
+  segundos y el POS reinicia con la nueva versión.
+- **Datos locales preservados:** el `device_code`, la sesión de caja y la configuración de `electron-store`
+  residen fuera del bundle de la aplicación (en `%APPDATA%`), por lo que persisten íntegramente tras
+  cada actualización.
 
 ### Canales IPC
 
@@ -181,18 +196,29 @@ expone listener.
 ### Cómo publicar una actualización
 
 ```bash
-# 1. Incrementar version en package.json (ej. 1.0.1)
-# 2. Hacer commit y push a main
-# 3. Crear y subir el tag:
-git tag v1.0.1
-git push origin v1.0.1
+# 1. Incrementar versión en package.json (ej. 1.0.5) sin crear tag git automático
+npm version patch --no-git-tag-version
+
+# 2. Hacer commit en main
+git commit -am "chore(release): bump version to 1.0.5"
+
+# 3. Crear el tag correspondiente a la nueva versión
+git tag v1.0.5
+
+# 4. Enviar los cambios y el tag al repositorio remoto
+git push origin main --tags
 ```
 
-El tag dispara el workflow `Release Windows Installer`, que compila el instalador NSIS y publica un
-GitHub Release con el `.exe`, los `*.blockmap` y `latest.yml`. Las terminales con una versión anterior
-lo detectan en el siguiente arranque. Un `workflow_dispatch` (Opción A) **no** publica Release ni
-`latest.yml` en Releases: solo deja el artefacto descargable del workflow, por lo que no alimenta el
-auto-updater.
+El tag dispara el workflow `Release Windows Installer` (`.github/workflows/release-windows.yml`), que:
+
+1. Inyecta el token embebido desde `secrets.GH_READ_TOKEN`.
+2. Compila el instalador NSIS (`dist/POS-CROKETS-Setup-X.X.X.exe`), el mapa `.blockmap` y `dist/latest.yml`.
+3. Publica automáticamente el Release en GitHub con los tres artefactos adjuntos.
+
+Las terminales de producción detectarán la nueva versión en el siguiente arranque (10 segundos después de
+abrir la aplicación) y descargarán la actualización de forma desatendida. Un `workflow_dispatch` manual
+**no** publica Release ni `latest.yml` en Releases: solo deja el artefacto descargable del workflow, por lo
+que no alimenta el auto-updater.
 
 ## Checklist antes de distribuir a un cliente
 
