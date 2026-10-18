@@ -436,7 +436,10 @@ describe("electron mainProcess", () => {
       const buildPrintHarness = ({ printers = [{ name: "Termica" }] } = {}) => {
         const printWindow = {
           webContents: {
-            print: vi.fn(() => Promise.resolve({ success: true })),
+            print: vi.fn((opts, callback) => {
+              if (typeof callback === "function") callback(true);
+              return Promise.resolve({ success: true });
+            }),
             once: vi.fn((event, callback) => {
               if (event === "did-finish-load") callback();
             }),
@@ -487,8 +490,24 @@ describe("electron mainProcess", () => {
           expect.objectContaining({
             silent: true,
             pageSize: { width: 80000, height: 300000 },
-          })
+          }),
+          expect.any(Function)
         );
+        expect(printWindow.destroy).toHaveBeenCalled();
+      });
+
+      it("soporta impresion con la firma real basada en callback de Electron", async () => {
+        const { handlers, printWindow, sender } = buildPrintHarness();
+        printWindow.webContents.print = vi.fn((options, callback) => {
+          callback(true);
+        });
+
+        await expect(
+          handlers["print-ticket"]({ sender }, { ticketText: "TICKET NATIVO" })
+        ).resolves.toEqual({
+          success: true,
+          message: "Ticket impreso correctamente.",
+        });
         expect(printWindow.destroy).toHaveBeenCalled();
       });
 
@@ -554,7 +573,8 @@ describe("electron mainProcess", () => {
 
         expect(sender.getPrintersAsync).not.toHaveBeenCalled();
         expect(printWindow.webContents.print).toHaveBeenCalledWith(
-          expect.objectContaining({ deviceName: "Termica" })
+          expect.objectContaining({ deviceName: "Termica" }),
+          expect.any(Function)
         );
       });
 

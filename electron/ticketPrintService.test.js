@@ -4,6 +4,7 @@ import {
   buildTicketPrintDocument,
   buildTicketPrintOptions,
   escapeHtml,
+  executePrint,
   listPrinters,
   loadTicketDocument,
   openCashDrawer,
@@ -18,7 +19,10 @@ const createPrintWindow = (overrides = {}) => {
   const listeners = new Map();
 
   const webContents = {
-    print: vi.fn(() => Promise.resolve({ success: true })),
+    print: vi.fn((options, callback) => {
+      if (typeof callback === "function") callback(true);
+      return Promise.resolve({ success: true });
+    }),
     once: vi.fn((event, callback) => {
       listeners.set(event, callback);
     }),
@@ -273,12 +277,132 @@ describe("electron ticketPrintService", () => {
     });
   });
 
+  describe("executePrint", () => {
+    it("resuelve con exito cuando webContents.print invoca el callback con true", async () => {
+      const webContents = {
+        print: vi.fn((options, callback) => {
+          callback(true);
+        }),
+      };
+
+      await expect(executePrint(webContents, {})).resolves.toEqual({
+        success: true,
+        failureReason: undefined,
+      });
+      expect(webContents.print).toHaveBeenCalled();
+    });
+
+    it("resuelve con fallo y failureReason cuando el callback recibe false", async () => {
+      const webContents = {
+        print: vi.fn((options, callback) => {
+          callback(false, "Printer offline");
+        }),
+      };
+
+      await expect(executePrint(webContents, {})).resolves.toEqual({
+        success: false,
+        failureReason: "Printer offline",
+      });
+    });
+
+    it("soporta entornos o mocks que devuelven una Promesa", async () => {
+      const webContents = {
+        print: vi.fn(() => Promise.resolve({ success: true })),
+      };
+
+      await expect(executePrint(webContents, {})).resolves.toEqual({
+        success: true,
+      });
+    });
+
+    it("propaga el rechazo cuando la Promesa falla", async () => {
+      const webContents = {
+        print: vi.fn(() => Promise.reject(new Error("Device error"))),
+      };
+
+      await expect(executePrint(webContents, {})).rejects.toThrow(
+        "Device error"
+      );
+    });
+
+    it("protege contra doble resolucion si callback y Promesa se disparan", async () => {
+      const webContents = {
+        print: vi.fn((options, callback) => {
+          callback(true);
+          return Promise.resolve({ success: false, failureReason: "Ignored" });
+        }),
+      };
+
+      await expect(executePrint(webContents, {})).resolves.toEqual({
+        success: true,
+        failureReason: undefined,
+      });
+    });
+
+    it("propaga la excepcion cuando webContents.print lanza sincronamente", async () => {
+      const webContents = {
+        print: vi.fn(() => {
+          throw new Error("Fatal driver crash");
+        }),
+      };
+
+      await expect(executePrint(webContents, {})).rejects.toThrow(
+        "Fatal driver crash"
+      );
+    });
+  });
+
   describe("printTicket", () => {
     const run = (payload, printWindow = createPrintWindow()) =>
       printTicket({
         BrowserWindow: createBrowserWindow(printWindow),
         ...payload,
       });
+
+    it("imprime correctamente cuando el driver usa la firma nativa con callback de Electron", async () => {
+      const printWindow = createPrintWindow({
+        webContents: {
+          print: vi.fn((options, callback) => {
+            callback(true);
+          }),
+          once: vi.fn((event, cb) => {
+            if (event === "did-finish-load") cb();
+          }),
+          removeListener: vi.fn(),
+        },
+      });
+
+      await expect(run({ ticketText: "TICKET" }, printWindow)).resolves.toEqual(
+        {
+          success: true,
+          message: "Ticket impreso correctamente.",
+        }
+      );
+      expect(printWindow.destroy).toHaveBeenCalled();
+    });
+
+    it("propaga fallo cuando el driver usa la firma nativa con callback y devuelve false", async () => {
+      const printWindow = createPrintWindow({
+        webContents: {
+          print: vi.fn((options, callback) => {
+            callback(false, "Device disconnected");
+          }),
+          once: vi.fn((event, cb) => {
+            if (event === "did-finish-load") cb();
+          }),
+          removeListener: vi.fn(),
+        },
+      });
+
+      await expect(run({ ticketText: "TICKET" }, printWindow)).resolves.toEqual(
+        {
+          success: false,
+          message: "El sistema no pudo imprimir el ticket.",
+          error: "Device disconnected",
+        }
+      );
+      expect(printWindow.destroy).toHaveBeenCalled();
+    });
 
     it("imprime el texto codificado y destruye la ventana utilitaria", async () => {
       const printWindow = createPrintWindow();
@@ -300,7 +424,8 @@ describe("electron ticketPrintService", () => {
         expect.objectContaining({
           silent: true,
           pageSize: { width: 58000, height: 300000 },
-        })
+        }),
+        expect.any(Function)
       );
       expect(printWindow.destroy).toHaveBeenCalled();
     });
