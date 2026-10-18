@@ -258,7 +258,9 @@ describe("useProductsList paginacion server-side", () => {
       await capturedReload.current();
     });
 
-    await waitFor(() => expect(result.current.paginatedProducts).toHaveLength(8));
+    await waitFor(() =>
+      expect(result.current.paginatedProducts).toHaveLength(8)
+    );
     expect(result.current.selectedRowIndex).toBe(7);
     expect(result.current.selectedRowIndex).toBeLessThan(
       result.current.paginatedProducts.length
