@@ -339,6 +339,20 @@ describe("electron ticketPrintService", () => {
       });
     });
 
+    it("ignora el rechazo tardio de la Promesa cuando el callback ya resolvio", async () => {
+      const webContents = {
+        print: vi.fn((options, callback) => {
+          callback(true);
+          return Promise.reject(new Error("Late rejection"));
+        }),
+      };
+
+      await expect(executePrint(webContents, {})).resolves.toEqual({
+        success: true,
+        failureReason: undefined,
+      });
+    });
+
     it("propaga la excepcion cuando webContents.print lanza sincronamente", async () => {
       const webContents = {
         print: vi.fn(() => {
@@ -399,6 +413,29 @@ describe("electron ticketPrintService", () => {
           success: false,
           message: "El sistema no pudo imprimir el ticket.",
           error: "Device disconnected",
+        }
+      );
+      expect(printWindow.destroy).toHaveBeenCalled();
+    });
+
+    it("usa PRINT_JOB_REJECTED cuando el callback nativo no explica el fallo", async () => {
+      const printWindow = createPrintWindow({
+        webContents: {
+          print: vi.fn((options, callback) => {
+            callback(false);
+          }),
+          once: vi.fn((event, cb) => {
+            if (event === "did-finish-load") cb();
+          }),
+          removeListener: vi.fn(),
+        },
+      });
+
+      await expect(run({ ticketText: "TICKET" }, printWindow)).resolves.toEqual(
+        {
+          success: false,
+          message: "El sistema no pudo imprimir el ticket.",
+          error: "PRINT_JOB_REJECTED",
         }
       );
       expect(printWindow.destroy).toHaveBeenCalled();
