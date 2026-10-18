@@ -1,6 +1,6 @@
 {
   "name": "pos-crokets-react",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sistema POS CROKETS con React y Electron",
   "main": "electron/main.js",
   "private": true,
