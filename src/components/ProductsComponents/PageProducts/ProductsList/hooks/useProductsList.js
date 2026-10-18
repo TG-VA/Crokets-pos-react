@@ -205,6 +205,13 @@ export const useProductsList = () => {
 
   useProductsRealtime(branch?.id, reload);
 
+  // Si la pagina vigente se acorta (por ejemplo tras una recarga en tiempo
+  // real), el indice seleccionado no debe quedar fuera del rango de filas
+  // visibles. El ajuste durante el render evita un re-render adicional.
+  if (products.length > 0 && selectedRowIndex > products.length - 1) {
+    setSelectedRowIndex(products.length - 1);
+  }
+
   // El indice seleccionado y la pagina se reinician durante el render, en
   // lugar de desde un efecto que provocaba un re-render adicional. El scroll del
   // documento si es un efecto sobre el DOM y se queda en el efecto.
