@@ -24,8 +24,15 @@ vi.mock("../../../../../services/products/productCatalogService", () => ({
   fetchPaginatedBranchProducts,
 }));
 
+const { capturedReload } = vi.hoisted(() => ({
+  capturedReload: { current: null },
+}));
+
 vi.mock("../../../../../hooks/useProductsRealtime", () => ({
-  useProductsRealtime: vi.fn(() => ({ markLocalMutation: vi.fn() })),
+  useProductsRealtime: vi.fn((_branchId, onInvalidate) => {
+    capturedReload.current = onInvalidate;
+    return { markLocalMutation: vi.fn() };
+  }),
 }));
 
 import { useProductsList } from "./useProductsList";
@@ -56,13 +63,22 @@ const mockServicePage = ({ totalCount = 25 } = {}) => {
   );
 };
 
+const pressKey = (key) => {
+  act(() => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+    );
+  });
+};
+
 describe("useProductsList paginacion server-side", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    capturedReload.current = null;
     useBranch.mockReturnValue({ branch: { id: "b1", name: "Merida" } });
     fetchDepartments.mockResolvedValue({ success: true, data: [] });
-    mockServicePage({ totalCount: 25, pageSize: 10 });
+    mockServicePage({ totalCount: 25 });
   });
 
   it("inicializa en la pagina 1 con el pageSize configurado", async () => {
@@ -175,6 +191,75 @@ describe("useProductsList paginacion server-side", () => {
 
     act(() => result.current.handleRowClick(9));
     expect(result.current.selectedRowIndex).toBe(9);
+    expect(result.current.selectedRowIndex).toBeLessThan(
+      result.current.paginatedProducts.length
+    );
+  });
+
+  it("limita ArrowDown y ArrowUp al rango de filas de la pagina", async () => {
+    const { result } = renderHook(() => useProductsList());
+
+    await waitFor(() => expect(result.current.loadingProducts).toBe(false));
+
+    pressKey("End");
+    expect(result.current.selectedRowIndex).toBe(9);
+
+    pressKey("ArrowDown");
+    expect(result.current.selectedRowIndex).toBe(9);
+
+    pressKey("Home");
+    expect(result.current.selectedRowIndex).toBe(0);
+
+    pressKey("ArrowUp");
+    expect(result.current.selectedRowIndex).toBe(0);
+  });
+
+  it("limita PageDown y PageUp al tamano de pagina", async () => {
+    const { result } = renderHook(() => useProductsList());
+
+    await waitFor(() => expect(result.current.loadingProducts).toBe(false));
+
+    pressKey("PageDown");
+    expect(result.current.selectedRowIndex).toBe(9);
+
+    pressKey("PageUp");
+    expect(result.current.selectedRowIndex).toBe(0);
+  });
+
+  it("acota Home y End a las filas de la ultima pagina", async () => {
+    const { result } = renderHook(() => useProductsList());
+
+    await waitFor(() => expect(result.current.loadingProducts).toBe(false));
+
+    act(() => result.current.handlePageChange(3));
+    await waitFor(() => expect(result.current.currentPage).toBe(3));
+    await waitFor(() => expect(result.current.loadingProducts).toBe(false));
+
+    pressKey("End");
+    expect(result.current.selectedRowIndex).toBe(4);
+    expect(result.current.selectedRowIndex).toBeLessThan(
+      result.current.paginatedProducts.length
+    );
+
+    pressKey("Home");
+    expect(result.current.selectedRowIndex).toBe(0);
+  });
+
+  it("recorta el indice seleccionado cuando la pagina se acorta tras una recarga", async () => {
+    const { result } = renderHook(() => useProductsList());
+
+    await waitFor(() => expect(result.current.loadingProducts).toBe(false));
+
+    pressKey("End");
+    expect(result.current.selectedRowIndex).toBe(9);
+
+    mockServicePage({ totalCount: 8 });
+    await act(async () => {
+      await capturedReload.current();
+    });
+
+    await waitFor(() => expect(result.current.paginatedProducts).toHaveLength(8));
+    expect(result.current.selectedRowIndex).toBe(7);
     expect(result.current.selectedRowIndex).toBeLessThan(
       result.current.paginatedProducts.length
     );
