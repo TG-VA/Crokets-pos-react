@@ -78,6 +78,7 @@ function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
   updater.autoDownload = true;
   updater.autoInstallOnAppQuit = true;
   updater.allowPrerelease = false;
+  updater.logger = console;
 
   const token = resolveReadToken(env, embeddedConfig);
   if (token) {
