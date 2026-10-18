@@ -697,6 +697,13 @@ página es limitado y filtrado en el servidor.
 **Recomendación:** si otras vistas (Kardex, altas, inventario) superan el umbral, migrar sus
 consultas al mismo patrón RPC paginado en lugar de `fetchBranchCatalog`.
 
+**Actualización (18 oct 2026):** Resolución del bloqueo de paginación en página 1
+(`fix/products-list-pagination`). Se eliminó el `useEffect` residual que recalculaba la página desde
+`selectedRowIndex / pageSize` (que forzaba la página a 1 tras cualquier `handlePageChange`), se
+alineó la selección de filas con el índice local (`rowIndex`) en `ProductsList.jsx`, se agregó
+protección clamp durante el render ante reducciones de filas por recargas en tiempo real, y se
+blindó la suite con 10 tests unitarios en `useProductsList.test.js`.
+
 ### 19. Base de la comisión % en la RPC difiere del client legacy (bruta vs neta)
 
 **Estado:** Resuelto — 17 sep 2026, verificado con datos reales de Supabase; decisión: mantener base neta (sin cambio de código).
@@ -2290,6 +2297,45 @@ documentación de la resolución va en un commit `docs(debt)` aparte.
 era alto en la práctica: casi cualquier archivo de `src/` que se modificara hacía fallar el PR por
 formato, en archivos cuyo cambio funcional era independiente del estilo. No era un obstáculo que se
 pudiera absorber PR a PR sin una barrida previa.
+
+---
+
+### 64. Warning de linter (react-hooks/exhaustive-deps) sobre `normalizeDept` en `useProductsList`
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (deuda técnica / advertencia de ESLint).
+
+En `src/components/ProductsComponents/PageProducts/ProductsList/hooks/useProductsList.js:34`, la
+función utilitaria `normalizeDept` está declarada en el cuerpo del hook sin memoización. Al estar
+incluida en las dependencias del `useMemo` de `selectedDepartmentId`, ESLint reporta advertencia de
+dependencias inestables en cada render.
+
+**Impacto:** Ninguno en ejecución (la función siempre hace lo mismo), pero genera ruido en el linter
+y viola la estabilidad de dependencias en hooks.
+
+**Solución recomendada:** Extraer `normalizeDept` fuera del hook `useProductsList` a nivel de
+módulo, ya que es una función pura que no depende de estado ni de props.
+
+---
+
+### 65. Desmontaje completo de la UI en la lista de productos al paginar o filtrar (flicker de carga)
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (experiencia de usuario / UX).
+
+En `src/components/ProductsComponents/PageProducts/ProductsList/ProductsList.jsx:37-48`, la guarda
+anticipada `if (loadingProducts)` retorna una vista mínima ("Cargando productos...") que desmonta la
+barra de herramientas, el campo de búsqueda, el selector de departamentos, la tabla y el componente
+`PaginationBar` durante la resolución asíncrona de una nueva página o filtro.
+
+**Impacto:** Provoca un parpadeo visual molesto (layout shift / flicker) cada vez que el usuario
+cambia de página o introduce texto en el buscador.
+
+**Solución recomendada:** Mantener los controles y la estructura de la tabla montados durante la
+recarga, mostrando un indicador sutil (ej. spinner o overlay de opacidad sobre el cuerpo de la
+tabla) mientras `loadingProducts` sea verdadero, sin desmontar el árbol de componentes.
 
 ---
 

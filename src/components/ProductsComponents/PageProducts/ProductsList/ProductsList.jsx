@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
 import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
@@ -184,39 +183,35 @@ const ProductsList = () => {
           </thead>
 
           <tbody>
-            {paginatedProducts.map((product, rowIndex) => {
-              const index = pageStart + rowIndex;
-
-              return (
-                <tr
-                  key={`${product.product_id || product.id || product.codigo}-${index}`}
-                  ref={index === selectedRowIndex ? selectedRowRef : null}
-                  className={[
-                    styles.productRow,
-                    index === selectedRowIndex ? styles.selectedRow : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => handleRowClick(index)}
-                >
-                  <td>{product.codigo}</td>
-                  <td className={styles.descriptionCell}>
-                    <span className={styles.scrollText}>
-                      {product.descripcion}
-                    </span>
-                  </td>
-                  <td className={styles.departmentCell}>
-                    {product.departamento}
-                  </td>
-                  <td className={styles.priceCell}>
-                    {formatMoney(product.costo)}
-                  </td>
-                  <td className={styles.priceCell}>
-                    {formatMoney(product.precio)}
-                  </td>
-                </tr>
-              );
-            })}
+            {paginatedProducts.map((product, rowIndex) => (
+              <tr
+                key={product.product_id || product.id || product.codigo}
+                ref={rowIndex === selectedRowIndex ? selectedRowRef : null}
+                className={[
+                  styles.productRow,
+                  rowIndex === selectedRowIndex ? styles.selectedRow : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => handleRowClick(rowIndex)}
+              >
+                <td>{product.codigo}</td>
+                <td className={styles.descriptionCell}>
+                  <span className={styles.scrollText}>
+                    {product.descripcion}
+                  </span>
+                </td>
+                <td className={styles.departmentCell}>
+                  {product.departamento}
+                </td>
+                <td className={styles.priceCell}>
+                  {formatMoney(product.costo)}
+                </td>
+                <td className={styles.priceCell}>
+                  {formatMoney(product.precio)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
