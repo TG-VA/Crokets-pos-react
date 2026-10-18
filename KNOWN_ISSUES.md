@@ -2144,6 +2144,8 @@ persisten; el clamping de valores fraccionarios nunca devuelve 0; y los tres lla
 emisión real y no solo la pantalla de configuración. Los límites de la RPC `get_branch_by_device`
 siguen siendo la vía para resolver la sucursal por terminal cuando exista el hardware (ver #30).
 
+**Actualización (18 oct 2026):** se corrigió una discrepancia de firma en `electron/ticketPrintService.js` donde `webContents.print` de Electron utiliza un callback (`print(options, callback): void`) y no retorna una Promesa. Al invocar `await webContents.print(...)` sin callback, la llamada retornaba `undefined`, activando erróneamente la rama `!result?.success` y destruyendo la ventana utilitaria en `finally` antes de que Chromium despachara el trabajo. Se introdujo `executePrint` para encapsular la firma basada en callback de Electron con soporte retrocompatible para Promesas y protección antirrebote. Adicionalmente, se eliminó el scroll horizontal en el simulador térmico de `SettingsPrinters.module.css` aplicando `overflow-x: hidden`, `scrollbar-gutter: stable` y holgura de 4px para bordes y rasterizado subpixel.
+
 ---
 
 ### 60. Los pasos incrementales de ESLint y Prettier en CI no ejecutan nada
