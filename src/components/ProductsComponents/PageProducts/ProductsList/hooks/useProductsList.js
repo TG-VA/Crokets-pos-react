@@ -205,13 +205,6 @@ export const useProductsList = () => {
 
   useProductsRealtime(branch?.id, reload);
 
-  useEffect(() => {
-    const page = Math.floor(selectedRowIndex / pageSize) + 1;
-    if (page !== currentPage && page <= totalPages) {
-      changePage(page);
-    }
-  }, [selectedRowIndex, currentPage, totalPages, pageSize, changePage]);
-
   // El indice seleccionado y la pagina se reinician durante el render, en
   // lugar de desde un efecto que provocaba un re-render adicional. El scroll del
   // documento si es un efecto sobre el DOM y se queda en el efecto.
