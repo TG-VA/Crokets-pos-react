@@ -191,6 +191,45 @@ function destroyPrintWindow(printWindow) {
 }
 
 /**
+ * Envuelve `webContents.print` en una Promesa compatible con la firma real de Electron
+ * (`print(options, callback): void`) y retrocompatible con mocks o entornos que devuelven
+ * una Promesa. Las excepciones del driver se propagan para ser capturadas en `printTicket`.
+ */
+function executePrint(webContents, printOptions) {
+  return new Promise((resolve, reject) => {
+    let completed = false;
+
+    const finish = (success, failureReason) => {
+      if (completed) return;
+      completed = true;
+      resolve({ success: Boolean(success), failureReason });
+    };
+
+    try {
+      const maybePromise = webContents.print(printOptions, finish);
+      if (maybePromise && typeof maybePromise.then === "function") {
+        maybePromise
+          .then((res) => {
+            if (completed) return;
+            completed = true;
+            resolve(res && typeof res === "object" ? res : { success: true });
+          })
+          .catch((err) => {
+            if (completed) return;
+            completed = true;
+            reject(err);
+          });
+      }
+    } catch (error) {
+      if (!completed) {
+        completed = true;
+        reject(error);
+      }
+    }
+  });
+}
+
+/**
  * Imprime el texto sobre una ventana utilitaria oculta y siempre devuelve el contrato
  * `{ success, message, error? }`: las excepciones del driver se traducen al mismo contrato
  * en lugar de propagarse al canal IPC.
@@ -214,7 +253,8 @@ async function printTicket({ BrowserWindow, ticketText, options = {} }) {
       toDataUrl(buildTicketPrintDocument(ticketText, profile, options))
     );
 
-    const result = await printWindow.webContents.print(
+    const result = await executePrint(
+      printWindow.webContents,
       buildTicketPrintOptions(profile, options)
     );
 
@@ -324,6 +364,7 @@ module.exports = {
   buildTicketPrintDocument,
   buildTicketPrintOptions,
   escapeHtml,
+  executePrint,
   listPrinters,
   loadTicketDocument,
   openCashDrawer,
