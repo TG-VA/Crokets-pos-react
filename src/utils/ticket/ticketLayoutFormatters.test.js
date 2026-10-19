@@ -14,6 +14,7 @@ import {
   formatItemLine,
   formatTotalLine,
   pushItemDetailLines,
+  sanitizeTicketText,
 } from "./ticketLayoutFormatters";
 
 describe("ticketLayoutFormatters", () => {
@@ -106,6 +107,37 @@ describe("ticketLayoutFormatters", () => {
       const lines = [];
       pushItemDetailLines(lines, "P.U. $80.00");
       expect(lines).toEqual(["     P.U. $80.00"]);
+    });
+  });
+
+  describe("sanitizeTicketText", () => {
+    it("elimina acentos en vocales minúsculas y mayúsculas", () => {
+      expect(sanitizeTicketText("áéíóú")).toBe("aeiou");
+      expect(sanitizeTicketText("ÁÉÍÓÚ")).toBe("AEIOU");
+    });
+
+    it("convierte ñ y Ñ a n y N", () => {
+      expect(sanitizeTicketText("ñ")).toBe("n");
+      expect(sanitizeTicketText("Ñ")).toBe("N");
+    });
+
+    it("elimina ¡ y ¿", () => {
+      expect(sanitizeTicketText("¡Hola!")).toBe("Hola!");
+      expect(sanitizeTicketText("¿Cómo estás?")).toBe("Como estas?");
+    });
+
+    it("convierte guiones largos y comillas tipográficas", () => {
+      expect(sanitizeTicketText("—")).toBe("-");
+      expect(sanitizeTicketText("–")).toBe("-");
+      expect(sanitizeTicketText("“”")).toBe('""');
+      expect(sanitizeTicketText("‘’")).toBe("''");
+    });
+
+    it("tolera null, undefined, números y cadenas vacías", () => {
+      expect(sanitizeTicketText(null)).toBe("");
+      expect(sanitizeTicketText(undefined)).toBe("");
+      expect(sanitizeTicketText("")).toBe("");
+      expect(sanitizeTicketText(123)).toBe("123");
     });
   });
 });
