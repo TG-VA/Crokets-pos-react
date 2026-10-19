@@ -2341,6 +2341,27 @@ tabla) mientras `loadingProducts` sea verdadero, sin desmontar el árbol de comp
 
 ---
 
+### 66. Caracteres acentuados corruptos (conflicto CP437) y división de palabras en tickets térmicos
+
+**Estado:** Resuelto (18 oct 2026).
+
+**Severidad:** Alto.
+
+La impresión física en impresoras térmicas mostró caracteres acentuados (`á, é, í, ó, ú, ñ`) distorsionados por una divergencia entre las páginas de código: el software generaba texto en Windows-1252/UTF-8, pero el firmware térmico de hardware asumía código de página CP437. Además, en rollos de 58 mm (32 columnas) la leyenda "Impresión térmica conectada correctamente" excedía el ancho útil, provocando un corte arbitrario que rompía palabras (ej. `corr / ectamente`) al no dividirse correctamente.
+
+**Solución aplicada:**
+
+- **Normalización para hardware térmico:** Se creó la función `sanitizeTicketText()` en `src/utils/ticket/ticketLayoutFormatters.js` y su equivalente en `electron/ticketPrintService.js`. Esta función:
+  - Elimina acentos y diéresis mediante `normalize("NFD")` y reemplazo de `\u0300-\u036f`.
+  - Convierte `ñ, Ñ` a `n, N`.
+  - Elimina signos invertidos `¡¿`.
+  - Normaliza guiones largos (`—, –`) y comillas tipográficas (`“”‘’`), además de espacios no rompibles (`\u00A0`).
+- **Sanitización en el flujo de impresión:** `electron/ticketPrintService.js` aplica `sanitizeTicketText()` dentro de `buildTicketPrintDocument()` antes de `escapeHtml()`, garantizando que cualquier ticket enviado a la impresora (venta, reimpresión, corte de caja, ticket de prueba) quede en ASCII puro y seguro para fuentes CP437.
+- **Corrección del ticket de prueba:** En `src/components/SettingsComponents/PageSettings/SettingsPrinters/hooks/useSettingsPrinters.js`, se reemplazaron los separadores rígidos por `"-".repeat(cols)`, se envolvió la leyenda informativa con `wrapText()` (32 columnas → "Impresion termica conectada" y "correctamente") y se aplicó `wrapText()` a `footerLine1`, `footerLine2` y `returnPolicy`.
+- **Cobertura de pruebas:** Se añadieron tests unitarios para `sanitizeTicketText()` en `ticketLayoutFormatters.test.js`, validación de sanitización en `ticketPrintService.test.js`, y verificación de comportamiento en `useSettingsPrinters.test.js`.
+
+---
+
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una
