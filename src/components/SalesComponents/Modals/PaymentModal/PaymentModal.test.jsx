@@ -201,5 +201,43 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
       expect(screen.getByLabelText("Efectivo:")).toBeTruthy();
       expect(screen.queryByLabelText("Pagó Con (USD):")).toBeNull();
     });
+
+    it("baja con ArrowDown desde la primera fila a la opcion mas cercana", () => {
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+
+      expect(screen.getByText("Total a Cobrar:")).toBeTruthy();
+      expect(screen.queryByLabelText("Pagó Con:")).toBeNull();
+    });
+
+    it("sube con ArrowUp desde la segunda fila a la opcion mas cercana", () => {
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowUp" });
+
+      expect(screen.getByText("Desglose de Pago")).toBeTruthy();
+      expect(
+        screen.queryByLabelText("Información de Transferencia:")
+      ).toBeNull();
+    });
+
+    it("baja al unico metodo disponible en la segunda fila cuando hay 4 visibles", () => {
+      window.localStorage.setItem(
+        "cash_operation_settings",
+        JSON.stringify({ acceptUsdPayments: false })
+      );
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+
+      expect(
+        screen.getByLabelText("Información de Transferencia:")
+      ).toBeTruthy();
+    });
   });
 });
