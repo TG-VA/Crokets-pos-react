@@ -105,6 +105,21 @@ export const pushItemDetailLines = (lines, text = "") => {
   });
 };
 
+export const sanitizeTicketText = (text = "") => {
+  if (text === null || text === undefined) return "";
+  const str = String(text);
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ñ/g, "n")
+    .replace(/Ñ/g, "N")
+    .replace(/[¡¿]/g, "")
+    .replace(/[—–]/g, "-")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\u00A0/g, " ");
+};
+
 export const pushWrappedLeft = (lines, text = "", width = TICKET_WIDTH) => {
   wrapText(text, width).forEach((line) => {
     lines.push(line);
