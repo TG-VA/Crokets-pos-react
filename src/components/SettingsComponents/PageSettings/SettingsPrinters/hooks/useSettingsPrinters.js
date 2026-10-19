@@ -217,17 +217,33 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       });
     }
     lines.push("CROKETS - TICKET DE PRUEBA");
-    lines.push("--------------------------------");
+    lines.push("-".repeat(cols));
     lines.push(`Ancho de papel: ${widthMm} mm`);
-    lines.push("Impresión térmica conectada correctamente");
-    lines.push("--------------------------------");
-    lines.push("ARTÍCULO DE PRUEBA x1   $100.00");
+    wrapText("Impresion termica conectada correctamente", cols).forEach(
+      (line) => {
+        lines.push(line);
+      }
+    );
+    lines.push("-".repeat(cols));
+    lines.push("ARTICULO DE PRUEBA x1   $100.00");
     lines.push("TOTAL                $100.00");
-    lines.push("--------------------------------");
-    if (template.footerLine1) lines.push(template.footerLine1);
-    if (template.footerLine2) lines.push(template.footerLine2);
+    lines.push("-".repeat(cols));
+    if (template.footerLine1) {
+      wrapText(template.footerLine1, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
+    if (template.footerLine2) {
+      wrapText(template.footerLine2, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
     if (template.footerPhone) lines.push(`Tel.: ${template.footerPhone}`);
-    if (template.returnPolicy) lines.push(template.returnPolicy);
+    if (template.returnPolicy) {
+      wrapText(template.returnPolicy, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
     return lines.join("\n");
   }, [template, widthMm]);
 

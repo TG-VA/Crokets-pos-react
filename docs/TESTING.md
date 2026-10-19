@@ -156,7 +156,7 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   `cashCutBuilder.js` (secciones, totales, wrapping e invariante de 32 columnas) y
   `ticketPrinter.js` sobre su contrato completo de `{ success, message, error, simulated }`: invocación
   del canal `print-ticket`, normalización de rechazos y excepciones, y el fallback `simulated` de
-  navegador. Del lado del proceso principal, `ticketPrintService.test.js` (43 casos) fija los perfiles
+  navegador. Del lado del proceso principal, `ticketPrintService.test.js` (46 casos) fija los perfiles
   de papel, el documento HTML, la traducción de `options` a opciones de `webContents.print`, la espera
   de carga, el descarte de `did-fail-load` con código `-3`, la destrucción de la ventana utilitaria,
   el soporte dual de callback nativo y Promesa, y

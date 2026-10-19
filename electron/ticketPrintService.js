@@ -35,6 +35,21 @@ const HTML_ESCAPES = Object.freeze({
   "'": "&#39;",
 });
 
+function sanitizeTicketText(text) {
+  if (text === null || text === undefined) return "";
+  const str = String(text);
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ñ/g, "n")
+    .replace(/Ñ/g, "N")
+    .replace(/[¡¿]/g, "")
+    .replace(/[—–]/g, "-")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\u00A0/g, " ");
+}
+
 function escapeHtml(text) {
   return String(text ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
 }
@@ -117,7 +132,8 @@ function buildTicketPrintOptions(profile, options) {
 
 function buildTicketPrintDocument(ticketText, profile, options = {}) {
   const feedLines = resolveFeedLines(options?.feedLines);
-  const bodyText = `${ticketText}${"\n".repeat(feedLines)}`;
+  const sanitized = sanitizeTicketText(ticketText);
+  const bodyText = `${sanitized}${"\n".repeat(feedLines)}`;
 
   return [
     "<!doctype html>",
@@ -371,4 +387,5 @@ module.exports = {
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
+  sanitizeTicketText,
 };

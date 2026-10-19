@@ -11,6 +11,7 @@ import {
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
+  sanitizeTicketText,
 } from "./ticketPrintService";
 
 const URL_LOAD_ERROR_CODE = -6;
@@ -61,6 +62,21 @@ describe("electron ticketPrintService", () => {
     it("tolera null y undefined", () => {
       expect(escapeHtml(null)).toBe("");
       expect(escapeHtml(undefined)).toBe("");
+    });
+  });
+
+  describe("sanitizeTicketText", () => {
+    it("elimina acentos, dieresis y signos especiales convirtiendo a ASCII puro", () => {
+      expect(sanitizeTicketText("¡Atencion! Nino con pinguino")).toBe(
+        "Atencion! Nino con pinguino"
+      );
+      expect(sanitizeTicketText("óéíúá ÓÉÍÚÁ")).toBe("oeiua OEIUA");
+    });
+
+    it("tolera entradas nulas, indefinidas o numericas", () => {
+      expect(sanitizeTicketText(null)).toBe("");
+      expect(sanitizeTicketText(undefined)).toBe("");
+      expect(sanitizeTicketText(100)).toBe("100");
     });
   });
 
@@ -165,6 +181,19 @@ describe("electron ticketPrintService", () => {
       expect(html).toContain("Courier New");
       expect(html).toContain("font-size: 9pt");
       expect(html).toContain("<pre>LINEA &lt;1&gt;\nLINEA 2\n\n</pre>");
+    });
+
+    it("sanitiza caracteres acentuados, eñes y signos ¡¿ en el documento generado", () => {
+      const html = buildTicketPrintDocument(
+        "¡Hola! ¿Cómo estás? Niño ñoño",
+        resolveTicketPrintProfile("58mm")
+      );
+
+      expect(html).toContain("Hola! Como estas? Nino nono");
+      expect(html).not.toContain("¡");
+      expect(html).not.toContain("¿");
+      expect(html).not.toContain("ñ");
+      expect(html).not.toContain("á");
     });
 
     it("cambia el ancho de pagina segun el perfil de 80mm", () => {
