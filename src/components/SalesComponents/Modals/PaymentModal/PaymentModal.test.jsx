@@ -135,6 +135,29 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
   });
 
+  it("expande los ultimos 2 metodos para ocupar toda la fila cuando hay 5 visibles", () => {
+    renderModal();
+
+    expect(
+      screen.getByRole("button", { name: "Terminal" }).style.gridColumn
+    ).toBe("span 3");
+    expect(
+      screen.getByRole("button", { name: "Transferencia" }).style.gridColumn
+    ).toBe("span 3");
+  });
+
+  it("expande el ultimo metodo para ocupar toda la fila cuando hay 4 visibles", () => {
+    window.localStorage.setItem(
+      "cash_operation_settings",
+      JSON.stringify({ acceptUsdPayments: false })
+    );
+    renderModal();
+
+    expect(
+      screen.getByRole("button", { name: "Transferencia" }).style.gridColumn
+    ).toBe("span 6");
+  });
+
   describe("navegacion por flechas entre formas de pago", () => {
     it("avanza con ArrowRight desde Efectivo y da foco al input del metodo", () => {
       renderModal();

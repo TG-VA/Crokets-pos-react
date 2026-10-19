@@ -134,7 +134,7 @@
 
 .paymentMethods {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 15px;
   padding: 0 20px;
   margin-bottom: 20px;
@@ -145,13 +145,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
+  width: 100%;
+  min-width: 0;
   min-height: 105px;
   padding: 15px;
-
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-
   cursor: pointer;
   transition:
     border-color 0.3s ease,

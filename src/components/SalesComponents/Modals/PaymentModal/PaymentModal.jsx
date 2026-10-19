@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 import AppModal from "../../../AppModal/AppModal";
@@ -32,6 +32,23 @@ const PAYMENT_METHODS = [
   { id: "Terminal", name: "Terminal", icon: TerminalIcon },
   { id: "Transferencia", name: "Transferencia", icon: TransferIcon },
 ];
+
+const PAYMENT_METHODS_PER_ROW = 3;
+const PAYMENT_METHOD_GRID_COLUMNS = PAYMENT_METHODS_PER_ROW * 2;
+
+const getPaymentMethodColumnSpan = (index, totalMethods) => {
+  const lastRowItems = totalMethods % PAYMENT_METHODS_PER_ROW;
+
+  if (lastRowItems === 0) return 2;
+
+  const lastRowStartIndex = totalMethods - lastRowItems;
+  if (index < lastRowStartIndex) return 2;
+
+  if (lastRowItems === 1) return PAYMENT_METHOD_GRID_COLUMNS;
+  if (lastRowItems === 2) return PAYMENT_METHODS_PER_ROW;
+
+  return 2;
+};
 
 const PaymentModal = memo(
   ({ isOpen, onClose, total, onProcessPayment, processingSale }) => {
@@ -472,11 +489,23 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {visiblePaymentMethods.map((m) => (
+              {visiblePaymentMethods.map((m, index) => (
                 <button
                   key={m.id}
                   type="button"
-                  className={`${styles.paymentMethod} ${selectedPaymentMethod === m.id ? styles.paymentMethodSelected : ""}`}
+                  className={[
+                    styles.paymentMethod,
+                    selectedPaymentMethod === m.id &&
+                      styles.paymentMethodSelected,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{
+                    gridColumn: `span ${getPaymentMethodColumnSpan(
+                      index,
+                      visiblePaymentMethods.length
+                    )}`,
+                  }}
                   onClick={() =>
                     !effectiveProcessing && setSelectedPaymentMethod(m.id)
                   }
