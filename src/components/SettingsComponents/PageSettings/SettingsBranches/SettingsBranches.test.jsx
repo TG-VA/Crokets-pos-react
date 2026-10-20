@@ -94,7 +94,6 @@ describe("SettingsBranches", () => {
     expect(screen.getByText("Cancún, QR")).toBeTruthy();
     expect(screen.getByText("Activa")).toBeTruthy();
     expect(screen.getByText("Inactiva")).toBeTruthy();
-    expect(screen.getByText("2 sucursales encontradas")).toBeTruthy();
     expect(
       screen.getByText("Total de Sucursales").previousSibling.textContent
     ).toBe("2");
@@ -289,6 +288,57 @@ describe("SettingsBranches", () => {
     fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
 
     expect(state.setSearchTerm).toHaveBeenCalledWith("");
+  });
+
+  it("muestra el resumen de resultados cuando hay busqueda activa", () => {
+    hookResult.current = buildHookState({
+      searchTerm: "cen",
+      filteredCount: 2,
+    });
+    render(<SettingsBranches />);
+
+    expect(screen.getByText('2 resultados para "cen"')).toBeTruthy();
+  });
+
+  it("no muestra el resumen de resultados sin busqueda activa", () => {
+    hookResult.current = buildHookState({ searchTerm: "" });
+    render(<SettingsBranches />);
+
+    expect(screen.queryByText(/resultados para/)).toBeNull();
+  });
+
+  it("muestra el estado vacio con la opcion de restablecer la busqueda", () => {
+    const state = buildHookState({
+      branches: [],
+      filteredCount: 0,
+      searchTerm: "zzz",
+    });
+    hookResult.current = state;
+    render(<SettingsBranches />);
+
+    expect(
+      screen.getByText(
+        "No se encontraron sucursales coincidentes con tu búsqueda."
+      )
+    ).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Restablecer búsqueda" })
+    );
+    expect(state.setSearchTerm).toHaveBeenCalledWith("");
+  });
+
+  it("no muestra el boton restablecer en el estado vacio sin busqueda", () => {
+    hookResult.current = buildHookState({
+      branches: [],
+      filteredCount: 0,
+      searchTerm: "",
+    });
+    render(<SettingsBranches />);
+
+    expect(
+      screen.queryByRole("button", { name: "Restablecer búsqueda" })
+    ).toBeNull();
   });
 
   it("renderiza el modal de cambio de estatus con advertencias", () => {

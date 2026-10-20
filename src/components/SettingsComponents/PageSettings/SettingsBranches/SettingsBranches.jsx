@@ -58,11 +58,9 @@ const buildKpiCards = (metrics) => [
   },
 ];
 
-const buildRecordsLabel = (count, loading) => {
-  if (loading) return "Cargando...";
-  return count === 1
-    ? "1 sucursal encontrada"
-    : `${count} sucursales encontradas`;
+const buildSearchSummary = (count, term) => {
+  const label = count === 1 ? "resultado" : "resultados";
+  return `${count} ${label} para "${term}"`;
 };
 
 const SettingsBranches = () => {
@@ -216,42 +214,50 @@ const SettingsBranches = () => {
       </section>
 
       <div className={styles.toolbar}>
-        <div className={styles.searchField}>
-          <img
-            src={searchIcon}
-            alt=""
-            aria-hidden="true"
-            className={styles.searchIcon}
-          />
-          <label htmlFor="settings-branches-search" className={styles.srOnly}>
-            Buscar sucursales
-          </label>
-          <input
-            id="settings-branches-search"
-            type="search"
-            className={styles.searchInput}
-            placeholder="Buscar por nombre, código, ciudad o estado..."
-            title="Buscar por nombre, código, ciudad o estado"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            maxLength={50}
-            aria-label="Buscar sucursales por nombre, código, ciudad o estado"
-          />
-          {searchTerm ? (
-            <button
-              type="button"
-              className={styles.searchClearButton}
-              onClick={() => setSearchTerm("")}
-              aria-label="Limpiar búsqueda"
-              title="Limpiar búsqueda"
-            >
-              <img
-                src={closeIcon}
-                alt=""
-                aria-hidden="true"
-                className={styles.searchClearIcon}
-              />
-            </button>
+        <div className={styles.toolbarLeft}>
+          <div className={styles.searchField}>
+            <img
+              src={searchIcon}
+              alt=""
+              aria-hidden="true"
+              className={styles.searchIcon}
+            />
+            <label htmlFor="settings-branches-search" className={styles.srOnly}>
+              Buscar sucursales
+            </label>
+            <input
+              id="settings-branches-search"
+              type="search"
+              className={styles.searchInput}
+              placeholder="Buscar por nombre, código, ciudad o estado..."
+              title="Buscar por nombre, código, ciudad o estado"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              maxLength={50}
+              aria-label="Buscar sucursales por nombre, código, ciudad o estado"
+            />
+            {searchTerm ? (
+              <button
+                type="button"
+                className={styles.searchClearButton}
+                onClick={() => setSearchTerm("")}
+                aria-label="Limpiar búsqueda"
+                title="Limpiar búsqueda"
+              >
+                <img
+                  src={closeIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.searchClearIcon}
+                />
+              </button>
+            ) : null}
+          </div>
+
+          {searchTerm && !loading ? (
+            <p className={styles.searchSummary} aria-live="polite">
+              {buildSearchSummary(recordsCount, searchTerm)}
+            </p>
           ) : null}
         </div>
 
@@ -277,17 +283,13 @@ const SettingsBranches = () => {
         </div>
       </div>
 
-      <div className={styles.recordsRow}>
-        <span className={styles.recordsChip}>
-          {buildRecordsLabel(recordsCount, loading)}
-        </span>
-      </div>
-
       <BranchesTable
         branches={branches}
         loading={loading}
         loadError={loadError}
         isAdmin={isAdmin}
+        searchTerm={searchTerm}
+        onResetSearch={() => setSearchTerm("")}
         onEdit={openEditModal}
         onToggleStatus={openToggleModal}
       />

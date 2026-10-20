@@ -3,6 +3,7 @@ import pencilIcon from "../../../../../assets/icons/pencil-solid-full.svg";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
 import displayIcon from "../../../../../assets/icons/display-solid-full.svg";
+import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import { getBranchStatusLabel } from "../utils/branchesFormatters";
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
@@ -15,6 +16,8 @@ const BranchesTable = ({
   loading,
   loadError,
   isAdmin,
+  searchTerm,
+  onResetSearch,
   onEdit,
   onToggleStatus,
 }) => {
@@ -41,9 +44,26 @@ const BranchesTable = ({
   if (branches.length === 0) {
     return (
       <div className={styles.tableCard}>
-        <p className={styles.emptyState}>
-          No se encontraron sucursales con los filtros seleccionados.
-        </p>
+        <div className={styles.emptyState}>
+          <img
+            src={searchIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.emptyStateIcon}
+          />
+          <p className={styles.emptyStateText}>
+            No se encontraron sucursales coincidentes con tu búsqueda.
+          </p>
+          {searchTerm ? (
+            <button
+              type="button"
+              className={styles.emptyStateAction}
+              onClick={onResetSearch}
+            >
+              Restablecer búsqueda
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }

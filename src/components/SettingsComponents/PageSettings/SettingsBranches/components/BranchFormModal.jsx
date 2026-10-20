@@ -89,10 +89,17 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
             <div className={styles.formGrid}>
               <div className={styles.formField}>
                 <label htmlFor="branch-form-code" className={styles.formLabel}>
-                  Código{" "}
-                  <span className={styles.requiredMark} aria-hidden="true">
-                    *
+                  <span>
+                    Código{" "}
+                    <span className={styles.requiredMark} aria-hidden="true">
+                      *
+                    </span>
                   </span>
+                  {!isEdit ? (
+                    <span className={styles.labelHint}>
+                      (A-Z, 0-9, guiones)
+                    </span>
+                  ) : null}
                 </label>
                 <input
                   id="branch-form-code"
@@ -113,11 +120,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                     El código no es editable para preservar folios y series
                     fiscales.
                   </p>
-                ) : (
-                  <p className={styles.fieldHint}>
-                    Solo letras, números, guiones y guiones bajos.
-                  </p>
-                )}
+                ) : null}
               </div>
 
               <div className={styles.formField}>
