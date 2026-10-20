@@ -8,7 +8,7 @@ const resolveSystemTimeZone = () => {
 
 export const MOVEMENTS_TIME_ZONE = resolveSystemTimeZone();
 
-const parseMovementDate = (value, { assumeUtcNaive = false } = {}) => {
+export const parseMovementDate = (value, { assumeUtcNaive = false } = {}) => {
   if (!value) {
     return null;
   }
