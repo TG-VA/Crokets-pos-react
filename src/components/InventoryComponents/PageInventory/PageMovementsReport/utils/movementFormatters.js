@@ -247,14 +247,22 @@ export const buildRowView = (row) => {
   const movementTypeKey = getRowMovementTypeKey(row);
 
   const useSystemTime = !sale?.sale_date;
-  const assumeUtcNaive = movementTypeKey === "transfer";
+  const assumeUtcNaive = ["transfer", "canceled", "return"].includes(
+    movementTypeKey
+  );
 
   const soldAtValue =
-    sale?.sale_date ??
-    row?.report_sort_at ??
-    row?.created_at ??
-    sale?.created_at ??
-    null;
+    movementTypeKey === "sale" || movementTypeKey === "redemption"
+      ? sale?.sale_date ??
+        row?.report_sort_at ??
+        row?.created_at ??
+        sale?.created_at ??
+        null
+      : row?.report_sort_at ??
+        row?.created_at ??
+        sale?.sale_date ??
+        sale?.created_at ??
+        null;
 
   const soldAt = formatDateTime(soldAtValue, {
     useSystemTime,

@@ -97,7 +97,9 @@ export const hydrateBaseMovements = ({
       has_sale_redemption: redemptionSaleIds.has(row?.sale_id),
 
       report_sort_at:
-        sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null,
+        getRowMovementTypeKey(row) === "sale"
+          ? sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null
+          : row?.created_at ?? sale?.sale_date ?? sale?.created_at ?? null,
 
       reason:
         rewardRow && isSaleMovement
