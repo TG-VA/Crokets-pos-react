@@ -12,6 +12,7 @@ import {
   persistCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../../../services/cashOperationSettingsService";
+import { getSelectedPrinter } from "../../../../../services/printSettingsService";
 
 /**
  * Estado y ciclo de vida de la configuracion de caja.
@@ -148,7 +149,9 @@ const useSettingsCash = ({ branchId = null } = {}) => {
   const handleTestDrawer = async () => {
     setDrawerFeedback(null);
     setTestingDrawer(true);
-    const res = await triggerCashDrawerKick();
+    const res = await triggerCashDrawerKick({
+      printerDeviceName: getSelectedPrinter(),
+    });
     setTestingDrawer(false);
     if (!res.success) {
       setDrawerFeedback({ type: "error", message: res.message });

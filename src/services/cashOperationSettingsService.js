@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "../lib/supabaseClient";
+import { getSelectedPrinter } from "./printSettingsService";
 
 export const CASH_OPERATION_SETTING_KEY = "cash_operation_settings";
 
@@ -429,9 +430,14 @@ export async function persistCashOperationSettings({
 
 export async function triggerCashDrawerKick({ printerDeviceName, pin } = {}) {
   try {
+    const resolvedPrinter =
+      (typeof printerDeviceName === "string" && printerDeviceName.trim()) ||
+      getSelectedPrinter() ||
+      undefined;
+
     if (window.electronAPI?.invoke) {
       const result = await window.electronAPI.invoke("open-cash-drawer", {
-        deviceName: printerDeviceName,
+        deviceName: resolvedPrinter,
         pin,
       });
       return {

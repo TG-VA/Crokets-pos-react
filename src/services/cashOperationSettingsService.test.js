@@ -252,6 +252,24 @@ describe("cashOperationSettingsService", () => {
     expect(result.message).toBe("Pulso enviado");
   });
 
+  it("resuelve la impresora configurada cuando no se pasa printerDeviceName explicito", async () => {
+    localStorage.setItem("settings_selected_printer", "Epson TM-T20");
+    window.electronAPI = {
+      invoke: vi.fn().mockResolvedValue({
+        success: true,
+        message: "Pulso enviado",
+      }),
+    };
+
+    const result = await triggerCashDrawerKick();
+
+    expect(window.electronAPI.invoke).toHaveBeenCalledWith("open-cash-drawer", {
+      deviceName: "Epson TM-T20",
+      pin: undefined,
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("maneja errores del canal IPC correctamente", async () => {
     window.electronAPI = {
       invoke: vi.fn().mockRejectedValue(new Error("No printer")),
