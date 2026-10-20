@@ -129,4 +129,52 @@ describe("useBranchForm", () => {
     expect(result.current.values.name).toBe("Centro");
     expect(result.current.touched).toBe(false);
   });
+
+  it("no expone errores visibles al abrir el formulario limpio", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    expect(result.current.errors.code).toBeTruthy();
+    expect(result.current.shouldShowError("code")).toBe(false);
+    expect(result.current.getFieldError("code")).toBeUndefined();
+    expect(result.current.isSubmitted).toBe(false);
+  });
+
+  it("muestra el error del campo despues de tocarlo", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.handleBlur("code")();
+    });
+
+    expect(result.current.shouldShowError("code")).toBe(true);
+    expect(result.current.getFieldError("code")).toBe(
+      "El código de la sucursal es obligatorio."
+    );
+  });
+
+  it("marca el submit incompleto como enviado y expone todos los errores", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.markSubmitted();
+    });
+
+    expect(result.current.isSubmitted).toBe(true);
+    expect(result.current.shouldShowError("name")).toBe(true);
+    expect(result.current.shouldShowError("city")).toBe(true);
+  });
+
+  it("limpia los errores visibles al resetear", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.markSubmitted();
+    });
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.isSubmitted).toBe(false);
+    expect(result.current.getFieldError("code")).toBeUndefined();
+  });
 });

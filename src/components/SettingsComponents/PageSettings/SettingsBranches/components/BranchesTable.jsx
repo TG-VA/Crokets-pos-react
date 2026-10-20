@@ -1,10 +1,14 @@
 import styles from "../SettingsBranches.module.css";
 import pencilIcon from "../../../../../assets/icons/pencil-solid-full.svg";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
-import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
+import displayIcon from "../../../../../assets/icons/display-solid-full.svg";
 import { getBranchStatusLabel } from "../utils/branchesFormatters";
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
+
+const getTerminalLabel = (count) =>
+  count === 1 ? "1 terminal" : `${count} terminales`;
 
 const BranchesTable = ({
   branches,
@@ -60,7 +64,9 @@ const BranchesTable = ({
         <tbody>
           {branches.map((branch) => (
             <tr key={branch.id}>
-              <td>{branch.code}</td>
+              <td>
+                <span className={styles.codeChip}>{branch.code}</span>
+              </td>
               <td>{branch.name}</td>
               <td>
                 {branch.city}
@@ -78,13 +84,27 @@ const BranchesTable = ({
                   {getBranchStatusLabel(branch.isActive)}
                 </span>
               </td>
-              <td>{branch.posDevicesCount}</td>
+              <td>
+                <span className={styles.terminalCount}>
+                  <img
+                    src={displayIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className={styles.terminalIcon}
+                  />
+                  {getTerminalLabel(branch.posDevicesCount || 0)}
+                </span>
+              </td>
               <td>
                 <div className={styles.actionsCell}>
                   <button
                     type="button"
-                    className={styles.iconButton}
+                    className={joinClasses(
+                      styles.iconButton,
+                      styles.iconButtonEdit
+                    )}
                     aria-label={`Editar ${branch.name}`}
+                    title={`Editar ${branch.name}`}
                     onClick={() => onEdit(branch)}
                     disabled={!isAdmin}
                   >
@@ -97,8 +117,18 @@ const BranchesTable = ({
                   </button>
                   <button
                     type="button"
-                    className={styles.iconButton}
+                    className={joinClasses(
+                      styles.iconButton,
+                      branch.isActive
+                        ? styles.iconButtonDanger
+                        : styles.iconButtonSuccess
+                    )}
                     aria-label={
+                      branch.isActive
+                        ? `Desactivar ${branch.name}`
+                        : `Reactivar ${branch.name}`
+                    }
+                    title={
                       branch.isActive
                         ? `Desactivar ${branch.name}`
                         : `Reactivar ${branch.name}`
@@ -107,7 +137,7 @@ const BranchesTable = ({
                     disabled={!isAdmin}
                   >
                     <img
-                      src={branch.isActive ? warningIcon : checkIcon}
+                      src={branch.isActive ? lockIcon : checkIcon}
                       alt=""
                       aria-hidden="true"
                       className={styles.actionIcon}

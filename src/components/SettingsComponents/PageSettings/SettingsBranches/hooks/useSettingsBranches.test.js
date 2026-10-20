@@ -77,6 +77,12 @@ describe("useSettingsBranches", () => {
 
     expect(result.current.branches).toHaveLength(2);
     expect(result.current.totalBranches).toBe(2);
+    expect(result.current.metrics).toEqual({
+      total: 2,
+      active: 1,
+      inactive: 1,
+      terminals: 1,
+    });
     expect(result.current.isAdmin).toBe(true);
     expect(result.current.adminChecked).toBe(true);
   });

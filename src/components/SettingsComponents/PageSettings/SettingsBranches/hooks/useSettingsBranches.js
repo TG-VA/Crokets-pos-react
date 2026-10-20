@@ -87,6 +87,16 @@ export const useSettingsBranches = () => {
     });
   }, [branches, statusFilter, searchTerm]);
 
+  const metrics = useMemo(() => {
+    const total = branches.length;
+    const active = branches.filter((branch) => branch.isActive).length;
+    const terminals = branches.reduce(
+      (sum, branch) => sum + (Number(branch.posDevicesCount) || 0),
+      0
+    );
+    return { total, active, inactive: total - active, terminals };
+  }, [branches]);
+
   const openCreateModal = useCallback(() => {
     setFeedback(null);
     setFormModal({ isOpen: true, branch: null });
@@ -191,6 +201,7 @@ export const useSettingsBranches = () => {
   return {
     branches: filteredBranches,
     totalBranches: branches.length,
+    metrics,
     loading,
     loadError,
     isAdmin,

@@ -10,12 +10,14 @@ export const useBranchForm = (initialBranch = null) => {
     buildBranchFormValues(initialBranch)
   );
   const [sourceBranch, setSourceBranch] = useState(initialBranch);
-  const [touched, setTouched] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   if (sourceBranch !== initialBranch) {
     setSourceBranch(initialBranch);
     setValues(buildBranchFormValues(initialBranch));
-    setTouched(false);
+    setTouchedFields({});
+    setIsSubmitted(false);
   }
 
   const isEdit = Boolean(initialBranch?.id);
@@ -27,6 +29,17 @@ export const useBranchForm = (initialBranch = null) => {
 
   const isValid = Object.keys(errors).length === 0;
 
+  const shouldShowError = useCallback(
+    (field) =>
+      Boolean(errors[field]) && (isSubmitted || Boolean(touchedFields[field])),
+    [errors, isSubmitted, touchedFields]
+  );
+
+  const getFieldError = useCallback(
+    (field) => (shouldShowError(field) ? errors[field] : undefined),
+    [errors, shouldShowError]
+  );
+
   const handleChange = useCallback(
     (field) => (event) => {
       let value = event.target.value;
@@ -37,10 +50,23 @@ export const useBranchForm = (initialBranch = null) => {
         value = value.toUpperCase();
       }
       setValues((prev) => ({ ...prev, [field]: value }));
-      setTouched(true);
+      setTouchedFields((prev) =>
+        prev[field] ? prev : { ...prev, [field]: true }
+      );
     },
     []
   );
+
+  const handleBlur = useCallback(
+    (field) => () => {
+      setTouchedFields((prev) =>
+        prev[field] ? prev : { ...prev, [field]: true }
+      );
+    },
+    []
+  );
+
+  const markSubmitted = useCallback(() => setIsSubmitted(true), []);
 
   const getSanitizedValues = useCallback(
     () => sanitizeBranchFormValues(values),
@@ -49,7 +75,8 @@ export const useBranchForm = (initialBranch = null) => {
 
   const reset = useCallback(() => {
     setValues(buildBranchFormValues(initialBranch));
-    setTouched(false);
+    setTouchedFields({});
+    setIsSubmitted(false);
   }, [initialBranch]);
 
   return {
@@ -57,8 +84,14 @@ export const useBranchForm = (initialBranch = null) => {
     errors,
     isValid,
     isEdit,
-    touched,
+    touched: Object.keys(touchedFields).length > 0,
+    touchedFields,
+    isSubmitted,
+    shouldShowError,
+    getFieldError,
     handleChange,
+    handleBlur,
+    markSubmitted,
     getSanitizedValues,
     reset,
   };

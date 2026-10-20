@@ -10,6 +10,11 @@ import BranchToggleStatusModal from "./components/BranchToggleStatusModal";
 import plusIcon from "../../../../assets/icons/plus-solid-full.svg";
 import circleCheckIcon from "../../../../assets/icons/circle-check-solid-full.svg";
 import circleInfoIcon from "../../../../assets/icons/circle-info-solid-full.svg";
+import storeIcon from "../../../../assets/icons/store-solid-full.svg";
+import eyeSlashIcon from "../../../../assets/icons/eye-slash-solid-full.svg";
+import displayIcon from "../../../../assets/icons/display-solid-full.svg";
+import searchIcon from "../../../../assets/icons/searchIcon.svg";
+import closeIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const FEEDBACK_TIMEOUT = 5000;
 
@@ -21,10 +26,49 @@ const STATUS_FILTER_OPTIONS = [
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 
+const buildKpiCards = (metrics) => [
+  {
+    key: "total",
+    label: "Total de Sucursales",
+    value: metrics.total,
+    icon: storeIcon,
+    tone: "Neutral",
+  },
+  {
+    key: "active",
+    label: "Sucursales Activas",
+    value: metrics.active,
+    icon: circleCheckIcon,
+    tone: "Active",
+  },
+  {
+    key: "inactive",
+    label: "Sucursales Inactivas",
+    value: metrics.inactive,
+    icon: eyeSlashIcon,
+    tone: "Inactive",
+  },
+  {
+    key: "terminals",
+    label: "Terminales POS",
+    value: metrics.terminals,
+    icon: displayIcon,
+    tone: "Info",
+  },
+];
+
+const buildRecordsLabel = (count, loading) => {
+  if (loading) return "Cargando...";
+  return count === 1
+    ? "1 sucursal encontrada"
+    : `${count} sucursales encontradas`;
+};
+
 const SettingsBranches = () => {
   const {
     branches,
     totalBranches,
+    metrics,
     loading,
     loadError,
     isAdmin,
@@ -53,6 +97,13 @@ const SettingsBranches = () => {
     const timeout = window.setTimeout(clearFeedback, FEEDBACK_TIMEOUT);
     return () => window.clearTimeout(timeout);
   }, [feedback, clearFeedback]);
+
+  const safeMetrics = {
+    total: metrics?.total ?? totalBranches,
+    active: metrics?.active ?? 0,
+    inactive: metrics?.inactive ?? 0,
+    terminals: metrics?.terminals ?? 0,
+  };
 
   return (
     <section className={styles.page} aria-labelledby="settings-branches-title">
@@ -125,17 +176,67 @@ const SettingsBranches = () => {
         </div>
       ) : null}
 
+      <section className={styles.kpiGrid} aria-label="Resumen de sucursales">
+        {buildKpiCards(safeMetrics).map((card) => (
+          <article key={card.key} className={styles.kpiCard}>
+            <span
+              className={joinClasses(
+                styles.kpiIcon,
+                styles[`kpiIcon${card.tone}`]
+              )}
+              aria-hidden="true"
+            >
+              <img src={card.icon} alt="" className={styles.kpiIconImage} />
+            </span>
+            <div className={styles.kpiBody}>
+              <span className={styles.kpiValue}>{card.value}</span>
+              <span className={styles.kpiLabel}>{card.label}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
       <div className={styles.toolbar}>
-        <input
-          type="search"
-          className={styles.searchInput}
-          placeholder="Buscar por nombre o código..."
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          aria-label="Buscar sucursales por nombre o código"
-        />
+        <div className={styles.searchField}>
+          <img
+            src={searchIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.searchIcon}
+          />
+          <label htmlFor="settings-branches-search" className={styles.srOnly}>
+            Buscar sucursales
+          </label>
+          <input
+            id="settings-branches-search"
+            type="search"
+            className={styles.searchInput}
+            placeholder="Buscar por nombre o código..."
+            title="Buscar por nombre o código"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            aria-label="Buscar sucursales por nombre o código"
+          />
+          {searchTerm ? (
+            <button
+              type="button"
+              className={styles.searchClearButton}
+              onClick={() => setSearchTerm("")}
+              aria-label="Limpiar búsqueda"
+              title="Limpiar búsqueda"
+            >
+              <img
+                src={closeIcon}
+                alt=""
+                aria-hidden="true"
+                className={styles.searchClearIcon}
+              />
+            </button>
+          ) : null}
+        </div>
+
         <div
-          className={styles.filterGroup}
+          className={styles.segmentedControl}
           role="group"
           aria-label="Filtrar por estatus"
         >
@@ -156,11 +257,11 @@ const SettingsBranches = () => {
         </div>
       </div>
 
-      <p className={styles.pageSubtitle}>
-        {loading
-          ? "Cargando..."
-          : `${branches.length} de ${totalBranches} sucursal(es)`}
-      </p>
+      <div className={styles.recordsRow}>
+        <span className={styles.recordsChip}>
+          {buildRecordsLabel(branches.length, loading)}
+        </span>
+      </div>
 
       <BranchesTable
         branches={branches}

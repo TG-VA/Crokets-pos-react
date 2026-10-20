@@ -44,6 +44,7 @@ const buildHookState = (overrides = {}) => ({
     },
   ],
   totalBranches: 2,
+  metrics: { total: 2, active: 1, inactive: 1, terminals: 2 },
   loading: false,
   loadError: null,
   isAdmin: true,
@@ -84,7 +85,19 @@ describe("SettingsBranches", () => {
     expect(screen.getByText("Cancún, QR")).toBeTruthy();
     expect(screen.getByText("Activa")).toBeTruthy();
     expect(screen.getByText("Inactiva")).toBeTruthy();
-    expect(screen.getByText("2 de 2 sucursal(es)")).toBeTruthy();
+    expect(screen.getByText("2 sucursales encontradas")).toBeTruthy();
+    expect(
+      screen.getByText("Total de Sucursales").previousSibling.textContent
+    ).toBe("2");
+    expect(
+      screen.getByText("Sucursales Activas").previousSibling.textContent
+    ).toBe("1");
+    expect(
+      screen.getByText("Sucursales Inactivas").previousSibling.textContent
+    ).toBe("1");
+    expect(screen.getByText("Terminales POS").previousSibling.textContent).toBe(
+      "2"
+    );
   });
 
   it("abre el modal de creacion al pulsar Nueva Sucursal", () => {
@@ -203,6 +216,28 @@ describe("SettingsBranches", () => {
     render(<SettingsBranches />);
 
     expect(screen.getByRole("dialog", { name: "Nueva sucursal" })).toBeTruthy();
+  });
+
+  it("cierra el modal de formulario con el boton de cerrar", () => {
+    const state = buildHookState({
+      formModal: { isOpen: true, branch: null },
+    });
+    hookResult.current = state;
+    render(<SettingsBranches />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar formulario" }));
+
+    expect(state.closeFormModal).toHaveBeenCalledTimes(1);
+  });
+
+  it("muestra el boton para limpiar la busqueda cuando hay texto", () => {
+    const state = buildHookState({ searchTerm: "cen" });
+    hookResult.current = state;
+    render(<SettingsBranches />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar búsqueda" }));
+
+    expect(state.setSearchTerm).toHaveBeenCalledWith("");
   });
 
   it("renderiza el modal de cambio de estatus con advertencias", () => {

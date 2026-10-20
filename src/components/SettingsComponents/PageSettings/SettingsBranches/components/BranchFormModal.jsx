@@ -6,6 +6,7 @@ import {
   BRANCH_TIMEZONE_OPTIONS,
   DEFAULT_TIMEZONE,
 } from "../utils/branchesFormatters";
+import closeIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const FieldError = ({ message }) =>
   message ? (
@@ -15,8 +16,17 @@ const FieldError = ({ message }) =>
   ) : null;
 
 const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
-  const { values, errors, isValid, isEdit, handleChange, getSanitizedValues } =
-    useBranchForm(isOpen ? branch : null);
+  const {
+    values,
+    isValid,
+    isEdit,
+    handleChange,
+    handleBlur,
+    shouldShowError,
+    getFieldError,
+    markSubmitted,
+    getSanitizedValues,
+  } = useBranchForm(isOpen ? branch : null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -41,6 +51,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    markSubmitted();
     if (!isValid) return;
     const sanitized = getSanitizedValues();
     if (isEdit) {
@@ -49,6 +60,11 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
     }
     onSubmit(sanitized);
   };
+
+  const errorProps = (field) => ({
+    "aria-invalid": shouldShowError(field) ? "true" : "false",
+    onBlur: handleBlur(field),
+  });
 
   return (
     <div className={styles.modalOverlay} onMouseDown={handleOverlayMouseDown}>
@@ -59,14 +75,36 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
         aria-labelledby="settings-branches-form-title"
       >
         <div className={styles.modalHeader}>
-          <h2 id="settings-branches-form-title" className={styles.modalTitle}>
-            {isEdit ? "Editar sucursal" : "Nueva sucursal"}
-          </h2>
-          <p className={styles.modalSubtitle}>
-            {isEdit
-              ? "Actualiza los datos generales de contacto de la sucursal."
-              : "Registra una sucursal nueva del catálogo corporativo."}
-          </p>
+          <div className={styles.modalHeaderRow}>
+            <div className={styles.modalHeaderCopy}>
+              <h2
+                id="settings-branches-form-title"
+                className={styles.modalTitle}
+              >
+                {isEdit ? "Editar sucursal" : "Nueva sucursal"}
+              </h2>
+              <p className={styles.modalSubtitle}>
+                {isEdit
+                  ? "Actualiza los datos generales de contacto de la sucursal."
+                  : "Registra una sucursal nueva del catálogo corporativo."}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.modalCloseButton}
+              onClick={onClose}
+              disabled={saving}
+              aria-label="Cerrar formulario"
+              title="Cerrar"
+            >
+              <img
+                src={closeIcon}
+                alt=""
+                aria-hidden="true"
+                className={styles.modalCloseIcon}
+              />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -88,9 +126,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   placeholder="Ej. CEN01"
                   maxLength={20}
                   disabled={isEdit}
-                  aria-invalid={errors.code ? "true" : "false"}
+                  {...errorProps("code")}
                 />
-                <FieldError message={errors.code} />
+                <FieldError message={getFieldError("code")} />
                 {isEdit ? (
                   <p className={styles.fieldHint}>
                     El código no es editable para preservar folios y series
@@ -114,9 +152,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("name")}
                   placeholder="Ej. Sucursal Centro"
                   maxLength={100}
-                  aria-invalid={errors.name ? "true" : "false"}
+                  {...errorProps("name")}
                 />
-                <FieldError message={errors.name} />
+                <FieldError message={getFieldError("name")} />
               </div>
 
               <div className={styles.formField}>
@@ -134,9 +172,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("city")}
                   placeholder="Ej. Cancún"
                   maxLength={50}
-                  aria-invalid={errors.city ? "true" : "false"}
+                  {...errorProps("city")}
                 />
-                <FieldError message={errors.city} />
+                <FieldError message={getFieldError("city")} />
               </div>
 
               <div className={styles.formField}>
@@ -154,9 +192,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("state")}
                   placeholder="Ej. Quintana Roo"
                   maxLength={50}
-                  aria-invalid={errors.state ? "true" : "false"}
+                  {...errorProps("state")}
                 />
-                <FieldError message={errors.state} />
+                <FieldError message={getFieldError("state")} />
               </div>
 
               <div className={styles.formField}>
@@ -172,9 +210,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("phone")}
                   placeholder="Ej. 9999999999"
                   maxLength={10}
-                  aria-invalid={errors.phone ? "true" : "false"}
+                  {...errorProps("phone")}
                 />
-                <FieldError message={errors.phone} />
+                <FieldError message={getFieldError("phone")} />
               </div>
 
               <div className={styles.formField}>
@@ -188,9 +226,9 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   value={values.email}
                   onChange={handleChange("email")}
                   placeholder="contacto@sucursal.com"
-                  aria-invalid={errors.email ? "true" : "false"}
+                  {...errorProps("email")}
                 />
-                <FieldError message={errors.email} />
+                <FieldError message={getFieldError("email")} />
               </div>
 
               <div className={`${styles.formField} ${styles.formFieldFull}`}>
@@ -226,7 +264,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   className={styles.select}
                   value={values.timezone || DEFAULT_TIMEZONE}
                   onChange={handleChange("timezone")}
-                  aria-invalid={errors.timezone ? "true" : "false"}
+                  {...errorProps("timezone")}
                 >
                   {BRANCH_TIMEZONE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -234,7 +272,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                     </option>
                   ))}
                 </select>
-                <FieldError message={errors.timezone} />
+                <FieldError message={getFieldError("timezone")} />
               </div>
             </div>
           </div>
@@ -251,7 +289,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
             <button
               type="submit"
               className={styles.modalPrimaryButton}
-              disabled={saving || !isValid}
+              disabled={saving}
             >
               {saving
                 ? "Guardando..."
