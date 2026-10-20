@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, it, expect, vi } from "vitest";
 
 import {
@@ -200,21 +201,24 @@ describe("cashDrawerService", () => {
         message: "Pulso de apertura enviado al cajón de dinero.",
       });
 
+      const expectedDir = path.join("/tmp", "crokets-cash-drawer-abc123");
+      const expectedPulseFile = path.join(expectedDir, "pulse.bin");
+
       expect(execFile).toHaveBeenCalledWith(
         "lpstat",
         ["-p", "Termica"],
         expect.any(Object)
       );
       expect(fs.writeFile).toHaveBeenCalledWith(
-        "/tmp/crokets-cash-drawer-abc123/pulse.bin",
+        expectedPulseFile,
         Buffer.from([0x1b, 0x70, 0x01, 0x19, 0xfa])
       );
       expect(execFile).toHaveBeenCalledWith(
         "lpr",
-        ["-l", "-P", "Termica", "/tmp/crokets-cash-drawer-abc123/pulse.bin"],
+        ["-l", "-P", "Termica", expectedPulseFile],
         expect.any(Object)
       );
-      expect(fs.rm).toHaveBeenCalledWith("/tmp/crokets-cash-drawer-abc123", {
+      expect(fs.rm).toHaveBeenCalledWith(expectedDir, {
         recursive: true,
         force: true,
       });
