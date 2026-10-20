@@ -172,6 +172,27 @@ function normalizePrinterName(value) {
   return typeof value === "string" ? value.replace(/[\r\n]/g, "").trim() : "";
 }
 
+/**
+ * Valida el nombre de impresora que llega del renderer por IPC.
+ *
+ * `execFile` ya evita la inyeccion por shell (los argumentos no pasan por un
+ * interprete), pero un nombre que empiece con `-` se interpretaria como una
+ * opcion de `lpr`/`lpstat` (argument injection) y un nombre vacio o con
+ * caracteres de control no tiene sentido. Se rechaza ese conjunto y se exige un
+ * charset razonable para nombres de cola de impresion de Windows y CUPS.
+ */
+function isValidPrinterName(name) {
+  if (typeof name !== "string" || name.length === 0 || name.length > 255) {
+    return false;
+  }
+  if (name.startsWith("-")) return false;
+  for (let index = 0; index < name.length; index += 1) {
+    const code = name.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return false;
+  }
+  return true;
+}
+
 function parsePrinterNames(stdout) {
   return String(stdout || "")
     .split(/\r?\n/)
@@ -332,6 +353,13 @@ function createCashDrawerService(deps = {}) {
       );
     }
 
+    if (!isValidPrinterName(printerName)) {
+      return failure(
+        "PRINTER_NOT_FOUND",
+        "El nombre de la impresora no es válido para abrir el cajón de dinero."
+      );
+    }
+
     const payload = realtime
       ? buildRealtimePulseCommand()
       : buildPulseCommand(pin);
@@ -368,7 +396,7 @@ function createCashDrawerService(deps = {}) {
       }
       return failure(
         "UNSUPPORTED_PLATFORM",
-        `La apertura de cajón no está soportada en la plataforma ${platform}.`
+        "La apertura de cajón no está soportada en este sistema operativo."
       );
     } catch (error) {
       console.error("Error inesperado enviando el pulso del cajón:", error);
@@ -392,5 +420,6 @@ module.exports = {
   buildRealtimePulseCommand,
   buildWindowsRawSendScript,
   createCashDrawerService,
+  isValidPrinterName,
   openCashDrawer: defaultService.openCashDrawer,
 };

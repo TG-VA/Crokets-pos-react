@@ -8,6 +8,7 @@ import {
   buildRealtimePulseCommand,
   buildWindowsRawSendScript,
   createCashDrawerService,
+  isValidPrinterName,
 } from "./cashDrawerService";
 
 const createFs = (overrides = {}) => ({
@@ -117,6 +118,50 @@ describe("cashDrawerService", () => {
         error: "UNSUPPORTED_PLATFORM",
       });
     });
+
+    it("rechaza nombres de impresora con inyeccion de argumentos (dash inicial)", async () => {
+      const execFile = vi.fn(() => Promise.resolve({ stdout: "" }));
+      const { openCashDrawer } = createService({ execFile });
+
+      await expect(
+        openCashDrawer({ printerDeviceName: "-o" })
+      ).resolves.toMatchObject({
+        success: false,
+        error: "PRINTER_NOT_FOUND",
+      });
+      expect(execFile).not.toHaveBeenCalled();
+    });
+
+    it("rechaza nombres con caracteres de control sin tocar el spooler", async () => {
+      const execFile = vi.fn(() => Promise.resolve({ stdout: "" }));
+      const { openCashDrawer } = createService({ execFile });
+
+      await expect(
+        openCashDrawer({ printerDeviceName: "Termica\u0007" })
+      ).resolves.toMatchObject({
+        success: false,
+        error: "PRINTER_NOT_FOUND",
+      });
+      expect(execFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("isValidPrinterName", () => {
+    it("acepta nombres de impresora razonables", () => {
+      expect(isValidPrinterName("Termica")).toBe(true);
+      expect(isValidPrinterName("Epson TM-T20 III")).toBe(true);
+      expect(isValidPrinterName("O'Brien")).toBe(true);
+    });
+
+    it("rechaza vacios, dash inicial, controles y valores no string", () => {
+      expect(isValidPrinterName("")).toBe(false);
+      expect(isValidPrinterName("-o")).toBe(false);
+      expect(isValidPrinterName("--foo")).toBe(false);
+      expect(isValidPrinterName("a\u0000b")).toBe(false);
+      expect(isValidPrinterName("x".repeat(256))).toBe(false);
+      expect(isValidPrinterName(undefined)).toBe(false);
+      expect(isValidPrinterName(123)).toBe(false);
+    });
   });
 
   describe("simulacion de desarrollo", () => {
@@ -136,8 +181,8 @@ describe("cashDrawerService", () => {
 
   describe("macOS / Linux", () => {
     it("escribe el archivo crudo y lo manda con lpr -l", async () => {
-      const execFile = vi.fn((command, args) => {
-        if (command === "lpstat") return Promise.resolve({ stdout: "ok" });
+      const execFile = vi.fn((_command, _args) => {
+        if (_command === "lpstat") return Promise.resolve({ stdout: "ok" });
         return Promise.resolve({ stdout: "" });
       });
       const fs = createFs();
