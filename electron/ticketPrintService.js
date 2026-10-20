@@ -333,46 +333,6 @@ async function resolvePrintAvailability(webContents, options = {}) {
   };
 }
 
-/**
- * Dispara la apertura del cajón de dinero.
- *
- * La apertura real (pulso ESC/POS crudo) vive en `electron/cashDrawerService.js`
- * porque `webContents.print` no transporta bytes binarios; este servicio solo
- * imprime documentos HTML. La funcion se conserva por retrocompatibilidad con
- * llamadores legacy que aun consultan la disponibilidad de impresora.
- */
-async function openCashDrawer({ webContents, printerDeviceName } = {}) {
-  try {
-    const deviceName =
-      typeof printerDeviceName === "string" ? printerDeviceName.trim() : "";
-
-    const unavailable = await resolvePrintAvailability(webContents, {
-      deviceName,
-    });
-
-    if (unavailable) {
-      return {
-        success: false,
-        message:
-          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
-        error: "NO_PRINTER_AVAILABLE",
-      };
-    }
-
-    return {
-      success: true,
-      message: "Pulso de apertura enviado al cajón de dinero.",
-      error: null,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: "No se pudo abrir el cajón de dinero.",
-      error: error?.message || "DRAWER_OPEN_FAILED",
-    };
-  }
-}
-
 module.exports = {
   DEFAULT_TICKET_PRINT_PROFILE,
   TICKET_PRINT_PROFILES,
@@ -382,7 +342,6 @@ module.exports = {
   executePrint,
   listPrinters,
   loadTicketDocument,
-  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
