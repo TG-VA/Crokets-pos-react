@@ -21,7 +21,13 @@ const INITIAL_APP_MODAL = {
 };
 
 const useInventoryAdd = () => {
-  const { products, getProductByCodigo, refreshProducts } = useProducts();
+  const {
+    products,
+    loadingProducts,
+    productsError,
+    getProductByCodigo,
+    refreshProducts,
+  } = useProducts();
   const { branch } = useBranch();
   const { user } = useAuth();
 
@@ -289,6 +295,8 @@ const useInventoryAdd = () => {
 
   return {
     products,
+    loadingProducts,
+    productsError,
     searchModalOpen,
     barcode,
     selectedProduct,

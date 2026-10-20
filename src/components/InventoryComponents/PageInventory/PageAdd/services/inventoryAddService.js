@@ -130,6 +130,10 @@ export const addInventoryToProduct = async ({
   const previousStock = Number(inventoryRow?.stock || 0);
   const newStock = previousStock + normalizedQuantity;
 
+  const entryReason = inventoryRow?.has_been_stocked
+    ? "Entrada común"
+    : "Alta inicial";
+
   const newCostPrice = calculateWeightedAverageCost({
     currentStock: previousStock,
     currentCost,
@@ -159,13 +163,13 @@ export const addInventoryToProduct = async ({
   await logInventoryMovement({
     branchId,
     productId,
-    movementType: "inventory_add",
+    movementType: "entry",
     quantity: normalizedQuantity,
     previousStock,
     newStock,
     unitCost: resolvedIncomingCostPrice,
     totalCost: roundCost(resolvedIncomingCostPrice * normalizedQuantity),
-    reason: "Alta a inventario (manual)",
+    reason: entryReason,
     userId,
     createdAt: movementCreatedAt,
   });

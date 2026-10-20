@@ -6,7 +6,7 @@ export const REWARD_REDEMPTIONS_TABLE = "sale_reward_redemptions";
 
 export const DEFAULT_MAX_MOVEMENTS = 500;
 
-export const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v4";
+export const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v5";
 
 export const MOVEMENTS_PRODUCTS_SELECT_KEY = "movementsReportProductsSelect_v3";
 

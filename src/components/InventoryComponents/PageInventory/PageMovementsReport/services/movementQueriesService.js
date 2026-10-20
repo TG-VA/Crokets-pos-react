@@ -317,6 +317,8 @@ export const loadSales = async (saleIds) => {
 
   const candidates = [
     cachedSelect,
+    "id, sale_date, created_at, total, user_id, status",
+    "id, sale_date, created_at, total",
     "id, sale_date, ticket_number, created_at, total, user_id, status",
     "id, sale_date, ticket_number, created_at, total",
     "id, sale_date, ticket_number, created_at",

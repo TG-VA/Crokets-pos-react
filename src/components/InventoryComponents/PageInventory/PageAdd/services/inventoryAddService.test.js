@@ -189,13 +189,61 @@ describe("inventoryAddService", () => {
         expect.objectContaining({
           branchId: BRANCH_ID,
           productId: PRODUCT_ID,
-          movementType: "inventory_add",
+          movementType: "entry",
           quantity: 10,
           previousStock: 10,
           newStock: 20,
           unitCost: 400,
           totalCost: 4000,
+          reason: "Entrada común",
           userId: "user-1",
+        })
+      );
+    });
+
+    it("marca 'Alta inicial' cuando la fila nunca habia recibido stock", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 0,
+        has_been_stocked: false,
+        cost_price: 0,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 10,
+        incomingCostPrice: 400,
+      });
+
+      expect(logInventoryMovement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          movementType: "entry",
+          reason: "Alta inicial",
+        })
+      );
+    });
+
+    it("marca 'Alta inicial' cuando no existe fila de inventario previa", async () => {
+      setupRow(null);
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.insert.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 5,
+        incomingCostPrice: 100,
+      });
+
+      expect(logInventoryMovement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          movementType: "entry",
+          reason: "Alta inicial",
+          previousStock: 0,
+          newStock: 5,
         })
       );
     });
