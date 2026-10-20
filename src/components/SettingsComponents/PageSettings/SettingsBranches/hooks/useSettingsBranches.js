@@ -7,12 +7,22 @@ import {
   updateBranchContact,
   setBranchActive,
 } from "../services/branchesMutationService";
+import { sanitizeSearchTerm } from "../utils/branchesFormatters";
 
 export const BRANCH_STATUS_FILTERS = {
   ALL: "all",
   ACTIVE: "active",
   INACTIVE: "inactive",
 };
+
+export const BRANCH_PAGE_SIZE_OPTIONS = [5, 10, 20, "all"];
+export const DEFAULT_BRANCH_PAGE_SIZE = 5;
+
+const normalizeForSearch = (value = "") =>
+  String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 export const useSettingsBranches = () => {
   const { user } = useAuth();
@@ -22,7 +32,9 @@ export const useSettingsBranches = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminChecked, setAdminChecked] = useState(false);
   const [statusFilter, setStatusFilter] = useState(BRANCH_STATUS_FILTERS.ALL);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTermState] = useState("");
+  const [pageSize, setPageSize] = useState(DEFAULT_BRANCH_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [formModal, setFormModal] = useState({ isOpen: false, branch: null });
@@ -71,7 +83,7 @@ export const useSettingsBranches = () => {
   }, []);
 
   const filteredBranches = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = normalizeForSearch(sanitizeSearchTerm(searchTerm));
     return branches.filter((branch) => {
       if (statusFilter === BRANCH_STATUS_FILTERS.ACTIVE && !branch.isActive) {
         return false;
@@ -80,12 +92,48 @@ export const useSettingsBranches = () => {
         return false;
       }
       if (!term) return true;
-      return (
-        branch.name.toLowerCase().includes(term) ||
-        branch.code.toLowerCase().includes(term)
+      return [branch.name, branch.code, branch.city, branch.state].some(
+        (field) => normalizeForSearch(field).includes(term)
       );
     });
   }, [branches, statusFilter, searchTerm]);
+
+  const sortedBranches = useMemo(
+    () =>
+      [...filteredBranches].sort((a, b) =>
+        a.name.localeCompare(b.name, "es", { sensitivity: "base" })
+      ),
+    [filteredBranches]
+  );
+
+  const effectivePageSize =
+    pageSize === "all" ? sortedBranches.length : pageSize;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedBranches.length / Math.max(1, effectivePageSize))
+  );
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedBranches = useMemo(() => {
+    if (pageSize === "all") return sortedBranches;
+    const start = (safePage - 1) * pageSize;
+    return sortedBranches.slice(start, start + pageSize);
+  }, [sortedBranches, pageSize, safePage]);
+
+  const setSearchTerm = useCallback((value) => {
+    setSearchTermState(sanitizeSearchTerm(value));
+    setCurrentPage(1);
+  }, []);
+
+  const changePageSize = useCallback((value) => {
+    setPageSize(value);
+    setCurrentPage(1);
+  }, []);
+
+  const changeStatusFilter = useCallback((value) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  }, []);
 
   const metrics = useMemo(() => {
     const total = branches.length;
@@ -199,15 +247,24 @@ export const useSettingsBranches = () => {
   const clearFeedback = useCallback(() => setFeedback(null), []);
 
   return {
-    branches: filteredBranches,
+    branches: paginatedBranches,
+    filteredCount: sortedBranches.length,
     totalBranches: branches.length,
     metrics,
+    pagination: {
+      currentPage: safePage,
+      totalPages,
+      pageSize,
+      pageSizeOptions: BRANCH_PAGE_SIZE_OPTIONS,
+      setPage: setCurrentPage,
+      setPageSize: changePageSize,
+    },
     loading,
     loadError,
     isAdmin,
     adminChecked,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: changeStatusFilter,
     searchTerm,
     setSearchTerm,
     saving,

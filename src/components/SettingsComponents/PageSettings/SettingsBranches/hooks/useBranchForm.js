@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   buildBranchFormValues,
+  sanitizeBranchCodeInput,
   sanitizeBranchFormValues,
   validateBranchFormValues,
 } from "../utils/branchesFormatters";
@@ -47,7 +48,7 @@ export const useBranchForm = (initialBranch = null) => {
         value = value.replace(/\D/g, "").slice(0, 10);
       }
       if (field === "code") {
-        value = value.toUpperCase();
+        value = sanitizeBranchCodeInput(value);
       }
       setValues((prev) => ({ ...prev, [field]: value }));
       setTouchedFields((prev) =>

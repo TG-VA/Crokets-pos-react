@@ -246,4 +246,121 @@ describe("useSettingsBranches", () => {
     });
     expect(result.current.feedback.type).toBe("success");
   });
+
+  it("ordena el listado alfabeticamente A-Z", async () => {
+    fetchBranchesCatalog.mockResolvedValue({
+      success: true,
+      data: [
+        { ...catalog[0], id: "z", name: "Zapata" },
+        { ...catalog[1], id: "a", name: "Acapulco" },
+        { ...catalog[0], id: "m", name: "Mérida" },
+      ],
+      error: null,
+    });
+
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.branches.map((b) => b.name)).toEqual([
+      "Acapulco",
+      "Mérida",
+      "Zapata",
+    ]);
+  });
+
+  it("busca sin distinguir acentos ni mayusculas en name, code, city y state", async () => {
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setSearchTerm("cancun"));
+    expect(result.current.branches.map((b) => b.id)).toEqual(["b1"]);
+
+    act(() => result.current.setSearchTerm("yu"));
+    expect(result.current.branches.map((b) => b.id)).toEqual(["b2"]);
+
+    act(() => result.current.setSearchTerm("cen"));
+    expect(result.current.branches.map((b) => b.id)).toEqual(["b1"]);
+
+    act(() => result.current.setSearchTerm("merida"));
+    expect(result.current.branches.map((b) => b.id)).toEqual(["b2"]);
+  });
+
+  it("sanea el termino de busqueda y limita su longitud", async () => {
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setSearchTerm("  cen  "));
+    expect(result.current.searchTerm).toBe("cen");
+
+    act(() => result.current.setSearchTerm("a".repeat(80)));
+    expect(result.current.searchTerm).toHaveLength(50);
+  });
+
+  it("pagina el listado con 5 elementos por defecto", async () => {
+    fetchBranchesCatalog.mockResolvedValue({
+      success: true,
+      data: Array.from({ length: 12 }, (_, index) => ({
+        ...catalog[0],
+        id: `b${index}`,
+        name: `Sucursal ${String(index).padStart(2, "0")}`,
+      })),
+      error: null,
+    });
+
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.branches).toHaveLength(5);
+    expect(result.current.filteredCount).toBe(12);
+    expect(result.current.pagination.currentPage).toBe(1);
+    expect(result.current.pagination.totalPages).toBe(3);
+
+    act(() => result.current.pagination.setPage(2));
+    expect(result.current.pagination.currentPage).toBe(2);
+    expect(result.current.branches[0].name).toBe("Sucursal 05");
+  });
+
+  it("permite mostrar todas las sucursales sin paginar", async () => {
+    fetchBranchesCatalog.mockResolvedValue({
+      success: true,
+      data: Array.from({ length: 8 }, (_, index) => ({
+        ...catalog[0],
+        id: `b${index}`,
+        name: `Sucursal ${index}`,
+      })),
+      error: null,
+    });
+
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.pagination.setPageSize("all"));
+    expect(result.current.branches).toHaveLength(8);
+    expect(result.current.pagination.totalPages).toBe(1);
+  });
+
+  it("resetea a la pagina 1 al buscar o cambiar de filtro", async () => {
+    fetchBranchesCatalog.mockResolvedValue({
+      success: true,
+      data: Array.from({ length: 12 }, (_, index) => ({
+        ...catalog[0],
+        id: `b${index}`,
+        name: `Sucursal ${String(index).padStart(2, "0")}`,
+      })),
+      error: null,
+    });
+
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.pagination.setPage(3));
+    expect(result.current.pagination.currentPage).toBe(3);
+
+    act(() => result.current.setSearchTerm("sucursal"));
+    expect(result.current.pagination.currentPage).toBe(1);
+
+    act(() => result.current.pagination.setPage(2));
+    act(() => result.current.setStatusFilter(BRANCH_STATUS_FILTERS.ACTIVE));
+    expect(result.current.pagination.currentPage).toBe(1);
+  });
 });

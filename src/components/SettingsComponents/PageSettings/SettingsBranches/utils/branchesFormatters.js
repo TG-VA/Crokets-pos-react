@@ -17,10 +17,26 @@ export const BRANCH_TIMEZONE_OPTIONS = [
     value: "America/Hermosillo",
     label: "America/Hermosillo (Zona Pacífico - Sonora)",
   },
+  {
+    value: "America/Monterrey",
+    label: "America/Monterrey (Zona Centro-Norte - Nuevo León)",
+  },
 ];
 
 const PHONE_REGEX = /^\d{10}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CODE_ALLOWED_REGEX = /[^A-Z0-9_-]/g;
+const SEARCH_SANITIZE_REGEX = /[^\p{L}\p{N}\s_-]/gu;
+
+export const sanitizeBranchCodeInput = (value = "") =>
+  String(value)
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(CODE_ALLOWED_REGEX, "")
+    .slice(0, 20);
+
+export const sanitizeSearchTerm = (value = "") =>
+  String(value).replace(SEARCH_SANITIZE_REGEX, "").trim().slice(0, 50);
 
 export const buildBranchFormValues = (branch = null) => ({
   code: branch?.code || "",
@@ -34,13 +50,13 @@ export const buildBranchFormValues = (branch = null) => ({
 });
 
 export const sanitizeBranchFormValues = (form = {}) => ({
-  code: (form.code || "").trim().toUpperCase(),
+  code: sanitizeBranchCodeInput(form.code || ""),
   name: (form.name || "").trim(),
   city: (form.city || "").trim(),
   state: (form.state || "").trim(),
   phone: (form.phone || "").replace(/\D/g, "").slice(0, 10),
   email: (form.email || "").trim().toLowerCase(),
-  address: (form.address || "").trim(),
+  address: (form.address || "").trim().slice(0, 255),
   timezone: form.timezone || DEFAULT_TIMEZONE,
 });
 
@@ -54,8 +70,9 @@ export const validateBranchFormValues = (
   if (!isEdit) {
     if (!code) {
       errors.code = "El código de la sucursal es obligatorio.";
-    } else if (code.length > 20) {
-      errors.code = "El código no puede exceder 20 caracteres.";
+    } else if (!/^[A-Z0-9_-]{1,20}$/.test(code)) {
+      errors.code =
+        "El código solo admite letras, números, guiones y guiones bajos.";
     }
   }
 
@@ -86,6 +103,11 @@ export const validateBranchFormValues = (
   const email = (form.email || "").trim();
   if (email && !EMAIL_REGEX.test(email)) {
     errors.email = "El correo no tiene un formato válido.";
+  }
+
+  const address = (form.address || "").trim();
+  if (address.length > 255) {
+    errors.address = "La dirección no puede exceder 255 caracteres.";
   }
 
   return errors;

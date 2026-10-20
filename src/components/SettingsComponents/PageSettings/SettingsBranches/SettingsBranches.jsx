@@ -5,6 +5,7 @@ import useSettingsBranches, {
   BRANCH_STATUS_FILTERS,
 } from "./hooks/useSettingsBranches";
 import BranchesTable from "./components/BranchesTable";
+import BranchesPagination from "./components/BranchesPagination";
 import BranchFormModal from "./components/BranchFormModal";
 import BranchToggleStatusModal from "./components/BranchToggleStatusModal";
 import plusIcon from "../../../../assets/icons/plus-solid-full.svg";
@@ -68,7 +69,9 @@ const SettingsBranches = () => {
   const {
     branches,
     totalBranches,
+    filteredCount,
     metrics,
+    pagination,
     loading,
     loadError,
     isAdmin,
@@ -104,6 +107,16 @@ const SettingsBranches = () => {
     inactive: metrics?.inactive ?? 0,
     terminals: metrics?.terminals ?? 0,
   };
+
+  const recordsCount = filteredCount ?? branches.length;
+  const pageSize = pagination?.pageSize ?? branches.length;
+  const currentPage = pagination?.currentPage ?? 1;
+  const totalPages = pagination?.totalPages ?? 1;
+  const pageStart = recordsCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd =
+    pageSize && pagination?.pageSize !== "all"
+      ? Math.min(currentPage * pageSize, recordsCount)
+      : recordsCount;
 
   return (
     <section className={styles.page} aria-labelledby="settings-branches-title">
@@ -178,7 +191,13 @@ const SettingsBranches = () => {
 
       <section className={styles.kpiGrid} aria-label="Resumen de sucursales">
         {buildKpiCards(safeMetrics).map((card) => (
-          <article key={card.key} className={styles.kpiCard}>
+          <article
+            key={card.key}
+            className={joinClasses(
+              styles.kpiCard,
+              styles[`kpiCard${card.tone}`]
+            )}
+          >
             <span
               className={joinClasses(
                 styles.kpiIcon,
@@ -211,11 +230,12 @@ const SettingsBranches = () => {
             id="settings-branches-search"
             type="search"
             className={styles.searchInput}
-            placeholder="Buscar por nombre o código..."
-            title="Buscar por nombre o código"
+            placeholder="Buscar por nombre, código, ciudad o estado..."
+            title="Buscar por nombre, código, ciudad o estado"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            aria-label="Buscar sucursales por nombre o código"
+            maxLength={50}
+            aria-label="Buscar sucursales por nombre, código, ciudad o estado"
           />
           {searchTerm ? (
             <button
@@ -259,7 +279,7 @@ const SettingsBranches = () => {
 
       <div className={styles.recordsRow}>
         <span className={styles.recordsChip}>
-          {buildRecordsLabel(branches.length, loading)}
+          {buildRecordsLabel(recordsCount, loading)}
         </span>
       </div>
 
@@ -271,6 +291,23 @@ const SettingsBranches = () => {
         onEdit={openEditModal}
         onToggleStatus={openToggleModal}
       />
+
+      {!loading && !loadError && recordsCount > 0 ? (
+        <BranchesPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          pageSizeOptions={pagination?.pageSizeOptions ?? [5, 10, 20, "all"]}
+          filteredCount={recordsCount}
+          pageStart={pageStart}
+          pageEnd={pageEnd}
+          loading={loading}
+          onPageChange={pagination?.setPage}
+          onPageSizeChange={(value) =>
+            pagination?.setPageSize(value === "all" ? "all" : Number(value))
+          }
+        />
+      ) : null}
 
       <BranchFormModal
         key={`branch-form-${formModal.branch?.id || "new"}-${

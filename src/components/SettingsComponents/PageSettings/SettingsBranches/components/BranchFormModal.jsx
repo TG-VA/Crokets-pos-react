@@ -6,7 +6,6 @@ import {
   BRANCH_TIMEZONE_OPTIONS,
   DEFAULT_TIMEZONE,
 } from "../utils/branchesFormatters";
-import closeIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const FieldError = ({ message }) =>
   message ? (
@@ -75,36 +74,14 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
         aria-labelledby="settings-branches-form-title"
       >
         <div className={styles.modalHeader}>
-          <div className={styles.modalHeaderRow}>
-            <div className={styles.modalHeaderCopy}>
-              <h2
-                id="settings-branches-form-title"
-                className={styles.modalTitle}
-              >
-                {isEdit ? "Editar sucursal" : "Nueva sucursal"}
-              </h2>
-              <p className={styles.modalSubtitle}>
-                {isEdit
-                  ? "Actualiza los datos generales de contacto de la sucursal."
-                  : "Registra una sucursal nueva del catálogo corporativo."}
-              </p>
-            </div>
-            <button
-              type="button"
-              className={styles.modalCloseButton}
-              onClick={onClose}
-              disabled={saving}
-              aria-label="Cerrar formulario"
-              title="Cerrar"
-            >
-              <img
-                src={closeIcon}
-                alt=""
-                aria-hidden="true"
-                className={styles.modalCloseIcon}
-              />
-            </button>
-          </div>
+          <h2 id="settings-branches-form-title" className={styles.modalTitle}>
+            {isEdit ? "Editar sucursal" : "Nueva sucursal"}
+          </h2>
+          <p className={styles.modalSubtitle}>
+            {isEdit
+              ? "Actualiza los datos generales de contacto de la sucursal."
+              : "Registra una sucursal nueva del catálogo corporativo."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -125,6 +102,8 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("code")}
                   placeholder="Ej. CEN01"
                   maxLength={20}
+                  autoComplete="off"
+                  spellCheck={false}
                   disabled={isEdit}
                   {...errorProps("code")}
                 />
@@ -134,7 +113,11 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                     El código no es editable para preservar folios y series
                     fiscales.
                   </p>
-                ) : null}
+                ) : (
+                  <p className={styles.fieldHint}>
+                    Solo letras, números, guiones y guiones bajos.
+                  </p>
+                )}
               </div>
 
               <div className={styles.formField}>
@@ -152,6 +135,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("name")}
                   placeholder="Ej. Sucursal Centro"
                   maxLength={100}
+                  autoComplete="off"
                   {...errorProps("name")}
                 />
                 <FieldError message={getFieldError("name")} />
@@ -172,6 +156,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("city")}
                   placeholder="Ej. Cancún"
                   maxLength={50}
+                  autoComplete="off"
                   {...errorProps("city")}
                 />
                 <FieldError message={getFieldError("city")} />
@@ -192,6 +177,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("state")}
                   placeholder="Ej. Quintana Roo"
                   maxLength={50}
+                  autoComplete="off"
                   {...errorProps("state")}
                 />
                 <FieldError message={getFieldError("state")} />
@@ -210,6 +196,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("phone")}
                   placeholder="Ej. 9999999999"
                   maxLength={10}
+                  autoComplete="off"
                   {...errorProps("phone")}
                 />
                 <FieldError message={getFieldError("phone")} />
@@ -226,6 +213,8 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   value={values.email}
                   onChange={handleChange("email")}
                   placeholder="contacto@sucursal.com"
+                  maxLength={100}
+                  autoComplete="off"
                   {...errorProps("email")}
                 />
                 <FieldError message={getFieldError("email")} />
@@ -245,7 +234,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   onChange={handleChange("address")}
                   placeholder="Dirección completa de la sucursal"
                   rows={3}
-                  maxLength={250}
+                  maxLength={255}
                 />
               </div>
 

@@ -44,7 +44,16 @@ const buildHookState = (overrides = {}) => ({
     },
   ],
   totalBranches: 2,
+  filteredCount: 2,
   metrics: { total: 2, active: 1, inactive: 1, terminals: 2 },
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 20, "all"],
+    setPage: vi.fn(),
+    setPageSize: vi.fn(),
+  },
   loading: false,
   loadError: null,
   isAdmin: true,
@@ -218,16 +227,58 @@ describe("SettingsBranches", () => {
     expect(screen.getByRole("dialog", { name: "Nueva sucursal" })).toBeTruthy();
   });
 
-  it("cierra el modal de formulario con el boton de cerrar", () => {
-    const state = buildHookState({
+  it("no renderiza boton de cerrar en el modal de formulario", () => {
+    hookResult.current = buildHookState({
       formModal: { isOpen: true, branch: null },
+    });
+    render(<SettingsBranches />);
+
+    expect(
+      screen.queryByRole("button", { name: "Cerrar formulario" })
+    ).toBeNull();
+  });
+
+  it("renderiza la paginacion con el resumen y navegacion", () => {
+    const state = buildHookState({
+      filteredCount: 12,
+      pagination: {
+        currentPage: 2,
+        totalPages: 3,
+        pageSize: 5,
+        pageSizeOptions: [5, 10, 20, "all"],
+        setPage: vi.fn(),
+        setPageSize: vi.fn(),
+      },
     });
     hookResult.current = state;
     render(<SettingsBranches />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Cerrar formulario" }));
+    expect(screen.getByText("Mostrando 6 - 10 de 12 sucursales")).toBeTruthy();
 
-    expect(state.closeFormModal).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
+    expect(state.pagination.setPage).toHaveBeenCalledWith(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+    expect(state.pagination.setPage).toHaveBeenCalledWith(3);
+  });
+
+  it("deshabilita la navegacion de paginacion en la primera pagina", () => {
+    hookResult.current = buildHookState({
+      filteredCount: 12,
+      pagination: {
+        currentPage: 1,
+        totalPages: 3,
+        pageSize: 5,
+        pageSizeOptions: [5, 10, 20, "all"],
+        setPage: vi.fn(),
+        setPageSize: vi.fn(),
+      },
+    });
+    render(<SettingsBranches />);
+
+    expect(
+      screen.getByRole("button", { name: "Página anterior" }).disabled
+    ).toBe(true);
   });
 
   it("muestra el boton para limpiar la busqueda cuando hay texto", () => {

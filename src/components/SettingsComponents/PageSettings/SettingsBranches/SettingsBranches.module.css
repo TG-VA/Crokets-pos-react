@@ -68,6 +68,7 @@
 .buttonIcon {
   width: 0.95rem;
   height: 0.95rem;
+  filter: brightness(0) invert(1);
 }
 
 .feedback {
@@ -119,6 +120,26 @@
   box-sizing: border-box;
 }
 
+.kpiCardNeutral {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.kpiCardActive {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.kpiCardInactive {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.kpiCardInfo {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
 .kpiIcon {
   display: inline-flex;
   align-items: center;
@@ -130,7 +151,7 @@
 }
 
 .kpiIconNeutral {
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 .kpiIconActive {
@@ -151,8 +172,8 @@
 }
 
 .kpiIconNeutral .kpiIconImage {
-  filter: invert(34%) sepia(12%) saturate(836%) hue-rotate(176deg)
-    brightness(94%) contrast(89%);
+  filter: invert(24%) sepia(10%) saturate(1318%) hue-rotate(179deg)
+    brightness(94%) contrast(88%);
 }
 
 .kpiIconActive .kpiIconImage {
@@ -161,13 +182,13 @@
 }
 
 .kpiIconInactive .kpiIconImage {
-  filter: invert(27%) sepia(74%) saturate(2832%) hue-rotate(345deg)
-    brightness(93%) contrast(92%);
+  filter: invert(20%) sepia(74%) saturate(2832%) hue-rotate(345deg)
+    brightness(88%) contrast(92%);
 }
 
 .kpiIconInfo .kpiIconImage {
-  filter: invert(31%) sepia(58%) saturate(1242%) hue-rotate(157deg)
-    brightness(95%) contrast(93%);
+  filter: invert(31%) sepia(83%) saturate(1242%) hue-rotate(177deg)
+    brightness(90%) contrast(93%);
 }
 
 .kpiBody {
@@ -181,6 +202,22 @@
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.1;
+}
+
+.kpiCardActive .kpiValue {
+  color: #166534;
+}
+
+.kpiCardInactive .kpiValue {
+  color: #991b1b;
+}
+
+.kpiCardInfo .kpiValue {
+  color: #0369a1;
+}
+
+.kpiCardNeutral .kpiValue {
+  color: #334155;
 }
 
 .kpiLabel {
@@ -294,9 +331,9 @@
   border-radius: 9999px;
   cursor: pointer;
   transition:
-    background-color 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s ease;
 }
 
 .filterButton:hover {
@@ -314,7 +351,9 @@
 .filterButtonActive:hover {
   background: #0b6d85;
   color: #ffffff;
-  box-shadow: 0 1px 2px rgba(11, 109, 133, 0.35);
+  box-shadow:
+    0 1px 2px rgba(11, 109, 133, 0.35),
+    0 2px 6px rgba(11, 109, 133, 0.22);
 }
 
 .recordsRow {
@@ -326,14 +365,131 @@
 .recordsChip {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.7rem;
+  padding: 0.3rem 0.75rem;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   border-radius: 9999px;
   color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.recordsChipValue {
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.paginationSummary {
+  margin: 0;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.pageSizeField {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.pageSizeLabel {
+  color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
-  white-space: nowrap;
+}
+
+.pageSizeSelect {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.pageSizeSelect:focus-visible {
+  outline: none;
+  border-color: #0b6d85;
+  box-shadow: 0 0 0 3px rgba(11, 109, 133, 0.15);
+}
+
+.pageNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pageNavButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.pageNavButton:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0b6d85;
+}
+
+.pageNavButton:focus-visible {
+  outline: none;
+  border-color: #0b6d85;
+  box-shadow: 0 0 0 3px rgba(11, 109, 133, 0.15);
+}
+
+.pageNavButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageNavButtonActive,
+.pageNavButtonActive:hover:not(:disabled) {
+  background: #0b6d85;
+  border-color: #0b6d85;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(11, 109, 133, 0.35);
 }
 
 .tableCard {
@@ -540,66 +696,18 @@
 
 .modal {
   width: 100%;
-  max-width: 560px;
+  max-width: 680px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .modalHeader {
   padding: 1.1rem 1.25rem 0.5rem;
-}
-
-.modalHeaderRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.modalHeaderCopy {
-  min-width: 0;
-}
-
-.modalCloseButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  flex-shrink: 0;
-  padding: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #475569;
-  cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.modalCloseButton:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.modalCloseButton:focus-visible {
-  outline: none;
-  border-color: #0b6d85;
-  box-shadow: 0 0 0 3px rgba(11, 109, 133, 0.15);
-}
-
-.modalCloseButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.modalCloseIcon {
-  width: 0.7rem;
-  height: 0.7rem;
 }
 
 .modalTitle {
@@ -622,13 +730,14 @@
 .modalFooter {
   display: flex;
   justify-content: flex-end;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1.25rem 1.1rem;
   border-top: 1px solid #f1f5f9;
 }
 
 .secondaryButton {
-  padding: 0.55rem 1rem;
+  padding: 0.6rem 1.25rem;
   background: #ffffff;
   color: #475569;
   border: 1px solid #cbd5e1;
@@ -658,7 +767,7 @@
 }
 
 .modalPrimaryButton {
-  padding: 0.6rem 1.15rem;
+  padding: 0.6rem 1.5rem;
   background: #0b6d85;
   color: #ffffff;
   border: 1px solid #0b6d85;
@@ -666,7 +775,7 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(11, 109, 133, 0.3);
+  box-shadow: 0 2px 6px rgba(11, 109, 133, 0.25);
   transition:
     background-color 0.18s ease,
     border-color 0.18s ease,
@@ -696,12 +805,14 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.85rem;
+  box-sizing: border-box;
 }
 
 .formField {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  min-width: 0;
 }
 
 .formFieldFull {
@@ -728,6 +839,8 @@
   background: #ffffff;
   color: #1e293b;
   font-family: inherit;
+  box-sizing: border-box;
+  max-width: 100%;
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease;
@@ -748,10 +861,10 @@
 }
 
 .textarea {
-  resize: vertical;
-  height: 78px;
-  min-height: 78px;
-  max-height: 180px;
+  resize: none;
+  height: 75px;
+  min-height: 75px;
+  max-height: 75px;
   line-height: 1.4;
 }
 

@@ -75,6 +75,46 @@ describe("useBranchForm", () => {
     expect(result.current.values.phone).toBe("9999999999");
   });
 
+  it("elimina espacios y caracteres invalidos del codigo", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.handleChange("code")({ target: { value: "ce n@1!" } });
+    });
+
+    expect(result.current.values.code).toBe("CEN1");
+  });
+
+  it("limita el codigo a 20 caracteres alfanumericos", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.handleChange("code")({
+        target: { value: "a".repeat(30) },
+      });
+    });
+
+    expect(result.current.values.code).toBe("A".repeat(20));
+  });
+
+  it("exige telefono de exactamente 10 digitos cuando se ingresa", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.handleChange("phone")({ target: { value: "12345" } });
+    });
+
+    expect(result.current.errors.phone).toBeTruthy();
+
+    act(() => {
+      result.current.handleChange("phone")({
+        target: { value: "1234567890" },
+      });
+    });
+
+    expect(result.current.errors.phone).toBeUndefined();
+  });
+
   it("rechaza correo con formato invalido", () => {
     const { result } = renderHook(() => useBranchForm(validBranch));
 
