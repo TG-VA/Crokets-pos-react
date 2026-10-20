@@ -594,32 +594,60 @@ describe("electron mainProcess", () => {
     });
 
     describe("open-cash-drawer", () => {
-      it("confirma la apertura cuando hay impresora conectada", async () => {
-        const { handlers } = buildIpcHarness();
-        const sender = createWebContents({
-          getPrintersAsync: vi.fn(() => Promise.resolve([{ name: "Termica" }])),
-        });
+      it("delega en el servicio de hardware pasando impresora, pin y realtime", async () => {
+        const openCashDrawer = vi.fn(() =>
+          Promise.resolve({
+            success: true,
+            message: "Pulso de apertura enviado al cajón de dinero.",
+            error: null,
+          })
+        );
+        const { handlers } = buildIpcHarness({ openCashDrawer });
 
         await expect(
-          handlers["open-cash-drawer"]({ sender }, {})
-        ).resolves.toEqual({
-          success: true,
-          message: "Pulso de apertura enviado al cajón de dinero.",
-          error: null,
+          handlers["open-cash-drawer"](
+            { sender: createWebContents() },
+            { deviceName: "Termica", pin: 1, realtime: true }
+          )
+        ).resolves.toMatchObject({ success: true });
+
+        expect(openCashDrawer).toHaveBeenCalledWith({
+          printerDeviceName: "Termica",
+          pin: 1,
+          realtime: true,
         });
       });
 
-      it("falla cuando no hay ninguna impresora disponible", async () => {
-        const { handlers } = buildIpcHarness();
-        const sender = createWebContents({
-          getPrintersAsync: vi.fn(() => Promise.resolve([])),
+      it("acepta printerDeviceName como alias legado del dispositivo", async () => {
+        const openCashDrawer = vi.fn(() =>
+          Promise.resolve({ success: true, error: null, message: "ok" })
+        );
+        const { handlers } = buildIpcHarness({ openCashDrawer });
+
+        await handlers["open-cash-drawer"](
+          { sender: createWebContents() },
+          { printerDeviceName: "Xprinter" }
+        );
+
+        expect(openCashDrawer).toHaveBeenCalledWith({
+          printerDeviceName: "Xprinter",
+          pin: undefined,
+          realtime: false,
         });
+      });
+
+      it("traduce las excepciones del servicio al contrato honesto", async () => {
+        const openCashDrawer = vi.fn(() =>
+          Promise.reject(new Error("spooler caido"))
+        );
+        const { handlers } = buildIpcHarness({ openCashDrawer });
 
         await expect(
-          handlers["open-cash-drawer"]({ sender }, {})
-        ).resolves.toMatchObject({
+          handlers["open-cash-drawer"]({ sender: createWebContents() }, {})
+        ).resolves.toEqual({
           success: false,
-          error: "NO_PRINTER_AVAILABLE",
+          message: "No se pudo abrir el cajón de dinero.",
+          error: "spooler caido",
         });
       });
     });

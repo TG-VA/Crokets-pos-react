@@ -1,8 +1,8 @@
 const {
-  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
 } = require("./ticketPrintService");
+const cashDrawerService = require("./cashDrawerService");
 
 const ZOOM_MIN_DEFAULT = 0.5;
 const ZOOM_MAX_DEFAULT = 3;
@@ -128,6 +128,7 @@ function registerIpcHandlers({
   randomUUID,
   zoomStateByWebContentsId,
   zoomWindowsWithListeners,
+  openCashDrawer = cashDrawerService.openCashDrawer,
 }) {
   // Devuelve el device_code único de esta PC.
   ipcMain.handle("get-device-code", async () => {
@@ -241,11 +242,14 @@ function registerIpcHandlers({
     return listPrinters(event.sender);
   });
 
+  // Envia el pulso electrico real (ESC/POS crudo) a la impresora seleccionada.
+  // El servicio de hardware resuelve la cola de impresion del sistema operativo.
   ipcMain.handle("open-cash-drawer", async (event, payload = {}) => {
     try {
       return await openCashDrawer({
-        webContents: event.sender,
-        printerDeviceName: payload?.deviceName,
+        printerDeviceName: payload?.deviceName ?? payload?.printerDeviceName,
+        pin: payload?.pin,
+        realtime: payload?.realtime === true,
       });
     } catch (error) {
       console.error("Error abriendo cajón de dinero:", error);
