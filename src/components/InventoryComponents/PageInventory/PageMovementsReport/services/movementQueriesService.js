@@ -308,14 +308,8 @@ export const loadUsers = async (userIds) => {
   return [];
 };
 
-export const loadSales = async (saleIds) => {
-  if (!Array.isArray(saleIds) || saleIds.length === 0) {
-    return [];
-  }
-
-  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
-
-  const candidates = [
+const getSalesSelectCandidates = (cachedSelect) => {
+  return [
     cachedSelect,
     "id, sale_date, created_at, total, user_id, status",
     "id, sale_date, created_at, total",
@@ -334,6 +328,16 @@ export const loadSales = async (saleIds) => {
     "id, created_at",
     "id",
   ].filter(Boolean);
+};
+
+export const loadSales = async (saleIds) => {
+  if (!Array.isArray(saleIds) || saleIds.length === 0) {
+    return [];
+  }
+
+  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
+
+  const candidates = getSalesSelectCandidates(cachedSelect);
 
   for (const selectFields of candidates) {
     const response = await supabase
@@ -390,6 +394,37 @@ const loadRowsByColumn = async ({
 
     if (isMissingRelationError(response.error)) {
       return [];
+    }
+
+    throw response.error;
+  }
+
+  return [];
+};
+
+export const loadSalesByBranch = async ({ branchId, maxMovements }) => {
+  if (!branchId || !Number.isFinite(maxMovements) || maxMovements <= 0) {
+    return [];
+  }
+
+  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
+  const candidates = getSalesSelectCandidates(cachedSelect);
+
+  for (const selectFields of candidates) {
+    const response = await supabase
+      .from("sales")
+      .select(selectFields)
+      .eq("branch_id", branchId)
+      .order("sale_date", { ascending: false })
+      .limit(maxMovements);
+
+    if (!response.error) {
+      setCachedValue(MOVEMENTS_SALES_SELECT_KEY, selectFields);
+      return Array.isArray(response.data) ? response.data : [];
+    }
+
+    if (isMissingColumnError(response.error)) {
+      continue;
     }
 
     throw response.error;

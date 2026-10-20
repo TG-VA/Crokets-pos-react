@@ -4,6 +4,7 @@ import {
   loadBaseMovements,
   loadCanceledSalesBySales,
   loadProducts,
+  loadSalesByBranch,
   loadReturnItemsByReturns,
   loadRewardRedemptions,
   loadRewards,
@@ -38,7 +39,7 @@ export const loadMovementsReport = async ({
   branchId,
   maxMovements = DEFAULT_MAX_MOVEMENTS,
 }) => {
-  const [baseRows, rewardRows] = await Promise.all([
+  const [baseRows, rewardRows, standaloneSales] = await Promise.all([
     loadBaseMovements({
       branchId,
       maxMovements,
@@ -48,13 +49,28 @@ export const loadMovementsReport = async ({
       branchId,
       maxMovements,
     }),
+
+    loadSalesByBranch({
+      branchId,
+      maxMovements,
+    }),
   ]);
 
   const allRows = [...baseRows, ...rewardRows];
 
-  const userIds = getUniqueIds(allRows, "user_id");
+  const userIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "user_id"),
+      ...getUniqueIds(standaloneSales, "user_id"),
+    ])
+  );
 
-  const saleIds = getUniqueIds(allRows, "sale_id");
+  const saleIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "sale_id"),
+      ...getUniqueIds(standaloneSales, "id"),
+    ])
+  );
 
   const rewardIds = getUniqueIds(rewardRows, "reward_id");
 
