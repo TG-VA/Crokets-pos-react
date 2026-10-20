@@ -170,6 +170,14 @@ export const useSettingsBranches = () => {
 
   const handleCreateBranch = useCallback(
     async (formValues) => {
+      if (!isAdmin) {
+        setFeedback({
+          type: "error",
+          message:
+            "Se requieren permisos de administrador para crear sucursales.",
+        });
+        return false;
+      }
       setSaving(true);
       const result = await createBranch({
         ...formValues,
@@ -191,7 +199,7 @@ export const useSettingsBranches = () => {
       setFeedback({ type: "error", message: result.error });
       return false;
     },
-    [user, loadCatalog]
+    [isAdmin, user, loadCatalog]
   );
 
   const handleUpdateBranch = useCallback(

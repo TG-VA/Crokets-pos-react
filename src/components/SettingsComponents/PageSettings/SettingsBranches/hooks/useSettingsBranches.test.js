@@ -253,6 +253,15 @@ describe("useSettingsBranches", () => {
     await waitFor(() => expect(result.current.adminChecked).toBe(true));
 
     await act(async () => {
+      const okCreate = await result.current.handleCreateBranch({
+        code: "CEN",
+        name: "Centro",
+      });
+      expect(okCreate).toBe(false);
+    });
+    expect(createBranch).not.toHaveBeenCalled();
+
+    await act(async () => {
       const okUpdate = await result.current.handleUpdateBranch("b1", {
         name: "Nuevo",
       });
@@ -262,7 +271,10 @@ describe("useSettingsBranches", () => {
     expect(result.current.feedback.type).toBe("error");
 
     await act(async () => {
-      const okToggle = await result.current.handleToggleStatus(catalog[0], false);
+      const okToggle = await result.current.handleToggleStatus(
+        catalog[0],
+        false
+      );
       expect(okToggle).toBe(false);
     });
     expect(setBranchActive).not.toHaveBeenCalled();
