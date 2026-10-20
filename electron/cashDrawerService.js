@@ -60,6 +60,14 @@ using System.Runtime.InteropServices;
 
 namespace CroketsPos
 {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public class DOCINFO1
+    {
+        [MarshalAs(UnmanagedType.LPWStr)] public string pDocName;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pOutputFile;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pDataType;
+    }
+
     public static class RawPrinter
     {
         [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -69,16 +77,48 @@ namespace CroketsPos
         public static extern bool ClosePrinter(IntPtr printerHandle);
 
         [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int StartDocPrinter(IntPtr hPrinter, int level, [In] DOCINFO1 di);
+
+        [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool EndDocPrinter(IntPtr hPrinter);
+
+        [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool StartPagePrinter(IntPtr hPrinter);
+
+        [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool EndPagePrinter(IntPtr hPrinter);
+
+        [DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool WritePrinter(IntPtr printerHandle, byte[] buffer, int count, out int written);
 
         public static bool Send(string printerName, byte[] data)
         {
+            if (data == null || data.Length == 0) return false;
             IntPtr handle;
             if (!OpenPrinter(printerName, out handle, IntPtr.Zero)) return false;
             try
             {
-                int written;
-                return WritePrinter(handle, data, data.Length, out written);
+                DOCINFO1 di = new DOCINFO1();
+                di.pDocName = "Crokets Cash Drawer";
+                di.pDataType = "RAW";
+                if (StartDocPrinter(handle, 1, di) == 0) return false;
+                try
+                {
+                    if (!StartPagePrinter(handle)) return false;
+                    try
+                    {
+                        int written;
+                        return WritePrinter(handle, data, data.Length, out written);
+                    }
+                    finally
+                    {
+                        EndPagePrinter(handle);
+                    }
+                }
+                finally
+                {
+                    EndDocPrinter(handle);
+                }
             }
             finally
             {
@@ -129,7 +169,7 @@ function isSimulationEnabled(env) {
 }
 
 function normalizePrinterName(value) {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string" ? value.replace(/[\r\n]/g, "").trim() : "";
 }
 
 function parsePrinterNames(stdout) {
