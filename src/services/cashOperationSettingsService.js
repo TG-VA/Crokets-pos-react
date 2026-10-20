@@ -427,10 +427,13 @@ export async function persistCashOperationSettings({
   }
 }
 
-export async function triggerCashDrawerKick() {
+export async function triggerCashDrawerKick({ printerDeviceName, pin } = {}) {
   try {
     if (window.electronAPI?.invoke) {
-      const result = await window.electronAPI.invoke("open-cash-drawer");
+      const result = await window.electronAPI.invoke("open-cash-drawer", {
+        deviceName: printerDeviceName,
+        pin,
+      });
       return {
         success: result?.success !== false,
         message:

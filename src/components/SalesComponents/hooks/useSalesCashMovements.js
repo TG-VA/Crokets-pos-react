@@ -7,6 +7,7 @@ import {
   getCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../services/cashOperationSettingsService";
+import { getSelectedPrinter } from "../../../services/printSettingsService";
 
 const useSalesCashMovements = ({
   userId,
@@ -52,7 +53,9 @@ const useSalesCashMovements = ({
       cashOps.cashDrawerEnabled &&
       cashOps.cashDrawerConnection !== "manual"
     ) {
-      triggerCashDrawerKick().catch(() => {});
+      triggerCashDrawerKick({
+        printerDeviceName: getSelectedPrinter(),
+      }).catch(() => {});
     }
   }, []);
 

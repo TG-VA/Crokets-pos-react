@@ -12,6 +12,7 @@ import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import {
   getPrintMode,
   PRINT_MODE_CONFIRM,
+  getSelectedPrinter,
 } from "../../../../services/printSettingsService";
 import {
   getCashOperationSettings,
@@ -283,7 +284,9 @@ const PaymentModal = memo(
                 }
               }
               if (shouldTrigger) {
-                triggerCashDrawerKick().catch(() => {});
+                triggerCashDrawerKick({
+                  printerDeviceName: getSelectedPrinter(),
+                }).catch(() => {});
               }
             } catch (error) {
               console.error("Error al disparar apertura de cajon:", error);
