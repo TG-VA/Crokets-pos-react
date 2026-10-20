@@ -15,6 +15,8 @@ const updateQuery = ({ data, error }) => {
   const query = {
     update: vi.fn(() => query),
     eq: vi.fn(() => query),
+    neq: vi.fn(() => query),
+    ilike: vi.fn(() => query),
     select: vi.fn(() => query),
     maybeSingle: vi.fn(() => Promise.resolve({ data, error })),
   };
@@ -133,11 +135,14 @@ describe("branchesMutationService", () => {
     });
 
     it("actualiza solo campos permitidos", async () => {
-      const query = updateQuery({
+      const checkQuery = updateQuery({ data: null, error: null });
+      const mutationQuery = updateQuery({
         data: { id: "b1", name: "Centro Norte", state: "QR" },
         error: null,
       });
-      supabase.from.mockReturnValue(query);
+      supabase.from
+        .mockReturnValueOnce(checkQuery)
+        .mockReturnValueOnce(mutationQuery);
 
       const result = await updateBranchContact("b1", {
         name: "Centro Norte",
@@ -145,17 +150,28 @@ describe("branchesMutationService", () => {
         code: "IGNORED",
       });
 
-      expect(query.update).toHaveBeenCalledWith({
+      expect(mutationQuery.update).toHaveBeenCalledWith({
         name: "Centro Norte",
         state: "QR",
       });
-      expect(query.eq).toHaveBeenCalledWith("id", "b1");
+      expect(mutationQuery.eq).toHaveBeenCalledWith("id", "b1");
       expect(result.success).toBe(true);
       expect(result.data).toEqual({
         id: "b1",
         name: "Centro Norte",
         state: "QR",
       });
+    });
+
+    it("rechaza si ya existe otra sucursal con el mismo nombre", async () => {
+      supabase.from.mockReturnValue(
+        updateQuery({ data: { id: "b2" }, error: null })
+      );
+
+      const result = await updateBranchContact("b1", { name: "Torres" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Ya existe una sucursal con ese nombre");
     });
 
     it("propaga el error de Supabase", async () => {

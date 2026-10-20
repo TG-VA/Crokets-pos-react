@@ -247,6 +247,27 @@ describe("useSettingsBranches", () => {
     expect(result.current.feedback.type).toBe("success");
   });
 
+  it("bloquea la modificacion y cambio de estatus si el usuario no es admin", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    const { result } = renderHook(() => useSettingsBranches());
+    await waitFor(() => expect(result.current.adminChecked).toBe(true));
+
+    await act(async () => {
+      const okUpdate = await result.current.handleUpdateBranch("b1", {
+        name: "Nuevo",
+      });
+      expect(okUpdate).toBe(false);
+    });
+    expect(updateBranchContact).not.toHaveBeenCalled();
+    expect(result.current.feedback.type).toBe("error");
+
+    await act(async () => {
+      const okToggle = await result.current.handleToggleStatus(catalog[0], false);
+      expect(okToggle).toBe(false);
+    });
+    expect(setBranchActive).not.toHaveBeenCalled();
+  });
+
   it("ordena el listado alfabeticamente A-Z", async () => {
     fetchBranchesCatalog.mockResolvedValue({
       success: true,

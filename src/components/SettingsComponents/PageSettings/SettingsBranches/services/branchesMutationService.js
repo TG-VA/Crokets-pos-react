@@ -85,6 +85,25 @@ export const updateBranchContact = async (branchId, updates) => {
   }
 
   try {
+    if (allowedUpdates.name) {
+      const { data: existing, error: checkError } = await supabase
+        .from("branches")
+        .select("id")
+        .ilike("name", allowedUpdates.name.trim())
+        .neq("id", branchId)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existing?.id) {
+        return {
+          success: false,
+          data: null,
+          error: "Ya existe una sucursal con ese nombre.",
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from("branches")
       .update(allowedUpdates)

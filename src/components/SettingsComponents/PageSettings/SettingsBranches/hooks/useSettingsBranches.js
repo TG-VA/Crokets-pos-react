@@ -196,6 +196,14 @@ export const useSettingsBranches = () => {
 
   const handleUpdateBranch = useCallback(
     async (branchId, formValues) => {
+      if (!isAdmin) {
+        setFeedback({
+          type: "error",
+          message:
+            "Se requieren permisos de administrador para modificar sucursales.",
+        });
+        return false;
+      }
       setSaving(true);
       const result = await updateBranchContact(branchId, formValues);
       if (!mountedRef.current) return false;
@@ -212,11 +220,19 @@ export const useSettingsBranches = () => {
       setFeedback({ type: "error", message: result.error });
       return false;
     },
-    [loadCatalog]
+    [isAdmin, loadCatalog]
   );
 
   const handleToggleStatus = useCallback(
     async (branch, nextIsActive) => {
+      if (!isAdmin) {
+        setFeedback({
+          type: "error",
+          message:
+            "Se requieren permisos de administrador para modificar el estatus de sucursales.",
+        });
+        return false;
+      }
       setSaving(true);
       const result = await setBranchActive({
         branchId: branch.id,
@@ -241,7 +257,7 @@ export const useSettingsBranches = () => {
       setFeedback({ type: "error", message: result.error });
       return false;
     },
-    [user, loadCatalog]
+    [isAdmin, user, loadCatalog]
   );
 
   const clearFeedback = useCallback(() => setFeedback(null), []);
