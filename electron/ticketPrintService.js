@@ -336,11 +336,10 @@ async function resolvePrintAvailability(webContents, options = {}) {
 /**
  * Dispara la apertura del cajón de dinero.
  *
- * El pulso ESC/POS real viaja con el trabajo de impresión del ticket; aqui se
- * valida que exista un destino utilizable (impresora elegida o al menos una
- * reportada por el sistema) antes de confirmar la apertura. Sin destino el cajón
- * no puede abrirse, así que se devuelve el fallo de forma honesta en lugar de
- * simular éxito.
+ * La apertura real (pulso ESC/POS crudo) vive en `electron/cashDrawerService.js`
+ * porque `webContents.print` no transporta bytes binarios; este servicio solo
+ * imprime documentos HTML. La funcion se conserva por retrocompatibilidad con
+ * llamadores legacy que aun consultan la disponibilidad de impresora.
  */
 async function openCashDrawer({ webContents, printerDeviceName } = {}) {
   try {
