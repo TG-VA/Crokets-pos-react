@@ -6,6 +6,7 @@ import SettingsCash from "../../components/SettingsComponents/PageSettings/Setti
 import SettingsUsers from "../../components/SettingsComponents/PageSettings/SettingsUsers/SettingsUsers";
 import SettingsPrinters from "../../components/SettingsComponents/PageSettings/SettingsPrinters/SettingsPrinters";
 import SettingsTerminal from "../../components/SettingsComponents/PageSettings/SettingsTerminal/SettingsTerminal";
+import SettingsBranches from "../../components/SettingsComponents/PageSettings/SettingsBranches/SettingsBranches";
 
 import styles from "./Settings.module.css";
 
@@ -21,6 +22,7 @@ const Settings = () => {
           <Route path="/usuarios" element={<SettingsUsers />} />
           <Route path="/impresion" element={<SettingsPrinters />} />
           <Route path="/terminal" element={<SettingsTerminal />} />
+          <Route path="/sucursales" element={<SettingsBranches />} />
           <Route path="*" element={<Navigate to="/settings/caja" replace />} />
         </Routes>
       </main>

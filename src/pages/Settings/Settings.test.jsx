@@ -31,6 +31,11 @@ vi.mock(
   () => ({ default: () => <h1>Terminal y Sucursal</h1> })
 );
 
+vi.mock(
+  "../../components/SettingsComponents/PageSettings/SettingsBranches/SettingsBranches",
+  () => ({ default: () => <h1>Sucursales</h1> })
+);
+
 const renderSettingsAt = (path) =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -77,6 +82,12 @@ describe("Settings", () => {
     expect(
       screen.getByRole("heading", { name: "Terminal y Sucursal" })
     ).toBeTruthy();
+  });
+
+  it("renderiza la subpágina de sucursales bajo /settings/sucursales", () => {
+    renderSettingsAt("/settings/sucursales");
+
+    expect(screen.getByRole("heading", { name: "Sucursales" })).toBeTruthy();
   });
 
   it("redirige una subruta desconocida a /settings/caja", async () => {
