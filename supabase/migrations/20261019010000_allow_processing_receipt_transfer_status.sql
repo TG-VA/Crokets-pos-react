@@ -12,4 +12,3 @@ ALTER TABLE public.inventory_transfers
       'cancelled'
     )
   );
-  

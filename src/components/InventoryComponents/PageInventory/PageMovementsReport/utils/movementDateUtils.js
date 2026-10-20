@@ -24,7 +24,8 @@ export const parseMovementDate = (value, { assumeUtcNaive = false } = {}) => {
   }
 
   const normalizedValue =
-    assumeUtcNaive && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(rawValue)
+    assumeUtcNaive &&
+    /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(rawValue)
       ? `${rawValue.replace(" ", "T")}Z`
       : rawValue;
 

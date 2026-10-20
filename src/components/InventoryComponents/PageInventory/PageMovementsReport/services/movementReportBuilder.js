@@ -98,8 +98,8 @@ export const hydrateBaseMovements = ({
 
       report_sort_at:
         getRowMovementTypeKey(row) === "sale"
-          ? sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null
-          : row?.created_at ?? sale?.sale_date ?? sale?.created_at ?? null,
+          ? (sale?.sale_date ?? row?.created_at ?? sale?.created_at ?? null)
+          : (row?.created_at ?? sale?.sale_date ?? sale?.created_at ?? null),
 
       reason:
         rewardRow && isSaleMovement

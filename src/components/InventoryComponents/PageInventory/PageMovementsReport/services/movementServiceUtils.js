@@ -70,18 +70,14 @@ export const sortMovementsByDate = (movements) => {
     const firstDate = parseMovementDate(
       first?.report_sort_at ?? first?.created_at ?? 0,
       {
-        assumeUtcNaive: ["transfer", "canceled", "return"].includes(
-          firstType
-        ),
+        assumeUtcNaive: ["transfer", "canceled", "return"].includes(firstType),
       }
     );
 
     const secondDate = parseMovementDate(
       second?.report_sort_at ?? second?.created_at ?? 0,
       {
-        assumeUtcNaive: ["transfer", "canceled", "return"].includes(
-          secondType
-        ),
+        assumeUtcNaive: ["transfer", "canceled", "return"].includes(secondType),
       }
     );
 

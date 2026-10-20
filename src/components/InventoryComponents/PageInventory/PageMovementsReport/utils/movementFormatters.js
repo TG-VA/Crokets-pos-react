@@ -253,16 +253,16 @@ export const buildRowView = (row) => {
 
   const soldAtValue =
     movementTypeKey === "sale" || movementTypeKey === "redemption"
-      ? sale?.sale_date ??
+      ? (sale?.sale_date ??
         row?.report_sort_at ??
         row?.created_at ??
         sale?.created_at ??
-        null
-      : row?.report_sort_at ??
+        null)
+      : (row?.report_sort_at ??
         row?.created_at ??
         sale?.sale_date ??
         sale?.created_at ??
-        null;
+        null);
 
   const soldAt = formatDateTime(soldAtValue, {
     useSystemTime,
