@@ -1,9 +1,43 @@
-export const MOVEMENTS_TIME_ZONE = "America/Cancun";
+const resolveSystemTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch (_error) {
+    return null;
+  }
+};
 
-export const formatDateTime = (value, { useSystemTime = false } = {}) => {
+export const MOVEMENTS_TIME_ZONE = resolveSystemTimeZone();
+
+const parseMovementDate = (value, { assumeUtcNaive = false } = {}) => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const rawValue = String(value).trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  const normalizedValue =
+    assumeUtcNaive && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(rawValue)
+      ? `${rawValue.replace(" ", "T")}Z`
+      : rawValue;
+
+  return new Date(normalizedValue);
+};
+
+export const formatDateTime = (
+  value,
+  { useSystemTime = false, assumeUtcNaive = false } = {}
+) => {
   if (!value) return "—";
 
-  const date = value instanceof Date ? value : new Date(value);
+  const date = parseMovementDate(value, { assumeUtcNaive });
 
   if (Number.isNaN(date.getTime())) {
     return "—";
@@ -18,17 +52,20 @@ export const formatDateTime = (value, { useSystemTime = false } = {}) => {
     hour12: false,
   };
 
-  if (!useSystemTime) {
+  if (!useSystemTime && MOVEMENTS_TIME_ZONE) {
     options.timeZone = MOVEMENTS_TIME_ZONE;
   }
 
   return new Intl.DateTimeFormat("es-MX", options).format(date);
 };
 
-export const getDateParts = (value, { useSystemTime = false } = {}) => {
+export const getDateParts = (
+  value,
+  { useSystemTime = false, assumeUtcNaive = false } = {}
+) => {
   if (!value) return null;
 
-  const date = value instanceof Date ? value : new Date(value);
+  const date = parseMovementDate(value, { assumeUtcNaive });
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -40,7 +77,7 @@ export const getDateParts = (value, { useSystemTime = false } = {}) => {
     day: "2-digit",
   };
 
-  if (!useSystemTime) {
+  if (!useSystemTime && MOVEMENTS_TIME_ZONE) {
     options.timeZone = MOVEMENTS_TIME_ZONE;
   }
 

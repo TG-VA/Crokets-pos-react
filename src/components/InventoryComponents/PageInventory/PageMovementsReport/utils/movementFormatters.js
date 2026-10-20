@@ -244,7 +244,10 @@ export const buildRowView = (row) => {
 
   const ticket = formatTicket(ticketRaw);
 
+  const movementTypeKey = getRowMovementTypeKey(row);
+
   const useSystemTime = !sale?.sale_date;
+  const assumeUtcNaive = movementTypeKey === "transfer";
 
   const soldAtValue =
     sale?.sale_date ??
@@ -255,10 +258,12 @@ export const buildRowView = (row) => {
 
   const soldAt = formatDateTime(soldAtValue, {
     useSystemTime,
+    assumeUtcNaive,
   });
 
   const soldAtDateKey = getDateKeyFromValue(soldAtValue, {
     useSystemTime,
+    assumeUtcNaive,
   });
 
   const productName = (
