@@ -19,6 +19,7 @@ import {
 const thenableQuery = ({ data, error }) => {
   const query = {
     select: vi.fn(() => query),
+    eq: vi.fn(() => query),
     order: vi.fn(() => Promise.resolve({ data, error })),
   };
   return query;
@@ -103,18 +104,18 @@ describe("deviceBranchService", () => {
 });
 
 describe("fetchActiveBranches", () => {
-  it("devuelve el catálogo de sucursales ordenado", async () => {
+  it("devuelve el catálogo de sucursales ordenado y solo activas", async () => {
     const branches = [
       { id: "b1", name: "Centro", code: "C01", city: "Cancún", state: "QR" },
       { id: "b2", name: "Norte", code: "C02", city: "Cancún", state: "QR" },
     ];
-    supabase.from.mockReturnValue(
-      thenableQuery({ data: branches, error: null })
-    );
+    const query = thenableQuery({ data: branches, error: null });
+    supabase.from.mockReturnValue(query);
 
     const result = await fetchActiveBranches();
 
     expect(supabase.from).toHaveBeenCalledWith("branches");
+    expect(query.eq).toHaveBeenCalledWith("is_active", true);
     expect(result).toEqual({ success: true, data: branches, error: null });
   });
 

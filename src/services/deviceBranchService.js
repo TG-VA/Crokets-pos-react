@@ -50,6 +50,7 @@ export const fetchActiveBranches = async () => {
     const { data, error } = await supabase
       .from("branches")
       .select("id, name, code, city, state")
+      .eq("is_active", true)
       .order("name");
 
     if (error) throw error;

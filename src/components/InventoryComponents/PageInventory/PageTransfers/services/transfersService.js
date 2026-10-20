@@ -18,6 +18,7 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
     const { data, error } = await supabase
       .from("branches")
       .select("id, name, code")
+      .eq("is_active", true)
       .order("name", {
         ascending: true,
       });
