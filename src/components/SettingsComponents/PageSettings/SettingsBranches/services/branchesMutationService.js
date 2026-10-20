@@ -28,7 +28,7 @@ export const createBranch = async (payload) => {
 
   try {
     const { data, error } = await supabase.rpc("create_branch", {
-      p_code: payload.code.trim(),
+      p_code: payload.code.trim().toUpperCase(),
       p_name: payload.name.trim(),
       p_admin_id: payload.adminId,
       p_phone: payload.phone || null,
