@@ -28,6 +28,7 @@ import {
 
 const mockFrom = {
   select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
   order: vi.fn().mockResolvedValue({ data: [], error: null }),
 };
 

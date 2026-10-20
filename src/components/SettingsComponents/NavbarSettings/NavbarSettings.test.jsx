@@ -7,7 +7,8 @@ const TAB_LABELS = [
   "Caja y Operación",
   "Usuarios y Permisos",
   "Impresión y Tickets",
-  "Terminal y Sucursal",
+  "Terminal local",
+  "Sucursales",
   "Acceso rápido fiscal",
 ];
 
