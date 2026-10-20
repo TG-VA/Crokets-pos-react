@@ -75,12 +75,8 @@ describe("contrato SQL de gestión de sucursales (is_active)", () => {
     });
 
     it("valida unicidad de code y name antes de insertar", () => {
-      expect(normalizedSql).toMatch(
-        /Ya existe una sucursal con ese código/i
-      );
-      expect(normalizedSql).toMatch(
-        /Ya existe una sucursal con ese nombre/i
-      );
+      expect(normalizedSql).toMatch(/Ya existe una sucursal con ese código/i);
+      expect(normalizedSql).toMatch(/Ya existe una sucursal con ese nombre/i);
     });
 
     it("inserta con is_active = true", () => {
@@ -91,7 +87,13 @@ describe("contrato SQL de gestión de sucursales (is_active)", () => {
 
     it("valida que el administrador este activo con rol admin", () => {
       expect(normalizedSql).toMatch(
-        /join public\.roles r on r\.id = u\.role_id where u\.id = p_admin_id and u\.status = true and r\.name = 'admin'/i
+        /join public\.roles r on r\.id = u\.role_id where u\.id = v_admin_id and u\.status = true and r\.name = 'admin'/i
+      );
+    });
+
+    it("fija el actor server-side con coalesce(auth.uid(), p_admin_id)", () => {
+      expect(normalizedSql).toMatch(
+        /v_admin_id uuid := coalesce\(auth\.uid\(\), p_admin_id\)/i
       );
     });
 
@@ -143,6 +145,18 @@ describe("contrato SQL de gestión de sucursales (is_active)", () => {
 
     it("nunca borra fisicamente la sucursal", () => {
       expect(normalizedSql).not.toMatch(/delete from public\.branches/i);
+    });
+
+    it("fija el actor server-side para impedir suplantacion de admin", () => {
+      const fn = normalizedSql.match(
+        /CREATE OR REPLACE FUNCTION public\.set_branch_active[\s\S]*?end; \$\$/i
+      );
+      expect(fn, "falta el cuerpo de set_branch_active").not.toBeNull();
+      expect(fn[0]).toMatch(
+        /v_admin_id uuid := coalesce\(auth\.uid\(\), p_admin_id\)/i
+      );
+      expect(fn[0]).toMatch(/where u\.id = v_admin_id/i);
+      expect(fn[0]).not.toMatch(/where u\.id = p_admin_id/i);
     });
 
     it("restringe execute y solo lo concede a authenticated y service_role", () => {

@@ -11,8 +11,10 @@
 -- set_branch_active: activa/desactiva con bloqueos operativos (sesiones de caja
 -- abiertas, traspasos en tránsito) y advertencia de terminales POS vinculadas.
 --
--- Ambas RPCs validan que p_admin_id sea un usuario activo con rol 'admin'
--- (mismo patrón de elevación contenido que register_pos_device).
+-- Ambas RPCs validan que el actor sea un usuario activo con rol 'admin'. El
+-- actor se fija server-side con coalesce(auth.uid(), p_admin_id): un usuario
+-- autenticado no puede suplantar a un admin pasando un p_admin_id ajeno
+-- (mismo patrón de hardening que 20260917200000 y register_pos_device).
 
 -- -----------------------------------------------------------------------------
 -- 1. Columna is_active + índice
@@ -49,6 +51,7 @@ SET search_path = public
 AS $$
 declare
   v_admin_is_valid boolean;
+  v_admin_id uuid := coalesce(auth.uid(), p_admin_id);
   v_existing record;
   v_branch record;
 begin
@@ -64,7 +67,7 @@ begin
     into v_admin_is_valid
   from public.users u
   join public.roles r on r.id = u.role_id
-  where u.id = p_admin_id
+  where u.id = v_admin_id
     and u.status = true
     and r.name = 'admin'
   limit 1;
@@ -134,6 +137,7 @@ SET search_path = public
 AS $$
 declare
   v_admin_is_valid boolean;
+  v_admin_id uuid := coalesce(auth.uid(), p_admin_id);
   v_branch record;
   v_open_sessions bigint;
   v_in_transit_transfers bigint;
@@ -151,7 +155,7 @@ begin
     into v_admin_is_valid
   from public.users u
   join public.roles r on r.id = u.role_id
-  where u.id = p_admin_id
+  where u.id = v_admin_id
     and u.status = true
     and r.name = 'admin'
   limit 1;
