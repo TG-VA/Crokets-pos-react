@@ -239,9 +239,15 @@ describe("cashOperationSettingsService", () => {
       }),
     };
 
-    const result = await triggerCashDrawerKick();
+    const result = await triggerCashDrawerKick({
+      printerDeviceName: "Termica",
+      pin: 1,
+    });
 
-    expect(window.electronAPI.invoke).toHaveBeenCalledWith("open-cash-drawer");
+    expect(window.electronAPI.invoke).toHaveBeenCalledWith("open-cash-drawer", {
+      deviceName: "Termica",
+      pin: 1,
+    });
     expect(result.success).toBe(true);
     expect(result.message).toBe("Pulso enviado");
   });
