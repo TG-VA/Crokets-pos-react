@@ -2,14 +2,19 @@ import { DEFAULT_MAX_MOVEMENTS } from "./movementServiceConstants";
 
 import {
   loadBaseMovements,
+  loadCanceledSalesBySales,
   loadProducts,
+  loadReturnItemsByReturns,
   loadRewardRedemptions,
   loadRewards,
+  loadSaleDetailsBySales,
+  loadSaleReturnsBySales,
   loadSales,
   loadUsers,
 } from "./movementQueriesService";
 
 import {
+  buildNoStockRows,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
 } from "./movementReportBuilder";
@@ -47,20 +52,34 @@ export const loadMovementsReport = async ({
 
   const allRows = [...baseRows, ...rewardRows];
 
-  const productIds = getUniqueIds(allRows, "product_id");
-
   const userIds = getUniqueIds(allRows, "user_id");
 
   const saleIds = getUniqueIds(allRows, "sale_id");
 
   const rewardIds = getUniqueIds(rewardRows, "reward_id");
 
-  const [products, users, sales, rewards] = await Promise.all([
-    loadProducts(productIds),
-    loadUsers(userIds),
-    loadSales(saleIds),
-    loadRewards(rewardIds),
-  ]);
+  const saleDetails = await loadSaleDetailsBySales(saleIds);
+
+  const productIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "product_id"),
+      ...getUniqueIds(saleDetails, "product_id"),
+    ])
+  );
+
+  const [products, users, sales, rewards, canceledSales, saleReturns] =
+    await Promise.all([
+      loadProducts(productIds),
+      loadUsers(userIds),
+      loadSales(saleIds),
+      loadRewards(rewardIds),
+      loadCanceledSalesBySales(saleIds),
+      loadSaleReturnsBySales(saleIds),
+    ]);
+
+  const returnItems = await loadReturnItemsByReturns(
+    getUniqueIds(saleReturns, "id")
+  );
 
   const productsById = createEntityMap(products);
 
@@ -88,5 +107,28 @@ export const loadMovementsReport = async ({
     rewardsById,
   });
 
-  return sortMovementsByDate([...hydratedMovements, ...hydratedRedemptions]);
+  const existingSaleProductKeys = new Set(
+    baseRows
+      .filter(
+        (row) => String(row?.movement_type ?? "").toLowerCase() === "sale"
+      )
+      .map((row) => `${row?.sale_id}::${row?.product_id}`)
+  );
+
+  const noStockRows = buildNoStockRows({
+    saleDetails,
+    canceledSales,
+    saleReturns,
+    returnItems,
+    productsById,
+    usersById,
+    salesById,
+    existingSaleProductKeys,
+  });
+
+  return sortMovementsByDate([
+    ...hydratedMovements,
+    ...hydratedRedemptions,
+    ...noStockRows,
+  ]);
 };

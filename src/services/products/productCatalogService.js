@@ -7,7 +7,7 @@ import {
   formatGlobalProductsWithoutInventory,
 } from "./productFormatters";
 
-const MAX_CATALOG_ROWS_TO_LOAD = 10000;
+const MAX_CATALOG_ROWS_TO_LOAD = 1000;
 
 export const fetchDepartments = async () => {
   try {

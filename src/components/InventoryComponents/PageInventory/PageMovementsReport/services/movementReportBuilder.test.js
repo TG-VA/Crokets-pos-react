@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  buildNoStockRows,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
 } from "./movementReportBuilder";
@@ -278,6 +279,145 @@ describe("movementReportBuilder", () => {
       });
 
       expect(result[0].display_product_name).toBe("Premio Lealtad");
+    });
+  });
+
+  describe("buildNoStockRows", () => {
+    const buildNoStockDeps = () => ({
+      productsById: new Map([
+        ["p1", { id: "p1", name: "Sin Stock", tracks_inventory: false }],
+        ["p2", { id: "p2", name: "Con Stock", tracks_inventory: true }],
+        [
+          "p3",
+          {
+            id: "p3",
+            name: "Kit Sin Stock",
+            tracks_inventory: false,
+            is_kit: true,
+          },
+        ],
+      ]),
+      usersById: new Map([["u1", { id: "u1", username: "admin" }]]),
+      salesById: new Map([
+        [
+          "s1",
+          {
+            id: "s1",
+            sale_date: "2026-10-01T10:00:00Z",
+            ticket_number: "TCK-1",
+            user_id: "u1",
+          },
+        ],
+      ]),
+    });
+
+    it("deriva una fila de venta para productos sin stock", () => {
+      const result = buildNoStockRows({
+        saleDetails: [
+          {
+            id: "sd1",
+            sale_id: "s1",
+            product_id: "p1",
+            quantity: 2,
+          },
+        ],
+        canceledSales: [],
+        saleReturns: [],
+        returnItems: [],
+        ...buildNoStockDeps(),
+        existingSaleProductKeys: new Set(),
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].movement_type).toBe("sale");
+      expect(result[0].quantity).toBe(-2);
+      expect(result[0].previous_stock).toBeNull();
+      expect(result[0].new_stock).toBeNull();
+      expect(result[0].reason).toBe("Venta registrada");
+    });
+
+    it("omite productos que si manejan inventario", () => {
+      const result = buildNoStockRows({
+        saleDetails: [
+          { id: "sd2", sale_id: "s1", product_id: "p2", quantity: 1 },
+        ],
+        canceledSales: [],
+        saleReturns: [],
+        returnItems: [],
+        ...buildNoStockDeps(),
+        existingSaleProductKeys: new Set(),
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("omite productos que ya tienen movimiento de venta", () => {
+      const result = buildNoStockRows({
+        saleDetails: [
+          { id: "sd1", sale_id: "s1", product_id: "p1", quantity: 2 },
+        ],
+        canceledSales: [],
+        saleReturns: [],
+        returnItems: [],
+        ...buildNoStockDeps(),
+        existingSaleProductKeys: new Set(["s1::p1"]),
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("omite el producto-kit padre aunque no maneje stock", () => {
+      const result = buildNoStockRows({
+        saleDetails: [
+          { id: "sd3", sale_id: "s1", product_id: "p3", quantity: 1 },
+        ],
+        canceledSales: [],
+        saleReturns: [],
+        returnItems: [],
+        ...buildNoStockDeps(),
+        existingSaleProductKeys: new Set(),
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("agrega cancelacion y devolucion ademas de la venta", () => {
+      const result = buildNoStockRows({
+        saleDetails: [
+          { id: "sd1", sale_id: "s1", product_id: "p1", quantity: 3 },
+        ],
+        canceledSales: [
+          {
+            id: "c1",
+            sale_id: "s1",
+            user_id: "u1",
+            cancel_reason: "Cliente se arrepintio",
+            canceled_at: "2026-10-01T11:00:00Z",
+          },
+        ],
+        saleReturns: [
+          {
+            id: "r1",
+            sale_id: "s1",
+            user_id: "u1",
+            return_reason: "Producto danado",
+            created_at: "2026-10-01T12:00:00Z",
+          },
+        ],
+        returnItems: [
+          { id: "ri1", return_id: "r1", product_id: "p1", quantity: 1 },
+        ],
+        ...buildNoStockDeps(),
+        existingSaleProductKeys: new Set(),
+      });
+
+      const types = result.map((row) => row.movement_type);
+
+      expect(types).toEqual(["sale", "canceled", "return"]);
+
+      const returnRow = result.find((row) => row.movement_type === "return");
+
+      expect(returnRow.quantity).toBe(1);
     });
   });
 });

@@ -158,11 +158,12 @@ export const logInventoryMovement = async (movement) => {
       (message.includes("violates check constraint") ||
         message.includes("check constraint"));
 
-    // El check constraint de Postgres no admite `inventory_add`, asi que el
-    // reintento degrada el tipo a `adjustment`. El motivo humano que ya viaja en
-    // el payload se conserva tal cual: anteponerle el slug tecnico lo persistia
-    // como "inventory_add: Alta a inventario (manual)" y contaminaba el Kardex.
-    // El slug solo se usa cuando el llamador no aporto ningun motivo.
+    // Red de seguridad para bases sin migrar: si el CHECK no reconoce el tipo
+    // (por ejemplo `entry` antes de aplicar la migracion), el reintento degrada
+    // a `adjustment` para no perder el movimiento. El motivo humano que ya viaja
+    // en el payload se conserva tal cual: anteponerle el slug tecnico lo
+    // persistia como "entry: <motivo>" y contaminaba el Kardex. El slug solo se
+    // usa cuando el llamador no aporto ningun motivo.
     if (invalidMovementType) {
       const originalType = fullPayload.movement_type || "";
       const nextReason = fullPayload.reason || originalType || null;
