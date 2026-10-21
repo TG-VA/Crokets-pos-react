@@ -220,6 +220,26 @@ describe("SettingsPrinters", () => {
     ).toBeTruthy();
   });
 
+  it("el simulador muestra el mismo pie que se imprime cuando la plantilla deja campos vacios", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      previewData: {
+        ...mockHookReturn.previewData,
+        footerLine1: "",
+        footerLine2: "",
+        footerPhone: "",
+        returnPolicy: "",
+      },
+    };
+
+    render(<SettingsPrinters />);
+
+    const preview = document.querySelector("pre");
+    expect(preview.textContent).toContain("Gracias por su compra");
+    expect(preview.textContent).toContain("Agenda tu cita de baño");
+    expect(preview.textContent).toContain("Tel. 998 117 5387");
+  });
+
   it("muestra los mensajes de estado y error cuando hay feedback activo", () => {
     currentHookData = {
       ...mockHookReturn,

@@ -31,6 +31,7 @@ import {
 } from "../../../../services/printSettingsService";
 import { getTicketCustomization } from "../../../../services/ticketCustomizationService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
+import { buildTicketFooter } from "../../../../utils/ticket/ticketFooterFormatters";
 
 export const useSalesHistory = ({
   isOpen,
@@ -656,14 +657,7 @@ export const useSalesHistory = ({
         },
         items: itemsForPrint,
         cashierName: ticketForPrint.cashier,
-        footer: {
-          line1: customization?.footerLine1 || "Gracias por su compra",
-          line2: customization?.footerLine2 || "Agenda tu cita de baño",
-          phone: customization?.footerPhone || "998 117 5387",
-          returnPolicy:
-            customization?.returnPolicy ||
-            "Para cambios o devoluciones presentar ticket de compra",
-        },
+        footer: buildTicketFooter(customization),
         isReprint: true,
         reprintedAt: new Date(),
         customization,

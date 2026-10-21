@@ -30,7 +30,9 @@ import {
 import {
   wrapText,
   centerText,
+  TICKET_WIDTH,
 } from "../../../../../utils/ticket/ticketLayoutFormatters";
+import { buildTicketFooter } from "../../../../../utils/ticket/ticketFooterFormatters";
 
 const DEFAULT_FEEDBACK = null;
 
@@ -244,7 +246,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, [branchId, template]);
 
   const buildTestTicketText = useCallback(() => {
-    const cols = widthMm === 80 ? 42 : 32;
+    const cols = TICKET_WIDTH;
     const lines = [];
     const slogan = (template.headerSlogan || "CROKETS").trim();
     if (slogan) {
@@ -266,22 +268,21 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     lines.push("ARTICULO DE PRUEBA x1   $100.00");
     lines.push("TOTAL                $100.00");
     lines.push("-".repeat(cols));
-    if (template.footerLine1) {
-      wrapText(template.footerLine1, cols).forEach((line) => {
+    const footer = buildTicketFooter(template);
+    wrapText(footer.line1, cols).forEach((line) => {
+      lines.push(line);
+    });
+    wrapText(footer.line2, cols).forEach((line) => {
+      lines.push(line);
+    });
+    if (footer.phone) {
+      wrapText(`Tel. ${footer.phone}`, cols).forEach((line) => {
         lines.push(line);
       });
     }
-    if (template.footerLine2) {
-      wrapText(template.footerLine2, cols).forEach((line) => {
-        lines.push(line);
-      });
-    }
-    if (template.footerPhone) lines.push(`Tel.: ${template.footerPhone}`);
-    if (template.returnPolicy) {
-      wrapText(template.returnPolicy, cols).forEach((line) => {
-        lines.push(line);
-      });
-    }
+    wrapText(footer.returnPolicy, cols).forEach((line) => {
+      lines.push(line);
+    });
     return lines.join("\n");
   }, [template, widthMm]);
 
