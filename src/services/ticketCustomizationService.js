@@ -72,6 +72,14 @@ const SETTING_COLUMNS = `
 const TICKET_CUSTOMIZATION_CACHE_KEY = "settings_ticket_template_cache";
 
 /**
+ * La cache local se indexa por sucursal. Sin este aislamiento, un fallo de
+ * Supabase podia servir la plantilla de otra sucursal en los tickets de la
+ * sucursal activa.
+ */
+const getCacheKey = (branchId = null) =>
+  `${TICKET_CUSTOMIZATION_CACHE_KEY}:${branchId ?? "global"}`;
+
+/**
  * Normaliza una plantilla arbitraria: completa los campos ausentes con los
  * valores por defecto y recorta cada texto al límite de
  * `TICKET_TEMPLATE_LIMITS`. La sanitización es defensiva, de modo que una
@@ -105,7 +113,7 @@ export const normalizeTemplate = (template = {}) => ({
   ),
   showCustomerPoints: Boolean(
     template.showCustomerPoints ??
-      DEFAULT_TICKET_CUSTOMIZATION.showCustomerPoints
+    DEFAULT_TICKET_CUSTOMIZATION.showCustomerPoints
   ),
   showCashierName: Boolean(
     template.showCashierName ?? DEFAULT_TICKET_CUSTOMIZATION.showCashierName
@@ -114,18 +122,16 @@ export const normalizeTemplate = (template = {}) => ({
     template.showSaleNotes ?? DEFAULT_TICKET_CUSTOMIZATION.showSaleNotes
   ),
   showBranchAddress: Boolean(
-    template.showBranchAddress ??
-      DEFAULT_TICKET_CUSTOMIZATION.showBranchAddress
+    template.showBranchAddress ?? DEFAULT_TICKET_CUSTOMIZATION.showBranchAddress
   ),
   showBranchPhone: Boolean(
-    template.showBranchPhone ??
-      DEFAULT_TICKET_CUSTOMIZATION.showBranchPhone
+    template.showBranchPhone ?? DEFAULT_TICKET_CUSTOMIZATION.showBranchPhone
   ),
 });
 
-const readCache = () => {
+const readCache = (branchId = null) => {
   try {
-    const raw = window.localStorage.getItem(TICKET_CUSTOMIZATION_CACHE_KEY);
+    const raw = window.localStorage.getItem(getCacheKey(branchId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return normalizeTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION, ...parsed });
@@ -135,10 +141,10 @@ const readCache = () => {
   }
 };
 
-const writeCache = (value) => {
+const writeCache = (value, branchId = null) => {
   try {
     window.localStorage.setItem(
-      TICKET_CUSTOMIZATION_CACHE_KEY,
+      getCacheKey(branchId),
       JSON.stringify(value || DEFAULT_TICKET_CUSTOMIZATION)
     );
     return true;
@@ -170,13 +176,13 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
         "Error consultando plantilla de ticket en Supabase:",
         error
       );
-      const cached = readCache();
+      const cached = readCache(branchId);
       if (cached) return cached;
       return { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
 
     if (!data) {
-      const cached = readCache();
+      const cached = readCache(branchId);
       if (cached) return cached;
       return { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
@@ -194,11 +200,11 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
       parsed = { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
 
-    writeCache(parsed);
+    writeCache(parsed, branchId);
     return parsed;
   } catch (error) {
     console.error("Error al obtener plantilla de ticket:", error);
-    const cached = readCache();
+    const cached = readCache(branchId);
     if (cached) return cached;
     return { ...DEFAULT_TICKET_CUSTOMIZATION };
   }
@@ -239,7 +245,7 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
       .eq("id", existingSetting.id);
 
     if (updateError) throw updateError;
-    writeCache(normalized);
+    writeCache(normalized, branchId);
     return normalized;
   }
 
@@ -258,6 +264,6 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
   ]);
 
   if (insertError) throw insertError;
-  writeCache(normalized);
+  writeCache(normalized, branchId);
   return normalized;
 };

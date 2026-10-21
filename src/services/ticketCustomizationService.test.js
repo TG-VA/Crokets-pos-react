@@ -74,7 +74,7 @@ describe("ticketCustomizationService", () => {
       footerLine2: "",
     };
     window.localStorage.setItem(
-      "settings_ticket_template_cache",
+      "settings_ticket_template_cache:global",
       JSON.stringify(cached)
     );
     const query = buildQueryChain({ data: null, error: null });
@@ -107,7 +107,7 @@ describe("ticketCustomizationService", () => {
     expect(saved.showBranchPhone).toBe(true);
     expect(supabase.from).toHaveBeenNthCalledWith(2, "system_settings");
     const cached = JSON.parse(
-      window.localStorage.getItem("settings_ticket_template_cache")
+      window.localStorage.getItem("settings_ticket_template_cache:2")
     );
     expect(cached.headerSlogan).toBe("Nuevo slogan");
   });
@@ -128,7 +128,7 @@ describe("ticketCustomizationService", () => {
     expect(insertedRow.branch_id).toBe(7);
     expect(insertedRow.setting_key).toBe("ticket_customization");
     const cached = JSON.parse(
-      window.localStorage.getItem("settings_ticket_template_cache")
+      window.localStorage.getItem("settings_ticket_template_cache:7")
     );
     expect(cached.footerLine1).toBe("Gracias por todo");
   });
@@ -319,9 +319,47 @@ describe("ticketCustomizationService", () => {
     expect(persisted.footerPhone).toBe("998- 117 5387");
   });
 
+  it("no sirve la cache global a una sucursal concreta cuando Supabase no responde", async () => {
+    window.localStorage.setItem(
+      "settings_ticket_template_cache:global",
+      JSON.stringify({
+        ...DEFAULT_TICKET_CUSTOMIZATION,
+        headerSlogan: "Cuidamos a tu mejor amigo",
+      })
+    );
+    const query = buildQueryChain({
+      data: null,
+      error: { message: "network" },
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await getTicketCustomization({ branchId: 4 });
+
+    expect(result).toEqual(DEFAULT_TICKET_CUSTOMIZATION);
+  });
+
+  it("sirve la cache de la sucursal activa cuando Supabase no responde", async () => {
+    window.localStorage.setItem(
+      "settings_ticket_template_cache:4",
+      JSON.stringify({
+        ...DEFAULT_TICKET_CUSTOMIZATION,
+        headerSlogan: "Cuidamos a tu mejor amigo",
+      })
+    );
+    const query = buildQueryChain({
+      data: null,
+      error: { message: "network" },
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await getTicketCustomization({ branchId: 4 });
+
+    expect(result.headerSlogan).toBe("Cuidamos a tu mejor amigo");
+  });
+
   it("recorta la plantilla cacheada que excede los limites", async () => {
     window.localStorage.setItem(
-      "settings_ticket_template_cache",
+      "settings_ticket_template_cache:global",
       JSON.stringify({
         ...DEFAULT_TICKET_CUSTOMIZATION,
         headerSlogan: "a".repeat(200),
