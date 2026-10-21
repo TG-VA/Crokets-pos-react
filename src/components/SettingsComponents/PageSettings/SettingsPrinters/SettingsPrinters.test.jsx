@@ -148,6 +148,10 @@ describe("SettingsPrinters", () => {
 
     fireEvent.blur(feedLinesInput);
     expect(currentHookData.handleFeedLinesBlur).toHaveBeenCalled();
+
+    const blurSpy = vi.spyOn(copiesInput, "blur");
+    fireEvent.keyDown(copiesInput, { key: "Enter" });
+    expect(blurSpy).toHaveBeenCalled();
   });
 
   it("informa los rangos permitidos en las ayudas de los campos", () => {

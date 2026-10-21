@@ -114,6 +114,9 @@ const TicketFormatCard = ({
           value={copiesText}
           onChange={(e) => handleCopiesChange(e.target.value)}
           onBlur={handleCopiesBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
         />
       </div>
       <div className={styles.fieldCompact}>
@@ -134,6 +137,9 @@ const TicketFormatCard = ({
           value={feedLinesText}
           onChange={(e) => handleFeedLinesChange(e.target.value)}
           onBlur={handleFeedLinesBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
         />
       </div>
     </div>

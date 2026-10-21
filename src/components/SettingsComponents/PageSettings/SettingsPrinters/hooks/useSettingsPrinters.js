@@ -285,7 +285,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     const result = await printTicket(text, {
       profile: getTicketPrintProfile(),
       deviceName: selectedPrinter || undefined,
-      copies,
+      copies: getTicketCopies(),
       feedLines: getTicketFeedLines(),
     });
     setPrinting(false);
@@ -297,7 +297,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       return;
     }
     setPrintFeedback({ type: "success", message: result.message });
-  }, [buildTestTicketText, copies, selectedPrinter]);
+  }, [buildTestTicketText, selectedPrinter]);
 
   const handleResetTemplate = useCallback(() => {
     setTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION });
