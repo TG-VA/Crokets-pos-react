@@ -21,8 +21,8 @@ const SettingsPrinters = () => {
     printFeedback,
     drawerFeedback,
     testingDrawer,
-    copies,
-    feedLines,
+    copiesText,
+    feedLinesText,
     template,
     templateFeedback,
     savingTemplate,
@@ -38,7 +38,9 @@ const SettingsPrinters = () => {
     handleWidthChange,
     handlePrintModeChange,
     handleCopiesChange,
+    handleCopiesBlur,
     handleFeedLinesChange,
+    handleFeedLinesBlur,
     handleTemplateChange,
     handleToggleChange,
     handleResetTemplate,
@@ -76,10 +78,12 @@ const SettingsPrinters = () => {
             handleWidthChange={handleWidthChange}
             printMode={printMode}
             handlePrintModeChange={handlePrintModeChange}
-            copies={copies}
+            copiesText={copiesText}
             handleCopiesChange={handleCopiesChange}
-            feedLines={feedLines}
+            handleCopiesBlur={handleCopiesBlur}
+            feedLinesText={feedLinesText}
             handleFeedLinesChange={handleFeedLinesChange}
+            handleFeedLinesBlur={handleFeedLinesBlur}
             preferencesFeedback={preferencesFeedback}
           />
 

@@ -72,8 +72,8 @@ describe("useSettingsPrinters", () => {
       useSettingsPrinters({ branchId: null })
     );
     await act(async () => {
-      result.current.handleCopiesChange(2);
-      result.current.handleFeedLinesChange(3);
+      result.current.handleCopiesChange("2");
+      result.current.handleFeedLinesChange("3");
       result.current.handleSelectPrinter("POS-80");
       result.current.handleTemplateChange(
         "footerLine1",
@@ -81,14 +81,77 @@ describe("useSettingsPrinters", () => {
       );
       await result.current.handleSaveTemplate();
     });
+    expect(result.current.copiesText).toBe("2");
+    expect(result.current.feedLinesText).toBe("3");
+    expect(window.localStorage.getItem("settings_ticket_copies")).toBe(null);
+    expect(window.localStorage.getItem("settings_ticket_feed_lines")).toBe(
+      null
+    );
+
+    await act(async () => {
+      result.current.handleCopiesBlur();
+      result.current.handleFeedLinesBlur();
+    });
     expect(result.current.copies).toBe(2);
     expect(result.current.feedLines).toBe(3);
-    expect(result.current.selectedPrinter).toBe("POS-80");
     expect(window.localStorage.getItem("settings_ticket_copies")).toBe("2");
     expect(window.localStorage.getItem("settings_ticket_feed_lines")).toBe("3");
     expect(window.localStorage.getItem("settings_selected_printer")).toBe(
       "POS-80"
     );
+  });
+
+  it("permite vaciar y reescribir los campos numericos sin reinicios durante la teclea", async () => {
+    const { result } = renderHook(() =>
+      useSettingsPrinters({ branchId: null })
+    );
+
+    await act(async () => {
+      result.current.handleCopiesChange("4");
+      result.current.handleCopiesBlur();
+    });
+    expect(result.current.copies).toBe(4);
+
+    await act(async () => {
+      result.current.handleCopiesChange("");
+    });
+    expect(result.current.copiesText).toBe("");
+    expect(result.current.copies).toBe(4);
+
+    await act(async () => {
+      result.current.handleCopiesChange("9");
+    });
+    expect(result.current.copiesText).toBe("9");
+
+    await act(async () => {
+      result.current.handleCopiesBlur();
+    });
+    expect(result.current.copies).toBe(9);
+    expect(result.current.copiesText).toBe("9");
+    expect(window.localStorage.getItem("settings_ticket_copies")).toBe("9");
+  });
+
+  it("filtra caracteres no numericos y restablece el valor persistido al perder el foco vacio", async () => {
+    const { result } = renderHook(() =>
+      useSettingsPrinters({ branchId: null })
+    );
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("1a2-b");
+    });
+    expect(result.current.feedLinesText).toBe("12");
+
+    await act(async () => {
+      result.current.handleFeedLinesBlur();
+    });
+    expect(result.current.feedLines).toBe(12);
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("");
+      result.current.handleFeedLinesBlur();
+    });
+    expect(result.current.feedLines).toBe(2);
+    expect(result.current.feedLinesText).toBe("2");
   });
 
   it("hidrata copias, saltos e impresora persistidos al montar", async () => {
@@ -112,7 +175,9 @@ describe("useSettingsPrinters", () => {
     });
 
     expect(result.current.copies).toBe(4);
+    expect(result.current.copiesText).toBe("4");
     expect(result.current.feedLines).toBe(5);
+    expect(result.current.feedLinesText).toBe("5");
     expect(result.current.selectedPrinter).toBe("POS-40");
   });
 
