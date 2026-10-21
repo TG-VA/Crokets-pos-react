@@ -13,6 +13,7 @@ const TicketDiagnosticCard = ({
   drawerFeedback,
   handleOpenDrawer,
   isElectron = false,
+  testingDrawer = false,
 }) => (
   <article className={styles.card}>
     <div className={styles.cardTitleRow}>
@@ -102,9 +103,9 @@ const TicketDiagnosticCard = ({
         type="button"
         className={styles.buttonSecondary}
         onClick={handleOpenDrawer}
-        disabled={!isElectron}
+        disabled={!isElectron || testingDrawer}
       >
-        Probar apertura del cajón
+        {testingDrawer ? "Abriendo cajón..." : "Probar apertura del cajón"}
       </button>
       {drawerFeedback?.type === "error" ? (
         <div

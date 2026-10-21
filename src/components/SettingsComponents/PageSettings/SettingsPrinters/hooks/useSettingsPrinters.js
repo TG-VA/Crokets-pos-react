@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   printTicket,
   getAvailablePrinters,
@@ -30,6 +30,13 @@ import {
 
 const DEFAULT_FEEDBACK = null;
 
+/**
+ * Ventana de enfriamiento posterior a la prueba del cajon. El solenoide
+ * fisico necesita un periodo de reposo entre pulsos, por lo que el boton
+ * permanece bloqueado aun cuando la llamada al puente ya termino.
+ */
+const DRAWER_TEST_COOLDOWN_MS = 2500;
+
 export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [widthMm, setWidthMm] = useState(() => getTicketWidthMm());
   const [printMode, setPrintMode] = useState(() => getPrintMode());
@@ -38,6 +45,9 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [printing, setPrinting] = useState(false);
   const [printFeedback, setPrintFeedback] = useState(DEFAULT_FEEDBACK);
   const [drawerFeedback, setDrawerFeedback] = useState(DEFAULT_FEEDBACK);
+  const [testingDrawer, setTestingDrawer] = useState(false);
+  const isTestingDrawerRef = useRef(false);
+  const drawerCooldownTimerRef = useRef(null);
 
   const [copies, setCopies] = useState(() => getTicketCopies());
   const [feedLines, setFeedLines] = useState(() => getTicketFeedLines());
@@ -273,8 +283,16 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleOpenDrawer = useCallback(async () => {
+    if (isTestingDrawerRef.current) {
+      return;
+    }
+    isTestingDrawerRef.current = true;
+    setTestingDrawer(true);
     setDrawerFeedback(DEFAULT_FEEDBACK);
+
     if (!isElectron) {
+      isTestingDrawerRef.current = false;
+      setTestingDrawer(false);
       setDrawerFeedback({
         type: "error",
         message:
@@ -282,6 +300,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       });
       return;
     }
+
     try {
       const result = await openCashDrawerBridge({
         printerDeviceName: selectedPrinter,
@@ -300,8 +319,24 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
         type: "error",
         message: "No se pudo abrir el cajón de dinero.",
       });
+    } finally {
+      drawerCooldownTimerRef.current = setTimeout(() => {
+        drawerCooldownTimerRef.current = null;
+        isTestingDrawerRef.current = false;
+        setTestingDrawer(false);
+      }, DRAWER_TEST_COOLDOWN_MS);
     }
   }, [isElectron, selectedPrinter]);
+
+  useEffect(
+    () => () => {
+      if (drawerCooldownTimerRef.current) {
+        clearTimeout(drawerCooldownTimerRef.current);
+        drawerCooldownTimerRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (templateFeedback?.type === "success") {
@@ -357,6 +392,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     setPrintFeedback,
     drawerFeedback,
     setDrawerFeedback,
+    testingDrawer,
     copies,
     feedLines,
     template,
