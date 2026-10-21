@@ -171,6 +171,81 @@ describe("useSettingsPrinters", () => {
     );
   });
 
+  it("bloquea la prueba del cajon durante el cooldown y descarta clics repetidos", async () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() =>
+        useSettingsPrinters({ branchId: null })
+      );
+
+      const drawerCalls = () =>
+        window.electronAPI.invoke.mock.calls.filter(
+          ([channel]) => channel === "open-cash-drawer"
+        );
+
+      await act(async () => {
+        await result.current.handleOpenDrawer();
+      });
+
+      expect(result.current.drawerFeedback?.type).toBe("success");
+      expect(result.current.testingDrawer).toBe(true);
+
+      await act(async () => {
+        await result.current.handleOpenDrawer();
+      });
+      expect(drawerCalls()).toHaveLength(1);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+      expect(result.current.testingDrawer).toBe(false);
+
+      await act(async () => {
+        await result.current.handleOpenDrawer();
+      });
+      expect(drawerCalls()).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("no programa el cooldown de cajon si el hook se desmonta con la llamada en vuelo", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveDrawer;
+      window.electronAPI = {
+        invoke: vi.fn((channel) => {
+          if (channel === "open-cash-drawer") {
+            return new Promise((resolve) => {
+              resolveDrawer = resolve;
+            });
+          }
+          return Promise.resolve({ success: true, printers: [] });
+        }),
+      };
+
+      const { result, unmount } = renderHook(() =>
+        useSettingsPrinters({ branchId: null })
+      );
+
+      let drawerPromise;
+      act(() => {
+        drawerPromise = result.current.handleOpenDrawer();
+      });
+
+      unmount();
+
+      await act(async () => {
+        resolveDrawer({ success: true, message: "ok" });
+        await drawerPromise;
+      });
+
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("restablece la plantilla a sus valores por defecto con handleResetTemplate", async () => {
     const { result } = renderHook(() =>
       useSettingsPrinters({ branchId: null })

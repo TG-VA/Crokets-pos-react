@@ -445,12 +445,14 @@ export async function triggerCashDrawerKick({ printerDeviceName, pin } = {}) {
         message:
           result?.message || "Pulso de apertura enviado al cajón de dinero.",
         error: result?.error || null,
+        throttled: Boolean(result?.throttled),
       };
     }
     return {
       success: true,
       message: "Pulso de apertura enviado al cajón de dinero.",
       error: null,
+      throttled: false,
     };
   } catch (error) {
     console.error("Error triggering cash drawer:", error);
@@ -458,6 +460,7 @@ export async function triggerCashDrawerKick({ printerDeviceName, pin } = {}) {
       success: false,
       message: "No se pudo abrir el cajón de dinero.",
       error: error.message || "DRAWER_TRIGGER_FAILED",
+      throttled: false,
     };
   }
 }

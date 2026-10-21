@@ -9,6 +9,7 @@ const mockHookReturn = {
   printing: false,
   printFeedback: null,
   drawerFeedback: null,
+  testingDrawer: false,
   copies: 1,
   feedLines: 2,
   template: {
@@ -138,6 +139,20 @@ describe("SettingsPrinters", () => {
     expect(screen.getByRole("alert").textContent).toContain(
       "Impresora desconectada."
     );
+  });
+
+  it("bloquea la apertura del cajon durante la ventana de enfriamiento", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      testingDrawer: true,
+    };
+
+    render(<SettingsPrinters />);
+
+    const openDrawerBtn = screen.getByRole("button", {
+      name: "Abriendo cajón...",
+    });
+    expect(openDrawerBtn.disabled).toBe(true);
   });
 
   it("muestra los distintivos de alcance de sucursal y de equipo", () => {

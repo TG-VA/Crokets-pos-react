@@ -280,6 +280,23 @@ describe("cashOperationSettingsService", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("No printer");
     expect(result.message).toContain("No se pudo abrir");
+    expect(result.throttled).toBe(false);
+  });
+
+  it("propaga la bandera throttled cuando el canal IPC reporta rate limiting", async () => {
+    window.electronAPI = {
+      invoke: vi.fn().mockResolvedValue({
+        success: true,
+        throttled: true,
+        message: "En periodo de enfriamiento",
+      }),
+    };
+
+    const result = await triggerCashDrawerKick();
+
+    expect(result.success).toBe(true);
+    expect(result.throttled).toBe(true);
+    expect(result.message).toBe("En periodo de enfriamiento");
   });
 
   it("expone defaults constantes", () => {

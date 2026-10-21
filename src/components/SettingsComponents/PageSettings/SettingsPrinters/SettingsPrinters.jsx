@@ -20,6 +20,7 @@ const SettingsPrinters = () => {
     printing,
     printFeedback,
     drawerFeedback,
+    testingDrawer,
     copies,
     feedLines,
     template,
@@ -100,6 +101,7 @@ const SettingsPrinters = () => {
             drawerFeedback={drawerFeedback}
             handleOpenDrawer={handleOpenDrawer}
             isElectron={isElectron}
+            testingDrawer={testingDrawer}
           />
         </div>
 

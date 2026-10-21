@@ -11,9 +11,9 @@
  *   requiere dependencias nativas de Node ni compilacion con node-gyp.
  * - macOS / Linux: `lpr -l` sobre un archivo temporal con los bytes crudos.
  *
- * Todas las dependencias externas (`execFile`, `fs`, `tmpdir`, `platform`, `env`)
- * se inyectan para poder probar el flujo completo sin hardware conectado y sin
- * ejecutar comandos reales del sistema.
+ * Todas las dependencias externas (`execFile`, `fs`, `tmpdir`, `platform`,
+ * `env`, `now`) se inyectan para poder probar el flujo completo sin hardware
+ * conectado y sin ejecutar comandos reales del sistema.
  */
 
 const { execFile: execFileCallback } = require("node:child_process");
@@ -31,6 +31,17 @@ const EXEC_OPTIONS = Object.freeze({
 const TEMP_DIR_PREFIX = "crokets-cash-drawer-";
 const TEMP_PULSE_FILENAME = "pulse.bin";
 const SIMULATION_ENV_VAR = "CROKETS_CASH_DRAWER_SIMULATE";
+
+/**
+ * Enfriamiento minimo entre pulsos exitosos. El solenoide del cajon es una
+ * bobina electrica de 24V: pulsos demasiado frecuentes lo recalentarian y
+ * pueden danar el transistor del puerto RJ11 de la impresora.
+ */
+const DEFAULT_PULSE_COOLDOWN_MS = 2000;
+
+const PULSE_IN_FLIGHT_MESSAGE = "El cajón de dinero ya se está abriendo.";
+const PULSE_COOLDOWN_MESSAGE =
+  "El cajón de dinero está en periodo de enfriamiento; vuelve a intentarlo en unos segundos.";
 
 const DRAWER_PINS = Object.freeze({
   PIN_2: 0,
@@ -137,6 +148,15 @@ function failure(error, message) {
 
 function success(message) {
   return { success: true, error: null, message };
+}
+
+/**
+ * Respuesta segura ante un pulso descartado por proteccion de hardware: el
+ * renderer no debe tratarlo como un fallo, pero tampoco debe reintentar de
+ * inmediato.
+ */
+function throttled(message) {
+  return { success: true, throttled: true, error: null, message };
 }
 
 /**
@@ -329,8 +349,17 @@ async function sendOnPosix({ execFile, fs, tmpdir, printerName, payload }) {
 
 /**
  * Fabrica el servicio con dependencias inyectables. Devuelve `openCashDrawer`,
- * que siempre resuelve el contrato `{ success, message, error, simulated? }`:
- * nunca propaga excepciones al canal IPC.
+ * que siempre resuelve el contrato `{ success, message, error, simulated?,
+ * throttled? }`: nunca propaga excepciones al canal IPC.
+ *
+ * Proteccion de hardware de dos niveles:
+ * - Mutex (`isPulseInFlight`): descarta llamadas concurrentes mientras un
+ *   pulso sigue en camino al spooler.
+ * - Cooldown (`lastPulseTimestamp`): descarta pulsos nuevos dentro de la
+ *   ventana de enfriamiento del solenoide.
+ *
+ * El reloj se inyecta via `now` para poder probar el flujo de forma
+ * determinista sin timers reales.
  */
 function createCashDrawerService(deps = {}) {
   const execFile = deps.execFile ?? promisify(execFileCallback);
@@ -338,6 +367,11 @@ function createCashDrawerService(deps = {}) {
   const tmpdir = deps.tmpdir ?? (() => os.tmpdir());
   const platform = deps.platform ?? process.platform;
   const env = deps.env ?? process.env;
+  const now = deps.now ?? (() => Date.now());
+  const pulseCooldownMs = deps.pulseCooldownMs ?? DEFAULT_PULSE_COOLDOWN_MS;
+
+  let isPulseInFlight = false;
+  let lastPulseTimestamp = null;
 
   async function openCashDrawer({
     printerDeviceName,
@@ -371,39 +405,60 @@ function createCashDrawerService(deps = {}) {
       );
     }
 
-    if (isSimulationEnabled(env)) {
-      return {
-        success: true,
-        simulated: true,
-        error: null,
-        message:
-          "Pulso de apertura simulado (entorno de desarrollo, sin hardware).",
-      };
+    if (isPulseInFlight) {
+      return throttled(PULSE_IN_FLIGHT_MESSAGE);
     }
 
+    if (
+      lastPulseTimestamp !== null &&
+      now() - lastPulseTimestamp < pulseCooldownMs
+    ) {
+      return throttled(PULSE_COOLDOWN_MESSAGE);
+    }
+
+    isPulseInFlight = true;
     try {
-      if (platform === "win32") {
-        return await sendOnWindows(execFile, printerName, payload);
+      if (isSimulationEnabled(env)) {
+        lastPulseTimestamp = now();
+        return {
+          success: true,
+          simulated: true,
+          error: null,
+          message:
+            "Pulso de apertura simulado (entorno de desarrollo, sin hardware).",
+        };
       }
-      if (POSIX_PLATFORMS.includes(platform)) {
-        return await sendOnPosix({
+
+      let result;
+      if (platform === "win32") {
+        result = await sendOnWindows(execFile, printerName, payload);
+      } else if (POSIX_PLATFORMS.includes(platform)) {
+        result = await sendOnPosix({
           execFile,
           fs,
           tmpdir,
           printerName,
           payload,
         });
+      } else {
+        result = failure(
+          "UNSUPPORTED_PLATFORM",
+          "La apertura de cajón no está soportada en este sistema operativo."
+        );
       }
-      return failure(
-        "UNSUPPORTED_PLATFORM",
-        "La apertura de cajón no está soportada en este sistema operativo."
-      );
+
+      if (result.success) {
+        lastPulseTimestamp = now();
+      }
+      return result;
     } catch (error) {
       console.error("Error inesperado enviando el pulso del cajón:", error);
       return failure(
         "DRAWER_PULSE_FAILED",
         "No se pudo enviar el pulso de apertura al cajón de dinero."
       );
+    } finally {
+      isPulseInFlight = false;
     }
   }
 
@@ -413,6 +468,7 @@ function createCashDrawerService(deps = {}) {
 const defaultService = createCashDrawerService();
 
 module.exports = {
+  DEFAULT_PULSE_COOLDOWN_MS,
   DRAWER_PINS,
   PULSE_BYTES,
   REALTIME_PULSE_BYTES,
