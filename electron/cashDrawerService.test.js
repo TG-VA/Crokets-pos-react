@@ -2,6 +2,7 @@ import path from "node:path";
 import { describe, it, expect, vi } from "vitest";
 
 import {
+  DEFAULT_PULSE_COOLDOWN_MS,
   DRAWER_PINS,
   PULSE_BYTES,
   REALTIME_PULSE_BYTES,
@@ -375,6 +376,113 @@ describe("cashDrawerService", () => {
       await expect(
         openCashDrawer({ printerDeviceName: "Termica" })
       ).resolves.toMatchObject({ success: false });
+    });
+  });
+
+  describe("proteccion de hardware: mutex y cooldown", () => {
+    const posixExec = () =>
+      vi.fn((command) => {
+        if (command === "lpstat") return Promise.resolve({ stdout: "ok" });
+        return Promise.resolve({ stdout: "" });
+      });
+
+    it("expone el cooldown por defecto de 2 segundos", () => {
+      expect(DEFAULT_PULSE_COOLDOWN_MS).toBe(2000);
+    });
+
+    it("descarta pulsos consecutivos dentro del cooldown sin invocar el spooler", async () => {
+      let currentTime = 1000000;
+      const execFile = posixExec();
+      const { openCashDrawer } = createService({
+        execFile,
+        now: () => currentTime,
+      });
+
+      await expect(
+        openCashDrawer({ printerDeviceName: "Termica" })
+      ).resolves.toMatchObject({ success: true });
+      expect(execFile).toHaveBeenCalledTimes(2);
+
+      currentTime += 1500;
+
+      const second = await openCashDrawer({ printerDeviceName: "Termica" });
+      expect(second).toMatchObject({ success: true, throttled: true });
+      expect(second.error).toBeNull();
+      expect(execFile).toHaveBeenCalledTimes(2);
+    });
+
+    it("permite un nuevo pulso cuando el cooldown ya expiro", async () => {
+      let currentTime = 1000000;
+      const execFile = posixExec();
+      const { openCashDrawer } = createService({
+        execFile,
+        now: () => currentTime,
+      });
+
+      await openCashDrawer({ printerDeviceName: "Termica" });
+
+      currentTime += DEFAULT_PULSE_COOLDOWN_MS;
+
+      await expect(
+        openCashDrawer({ printerDeviceName: "Termica" })
+      ).resolves.toEqual({
+        success: true,
+        error: null,
+        message: "Pulso de apertura enviado al cajón de dinero.",
+      });
+      expect(execFile).toHaveBeenCalledTimes(4);
+    });
+
+    it("descarta pulsos concurrentes mientras hay un pulso en vuelo", async () => {
+      let releasePulse;
+      const pulseGate = new Promise((resolve) => {
+        releasePulse = resolve;
+      });
+      const execFile = vi.fn((command) => {
+        if (command === "lpstat") return Promise.resolve({ stdout: "ok" });
+        return pulseGate;
+      });
+      const { openCashDrawer } = createService({ execFile });
+
+      const firstPulse = openCashDrawer({ printerDeviceName: "Termica" });
+      const concurrent = await openCashDrawer({
+        printerDeviceName: "Termica",
+      });
+
+      expect(concurrent).toMatchObject({
+        success: true,
+        throttled: true,
+        message: "El cajón de dinero ya se está abriendo.",
+      });
+      expect(execFile).toHaveBeenCalledTimes(1);
+
+      releasePulse({ stdout: "" });
+      await expect(firstPulse).resolves.toMatchObject({ success: true });
+      expect(execFile).toHaveBeenCalledTimes(2);
+    });
+
+    it("no inicia el cooldown cuando el pulso llega fallido", async () => {
+      let currentTime = 1000000;
+      const execFile = vi.fn((command) => {
+        if (command === "lpstat") {
+          const error = new Error("lpstat failed");
+          error.code = 1;
+          return Promise.reject(error);
+        }
+        return Promise.resolve({ stdout: "" });
+      });
+      const { openCashDrawer } = createService({
+        execFile,
+        now: () => currentTime,
+      });
+
+      await expect(
+        openCashDrawer({ printerDeviceName: "Fantasma" })
+      ).resolves.toMatchObject({ success: false });
+
+      const second = await openCashDrawer({ printerDeviceName: "Fantasma" });
+      expect(second).toMatchObject({ success: false });
+      expect(second.throttled).toBeUndefined();
     });
   });
 });
