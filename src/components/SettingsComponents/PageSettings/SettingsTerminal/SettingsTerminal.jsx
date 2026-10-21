@@ -8,6 +8,7 @@ import BranchEditModal from "./components/BranchEditModal";
 import TerminalDeviceCard from "./components/TerminalDeviceCard";
 import ConnectivityStatusCard from "./components/ConnectivityStatusCard";
 import DisplaySettingsCard from "./components/DisplaySettingsCard";
+import BarcodeScannerCard from "./components/BarcodeScannerCard";
 
 const SettingsTerminal = () => {
   const { branch, setBranch } = useBranch();
@@ -130,6 +131,7 @@ const SettingsTerminal = () => {
           onZoomReset={handleZoomReset}
           onToggleFullscreen={handleToggleFullscreen}
         />
+        <BarcodeScannerCard />
       </div>
 
       <BranchEditModal

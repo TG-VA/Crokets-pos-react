@@ -199,7 +199,16 @@ describe("SettingsTerminal", () => {
 
     const branchBadges = await screen.findAllByText(/Aplica a nivel global/i);
     expect(branchBadges).toHaveLength(1);
-    expect(screen.getAllByText(/Solo este equipo/i)).toHaveLength(2);
+    expect(screen.getAllByText(/Solo este equipo/i)).toHaveLength(3);
     expect(screen.getByText(/Estado del sistema/i)).toBeTruthy();
+  });
+
+  it("renderiza la tarjeta del lector de código de barras y su probador interactivo", async () => {
+    render(<SettingsTerminal />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Lector de código de barras" })
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Prueba interactiva de lectura")).toBeTruthy();
   });
 });
