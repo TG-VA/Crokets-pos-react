@@ -220,7 +220,7 @@ describe("SettingsPrinters", () => {
     ).toBeTruthy();
   });
 
-  it("el simulador muestra el mismo pie que se imprime cuando la plantilla deja campos vacios", () => {
+  it("el simulador omite del pie las lineas que la plantilla deja vacias", () => {
     currentHookData = {
       ...mockHookReturn,
       previewData: {
@@ -235,9 +235,29 @@ describe("SettingsPrinters", () => {
     render(<SettingsPrinters />);
 
     const preview = document.querySelector("pre");
-    expect(preview.textContent).toContain("Gracias por su compra");
-    expect(preview.textContent).toContain("Agenda tu cita de baño");
+    expect(preview.textContent).not.toContain("Gracias por su compra");
+    expect(preview.textContent).not.toContain("Agenda tu cita de baño");
+    expect(preview.textContent).not.toContain("Tel. 998 117 5387");
+  });
+
+  it("el simulador conserva las lineas que la plantilla si define", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      previewData: {
+        ...mockHookReturn.previewData,
+        footerLine1: "Gracias por todo",
+        footerLine2: "",
+        footerPhone: "998 117 5387",
+        returnPolicy: "",
+      },
+    };
+
+    render(<SettingsPrinters />);
+
+    const preview = document.querySelector("pre");
+    expect(preview.textContent).toContain("Gracias por todo");
     expect(preview.textContent).toContain("Tel. 998 117 5387");
+    expect(preview.textContent).not.toContain("Agenda tu cita de baño");
   });
 
   it("muestra los mensajes de estado y error cuando hay feedback activo", () => {

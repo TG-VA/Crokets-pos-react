@@ -29,7 +29,7 @@ describe("ticketFooterFormatters", () => {
     expect(buildTicketFooter(undefined)).toEqual(TICKET_FOOTER_DEFAULTS);
   });
 
-  it("sustituye por el valor por defecto los campos que quedan vacios", () => {
+  it("omite del pie los campos que quedan vacios", () => {
     const footer = buildTicketFooter({
       footerLine1: "",
       footerLine2: "",
@@ -37,7 +37,38 @@ describe("ticketFooterFormatters", () => {
       returnPolicy: "",
     });
 
-    expect(footer).toEqual(TICKET_FOOTER_DEFAULTS);
+    expect(footer).toEqual({
+      line1: "",
+      line2: "",
+      phone: "",
+      returnPolicy: "",
+    });
+  });
+
+  it("omite del pie impreso las lineas que la plantilla deja vacias", () => {
+    const footer = buildTicketFooter({
+      footerLine1: "Gracias por todo",
+      footerLine2: "",
+      footerPhone: "998 117 5387",
+      returnPolicy: "",
+    });
+    const lines = buildFooterSection(footer);
+
+    expect(lines).toContain("Gracias por todo");
+    expect(lines).toContain("Tel. 998 117 5387");
+    expect(lines).not.toContain("Agenda tu cita de baño");
+    expect(lines).not.toContain("Para cambios o devoluciones");
+  });
+
+  it("no imprime seccion de pie cuando la plantilla deja todos sus campos vacios", () => {
+    const footer = buildTicketFooter({
+      footerLine1: "",
+      footerLine2: "",
+      footerPhone: "",
+      returnPolicy: "",
+    });
+
+    expect(buildFooterSection(footer)).toEqual([]);
   });
 
   it("el pie impreso usa exactamente los valores resueltos por la plantilla", () => {

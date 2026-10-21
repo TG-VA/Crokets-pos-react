@@ -54,6 +54,7 @@ const TicketContentCard = ({
     </div>
     <p className={styles.cardDescription}>
       Personaliza encabezado, pie de página y políticas. Se guarda por sucursal.
+      Deja un campo vacío para quitar esa línea del ticket.
     </p>
 
     <div className={styles.formGrid}>

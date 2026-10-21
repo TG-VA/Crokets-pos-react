@@ -657,14 +657,16 @@ export const buildNotesSection = (sale = {}, { showNotes = true } = {}) => {
 export const buildFooterSection = (footer = {}) => {
   const lines = [];
 
-  const footerLine1 = footer.line1 || TICKET_FOOTER_DEFAULTS.line1;
-  const footerLine2 = footer.line2 || TICKET_FOOTER_DEFAULTS.line2;
-  const footerPhone = footer.phone || TICKET_FOOTER_DEFAULTS.phone;
+  const footerLine1 = footer.line1 ?? TICKET_FOOTER_DEFAULTS.line1;
+  const footerLine2 = footer.line2 ?? TICKET_FOOTER_DEFAULTS.line2;
+  const footerPhone = footer.phone ?? TICKET_FOOTER_DEFAULTS.phone;
   const returnPolicy =
-    footer.returnPolicy || TICKET_FOOTER_DEFAULTS.returnPolicy;
+    footer.returnPolicy ?? TICKET_FOOTER_DEFAULTS.returnPolicy;
 
-  pushWrappedLeft(lines, footerLine1, TICKET_WIDTH);
-  lines.push("");
+  if (footerLine1) {
+    pushWrappedLeft(lines, footerLine1, TICKET_WIDTH);
+    lines.push("");
+  }
 
   if (footerLine2) {
     pushWrappedLeft(lines, footerLine2, TICKET_WIDTH);
@@ -677,6 +679,10 @@ export const buildFooterSection = (footer = {}) => {
   if (returnPolicy) {
     lines.push("");
     pushWrappedLeft(lines, returnPolicy, TICKET_WIDTH);
+  }
+
+  if (lines.length === 0) {
+    return lines;
   }
 
   lines.push(strongSeparator());

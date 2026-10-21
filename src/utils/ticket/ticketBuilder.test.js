@@ -1203,7 +1203,6 @@ describe("buildTicketText (golden)", () => {
         "--------------------------------",
         "Visítanos en línea",
         "",
-        "Agenda tu cita de baño",
         "Tel. 998 999 8877",
         "",
         "Devoluciones solo con ticket",

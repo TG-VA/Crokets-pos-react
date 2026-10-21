@@ -269,20 +269,26 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     lines.push("TOTAL                $100.00");
     lines.push("-".repeat(cols));
     const footer = buildTicketFooter(template);
-    wrapText(footer.line1, cols).forEach((line) => {
-      lines.push(line);
-    });
-    wrapText(footer.line2, cols).forEach((line) => {
-      lines.push(line);
-    });
+    if (footer.line1) {
+      wrapText(footer.line1, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
+    if (footer.line2) {
+      wrapText(footer.line2, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
     if (footer.phone) {
       wrapText(`Tel. ${footer.phone}`, cols).forEach((line) => {
         lines.push(line);
       });
     }
-    wrapText(footer.returnPolicy, cols).forEach((line) => {
-      lines.push(line);
-    });
+    if (footer.returnPolicy) {
+      wrapText(footer.returnPolicy, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
     return lines.join("\n");
   }, [template, widthMm]);
 
