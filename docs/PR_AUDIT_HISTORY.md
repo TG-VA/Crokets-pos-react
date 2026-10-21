@@ -2619,3 +2619,101 @@ La rama cumple rigurosamente con todos los gates de calidad y el protocolo estri
 ### 3. Veredicto Final
 
 **APROBADO PARA MERGE.** La rama cumple rigurosamente con los 8 gates de calidad de `PR_REVIEW.md` y `AGENTS.md`. No existen bloqueantes, errores de linter ni regresiones en la suite completa de pruebas.
+
+---
+
+## Doble Auditoría — RAMA `feature/ticket-settings-input-constraints` (21 de octubre de 2026)
+
+**Base:** `origin/main` (`505338c`) · **HEAD:** `c9b8e80`
+**Commits evaluados en esta fase:** `bdc3778`, `cc67675`, `985fe7c`, `c9b8e80`
+**Commits ya auditados en la fase 1:** `9ee0e22`, `59e3f05`, `a70316a`
+**Alcance:** segunda auditoría independiente (Software + Seguridad) sobre las restricciones de entrada de
+la plantilla comercial y la impresión de tickets. Verificación de la emisión real (venta y
+reimpresión), del simulador en vivo, del ticket de prueba y de la ruta de corte de caja, con
+trazabilidad del dato desde la plantilla en Supabase hasta el texto impreso.
+**Veredicto:** APROBADO tras resolución de F1–F5 en 4 commits atómicos.
+
+### 1. Comandos mecánicos sobre HEAD `c9b8e80`
+
+| Verificación                        | Resultado                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| ESLint incremental (diff vs base)   | EXIT 0, 0 errores (8 warnings `no-unused-vars` preexistentes en `useSalesHistory.js`, confirmados en `main`) |
+| Prettier incremental (diff vs base) | todas las rutas del diff OK                                                                                  |
+| `npm run check:agents`              | OK (0 emojis, 0 `!important`, 0 `console.log/warn`, EOF newlines)                                            |
+| `npm test`                          | 162 archivos / 2262 tests pasados                                                                            |
+| `npm run build:frontend`            | EXIT 0 (advertencia de chunk >500 kB preexistente)                                                           |
+
+Los 8 warnings son idénticos a los de `main` (verificado ejecutando ESLint sobre la versión de base
+del mismo archivo): son imports y variables sin uso heredados, ajenos a esta rama.
+
+### 2. Trazabilidad del dato (plantilla → texto impreso)
+
+| Origen                                                                 | Destino                                                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `system_settings` / `ticket_customization`                             | `getTicketCustomization()` → `normalizeTemplate()` → `sanitizeTicketTemplateField()` |
+| `DEFAULT_TICKET_CUSTOMIZATION` (`ticketCustomizationService.js:46-58`) | valores por defecto de los 5 toggles y de los 4 textos del pie                       |
+| `buildTicketFooter()` (`ticketFooterFormatters.js:23-29`)              | pie del ticket real, pie del simulador y pie del ticket de prueba                    |
+| `buildFooterSection()` (`ticketSections.js:657-682`)                   | líneas impresas del pie, envueltas a `TICKET_WIDTH` (32)                             |
+
+Rutas de emisión verificadas: venta (`salesTicketService.js:307-352`), reimpresión
+(`useSalesHistory.js:595-660`), simulador (`TicketLivePreview.jsx:105-113`) y ticket de prueba
+(`useSettingsPrinters.js:249-285`). El corte de caja (`buildCashCutText`) no consume la plantilla
+comercial y no queda afectado por esta rama.
+
+### 3. Hallazgos F1–F5 y evidencia
+
+| Hallazgo                                                              | Evidencia en HEAD                                                                                                                                                                                                                                                                     | Estado  |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| F1 el pie se imprimía fuera del ancho útil del rollo                  | `ticketSections.js:666,670,674` envuelven `footerLine1`, `footerLine2` y `Tel. <telefono>` con `pushWrappedLeft(..., TICKET_WIDTH)`; el documento de impresión es `<pre>` con `white-space: pre` (`electron/ticketPrintService.js:146`), que no re-envuelve                           | CERRADO |
+| F2 los toggles se apagaban solos en filas legacy                      | `ticketCustomizationService.js:114-129` resuelve los 5 toggles con `?? DEFAULT_TICKET_CUSTOMIZATION.showX` en lugar de `Boolean(...)`; un toggle ausente ya no se convierte en `false`                                                                                                | CERRADO |
+| F3 el pie se resolvía en tres lugares distintos                       | `ticketFooterFormatters.js` concentra textos por defecto y regla de vacío; `salesTicketService.js:350` y `useSalesHistory.js:660` consumen `buildTicketFooter(customization)`; `TicketLivePreview.jsx:104` y `useSettingsPrinters.js:271` consumen `buildTicketFooter(template)`      | CERRADO |
+| F4 el simulador y el ticket de prueba no representaban el ticket real | `TicketLivePreview.jsx:18` y `useSettingsPrinters.js:249` usan `TICKET_WIDTH` (32) en lugar de 42 columnas con perfil de 80 mm; el renderer genera 32 columnas en ambos perfiles (`electron/ticketPrintService.js`, `TICKET_PRINT_PROFILES` solo ajusta página y cuerpo 11 pt / 9 pt) | CERRADO |
+| F5 la caché local de la plantilla no estaba aislada por sucursal      | `ticketCustomizationService.js:79-80` indexa la clave por sucursal (`settings_ticket_template_cache:<branchId>`, `global` para la plantilla compartida) y `readCache`/`writeCache` reciben el `branchId` en los 6 call sites (179, 185, 203, 207, 248, 267)                           | CERRADO |
+
+**Regresión introducida por F3:** el refactor del pie es **preservador de comportamiento**. El mapeo
+anterior en `salesTicketService.js` y `useSalesHistory.js` usaba exactamente los mismos textos y la
+misma regla de vacío (`||`) que `buildTicketFooter`; la diferencia es que ahora la fuente es única.
+La única diferencia observable está en `buildFooterSection()` cuando se invoca sin pie (teléfono por
+defecto antes vacío, ahora `998 117 5387`): ninguna ruta de producción lo hace —las tres llamadas
+a `buildTicketText` pasan siempre `footer`— y los 15 golden tests de `ticketBuilder.test.js` siguen
+pasando byte a byte.
+
+### 4. Auditoría de seguridad
+
+- **Inyección de contenido:** el texto de la plantilla viaja como texto plano hasta React, que lo
+  escapa; no hay `dangerouslySetInnerHTML` en el repositorio (`rg -n "dangerouslySetInnerHTML" src electron` → 0 resultados) ni `innerHTML` fuera de aserciones de test. En el proceso principal, `escapeHtml()` (`electron/ticketPrintService.js:53`) y `sanitizeTicketText()` (`:38`) se aplican antes de construir el `<pre>` (`:135-146`).
+- **Superficie IPC:** `electron/preload.js:6-24` define listas blancas (`allowedInvokeChannels`, `allowedListenerChannels`) y rechaza cualquier canal fuera de la lista; `print-ticket` es el único canal de impresión.
+- **Ejecución de procesos:** sin `exec`, `spawn` ni `shell` en `electron/ticketPrintService.js`; la impresión se delega al gestor de impresión de Electron.
+- **Persistencia y RLS:** los componentes de UI no importan `supabase`; todo el acceso pasa por `src/services/ticketCustomizationService.js`, que usa el cliente de sesión (RLS activo). La `SUPABASE_SERVICE_ROLE_KEY` no se expone en el renderer ni se introduce con prefijo `VITE_`.
+- **Almacenamiento local:** no hay lecturas directas de `localStorage` fuera del servicio; la caché de la plantilla vive aislada en `ticketCustomizationService.js` y ahora indexada por sucursal.
+- **Secretos:** sin credenciales del PAC ni tokens en el diff; `docs/ENV_VARIABLES.md` no se ve afectado.
+- **Superficie de entrada:** `sanitizeTicketTemplateField()` recorta cada campo al límite declarado y `sanitizeTicketPhone()` filtra el teléfono a dígitos y separadores; los toggles son booleanos y no admitsen entrada de texto.
+
+**Resultado de la auditoría de seguridad: sin vectores explotables ni degradaciones introducidas.**
+
+### 5. Checklist de `PR_REVIEW.md`
+
+| Sección                         | Resultado                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §0 bloqueantes previos          | los 5 hallazgos de esta fase se atendieron uno por uno con commit, evidencia y prueba de regresión                                                                                                                                                                                                                                                                                                   |
+| §1 funcionalidad y arquitectura | SRP/OCP/ISP/DIP respetados: la resolución del pie se extrajo a `ticketFooterFormatters.js` (29 líneas) y los componentes no importan `supabase`. Ningún archivo tocado crece: `useSalesHistory.js` 752 → 746 líneas, `salesTicketService.js` 378 → 372, `ticketSections.js` 685 → 685; el único que aumenta es `ticketCustomizationService.js` (193 → 269) por el aislamiento de caché y las pruebas |
+| §2 corrección de datos y lógica | la regla de vacío del pie y la de los toggles se unificaron y se fijaron con pruebas; la caché se aisló por sucursal (F5)                                                                                                                                                                                                                                                                            |
+| §3 estado y contexto global     | sin efectos cruzados: los cambios se limitan a la construcción del texto del ticket y a la caché indexada por sucursal                                                                                                                                                                                                                                                                               |
+| §4 estilos y UI                 | únicamente CSS Modules, sin `!important`, sin estilos inline ni iconos nuevos                                                                                                                                                                                                                                                                                                                        |
+| §5 convenciones y logs          | 0 emojis, 0 `console.log`/`console.warn`, `console.error` preservados en los `catch`, EOF newlines conformes                                                                                                                                                                                                                                                                                         |
+| §6 documentación                | este informe + `KNOWN_ISSUES.md` #67–#71                                                                                                                                                                                                                                                                                                                                                             |
+| §7 a11y y calidad               | sin cambios de markup ni de roles; 2262 tests en verde con 12 pruebas nuevas de regresión                                                                                                                                                                                                                                                                                                            |
+
+### 6. Observaciones no bloqueantes
+
+1. Los 8 warnings `no-unused-vars` de `useSalesHistory.js` son deuda legacy preexistente en `main` (verificada ejecutando ESLint sobre la versión de base).
+2. La caja del simulador de 80 mm (`.preview80`, 42 ch) representa el ancho del papel, no la proporción tipográfica: el texto ocupa ~76% del ancho simulado frente a ~93% de la impresión real (11 pt contra 9 pt). El número de columnas es correcto en ambos perfiles. Registrado en `KNOWN_ISSUES.md` #71.
+3. Vaciar un campo del pie no lo elimina: toma el texto por defecto. Es la decisión de producto vigente, ahora uniforme en los tres consumidores y documentada en el propio módulo.
+
+### 7. Veredicto final
+
+**APROBADO.** Los cinco comandos mecánicos pasan en verde sobre HEAD `c9b8e80`, los hallazgos F1–F5
+quedan cerrados con evidencia reproducible y prueba de regresión propia, la auditoría de seguridad no
+encuentra vectores explotables y no hay cambios de salida en los tickets de producción. La rama queda
+lista para merge con el simulador, el ticket de prueba y el ticket real printing exactamente el mismo
+pie para la misma plantilla.
