@@ -8,6 +8,12 @@ const resolveSystemTimeZone = () => {
 
 export const MOVEMENTS_TIME_ZONE = resolveSystemTimeZone();
 
+/**
+ * Algunos movimientos llegan desde Postgres como `timestamp without time zone`
+ * pero representan una marca UTC emitida por el servidor. Cuando
+ * `assumeUtcNaive` es `true`, se promueve el literal sin zona a ISO UTC para
+ * evitar desfases al convertirlo a la zona local de la maquina.
+ */
 export const parseMovementDate = (value, { assumeUtcNaive = false } = {}) => {
   if (!value) {
     return null;

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { getRowTypeInfo, formatMovementType } from "./movementFormatters";
+import { parseMovementDate } from "./movementDateUtils";
 
 describe("movementFormatters - getRowTypeInfo", () => {
   it("marca Venta/canje cuando el ticket tiene canje y cobro (total > 0)", () => {
@@ -93,5 +94,15 @@ describe("movementFormatters - formatMovementType", () => {
   it("etiqueta entry como Entrada y transfer como Traspaso", () => {
     expect(formatMovementType("entry")).toBe("Entrada");
     expect(formatMovementType("transfer")).toBe("Traspaso");
+  });
+});
+
+describe("movementDateUtils - parseMovementDate", () => {
+  it("interpreta timestamps naive como UTC cuando el movimiento asi lo requiere", () => {
+    const parsed = parseMovementDate("2026-10-20 03:30:00", {
+      assumeUtcNaive: true,
+    });
+
+    expect(parsed?.toISOString()).toBe("2026-10-20T03:30:00.000Z");
   });
 });
