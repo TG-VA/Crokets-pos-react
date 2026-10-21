@@ -11,7 +11,9 @@ const mockHookReturn = {
   drawerFeedback: null,
   testingDrawer: false,
   copies: 1,
+  copiesText: "1",
   feedLines: 2,
+  feedLinesText: "2",
   template: {
     headerSlogan: "¡Todo para consentir a tu mascota!",
     fiscalInfo: "RFC: CRO123456",
@@ -39,7 +41,9 @@ const mockHookReturn = {
   handleWidthChange: vi.fn(),
   handlePrintModeChange: vi.fn(),
   handleCopiesChange: vi.fn(),
+  handleCopiesBlur: vi.fn(),
   handleFeedLinesChange: vi.fn(),
+  handleFeedLinesBlur: vi.fn(),
   handleTemplateChange: vi.fn(),
   handleToggleChange: vi.fn(),
   handleResetTemplate: vi.fn(),
@@ -120,6 +124,42 @@ describe("SettingsPrinters", () => {
     });
     fireEvent.click(openDrawerBtn);
     expect(currentHookData.handleOpenDrawer).toHaveBeenCalled();
+  });
+
+  it("usa inputs de texto numericos sin spinners y normaliza en onBlur", () => {
+    render(<SettingsPrinters />);
+
+    const copiesInput = document.getElementById("copies-input");
+    const feedLinesInput = document.getElementById("feedlines-input");
+
+    expect(copiesInput.getAttribute("type")).toBe("text");
+    expect(copiesInput.getAttribute("inputmode")).toBe("numeric");
+    expect(feedLinesInput.getAttribute("type")).toBe("text");
+    expect(feedLinesInput.getAttribute("inputmode")).toBe("numeric");
+
+    fireEvent.change(copiesInput, { target: { value: "4" } });
+    expect(currentHookData.handleCopiesChange).toHaveBeenCalledWith("4");
+
+    fireEvent.blur(copiesInput);
+    expect(currentHookData.handleCopiesBlur).toHaveBeenCalled();
+
+    fireEvent.change(feedLinesInput, { target: { value: "6" } });
+    expect(currentHookData.handleFeedLinesChange).toHaveBeenCalledWith("6");
+
+    fireEvent.blur(feedLinesInput);
+    expect(currentHookData.handleFeedLinesBlur).toHaveBeenCalled();
+
+    const blurSpy = vi.spyOn(copiesInput, "blur");
+    fireEvent.keyDown(copiesInput, { key: "Enter" });
+    expect(blurSpy).toHaveBeenCalled();
+  });
+
+  it("informa los rangos permitidos en las ayudas de los campos", () => {
+    render(<SettingsPrinters />);
+    expect(screen.getByText("Entre 1 y 10 copias por venta")).toBeTruthy();
+    expect(
+      screen.getByText("Entre 0 y 25 líneas de avance antes del corte")
+    ).toBeTruthy();
   });
 
   it("muestra los mensajes de estado y error cuando hay feedback activo", () => {

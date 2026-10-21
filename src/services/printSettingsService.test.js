@@ -83,17 +83,17 @@ describe("printSettingsService", () => {
     expect(getSelectedPrinter()).toBe("");
   });
 
-  it("gestiona el número de copias acotándolo entre 1 y 5", () => {
+  it("gestiona el número de copias acotándolo entre 1 y 10", () => {
     expect(getTicketCopies()).toBe(1);
 
     const saved = saveTicketCopies(3);
     expect(saved).toEqual({ success: true, copies: 3 });
     expect(getTicketCopies()).toBe(3);
 
-    // Mayor a 5 se acota a 5
-    const clampedMax = saveTicketCopies(10);
-    expect(clampedMax).toEqual({ success: true, copies: 5 });
-    expect(getTicketCopies()).toBe(5);
+    // Mayor a 10 se acota a 10
+    const clampedMax = saveTicketCopies(40);
+    expect(clampedMax).toEqual({ success: true, copies: 10 });
+    expect(getTicketCopies()).toBe(10);
 
     // Menor a 1 se acota a 1
     const clampedMin = saveTicketCopies(0);
@@ -103,6 +103,10 @@ describe("printSettingsService", () => {
     // No numérico se normaliza a 1
     const invalid = saveTicketCopies("abc");
     expect(invalid).toEqual({ success: true, copies: 1 });
+
+    // Cadena vacía se normaliza a 1
+    const empty = saveTicketCopies("");
+    expect(empty).toEqual({ success: true, copies: 1 });
   });
 
   it("trunca fracciones y evita que un valor < 1 persista como 0 en copias", () => {
@@ -123,28 +127,39 @@ describe("printSettingsService", () => {
     expect(getTicketCopies()).toBe(1);
   });
 
-  it("gestiona los saltos de línea de corte acotándolos entre 1 y 5 con default 2", () => {
+  it("gestiona los saltos de línea de corte acotándolos entre 0 y 25 con default 2", () => {
     expect(getTicketFeedLines()).toBe(2);
 
     const saved = saveTicketFeedLines(4);
     expect(saved).toEqual({ success: true, feedLines: 4 });
     expect(getTicketFeedLines()).toBe(4);
 
-    // Mayor a 5 se acota a 5
-    const clampedMax = saveTicketFeedLines(9);
-    expect(clampedMax).toEqual({ success: true, feedLines: 5 });
-    expect(getTicketFeedLines()).toBe(5);
+    // Mayor a 25 se acota a 25
+    const clampedMax = saveTicketFeedLines(30);
+    expect(clampedMax).toEqual({ success: true, feedLines: 25 });
+    expect(getTicketFeedLines()).toBe(25);
 
-    // Menor a 1 se normaliza a 2 (default)
-    const clampedMin = saveTicketFeedLines(0);
-    expect(clampedMin).toEqual({ success: true, feedLines: 2 });
+    // 0 es un valor válido (corte a ras del cabezal)
+    const zero = saveTicketFeedLines(0);
+    expect(zero).toEqual({ success: true, feedLines: 0 });
+    expect(getTicketFeedLines()).toBe(0);
+
+    // Negativo cae al default 2
+    const negative = saveTicketFeedLines(-1);
+    expect(negative).toEqual({ success: true, feedLines: 2 });
+    expect(getTicketFeedLines()).toBe(2);
+
+    // Cadena vacía cae al default 2
+    const empty = saveTicketFeedLines("");
+    expect(empty).toEqual({ success: true, feedLines: 2 });
     expect(getTicketFeedLines()).toBe(2);
   });
 
-  it("trunca fracciones y evita que un valor < 1 persista como 0 en saltos de línea", () => {
+  it("trunca fracciones y normaliza entradas no numéricas en saltos de línea", () => {
+    // 0.5 trunca a 0, que es un valor válido dentro del rango
     const fractional = saveTicketFeedLines(0.5);
-    expect(fractional).toEqual({ success: true, feedLines: 2 });
-    expect(getTicketFeedLines()).toBe(2);
+    expect(fractional).toEqual({ success: true, feedLines: 0 });
+    expect(getTicketFeedLines()).toBe(0);
 
     const nearOne = saveTicketFeedLines(1.4);
     expect(nearOne).toEqual({ success: true, feedLines: 1 });
@@ -154,8 +169,20 @@ describe("printSettingsService", () => {
     expect(validFraction).toEqual({ success: true, feedLines: 4 });
     expect(getTicketFeedLines()).toBe(4);
 
-    const negative = saveTicketFeedLines(-1);
-    expect(negative).toEqual({ success: true, feedLines: 2 });
+    const notNumeric = saveTicketFeedLines("abc");
+    expect(notNumeric).toEqual({ success: true, feedLines: 2 });
     expect(getTicketFeedLines()).toBe(2);
+  });
+
+  it("mantiene la compatibilidad con valores previos fuera del nuevo rango", () => {
+    window.localStorage.setItem("settings_ticket_copies", "7");
+    window.localStorage.setItem("settings_ticket_feed_lines", "5");
+    expect(getTicketCopies()).toBe(7);
+    expect(getTicketFeedLines()).toBe(5);
+
+    window.localStorage.setItem("settings_ticket_copies", "99");
+    window.localStorage.setItem("settings_ticket_feed_lines", "50");
+    expect(getTicketCopies()).toBe(10);
+    expect(getTicketFeedLines()).toBe(25);
   });
 });

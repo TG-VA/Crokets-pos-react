@@ -11,7 +11,11 @@ import AppModal from "../../components/AppModal/AppModal";
 
 import { buildCashCutText } from "../../utils/cashCutBuilder";
 import { printTicket } from "../../utils/ticketPrinter";
-import { getTicketPrintProfile } from "../../services/printSettingsService";
+import {
+  getTicketPrintProfile,
+  getSelectedPrinter,
+  getTicketFeedLines,
+} from "../../services/printSettingsService";
 
 import { useCashCutReport } from "./hooks/useCashCutReport";
 import { useCashCutDetail } from "./hooks/useCashCutDetail";
@@ -182,6 +186,8 @@ const CashCut = () => {
 
       const result = await printTicket(text, {
         profile: getTicketPrintProfile(),
+        deviceName: getSelectedPrinter() || undefined,
+        feedLines: getTicketFeedLines(),
       });
 
       if (!result?.success) {

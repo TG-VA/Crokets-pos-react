@@ -1,6 +1,10 @@
 import styles from "../SettingsPrinters.module.css";
 import ScopeBadge from "../../components/ScopeBadge";
-import { TICKET_WIDTH_OPTIONS } from "../../../../../services/printSettingsService";
+import {
+  TICKET_WIDTH_OPTIONS,
+  TICKET_COPIES_RANGE,
+  TICKET_FEED_LINES_RANGE,
+} from "../../../../../services/printSettingsService";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
@@ -9,10 +13,12 @@ const TicketFormatCard = ({
   handleWidthChange,
   printMode,
   handlePrintModeChange,
-  copies,
+  copiesText,
   handleCopiesChange,
-  feedLines,
+  handleCopiesBlur,
+  feedLinesText,
   handleFeedLinesChange,
+  handleFeedLinesBlur,
   preferencesFeedback,
 }) => (
   <article className={styles.card}>
@@ -95,31 +101,45 @@ const TicketFormatCard = ({
           Copias por venta
         </label>
         <p className={styles.fieldHint}>
-          Número de copias a imprimir por venta
+          Entre {TICKET_COPIES_RANGE.min} y {TICKET_COPIES_RANGE.max} copias por
+          venta
         </p>
         <input
           id="copies-input"
-          type="number"
-          min={1}
-          max={5}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
           className={styles.input}
-          value={copies}
+          value={copiesText}
           onChange={(e) => handleCopiesChange(e.target.value)}
+          onBlur={handleCopiesBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
         />
       </div>
       <div className={styles.fieldCompact}>
         <label htmlFor="feedlines-input" className={styles.label}>
           Saltos de línea antes de corte
         </label>
-        <p className={styles.fieldHint}>Espaciado antes del corte automático</p>
+        <p className={styles.fieldHint}>
+          Entre {TICKET_FEED_LINES_RANGE.min} y {TICKET_FEED_LINES_RANGE.max}{" "}
+          líneas de avance antes del corte
+        </p>
         <input
           id="feedlines-input"
-          type="number"
-          min={1}
-          max={5}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
           className={styles.input}
-          value={feedLines}
+          value={feedLinesText}
           onChange={(e) => handleFeedLinesChange(e.target.value)}
+          onBlur={handleFeedLinesBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
         />
       </div>
     </div>

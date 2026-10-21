@@ -51,7 +51,11 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const drawerCooldownTimerRef = useRef(null);
 
   const [copies, setCopies] = useState(() => getTicketCopies());
+  const [copiesText, setCopiesText] = useState(() => String(copies));
   const [feedLines, setFeedLines] = useState(() => getTicketFeedLines());
+  const [feedLinesText, setFeedLinesText] = useState(() => String(feedLines));
+  const copiesTextRef = useRef(copiesText);
+  const feedLinesTextRef = useRef(feedLinesText);
   const [template, setTemplate] = useState(() => ({
     ...DEFAULT_TICKET_CUSTOMIZATION,
   }));
@@ -172,14 +176,30 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     });
   }, []);
 
-  const handleCopiesChange = useCallback((value) => {
-    const result = saveTicketCopies(value);
-    setCopies(result.copies);
+  const handleCopiesChange = useCallback((rawValue) => {
+    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    copiesTextRef.current = filtered;
+    setCopiesText(filtered);
   }, []);
 
-  const handleFeedLinesChange = useCallback((value) => {
-    const result = saveTicketFeedLines(value);
+  const handleCopiesBlur = useCallback(() => {
+    const result = saveTicketCopies(copiesTextRef.current);
+    setCopies(result.copies);
+    copiesTextRef.current = String(result.copies);
+    setCopiesText(String(result.copies));
+  }, []);
+
+  const handleFeedLinesChange = useCallback((rawValue) => {
+    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    feedLinesTextRef.current = filtered;
+    setFeedLinesText(filtered);
+  }, []);
+
+  const handleFeedLinesBlur = useCallback(() => {
+    const result = saveTicketFeedLines(feedLinesTextRef.current);
     setFeedLines(result.feedLines);
+    feedLinesTextRef.current = String(result.feedLines);
+    setFeedLinesText(String(result.feedLines));
   }, []);
 
   const handleSelectPrinter = useCallback((printerName) => {
@@ -265,7 +285,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     const result = await printTicket(text, {
       profile: getTicketPrintProfile(),
       deviceName: selectedPrinter || undefined,
-      copies,
+      copies: getTicketCopies(),
       feedLines: getTicketFeedLines(),
     });
     setPrinting(false);
@@ -277,7 +297,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       return;
     }
     setPrintFeedback({ type: "success", message: result.message });
-  }, [buildTestTicketText, copies, selectedPrinter]);
+  }, [buildTestTicketText, selectedPrinter]);
 
   const handleResetTemplate = useCallback(() => {
     setTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION });
@@ -400,7 +420,9 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     setDrawerFeedback,
     testingDrawer,
     copies,
+    copiesText,
     feedLines,
+    feedLinesText,
     template,
     templateFeedback,
     savingTemplate,
@@ -416,7 +438,9 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     handleWidthChange,
     handlePrintModeChange,
     handleCopiesChange,
+    handleCopiesBlur,
     handleFeedLinesChange,
+    handleFeedLinesBlur,
     handleTemplateChange,
     handleToggleChange,
     handleResetTemplate,
