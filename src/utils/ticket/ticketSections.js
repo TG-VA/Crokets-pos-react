@@ -663,15 +663,15 @@ export const buildFooterSection = (footer = {}) => {
     footer.returnPolicy ||
     "Para cambios o devoluciones presentar ticket de compra";
 
-  lines.push(footerLine1);
+  pushWrappedLeft(lines, footerLine1, TICKET_WIDTH);
   lines.push("");
 
   if (footerLine2) {
-    lines.push(footerLine2);
+    pushWrappedLeft(lines, footerLine2, TICKET_WIDTH);
   }
 
   if (footerPhone) {
-    lines.push(`Tel. ${footerPhone}`);
+    pushWrappedLeft(lines, `Tel. ${footerPhone}`, TICKET_WIDTH);
   }
 
   if (returnPolicy) {

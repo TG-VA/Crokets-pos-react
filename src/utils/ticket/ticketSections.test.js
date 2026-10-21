@@ -327,5 +327,22 @@ describe("ticketSections", () => {
       const lines = buildFooterSection({ line1: "HOLA" });
       expect(lines[lines.length - 1]).toBe(strongSeparator());
     });
+
+    it("envuelve las lineas del pie dentro del ancho util de 32 columnas", () => {
+      const lines = buildFooterSection({
+        line1:
+          "Gracias por su compra, te esperamos de nuevo en CROKETS Cancun Centro",
+        line2: "Agenda tu cita de baño y tu corte de pelo con nosotros",
+        phone: "998 117 5387",
+      });
+
+      const footerLines = lines.slice(0, lines.length - 1);
+      footerLines.forEach((line) => {
+        expect(line.length).toBeLessThanOrEqual(32);
+      });
+      expect(footerLines.join(" ")).toContain(
+        "Gracias por su compra, te esperamos de nuevo en CROKETS Cancun Centro"
+      );
+    });
   });
 });
