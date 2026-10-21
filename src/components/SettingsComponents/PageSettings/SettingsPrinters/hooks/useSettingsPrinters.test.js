@@ -154,6 +154,127 @@ describe("useSettingsPrinters", () => {
     expect(result.current.feedLinesText).toBe("2");
   });
 
+  it("acota las copias a 10 mientras se teclea y restablece el fallback al perder el foco", async () => {
+    const { result } = renderHook(() =>
+      useSettingsPrinters({ branchId: null })
+    );
+
+    await act(async () => {
+      result.current.handleCopiesChange("11");
+    });
+    expect(result.current.copiesText).toBe("10");
+
+    await act(async () => {
+      result.current.handleCopiesChange("100");
+    });
+    expect(result.current.copiesText).toBe("10");
+
+    await act(async () => {
+      result.current.handleCopiesChange("10");
+    });
+    expect(result.current.copiesText).toBe("10");
+
+    await act(async () => {
+      result.current.handleCopiesChange("0");
+    });
+    expect(result.current.copiesText).toBe("0");
+
+    await act(async () => {
+      result.current.handleCopiesBlur();
+    });
+    expect(result.current.copies).toBe(1);
+    expect(result.current.copiesText).toBe("1");
+    expect(window.localStorage.getItem("settings_ticket_copies")).toBe("1");
+
+    await act(async () => {
+      result.current.handleCopiesChange("");
+    });
+    expect(result.current.copiesText).toBe("");
+
+    await act(async () => {
+      result.current.handleCopiesBlur();
+    });
+    expect(result.current.copies).toBe(1);
+    expect(result.current.copiesText).toBe("1");
+    expect(window.localStorage.getItem("settings_ticket_copies")).toBe("1");
+  });
+
+  it("acota los saltos de linea a 25 mientras se teclea y admite el cero", async () => {
+    const { result } = renderHook(() =>
+      useSettingsPrinters({ branchId: null })
+    );
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("26");
+    });
+    expect(result.current.feedLinesText).toBe("25");
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("300");
+    });
+    expect(result.current.feedLinesText).toBe("25");
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("12");
+    });
+    expect(result.current.feedLinesText).toBe("12");
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("0");
+    });
+    expect(result.current.feedLinesText).toBe("0");
+
+    await act(async () => {
+      result.current.handleFeedLinesBlur();
+    });
+    expect(result.current.feedLines).toBe(0);
+    expect(result.current.feedLinesText).toBe("0");
+    expect(window.localStorage.getItem("settings_ticket_feed_lines")).toBe("0");
+
+    await act(async () => {
+      result.current.handleFeedLinesChange("");
+      result.current.handleFeedLinesBlur();
+    });
+    expect(result.current.feedLines).toBe(2);
+    expect(result.current.feedLinesText).toBe("2");
+    expect(window.localStorage.getItem("settings_ticket_feed_lines")).toBe("2");
+  });
+
+  it("sanea el telefono y recorta los campos de plantilla al escribir", async () => {
+    const { result } = renderHook(() =>
+      useSettingsPrinters({ branchId: null })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      result.current.handleTemplateChange("footerPhone", "998-ABC (117) 5387");
+    });
+    expect(result.current.template.footerPhone).toBe("998- (117) 5387");
+
+    await act(async () => {
+      result.current.handleTemplateChange("footerPhone", "+52 998 117 5387");
+    });
+    expect(result.current.template.footerPhone).toBe("+52 998 117 5387");
+
+    await act(async () => {
+      result.current.handleTemplateChange("headerSlogan", "a".repeat(120));
+    });
+    expect(result.current.template.headerSlogan).toHaveLength(80);
+
+    await act(async () => {
+      result.current.handleTemplateChange("returnPolicy", "b".repeat(400));
+    });
+    expect(result.current.template.returnPolicy).toHaveLength(250);
+
+    await act(async () => {
+      result.current.handleTemplateChange("footerLine1", "c".repeat(90));
+    });
+    expect(result.current.template.footerLine1).toHaveLength(60);
+  });
+
   it("hidrata copias, saltos e impresora persistidos al montar", async () => {
     window.localStorage.setItem("settings_ticket_copies", "4");
     window.localStorage.setItem("settings_ticket_feed_lines", "5");

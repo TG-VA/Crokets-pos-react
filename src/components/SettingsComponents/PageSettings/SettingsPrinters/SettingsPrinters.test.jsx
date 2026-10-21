@@ -162,6 +162,64 @@ describe("SettingsPrinters", () => {
     ).toBeTruthy();
   });
 
+  it("expone los limites numericos en los inputs de copias y saltos de linea", () => {
+    render(<SettingsPrinters />);
+
+    const copiesInput = document.getElementById("copies-input");
+    const feedLinesInput = document.getElementById("feedlines-input");
+
+    expect(copiesInput.getAttribute("min")).toBe("1");
+    expect(copiesInput.getAttribute("max")).toBe("10");
+    expect(copiesInput.getAttribute("maxlength")).toBe("2");
+
+    expect(feedLinesInput.getAttribute("min")).toBe("0");
+    expect(feedLinesInput.getAttribute("max")).toBe("25");
+    expect(feedLinesInput.getAttribute("maxlength")).toBe("2");
+  });
+
+  it("expone los limites de longitud en los campos de la plantilla comercial", () => {
+    render(<SettingsPrinters />);
+
+    const expectedLimits = {
+      headerSlogan: 80,
+      fiscalInfo: 100,
+      footerLine1: 60,
+      footerLine2: 60,
+      footerPhone: 20,
+      returnPolicy: 250,
+    };
+
+    Object.entries(expectedLimits).forEach(([id, limit]) => {
+      const field = document.getElementById(id);
+      expect(field).toBeTruthy();
+      expect(field.getAttribute("maxlength")).toBe(String(limit));
+    });
+  });
+
+  it("muestra los contadores de caracteres de la plantilla comercial", () => {
+    render(<SettingsPrinters />);
+
+    const template = mockHookReturn.template;
+    expect(
+      screen.getByText(`${template.headerSlogan.length} / 80`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.fiscalInfo.length} / 100`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerLine1.length} / 60`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerLine2.length} / 60`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerPhone.length} / 20`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.returnPolicy.length} / 250`)
+    ).toBeTruthy();
+  });
+
   it("muestra los mensajes de estado y error cuando hay feedback activo", () => {
     currentHookData = {
       ...mockHookReturn,

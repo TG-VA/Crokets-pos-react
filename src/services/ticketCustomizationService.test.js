@@ -10,7 +10,11 @@ vi.mock("../lib/supabaseClient", () => {
 import {
   getTicketCustomization,
   saveTicketCustomization,
+  normalizeTemplate,
+  sanitizeTicketPhone,
+  sanitizeTicketTemplateField,
   DEFAULT_TICKET_CUSTOMIZATION,
+  TICKET_TEMPLATE_LIMITS,
 } from "./ticketCustomizationService";
 import { supabase } from "../lib/supabaseClient";
 
@@ -137,5 +141,152 @@ describe("ticketCustomizationService", () => {
       template: { footerLine1: "OK" },
     });
     expect(saved.footerLine1).toBe("OK");
+  });
+
+  it("expone los limites de longitud de la plantilla comercial", () => {
+    expect(TICKET_TEMPLATE_LIMITS).toEqual({
+      headerSlogan: 80,
+      fiscalInfo: 100,
+      footerLine1: 60,
+      footerLine2: 60,
+      footerPhone: 20,
+      returnPolicy: 250,
+    });
+    expect(Object.isFrozen(TICKET_TEMPLATE_LIMITS)).toBe(true);
+  });
+
+  it("recorta en normalizeTemplate los textos que exceden los limites", () => {
+    const normalized = normalizeTemplate({
+      headerSlogan: "a".repeat(150),
+      fiscalInfo: "b".repeat(200),
+      footerLine1: "c".repeat(90),
+      footerLine2: "d".repeat(90),
+      returnPolicy: "e".repeat(400),
+    });
+
+    expect(normalized.headerSlogan).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.headerSlogan
+    );
+    expect(normalized.fiscalInfo).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.fiscalInfo
+    );
+    expect(normalized.footerLine1).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.footerLine1
+    );
+    expect(normalized.footerLine2).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.footerLine2
+    );
+    expect(normalized.returnPolicy).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.returnPolicy
+    );
+  });
+
+  it("completa con los valores por defecto los campos ausentes al normalizar", () => {
+    const normalized = normalizeTemplate({ footerLine1: "Gracias" });
+
+    expect(normalized.footerLine1).toBe("Gracias");
+    expect(normalized.headerSlogan).toBe(
+      DEFAULT_TICKET_CUSTOMIZATION.headerSlogan
+    );
+    expect(normalized.footerPhone).toBe(
+      DEFAULT_TICKET_CUSTOMIZATION.footerPhone
+    );
+  });
+
+  it("sanea el telefono admitiendo solo digitos, espacios, guiones, parentesis y el prefijo mas", () => {
+    expect(sanitizeTicketPhone("998-ABC (117) 5387")).toBe("998- (117) 5387");
+    expect(sanitizeTicketPhone("+52 (998) 117-5387")).toBe(
+      "+52 (998) 117-5387"
+    );
+    expect(sanitizeTicketPhone("998#117*5387")).toBe("9981175387");
+    expect(sanitizeTicketPhone("")).toBe("");
+    expect(sanitizeTicketPhone(null)).toBe("");
+  });
+
+  it("recorta y sanea cada campo de la plantilla al escribir", () => {
+    expect(
+      sanitizeTicketTemplateField("headerSlogan", "x".repeat(200))
+    ).toHaveLength(TICKET_TEMPLATE_LIMITS.headerSlogan);
+    expect(
+      sanitizeTicketTemplateField("footerPhone", "998 117 5387 ext 4")
+    ).toBe("998 117 5387  4");
+    expect(
+      sanitizeTicketTemplateField("footerPhone", "9".repeat(40))
+    ).toHaveLength(TICKET_TEMPLATE_LIMITS.footerPhone);
+    expect(sanitizeTicketTemplateField("campoDesconocido", "texto")).toBe(
+      "texto"
+    );
+  });
+
+  it("recorta la plantilla almacenada en Supabase al recuperarla", async () => {
+    const query = buildQueryChain({
+      data: {
+        id: "1",
+        setting_key: "ticket_customization",
+        setting_value: JSON.stringify({
+          headerSlogan: "a".repeat(200),
+          footerPhone: "998-ABC 117 5387",
+          returnPolicy: "b".repeat(400),
+        }),
+        value_type: "json",
+        branch_id: null,
+      },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await getTicketCustomization({ branchId: null });
+
+    expect(result.headerSlogan).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.headerSlogan
+    );
+    expect(result.footerPhone).toBe("998- 117 5387");
+    expect(result.returnPolicy).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.returnPolicy
+    );
+  });
+
+  it("recorta la plantilla antes de persistirla en Supabase", async () => {
+    const query = buildQueryChain({ data: null, error: null });
+    supabase.from.mockReturnValue(query);
+
+    const saved = await saveTicketCustomization({
+      branchId: null,
+      template: {
+        headerSlogan: "a".repeat(200),
+        footerPhone: "998-ABC 117 5387",
+      },
+    });
+
+    expect(saved.headerSlogan).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.headerSlogan
+    );
+    expect(saved.footerPhone).toBe("998- 117 5387");
+    const insertedRow = query.insert.mock.calls[0][0][0];
+    const persisted = JSON.parse(insertedRow.setting_value);
+    expect(persisted.headerSlogan).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.headerSlogan
+    );
+    expect(persisted.footerPhone).toBe("998- 117 5387");
+  });
+
+  it("recorta la plantilla cacheada que excede los limites", async () => {
+    window.localStorage.setItem(
+      "settings_ticket_template_cache",
+      JSON.stringify({
+        ...DEFAULT_TICKET_CUSTOMIZATION,
+        headerSlogan: "a".repeat(200),
+        footerPhone: "998-ABC 117 5387",
+      })
+    );
+    const query = buildQueryChain({ data: null, error: null });
+    supabase.from.mockReturnValue(query);
+
+    const result = await getTicketCustomization({ branchId: null });
+
+    expect(result.headerSlogan).toHaveLength(
+      TICKET_TEMPLATE_LIMITS.headerSlogan
+    );
+    expect(result.footerPhone).toBe("998- 117 5387");
   });
 });
