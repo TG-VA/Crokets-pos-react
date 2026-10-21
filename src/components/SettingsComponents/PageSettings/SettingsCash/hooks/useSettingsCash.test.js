@@ -282,4 +282,37 @@ describe("useSettingsCash", () => {
       vi.useRealTimers();
     }
   });
+
+  it("captura excepciones inesperadas en handleTestDrawer y muestra feedback de error", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    checkUserIsAdmin.mockResolvedValue(false);
+    triggerCashDrawerKick.mockRejectedValue(new Error("Fallo catastrófico"));
+
+    const { result } = renderUseSettingsCash();
+    await waitFor(() => expect(result.current.adminLoading).toBe(false));
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        await result.current.handleTestDrawer();
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(result.current.drawerFeedback).toEqual({
+        type: "error",
+        message: "No se pudo abrir el cajón de dinero.",
+      });
+      expect(result.current.testingDrawer).toBe(true);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+      expect(result.current.testingDrawer).toBe(false);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });

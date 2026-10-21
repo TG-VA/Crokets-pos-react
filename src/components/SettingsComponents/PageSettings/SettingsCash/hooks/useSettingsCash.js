@@ -182,6 +182,12 @@ const useSettingsCash = ({ branchId = null } = {}) => {
         return;
       }
       setDrawerFeedback({ type: "success", message: res.message });
+    } catch (error) {
+      console.error("Error al probar el cajón de dinero:", error);
+      setDrawerFeedback({
+        type: "error",
+        message: "No se pudo abrir el cajón de dinero.",
+      });
     } finally {
       drawerCooldownTimerRef.current = setTimeout(() => {
         drawerCooldownTimerRef.current = null;
