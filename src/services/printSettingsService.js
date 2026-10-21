@@ -104,12 +104,30 @@ const TICKET_COPIES_KEY = "settings_ticket_copies";
 const TICKET_FEED_LINES_KEY = "settings_ticket_feed_lines";
 
 /**
- * Normaliza un entero positivo hacia el rango [min, max]. Un valor válido por
- * debajo de `min` (incluidas fracciones < 1 que truncarían a 0) cae al
- * `fallback`, de modo que `saveTicketCopies(0.5)` persiste 1 y
- * `saveTicketFeedLines(0.5)` persiste 2 en lugar de un 0 fuera de rango.
+ * Rangos permitidos para los campos numéricos de formato de ticket.
+ * `feedLines` admite 0 porque el hardware térmico puede cortar a ras del
+ * cabezal; el máximo de 25 cubre la distancia cabezal-guillotina de las
+ * impresoras de tickets más comunes (Epson, Bixolon, Star, Xprinter).
  */
-const clampInteger = (value, { fallback, min = 1, max = 5 }) => {
+export const TICKET_COPIES_RANGE = { min: 1, max: 10, fallback: 1 };
+export const TICKET_FEED_LINES_RANGE = { min: 0, max: 25, fallback: 2 };
+
+/**
+ * Normaliza un entero hacia el rango [min, max]. Entradas vacías
+ * (`null`, `undefined` o cadena en blanco) caen al `fallback`. Un entero
+ * por debajo de `min` también cae al `fallback`; los valores dentro del
+ * rango se truncan y acotan de forma predecible.
+ */
+const clampInteger = (value, { fallback, min, max }) => {
+  const isEmpty =
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "");
+
+  if (isEmpty) {
+    return fallback;
+  }
+
   const parsed = Number(value);
   const truncated = Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
   return Math.max(min, Math.min(max, truncated >= min ? truncated : fallback));
@@ -122,19 +140,19 @@ export const saveSelectedPrinter = (value = "") =>
   writeStoredValue(SELECTED_PRINTER_KEY, String(value || ""));
 
 export const getTicketCopies = () =>
-  clampInteger(readStoredValue(TICKET_COPIES_KEY), { fallback: 1 });
+  clampInteger(readStoredValue(TICKET_COPIES_KEY), TICKET_COPIES_RANGE);
 
 export const saveTicketCopies = (value = 1) => {
-  const copies = clampInteger(value, { fallback: 1 });
+  const copies = clampInteger(value, TICKET_COPIES_RANGE);
   const ok = writeStoredValue(TICKET_COPIES_KEY, String(copies));
   return { success: ok, copies: ok ? copies : getTicketCopies() };
 };
 
 export const getTicketFeedLines = () =>
-  clampInteger(readStoredValue(TICKET_FEED_LINES_KEY), { fallback: 2 });
+  clampInteger(readStoredValue(TICKET_FEED_LINES_KEY), TICKET_FEED_LINES_RANGE);
 
 export const saveTicketFeedLines = (value = 2) => {
-  const feedLines = clampInteger(value, { fallback: 2 });
+  const feedLines = clampInteger(value, TICKET_FEED_LINES_RANGE);
   const ok = writeStoredValue(TICKET_FEED_LINES_KEY, String(feedLines));
   return { success: ok, feedLines: ok ? feedLines : getTicketFeedLines() };
 };
