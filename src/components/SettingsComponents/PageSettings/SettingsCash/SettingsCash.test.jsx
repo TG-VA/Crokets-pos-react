@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import SettingsCash from "./SettingsCash";
 
 const { checkUserIsAdmin } = vi.hoisted(() => ({
@@ -188,6 +194,60 @@ describe("SettingsCash", () => {
     expect(screen.getByRole("button", { name: /Guardar/i }).disabled).toBe(
       true
     );
+  });
+
+  it("bloquea el botón de prueba de cajón durante el cooldown", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    triggerCashDrawerKick.mockResolvedValue({
+      success: true,
+      message: "Pulso de apertura enviado al cajón de dinero.",
+    });
+    getCashOperationSettings.mockReturnValue({
+      success: true,
+      ...baseSettings,
+      cashDrawerEnabled: true,
+    });
+    loadCashOperationSettings.mockResolvedValue({
+      success: true,
+      ...baseSettings,
+      cashDrawerEnabled: true,
+      error: null,
+      source: "cache",
+    });
+
+    render(<SettingsCash />);
+
+    const button = await screen.findByRole("button", {
+      name: "Probar apertura del cajón",
+    });
+    expect(button.disabled).toBe(false);
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(button);
+      });
+
+      expect(triggerCashDrawerKick).toHaveBeenCalledTimes(1);
+      const testingButton = screen.getByRole("button", { name: "Probando..." });
+      expect(testingButton.disabled).toBe(true);
+
+      await act(async () => {
+        fireEvent.click(testingButton);
+      });
+      expect(triggerCashDrawerKick).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+
+      expect(
+        screen.getByRole("button", { name: "Probar apertura del cajón" })
+          .disabled
+      ).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("muestra el distintivo de alcance de sucursal en cada tarjeta", async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
@@ -13,6 +13,13 @@ import {
   triggerCashDrawerKick,
 } from "../../../../../services/cashOperationSettingsService";
 import { getSelectedPrinter } from "../../../../../services/printSettingsService";
+
+/**
+ * Ventana de enfriamiento posterior a la prueba del cajon. El solenoide
+ * fisico necesita un periodo de reposo entre pulsos, por lo que el boton
+ * permanece bloqueado aun cuando la llamada al puente ya termino.
+ */
+const DRAWER_TEST_COOLDOWN_MS = 2500;
 
 /**
  * Estado y ciclo de vida de la configuracion de caja.
@@ -35,6 +42,18 @@ const useSettingsCash = ({ branchId = null } = {}) => {
   const [settings, setSettings] = useState(() => getCashOperationSettings());
   const [testingDrawer, setTestingDrawer] = useState(false);
   const [drawerFeedback, setDrawerFeedback] = useState(null);
+  const isTestingDrawerRef = useRef(false);
+  const drawerCooldownTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (drawerCooldownTimerRef.current) {
+        clearTimeout(drawerCooldownTimerRef.current);
+        drawerCooldownTimerRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -147,17 +166,29 @@ const useSettingsCash = ({ branchId = null } = {}) => {
   };
 
   const handleTestDrawer = async () => {
-    setDrawerFeedback(null);
-    setTestingDrawer(true);
-    const res = await triggerCashDrawerKick({
-      printerDeviceName: getSelectedPrinter(),
-    });
-    setTestingDrawer(false);
-    if (!res.success) {
-      setDrawerFeedback({ type: "error", message: res.message });
+    if (isTestingDrawerRef.current) {
       return;
     }
-    setDrawerFeedback({ type: "success", message: res.message });
+    isTestingDrawerRef.current = true;
+    setDrawerFeedback(null);
+    setTestingDrawer(true);
+
+    try {
+      const res = await triggerCashDrawerKick({
+        printerDeviceName: getSelectedPrinter(),
+      });
+      if (!res.success) {
+        setDrawerFeedback({ type: "error", message: res.message });
+        return;
+      }
+      setDrawerFeedback({ type: "success", message: res.message });
+    } finally {
+      drawerCooldownTimerRef.current = setTimeout(() => {
+        drawerCooldownTimerRef.current = null;
+        isTestingDrawerRef.current = false;
+        setTestingDrawer(false);
+      }, DRAWER_TEST_COOLDOWN_MS);
+    }
   };
 
   return {

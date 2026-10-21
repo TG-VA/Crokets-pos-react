@@ -220,14 +220,66 @@ describe("useSettingsCash", () => {
     const { result } = renderUseSettingsCash();
     await waitFor(() => expect(result.current.adminLoading).toBe(false));
 
-    await act(async () => {
-      await result.current.handleTestDrawer();
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        await result.current.handleTestDrawer();
+      });
+
+      expect(result.current.drawerFeedback).toEqual({
+        type: "error",
+        message: "Sin impresora",
+      });
+      expect(result.current.testingDrawer).toBe(true);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+      expect(result.current.testingDrawer).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("mantiene el bloqueo durante el cooldown y descarta dobles clics", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    triggerCashDrawerKick.mockResolvedValue({
+      success: true,
+      message: "Pulso de apertura enviado al cajón de dinero.",
     });
 
-    expect(result.current.testingDrawer).toBe(false);
-    expect(result.current.drawerFeedback).toEqual({
-      type: "error",
-      message: "Sin impresora",
-    });
+    const { result } = renderUseSettingsCash();
+    await waitFor(() => expect(result.current.adminLoading).toBe(false));
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        await result.current.handleTestDrawer();
+      });
+
+      expect(triggerCashDrawerKick).toHaveBeenCalledTimes(1);
+      expect(result.current.testingDrawer).toBe(true);
+      expect(result.current.drawerFeedback).toEqual({
+        type: "success",
+        message: "Pulso de apertura enviado al cajón de dinero.",
+      });
+
+      await act(async () => {
+        await result.current.handleTestDrawer();
+      });
+      expect(triggerCashDrawerKick).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2500);
+      });
+      expect(result.current.testingDrawer).toBe(false);
+
+      await act(async () => {
+        await result.current.handleTestDrawer();
+      });
+      expect(triggerCashDrawerKick).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
