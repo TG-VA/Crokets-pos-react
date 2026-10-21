@@ -209,6 +209,43 @@ describe("useSettingsPrinters", () => {
     }
   });
 
+  it("no programa el cooldown de cajon si el hook se desmonta con la llamada en vuelo", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveDrawer;
+      window.electronAPI = {
+        invoke: vi.fn((channel) => {
+          if (channel === "open-cash-drawer") {
+            return new Promise((resolve) => {
+              resolveDrawer = resolve;
+            });
+          }
+          return Promise.resolve({ success: true, printers: [] });
+        }),
+      };
+
+      const { result, unmount } = renderHook(() =>
+        useSettingsPrinters({ branchId: null })
+      );
+
+      let drawerPromise;
+      act(() => {
+        drawerPromise = result.current.handleOpenDrawer();
+      });
+
+      unmount();
+
+      await act(async () => {
+        resolveDrawer({ success: true, message: "ok" });
+        await drawerPromise;
+      });
+
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("restablece la plantilla a sus valores por defecto con handleResetTemplate", async () => {
     const { result } = renderHook(() =>
       useSettingsPrinters({ branchId: null })

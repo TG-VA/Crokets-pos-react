@@ -283,6 +283,39 @@ describe("useSettingsCash", () => {
     }
   });
 
+  it("no programa el cooldown de cajon si el hook se desmonta con la llamada en vuelo", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    let resolveKick;
+    triggerCashDrawerKick.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveKick = resolve;
+        })
+    );
+
+    const { result, unmount } = renderUseSettingsCash();
+    await waitFor(() => expect(result.current.adminLoading).toBe(false));
+
+    vi.useFakeTimers();
+    try {
+      let drawerPromise;
+      act(() => {
+        drawerPromise = result.current.handleTestDrawer();
+      });
+
+      unmount();
+
+      await act(async () => {
+        resolveKick({ success: true, message: "ok" });
+        await drawerPromise;
+      });
+
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("captura excepciones inesperadas en handleTestDrawer y muestra feedback de error", async () => {
     const consoleErrorSpy = vi
       .spyOn(console, "error")

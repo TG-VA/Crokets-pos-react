@@ -47,6 +47,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [drawerFeedback, setDrawerFeedback] = useState(DEFAULT_FEEDBACK);
   const [testingDrawer, setTestingDrawer] = useState(false);
   const isTestingDrawerRef = useRef(false);
+  const isDrawerEffectMountedRef = useRef(true);
   const drawerCooldownTimerRef = useRef(null);
 
   const [copies, setCopies] = useState(() => getTicketCopies());
@@ -320,23 +321,28 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
         message: "No se pudo abrir el cajón de dinero.",
       });
     } finally {
-      drawerCooldownTimerRef.current = setTimeout(() => {
-        drawerCooldownTimerRef.current = null;
+      if (isDrawerEffectMountedRef.current) {
+        drawerCooldownTimerRef.current = setTimeout(() => {
+          drawerCooldownTimerRef.current = null;
+          isTestingDrawerRef.current = false;
+          setTestingDrawer(false);
+        }, DRAWER_TEST_COOLDOWN_MS);
+      } else {
         isTestingDrawerRef.current = false;
-        setTestingDrawer(false);
-      }, DRAWER_TEST_COOLDOWN_MS);
+      }
     }
   }, [isElectron, selectedPrinter]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isDrawerEffectMountedRef.current = true;
+    return () => {
+      isDrawerEffectMountedRef.current = false;
       if (drawerCooldownTimerRef.current) {
         clearTimeout(drawerCooldownTimerRef.current);
         drawerCooldownTimerRef.current = null;
       }
-    },
-    []
-  );
+    };
+  }, []);
 
   useEffect(() => {
     if (templateFeedback?.type === "success") {

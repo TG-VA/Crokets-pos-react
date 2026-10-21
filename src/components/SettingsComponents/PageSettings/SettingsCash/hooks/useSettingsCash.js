@@ -43,17 +43,19 @@ const useSettingsCash = ({ branchId = null } = {}) => {
   const [testingDrawer, setTestingDrawer] = useState(false);
   const [drawerFeedback, setDrawerFeedback] = useState(null);
   const isTestingDrawerRef = useRef(false);
+  const isDrawerEffectMountedRef = useRef(true);
   const drawerCooldownTimerRef = useRef(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isDrawerEffectMountedRef.current = true;
+    return () => {
+      isDrawerEffectMountedRef.current = false;
       if (drawerCooldownTimerRef.current) {
         clearTimeout(drawerCooldownTimerRef.current);
         drawerCooldownTimerRef.current = null;
       }
-    },
-    []
-  );
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -189,11 +191,15 @@ const useSettingsCash = ({ branchId = null } = {}) => {
         message: "No se pudo abrir el cajón de dinero.",
       });
     } finally {
-      drawerCooldownTimerRef.current = setTimeout(() => {
-        drawerCooldownTimerRef.current = null;
+      if (isDrawerEffectMountedRef.current) {
+        drawerCooldownTimerRef.current = setTimeout(() => {
+          drawerCooldownTimerRef.current = null;
+          isTestingDrawerRef.current = false;
+          setTestingDrawer(false);
+        }, DRAWER_TEST_COOLDOWN_MS);
+      } else {
         isTestingDrawerRef.current = false;
-        setTestingDrawer(false);
-      }, DRAWER_TEST_COOLDOWN_MS);
+      }
     }
   };
 
