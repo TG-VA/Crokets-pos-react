@@ -419,5 +419,56 @@ describe("movementReportBuilder", () => {
 
       expect(returnRow.quantity).toBe(1);
     });
+
+    it("preserva una fila por cada devolucion parcial con su fecha real", () => {
+      const deps = buildNoStockDeps();
+      deps.usersById = new Map([
+        ["u1", { id: "u1", username: "admin" }],
+        ["u2", { id: "u2", username: "cajero2" }],
+      ]);
+
+      const result = buildNoStockRows({
+        saleDetails: [
+          { id: "sd1", sale_id: "s1", product_id: "p1", quantity: 3 },
+        ],
+        canceledSales: [],
+        saleReturns: [
+          {
+            id: "r1",
+            sale_id: "s1",
+            user_id: "u1",
+            return_reason: "Primer ajuste",
+            created_at: "2026-10-01T12:00:00Z",
+          },
+          {
+            id: "r2",
+            sale_id: "s1",
+            user_id: "u2",
+            return_reason: "Segundo ajuste",
+            created_at: "2026-10-01T13:30:00Z",
+          },
+        ],
+        returnItems: [
+          { id: "ri1", return_id: "r1", product_id: "p1", quantity: 1 },
+          { id: "ri2", return_id: "r2", product_id: "p1", quantity: 2 },
+        ],
+        ...deps,
+        existingSaleProductKeys: new Set(),
+      });
+
+      const returnRows = result.filter((row) => row.movement_type === "return");
+
+      expect(returnRows).toHaveLength(2);
+      expect(returnRows.map((row) => row.quantity)).toEqual([1, 2]);
+      expect(returnRows.map((row) => row.created_at)).toEqual([
+        "2026-10-01T12:00:00Z",
+        "2026-10-01T13:30:00Z",
+      ]);
+      expect(returnRows.map((row) => row.user_id)).toEqual(["u1", "u2"]);
+      expect(returnRows.map((row) => row.reason)).toEqual([
+        "Primer ajuste",
+        "Segundo ajuste",
+      ]);
+    });
   });
 });

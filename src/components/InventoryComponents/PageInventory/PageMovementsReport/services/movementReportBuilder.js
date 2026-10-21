@@ -148,43 +148,31 @@ export const buildNoStockRows = ({
       .map((row) => [row.sale_id, row])
   );
 
-  const returnsBySale = new Map();
-
-  normalizedReturns.forEach((row) => {
-    if (!row?.sale_id) {
-      return;
-    }
-
-    const current = returnsBySale.get(row.sale_id) ?? [];
-
-    current.push(row);
-
-    returnsBySale.set(row.sale_id, current);
-  });
-
   const returnById = new Map(
     normalizedReturns.filter((row) => row?.id).map((row) => [row.id, row])
   );
 
-  const returnedQtyBySaleProduct = new Map();
+  const returnEventsBySaleProduct = new Map();
 
   normalizedReturnItems.forEach((item) => {
     const returnRow = returnById.get(item?.return_id);
-
     const saleId = returnRow?.sale_id;
 
-    if (!saleId || !item?.product_id) {
+    if (!saleId || !item?.product_id || !returnRow?.id) {
       return;
     }
 
     const key = buildSaleProductKey(saleId, item.product_id);
+    const eventKey = `${returnRow.id}::${item.product_id}`;
+    const currentEvents = returnEventsBySaleProduct.get(key) ?? new Map();
+    const currentEvent = currentEvents.get(eventKey) ?? {
+      returnRow,
+      quantity: 0,
+    };
 
-    const currentQuantity = returnedQtyBySaleProduct.get(key) ?? 0;
-
-    returnedQtyBySaleProduct.set(
-      key,
-      currentQuantity + Math.abs(Number(item.quantity) || 0)
-    );
+    currentEvent.quantity += Math.abs(Number(item.quantity) || 0);
+    currentEvents.set(eventKey, currentEvent);
+    returnEventsBySaleProduct.set(key, currentEvents);
   });
 
   const derivedRows = [];
@@ -260,12 +248,14 @@ export const buildNoStockRows = ({
       });
     }
 
-    const returnedQuantity = returnedQtyBySaleProduct.get(key) ?? 0;
+    const returnEvents = Array.from(
+      (returnEventsBySaleProduct.get(key) ?? new Map()).values()
+    );
 
-    if (returnedQuantity > 0) {
-      const saleReturnsForSale = returnsBySale.get(detail?.sale_id) ?? [];
-
-      const returnRow = saleReturnsForSale[0] ?? null;
+    returnEvents.forEach(({ returnRow, quantity: returnedQuantity }) => {
+      if (returnedQuantity <= 0) {
+        return;
+      }
 
       const returnedAt = returnRow?.created_at ?? soldAt;
 
@@ -286,7 +276,7 @@ export const buildNoStockRows = ({
         users: usersById.get(returnRow?.user_id) ?? null,
         sales: sale,
       });
-    }
+    });
   });
 
   return derivedRows;
