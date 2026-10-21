@@ -162,6 +162,104 @@ describe("SettingsPrinters", () => {
     ).toBeTruthy();
   });
 
+  it("expone los limites numericos en los inputs de copias y saltos de linea", () => {
+    render(<SettingsPrinters />);
+
+    const copiesInput = document.getElementById("copies-input");
+    const feedLinesInput = document.getElementById("feedlines-input");
+
+    expect(copiesInput.getAttribute("min")).toBe("1");
+    expect(copiesInput.getAttribute("max")).toBe("10");
+    expect(copiesInput.getAttribute("maxlength")).toBe("2");
+
+    expect(feedLinesInput.getAttribute("min")).toBe("0");
+    expect(feedLinesInput.getAttribute("max")).toBe("25");
+    expect(feedLinesInput.getAttribute("maxlength")).toBe("2");
+  });
+
+  it("expone los limites de longitud en los campos de la plantilla comercial", () => {
+    render(<SettingsPrinters />);
+
+    const expectedLimits = {
+      headerSlogan: 80,
+      fiscalInfo: 100,
+      footerLine1: 60,
+      footerLine2: 60,
+      footerPhone: 20,
+      returnPolicy: 250,
+    };
+
+    Object.entries(expectedLimits).forEach(([id, limit]) => {
+      const field = document.getElementById(id);
+      expect(field).toBeTruthy();
+      expect(field.getAttribute("maxlength")).toBe(String(limit));
+    });
+  });
+
+  it("muestra los contadores de caracteres de la plantilla comercial", () => {
+    render(<SettingsPrinters />);
+
+    const template = mockHookReturn.template;
+    expect(
+      screen.getByText(`${template.headerSlogan.length} / 80`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.fiscalInfo.length} / 100`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerLine1.length} / 60`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerLine2.length} / 60`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.footerPhone.length} / 20`)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(`${template.returnPolicy.length} / 250`)
+    ).toBeTruthy();
+  });
+
+  it("el simulador omite del pie las lineas que la plantilla deja vacias", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      previewData: {
+        ...mockHookReturn.previewData,
+        footerLine1: "",
+        footerLine2: "",
+        footerPhone: "",
+        returnPolicy: "",
+      },
+    };
+
+    render(<SettingsPrinters />);
+
+    const preview = document.querySelector("pre");
+    expect(preview.textContent).not.toContain("Gracias por su compra");
+    expect(preview.textContent).not.toContain("Agenda tu cita de baño");
+    expect(preview.textContent).not.toContain("Tel. 998 117 5387");
+  });
+
+  it("el simulador conserva las lineas que la plantilla si define", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      previewData: {
+        ...mockHookReturn.previewData,
+        footerLine1: "Gracias por todo",
+        footerLine2: "",
+        footerPhone: "998 117 5387",
+        returnPolicy: "",
+      },
+    };
+
+    render(<SettingsPrinters />);
+
+    const preview = document.querySelector("pre");
+    expect(preview.textContent).toContain("Gracias por todo");
+    expect(preview.textContent).toContain("Tel. 998 117 5387");
+    expect(preview.textContent).not.toContain("Agenda tu cita de baño");
+  });
+
   it("muestra los mensajes de estado y error cuando hay feedback activo", () => {
     currentHookData = {
       ...mockHookReturn,

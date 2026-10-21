@@ -181,9 +181,10 @@ describe("DeviceActivationModal", () => {
     renderModal({ onClose });
     await screen.findByRole("option", { name: "Centro" });
 
-    fireEvent.keyDown(window, { key: "Escape" });
-
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("cierra el modal con el boton de cierre", async () => {

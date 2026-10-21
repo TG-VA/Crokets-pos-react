@@ -17,16 +17,22 @@ import {
   saveTicketCopies,
   getTicketFeedLines,
   saveTicketFeedLines,
+  sanitizeNumericText,
+  TICKET_COPIES_RANGE,
+  TICKET_FEED_LINES_RANGE,
 } from "../../../../../services/printSettingsService";
 import {
   DEFAULT_TICKET_CUSTOMIZATION,
   getTicketCustomization,
   saveTicketCustomization,
+  sanitizeTicketTemplateField,
 } from "../../../../../services/ticketCustomizationService";
 import {
   wrapText,
   centerText,
+  TICKET_WIDTH,
 } from "../../../../../utils/ticket/ticketLayoutFormatters";
+import { buildTicketFooter } from "../../../../../utils/ticket/ticketFooterFormatters";
 
 const DEFAULT_FEEDBACK = null;
 
@@ -177,7 +183,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleCopiesChange = useCallback((rawValue) => {
-    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    const filtered = sanitizeNumericText(rawValue, TICKET_COPIES_RANGE);
     copiesTextRef.current = filtered;
     setCopiesText(filtered);
   }, []);
@@ -190,7 +196,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleFeedLinesChange = useCallback((rawValue) => {
-    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    const filtered = sanitizeNumericText(rawValue, TICKET_FEED_LINES_RANGE);
     feedLinesTextRef.current = filtered;
     setFeedLinesText(filtered);
   }, []);
@@ -208,7 +214,10 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleTemplateChange = useCallback((key, value) => {
-    setTemplate((prev) => ({ ...prev, [key]: value }));
+    setTemplate((prev) => ({
+      ...prev,
+      [key]: sanitizeTicketTemplateField(key, value),
+    }));
   }, []);
 
   const handleToggleChange = useCallback((key, checked) => {
@@ -237,7 +246,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, [branchId, template]);
 
   const buildTestTicketText = useCallback(() => {
-    const cols = widthMm === 80 ? 42 : 32;
+    const cols = TICKET_WIDTH;
     const lines = [];
     const slogan = (template.headerSlogan || "CROKETS").trim();
     if (slogan) {
@@ -259,19 +268,24 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     lines.push("ARTICULO DE PRUEBA x1   $100.00");
     lines.push("TOTAL                $100.00");
     lines.push("-".repeat(cols));
-    if (template.footerLine1) {
-      wrapText(template.footerLine1, cols).forEach((line) => {
+    const footer = buildTicketFooter(template);
+    if (footer.line1) {
+      wrapText(footer.line1, cols).forEach((line) => {
         lines.push(line);
       });
     }
-    if (template.footerLine2) {
-      wrapText(template.footerLine2, cols).forEach((line) => {
+    if (footer.line2) {
+      wrapText(footer.line2, cols).forEach((line) => {
         lines.push(line);
       });
     }
-    if (template.footerPhone) lines.push(`Tel.: ${template.footerPhone}`);
-    if (template.returnPolicy) {
-      wrapText(template.returnPolicy, cols).forEach((line) => {
+    if (footer.phone) {
+      wrapText(`Tel. ${footer.phone}`, cols).forEach((line) => {
+        lines.push(line);
+      });
+    }
+    if (footer.returnPolicy) {
+      wrapText(footer.returnPolicy, cols).forEach((line) => {
         lines.push(line);
       });
     }

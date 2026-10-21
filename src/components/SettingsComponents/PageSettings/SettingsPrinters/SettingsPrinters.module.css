@@ -417,6 +417,14 @@
   min-width: 80mm;
 }
 
+.preview80 .ticketPre {
+  /* El perfil de 80 mm imprime con 11 pt contra los 9 pt del de 58 mm: el
+     texto ocupa las mismas 32 columnas, pero con un cuerpo mayor. Escalar el
+     cuerpo del simulador mantiene la misma proporcion de ocupacion del ancho
+     que en la impresion real. */
+  font-size: calc(0.75rem * 11 / 9);
+}
+
 .ticketPre {
   font-family: "Courier New", Courier, monospace;
   font-size: 0.75rem;
@@ -665,4 +673,16 @@
   font-size: 0.75rem;
   color: #6b7280;
   margin: 0;
+}
+.fieldWithCounter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.charCounter {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
 }

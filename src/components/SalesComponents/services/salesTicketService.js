@@ -1,5 +1,6 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
+import { buildTicketFooter } from "../../../utils/ticket/ticketFooterFormatters";
 import { printTicket } from "../../../utils/ticketPrinter";
 import {
   getTicketPrintProfile,
@@ -346,14 +347,7 @@ export const printSaleTicket = async ({
       },
       items: itemsForPrint,
       cashierName,
-      footer: {
-        line1: customization?.footerLine1 || "Gracias por su compra",
-        line2: customization?.footerLine2 || "Agenda tu cita de baño",
-        phone: customization?.footerPhone || "998 117 5387",
-        returnPolicy:
-          customization?.returnPolicy ||
-          "Para cambios o devoluciones presentar ticket de compra",
-      },
+      footer: buildTicketFooter(customization),
       isReprint: false,
       customization,
     });

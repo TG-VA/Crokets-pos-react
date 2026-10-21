@@ -8,6 +8,40 @@ import { supabase } from "../lib/supabaseClient";
 
 export const TICKET_CUSTOMIZATION_SETTING_KEY = "ticket_customization";
 
+/**
+ * Límites de longitud de los campos de texto de la plantilla comercial.
+ * Acotan el ancho del rollo térmico (58 mm) para que el contenido no se
+ * desborde al imprimir y mantienen la plantilla legible en el simulador.
+ */
+export const TICKET_TEMPLATE_LIMITS = Object.freeze({
+  headerSlogan: 80,
+  fiscalInfo: 100,
+  footerLine1: 60,
+  footerLine2: 60,
+  footerPhone: 20,
+  returnPolicy: 250,
+});
+
+const TICKET_PHONE_ALLOWED_PATTERN = /[^0-9+\s\-()]/g;
+
+/**
+ * Sanea el teléfono de atención: solo se admiten dígitos, espacios, guiones,
+ * paréntesis y el prefijo `+` para cubrir formatos nacionales e internacionales.
+ */
+export const sanitizeTicketPhone = (value) =>
+  String(value ?? "").replace(TICKET_PHONE_ALLOWED_PATTERN, "");
+
+/**
+ * Sanea un campo de la plantilla en tiempo real y lo recorta al límite
+ * configurado. Los campos sin límite declarado se devuelven sin modificar.
+ */
+export const sanitizeTicketTemplateField = (key, value) => {
+  const limit = TICKET_TEMPLATE_LIMITS[key];
+  const raw = String(value ?? "");
+  const sanitized = key === "footerPhone" ? sanitizeTicketPhone(raw) : raw;
+  return typeof limit === "number" ? sanitized.slice(0, limit) : sanitized;
+};
+
 export const DEFAULT_TICKET_CUSTOMIZATION = Object.freeze({
   headerSlogan: "¡Todo para consentir a tu mascota!",
   fiscalInfo: "",
@@ -37,22 +71,80 @@ const SETTING_COLUMNS = `
 
 const TICKET_CUSTOMIZATION_CACHE_KEY = "settings_ticket_template_cache";
 
-const readCache = () => {
+/**
+ * La cache local se indexa por sucursal. Sin este aislamiento, un fallo de
+ * Supabase podia servir la plantilla de otra sucursal en los tickets de la
+ * sucursal activa.
+ */
+const getCacheKey = (branchId = null) =>
+  `${TICKET_CUSTOMIZATION_CACHE_KEY}:${branchId ?? "global"}`;
+
+/**
+ * Normaliza una plantilla arbitraria: completa los campos ausentes con los
+ * valores por defecto y recorta cada texto al límite de
+ * `TICKET_TEMPLATE_LIMITS`. La sanitización es defensiva, de modo que una
+ * plantilla guardada previamente, cacheada o importada desde Supabase nunca
+ * pueda exceder los límites ni introducir caracteres inválidos.
+ */
+export const normalizeTemplate = (template = {}) => ({
+  headerSlogan: sanitizeTicketTemplateField(
+    "headerSlogan",
+    template.headerSlogan ?? DEFAULT_TICKET_CUSTOMIZATION.headerSlogan
+  ),
+  fiscalInfo: sanitizeTicketTemplateField(
+    "fiscalInfo",
+    template.fiscalInfo ?? DEFAULT_TICKET_CUSTOMIZATION.fiscalInfo
+  ),
+  footerLine1: sanitizeTicketTemplateField(
+    "footerLine1",
+    template.footerLine1 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine1
+  ),
+  footerLine2: sanitizeTicketTemplateField(
+    "footerLine2",
+    template.footerLine2 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine2
+  ),
+  footerPhone: sanitizeTicketTemplateField(
+    "footerPhone",
+    template.footerPhone ?? DEFAULT_TICKET_CUSTOMIZATION.footerPhone
+  ),
+  returnPolicy: sanitizeTicketTemplateField(
+    "returnPolicy",
+    template.returnPolicy ?? DEFAULT_TICKET_CUSTOMIZATION.returnPolicy
+  ),
+  showCustomerPoints: Boolean(
+    template.showCustomerPoints ??
+    DEFAULT_TICKET_CUSTOMIZATION.showCustomerPoints
+  ),
+  showCashierName: Boolean(
+    template.showCashierName ?? DEFAULT_TICKET_CUSTOMIZATION.showCashierName
+  ),
+  showSaleNotes: Boolean(
+    template.showSaleNotes ?? DEFAULT_TICKET_CUSTOMIZATION.showSaleNotes
+  ),
+  showBranchAddress: Boolean(
+    template.showBranchAddress ?? DEFAULT_TICKET_CUSTOMIZATION.showBranchAddress
+  ),
+  showBranchPhone: Boolean(
+    template.showBranchPhone ?? DEFAULT_TICKET_CUSTOMIZATION.showBranchPhone
+  ),
+});
+
+const readCache = (branchId = null) => {
   try {
-    const raw = window.localStorage.getItem(TICKET_CUSTOMIZATION_CACHE_KEY);
+    const raw = window.localStorage.getItem(getCacheKey(branchId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_TICKET_CUSTOMIZATION, ...parsed };
+    return normalizeTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION, ...parsed });
   } catch (error) {
     console.error("Error leyendo caché de plantilla de ticket:", error);
     return null;
   }
 };
 
-const writeCache = (value) => {
+const writeCache = (value, branchId = null) => {
   try {
     window.localStorage.setItem(
-      TICKET_CUSTOMIZATION_CACHE_KEY,
+      getCacheKey(branchId),
       JSON.stringify(value || DEFAULT_TICKET_CUSTOMIZATION)
     );
     return true;
@@ -61,22 +153,6 @@ const writeCache = (value) => {
     return false;
   }
 };
-
-const normalizeTemplate = (template = {}) => ({
-  headerSlogan:
-    template.headerSlogan ?? DEFAULT_TICKET_CUSTOMIZATION.headerSlogan,
-  fiscalInfo: template.fiscalInfo ?? DEFAULT_TICKET_CUSTOMIZATION.fiscalInfo,
-  footerLine1: template.footerLine1 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine1,
-  footerLine2: template.footerLine2 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine2,
-  footerPhone: template.footerPhone ?? DEFAULT_TICKET_CUSTOMIZATION.footerPhone,
-  returnPolicy:
-    template.returnPolicy ?? DEFAULT_TICKET_CUSTOMIZATION.returnPolicy,
-  showCustomerPoints: Boolean(template.showCustomerPoints),
-  showCashierName: Boolean(template.showCashierName),
-  showSaleNotes: Boolean(template.showSaleNotes),
-  showBranchAddress: Boolean(template.showBranchAddress),
-  showBranchPhone: Boolean(template.showBranchPhone),
-});
 
 export const getTicketCustomization = async ({ branchId } = {}) => {
   try {
@@ -100,13 +176,13 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
         "Error consultando plantilla de ticket en Supabase:",
         error
       );
-      const cached = readCache();
+      const cached = readCache(branchId);
       if (cached) return cached;
       return { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
 
     if (!data) {
-      const cached = readCache();
+      const cached = readCache(branchId);
       if (cached) return cached;
       return { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
@@ -124,11 +200,11 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
       parsed = { ...DEFAULT_TICKET_CUSTOMIZATION };
     }
 
-    writeCache(parsed);
+    writeCache(parsed, branchId);
     return parsed;
   } catch (error) {
     console.error("Error al obtener plantilla de ticket:", error);
-    const cached = readCache();
+    const cached = readCache(branchId);
     if (cached) return cached;
     return { ...DEFAULT_TICKET_CUSTOMIZATION };
   }
@@ -169,7 +245,7 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
       .eq("id", existingSetting.id);
 
     if (updateError) throw updateError;
-    writeCache(normalized);
+    writeCache(normalized, branchId);
     return normalized;
   }
 
@@ -188,6 +264,6 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
   ]);
 
   if (insertError) throw insertError;
-  writeCache(normalized);
+  writeCache(normalized, branchId);
   return normalized;
 };

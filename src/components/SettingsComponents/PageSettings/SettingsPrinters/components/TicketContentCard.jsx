@@ -1,7 +1,42 @@
 import styles from "../SettingsPrinters.module.css";
 import ScopeBadge from "../../components/ScopeBadge";
+import { TICKET_TEMPLATE_LIMITS } from "../../../../../services/ticketCustomizationService";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
+
+const TEMPLATE_TEXT_FIELDS = [
+  {
+    id: "headerSlogan",
+    label: "Eslogan de cabecera",
+    limit: TICKET_TEMPLATE_LIMITS.headerSlogan,
+  },
+  {
+    id: "fiscalInfo",
+    label: "Información fiscal / RFC",
+    limit: TICKET_TEMPLATE_LIMITS.fiscalInfo,
+  },
+  {
+    id: "footerLine1",
+    label: "Línea 1 de agradecimiento",
+    limit: TICKET_TEMPLATE_LIMITS.footerLine1,
+  },
+  {
+    id: "footerLine2",
+    label: "Línea 2 de promoción / citas",
+    limit: TICKET_TEMPLATE_LIMITS.footerLine2,
+  },
+  {
+    id: "footerPhone",
+    label: "Teléfono / WhatsApp de atención",
+    limit: TICKET_TEMPLATE_LIMITS.footerPhone,
+  },
+];
+
+const CharacterCounter = ({ length, limit }) => (
+  <span className={styles.charCounter} aria-hidden="true">
+    {`${length} / ${limit}`}
+  </span>
+);
 
 const TicketContentCard = ({
   template = {},
@@ -19,80 +54,51 @@ const TicketContentCard = ({
     </div>
     <p className={styles.cardDescription}>
       Personaliza encabezado, pie de página y políticas. Se guarda por sucursal.
+      Deja un campo vacío para quitar esa línea del ticket.
     </p>
 
     <div className={styles.formGrid}>
-      <div>
-        <label htmlFor="headerSlogan" className={styles.label}>
-          Eslogan de cabecera
-        </label>
-        <input
-          id="headerSlogan"
-          type="text"
-          className={styles.input}
-          value={template.headerSlogan || ""}
-          onChange={(e) => handleTemplateChange("headerSlogan", e.target.value)}
-        />
-      </div>
-      <div>
-        <label htmlFor="fiscalInfo" className={styles.label}>
-          Información fiscal / RFC
-        </label>
-        <input
-          id="fiscalInfo"
-          type="text"
-          className={styles.input}
-          value={template.fiscalInfo || ""}
-          onChange={(e) => handleTemplateChange("fiscalInfo", e.target.value)}
-        />
-      </div>
-      <div>
-        <label htmlFor="footerLine1" className={styles.label}>
-          Línea 1 de agradecimiento
-        </label>
-        <input
-          id="footerLine1"
-          type="text"
-          className={styles.input}
-          value={template.footerLine1 || ""}
-          onChange={(e) => handleTemplateChange("footerLine1", e.target.value)}
-        />
-      </div>
-      <div>
-        <label htmlFor="footerLine2" className={styles.label}>
-          Línea 2 de promoción / citas
-        </label>
-        <input
-          id="footerLine2"
-          type="text"
-          className={styles.input}
-          value={template.footerLine2 || ""}
-          onChange={(e) => handleTemplateChange("footerLine2", e.target.value)}
-        />
-      </div>
-      <div>
-        <label htmlFor="footerPhone" className={styles.label}>
-          Teléfono / WhatsApp de atención
-        </label>
-        <input
-          id="footerPhone"
-          type="text"
-          className={styles.input}
-          value={template.footerPhone || ""}
-          onChange={(e) => handleTemplateChange("footerPhone", e.target.value)}
-        />
-      </div>
+      {TEMPLATE_TEXT_FIELDS.map((field) => {
+        const value = template[field.id] || "";
+        return (
+          <div key={field.id}>
+            <label htmlFor={field.id} className={styles.label}>
+              {field.label}
+            </label>
+            <div className={styles.fieldWithCounter}>
+              <input
+                id={field.id}
+                type="text"
+                className={styles.input}
+                maxLength={field.limit}
+                value={value}
+                onChange={(e) => handleTemplateChange(field.id, e.target.value)}
+              />
+              <CharacterCounter length={value.length} limit={field.limit} />
+            </div>
+          </div>
+        );
+      })}
       <div className={styles.spanFull}>
         <label htmlFor="returnPolicy" className={styles.label}>
           Política de cambios y devoluciones
         </label>
-        <textarea
-          id="returnPolicy"
-          className={styles.textarea}
-          rows={4}
-          value={template.returnPolicy || ""}
-          onChange={(e) => handleTemplateChange("returnPolicy", e.target.value)}
-        />
+        <div className={styles.fieldWithCounter}>
+          <textarea
+            id="returnPolicy"
+            className={styles.textarea}
+            rows={4}
+            maxLength={TICKET_TEMPLATE_LIMITS.returnPolicy}
+            value={template.returnPolicy || ""}
+            onChange={(e) =>
+              handleTemplateChange("returnPolicy", e.target.value)
+            }
+          />
+          <CharacterCounter
+            length={(template.returnPolicy || "").length}
+            limit={TICKET_TEMPLATE_LIMITS.returnPolicy}
+          />
+        </div>
       </div>
     </div>
 

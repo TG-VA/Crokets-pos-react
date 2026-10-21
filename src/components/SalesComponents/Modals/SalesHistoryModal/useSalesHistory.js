@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  formatTime,
-  getDisplayFolio,
   getPaymentMethodLabel,
   getPaymentSummary,
   fetchPaymentMethods,
   fetchCashiers,
   buildCustomerPointsMaps,
-  loadRewardRedemptionsForSale,
-  fetchTicketsBatch,
-  fetchSalesRelatedData,
   fetchTicketDetailsData,
   fetchProductsByIds,
   fetchSaleReturnsData,
@@ -31,6 +26,7 @@ import {
 } from "../../../../services/printSettingsService";
 import { getTicketCustomization } from "../../../../services/ticketCustomizationService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
+import { buildTicketFooter } from "../../../../utils/ticket/ticketFooterFormatters";
 
 export const useSalesHistory = ({
   isOpen,
@@ -53,8 +49,6 @@ export const useSalesHistory = ({
   const [printProcessing, setPrintProcessing] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [refundMethodId, setRefundMethodId] = useState("");
-  const [returnHistory, setReturnHistory] = useState([]);
-  const [totalReturned, setTotalReturned] = useState(0);
   const [appModal, setAppModal] = useState({
     isOpen: false,
     type: "info",
@@ -300,8 +294,6 @@ export const useSalesHistory = ({
       }));
       const totRet = mapped.reduce((a, r) => a + r.totalRefund, 0);
 
-      setReturnHistory(mapped);
-      setTotalReturned(totRet);
       setSelectedTicket((p) =>
         p?.id === saleId
           ? {
@@ -454,7 +446,7 @@ export const useSalesHistory = ({
       await loadTickets();
       await loadTicketDetail(selectedTicket);
       await loadReturnData(selectedTicket.id);
-    } catch (error) {
+    } catch {
       showAppAlert({
         type: "warning",
         title: "Historial no actualizado",
@@ -656,14 +648,7 @@ export const useSalesHistory = ({
         },
         items: itemsForPrint,
         cashierName: ticketForPrint.cashier,
-        footer: {
-          line1: customization?.footerLine1 || "Gracias por su compra",
-          line2: customization?.footerLine2 || "Agenda tu cita de baño",
-          phone: customization?.footerPhone || "998 117 5387",
-          returnPolicy:
-            customization?.returnPolicy ||
-            "Para cambios o devoluciones presentar ticket de compra",
-        },
+        footer: buildTicketFooter(customization),
         isReprint: true,
         reprintedAt: new Date(),
         customization,
@@ -704,8 +689,6 @@ export const useSalesHistory = ({
     setRefundMethodId("");
     setIsNotesModalOpen(false);
     setPrintProcessing(false);
-    setReturnHistory([]);
-    setTotalReturned(0);
     setIsPartialReturnOpen(false);
     closeAppModal();
   }, [closeAppModal]);

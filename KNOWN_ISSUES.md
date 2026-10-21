@@ -2362,6 +2362,108 @@ La impresión física en impresoras térmicas mostró caracteres acentuados (`á
 
 ---
 
+### 67. El pie del ticket se imprimía fuera del ancho útil del rollo (32 columnas)
+
+**Estado:** Resuelto (21 oct 2026) — rama `feature/ticket-settings-input-constraints` (commit `bdc3778`).
+
+**Severidad:** Alto.
+
+`buildFooterSection()` en `src/utils/ticket/ticketSections.js` empuja `footerLine1`, `footerLine2` y
+`Tel. <telefono>` sin envolver, mientras el resto del ticket respeta el ancho útil de 32 columnas
+(`TICKET_WIDTH`). El documento de impresión se genera como `<pre>` con `white-space: pre`
+(`electron/ticketPrintService.js`), que no re-envuelve las líneas: cualquier línea de más de 32
+columnas se recorta físicamente en el rollo.
+
+**Impacto:** con los límites de la plantilla comercial (60 caracteres en las líneas 1 y 2) una
+línea larga perdía su cola al imprimirse, y los espacios múltiples o los saltos de línea
+introducidos a mano se imprimían literalmente en el ticket.
+
+**Solución aplicada:** el pie se envuelve con `pushWrappedLeft(lines, texto, TICKET_WIDTH)`, el mismo
+helper que ya usaba `returnPolicy`. El texto completo se conserva repartido en varias líneas de 32
+columnas y `wrapText` normaliza los espacios. Cobertura en `ticketSections.test.js`.
+
+---
+
+### 68. Los toggles de la plantilla se apagaban solos en filas guardadas antes de existirlos
+
+**Estado:** Resuelto (21 oct 2026) — commit `cc67675`.
+
+**Severidad:** Alto.
+
+`normalizeTemplate()` completaba los campos de texto ausentes con el valor por defecto (`??`), pero
+los cinco toggles (`showCustomerPoints`, `showCashierName`, `showSaleNotes`, `showBranchAddress`,
+`showBranchPhone`) se resolvían con `Boolean(...)`, que convierte un campo ausente en `false`.
+`getTicketCustomization()` sobrescribe el merge con `DEFAULT_TICKET_CUSTOMIZATION` cuando la fila de
+`system_settings` trae `setting_value`, de modo que una plantilla guardada antes de que existieran
+los toggles quedaba con los cinco elementos apagados en todos los tickets de esa sucursal, sin
+aviso en la interfaz.
+
+**Solución aplicada:** los toggles ausentes toman el valor por defecto y los apagados de forma
+explícita se respetan. Pruebas en `ticketCustomizationService.test.js`.
+
+---
+
+### 69. El simulador en vivo mostraba un pie distinto al que se imprimía
+
+**Estado:** Resuelto (21 oct 2026) — commit `985fe7c`.
+
+**Severidad:** Medio.
+
+El pie se resolvía en tres lugares distintos: la emisión (`salesTicketService.js`) y la reimpresión
+(`useSalesHistory.js`) duplicaban el mapeo de la plantilla con sus textos por defecto, el simulador
+(`TicketLivePreview.jsx`) usaba fallbacks vacíos y el ticket de prueba (`useSettingsPrinters.js`)
+usaba otros textos y otro ancho.
+
+**Impacto:** al vaciar la línea 2, el teléfono o la política de devoluciones, el simulador los
+mostraba como ausentes mientras el ticket real seguía imprimiendo el texto por defecto; y el ticket
+de prueba se armaba a 42 columnas con el perfil de 80 mm, un ancho que no cabe en el rollo y que no
+representaba el ticket de venta (el texto del renderer es de 32 columnas en ambos perfiles).
+
+**Solución aplicada:** nuevo módulo `src/utils/ticket/ticketFooterFormatters.js` como única fuente de
+la resolución del pie (`TICKET_FOOTER_DEFAULTS` y `buildTicketFooter`), reutilizado por los tres
+consumidores; el simulador y el ticket de prueba usan el ancho real de 32 columnas.
+
+---
+
+### 70. La caché local de la plantilla no estaba aislada por sucursal
+
+**Estado:** Resuelto (21 oct 2026) — commit `c9b8e80`.
+
+**Severidad:** Alto.
+
+La caché de la plantilla comercial se guardaba bajo una única clave global
+(`settings_ticket_template_cache`). Ante un error de Supabase, `getTicketCustomization()` recurría a
+esa caché sin comprobar la sucursal, de modo que el eslogan, la información fiscal y el pie de una
+sucursal podían imprimirse en los tickets de otra.
+
+**Solución aplicada:** la clave incluye el identificador de sucursal
+(`settings_ticket_template_cache:<branchId>`, con `global` para la plantilla compartida). Cada
+sucursal solo recupera su propia caché y, si no la tiene, cae en los valores por defecto.
+
+---
+
+### 71. El simulador térmico no reproduce la proporción real del rollo de 80 mm
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (visual / conveniencia).
+
+La caja del simulador (`.preview80`, `width: calc(42ch + 1.7rem + 4px)`) representa un rollo más
+ancho que el de 58 mm, pero el texto se dibuja al mismo cuerpo de letra (0.75rem) en ambos casos,
+mientras que el perfil de 80 mm imprime con un cuerpo mayor (11 pt contra 9 pt, en
+`TICKET_PRINT_PROFILES` de `electron/ticketPrintService.js`). El texto ocupa cerca del 99% del ancho
+en la simulación de 58 mm, pero solo del 76% en la de 80 mm, donde la impresión real ocupa cerca del
+93%. El número de columnas del texto sí es correcto en ambos perfiles (32).
+
+**Impacto:** ninguno funcional. La simulación es una aproximación del ancho de papel, no una
+simulación tipográfica exacta.
+
+**Solución recomendada:** escalar el cuerpo del texto del simulador en proporción al perfil (11/9)
+para que la ocupación del ancho se parezca a la impresión real, o documentar que el simulador
+representa únicamente el ancho del papel.
+
+---
+
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una

@@ -16,6 +16,9 @@ import {
   saveTicketCopies,
   getTicketFeedLines,
   saveTicketFeedLines,
+  sanitizeNumericText,
+  TICKET_COPIES_RANGE,
+  TICKET_FEED_LINES_RANGE,
 } from "./printSettingsService";
 
 describe("printSettingsService", () => {
@@ -184,5 +187,25 @@ describe("printSettingsService", () => {
     window.localStorage.setItem("settings_ticket_feed_lines", "50");
     expect(getTicketCopies()).toBe(10);
     expect(getTicketFeedLines()).toBe(25);
+  });
+
+  it("sanea la entrada numerica conservando la cadena vacia y acotando al maximo", () => {
+    expect(sanitizeNumericText("", TICKET_COPIES_RANGE)).toBe("");
+    expect(sanitizeNumericText(null, TICKET_COPIES_RANGE)).toBe("");
+    expect(sanitizeNumericText("4a2", TICKET_COPIES_RANGE)).toBe("10");
+    expect(sanitizeNumericText("a2", TICKET_COPIES_RANGE)).toBe("2");
+    expect(sanitizeNumericText("11", TICKET_COPIES_RANGE)).toBe("10");
+    expect(sanitizeNumericText("100", TICKET_COPIES_RANGE)).toBe("10");
+    expect(sanitizeNumericText("10", TICKET_COPIES_RANGE)).toBe("10");
+    expect(sanitizeNumericText("0", TICKET_COPIES_RANGE)).toBe("0");
+  });
+
+  it("acota los saltos de linea a 25 al sanear la entrada numerica", () => {
+    expect(sanitizeNumericText("", TICKET_FEED_LINES_RANGE)).toBe("");
+    expect(sanitizeNumericText("2a5", TICKET_FEED_LINES_RANGE)).toBe("25");
+    expect(sanitizeNumericText("26", TICKET_FEED_LINES_RANGE)).toBe("25");
+    expect(sanitizeNumericText("300", TICKET_FEED_LINES_RANGE)).toBe("25");
+    expect(sanitizeNumericText("25", TICKET_FEED_LINES_RANGE)).toBe("25");
+    expect(sanitizeNumericText("0", TICKET_FEED_LINES_RANGE)).toBe("0");
   });
 });

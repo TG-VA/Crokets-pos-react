@@ -21,6 +21,7 @@ import {
 } from "./ticketItemFormatters";
 import { getRewardVisualTypeForItem } from "./ticketRewardService";
 import { formatBranchAddressLines } from "./ticketBranchFormatters";
+import { TICKET_FOOTER_DEFAULTS } from "./ticketFooterFormatters";
 import { getReturnPointsFromReturn } from "./ticketPointsService";
 
 const pushCustomHeaderLines = (lines, text = "", width = TICKET_WIDTH) => {
@@ -656,27 +657,32 @@ export const buildNotesSection = (sale = {}, { showNotes = true } = {}) => {
 export const buildFooterSection = (footer = {}) => {
   const lines = [];
 
-  const footerLine1 = footer.line1 || "Gracias por su compra";
-  const footerLine2 = footer.line2 || "Agenda tu cita de baño";
-  const footerPhone = footer.phone || "";
+  const footerLine1 = footer.line1 ?? TICKET_FOOTER_DEFAULTS.line1;
+  const footerLine2 = footer.line2 ?? TICKET_FOOTER_DEFAULTS.line2;
+  const footerPhone = footer.phone ?? TICKET_FOOTER_DEFAULTS.phone;
   const returnPolicy =
-    footer.returnPolicy ||
-    "Para cambios o devoluciones presentar ticket de compra";
+    footer.returnPolicy ?? TICKET_FOOTER_DEFAULTS.returnPolicy;
 
-  lines.push(footerLine1);
-  lines.push("");
+  if (footerLine1) {
+    pushWrappedLeft(lines, footerLine1, TICKET_WIDTH);
+    lines.push("");
+  }
 
   if (footerLine2) {
-    lines.push(footerLine2);
+    pushWrappedLeft(lines, footerLine2, TICKET_WIDTH);
   }
 
   if (footerPhone) {
-    lines.push(`Tel. ${footerPhone}`);
+    pushWrappedLeft(lines, `Tel. ${footerPhone}`, TICKET_WIDTH);
   }
 
   if (returnPolicy) {
     lines.push("");
     pushWrappedLeft(lines, returnPolicy, TICKET_WIDTH);
+  }
+
+  if (lines.length === 0) {
+    return lines;
   }
 
   lines.push(strongSeparator());

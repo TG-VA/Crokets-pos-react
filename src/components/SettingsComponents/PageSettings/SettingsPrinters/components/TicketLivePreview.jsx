@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { buildTicketText } from "../../../../../utils/ticket/ticketBuilder";
+import { buildTicketFooter } from "../../../../../utils/ticket/ticketFooterFormatters";
+import { TICKET_WIDTH } from "../../../../../utils/ticket/ticketLayoutFormatters";
 import { buildCashCutText } from "../../../../../utils/cashCutBuilder";
 import styles from "../SettingsPrinters.module.css";
 import receiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
@@ -13,7 +15,7 @@ const TicketLivePreview = ({
   user = null,
 }) => {
   const [copied, setCopied] = useState(false);
-  const columns = widthMm === 80 ? 42 : 32;
+  const columns = TICKET_WIDTH;
   const widthClass = widthMm === 80 ? styles.preview80 : styles.preview58;
 
   const ticketText = useMemo(() => {
@@ -99,12 +101,7 @@ const TicketLivePreview = ({
         total_price: 70.0,
       },
     ];
-    const footer = {
-      line1: template.footerLine1 || "Gracias por su compra",
-      line2: template.footerLine2 || "",
-      phone: template.footerPhone || "",
-      returnPolicy: template.returnPolicy || "",
-    };
+    const footer = buildTicketFooter(template);
     let text = buildTicketText({
       branch: activeBranch,
       sale: sampleSale,
