@@ -17,6 +17,9 @@ import {
   saveTicketCopies,
   getTicketFeedLines,
   saveTicketFeedLines,
+  sanitizeNumericText,
+  TICKET_COPIES_RANGE,
+  TICKET_FEED_LINES_RANGE,
 } from "../../../../../services/printSettingsService";
 import {
   DEFAULT_TICKET_CUSTOMIZATION,
@@ -177,7 +180,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleCopiesChange = useCallback((rawValue) => {
-    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    const filtered = sanitizeNumericText(rawValue, TICKET_COPIES_RANGE);
     copiesTextRef.current = filtered;
     setCopiesText(filtered);
   }, []);
@@ -190,7 +193,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleFeedLinesChange = useCallback((rawValue) => {
-    const filtered = String(rawValue ?? "").replace(/\D/g, "");
+    const filtered = sanitizeNumericText(rawValue, TICKET_FEED_LINES_RANGE);
     feedLinesTextRef.current = filtered;
     setFeedLinesText(filtered);
   }, []);

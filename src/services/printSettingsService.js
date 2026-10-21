@@ -108,9 +108,39 @@ const TICKET_FEED_LINES_KEY = "settings_ticket_feed_lines";
  * `feedLines` admite 0 porque el hardware térmico puede cortar a ras del
  * cabezal; el máximo de 25 cubre la distancia cabezal-guillotina de las
  * impresoras de tickets más comunes (Epson, Bixolon, Star, Xprinter).
+ * `maxLength` acota los dígitos admitidos por el input de texto para que el
+ * usuario no pueda teclear cifras por encima del rango configurado.
  */
-export const TICKET_COPIES_RANGE = { min: 1, max: 10, fallback: 1 };
-export const TICKET_FEED_LINES_RANGE = { min: 0, max: 25, fallback: 2 };
+export const TICKET_COPIES_RANGE = {
+  min: 1,
+  max: 10,
+  fallback: 1,
+  maxLength: 2,
+};
+export const TICKET_FEED_LINES_RANGE = {
+  min: 0,
+  max: 25,
+  fallback: 2,
+  maxLength: 2,
+};
+
+/**
+ * Sanea en tiempo real la entrada de un campo numérico de texto.
+ *
+ * Conserva la cadena vacía para que el usuario pueda borrar y reescribir el
+ * campo con Backspace, descarta cualquier carácter no numérico y acota el
+ * valor al máximo del rango cuando la cifra tecleada lo excede.
+ */
+export const sanitizeNumericText = (value, { max, maxLength } = {}) => {
+  const filtered = String(value ?? "").replace(/\D/g, "");
+  if (filtered === "") return "";
+
+  const limited = maxLength ? filtered.slice(0, maxLength) : filtered;
+  if (typeof max !== "number") return limited;
+
+  const parsed = Number(limited);
+  return Number.isFinite(parsed) && parsed > max ? String(max) : limited;
+};
 
 /**
  * Normaliza un entero hacia el rango [min, max]. Entradas vacías
