@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  formatTime,
-  getDisplayFolio,
   getPaymentMethodLabel,
   getPaymentSummary,
   fetchPaymentMethods,
   fetchCashiers,
   buildCustomerPointsMaps,
-  loadRewardRedemptionsForSale,
-  fetchTicketsBatch,
-  fetchSalesRelatedData,
   fetchTicketDetailsData,
   fetchProductsByIds,
   fetchSaleReturnsData,
@@ -54,8 +49,6 @@ export const useSalesHistory = ({
   const [printProcessing, setPrintProcessing] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [refundMethodId, setRefundMethodId] = useState("");
-  const [returnHistory, setReturnHistory] = useState([]);
-  const [totalReturned, setTotalReturned] = useState(0);
   const [appModal, setAppModal] = useState({
     isOpen: false,
     type: "info",
@@ -301,8 +294,6 @@ export const useSalesHistory = ({
       }));
       const totRet = mapped.reduce((a, r) => a + r.totalRefund, 0);
 
-      setReturnHistory(mapped);
-      setTotalReturned(totRet);
       setSelectedTicket((p) =>
         p?.id === saleId
           ? {
@@ -455,7 +446,7 @@ export const useSalesHistory = ({
       await loadTickets();
       await loadTicketDetail(selectedTicket);
       await loadReturnData(selectedTicket.id);
-    } catch (error) {
+    } catch {
       showAppAlert({
         type: "warning",
         title: "Historial no actualizado",
@@ -698,8 +689,6 @@ export const useSalesHistory = ({
     setRefundMethodId("");
     setIsNotesModalOpen(false);
     setPrintProcessing(false);
-    setReturnHistory([]);
-    setTotalReturned(0);
     setIsPartialReturnOpen(false);
     closeAppModal();
   }, [closeAppModal]);
