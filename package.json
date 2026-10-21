@@ -9,6 +9,8 @@
     "build": "vite build && electron-builder --publish never",
     "build:frontend": "vite build",
     "build:electron": "electron-builder --publish never",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "package:win": "npm run build:frontend && electron-builder --win --x64 --publish never",
     "start": "electron .",
     "watch": "vite build --watch",
     "preview": "vite preview",
