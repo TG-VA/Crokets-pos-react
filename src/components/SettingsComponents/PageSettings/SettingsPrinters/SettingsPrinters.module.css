@@ -666,3 +666,15 @@
   color: #6b7280;
   margin: 0;
 }
+.fieldWithCounter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.charCounter {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}

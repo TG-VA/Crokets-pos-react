@@ -25,6 +25,7 @@ import {
   DEFAULT_TICKET_CUSTOMIZATION,
   getTicketCustomization,
   saveTicketCustomization,
+  sanitizeTicketTemplateField,
 } from "../../../../../services/ticketCustomizationService";
 import {
   wrapText,
@@ -211,7 +212,10 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleTemplateChange = useCallback((key, value) => {
-    setTemplate((prev) => ({ ...prev, [key]: value }));
+    setTemplate((prev) => ({
+      ...prev,
+      [key]: sanitizeTicketTemplateField(key, value),
+    }));
   }, []);
 
   const handleToggleChange = useCallback((key, checked) => {
