@@ -42,6 +42,10 @@
   }
 }
 
+.barcodeCard {
+  grid-column: 1 / -1;
+}
+
 .card {
   display: flex;
   flex-direction: column;
@@ -486,6 +490,33 @@
 
 .codeCopyButton:hover {
   background: #f8fafc;
+}
+
+.barcodeLayout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.barcodeMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.barcodeAside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .barcodeLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .statusRow {
