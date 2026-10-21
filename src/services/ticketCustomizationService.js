@@ -103,11 +103,24 @@ export const normalizeTemplate = (template = {}) => ({
     "returnPolicy",
     template.returnPolicy ?? DEFAULT_TICKET_CUSTOMIZATION.returnPolicy
   ),
-  showCustomerPoints: Boolean(template.showCustomerPoints),
-  showCashierName: Boolean(template.showCashierName),
-  showSaleNotes: Boolean(template.showSaleNotes),
-  showBranchAddress: Boolean(template.showBranchAddress),
-  showBranchPhone: Boolean(template.showBranchPhone),
+  showCustomerPoints: Boolean(
+    template.showCustomerPoints ??
+      DEFAULT_TICKET_CUSTOMIZATION.showCustomerPoints
+  ),
+  showCashierName: Boolean(
+    template.showCashierName ?? DEFAULT_TICKET_CUSTOMIZATION.showCashierName
+  ),
+  showSaleNotes: Boolean(
+    template.showSaleNotes ?? DEFAULT_TICKET_CUSTOMIZATION.showSaleNotes
+  ),
+  showBranchAddress: Boolean(
+    template.showBranchAddress ??
+      DEFAULT_TICKET_CUSTOMIZATION.showBranchAddress
+  ),
+  showBranchPhone: Boolean(
+    template.showBranchPhone ??
+      DEFAULT_TICKET_CUSTOMIZATION.showBranchPhone
+  ),
 });
 
 const readCache = () => {

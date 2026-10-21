@@ -193,6 +193,55 @@ describe("ticketCustomizationService", () => {
     );
   });
 
+  it("completa con los valores por defecto los toggles ausentes al normalizar", () => {
+    const normalized = normalizeTemplate({ footerLine1: "Gracias" });
+
+    expect(normalized.showCustomerPoints).toBe(true);
+    expect(normalized.showCashierName).toBe(true);
+    expect(normalized.showSaleNotes).toBe(true);
+    expect(normalized.showBranchAddress).toBe(true);
+    expect(normalized.showBranchPhone).toBe(true);
+  });
+
+  it("respeta los toggles apagados de forma explicita al normalizar", () => {
+    const normalized = normalizeTemplate({
+      showSaleNotes: false,
+      showBranchPhone: false,
+    });
+
+    expect(normalized.showSaleNotes).toBe(false);
+    expect(normalized.showBranchPhone).toBe(false);
+    expect(normalized.showCustomerPoints).toBe(true);
+    expect(normalized.showCashierName).toBe(true);
+    expect(normalized.showBranchAddress).toBe(true);
+  });
+
+  it("restaura los toggles por defecto de una plantilla guardada antes de existirlos", async () => {
+    const query = buildQueryChain({
+      data: {
+        id: "1",
+        setting_key: "ticket_customization",
+        setting_value: JSON.stringify({
+          headerSlogan: "Plantilla legacy",
+          footerLine1: "Gracias",
+        }),
+        value_type: "json",
+        branch_id: null,
+      },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await getTicketCustomization({ branchId: null });
+
+    expect(result.headerSlogan).toBe("Plantilla legacy");
+    expect(result.showCustomerPoints).toBe(true);
+    expect(result.showCashierName).toBe(true);
+    expect(result.showSaleNotes).toBe(true);
+    expect(result.showBranchAddress).toBe(true);
+    expect(result.showBranchPhone).toBe(true);
+  });
+
   it("sanea el telefono admitiendo solo digitos, espacios, guiones, parentesis y el prefijo mas", () => {
     expect(sanitizeTicketPhone("998-ABC (117) 5387")).toBe("998- (117) 5387");
     expect(sanitizeTicketPhone("+52 (998) 117-5387")).toBe(
