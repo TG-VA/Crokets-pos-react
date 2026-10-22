@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 vi.mock("../AdminAuthorizationModal/AdminAuthorizationModal", () => ({
   default: ({ isOpen, onAuthorized, onClose, action, targetId, branchId }) =>
@@ -32,16 +32,25 @@ import { checkUserIsAdmin } from "../../lib/permissionsService";
 import useProtectedNavigation from "../../hooks/useProtectedNavigation";
 import ProtectedRoute from "./ProtectedRoute";
 
+const LocationDisplay = () => {
+  const location = useLocation();
+
+  return <div data-testid="location">{location.pathname}</div>;
+};
+
 const renderProtected = (props = {}) =>
   render(
-    <ProtectedRoute
-      routePath="/reports/ventas"
-      routeLabel="Ventas"
-      action="reports_sales_access"
-      {...props}
-    >
-      <div data-testid="protected-content">contenido</div>
-    </ProtectedRoute>
+    <MemoryRouter initialEntries={["/reports/ventas"]}>
+      <ProtectedRoute
+        routePath="/reports/ventas"
+        routeLabel="Ventas"
+        action="reports_sales_access"
+        {...props}
+      >
+        <div data-testid="protected-content">contenido</div>
+      </ProtectedRoute>
+      <LocationDisplay />
+    </MemoryRouter>
   );
 
 describe("ProtectedRoute", () => {
@@ -58,18 +67,27 @@ describe("ProtectedRoute", () => {
     expect(screen.queryByTestId("admin-modal")).toBeNull();
   });
 
-  it("muestra el mensaje y abre el modal si el usuario no es admin", async () => {
+  it("no muestra una pantalla intermedia mientras verifica el acceso", () => {
+    checkUserIsAdmin.mockReturnValue(new Promise(() => {}));
+
+    renderProtected();
+
+    expect(screen.queryByText("Verificando acceso...")).toBeNull();
+    expect(screen.queryByTestId("protected-content")).toBeNull();
+  });
+
+  it("abre el modal sin renderizar el mensaje de bloqueo detrás", async () => {
     checkUserIsAdmin.mockResolvedValue(false);
 
     renderProtected();
 
+    expect(await screen.findByTestId("admin-modal")).toBeTruthy();
     expect(
-      await screen.findByText(
+      screen.queryByText(
         "Se requiere autorización de administrador para entrar a esta sección."
       )
-    ).toBeTruthy();
+    ).toBeNull();
 
-    expect(screen.getByTestId("admin-modal")).toBeTruthy();
     expect(screen.getByTestId("modal-action").textContent).toBe(
       "reports_sales_access"
     );
@@ -79,12 +97,12 @@ describe("ProtectedRoute", () => {
     expect(screen.getByTestId("modal-branch").textContent).toBe("branch-1");
   });
 
-  it("deja pasar sin consultar al backend si la ruta ya está autorizada", async () => {
+  it("deja pasar sin consultar al backend si la ruta ya está autorizada", () => {
     const authorizedRoutes = new Set(["/reports/ventas"]);
 
     renderProtected({ authorizedRoutes });
 
-    expect(await screen.findByTestId("protected-content")).toBeTruthy();
+    expect(screen.getByTestId("protected-content")).toBeTruthy();
     expect(checkUserIsAdmin).not.toHaveBeenCalled();
   });
 
@@ -102,7 +120,7 @@ describe("ProtectedRoute", () => {
     expect(onAuthorizedRoute).toHaveBeenCalledWith("/reports/ventas");
   });
 
-  it("al cerrar sin autorizar mantiene el bloqueo", async () => {
+  it("al cerrar sin autorizar redirige al fallback sin dejar pantalla muerta", async () => {
     checkUserIsAdmin.mockResolvedValue(false);
 
     renderProtected();
@@ -110,14 +128,10 @@ describe("ProtectedRoute", () => {
     fireEvent.click(await screen.findByText("cerrar"));
 
     await waitFor(() => {
-      expect(screen.queryByTestId("admin-modal")).toBeNull();
+      expect(screen.getByTestId("location").textContent).toBe("/dashboard");
     });
+    expect(screen.queryByTestId("admin-modal")).toBeNull();
     expect(screen.queryByTestId("protected-content")).toBeNull();
-    expect(
-      screen.getByText(
-        "Se requiere autorización de administrador para entrar a esta sección."
-      )
-    ).toBeTruthy();
   });
 });
 
