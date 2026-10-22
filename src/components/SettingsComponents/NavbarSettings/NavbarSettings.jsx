@@ -54,6 +54,9 @@ const SETTINGS_TABS = [
     label: "Acceso rápido fiscal",
     icon: FiscalIcon,
     path: "/invoices/configuracion",
+    navigationOptions: {
+      state: { authorizedRoute: "/invoices/configuracion" },
+    },
   },
 ];
 
@@ -69,7 +72,7 @@ const SETTINGS_OPTIONS = withProtectedMetadata(
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 
-const NavbarSettings = ({ onProtectedAccessAuthorized }) => {
+const NavbarSettings = ({ onProtectedAccessAuthorized, authorizedRoutes }) => {
   const { branch } = useBranch();
   const {
     handleNavigation,
@@ -77,7 +80,9 @@ const NavbarSettings = ({ onProtectedAccessAuthorized }) => {
     onCloseAdminAuth,
     onAuthorizedAdminAuth,
     pendingNavigation,
-  } = useProtectedNavigation(onProtectedAccessAuthorized);
+  } = useProtectedNavigation(onProtectedAccessAuthorized, (option) =>
+    Boolean(option?.routePath && authorizedRoutes?.has(option.routePath))
+  );
 
   return (
     <nav

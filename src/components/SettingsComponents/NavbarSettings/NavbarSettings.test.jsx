@@ -29,7 +29,14 @@ const TAB_LABELS = [
 const LocationDisplay = () => {
   const location = useLocation();
 
-  return <div data-testid="location">{location.pathname}</div>;
+  return (
+    <>
+      <div data-testid="location">{location.pathname}</div>
+      <div data-testid="location-state">
+        {JSON.stringify(location.state ?? null)}
+      </div>
+    </>
+  );
 };
 
 const renderAt = (path, props = {}) =>
@@ -134,5 +141,35 @@ describe("NavbarSettings", () => {
       await screen.findByRole("heading", { name: "Acceso restringido" })
     ).toBeTruthy();
     expect(screen.getByTestId("location").textContent).toBe("/settings/caja");
+  });
+
+  it("transmite la autorización fiscal al módulo de facturas", async () => {
+    renderAt("/settings/caja");
+
+    fireEvent.click(screen.getByRole("link", { name: "Acceso rápido fiscal" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location").textContent).toBe(
+        "/invoices/configuracion"
+      );
+    });
+    expect(screen.getByTestId("location-state").textContent).toBe(
+      JSON.stringify({ authorizedRoute: "/invoices/configuracion" })
+    );
+  });
+
+  it("no vuelve a pedir credenciales para una pestaña ya autorizada", async () => {
+    renderAt("/settings/caja", {
+      authorizedRoutes: new Set(["/settings/usuarios"]),
+    });
+
+    fireEvent.click(screen.getByRole("link", { name: "Usuarios y Permisos" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location").textContent).toBe(
+        "/settings/usuarios"
+      );
+    });
+    expect(checkUserIsAdmin).not.toHaveBeenCalled();
   });
 });

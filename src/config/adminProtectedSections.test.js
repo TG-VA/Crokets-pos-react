@@ -6,6 +6,7 @@ import ADMIN_PROTECTED_SECTIONS, {
   PROTECTED_REPORT_SECTIONS,
   PROTECTED_SETTINGS_ENTRY,
   PROTECTED_SETTINGS_SECTIONS,
+  createAuthorizedRoutesFromState,
   withProtectedMetadata,
 } from "./adminProtectedSections";
 
@@ -130,6 +131,38 @@ describe("withProtectedMetadata", () => {
 
     expect(fiscal.action).toBe("invoice_settings_access");
     expect(fiscal.routeLabel).toBe("Configuración CFDI");
+  });
+});
+
+describe("createAuthorizedRoutesFromState", () => {
+  it("acepta una ruta declarada para el módulo", () => {
+    const routes = createAuthorizedRoutesFromState(
+      { authorizedRoute: "/settings/caja" },
+      PROTECTED_SETTINGS_SECTIONS
+    );
+
+    expect(routes).toEqual(new Set(["/settings/caja"]));
+  });
+
+  it("ignora rutas ajenas al módulo", () => {
+    const routes = createAuthorizedRoutesFromState(
+      { authorizedRoute: "/invoices/configuracion" },
+      PROTECTED_SETTINGS_SECTIONS
+    );
+
+    expect(routes.size).toBe(0);
+  });
+
+  it("ignora un estado ausente o una ruta inventada", () => {
+    expect(
+      createAuthorizedRoutesFromState(null, PROTECTED_SETTINGS_SECTIONS).size
+    ).toBe(0);
+    expect(
+      createAuthorizedRoutesFromState(
+        { authorizedRoute: "/settings/inexistente" },
+        PROTECTED_SETTINGS_SECTIONS
+      ).size
+    ).toBe(0);
   });
 });
 

@@ -25,30 +25,41 @@ import { checkUserIsAdmin } from "../lib/permissionsService";
  * antes de consolidar el guard): al autorizar, este hook notifica `onProtectedAccessAuthorized`
  * con el `routePath` para que el guard compartido reconozca la ruta como autorizada y no vuelva
  * a pedir credenciales al montarse tras la navegación.
+ *
+ * `isRouteAuthorized` es un predicado opcional que permite a la página indicar qué rutas ya
+ * fueron autorizadas en la sesión de montaje; así volver a una pestaña autorizada no vuelve a
+ * pedir credenciales ni consulta innecesariamente al backend.
  */
-const useProtectedNavigation = (onProtectedAccessAuthorized) => {
+const useProtectedNavigation = (
+  onProtectedAccessAuthorized,
+  isRouteAuthorized
+) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
 
+  const navigateTo = (option) => {
+    if (option.navigationOptions) {
+      navigate(option.path, option.navigationOptions);
+    } else {
+      navigate(option.path);
+    }
+  };
+
   const handleNavigation = async (option, event) => {
     event?.preventDefault();
 
-    if (!option?.action) {
-      navigate(option.path);
+    if (!option?.action || isRouteAuthorized?.(option)) {
+      navigateTo(option);
       return;
     }
 
     const isAdmin = await checkUserIsAdmin(user?.id);
 
     if (isAdmin) {
-      if (option.navigationOptions) {
-        navigate(option.path, option.navigationOptions);
-      } else {
-        navigate(option.path);
-      }
+      navigateTo(option);
       return;
     }
 
@@ -60,11 +71,7 @@ const useProtectedNavigation = (onProtectedAccessAuthorized) => {
     setAdminAuthOpen(false);
     if (pendingNavigation) {
       onProtectedAccessAuthorized?.(pendingNavigation.routePath);
-      if (pendingNavigation.navigationOptions) {
-        navigate(pendingNavigation.path, pendingNavigation.navigationOptions);
-      } else {
-        navigate(pendingNavigation.path);
-      }
+      navigateTo(pendingNavigation);
     }
     clearPending();
   };

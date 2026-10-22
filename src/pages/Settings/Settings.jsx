@@ -4,7 +4,10 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarSettings from "../../components/SettingsComponents/NavbarSettings/NavbarSettings";
 import ProtectedRoute from "../../components/ProtectedRoute/ProtectedRoute";
-import { PROTECTED_SETTINGS_SECTIONS } from "../../config/adminProtectedSections";
+import {
+  PROTECTED_SETTINGS_SECTIONS,
+  createAuthorizedRoutesFromState,
+} from "../../config/adminProtectedSections";
 import SettingsCash from "../../components/SettingsComponents/PageSettings/SettingsCash/SettingsCash";
 import SettingsUsers from "../../components/SettingsComponents/PageSettings/SettingsUsers/SettingsUsers";
 import SettingsPrinters from "../../components/SettingsComponents/PageSettings/SettingsPrinters/SettingsPrinters";
@@ -23,13 +26,9 @@ const SETTINGS_COMPONENTS = {
 
 const Settings = () => {
   const location = useLocation();
-  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => {
-    const initial = new Set();
-    if (location.state?.authorizedRoute) {
-      initial.add(location.state.authorizedRoute);
-    }
-    return initial;
-  });
+  const [authorizedRoutes, setAuthorizedRoutes] = useState(() =>
+    createAuthorizedRoutesFromState(location.state, PROTECTED_SETTINGS_SECTIONS)
+  );
 
   const handleAuthorizedRoute = (routePath) => {
     setAuthorizedRoutes((prev) => {
@@ -42,7 +41,10 @@ const Settings = () => {
   return (
     <div className={styles.container}>
       <Navbar />
-      <NavbarSettings onProtectedAccessAuthorized={handleAuthorizedRoute} />
+      <NavbarSettings
+        authorizedRoutes={authorizedRoutes}
+        onProtectedAccessAuthorized={handleAuthorizedRoute}
+      />
       <main className={styles.pageContent}>
         <Routes>
           <Route

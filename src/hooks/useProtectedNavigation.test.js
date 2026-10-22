@@ -126,6 +126,22 @@ describe("useProtectedNavigation", () => {
     });
   });
 
+  it("navega sin consultar al backend si la ruta ya está autorizada", async () => {
+    const isRouteAuthorized = vi.fn().mockReturnValue(true);
+    const { result } = renderHook(() =>
+      useProtectedNavigation(undefined, isRouteAuthorized)
+    );
+
+    await act(async () => {
+      await result.current.handleNavigation(protectedOption, createEvent());
+    });
+
+    expect(isRouteAuthorized).toHaveBeenCalledWith(protectedOption);
+    expect(checkUserIsAdmin).not.toHaveBeenCalled();
+    expect(navigateMock).toHaveBeenCalledWith("/reports/ventas");
+    expect(result.current.adminAuthOpen).toBe(false);
+  });
+
   it("al cerrar sin autorizar no navega y limpia el pendiente", async () => {
     checkUserIsAdmin.mockResolvedValue(false);
     const onProtectedAccessAuthorized = vi.fn();

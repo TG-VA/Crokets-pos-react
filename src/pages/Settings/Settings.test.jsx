@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 vi.mock("../../contexts/AuthContext", () => ({
@@ -12,6 +12,10 @@ vi.mock("../../contexts/BranchContext", () => ({
 
 vi.mock("../../lib/permissionsService", () => ({
   checkUserIsAdmin: vi.fn(),
+}));
+
+vi.mock("../../lib/adminAuthorizationService", () => ({
+  authorizeAdminAction: vi.fn(),
 }));
 
 vi.mock("../../components/Navbar/Navbar", () => ({
@@ -48,6 +52,7 @@ vi.mock(
 );
 
 import { checkUserIsAdmin } from "../../lib/permissionsService";
+import { authorizeAdminAction } from "../../lib/adminAuthorizationService";
 import Settings from "./Settings";
 
 const renderSettingsAt = (path) =>
@@ -129,6 +134,61 @@ describe("Settings", () => {
 
     expect(
       await screen.findByRole("heading", { name: "Caja y Operación" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Acceso restringido" })
+    ).toBeNull();
+  });
+
+  it("no confia en un estado de navegacion con una ruta de otro modulo", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt({
+      pathname: "/settings/caja",
+      state: { authorizedRoute: "/invoices/configuracion" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Caja y Operación" })
+    ).toBeNull();
+  });
+
+  it("no encadena un segundo modal al autorizar una pestaña interna", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    authorizeAdminAction.mockResolvedValue({
+      ok: true,
+      authorizedBy: "admin-1",
+      authorizedByUsername: "admin",
+    });
+
+    const { container } = renderSettingsAt({
+      pathname: "/settings",
+      state: { authorizedRoute: "/settings/caja" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Caja y Operación" })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: "Usuarios y Permisos" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "admin" },
+    });
+    fireEvent.change(container.querySelector('input[type="password"]'), {
+      target: { value: "secreto" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Autorizar" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Usuarios y Permisos" })
     ).toBeTruthy();
     expect(
       screen.queryByRole("heading", { name: "Acceso restringido" })

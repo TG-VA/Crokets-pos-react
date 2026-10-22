@@ -170,6 +170,27 @@ export const withProtectedMetadata = (options, sections) => {
   });
 };
 
+/**
+ * Construye el registro inicial de rutas autorizadas a partir del estado de navegación que
+ * entrega un navbar tras validar credenciales de administrador.
+ *
+ * El estado de navegación NUNCA se confía a ciegas: solo se acepta si coincide exactamente con
+ * una sección protegida declarada para el módulo. Así un deep-link normal (sin estado) o un
+ * estado manipulado no puede habilitar una ruta arbitraria.
+ *
+ * @param {{authorizedRoute?: string}|null|undefined} navigationState Estado de `useLocation`.
+ * @param {Array<{routePath: string}>} sections Secciones protegidas del módulo.
+ * @returns {Set<string>} Rutas autorizadas para inicializar el guard.
+ */
+export const createAuthorizedRoutesFromState = (navigationState, sections) => {
+  const authorizedRoute = navigationState?.authorizedRoute;
+  const isKnownRoute = sections.some(
+    (section) => section.routePath === authorizedRoute
+  );
+
+  return isKnownRoute ? new Set([authorizedRoute]) : new Set();
+};
+
 const ADMIN_PROTECTED_SECTIONS = {
   reports: PROTECTED_REPORT_SECTIONS,
   products: PROTECTED_PRODUCT_SECTIONS,
