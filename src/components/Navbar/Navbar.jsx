@@ -85,6 +85,9 @@ const NAV_ITEMS = [
     action: PROTECTED_SETTINGS_ENTRY.action,
     routePath: PROTECTED_SETTINGS_ENTRY.routePath,
     routeLabel: PROTECTED_SETTINGS_ENTRY.routeLabel,
+    navigationOptions: {
+      state: { authorizedRoute: "/settings/caja" },
+    },
   },
 ];
 

@@ -118,4 +118,33 @@ describe("Settings", () => {
       await screen.findByRole("heading", { name: "Caja y Operación" })
     ).toBeTruthy();
   });
+
+  it("permite acceso directo a /settings/caja cuando viene autorizado desde el estado de navegacion", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt({
+      pathname: "/settings",
+      state: { authorizedRoute: "/settings/caja" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Caja y Operación" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Acceso restringido" })
+    ).toBeNull();
+  });
+
+  it("abre el modal de autorizacion si un no-admin entra a /settings/caja sin autorizacion previa", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt("/settings/caja");
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Caja y Operación" })
+    ).toBeNull();
+  });
 });

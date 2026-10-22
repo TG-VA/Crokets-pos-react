@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarSettings from "../../components/SettingsComponents/NavbarSettings/NavbarSettings";
@@ -22,7 +22,14 @@ const SETTINGS_COMPONENTS = {
 };
 
 const Settings = () => {
-  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => new Set());
+  const location = useLocation();
+  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => {
+    const initial = new Set();
+    if (location.state?.authorizedRoute) {
+      initial.add(location.state.authorizedRoute);
+    }
+    return initial;
+  });
 
   const handleAuthorizedRoute = (routePath) => {
     setAuthorizedRoutes((prev) => {
@@ -38,7 +45,12 @@ const Settings = () => {
       <NavbarSettings onProtectedAccessAuthorized={handleAuthorizedRoute} />
       <main className={styles.pageContent}>
         <Routes>
-          <Route path="/" element={<Navigate to="/settings/caja" replace />} />
+          <Route
+            path="/"
+            element={
+              <Navigate to="/settings/caja" replace state={location.state} />
+            }
+          />
 
           {PROTECTED_SETTINGS_SECTIONS.map(
             ({ routePath, routeLabel, action }) => {

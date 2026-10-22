@@ -44,7 +44,11 @@ const useProtectedNavigation = (onProtectedAccessAuthorized) => {
     const isAdmin = await checkUserIsAdmin(user?.id);
 
     if (isAdmin) {
-      navigate(option.path);
+      if (option.navigationOptions) {
+        navigate(option.path, option.navigationOptions);
+      } else {
+        navigate(option.path);
+      }
       return;
     }
 
@@ -56,7 +60,11 @@ const useProtectedNavigation = (onProtectedAccessAuthorized) => {
     setAdminAuthOpen(false);
     if (pendingNavigation) {
       onProtectedAccessAuthorized?.(pendingNavigation.routePath);
-      navigate(pendingNavigation.path);
+      if (pendingNavigation.navigationOptions) {
+        navigate(pendingNavigation.path, pendingNavigation.navigationOptions);
+      } else {
+        navigate(pendingNavigation.path);
+      }
     }
     clearPending();
   };
