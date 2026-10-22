@@ -5,7 +5,7 @@ export const getCachedValue = (key) => {
 
   try {
     return window.localStorage.getItem(key);
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -17,7 +17,7 @@ export const setCachedValue = (key, value) => {
 
   try {
     window.localStorage.setItem(key, value);
-  } catch (_error) {
+  } catch {
     // El caché es opcional.
   }
 };

@@ -1,7 +1,7 @@
 const resolveSystemTimeZone = () => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };

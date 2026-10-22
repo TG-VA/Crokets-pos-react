@@ -330,7 +330,7 @@ const PaymentModal = memo(
             resetModalState();
             onClose();
           }
-        } catch (error) {
+        } catch {
           showAppDanger("Ocurrió un error al procesar el pago.");
         } finally {
           setProcessing(false);
@@ -355,6 +355,7 @@ const PaymentModal = memo(
         onClose,
         showAppWarning,
         showAppDanger,
+        cashOpSettings,
       ]
     );
 
