@@ -1,5 +1,3 @@
-import React from "react";
-
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import AppModal from "../../../AppModal/AppModal";
 
