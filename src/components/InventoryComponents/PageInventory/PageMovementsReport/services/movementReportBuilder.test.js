@@ -420,7 +420,7 @@ describe("movementReportBuilder", () => {
       expect(returnRow.quantity).toBe(1);
     });
 
-    it("preserva una fila por cada devolucion parcial con su fecha real", () => {
+    it("preserva una fila por cada devolucion parcial con sus metadatos reales", () => {
       const deps = buildNoStockDeps();
       deps.usersById = new Map([
         ["u1", { id: "u1", username: "admin" }],
@@ -437,6 +437,7 @@ describe("movementReportBuilder", () => {
             id: "r1",
             sale_id: "s1",
             user_id: "u1",
+            branch_id: "b1",
             return_reason: "Primer ajuste",
             created_at: "2026-10-01T12:00:00Z",
           },
@@ -444,6 +445,7 @@ describe("movementReportBuilder", () => {
             id: "r2",
             sale_id: "s1",
             user_id: "u2",
+            branch_id: "b2",
             return_reason: "Segundo ajuste",
             created_at: "2026-10-01T13:30:00Z",
           },
@@ -459,12 +461,17 @@ describe("movementReportBuilder", () => {
       const returnRows = result.filter((row) => row.movement_type === "return");
 
       expect(returnRows).toHaveLength(2);
+      expect(returnRows.map((row) => row.row_key)).toEqual([
+        "nostock-return-r1",
+        "nostock-return-r2",
+      ]);
       expect(returnRows.map((row) => row.quantity)).toEqual([1, 2]);
       expect(returnRows.map((row) => row.created_at)).toEqual([
         "2026-10-01T12:00:00Z",
         "2026-10-01T13:30:00Z",
       ]);
       expect(returnRows.map((row) => row.user_id)).toEqual(["u1", "u2"]);
+      expect(returnRows.map((row) => row.branch_id)).toEqual(["b1", "b2"]);
       expect(returnRows.map((row) => row.reason)).toEqual([
         "Primer ajuste",
         "Segundo ajuste",
