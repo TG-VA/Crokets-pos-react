@@ -10,6 +10,7 @@ import PageReport from "../../components/InventoryComponents/PageInventory/PageR
 import PageMovementsReport from "../../components/InventoryComponents/PageInventory/PageMovementsReport/PageMovementsReport";
 import PageKardex from "../../components/InventoryComponents/PageInventory/PageKardex/Pagekardex";
 import PageTransfers from "../../components/InventoryComponents/PageInventory/PageTransfers/PageTransfers";
+import PageOrders from "../../components/InventoryComponents/PageInventory/PageOrders/PageOrders";
 
 import styles from "./Inventory.module.css";
 
@@ -33,6 +34,8 @@ const Inventory = () => {
           />
           <Route path="/kardex" element={<PageKardex />} />
           <Route path="/traspasos" element={<PageTransfers />} />
+          <Route path="/pedidos" element={<PageOrders />} />
+          <Route path="/orders" element={<PageOrders />} />
           <Route
             path="*"
             element={<Navigate to="/inventory/agregar" replace />}

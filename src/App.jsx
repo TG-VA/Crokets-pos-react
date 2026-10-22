@@ -20,6 +20,7 @@ const Reports = lazy(() => import("./pages/Reports/Reports"));
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { BranchProvider } from "./contexts/BranchContext";
 import { PendingTransfersProvider } from "./contexts/PendingTransfersContext";
+import { PendingOrdersProvider } from "./contexts/PendingOrdersContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
@@ -181,7 +182,9 @@ function App({ RouterComponent = Router } = {}) {
       <ProductsProvider>
         <BranchProvider>
           <PendingTransfersProvider>
-            <AppRoutes RouterComponent={RouterComponent} />
+            <PendingOrdersProvider>
+              <AppRoutes RouterComponent={RouterComponent} />
+            </PendingOrdersProvider>
           </PendingTransfersProvider>
         </BranchProvider>
       </ProductsProvider>

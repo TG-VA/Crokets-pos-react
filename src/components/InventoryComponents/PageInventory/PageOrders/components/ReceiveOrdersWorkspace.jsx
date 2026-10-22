@@ -1,0 +1,276 @@
+import React from "react";
+
+import styles from "../PageOrders.module.css";
+import {
+  formatOrderDateTime,
+  formatQuantity,
+  getOrderStatusMeta,
+} from "../utils/ordersFormatters";
+import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
+import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
+import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+
+const TONE_CLASS = {
+  pending: styles.statusPending,
+  success: styles.statusSuccess,
+  warning: styles.statusWarning,
+  danger: styles.statusDanger,
+  neutral: styles.statusPending,
+};
+
+const getDifferenceClass = (difference) => {
+  if (difference === null) return styles.differencePending;
+  if (difference === 0) return styles.differenceOk;
+  if (difference > 0) return styles.differenceOver;
+  return styles.differenceShort;
+};
+
+const getDifferenceLabel = (difference) => {
+  if (difference === null) return "Pendiente";
+  if (difference === 0) return "Sin diferencia";
+  if (difference > 0) return `+${formatQuantity(difference)}`;
+  return formatQuantity(difference);
+};
+
+const ReceiveOrdersWorkspace = ({
+  pendingOrders = [],
+  selectedOrder,
+  quantities,
+  isComplete,
+  missingItems,
+  error,
+  isSubmitting,
+  canSubmit,
+  currentBranchName,
+  onSelectOrder,
+  onQuantityChange,
+  getDifferencePreview,
+  onSubmit,
+  onCreateOrder,
+  onOpenDetail,
+}) => {
+  return (
+    <section
+      className={styles.workspace}
+      role="tabpanel"
+      id="panel-receive"
+      aria-labelledby="tab-receive"
+      tabIndex={0}
+    >
+      <header className={styles.workspaceHeader}>
+        <div>
+          <p className={styles.eyebrow}>Recepción</p>
+          <h2 className={styles.workspaceTitle}>Pedidos por recibir</h2>
+          <p className={styles.workspaceDescription}>
+            Sucursal activa: {currentBranchName || "Sin sucursal"}. Captura el
+            conteo físico de cada partida; no se precarga la cantidad esperada.
+          </p>
+        </div>
+      </header>
+
+      {pendingOrders.length === 0 ? (
+        <div className={styles.emptyState}>
+          <img src={ClockIcon} alt="" aria-hidden="true" />
+          <h3>No hay pedidos pendientes</h3>
+          <p>No hay pedidos pendientes de entrega para esta sucursal.</p>
+        </div>
+      ) : null}
+
+      {pendingOrders.length > 0 && !selectedOrder ? (
+        <div className={styles.orderCards}>
+          {pendingOrders.map((order) => {
+            const status = getOrderStatusMeta(order.status);
+
+            return (
+              <article key={order.id} className={styles.orderCard}>
+                <div className={styles.orderCardHeader}>
+                  <div>
+                    <span className={styles.orderFolio}>
+                      {order.orderNumber}
+                    </span>
+                    <h3 className={styles.orderCardTitle}>{order.orderName}</h3>
+                  </div>
+                  <span
+                    className={[
+                      styles.statusBadge,
+                      TONE_CLASS[status.tone] || TONE_CLASS.neutral,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+
+                <dl className={styles.orderMeta}>
+                  <div>
+                    <dt>Origen</dt>
+                    <dd>{order.fromBranchName}</dd>
+                  </div>
+                  <div>
+                    <dt>Enviado</dt>
+                    <dd>{formatOrderDateTime(order.sentAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Partidas</dt>
+                    <dd>{order.items.length}</dd>
+                  </div>
+                </dl>
+
+                <p className={styles.orderDepartments}>
+                  {order.departments.join(", ") || "Sin departamento"}
+                </p>
+
+                <div className={styles.orderCardActions}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={() => onOpenDetail(order)}
+                  >
+                    Ver detalle
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => onSelectOrder(order)}
+                  >
+                    <img src={ImportIcon} alt="" aria-hidden="true" />
+                    Recibir pedido
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {selectedOrder ? (
+        <div className={styles.receiptPanel}>
+          <div className={styles.receiptHeader}>
+            <div>
+              <span className={styles.orderFolio}>
+                {selectedOrder.orderNumber}
+              </span>
+              <h3 className={styles.receiptTitle}>{selectedOrder.orderName}</h3>
+              <p className={styles.receiptRoute}>
+                {selectedOrder.fromBranchName} hacia{" "}
+                {selectedOrder.toBranchName}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.ghostButton}
+              onClick={() => onSelectOrder(null)}
+              disabled={isSubmitting}
+            >
+              Cambiar pedido
+            </button>
+          </div>
+
+          <div className={styles.receiptProgress}>
+            <span>
+              {selectedOrder.items.length - missingItems.length} de{" "}
+              {selectedOrder.items.length} partidas capturadas
+            </span>
+            <progress
+              className={styles.progressBar}
+              value={selectedOrder.items.length - missingItems.length}
+              max={selectedOrder.items.length}
+              aria-label="Partidas capturadas"
+            />
+          </div>
+
+          <div className={styles.tableWrapper}>
+            <table className={styles.itemsTable}>
+              <thead>
+                <tr>
+                  <th>Codigo</th>
+                  <th>Producto</th>
+                  <th>Departamento</th>
+                  <th className={styles.numeric}>Esperado</th>
+                  <th className={styles.numeric}>Conteo fisico</th>
+                  <th className={styles.numeric}>Diferencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedOrder.items.map((item) => {
+                  const difference = getDifferencePreview(item);
+                  const value = quantities[item.productId] ?? "";
+
+                  return (
+                    <tr key={item.id || item.productId}>
+                      <td>{item.barcode || "—"}</td>
+                      <td className={styles.productNameCell}>
+                        {item.productName}
+                      </td>
+                      <td>{item.departmentName || "Sin departamento"}</td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.expectedQty)}
+                      </td>
+                      <td className={styles.numeric}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.quantityInput}
+                          value={value}
+                          onChange={(event) =>
+                            onQuantityChange(item.productId, event.target.value)
+                          }
+                          onFocus={(event) => event.target.select()}
+                          placeholder="Captura"
+                          aria-label={`Cantidad recibida de ${item.productName}`}
+                          disabled={isSubmitting}
+                        />
+                      </td>
+                      <td className={styles.numeric}>
+                        <span
+                          className={[
+                            styles.differenceBadge,
+                            getDifferenceClass(difference),
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {getDifferenceLabel(difference)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {error ? (
+            <p className={styles.inlineError} role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <footer className={styles.receiptFooter}>
+            <div className={styles.receiptHint}>
+              <img src={CheckIcon} alt="" aria-hidden="true" />
+              <span>
+                {isComplete
+                  ? "Conteo completo. Revisa diferencias antes de confirmar."
+                  : `Faltan ${missingItems.length} partida(s) por capturar.`}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={onSubmit}
+              disabled={!canSubmit}
+            >
+              <img src={ImportIcon} alt="" aria-hidden="true" />
+              {isSubmitting ? "Registrando..." : "Registrar recepcion"}
+            </button>
+          </footer>
+        </div>
+      ) : null}
+    </section>
+  );
+};
+
+export default ReceiveOrdersWorkspace;
