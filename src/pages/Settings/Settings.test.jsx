@@ -1,7 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import Settings from "./Settings";
+
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "user-1" } }),
+}));
+
+vi.mock("../../contexts/BranchContext", () => ({
+  useBranch: () => ({ branch: { id: "branch-1" } }),
+}));
+
+vi.mock("../../lib/permissionsService", () => ({
+  checkUserIsAdmin: vi.fn(),
+}));
 
 vi.mock("../../components/Navbar/Navbar", () => ({
   default: () => <div data-testid="global-navbar" />,
@@ -36,6 +47,9 @@ vi.mock(
   () => ({ default: () => <h1>Sucursales</h1> })
 );
 
+import { checkUserIsAdmin } from "../../lib/permissionsService";
+import Settings from "./Settings";
+
 const renderSettingsAt = (path) =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -46,6 +60,11 @@ const renderSettingsAt = (path) =>
   );
 
 describe("Settings", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    checkUserIsAdmin.mockResolvedValue(true);
+  });
+
   it("monta la sub-navbar y redirige /settings a la sección de caja", async () => {
     renderSettingsAt("/settings");
 
@@ -54,40 +73,42 @@ describe("Settings", () => {
     });
     expect(nav).toBeTruthy();
     expect(
-      screen.getByRole("heading", { name: "Caja y Operación" })
+      await screen.findByRole("heading", { name: "Caja y Operación" })
     ).toBeTruthy();
     expect(screen.getByTestId("global-navbar")).toBeTruthy();
     expect(screen.getByTestId("footer")).toBeTruthy();
   });
 
-  it("renderiza la subpágina de usuarios bajo /settings/usuarios", () => {
+  it("renderiza la subpágina de usuarios bajo /settings/usuarios", async () => {
     renderSettingsAt("/settings/usuarios");
 
     expect(
-      screen.getByRole("heading", { name: "Usuarios y Permisos" })
+      await screen.findByRole("heading", { name: "Usuarios y Permisos" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de impresión bajo /settings/impresion", () => {
+  it("renderiza la subpágina de impresión bajo /settings/impresion", async () => {
     renderSettingsAt("/settings/impresion");
 
     expect(
-      screen.getByRole("heading", { name: "Impresión y Tickets" })
+      await screen.findByRole("heading", { name: "Impresión y Tickets" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de terminal bajo /settings/terminal", () => {
+  it("renderiza la subpágina de terminal bajo /settings/terminal", async () => {
     renderSettingsAt("/settings/terminal");
 
     expect(
-      screen.getByRole("heading", { name: "Terminal y Sucursal" })
+      await screen.findByRole("heading", { name: "Terminal y Sucursal" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de sucursales bajo /settings/sucursales", () => {
+  it("renderiza la subpágina de sucursales bajo /settings/sucursales", async () => {
     renderSettingsAt("/settings/sucursales");
 
-    expect(screen.getByRole("heading", { name: "Sucursales" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sucursales" })
+    ).toBeTruthy();
   });
 
   it("redirige una subruta desconocida a /settings/caja", async () => {
