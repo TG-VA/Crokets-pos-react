@@ -162,6 +162,13 @@ describe("SettingsPrinters", () => {
     ).toBeTruthy();
   });
 
+  it("aclara la nota de compatibilidad de controladores para los saltos de linea", () => {
+    render(<SettingsPrinters />);
+    expect(
+      screen.getByText(/En controladores genéricos \(Generic \/ Text Only\)/i)
+    ).toBeTruthy();
+  });
+
   it("expone los limites numericos en los inputs de copias y saltos de linea", () => {
     render(<SettingsPrinters />);
 
