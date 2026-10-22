@@ -1,5 +1,3 @@
-import React from "react";
-
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import AppModal from "../../../AppModal/AppModal";
 
@@ -12,6 +10,8 @@ import styles from "./PageAdd.module.css";
 const PageAdd = () => {
   const {
     products,
+    loadingProducts,
+    productsError,
     searchModalOpen,
     barcode,
     selectedProduct,
@@ -111,6 +111,8 @@ const PageAdd = () => {
           isOpen={searchModalOpen}
           onClose={closeSearchModal}
           products={products}
+          loading={loadingProducts}
+          error={productsError}
           onSelect={loadProduct}
         />
 

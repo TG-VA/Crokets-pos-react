@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import styles from "./PaymentModal.module.css";
 import NotesModal from "../NotesModal/NotesModal";
 import AppModal from "../../../AppModal/AppModal";
@@ -33,6 +33,45 @@ const PAYMENT_METHODS = [
   { id: "Terminal", name: "Terminal", icon: TerminalIcon },
   { id: "Transferencia", name: "Transferencia", icon: TransferIcon },
 ];
+
+const PAYMENT_METHODS_PER_ROW = 3;
+const PAYMENT_METHOD_GRID_COLUMNS = PAYMENT_METHODS_PER_ROW * 2;
+
+const getPaymentMethodColumnSpan = (index, totalMethods) => {
+  const lastRowItems = totalMethods % PAYMENT_METHODS_PER_ROW;
+
+  if (lastRowItems === 0) return 2;
+
+  const lastRowStartIndex = totalMethods - lastRowItems;
+  if (index < lastRowStartIndex) return 2;
+
+  if (lastRowItems === 1) return PAYMENT_METHOD_GRID_COLUMNS;
+  if (lastRowItems === 2) return PAYMENT_METHODS_PER_ROW;
+
+  return 2;
+};
+
+const getPaymentMethodGridPosition = (index, totalMethods) => {
+  const row = Math.floor(index / PAYMENT_METHODS_PER_ROW);
+  const columnIndex = index % PAYMENT_METHODS_PER_ROW;
+  const lastRowItems = totalMethods % PAYMENT_METHODS_PER_ROW;
+  const lastRowStartIndex = totalMethods - lastRowItems;
+  const span = getPaymentMethodColumnSpan(index, totalMethods);
+
+  if (lastRowItems !== 0 && index >= lastRowStartIndex) {
+    if (lastRowItems === 1) {
+      return { row, start: 0, span, center: span / 2 };
+    }
+
+    if (lastRowItems === 2) {
+      const start = (index - lastRowStartIndex) * span;
+      return { row, start, span, center: start + span / 2 };
+    }
+  }
+
+  const start = columnIndex * 2;
+  return { row, start, span, center: start + span / 2 };
+};
 
 const PaymentModal = memo(
   ({ isOpen, onClose, total, onProcessPayment, processingSale }) => {
@@ -294,7 +333,7 @@ const PaymentModal = memo(
             resetModalState();
             onClose();
           }
-        } catch (error) {
+        } catch (_error) {
           showAppDanger("Ocurrió un error al procesar el pago.");
         } finally {
           setProcessing(false);
@@ -319,21 +358,75 @@ const PaymentModal = memo(
         onClose,
         showAppWarning,
         showAppDanger,
+        cashOpSettings,
       ]
     );
 
     const navigatePaymentMethod = useCallback(
       (direction) => {
         if (isZeroTotalSale) return;
+
         setSelectedPaymentMethod((current) => {
-          const index = visiblePaymentMethods.findIndex(
+          const currentIndex = visiblePaymentMethods.findIndex(
             (m) => m.id === current
           );
-          if (index === -1) return current;
-          const nextIndex = index + direction;
-          if (nextIndex < 0 || nextIndex >= visiblePaymentMethods.length)
-            return current;
-          return visiblePaymentMethods[nextIndex].id;
+          if (currentIndex === -1) return current;
+
+          if (direction === "left" || direction === "right") {
+            const nextIndex = currentIndex + (direction === "right" ? 1 : -1);
+            if (nextIndex < 0 || nextIndex >= visiblePaymentMethods.length) {
+              return current;
+            }
+            return visiblePaymentMethods[nextIndex].id;
+          }
+
+          const currentPosition = getPaymentMethodGridPosition(
+            currentIndex,
+            visiblePaymentMethods.length
+          );
+          const targetRow =
+            currentPosition.row + (direction === "down" ? 1 : -1);
+
+          if (targetRow < 0) return current;
+
+          const currentEnd = currentPosition.start + currentPosition.span;
+          const targetCandidates = visiblePaymentMethods
+            .map((method, index) => ({
+              id: method.id,
+              index,
+              ...getPaymentMethodGridPosition(
+                index,
+                visiblePaymentMethods.length
+              ),
+            }))
+            .filter((method) => method.row === targetRow);
+
+          if (!targetCandidates.length) return current;
+
+          const bestCandidate = targetCandidates.sort((a, b) => {
+            const overlapA = Math.max(
+              0,
+              Math.min(currentEnd, a.start + a.span) -
+                Math.max(currentPosition.start, a.start)
+            );
+            const overlapB = Math.max(
+              0,
+              Math.min(currentEnd, b.start + b.span) -
+                Math.max(currentPosition.start, b.start)
+            );
+
+            if (overlapA !== overlapB) return overlapB - overlapA;
+
+            const centerDistanceA = Math.abs(a.center - currentPosition.center);
+            const centerDistanceB = Math.abs(b.center - currentPosition.center);
+            if (centerDistanceA !== centerDistanceB) {
+              return centerDistanceA - centerDistanceB;
+            }
+
+            return a.index - b.index;
+          })[0];
+
+          return bestCandidate?.id || current;
         });
       },
       [isZeroTotalSale, visiblePaymentMethods]
@@ -382,10 +475,16 @@ const PaymentModal = memo(
           processPayment(false);
         } else if (e.key === "ArrowRight") {
           stop();
-          navigatePaymentMethod(1);
+          navigatePaymentMethod("right");
         } else if (e.key === "ArrowLeft") {
           stop();
-          navigatePaymentMethod(-1);
+          navigatePaymentMethod("left");
+        } else if (e.key === "ArrowDown") {
+          stop();
+          navigatePaymentMethod("down");
+        } else if (e.key === "ArrowUp") {
+          stop();
+          navigatePaymentMethod("up");
         }
       };
       document.addEventListener("keydown", handleKeyDown);
@@ -475,11 +574,23 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {visiblePaymentMethods.map((m) => (
+              {visiblePaymentMethods.map((m, index) => (
                 <button
                   key={m.id}
                   type="button"
-                  className={`${styles.paymentMethod} ${selectedPaymentMethod === m.id ? styles.paymentMethodSelected : ""}`}
+                  className={[
+                    styles.paymentMethod,
+                    selectedPaymentMethod === m.id &&
+                      styles.paymentMethodSelected,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{
+                    gridColumn: `span ${getPaymentMethodColumnSpan(
+                      index,
+                      visiblePaymentMethods.length
+                    )}`,
+                  }}
                   onClick={() =>
                     !effectiveProcessing && setSelectedPaymentMethod(m.id)
                   }

@@ -5,7 +5,7 @@ export const getCachedValue = (key) => {
 
   try {
     return window.localStorage.getItem(key);
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -17,7 +17,7 @@ export const setCachedValue = (key, value) => {
 
   try {
     window.localStorage.setItem(key, value);
-  } catch (_error) {
+  } catch {
     // El caché es opcional.
   }
 };
@@ -54,17 +54,35 @@ export const createEntityMap = (items) => {
   );
 };
 
+import { parseMovementDate } from "../utils/movementDateUtils";
+
 export const sortMovementsByDate = (movements) => {
   const normalizedMovements = Array.isArray(movements) ? movements : [];
 
   return [...normalizedMovements].sort((first, second) => {
-    const firstTimestamp = new Date(
-      first?.report_sort_at ?? first?.created_at ?? 0
-    ).getTime();
+    const firstType = String(first?.movement_type ?? "")
+      .trim()
+      .toLowerCase();
+    const secondType = String(second?.movement_type ?? "")
+      .trim()
+      .toLowerCase();
 
-    const secondTimestamp = new Date(
-      second?.report_sort_at ?? second?.created_at ?? 0
-    ).getTime();
+    const firstDate = parseMovementDate(
+      first?.report_sort_at ?? first?.created_at ?? 0,
+      {
+        assumeUtcNaive: ["transfer", "canceled", "return"].includes(firstType),
+      }
+    );
+
+    const secondDate = parseMovementDate(
+      second?.report_sort_at ?? second?.created_at ?? 0,
+      {
+        assumeUtcNaive: ["transfer", "canceled", "return"].includes(secondType),
+      }
+    );
+
+    const firstTimestamp = firstDate?.getTime?.() ?? 0;
+    const secondTimestamp = secondDate?.getTime?.() ?? 0;
 
     const safeFirstTimestamp = Number.isFinite(firstTimestamp)
       ? firstTimestamp

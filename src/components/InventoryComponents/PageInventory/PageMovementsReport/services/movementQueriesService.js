@@ -2,9 +2,13 @@ import { supabase } from "../../../../../lib/supabaseClient";
 
 import {
   INVENTORY_MOVEMENTS_TABLE,
+  MOVEMENTS_CANCELED_SALES_SELECT_KEY,
   MOVEMENTS_PRODUCTS_SELECT_KEY,
   MOVEMENTS_REDEMPTIONS_SELECT_KEY,
+  MOVEMENTS_RETURN_ITEMS_SELECT_KEY,
   MOVEMENTS_REWARDS_SELECT_KEY,
+  MOVEMENTS_SALE_DETAILS_SELECT_KEY,
+  MOVEMENTS_SALE_RETURNS_SELECT_KEY,
   MOVEMENTS_SALES_SELECT_KEY,
   MOVEMENTS_USERS_SELECT_KEY,
   POLI_BRANCH_ID,
@@ -244,6 +248,8 @@ export const loadProducts = async (productIds) => {
 
   const candidates = [
     cachedSelect,
+    "id, name, barcode, tracks_inventory, is_kit",
+    "id, name, barcode, tracks_inventory",
     "id, name, barcode",
     "id, name",
     "id",
@@ -302,16 +308,15 @@ export const loadUsers = async (userIds) => {
   return [];
 };
 
-export const loadSales = async (saleIds) => {
-  if (!Array.isArray(saleIds) || saleIds.length === 0) {
-    return [];
-  }
-
-  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
-
-  const candidates = [
+const getSalesSelectCandidates = (cachedSelect) => {
+  return [
     cachedSelect,
+    "id, sale_date, created_at, total, user_id, status",
+    "id, sale_date, created_at, total",
+    "id, sale_date, ticket_number, created_at, total, user_id, status",
+    "id, sale_date, ticket_number, created_at, total",
     "id, sale_date, ticket_number, created_at",
+    "id, sale_date, folio, created_at, total",
     "id, sale_date, folio, created_at",
     "id, sale_date, ticket, created_at",
     "id, sale_date, receipt_number, created_at",
@@ -323,6 +328,16 @@ export const loadSales = async (saleIds) => {
     "id, created_at",
     "id",
   ].filter(Boolean);
+};
+
+export const loadSales = async (saleIds) => {
+  if (!Array.isArray(saleIds) || saleIds.length === 0) {
+    return [];
+  }
+
+  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
+
+  const candidates = getSalesSelectCandidates(cachedSelect);
 
   for (const selectFields of candidates) {
     const response = await supabase
@@ -345,6 +360,125 @@ export const loadSales = async (saleIds) => {
 
   return [];
 };
+
+const loadRowsByColumn = async ({
+  table,
+  selectKey,
+  column,
+  values,
+  candidates,
+}) => {
+  if (!Array.isArray(values) || values.length === 0) {
+    return [];
+  }
+
+  const cachedSelect = getCachedValue(selectKey);
+
+  const selectCandidates = [cachedSelect, ...candidates].filter(Boolean);
+
+  for (const selectFields of selectCandidates) {
+    const response = await supabase
+      .from(table)
+      .select(selectFields)
+      .in(column, values);
+
+    if (!response.error) {
+      setCachedValue(selectKey, selectFields);
+
+      return Array.isArray(response.data) ? response.data : [];
+    }
+
+    if (isMissingColumnError(response.error)) {
+      continue;
+    }
+
+    if (isMissingRelationError(response.error)) {
+      return [];
+    }
+
+    throw response.error;
+  }
+
+  return [];
+};
+
+export const loadSalesByBranch = async ({ branchId, maxMovements }) => {
+  if (!branchId || !Number.isFinite(maxMovements) || maxMovements <= 0) {
+    return [];
+  }
+
+  const cachedSelect = getCachedValue(MOVEMENTS_SALES_SELECT_KEY);
+  const candidates = getSalesSelectCandidates(cachedSelect);
+
+  for (const selectFields of candidates) {
+    const response = await supabase
+      .from("sales")
+      .select(selectFields)
+      .eq("branch_id", branchId)
+      .order("sale_date", { ascending: false })
+      .limit(maxMovements);
+
+    if (!response.error) {
+      setCachedValue(MOVEMENTS_SALES_SELECT_KEY, selectFields);
+      return Array.isArray(response.data) ? response.data : [];
+    }
+
+    if (isMissingColumnError(response.error)) {
+      continue;
+    }
+
+    throw response.error;
+  }
+
+  return [];
+};
+
+export const loadSaleDetailsBySales = (saleIds) =>
+  loadRowsByColumn({
+    table: "sale_details",
+    selectKey: MOVEMENTS_SALE_DETAILS_SELECT_KEY,
+    column: "sale_id",
+    values: saleIds,
+    candidates: ["id, sale_id, product_id, branch_id, quantity"],
+  });
+
+export const loadCanceledSalesBySales = (saleIds) =>
+  loadRowsByColumn({
+    table: "canceled_sales",
+    selectKey: MOVEMENTS_CANCELED_SALES_SELECT_KEY,
+    column: "sale_id",
+    values: saleIds,
+    candidates: [
+      "id, sale_id, user_id, branch_id, cancel_reason, canceled_at, created_at",
+      "id, sale_id, user_id, cancel_reason, created_at",
+      "id, sale_id, created_at",
+    ],
+  });
+
+export const loadSaleReturnsBySales = (saleIds) =>
+  loadRowsByColumn({
+    table: "sale_returns",
+    selectKey: MOVEMENTS_SALE_RETURNS_SELECT_KEY,
+    column: "sale_id",
+    values: saleIds,
+    candidates: [
+      "id, sale_id, user_id, branch_id, return_reason, created_at",
+      "id, sale_id, created_at",
+      "id, sale_id",
+    ],
+  });
+
+export const loadReturnItemsByReturns = (returnIds) =>
+  loadRowsByColumn({
+    table: "sale_return_items",
+    selectKey: MOVEMENTS_RETURN_ITEMS_SELECT_KEY,
+    column: "return_id",
+    values: returnIds,
+    candidates: [
+      "id, return_id, sale_detail_id, product_id, quantity, created_at",
+      "id, return_id, product_id, quantity",
+    ],
+  });
 
 export const loadRewards = async (rewardIds) => {
   if (!Array.isArray(rewardIds) || rewardIds.length === 0) {

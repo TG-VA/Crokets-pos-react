@@ -79,6 +79,7 @@ const TECHNICAL_REASON_PREFIXES = new Set([
   "adjustment",
   "canceled",
   "cancelled",
+  "entry",
   "inventory_activate",
   "inventory_add",
   "inventory_deactivate",
@@ -219,6 +220,12 @@ export const getKardexMovementDescription = (movement) => {
 
     case "redemption":
       return appendReason("CANJE", reason);
+
+    case "entry":
+      return appendReason("ENTRADA", reason);
+
+    case "transfer":
+      return appendReason("TRASPASO", reason);
 
     default:
       return reason || movementType.toUpperCase() || "—";

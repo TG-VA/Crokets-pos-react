@@ -135,6 +135,29 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
   });
 
+  it("expande los ultimos 2 metodos para ocupar toda la fila cuando hay 5 visibles", () => {
+    renderModal();
+
+    expect(
+      screen.getByRole("button", { name: "Terminal" }).style.gridColumn
+    ).toBe("span 3");
+    expect(
+      screen.getByRole("button", { name: "Transferencia" }).style.gridColumn
+    ).toBe("span 3");
+  });
+
+  it("expande el ultimo metodo para ocupar toda la fila cuando hay 4 visibles", () => {
+    window.localStorage.setItem(
+      "cash_operation_settings",
+      JSON.stringify({ acceptUsdPayments: false })
+    );
+    renderModal();
+
+    expect(
+      screen.getByRole("button", { name: "Transferencia" }).style.gridColumn
+    ).toBe("span 6");
+  });
+
   describe("navegacion por flechas entre formas de pago", () => {
     it("avanza con ArrowRight desde Efectivo y da foco al input del metodo", () => {
       renderModal();
@@ -177,6 +200,44 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
 
       expect(screen.getByLabelText("Efectivo:")).toBeTruthy();
       expect(screen.queryByLabelText("Pagó Con (USD):")).toBeNull();
+    });
+
+    it("baja con ArrowDown desde la primera fila a la opcion mas cercana", () => {
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+
+      expect(screen.getByText("Total a Cobrar:")).toBeTruthy();
+      expect(screen.queryByLabelText("Pagó Con:")).toBeNull();
+    });
+
+    it("sube con ArrowUp desde la segunda fila a la opcion mas cercana", () => {
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowRight" });
+      fireEvent.keyDown(document, { key: "ArrowUp" });
+
+      expect(screen.getByText("Desglose de Pago")).toBeTruthy();
+      expect(
+        screen.queryByLabelText("Información de Transferencia:")
+      ).toBeNull();
+    });
+
+    it("baja al unico metodo disponible en la segunda fila cuando hay 4 visibles", () => {
+      window.localStorage.setItem(
+        "cash_operation_settings",
+        JSON.stringify({ acceptUsdPayments: false })
+      );
+      renderModal();
+
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+
+      expect(
+        screen.getByLabelText("Información de Transferencia:")
+      ).toBeTruthy();
     });
   });
 });

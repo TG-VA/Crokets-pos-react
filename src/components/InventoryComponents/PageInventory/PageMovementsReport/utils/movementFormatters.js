@@ -5,9 +5,10 @@ export const MOVEMENT_TYPE_LABELS = {
   sale_redemption: "Venta/canje",
   return: "Devolución",
   canceled: "Cancelación",
-  redemption: "Redención",
+  redemption: "Canje",
   adjustment: "Ajuste",
   transfer: "Traspaso",
+  entry: "Entrada",
   purchase: "Compra",
   inventory_add: "Alta inventario",
   inventory_activate: "Activar inventario",
@@ -61,6 +62,52 @@ export const formatReason = (value) => {
   return `${movementLabel.toUpperCase()}: ${detail.toUpperCase()}`;
 };
 
+/**
+ * Direcciones de traspaso segun el texto que guardan los RPCs. El folio
+ * (`TR-DDMMYY-HH24MISS` o `TR-SIN-FOLIO`) y la explicacion larga se descartan
+ * al mostrar; la sucursal se conserva como unica referencia.
+ */
+const TRANSFER_REASON_DIRECTIONS = [
+  { prefix: "TRASPASO DEVOLUCION AUTOMATICA A", label: "TRASPASO DEVUELTO A" },
+  { prefix: "TRASPASO CANCELADO Y DEVUELTO A", label: "TRASPASO CANCELADO A" },
+  { prefix: "TRASPASO ENVIADO A", label: "TRASPASO ENVIADO A" },
+  { prefix: "TRASPASO RECIBIDO DE", label: "TRASPASO RECIBIDO DE" },
+];
+
+/**
+ * Reduce un motivo de traspaso a `TRASPASO <direccion> <SUCURSAL>`. Devuelve
+ * `null` cuando el texto no corresponde a un traspaso para que el llamador
+ * use el formateo genérico.
+ */
+export const formatTransferReason = (value) => {
+  const rawReason = String(value ?? "").trim();
+
+  if (!rawReason) {
+    return null;
+  }
+
+  const upperReason = rawReason.toUpperCase();
+
+  const direction = TRANSFER_REASON_DIRECTIONS.find((candidate) =>
+    upperReason.startsWith(candidate.prefix)
+  );
+
+  if (!direction) {
+    return null;
+  }
+
+  const remainder = rawReason
+    .slice(direction.prefix.length)
+    .trim()
+    .replace(/^TR-\S+\s*/i, "");
+
+  const branch = remainder.split(" - ")[0].trim();
+
+  return branch
+    ? `${direction.label} ${branch.toUpperCase()}`
+    : direction.label;
+};
+
 export const formatTicket = (value) => {
   const ticket = String(value ?? "").trim();
 
@@ -109,11 +156,28 @@ export const getRowMovementTypeKey = (row) => {
 export const getRowTypeInfo = (row) => {
   const rawTypeKey = getRowMovementTypeKey(row);
 
-  const isMixedSaleRedemption =
+  const hasRedemption =
     row?.has_sale_redemption === true &&
     (rawTypeKey === "sale" || rawTypeKey === "redemption");
 
-  if (isMixedSaleRedemption) {
+  const saleTotal = Number(getSalesObject(row)?.total);
+
+  // Ticket con canje y ademas cobro: es venta/canje. Si el total es 0 o menor
+  // el ticket fue solo canje. Cuando el total no se puede leer se conserva el
+  // comportamiento previo (venta/canje) para no cambiar el marcado existente.
+  const isRedemptionOnly =
+    hasRedemption && Number.isFinite(saleTotal) && saleTotal <= 0;
+
+  if (isRedemptionOnly) {
+    return {
+      typeKey: "redemption",
+      typeLabel: formatMovementType("redemption"),
+      typeFilterKeys: ["redemption"],
+      rawTypeKey,
+    };
+  }
+
+  if (hasRedemption) {
     return {
       typeKey: "sale_redemption",
       typeLabel: formatMovementType("sale_redemption"),
@@ -180,21 +244,34 @@ export const buildRowView = (row) => {
 
   const ticket = formatTicket(ticketRaw);
 
+  const movementTypeKey = getRowMovementTypeKey(row);
+
   const useSystemTime = !sale?.sale_date;
+  const assumeUtcNaive = ["transfer", "canceled", "return"].includes(
+    movementTypeKey
+  );
 
   const soldAtValue =
-    sale?.sale_date ??
-    row?.report_sort_at ??
-    row?.created_at ??
-    sale?.created_at ??
-    null;
+    movementTypeKey === "sale" || movementTypeKey === "redemption"
+      ? (sale?.sale_date ??
+        row?.report_sort_at ??
+        row?.created_at ??
+        sale?.created_at ??
+        null)
+      : (row?.report_sort_at ??
+        row?.created_at ??
+        sale?.sale_date ??
+        sale?.created_at ??
+        null);
 
   const soldAt = formatDateTime(soldAtValue, {
     useSystemTime,
+    assumeUtcNaive,
   });
 
   const soldAtDateKey = getDateKeyFromValue(soldAtValue, {
     useSystemTime,
+    assumeUtcNaive,
   });
 
   const productName = (
@@ -213,7 +290,7 @@ export const buildRowView = (row) => {
   const { rawTypeKey, typeKey, typeLabel, typeFilterKeys } =
     getRowTypeInfo(row);
 
-  const reason = formatReason(row?.reason);
+  const reason = formatTransferReason(row?.reason) ?? formatReason(row?.reason);
 
   const shouldForceZeroQuantity =
     typeKey === "product_update" || typeKey === "product_delete";

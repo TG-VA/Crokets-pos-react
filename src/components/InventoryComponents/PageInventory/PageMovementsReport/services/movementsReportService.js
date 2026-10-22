@@ -2,14 +2,20 @@ import { DEFAULT_MAX_MOVEMENTS } from "./movementServiceConstants";
 
 import {
   loadBaseMovements,
+  loadCanceledSalesBySales,
   loadProducts,
+  loadSalesByBranch,
+  loadReturnItemsByReturns,
   loadRewardRedemptions,
   loadRewards,
+  loadSaleDetailsBySales,
+  loadSaleReturnsBySales,
   loadSales,
   loadUsers,
 } from "./movementQueriesService";
 
 import {
+  buildNoStockRows,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
 } from "./movementReportBuilder";
@@ -33,7 +39,7 @@ export const loadMovementsReport = async ({
   branchId,
   maxMovements = DEFAULT_MAX_MOVEMENTS,
 }) => {
-  const [baseRows, rewardRows] = await Promise.all([
+  const [baseRows, rewardRows, standaloneSales] = await Promise.all([
     loadBaseMovements({
       branchId,
       maxMovements,
@@ -43,24 +49,53 @@ export const loadMovementsReport = async ({
       branchId,
       maxMovements,
     }),
+
+    loadSalesByBranch({
+      branchId,
+      maxMovements,
+    }),
   ]);
 
   const allRows = [...baseRows, ...rewardRows];
 
-  const productIds = getUniqueIds(allRows, "product_id");
+  const userIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "user_id"),
+      ...getUniqueIds(standaloneSales, "user_id"),
+    ])
+  );
 
-  const userIds = getUniqueIds(allRows, "user_id");
-
-  const saleIds = getUniqueIds(allRows, "sale_id");
+  const saleIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "sale_id"),
+      ...getUniqueIds(standaloneSales, "id"),
+    ])
+  );
 
   const rewardIds = getUniqueIds(rewardRows, "reward_id");
 
-  const [products, users, sales, rewards] = await Promise.all([
-    loadProducts(productIds),
-    loadUsers(userIds),
-    loadSales(saleIds),
-    loadRewards(rewardIds),
-  ]);
+  const saleDetails = await loadSaleDetailsBySales(saleIds);
+
+  const productIds = Array.from(
+    new Set([
+      ...getUniqueIds(allRows, "product_id"),
+      ...getUniqueIds(saleDetails, "product_id"),
+    ])
+  );
+
+  const [products, users, sales, rewards, canceledSales, saleReturns] =
+    await Promise.all([
+      loadProducts(productIds),
+      loadUsers(userIds),
+      loadSales(saleIds),
+      loadRewards(rewardIds),
+      loadCanceledSalesBySales(saleIds),
+      loadSaleReturnsBySales(saleIds),
+    ]);
+
+  const returnItems = await loadReturnItemsByReturns(
+    getUniqueIds(saleReturns, "id")
+  );
 
   const productsById = createEntityMap(products);
 
@@ -88,5 +123,28 @@ export const loadMovementsReport = async ({
     rewardsById,
   });
 
-  return sortMovementsByDate([...hydratedMovements, ...hydratedRedemptions]);
+  const existingSaleProductKeys = new Set(
+    baseRows
+      .filter(
+        (row) => String(row?.movement_type ?? "").toLowerCase() === "sale"
+      )
+      .map((row) => `${row?.sale_id}::${row?.product_id}`)
+  );
+
+  const noStockRows = buildNoStockRows({
+    saleDetails,
+    canceledSales,
+    saleReturns,
+    returnItems,
+    productsById,
+    usersById,
+    salesById,
+    existingSaleProductKeys,
+  });
+
+  return sortMovementsByDate([
+    ...hydratedMovements,
+    ...hydratedRedemptions,
+    ...noStockRows,
+  ]);
 };
