@@ -674,6 +674,12 @@
   color: #6b7280;
   margin: 0;
 }
+.fieldNote {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.35;
+  margin: 0.25rem 0 0 0;
+}
 .fieldWithCounter {
   display: flex;
   flex-direction: column;

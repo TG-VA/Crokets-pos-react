@@ -147,6 +147,11 @@ const TicketFormatCard = ({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
+        <p className={styles.fieldNote}>
+          Nota: Aplica para impresoras con controlador oficial (Epson, Xprinter,
+          etc.). En controladores genéricos (Generic / Text Only), el avance se
+          configura desde Windows.
+        </p>
       </div>
     </div>
 
