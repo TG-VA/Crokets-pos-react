@@ -102,6 +102,46 @@ export const PROTECTED_INVOICE_SECTIONS = [
   },
 ];
 
+export const PROTECTED_SETTINGS_ENTRY = {
+  id: "settings",
+  routePath: "/settings",
+  routeLabel: "Configuración",
+  action: "settings_entry_access",
+};
+
+export const PROTECTED_SETTINGS_SECTIONS = [
+  {
+    id: "caja",
+    routePath: "/settings/caja",
+    routeLabel: "Caja y Operación",
+    action: "settings_cash_access",
+  },
+  {
+    id: "usuarios",
+    routePath: "/settings/usuarios",
+    routeLabel: "Usuarios y Permisos",
+    action: "settings_users_access",
+  },
+  {
+    id: "impresion",
+    routePath: "/settings/impresion",
+    routeLabel: "Impresión y Tickets",
+    action: "settings_printers_access",
+  },
+  {
+    id: "terminal",
+    routePath: "/settings/terminal",
+    routeLabel: "Terminal local",
+    action: "settings_terminal_access",
+  },
+  {
+    id: "sucursales",
+    routePath: "/settings/sucursales",
+    routeLabel: "Sucursales",
+    action: "settings_branches_access",
+  },
+];
+
 /**
  * Enriquece los items de un navbar de módulo con la metadata de protección,
  * matcheando por `path` del navbar contra el `routePath` de las secciones protegidas.
@@ -130,10 +170,33 @@ export const withProtectedMetadata = (options, sections) => {
   });
 };
 
+/**
+ * Construye el registro inicial de rutas autorizadas a partir del estado de navegación que
+ * entrega un navbar tras validar credenciales de administrador.
+ *
+ * El estado de navegación NUNCA se confía a ciegas: solo se acepta si coincide exactamente con
+ * una sección protegida declarada para el módulo. Así un deep-link normal (sin estado) o un
+ * estado manipulado no puede habilitar una ruta arbitraria.
+ *
+ * @param {{authorizedRoute?: string}|null|undefined} navigationState Estado de `useLocation`.
+ * @param {Array<{routePath: string}>} sections Secciones protegidas del módulo.
+ * @returns {Set<string>} Rutas autorizadas para inicializar el guard.
+ */
+export const createAuthorizedRoutesFromState = (navigationState, sections) => {
+  const authorizedRoute = navigationState?.authorizedRoute;
+  const isKnownRoute = sections.some(
+    (section) => section.routePath === authorizedRoute
+  );
+
+  return isKnownRoute ? new Set([authorizedRoute]) : new Set();
+};
+
 const ADMIN_PROTECTED_SECTIONS = {
   reports: PROTECTED_REPORT_SECTIONS,
   products: PROTECTED_PRODUCT_SECTIONS,
   invoices: PROTECTED_INVOICE_SECTIONS,
+  settings: PROTECTED_SETTINGS_SECTIONS,
+  settingsEntry: PROTECTED_SETTINGS_ENTRY,
 };
 
 export default ADMIN_PROTECTED_SECTIONS;

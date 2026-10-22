@@ -1,11 +1,14 @@
 import React, { useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import NavbarInvoices from "../../components/InvoicesComponents/NavbarInvoices/NavbarInvoices";
 import ProtectedRoute from "../../components/ProtectedRoute/ProtectedRoute";
-import { PROTECTED_INVOICE_SECTIONS } from "../../config/adminProtectedSections";
+import {
+  PROTECTED_INVOICE_SECTIONS,
+  createAuthorizedRoutesFromState,
+} from "../../config/adminProtectedSections";
 
 import InvoicesPending from "../../components/InvoicesComponents/PageInvoices/InvoicesPending/InvoicesPending";
 import InvoicesHistory from "../../components/InvoicesComponents/PageInvoices/InvoicesHistory/InvoicesHistory";
@@ -19,7 +22,10 @@ const PROTECTED_INVOICE_COMPONENTS = {
 };
 
 const Invoices = () => {
-  const [authorizedRoutes, setAuthorizedRoutes] = useState(() => new Set());
+  const location = useLocation();
+  const [authorizedRoutes, setAuthorizedRoutes] = useState(() =>
+    createAuthorizedRoutesFromState(location.state, PROTECTED_INVOICE_SECTIONS)
+  );
 
   const handleAuthorizedRoute = (routePath) => {
     setAuthorizedRoutes((prev) => {

@@ -4,6 +4,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import AppModal from "../AppModal/AppModal";
+import AdminAuthorizationModal from "../AdminAuthorizationModal/AdminAuthorizationModal";
+import useProtectedNavigation from "../../hooks/useProtectedNavigation";
+import { PROTECTED_SETTINGS_ENTRY } from "../../config/adminProtectedSections";
 
 import Logo from "../../assets/images/LOGOCROKETS.png";
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
@@ -79,6 +82,12 @@ const NAV_ITEMS = [
     icon: SettingsIcon,
     path: "/settings",
     matchPaths: ["/settings", "/profiles"],
+    action: PROTECTED_SETTINGS_ENTRY.action,
+    routePath: PROTECTED_SETTINGS_ENTRY.routePath,
+    routeLabel: PROTECTED_SETTINGS_ENTRY.routeLabel,
+    navigationOptions: {
+      state: { authorizedRoute: "/settings/caja" },
+    },
   },
 ];
 
@@ -87,6 +96,14 @@ const Navbar = () => {
   const location = useLocation();
   const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
+
+  const {
+    handleNavigation,
+    adminAuthOpen,
+    onCloseAdminAuth,
+    onAuthorizedAdminAuth,
+    pendingNavigation,
+  } = useProtectedNavigation();
 
   useKeyboardShortcuts(NAV_ITEMS);
 
@@ -178,7 +195,7 @@ const Navbar = () => {
               key={item.id}
               type="button"
               className={`${styles.navButton} ${styles[item.id]} ${isItemActive(item) ? styles.active : ""}`}
-              onClick={() => navigate(item.path)}
+              onClick={(event) => handleNavigation(item, event)}
             >
               <img
                 src={item.icon}
@@ -224,6 +241,21 @@ const Navbar = () => {
         onConfirm={appModal.onConfirm || closeAppModal}
         onCancel={appModal.onCancel || closeAppModal}
         onClose={closeAppModal}
+      />
+
+      <AdminAuthorizationModal
+        isOpen={adminAuthOpen}
+        onClose={onCloseAdminAuth}
+        onAuthorized={onAuthorizedAdminAuth}
+        action={pendingNavigation?.action}
+        title="Acceso restringido"
+        message={
+          pendingNavigation
+            ? `Para entrar a la sección "${pendingNavigation.routeLabel}", se requiere autorización de un administrador.`
+            : undefined
+        }
+        targetId={pendingNavigation?.routePath}
+        branchId={branch?.id}
       />
     </>
   );

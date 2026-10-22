@@ -1,7 +1,22 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import Settings from "./Settings";
+
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "user-1" } }),
+}));
+
+vi.mock("../../contexts/BranchContext", () => ({
+  useBranch: () => ({ branch: { id: "branch-1" } }),
+}));
+
+vi.mock("../../lib/permissionsService", () => ({
+  checkUserIsAdmin: vi.fn(),
+}));
+
+vi.mock("../../lib/adminAuthorizationService", () => ({
+  authorizeAdminAction: vi.fn(),
+}));
 
 vi.mock("../../components/Navbar/Navbar", () => ({
   default: () => <div data-testid="global-navbar" />,
@@ -36,6 +51,10 @@ vi.mock(
   () => ({ default: () => <h1>Sucursales</h1> })
 );
 
+import { checkUserIsAdmin } from "../../lib/permissionsService";
+import { authorizeAdminAction } from "../../lib/adminAuthorizationService";
+import Settings from "./Settings";
+
 const renderSettingsAt = (path) =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -46,6 +65,11 @@ const renderSettingsAt = (path) =>
   );
 
 describe("Settings", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    checkUserIsAdmin.mockResolvedValue(true);
+  });
+
   it("monta la sub-navbar y redirige /settings a la sección de caja", async () => {
     renderSettingsAt("/settings");
 
@@ -54,40 +78,42 @@ describe("Settings", () => {
     });
     expect(nav).toBeTruthy();
     expect(
-      screen.getByRole("heading", { name: "Caja y Operación" })
+      await screen.findByRole("heading", { name: "Caja y Operación" })
     ).toBeTruthy();
     expect(screen.getByTestId("global-navbar")).toBeTruthy();
     expect(screen.getByTestId("footer")).toBeTruthy();
   });
 
-  it("renderiza la subpágina de usuarios bajo /settings/usuarios", () => {
+  it("renderiza la subpágina de usuarios bajo /settings/usuarios", async () => {
     renderSettingsAt("/settings/usuarios");
 
     expect(
-      screen.getByRole("heading", { name: "Usuarios y Permisos" })
+      await screen.findByRole("heading", { name: "Usuarios y Permisos" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de impresión bajo /settings/impresion", () => {
+  it("renderiza la subpágina de impresión bajo /settings/impresion", async () => {
     renderSettingsAt("/settings/impresion");
 
     expect(
-      screen.getByRole("heading", { name: "Impresión y Tickets" })
+      await screen.findByRole("heading", { name: "Impresión y Tickets" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de terminal bajo /settings/terminal", () => {
+  it("renderiza la subpágina de terminal bajo /settings/terminal", async () => {
     renderSettingsAt("/settings/terminal");
 
     expect(
-      screen.getByRole("heading", { name: "Terminal y Sucursal" })
+      await screen.findByRole("heading", { name: "Terminal y Sucursal" })
     ).toBeTruthy();
   });
 
-  it("renderiza la subpágina de sucursales bajo /settings/sucursales", () => {
+  it("renderiza la subpágina de sucursales bajo /settings/sucursales", async () => {
     renderSettingsAt("/settings/sucursales");
 
-    expect(screen.getByRole("heading", { name: "Sucursales" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sucursales" })
+    ).toBeTruthy();
   });
 
   it("redirige una subruta desconocida a /settings/caja", async () => {
@@ -96,5 +122,89 @@ describe("Settings", () => {
     expect(
       await screen.findByRole("heading", { name: "Caja y Operación" })
     ).toBeTruthy();
+  });
+
+  it("permite acceso directo a /settings/caja cuando viene autorizado desde el estado de navegacion", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt({
+      pathname: "/settings",
+      state: { authorizedRoute: "/settings/caja" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Caja y Operación" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Acceso restringido" })
+    ).toBeNull();
+  });
+
+  it("no confia en un estado de navegacion con una ruta de otro modulo", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt({
+      pathname: "/settings/caja",
+      state: { authorizedRoute: "/invoices/configuracion" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Caja y Operación" })
+    ).toBeNull();
+  });
+
+  it("no encadena un segundo modal al autorizar una pestaña interna", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    authorizeAdminAction.mockResolvedValue({
+      ok: true,
+      authorizedBy: "admin-1",
+      authorizedByUsername: "admin",
+    });
+
+    const { container } = renderSettingsAt({
+      pathname: "/settings",
+      state: { authorizedRoute: "/settings/caja" },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Caja y Operación" })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: "Usuarios y Permisos" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "admin" },
+    });
+    fireEvent.change(container.querySelector('input[type="password"]'), {
+      target: { value: "secreto" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Autorizar" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Usuarios y Permisos" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Acceso restringido" })
+    ).toBeNull();
+  });
+
+  it("abre el modal de autorizacion si un no-admin entra a /settings/caja sin autorizacion previa", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderSettingsAt("/settings/caja");
+
+    expect(
+      await screen.findByRole("heading", { name: "Acceso restringido" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "Caja y Operación" })
+    ).toBeNull();
   });
 });

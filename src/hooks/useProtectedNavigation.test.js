@@ -105,6 +105,43 @@ describe("useProtectedNavigation", () => {
     expect(result.current.pendingNavigation).toBeNull();
   });
 
+  it("transmite navigationOptions al autorizar si están presentes", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+    const { result } = renderHook(() => useProtectedNavigation());
+    const optionWithOptions = {
+      ...protectedOption,
+      navigationOptions: { state: { authorizedRoute: "/settings/caja" } },
+    };
+
+    await act(async () => {
+      await result.current.handleNavigation(optionWithOptions, createEvent());
+    });
+
+    act(() => {
+      result.current.onAuthorizedAdminAuth();
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/reports/ventas", {
+      state: { authorizedRoute: "/settings/caja" },
+    });
+  });
+
+  it("navega sin consultar al backend si la ruta ya está autorizada", async () => {
+    const isRouteAuthorized = vi.fn().mockReturnValue(true);
+    const { result } = renderHook(() =>
+      useProtectedNavigation(undefined, isRouteAuthorized)
+    );
+
+    await act(async () => {
+      await result.current.handleNavigation(protectedOption, createEvent());
+    });
+
+    expect(isRouteAuthorized).toHaveBeenCalledWith(protectedOption);
+    expect(checkUserIsAdmin).not.toHaveBeenCalled();
+    expect(navigateMock).toHaveBeenCalledWith("/reports/ventas");
+    expect(result.current.adminAuthOpen).toBe(false);
+  });
+
   it("al cerrar sin autorizar no navega y limpia el pendiente", async () => {
     checkUserIsAdmin.mockResolvedValue(false);
     const onProtectedAccessAuthorized = vi.fn();
