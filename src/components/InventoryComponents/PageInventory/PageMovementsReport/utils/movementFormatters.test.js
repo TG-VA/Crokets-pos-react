@@ -98,11 +98,25 @@ describe("movementFormatters - formatMovementType", () => {
 });
 
 describe("movementDateUtils - parseMovementDate", () => {
+  it("mantiene el parseo nativo cuando el timestamp naive no debe tratarse como UTC", () => {
+    const rawValue = "2026-10-20 03:30:00";
+    const parsed = parseMovementDate(rawValue);
+
+    expect(parsed?.getTime()).toBe(new Date("2026-10-20T03:30:00").getTime());
+  });
+
   it("interpreta timestamps naive como UTC cuando el movimiento asi lo requiere", () => {
     const parsed = parseMovementDate("2026-10-20 03:30:00", {
       assumeUtcNaive: true,
     });
 
-    expect(parsed?.toISOString()).toBe("2026-10-20T03:30:00.000Z");
+    expect(parsed?.getTime()).toBe(new Date("2026-10-20T03:30:00Z").getTime());
+  });
+
+  it("respeta timestamps con zona explicita aunque assumeUtcNaive este activo", () => {
+    const rawValue = "2026-10-20T03:30:00-05:00";
+    const parsed = parseMovementDate(rawValue, { assumeUtcNaive: true });
+
+    expect(parsed?.getTime()).toBe(new Date(rawValue).getTime());
   });
 });
