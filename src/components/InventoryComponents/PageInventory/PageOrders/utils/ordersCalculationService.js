@@ -152,21 +152,19 @@ const normalizeHistoryFilterValue = (value) => {
 };
 
 const getDayBoundary = (dateValue, endOfDay = false) => {
-  if (!dateValue) return null;
+  const parsedDate = parseOrderDate(dateValue);
 
-  const [year, month, day] = dateValue.split("-").map(Number);
+  if (!parsedDate) return null;
 
-  if (!year || !month || !day) return null;
+  const boundary = new Date(parsedDate);
 
-  return new Date(
-    year,
-    month - 1,
-    day,
-    endOfDay ? 23 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 999 : 0
-  );
+  if (endOfDay) {
+    boundary.setHours(23, 59, 59, 999);
+  } else {
+    boundary.setHours(0, 0, 0, 0);
+  }
+
+  return boundary;
 };
 
 export const filterOrderHistory = (orders = [], filters = {}) => {

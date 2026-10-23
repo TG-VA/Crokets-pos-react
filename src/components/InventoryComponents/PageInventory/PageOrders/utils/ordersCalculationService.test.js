@@ -128,11 +128,25 @@ describe("ordersCalculationService", () => {
     expect(filterOrderHistory(orders, { fromBranchId: "b3" })).toHaveLength(1);
     expect(
       filterOrderHistory(orders, {
-        dateFrom: "2026-10-01",
-        dateTo: "2026-10-31",
+        dateFrom: new Date(2026, 9, 1),
+        dateTo: new Date(2026, 9, 31),
       })
     ).toHaveLength(1);
     expect(filterOrderHistory(orders, {})).toHaveLength(2);
+  });
+
+  it("incluye pedidos enviados durante el ultimo dia del rango", () => {
+    const orders = [
+      { ...baseOrder, id: "o1", sentAt: new Date(2026, 9, 31, 23, 30, 0) },
+      { ...baseOrder, id: "o2", sentAt: new Date(2026, 10, 1, 0, 1, 0) },
+    ];
+
+    expect(
+      filterOrderHistory(orders, {
+        dateFrom: new Date(2026, 9, 1),
+        dateTo: new Date(2026, 9, 31),
+      })
+    ).toHaveLength(1);
   });
 
   it("filtra productos por codigo, nombre o departamento", () => {
