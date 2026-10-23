@@ -63,7 +63,7 @@ const OrderPrintModal = ({ order, onClose, onConfirm }) => {
               <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
             </div>
             <div>
-              <dt>Partidas</dt>
+              <dt>Productos</dt>
               <dd>{order.items.length}</dd>
             </div>
           </dl>

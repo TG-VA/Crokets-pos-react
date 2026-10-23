@@ -72,7 +72,7 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--croketsBlueDark);
+  color: var(--croketsBlue);
   text-transform: uppercase;
   font-size: 0.82rem;
   font-weight: 600;
@@ -263,12 +263,12 @@
 
 .workspaceTitle {
   margin: 2px 0;
-  color: var(--darkGray);
+  color: #1e2d38;
 }
 
 .workspaceDescription {
   margin: 0;
-  color: #5c6b77;
+  color: #607080;
 }
 
 .primaryButton,
@@ -367,6 +367,7 @@
 
 .orderCardTitle {
   margin: 2px 0 0;
+  color: #2a3d4a;
 }
 
 .statusBadge {
@@ -415,7 +416,7 @@
 
 .orderDepartments {
   margin: 0;
-  color: #5c6b77;
+  color: #607080;
 }
 
 .orderCardActions {
@@ -444,7 +445,7 @@
 
 .receiptRoute {
   margin: 0;
-  color: #5c6b77;
+  color: #607080;
 }
 
 .receiptProgress {
@@ -491,7 +492,7 @@
   padding: 10px 16px;
   background: #f8fbfc;
   font-size: 0.8rem;
-  color: #6d7b86;
+  color: #5a7080;
   border-bottom: 1px solid #edf2f5;
 }
 
@@ -613,6 +614,12 @@
   grid-column: 1 / -1;
 }
 
+.field span,
+.field label {
+  color: #374d5c;
+  font-weight: 600;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -632,7 +639,20 @@
 .codeForm {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.codeForm .field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.codeForm .field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .rowActions {
@@ -643,10 +663,12 @@
 .draftSummary {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  align-items: flex-start;
+  gap: 14px 24px;
   padding: 12px 16px;
   border-radius: 12px;
   background: #f8fbfc;
+  border: 1px solid #edf2f5;
   position: sticky;
   bottom: 64px;
   z-index: 1;
@@ -655,12 +677,12 @@
 .metaLabel {
   display: block;
   font-size: 0.75rem;
-  color: #6d7b86;
+  color: #7a8e9a;
 }
 
 .formActions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   position: sticky;
   bottom: 0;
@@ -926,4 +948,127 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
+}
+
+.clearFiltersButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #dbe4ea;
+  background: var(--white);
+  color: #5a7080;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.clearFiltersButton:hover {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  color: var(--croketsBlue);
+}
+
+.clearFiltersButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}
+
+.clearFiltersButton img {
+  width: 14px;
+  height: 14px;
+}
+
+.saveOrderButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #1092b1, #0f7a94);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 14px rgba(16, 146, 177, 0.25);
+  margin-left: auto;
+}
+
+.saveOrderButton:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 146, 177, 0.32);
+}
+
+.saveOrderButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.saveOrderButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 3px;
+}
+
+.saveOrderButton img {
+  width: 17px;
+  height: 17px;
+}
+
+.draftSummaryDepts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.deptBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deptBadge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(16, 146, 177, 0.1);
+  color: var(--croketsBlueDark);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.draftSummaryStats {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.statBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--white);
+  border: 1px solid #edf2f5;
+  min-width: 80px;
+}
+
+.statValue {
+  font-size: 1.1rem;
+  color: #1e2d38;
+}
+
+.metaEmpty {
+  color: #9aacb8;
+  font-size: 0.82rem;
 }

@@ -14,6 +14,7 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
+import CloseIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const DATE_FORMAT = "dd/MM/yyyy";
 
@@ -279,13 +280,14 @@ const OrdersHistoryTable = ({
             ))}
           </div>
 
-          <button
-            type="button"
-            className={`${styles.ghostButton} ${styles.filterClearButton}`}
-            onClick={handleClearFilters}
-          >
-            Limpiar filtros
-          </button>
+            <button
+              type="button"
+              className={styles.clearFiltersButton}
+              onClick={handleClearFilters}
+            >
+              <img src={CloseIcon} alt="" aria-hidden="true" />
+              Limpiar filtros
+            </button>
         </div>
       </div>
 

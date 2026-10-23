@@ -3,10 +3,11 @@ import React, { useState } from "react";
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import SearchIcon from "../../../../../assets/icons/searchIcon.svg";
 import PlusIcon from "../../../../../assets/icons/plus-solid-full.svg";
 import TrashIcon from "../../../../../assets/icons/deleteIcon.svg";
-import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
 import SaveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
@@ -24,6 +25,24 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
   const handleSave = async () => {
     await onSave?.();
   };
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: form.items.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 25, 50],
+    storageKey: "crokets_create_order_page_size",
+  });
+
+  const paginatedItems = pageItems(form.items);
 
   return (
     <section
@@ -143,7 +162,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
                 </tr>
               </thead>
               <tbody>
-                {form.items.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr key={item.productId}>
                     <td>{item.barcode || "—"}</td>
                     <td className={styles.productNameCell}>
@@ -187,20 +206,47 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
           </div>
         )}
 
+        {form.items.length > 0 && (
+          <div className={styles.paginationFooter}>
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              pageSizeOptions={[5, 10, 25, 50]}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              totalItems={form.items.length}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="productos"
+              labelMode="range"
+            />
+          </div>
+        )}
+
         <div className={styles.draftSummary}>
-          <div>
+          <div className={styles.draftSummaryDepts}>
             <span className={styles.metaLabel}>Departamentos</span>
-            <strong>
-              {form.departmentSummary.join(", ") || "Sin departamento"}
-            </strong>
+            <div className={styles.deptBadges}>
+              {form.departmentSummary.length > 0
+                ? form.departmentSummary.map((dept) => (
+                    <span key={dept} className={styles.deptBadge}>
+                      {dept}
+                    </span>
+                  ))
+                : <span className={styles.metaEmpty}>Sin departamento</span>
+              }
+            </div>
           </div>
-          <div>
-            <span className={styles.metaLabel}>Partidas</span>
-            <strong>{form.items.length}</strong>
-          </div>
-          <div>
-            <span className={styles.metaLabel}>Unidades</span>
-            <strong>{formatQuantity(form.totalUnits)}</strong>
+          <div className={styles.draftSummaryStats}>
+            <div className={styles.statBadge}>
+              <span className={styles.metaLabel}>Productos</span>
+              <strong className={styles.statValue}>{form.items.length}</strong>
+            </div>
+            <div className={styles.statBadge}>
+              <span className={styles.metaLabel}>Unidades totales</span>
+              <strong className={styles.statValue}>{formatQuantity(form.totalUnits)}</strong>
+            </div>
           </div>
         </div>
 
@@ -213,34 +259,13 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
         <footer className={styles.formActions}>
           <button
             type="button"
-            className={styles.ghostButton}
-            onClick={form.resetForm}
-            disabled={form.isSaving}
+            className={styles.saveOrderButton}
+            onClick={handleSave}
+            disabled={!form.isValid || form.isSaving}
           >
-            Limpiar
+            <img src={SaveIcon} alt="" aria-hidden="true" />
+            {form.isSaving ? "Guardando pedido..." : "Guardar pedido"}
           </button>
-
-          <div className={styles.formActionsRight}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={form.printDraft}
-              disabled={form.items.length === 0 || form.isSaving}
-            >
-              <img src={PrintIcon} alt="" aria-hidden="true" />
-              Imprimir borrador
-            </button>
-
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={handleSave}
-              disabled={!form.isValid || form.isSaving}
-            >
-              <img src={SaveIcon} alt="" aria-hidden="true" />
-              {form.isSaving ? "Guardando..." : "Guardar pedido"}
-            </button>
-          </div>
         </footer>
       </div>
 

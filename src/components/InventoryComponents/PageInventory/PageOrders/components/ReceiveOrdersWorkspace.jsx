@@ -6,6 +6,8 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
 import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
@@ -49,6 +51,24 @@ const ReceiveOrdersWorkspace = ({
   onCreateOrder,
   onOpenDetail,
 }) => {
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: pendingOrders.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [5, 10, 25],
+    storageKey: "crokets_receive_orders_page_size",
+  });
+
+  const paginatedPendingOrders = pageItems(pendingOrders);
+
   return (
     <section
       className={styles.workspace}
@@ -77,71 +97,90 @@ const ReceiveOrdersWorkspace = ({
       ) : null}
 
       {pendingOrders.length > 0 && !selectedOrder ? (
-        <div className={styles.orderCards}>
-          {pendingOrders.map((order) => {
-            const status = getOrderStatusMeta(order.status);
+        <>
+          <div className={styles.orderCards}>
+            {paginatedPendingOrders.map((order) => {
+              const status = getOrderStatusMeta(order.status);
 
-            return (
-              <article key={order.id} className={styles.orderCard}>
-                <div className={styles.orderCardHeader}>
-                  <div>
-                    <span className={styles.orderFolio}>
-                      {order.orderNumber}
+              return (
+                <article key={order.id} className={styles.orderCard}>
+                  <div className={styles.orderCardHeader}>
+                    <div>
+                      <span className={styles.orderFolio}>
+                        {order.orderNumber}
+                      </span>
+                      <h3 className={styles.orderCardTitle}>{order.orderName}</h3>
+                    </div>
+                    <span
+                      className={[
+                        styles.statusBadge,
+                        TONE_CLASS[status.tone] || TONE_CLASS.neutral,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      {status.label}
                     </span>
-                    <h3 className={styles.orderCardTitle}>{order.orderName}</h3>
                   </div>
-                  <span
-                    className={[
-                      styles.statusBadge,
-                      TONE_CLASS[status.tone] || TONE_CLASS.neutral,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    {status.label}
-                  </span>
-                </div>
 
-                <dl className={styles.orderMeta}>
-                  <div>
-                    <dt>Origen</dt>
-                    <dd>{order.fromBranchName}</dd>
-                  </div>
-                  <div>
-                    <dt>Enviado</dt>
-                    <dd>{formatOrderDateTime(order.sentAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Partidas</dt>
-                    <dd>{order.items.length}</dd>
-                  </div>
-                </dl>
+                  <dl className={styles.orderMeta}>
+                    <div>
+                      <dt>Origen</dt>
+                      <dd>{order.fromBranchName}</dd>
+                    </div>
+                    <div>
+                      <dt>Enviado</dt>
+                      <dd>{formatOrderDateTime(order.sentAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Productos</dt>
+                      <dd>{order.items.length}</dd>
+                    </div>
+                  </dl>
 
-                <p className={styles.orderDepartments}>
-                  {order.departments.join(", ") || "Sin departamento"}
-                </p>
+                  <p className={styles.orderDepartments}>
+                    {order.departments.join(", ") || "Sin departamento"}
+                  </p>
 
-                <div className={styles.orderCardActions}>
-                  <button
-                    type="button"
-                    className={styles.ghostButton}
-                    onClick={() => onOpenDetail(order)}
-                  >
-                    Ver detalle
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() => onSelectOrder(order)}
-                  >
-                    <img src={ImportIcon} alt="" aria-hidden="true" />
-                    Recibir pedido
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                  <div className={styles.orderCardActions}>
+                    <button
+                      type="button"
+                      className={styles.ghostButton}
+                      onClick={() => onOpenDetail(order)}
+                    >
+                      Ver detalle
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => onSelectOrder(order)}
+                    >
+                      <img src={ImportIcon} alt="" aria-hidden="true" />
+                      Recibir pedido
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {pendingOrders.length > pageSize && (
+            <div className={styles.paginationFooter}>
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                pageSizeOptions={[5, 10, 25]}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                totalItems={pendingOrders.length}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                itemsNoun="pedidos"
+                labelMode="range"
+              />
+            </div>
+          )}
+        </>
       ) : null}
 
       {selectedOrder ? (
@@ -170,13 +209,13 @@ const ReceiveOrdersWorkspace = ({
           <div className={styles.receiptProgress}>
             <span>
               {selectedOrder.items.length - missingItems.length} de{" "}
-              {selectedOrder.items.length} partidas capturadas
+              {selectedOrder.items.length} productos capturados
             </span>
             <progress
               className={styles.progressBar}
               value={selectedOrder.items.length - missingItems.length}
               max={selectedOrder.items.length}
-              aria-label="Partidas capturadas"
+              aria-label="Productos capturados"
             />
           </div>
 
@@ -253,7 +292,7 @@ const ReceiveOrdersWorkspace = ({
               <span>
                 {isComplete
                   ? "Conteo completo. Revisa diferencias antes de confirmar."
-                  : `Faltan ${missingItems.length} partida(s) por capturar.`}
+                  : `Faltan ${missingItems.length} producto(s) por capturar.`}
               </span>
             </div>
 

@@ -75,10 +75,10 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
               <dt>Departamentos</dt>
               <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
             </div>
-            <div>
-              <dt>Partidas</dt>
-              <dd>{order.items.length}</dd>
-            </div>
+              <div>
+                <dt>Productos</dt>
+                <dd>{order.items?.length || 0}</dd>
+              </div>
           </dl>
 
           <div className={styles.tableWrapper}>
