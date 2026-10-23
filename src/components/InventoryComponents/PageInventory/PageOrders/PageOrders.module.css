@@ -34,7 +34,7 @@
   padding: 20px;
   flex: 1;
   min-height: 0;
-  overflow: hidden auto;
+  overflow: hidden;
   margin-top: 18px;
   width: 100%;
   box-sizing: border-box;
@@ -245,8 +245,13 @@
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 18px;
-  max-height: calc(100vh - 320px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.createWorkspace {
+  overflow: hidden;
 }
 
 .workspaceHeader {
@@ -566,6 +571,28 @@
   gap: 16px;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.createForm .formGrid,
+.createForm .productPicker,
+.createForm .draftSummary,
+.createForm .formActions,
+.createForm .inlineError {
+  flex-shrink: 0;
+}
+
+.createForm .tableWrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 460px);
+  overflow-y: auto;
+}
+
+.createForm .emptyState {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .formGrid {

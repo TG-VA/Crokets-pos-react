@@ -27,7 +27,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
 
   return (
     <section
-      className={styles.workspace}
+      className={`${styles.workspace} ${styles.createWorkspace}`}
       role="tabpanel"
       id="panel-create"
       aria-labelledby="tab-create"
