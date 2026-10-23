@@ -52,7 +52,11 @@ export const PendingOrdersProvider = ({ children }) => {
       setPendingOrdersCount(getPendingOrdersCount({ orders, currentBranchId }));
       setLastRefreshAt(new Date());
     } catch (err) {
-      console.error("Error al refrescar pedidos pendientes:", err);
+      const isSchemaMissing = err?.code === "PGRST205" || err?.status === 404;
+
+      if (!isSchemaMissing) {
+        console.error("Error al refrescar pedidos pendientes:", err);
+      }
     } finally {
       setIsLoading(false);
     }
