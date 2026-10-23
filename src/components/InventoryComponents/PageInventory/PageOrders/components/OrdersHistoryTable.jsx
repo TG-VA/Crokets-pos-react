@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import styles from "../PageOrders.module.css";
 import {
@@ -6,6 +6,8 @@ import {
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
 import { filterOrderHistory } from "../utils/ordersCalculationService";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
 
@@ -37,6 +39,29 @@ const OrdersHistoryTable = ({
     () => filterOrderHistory(orders, filters),
     [filters, orders]
   );
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredOrders.length,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+    storageKey: "crokets_orders_history_page_size",
+  });
+
+  useEffect(() => {
+    resetPagination();
+  }, [filters, resetPagination]);
+
+  const paginatedOrders = pageItems(filteredOrders);
 
   const updateFilter = (key, value) => {
     setFilters((previous) => ({
@@ -164,7 +189,7 @@ const OrdersHistoryTable = ({
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const status = getOrderStatusMeta(order.status);
 
                 return (
@@ -231,6 +256,24 @@ const OrdersHistoryTable = ({
           </table>
         </div>
       )}
+
+      {filteredOrders.length > 0 ? (
+        <div className={styles.paginationFooter}>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50]}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            totalItems={filteredOrders.length}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="pedidos"
+            labelMode="range"
+          />
+        </div>
+      ) : null}
     </section>
   );
 };

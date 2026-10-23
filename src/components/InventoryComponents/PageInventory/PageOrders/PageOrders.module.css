@@ -798,3 +798,9 @@
   outline: 2px solid var(--croketsBlue);
   outline-offset: 2px;
 }
+
+.paginationFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
