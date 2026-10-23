@@ -5,20 +5,30 @@ import {
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
 } from "../utils/ordersCalculationService";
+import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
 import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";
 
-export const fetchOrderBranchOptions = async () => {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name, code")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
+export const fetchOrderBranchOptions = async (currentBranch) => {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, name, code")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(
+      "No se pudieron cargar las sucursales para pedidos de abastecimiento:",
+      error
+    );
+
+    return getBranchFallback(currentBranch);
   }
-
-  return Array.isArray(data) ? data : [];
 };
 
 export const loadStoreOrders = async () => {

@@ -22,30 +22,42 @@ export const useOrdersData = () => {
 
   const currentBranchId = branch?.id || "";
 
-  const refreshData = useCallback(async ({ showLoader = true } = {}) => {
-    if (showLoader) {
-      setIsLoading(true);
-    }
+  const refreshData = useCallback(
+    async ({ showLoader = true } = {}) => {
+      if (showLoader) {
+        setIsLoading(true);
+      }
 
-    setError("");
+      setError("");
 
-    try {
-      const [rawOrders, branchOptions] = await Promise.all([
-        loadStoreOrders(),
-        fetchOrderBranchOptions(),
-      ]);
+      try {
+        const [ordersResult, branchesResult] = await Promise.allSettled([
+          loadStoreOrders(),
+          fetchOrderBranchOptions(branch),
+        ]);
 
-      setOrders(normalizeOrders(rawOrders));
-      setBranches(Array.isArray(branchOptions) ? branchOptions : []);
-    } catch (err) {
-      console.error("Error al cargar pedidos de abastecimiento:", err);
-      setError(
-        "No se pudieron cargar los pedidos. Verifica la conexion e intenta de nuevo."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        if (branchesResult.status === "fulfilled") {
+          setBranches(
+            Array.isArray(branchesResult.value) ? branchesResult.value : []
+          );
+        }
+
+        if (ordersResult.status === "rejected") {
+          throw ordersResult.reason;
+        }
+
+        setOrders(normalizeOrders(ordersResult.value));
+      } catch (err) {
+        console.error("Error al cargar pedidos de abastecimiento:", err);
+        setError(
+          "No se pudieron cargar los pedidos. Verifica la conexion e intenta de nuevo."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [branch]
+  );
 
   useEffect(() => {
     const run = async () => {
