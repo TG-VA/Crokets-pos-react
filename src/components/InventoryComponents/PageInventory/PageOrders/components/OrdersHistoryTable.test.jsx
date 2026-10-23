@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
@@ -20,6 +20,11 @@ const buildOrder = (index) => ({
 
 const buildOrders = (total) =>
   Array.from({ length: total }, (_, index) => buildOrder(index));
+
+const buildOrderAt = (sentAt, index = 0) => ({
+  ...buildOrder(index),
+  sentAt,
+});
 
 const getBodyRows = () => screen.getAllByRole("row").slice(1);
 
@@ -120,5 +125,96 @@ describe("OrdersHistoryTable pagination", () => {
     expect(onOpenPrint).toHaveBeenCalledWith(
       expect.objectContaining({ id: "order-0" })
     );
+  });
+});
+
+describe("OrdersHistoryTable date filters", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 21, 12, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("filtra los pedidos de hoy con el preset Hoy", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[
+          buildOrderAt(new Date(2026, 9, 21, 8, 0, 0), 0),
+          buildOrderAt(new Date(2026, 9, 20, 8, 0, 0), 1),
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(getBodyRows()).toHaveLength(1);
+    expect(getFirstOrderNumber()).toBe("PED-001");
+    expect(screen.getByText("1 de 2 pedidos")).toBeTruthy();
+    expect(screen.getByLabelText("Desde").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+  });
+
+  it("filtra de lunes a domingo con el preset Esta semana", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[
+          buildOrderAt(new Date(2026, 9, 19, 8, 0, 0), 0),
+          buildOrderAt(new Date(2026, 9, 25, 20, 0, 0), 1),
+          buildOrderAt(new Date(2026, 9, 18, 20, 0, 0), 2),
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.getByText("2 de 3 pedidos")).toBeTruthy();
+    expect(screen.getByLabelText("Desde").value).toBe("19/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("25/10/2026");
+  });
+
+  it("filtra el mes completo con el preset Este mes", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[
+          buildOrderAt(new Date(2026, 9, 1, 0, 0, 0), 0),
+          buildOrderAt(new Date(2026, 9, 31, 23, 59, 0), 1),
+          buildOrderAt(new Date(2026, 8, 30, 23, 59, 0), 2),
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Este mes" }));
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.getByText("2 de 3 pedidos")).toBeTruthy();
+  });
+
+  it("limpia las fechas y restablece todos los pedidos", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[
+          buildOrderAt(new Date(2026, 9, 21, 8, 0, 0), 0),
+          buildOrderAt(new Date(2026, 9, 20, 8, 0, 0), 1),
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(getBodyRows()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.getByLabelText("Desde").value).toBe("");
+    expect(screen.getByLabelText("Hasta").value).toBe("");
+    expect(
+      screen.getByRole("button", { name: "Hoy" }).getAttribute("aria-pressed")
+    ).toBe("false");
   });
 });
