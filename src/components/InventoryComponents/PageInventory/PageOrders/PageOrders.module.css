@@ -476,8 +476,6 @@
 
 .tableWrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 280px;
 }
 
 .itemsTable {
@@ -486,15 +484,19 @@
 }
 
 .itemsTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   text-align: left;
-  padding: 8px 12px;
+  padding: 10px 16px;
   background: #f8fbfc;
   font-size: 0.8rem;
   color: #6d7b86;
+  border-bottom: 1px solid #edf2f5;
 }
 
 .itemsTable td {
-  padding: 10px 12px;
+  padding: 12px 16px;
   border-top: 1px solid #edf2f5;
 }
 
@@ -676,12 +678,132 @@
 .filterBar {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  background: #f8fbfc;
+  border-radius: 12px;
+  border: 1px solid #edf2f5;
+}
+
+.filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 12px;
+}
+
+.filterGroupRight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.datePickerWrapper {
+  display: inline-block;
+}
+
+.datePickerWrapper :global(.react-datepicker-wrapper) {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
+.dateInput {
+  width: 135px;
+  height: 38px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid #dbe4ea;
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.88rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
+}
+
+.datePickerPopper {
+  z-index: 100;
+}
+
+.datePickerCalendar {
+  border: 1px solid var(--mediumGray);
+  box-shadow: var(--shadow);
+  font-family: inherit;
+}
+
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.quickButton {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #dbe4ea;
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.quickButton:hover {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  color: var(--croketsBlue);
+}
+
+.quickButtonActive {
+  border-color: var(--croketsBlue);
+  background: #e8f7fb;
+  color: var(--croketsBlue);
+}
+
+.quickButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}
+
+.filterClearButton {
+  height: 38px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .resultsCount {
   margin: 0;
   color: #6d7b86;
+  font-size: 0.82rem;
+  padding: 2px 0;
 }
 
 .folioCell {
@@ -691,6 +813,7 @@
 
 .rowSubtext {
   display: block;
+  margin-top: 3px;
   font-size: 0.8rem;
   color: #6d7b86;
 }
