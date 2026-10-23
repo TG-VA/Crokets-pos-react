@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
+
 import styles from "../PageOrders.module.css";
 import {
   formatOrderDateTime,
@@ -10,6 +14,14 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
+
+const DATE_FORMAT = "dd/MM/yyyy";
+
+const DATE_PRESETS = [
+  { id: "today", label: "Hoy" },
+  { id: "week", label: "Esta semana" },
+  { id: "month", label: "Este mes" },
+];
 
 const STATUS_CLASS = {
   pending: styles.statusPending,
@@ -23,8 +35,49 @@ const INITIAL_FILTERS = {
   status: "all",
   fromBranchId: "all",
   toBranchId: "all",
-  dateFrom: "",
-  dateTo: "",
+  dateFrom: null,
+  dateTo: null,
+};
+
+const startOfDay = (value) => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const endOfDay = (value) => {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
+const getPresetRange = (preset, referenceDate = new Date()) => {
+  if (preset === "week") {
+    const dateFrom = startOfDay(referenceDate);
+    const weekdayOffset = (dateFrom.getDay() + 6) % 7;
+
+    dateFrom.setDate(dateFrom.getDate() - weekdayOffset);
+
+    const dateTo = endOfDay(dateFrom);
+    dateTo.setDate(dateTo.getDate() + 6);
+
+    return { dateFrom, dateTo };
+  }
+
+  if (preset === "month") {
+    const year = referenceDate.getFullYear();
+    const month = referenceDate.getMonth();
+
+    return {
+      dateFrom: new Date(year, month, 1, 0, 0, 0, 0),
+      dateTo: new Date(year, month + 1, 0, 23, 59, 59, 999),
+    };
+  }
+
+  return {
+    dateFrom: startOfDay(referenceDate),
+    dateTo: endOfDay(referenceDate),
+  };
 };
 
 const OrdersHistoryTable = ({
@@ -34,6 +87,7 @@ const OrdersHistoryTable = ({
   onOpenPrint,
 }) => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [rangePreset, setRangePreset] = useState("custom");
 
   const filteredOrders = useMemo(
     () => filterOrderHistory(orders, filters),
@@ -70,6 +124,24 @@ const OrdersHistoryTable = ({
     }));
   };
 
+  const handleDateChange = (key, date) => {
+    updateFilter(key, date);
+    setRangePreset("custom");
+  };
+
+  const handleRangePreset = (preset) => {
+    setFilters((previous) => ({
+      ...previous,
+      ...getPresetRange(preset),
+    }));
+    setRangePreset(preset);
+  };
+
+  const handleClearFilters = () => {
+    setFilters(INITIAL_FILTERS);
+    setRangePreset("custom");
+  };
+
   return (
     <section
       className={styles.workspace}
@@ -87,82 +159,134 @@ const OrdersHistoryTable = ({
             abrir el detalle o imprimir cualquier pedido.
           </p>
         </div>
-
-        <button
-          type="button"
-          className={styles.ghostButton}
-          onClick={() => setFilters(INITIAL_FILTERS)}
-        >
-          Limpiar filtros
-        </button>
       </header>
 
-      <div className={styles.filterBar}>
-        <label className={styles.field}>
-          <span>Estado</span>
-          <select
-            value={filters.status}
-            onChange={(event) => updateFilter("status", event.target.value)}
-          >
-            <option value="all">Todos</option>
-            <option value="pending">Pendiente</option>
-            <option value="accepted">Aceptado</option>
-            <option value="accepted_with_difference">
-              Aceptado con diferencia
-            </option>
-            <option value="cancelled">Cancelado</option>
-          </select>
-        </label>
-
-        <label className={styles.field}>
-          <span>Origen</span>
-          <select
-            value={filters.fromBranchId}
-            onChange={(event) =>
-              updateFilter("fromBranchId", event.target.value)
-            }
-          >
-            <option value="all">Todas</option>
-            {branches.map((branchOption) => (
-              <option key={branchOption.id} value={branchOption.id}>
-                {branchOption.name}
+      <div
+        className={styles.filterBar}
+        role="group"
+        aria-label="Filtros de pedidos"
+      >
+        <div className={styles.filterGroup}>
+          <label className={styles.field}>
+            <span>Estado</span>
+            <select
+              value={filters.status}
+              onChange={(event) => updateFilter("status", event.target.value)}
+            >
+              <option value="all">Todos</option>
+              <option value="pending">Pendiente</option>
+              <option value="accepted">Aceptado</option>
+              <option value="accepted_with_difference">
+                Aceptado con diferencia
               </option>
-            ))}
-          </select>
-        </label>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </label>
 
-        <label className={styles.field}>
-          <span>Destino</span>
-          <select
-            value={filters.toBranchId}
-            onChange={(event) => updateFilter("toBranchId", event.target.value)}
+          <label className={styles.field}>
+            <span>Origen</span>
+            <select
+              value={filters.fromBranchId}
+              onChange={(event) =>
+                updateFilter("fromBranchId", event.target.value)
+              }
+            >
+              <option value="all">Todas</option>
+              {branches.map((branchOption) => (
+                <option key={branchOption.id} value={branchOption.id}>
+                  {branchOption.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className={styles.field}>
+            <span>Destino</span>
+            <select
+              value={filters.toBranchId}
+              onChange={(event) =>
+                updateFilter("toBranchId", event.target.value)
+              }
+            >
+              <option value="all">Todas</option>
+              {branches.map((branchOption) => (
+                <option key={branchOption.id} value={branchOption.id}>
+                  {branchOption.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className={styles.filterGroupRight}>
+          <label className={styles.dateField}>
+            <span>Desde</span>
+            <DatePicker
+              selected={filters.dateFrom}
+              onChange={(date) => handleDateChange("dateFrom", date)}
+              selectsStart
+              startDate={filters.dateFrom}
+              endDate={filters.dateTo}
+              maxDate={filters.dateTo || new Date()}
+              dateFormat={DATE_FORMAT}
+              className={styles.dateInput}
+              calendarClassName={styles.datePickerCalendar}
+              popperClassName={styles.datePickerPopper}
+              wrapperClassName={styles.datePickerWrapper}
+              showPopperArrow={false}
+              placeholderText="dd/mm/aaaa"
+              aria-label="Desde"
+            />
+          </label>
+
+          <label className={styles.dateField}>
+            <span>Hasta</span>
+            <DatePicker
+              selected={filters.dateTo}
+              onChange={(date) => handleDateChange("dateTo", date)}
+              selectsEnd
+              startDate={filters.dateFrom}
+              endDate={filters.dateTo}
+              minDate={filters.dateFrom}
+              maxDate={new Date()}
+              dateFormat={DATE_FORMAT}
+              className={styles.dateInput}
+              calendarClassName={styles.datePickerCalendar}
+              popperClassName={styles.datePickerPopper}
+              wrapperClassName={styles.datePickerWrapper}
+              showPopperArrow={false}
+              placeholderText="dd/mm/aaaa"
+              aria-label="Hasta"
+            />
+          </label>
+
+          <div className={styles.quickActions}>
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={[
+                  styles.quickButton,
+                  rangePreset === preset.id ? styles.quickButtonActive : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => handleRangePreset(preset.id)}
+                aria-pressed={rangePreset === preset.id}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={`${styles.ghostButton} ${styles.filterClearButton}`}
+            onClick={handleClearFilters}
           >
-            <option value="all">Todas</option>
-            {branches.map((branchOption) => (
-              <option key={branchOption.id} value={branchOption.id}>
-                {branchOption.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className={styles.field}>
-          <span>Desde</span>
-          <input
-            type="date"
-            value={filters.dateFrom}
-            onChange={(event) => updateFilter("dateFrom", event.target.value)}
-          />
-        </label>
-
-        <label className={styles.field}>
-          <span>Hasta</span>
-          <input
-            type="date"
-            value={filters.dateTo}
-            onChange={(event) => updateFilter("dateTo", event.target.value)}
-          />
-        </label>
+            Limpiar filtros
+          </button>
+        </div>
       </div>
 
       <p className={styles.resultsCount}>
