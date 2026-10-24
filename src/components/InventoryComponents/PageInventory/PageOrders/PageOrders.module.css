@@ -1040,9 +1040,31 @@
   gap: 16px;
 }
 
+.printModalTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.printModalInfoIcon {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
+}
+
+.printModalSubtitle {
+  font-size: 0.85rem;
+  color: #5c6b77;
+  font-weight: 400;
+}
+
 .printHeader {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .printStatus {
@@ -1050,6 +1072,11 @@
   border-radius: 999px;
   background: var(--pendingBg);
   color: var(--pendingText);
+  font-weight: 700;
+}
+
+.statusBadgeBold {
+  font-weight: 700;
 }
 
 .printHint {

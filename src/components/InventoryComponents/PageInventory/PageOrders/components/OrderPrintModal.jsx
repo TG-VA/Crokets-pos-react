@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
@@ -7,20 +7,89 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
-import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
+import InfoIcon from "../../../../../assets/icons/circle-info-solid-full.svg";
+import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
-const OrderPrintModal = ({ order, onClose, onConfirm }) => {
+const STATUS_CLASS = {
+  pending: styles.statusPending,
+  success: styles.statusSuccess,
+  warning: styles.statusWarning,
+  danger: styles.statusDanger,
+  neutral: styles.statusPending,
+};
+
+const OrderPrintModal = ({ order, onClose, onConfirm, onExportExcel }) => {
   const status = getOrderStatusMeta(order?.status);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+  const prevOrderIdRef = useRef(order?.id);
+
+  useEffect(() => {
+    if (prevOrderIdRef.current !== order?.id) {
+      prevOrderIdRef.current = order?.id;
+      setExportOpen(false);
+    }
+  }, [order?.id]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target)
+      ) {
+        setExportOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleExportPdf = () => {
+    setExportOpen(false);
+    if (onConfirm) {
+      onConfirm(order);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExportOpen(false);
+    if (onExportExcel) {
+      onExportExcel(order);
+      return;
+    }
+    try {
+      const { exportStoreOrderToExcel } =
+        await import("../services/ordersExportExcelService");
+      await exportStoreOrderToExcel(order);
+    } catch (err) {
+      console.error("Error al exportar pedido a Excel:", err);
+    }
+  };
 
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title="Vista de impresion"
-      message="Revisa el contenido antes de imprimir o guardar como PDF."
-      confirmText="Imprimir / Guardar PDF"
+      title={
+        <div className={styles.printModalTitle}>
+          <img
+            src={InfoIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.printModalInfoIcon}
+          />
+          <div>
+            <div>Vista de impresión</div>
+            <div className={styles.printModalSubtitle}>
+              Revisa el contenido antes de imprimir o guardar como PDF.
+            </div>
+          </div>
+        </div>
+      }
+      confirmText="Guardar PDF / Excel"
       cancelText="Cerrar"
       showCancel
-      onConfirm={onConfirm}
+      onConfirm={() => setExportOpen((prev) => !prev)}
       onCancel={onClose}
       onClose={onClose}
       size="large"
@@ -34,7 +103,17 @@ const OrderPrintModal = ({ order, onClose, onConfirm }) => {
                 {order.orderNumber} - {order.orderName}
               </h3>
             </div>
-            <span className={styles.printStatus}>{status.label}</span>
+            <span
+              className={[
+                styles.statusBadge,
+                styles.statusBadgeBold,
+                STATUS_CLASS[status.tone] || STATUS_CLASS.neutral,
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {status.label}
+            </span>
           </div>
 
           <dl className={styles.detailMeta}>
@@ -59,12 +138,20 @@ const OrderPrintModal = ({ order, onClose, onConfirm }) => {
               </dd>
             </div>
             <div>
+              <dt>Generado por</dt>
+              <dd>{order.createdByLabel || "—"}</dd>
+            </div>
+            <div>
+              <dt>Recibido por</dt>
+              <dd>{order.receivedByLabel || "—"}</dd>
+            </div>
+            <div>
               <dt>Departamentos</dt>
               <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
             </div>
             <div>
               <dt>Productos</dt>
-              <dd>{order.items.length}</dd>
+              <dd>{order.items?.length || 0}</dd>
             </div>
           </dl>
 
@@ -81,46 +168,71 @@ const OrderPrintModal = ({ order, onClose, onConfirm }) => {
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item) => (
-                  <tr key={item.id || item.productId}>
-                    <td>{item.barcode || "—"}</td>
-                    <td>{item.productName}</td>
-                    <td>{item.departmentName || "Sin departamento"}</td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.expectedQty)}
-                    </td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.receivedQty)}
-                    </td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.differenceQty)}
-                    </td>
-                  </tr>
-                ))}
+                {order.items?.map((item) => {
+                  const hasDifference =
+                    item?.differenceQty !== undefined &&
+                    item?.differenceQty !== null &&
+                    Number(item.differenceQty) !== 0;
+
+                  return (
+                    <tr
+                      key={item.id || item.productId}
+                      className={
+                        hasDifference ? styles.rowWithDifference : undefined
+                      }
+                    >
+                      <td>{item.barcode || "—"}</td>
+                      <td>{item.productName}</td>
+                      <td>{item.departmentName || "Sin departamento"}</td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.expectedQty)}
+                      </td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.receivedQty)}
+                      </td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.differenceQty)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {order.notes ? (
             <div className={styles.detailNote}>
-              <strong>Notas</strong>
+              <strong>Notas del pedido</strong>
               <p>{order.notes}</p>
             </div>
           ) : null}
 
           {order.discrepancyNotes ? (
             <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-              <strong>Diferencias</strong>
+              <strong>Diferencias de recepcion</strong>
               <p>{order.discrepancyNotes}</p>
             </div>
           ) : null}
 
-          <div className={styles.printHint}>
-            <img src={PrintIcon} alt="" aria-hidden="true" />
-            <span>
-              Se abrira una ventana de impresion del sistema para guardar como
-              PDF o imprimir.
-            </span>
+          <div className={styles.detailActions} ref={exportMenuRef}>
+            {exportOpen ? (
+              <div className={styles.exportMenu}>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={handleExportPdf}
+                >
+                  Exportar a PDF
+                </button>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={handleExportExcel}
+                >
+                  Exportar a Excel
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

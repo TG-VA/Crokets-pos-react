@@ -21,9 +21,13 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
   const status = getOrderStatusMeta(order?.status);
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef(null);
+  const prevOrderIdRef = useRef(order?.id);
 
   useEffect(() => {
-    setExportOpen(false);
+    if (prevOrderIdRef.current !== order?.id) {
+      prevOrderIdRef.current = order?.id;
+      setExportOpen(false);
+    }
   }, [order?.id]);
 
   useEffect(() => {
@@ -47,9 +51,15 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     setExportOpen(false);
-    console.error("Exportación a Excel aún no implementada");
+    try {
+      const { exportStoreOrderToExcel } =
+        await import("../services/ordersExportExcelService");
+      await exportStoreOrderToExcel(order);
+    } catch (err) {
+      console.error("Error al exportar pedido a Excel:", err);
+    }
   };
 
   const differences = (order?.items || []).filter(
