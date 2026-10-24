@@ -777,7 +777,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  align-self: flex-end;
   gap: 6px;
+  height: 38px;
 }
 
 .quickButton {
@@ -953,8 +955,11 @@
 .clearFiltersButton {
   display: inline-flex;
   align-items: center;
+  align-self: flex-end;
   gap: 6px;
-  padding: 7px 14px;
+  height: 38px;
+  padding: 0 14px;
+  box-sizing: border-box;
   border-radius: 999px;
   border: 1.5px solid #dbe4ea;
   background: var(--white);

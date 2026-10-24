@@ -280,14 +280,14 @@ const OrdersHistoryTable = ({
             ))}
           </div>
 
-            <button
-              type="button"
-              className={styles.clearFiltersButton}
-              onClick={handleClearFilters}
-            >
-              <img src={CloseIcon} alt="" aria-hidden="true" />
-              Limpiar filtros
-            </button>
+          <button
+            type="button"
+            className={styles.clearFiltersButton}
+            onClick={handleClearFilters}
+          >
+            <img src={CloseIcon} alt="" aria-hidden="true" />
+            Limpiar filtros
+          </button>
         </div>
       </div>
 
