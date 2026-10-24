@@ -47,18 +47,18 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: 10px 20px;
   background: var(--white);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 10px 18px;
+  padding: 12px 20px;
   min-height: 64px;
 }
 
 .heroHeading {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex: 1 1 300px;
   min-width: 0;
 }
@@ -72,10 +72,10 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--croketsBlue);
+  color: var(--croketsBlueDark);
   text-transform: uppercase;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
 }
 
@@ -83,12 +83,12 @@
   margin: 0;
   color: var(--darkGray);
   font-size: 1.5rem;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .description {
   margin: 0;
-  color: #374151;
+  color: #5c6b77;
   max-width: 720px;
   font-size: 0.88rem;
 }
@@ -107,6 +107,8 @@
 .metricIcon {
   width: 18px;
   height: 18px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .metricLabel {
@@ -262,8 +264,14 @@
   gap: 16px;
 }
 
+.workspaceHeader > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .workspaceTitle {
-  margin: 2px 0;
+  margin: 0;
   color: #1e2d38;
 }
 
