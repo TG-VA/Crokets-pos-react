@@ -1,267 +1,170 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback } from "react";
 
 import AppModal from "../../../../AppModal/AppModal";
-import styles from "../PageOrders.module.css";
-import {
-  formatOrderDateTime,
-  formatQuantity,
-  getOrderStatusMeta,
-} from "../utils/ordersFormatters";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
+import { exportStoreOrderToExcel } from "../services/ordersExportExcelService";
+import styles from "../PageOrders.module.css";
 
-const STATUS_CLASS = {
-  pending: styles.statusPending,
-  success: styles.statusSuccess,
-  warning: styles.statusWarning,
-  danger: styles.statusDanger,
-  neutral: styles.statusPending,
+const handleExportExcel = async (order) => {
+  if (!order) return;
+  await exportStoreOrderToExcel(order);
 };
 
-const OrderDetailModal = ({ order, onClose, onExportPdf, onPrint }) => {
-  const status = getOrderStatusMeta(order?.status);
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportMenuRef = useRef(null);
-  const prevOrderIdRef = useRef(order?.id);
+const getStatusLabel = (status) => {
+  if (status === "accepted_with_difference") return "Con diferencias";
+  if (status === "accepted") return "Aceptado";
+  return "Pendiente";
+};
 
-  useEffect(() => {
-    if (prevOrderIdRef.current !== order?.id) {
-      prevOrderIdRef.current = order?.id;
-      setExportOpen(false);
-    }
-  }, [order?.id]);
+const getDifferences = (items = []) => {
+  const differences = [];
+  items.forEach((item) => {
+    const differenceQty = Number(item.differenceQty);
+    if (Number.isNaN(differenceQty) || differenceQty === 0) return;
+    differences.push({
+      productName: item.productName,
+      differenceQty,
+      type: differenceQty > 0 ? "sobrante" : "faltante",
+    });
+  });
+  return differences;
+};
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        exportMenuRef.current &&
-        !exportMenuRef.current.contains(event.target)
-      ) {
-        setExportOpen(false);
-      }
-    };
+const OrderDetailModal = ({ order, onClose }) => {
+  const differences = getDifferences(order?.items);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleExportPdf = () => {
-    setExportOpen(false);
-    const handler = onExportPdf || onPrint;
-    if (typeof handler === "function") {
-      handler(order);
-    }
-  };
-
-  const handleExportExcel = async () => {
-    setExportOpen(false);
-    try {
-      const { exportStoreOrderToExcel } =
-        await import("../services/ordersExportExcelService");
-      await exportStoreOrderToExcel(order);
-    } catch (err) {
-      console.error("Error al exportar pedido a Excel:", err);
-    }
-  };
-
-  const differences = (order?.items || []).filter(
-    (item) =>
-      item?.differenceQty !== undefined &&
-      item?.differenceQty !== null &&
-      Number(item.differenceQty) !== 0
-  );
+  const exportHandler = useCallback(() => {
+    handleExportExcel(order);
+  }, [order]);
 
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title={
-        order
-          ? `Pedido ${order.orderNumber} - ${order.orderName}`
-          : "Detalle del pedido"
-      }
-      confirmText="Cerrar"
-      onConfirm={onClose}
       onClose={onClose}
+      title={order?.orderNumber || "Detalle de pedido"}
+      cancelText="Cerrar"
+      showCancel
       size="large"
     >
       {order ? (
         <div className={styles.detailContent}>
           <div className={styles.detailHeader}>
             <div>
-              <h3 className={styles.detailTitle}>{order.orderName}</h3>
-              <p className={styles.detailRoute}>
-                <span className={styles.routeBadgeOrange}>
-                  Recibe {order.toBranchName}
-                </span>
-                <span className={styles.routeBadgeDark}>
-                  desde {order.fromBranchName}
-                </span>
-              </p>
+              <div className={styles.detailTitle}>{order.orderName || ""}</div>
+              <div className={styles.detailSubtitle}>
+                {order.fromBranchName} / {order.toBranchName}
+              </div>
             </div>
             <span
-              className={[
-                styles.statusBadge,
-                STATUS_CLASS[status.tone] || STATUS_CLASS.neutral,
-              ]
-                .filter(Boolean)
-                .join(" ")}
+              className={`${styles.statusBadge} ${order.status === "accepted_with_difference" ? styles.statusWarning : styles.statusNeutral}`}
             >
-              {status.label}
+              {getStatusLabel(order.status)}
             </span>
           </div>
 
-          <dl className={styles.detailMeta}>
+          <div className={styles.detailGrid}>
             <div>
-              <dt>Enviado</dt>
-              <dd>{formatOrderDateTime(order.sentAt)}</dd>
+              <div className={styles.detailLabel}>Solicitado por</div>
+              <div className={styles.detailValue}>
+                {order.createdByLabel || ""}
+              </div>
             </div>
             <div>
-              <dt>Recibido</dt>
-              <dd>
-                {order.acceptedAt
-                  ? formatOrderDateTime(order.acceptedAt)
-                  : "Pendiente"}
-              </dd>
+              <div className={styles.detailLabel}>Fecha de envío</div>
+              <div className={styles.detailValue}>
+                {order.sentAt
+                  ? new Date(order.sentAt).toLocaleDateString()
+                  : ""}
+              </div>
             </div>
             <div>
-              <dt>Generado por</dt>
-              <dd>{order.createdByLabel || "—"}</dd>
+              <div className={styles.detailLabel}>Fecha de recepción</div>
+              <div className={styles.detailValue}>
+                {order.receivedAt
+                  ? new Date(order.receivedAt).toLocaleDateString()
+                  : "-"}
+              </div>
             </div>
             <div>
-              <dt>Recibido por</dt>
-              <dd>{order.receivedByLabel || "—"}</dd>
+              <div className={styles.detailLabel}>Recibido por</div>
+              <div className={styles.detailValue}>
+                {order.receivedByLabel || "-"}
+              </div>
             </div>
-            <div>
-              <dt>Departamentos</dt>
-              <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
-            </div>
-            <div>
-              <dt>Productos</dt>
-              <dd>{order.items?.length || 0}</dd>
-            </div>
-          </dl>
-
-          <div className={styles.tableWrapper}>
-            <table className={styles.itemsTable}>
-              <thead>
-                <tr>
-                  <th>Codigo</th>
-                  <th>Producto</th>
-                  <th>Departamento</th>
-                  <th className={styles.numeric}>Esperado</th>
-                  <th className={styles.numeric}>Recibido</th>
-                  <th className={styles.numeric}>Diferencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item) => {
-                  const hasDifference =
-                    item?.differenceQty !== undefined &&
-                    item?.differenceQty !== null &&
-                    Number(item.differenceQty) !== 0;
-
-                  return (
-                    <tr
-                      key={item.id || item.productId}
-                      className={
-                        hasDifference ? styles.rowWithDifference : undefined
-                      }
-                    >
-                      <td>{item.barcode || "—"}</td>
-                      <td>{item.productName}</td>
-                      <td>{item.departmentName || "Sin departamento"}</td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.expectedQty)}
-                      </td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.receivedQty)}
-                      </td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.differenceQty)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
 
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Solicitado</th>
+                <th>Recibido</th>
+                <th>Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(order.items || []).map((item, index) => (
+                <tr key={item.id || index}>
+                  <td>{item.productName}</td>
+                  <td>{item.expectedQty ?? item.quantity}</td>
+                  <td>{item.receivedQty ?? "-"}</td>
+                  <td
+                    className={
+                      Number(item.differenceQty) !== 0
+                        ? styles.differenceNegative
+                        : ""
+                    }
+                  >
+                    {item.differenceQty !== null &&
+                    item.differenceQty !== undefined
+                      ? item.differenceQty
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {differences.length > 0 ? (
+            <div className={styles.differencesSection}>
+              <div className={styles.differencesTitle}>Diferencias</div>
+              <div className={styles.differencesList}>
+                {differences.map((diff, index) => (
+                  <div key={index} className={styles.differenceItem}>
+                    <span>{diff.productName}</span>
+                    <span>
+                      {diff.type === "faltante" ? "Falta" : "Sobra"}{" "}
+                      {Math.abs(diff.differenceQty)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {order.notes ? (
-            <div className={styles.detailNote}>
-              <strong>Notas del pedido</strong>
-              <p>{order.notes}</p>
+            <div className={styles.detailNotes}>
+              <div className={styles.detailLabel}>Observaciones</div>
+              <div className={styles.detailValue}>{order.notes}</div>
             </div>
           ) : null}
 
           {order.discrepancyNotes ? (
-            <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-              <strong>Diferencias de recepcion</strong>
-              <p>{order.discrepancyNotes}</p>
+            <div className={styles.detailNotes}>
+              <div className={styles.detailLabel}>Notas de diferencia</div>
+              <div className={styles.detailValue}>{order.discrepancyNotes}</div>
             </div>
           ) : null}
 
-          {differences.length > 0 ? (
-            <div className={styles.differencesSection}>
-              <strong>Diferencias</strong>
-              <div className={styles.tableWrapper}>
-                <table className={styles.differencesTable}>
-                  <thead>
-                    <tr>
-                      <th>Codigo</th>
-                      <th>Producto</th>
-                      <th>Departamento</th>
-                      <th className={styles.numeric}>Diferencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {differences.map((item) => {
-                      const diff = Number(item.differenceQty);
-                      const isSurplus = diff > 0;
-
-                      return (
-                        <tr key={item.id || item.productId}>
-                          <td>{item.barcode || "—"}</td>
-                          <td>{item.productName}</td>
-                          <td>{item.departmentName || "Sin departamento"}</td>
-                          <td className={styles.numeric}>
-                            {isSurplus ? `+${diff}` : diff}{" "}
-                            {isSurplus ? "(Sobra)" : "(Falta)"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null}
-
-          <div className={styles.detailActions} ref={exportMenuRef}>
+          <div className={styles.detailActions}>
             <button
               type="button"
               className={styles.secondaryButton}
-              onClick={() => setExportOpen((prev) => !prev)}
+              onClick={exportHandler}
             >
               <img src={ExportIcon} alt="" aria-hidden="true" />
-              Exportar pedido
+              Exportar a Excel
             </button>
-            {exportOpen ? (
-              <div className={styles.exportMenu}>
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={handleExportPdf}
-                >
-                  Exportar a PDF
-                </button>
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={handleExportExcel}
-                >
-                  Exportar a Excel
-                </button>
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}

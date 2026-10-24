@@ -164,7 +164,7 @@ const OrdersHistoryTable = ({
           <h2 className={styles.workspaceTitle}>Pedidos registrados</h2>
           <p className={styles.workspaceDescription}>
             Consulta pedidos por estado, sucursal o rango de fechas. Puedes
-            abrir el detalle o imprimir cualquier pedido.
+            abrir el detalle o exportar cualquier pedido a Excel.
           </p>
         </div>
       </header>

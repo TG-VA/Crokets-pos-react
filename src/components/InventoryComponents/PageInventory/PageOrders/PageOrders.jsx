@@ -71,22 +71,9 @@ const PageOrders = () => {
         ) : null}
       </div>
 
-      <OrderDetailModal
-        order={page.detailOrder}
-        onClose={page.closeDetail}
-        onPrint={(order, printWindow) => {
-          page.closeDetail();
-          page.handlePrint(order, printWindow);
-        }}
-      />
+      <OrderDetailModal order={page.detailOrder} onClose={page.closeDetail} />
 
-      <OrderPrintModal
-        order={page.printOrder}
-        onClose={page.closePrint}
-        onConfirm={(order, preOpenedWindow) =>
-          page.handlePrint(order || page.printOrder, preOpenedWindow)
-        }
-      />
+      <OrderPrintModal order={page.printOrder} onClose={page.closePrint} />
 
       <AdminAuthorizationModal
         isOpen={page.adminAuthOpen}

@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { createStoreOrder } from "../services/ordersService";
-import { printStoreOrder } from "../services/ordersExportPdfService";
 
 const sanitizeQuantity = (value) => {
   const raw = String(value ?? "").replace(/[^\d.]/g, "");
@@ -201,46 +200,6 @@ export const useCreateOrderForm = ({
     user,
   ]);
 
-  const printDraft = useCallback(() => {
-    const destination = branches.find(
-      (branchOption) => branchOption.id === destinationBranchId
-    );
-
-    const opened = printStoreOrder({
-      orderNumber: "BORRADOR",
-      orderName: orderName.trim() || "Pedido sin nombre",
-      status: "pending",
-      fromBranchName: currentBranch?.name || "Sucursal origen",
-      toBranchName: destination?.name || "Sucursal destino",
-      createdByLabel: user?.username || "",
-      sentAt: new Date().toISOString(),
-      departments: departmentSummary,
-      notes,
-      discrepancyNotes: "",
-      items: items.map((item) => ({
-        ...item,
-        expectedQty: Number(item.expectedQty),
-        receivedQty: null,
-        differenceQty: null,
-      })),
-    });
-
-    if (!opened) {
-      setError("No se pudo abrir la vista de impresion.");
-    }
-
-    return opened;
-  }, [
-    branches,
-    currentBranch?.name,
-    departmentSummary,
-    destinationBranchId,
-    items,
-    notes,
-    orderName,
-    user?.username,
-  ]);
-
   return {
     orderName,
     setOrderName,
@@ -265,6 +224,5 @@ export const useCreateOrderForm = ({
     removeProduct,
     resetForm,
     saveOrder,
-    printDraft,
   };
 };

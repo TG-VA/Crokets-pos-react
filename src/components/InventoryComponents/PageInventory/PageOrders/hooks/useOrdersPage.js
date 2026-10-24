@@ -4,7 +4,6 @@ import { useAuth } from "../../../../../contexts/AuthContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
-import { printStoreOrder } from "../services/ordersExportPdfService";
 import {
   getPendingOrders,
   getOrderTotals,
@@ -135,33 +134,6 @@ export const useOrdersPage = () => {
     setActiveTab("create");
   }, []);
 
-  const handlePrint = useCallback(async (order) => {
-    const result = await printStoreOrder(order);
-
-    if (result?.canceled) {
-      return false;
-    }
-
-    if (result?.success) {
-      setFeedback({
-        tone: "success",
-        message: "Pedido exportado a PDF correctamente.",
-      });
-      return true;
-    }
-
-    setFeedback({
-      tone: "error",
-      message: result?.message || "No se pudo exportar el pedido a PDF.",
-    });
-    return false;
-  }, []);
-
-  const handleExportPdf = useCallback(
-    async (order) => handlePrint(order),
-    [handlePrint]
-  );
-
   return {
     activeTab,
     setActiveTab,
@@ -192,6 +164,5 @@ export const useOrdersPage = () => {
     printOrder,
     openPrint: (order) => setPrintOrder(order),
     closePrint: () => setPrintOrder(null),
-    handlePrint,
   };
 };

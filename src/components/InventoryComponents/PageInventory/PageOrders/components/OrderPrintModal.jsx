@@ -1,228 +1,120 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback } from "react";
 
 import AppModal from "../../../../AppModal/AppModal";
+import { exportStoreOrderToExcel } from "../services/ordersExportExcelService";
+import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 import styles from "../PageOrders.module.css";
-import {
-  formatOrderDateTime,
-  formatQuantity,
-  getOrderStatusMeta,
-} from "../utils/ordersFormatters";
 
-const STATUS_CLASS = {
-  pending: styles.statusPending,
-  success: styles.statusSuccess,
-  warning: styles.statusWarning,
-  danger: styles.statusDanger,
-  neutral: styles.statusPending,
+const handleExportExcel = async (order) => {
+  if (!order) return;
+  await exportStoreOrderToExcel(order);
 };
 
-const OrderPrintModal = ({
-  order,
-  onClose,
-  onConfirm,
-  onExportPdf,
-  onExportExcel,
-}) => {
-  const status = getOrderStatusMeta(order?.status);
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportMenuRef = useRef(null);
-  const prevOrderIdRef = useRef(order?.id);
-
-  useEffect(() => {
-    if (prevOrderIdRef.current !== order?.id) {
-      prevOrderIdRef.current = order?.id;
-      setExportOpen(false);
-    }
-  }, [order?.id]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        exportMenuRef.current &&
-        !exportMenuRef.current.contains(event.target)
-      ) {
-        setExportOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleExportPdf = () => {
-    setExportOpen(false);
-    const handler = onExportPdf || onConfirm;
-    if (typeof handler === "function") {
-      handler(order);
-    }
-  };
-
-  const handleExportExcel = async () => {
-    setExportOpen(false);
-    if (onExportExcel) {
-      onExportExcel(order);
+const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
+  const exportHandler = useCallback(async () => {
+    if (typeof onExportExcel === "function") {
+      await onExportExcel(order);
       return;
     }
-    try {
-      const { exportStoreOrderToExcel } =
-        await import("../services/ordersExportExcelService");
-      await exportStoreOrderToExcel(order);
-    } catch (err) {
-      console.error("Error al exportar pedido a Excel:", err);
-    }
-  };
+    await handleExportExcel(order);
+  }, [onExportExcel, order]);
 
   return (
     <AppModal
       isOpen={Boolean(order)}
-      confirmText="Guardar PDF / Excel"
+      onClose={onClose}
+      title="Vista de impresión"
+      confirmText="Exportar a Excel"
       cancelText="Cerrar"
       showCancel
-      onConfirm={() => setExportOpen((prev) => !prev)}
+      onConfirm={exportHandler}
       onCancel={onClose}
-      onClose={onClose}
       size="large"
     >
       {order ? (
         <div className={styles.printPreview}>
           <div className={styles.printHeader}>
             <div>
-              <span className={styles.eyebrow}>Pedido de abastecimiento</span>
-              <h3 className={styles.detailTitle}>
-                {order.orderNumber} - {order.orderName}
-              </h3>
+              <div className={styles.printModalTitle}>
+                Pedido {order.orderNumber}
+              </div>
+              <div className={styles.printModalSubtitle}>
+                {order.orderName || ""}
+              </div>
             </div>
-            <span
-              className={[
-                styles.statusBadge,
-                styles.statusBadgeBold,
-                STATUS_CLASS[status.tone] || STATUS_CLASS.neutral,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              {status.label}
+            <span className={`${styles.statusBadge} ${styles.statusBadgeBold}`}>
+              {order.status === "accepted_with_difference"
+                ? "Con diferencias"
+                : order.status === "accepted"
+                  ? "Aceptado"
+                  : "Pendiente"}
             </span>
           </div>
-
-          <dl className={styles.detailMeta}>
+          <div className={styles.printHeader}>
             <div>
-              <dt>Origen</dt>
-              <dd>{order.fromBranchName}</dd>
-            </div>
-            <div>
-              <dt>Destino</dt>
-              <dd>{order.toBranchName}</dd>
-            </div>
-            <div>
-              <dt>Enviado</dt>
-              <dd>{formatOrderDateTime(order.sentAt)}</dd>
-            </div>
-            <div>
-              <dt>Recibido</dt>
-              <dd>
-                {order.acceptedAt
-                  ? formatOrderDateTime(order.acceptedAt)
-                  : "Pendiente"}
-              </dd>
-            </div>
-            <div>
-              <dt>Generado por</dt>
-              <dd>{order.createdByLabel || "—"}</dd>
-            </div>
-            <div>
-              <dt>Recibido por</dt>
-              <dd>{order.receivedByLabel || "—"}</dd>
-            </div>
-            <div>
-              <dt>Departamentos</dt>
-              <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
-            </div>
-            <div>
-              <dt>Productos</dt>
-              <dd>{order.items?.length || 0}</dd>
-            </div>
-          </dl>
-
-          <div className={styles.tableWrapper}>
-            <table className={styles.itemsTable}>
-              <thead>
-                <tr>
-                  <th>Codigo</th>
-                  <th>Producto</th>
-                  <th>Departamento</th>
-                  <th className={styles.numeric}>Esperado</th>
-                  <th className={styles.numeric}>Recibido</th>
-                  <th className={styles.numeric}>Diferencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items?.map((item) => {
-                  const hasDifference =
-                    item?.differenceQty !== undefined &&
-                    item?.differenceQty !== null &&
-                    Number(item.differenceQty) !== 0;
-
-                  return (
-                    <tr
-                      key={item.id || item.productId}
-                      className={
-                        hasDifference ? styles.rowWithDifference : undefined
-                      }
-                    >
-                      <td>{item.barcode || "—"}</td>
-                      <td>{item.productName}</td>
-                      <td>{item.departmentName || "Sin departamento"}</td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.expectedQty)}
-                      </td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.receivedQty)}
-                      </td>
-                      <td className={styles.numeric}>
-                        {formatQuantity(item.differenceQty)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {order.notes ? (
-            <div className={styles.detailNote}>
-              <strong>Notas del pedido</strong>
-              <p>{order.notes}</p>
-            </div>
-          ) : null}
-
-          {order.discrepancyNotes ? (
-            <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-              <strong>Diferencias de recepcion</strong>
-              <p>{order.discrepancyNotes}</p>
-            </div>
-          ) : null}
-
-          <div className={styles.detailActions} ref={exportMenuRef}>
-            {exportOpen ? (
-              <div className={styles.exportMenu}>
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={handleExportPdf}
-                >
-                  Exportar a PDF
-                </button>
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={handleExportExcel}
-                >
-                  Exportar a Excel
-                </button>
+              <div className={styles.printModalSubtitle}>Origen</div>
+              <div className={styles.printModalTitle}>
+                {order.fromBranchName || ""}
               </div>
-            ) : null}
+            </div>
+            <div>
+              <div className={styles.printModalSubtitle}>Destino</div>
+              <div className={styles.printModalTitle}>
+                {order.toBranchName || ""}
+              </div>
+            </div>
           </div>
+          <div className={styles.printHeader}>
+            <div>
+              <div className={styles.printModalSubtitle}>Solicitado por</div>
+              <div className={styles.printModalTitle}>
+                {order.createdByLabel || ""}
+              </div>
+            </div>
+            <div>
+              <div className={styles.printModalSubtitle}>Fecha de envío</div>
+              <div className={styles.printModalTitle}>
+                {order.sentAt
+                  ? new Date(order.sentAt).toLocaleDateString()
+                  : ""}
+              </div>
+            </div>
+          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad solicitada</th>
+                <th>Recibido</th>
+                <th>Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(order.items || []).map((item, index) => (
+                <tr key={item.id || index}>
+                  <td>{item.productName}</td>
+                  <td>{item.expectedQty ?? item.quantity}</td>
+                  <td>{item.receivedQty ?? "-"}</td>
+                  <td>
+                    {item.differenceQty !== null &&
+                    item.differenceQty !== undefined
+                      ? item.differenceQty
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {order.notes ? (
+            <div className={styles.printHint}>
+              <span>Observaciones: {order.notes}</span>
+            </div>
+          ) : null}
+          {order.discrepancyNotes ? (
+            <div className={styles.printHint}>
+              <span>Notas de diferencia: {order.discrepancyNotes}</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </AppModal>

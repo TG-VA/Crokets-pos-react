@@ -20,7 +20,6 @@ const IPC_CHANNELS = [
   "print-ticket",
   "open-cash-drawer",
   "get-printers",
-  "export-order-pdf",
 ];
 
 const originalPlatform = process.platform;
