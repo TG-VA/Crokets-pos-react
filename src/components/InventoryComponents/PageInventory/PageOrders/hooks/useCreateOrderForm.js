@@ -97,7 +97,7 @@ export const useCreateOrderForm = ({
             product.department_name ??
             "Sin departamento",
           costPrice: Number(product.costo ?? product.cost_price ?? 0),
-          expectedQty: "1",
+          expectedQty: "",
         },
       ]);
 

@@ -119,7 +119,7 @@
 
 .metricValue {
   margin-left: auto;
-  color: var(--darkGray);
+  color: var(--croketsBlue);
   font-size: 1rem;
 }
 
@@ -317,8 +317,8 @@
 }
 
 .deleteIconButton img {
-  filter: brightness(0) saturate(100%) invert(18%) sepia(72%) saturate(2274%)
-    hue-rotate(343deg) brightness(93%) contrast(95%);
+  filter: brightness(0) saturate(100%) invert(36%) sepia(93%) saturate(3541%)
+    hue-rotate(344deg) brightness(95%) contrast(93%);
 }
 
 .primaryButton:disabled,
