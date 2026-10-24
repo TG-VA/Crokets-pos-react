@@ -1006,58 +1006,12 @@
   position: relative;
 }
 
-.exportMenu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
-  display: flex;
-  flex-direction: column;
-  background: var(--white);
-  border: 1px solid #dbe4ea;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(30, 45, 56, 0.12);
-  overflow: hidden;
-  min-width: 180px;
-  z-index: 10;
-}
 
-.exportMenuItem {
-  border: none;
-  background: transparent;
-  text-align: left;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.exportMenuItem:hover {
-  background: #f7fbfd;
-}
 
 .printPreview {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.printModalTitle {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.printModalInfoIcon {
-  width: 22px;
-  height: 22px;
-  margin-top: 2px;
-  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
-    hue-rotate(160deg) brightness(92%) contrast(92%);
-}
-
-.printModalSubtitle {
-  font-size: 0.85rem;
-  color: #5c6b77;
-  font-weight: 400;
 }
 
 .printHeader {
@@ -1067,28 +1021,8 @@
   gap: 16px;
 }
 
-.printStatus {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--pendingBg);
-  color: var(--pendingText);
-  font-weight: 700;
-}
-
 .statusBadgeBold {
   font-weight: 700;
-}
-
-.printHint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #6d7b86;
-}
-
-.printHint img {
-  width: 16px;
-  height: 16px;
 }
 
 .primaryButton:focus-visible,
