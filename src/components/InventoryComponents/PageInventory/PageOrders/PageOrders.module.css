@@ -251,7 +251,8 @@
 }
 
 .createWorkspace {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .workspaceHeader {
@@ -627,6 +628,9 @@
   border-radius: 10px;
   border: 1px solid #dbe4ea;
   font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 .productPicker {

@@ -118,6 +118,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
                 placeholder="Escanea o escribe el codigo"
+                autoComplete="off"
                 disabled={form.isSaving}
               />
             </label>
