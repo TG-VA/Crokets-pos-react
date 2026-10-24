@@ -161,6 +161,8 @@
 .tabIcon {
   width: 16px;
   height: 16px;
+  filter: brightness(0) saturate(100%) invert(57%) sepia(78%) saturate(1564%)
+    hue-rotate(359deg) brightness(101%) contrast(98%);
 }
 
 .tabLabel {
@@ -280,6 +282,20 @@
   color: #607080;
 }
 
+.branchBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 146, 177, 0.08);
+  color: var(--croketsBlue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
 .primaryButton,
 .secondaryButton,
 .ghostButton,
@@ -348,6 +364,16 @@
 .emptyState img {
   width: 36px;
   height: 36px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
+}
+
+.emptyState h3 {
+  color: var(--croketsBlue);
+}
+
+.emptyState p {
+  color: #607080;
 }
 
 .orderCards {

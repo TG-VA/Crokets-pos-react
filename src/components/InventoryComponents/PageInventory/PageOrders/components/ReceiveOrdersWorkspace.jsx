@@ -81,9 +81,12 @@ const ReceiveOrdersWorkspace = ({
         <div>
           <p className={styles.eyebrow}>Recepción</p>
           <h2 className={styles.workspaceTitle}>Pedidos por recibir</h2>
+          <span className={styles.branchBadge}>
+            Sucursal activa: {currentBranchName || "Sin sucursal"}
+          </span>
           <p className={styles.workspaceDescription}>
-            Sucursal activa: {currentBranchName || "Sin sucursal"}. Captura el
-            conteo físico de cada partida; no se precarga la cantidad esperada.
+            Captura manualmente la cantidad recibida de cada partida. El sistema
+            no precarga la cantidad esperada.
           </p>
         </div>
       </header>
