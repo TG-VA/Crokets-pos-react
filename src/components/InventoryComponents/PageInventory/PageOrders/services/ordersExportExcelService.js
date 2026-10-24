@@ -17,6 +17,35 @@ const saveExcel = async (workbook, fileName) => {
   window.URL.revokeObjectURL(url);
 };
 
+const applyHeaderStyle = (row) => {
+  row.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF7FBFD" },
+    };
+    cell.border = {
+      top: { style: "thin", color: { argb: "FFD8E3EA" } },
+      left: { style: "thin", color: { argb: "FFD8E3EA" } },
+      bottom: { style: "thin", color: { argb: "FFD8E3EA" } },
+      right: { style: "thin", color: { argb: "FFD8E3EA" } },
+    };
+    cell.alignment = { vertical: "middle", horizontal: "left" };
+  });
+};
+
+const applyCellBorders = (row) => {
+  row.eachCell((cell) => {
+    cell.border = {
+      top: { style: "thin", color: { argb: "FFEEF3F6" } },
+      left: { style: "thin", color: { argb: "FFEEF3F6" } },
+      bottom: { style: "thin", color: { argb: "FFEEF3F6" } },
+      right: { style: "thin", color: { argb: "FFEEF3F6" } },
+    };
+  });
+};
+
 export const exportStoreOrderToExcel = async (order) => {
   if (!order) return false;
 
@@ -24,15 +53,17 @@ export const exportStoreOrderToExcel = async (order) => {
   const sheet = workbook.addWorksheet("Pedido");
 
   sheet.columns = [
-    { header: "Campo", key: "campo", width: 30 },
-    { header: "Valor", key: "valor", width: 60 },
+    { header: "Campo", key: "campo", width: 28 },
+    { header: "Valor", key: "valor", width: 70 },
   ];
 
-  sheet.addRows([
+  applyHeaderStyle(sheet.getRow(1));
+
+  const infoRows = [
     { campo: "Folio", valor: order.orderNumber || "" },
     { campo: "Nombre del pedido", valor: order.orderName || "" },
-    { campo: "Sucursal origen", valor: order.fromBranchName || "" },
-    { campo: "Sucursal destino", valor: order.toBranchName || "" },
+    { campo: "Sucursal Origen", valor: order.fromBranchName || "" },
+    { campo: "Sucursal Destino", valor: order.toBranchName || "" },
     { campo: "Enviado", valor: formatOrderDateTime(order.sentAt) },
     {
       campo: "Recibido",
@@ -42,44 +73,66 @@ export const exportStoreOrderToExcel = async (order) => {
     },
     { campo: "Generado por", valor: order.createdByLabel || "" },
     { campo: "Recibido por", valor: order.receivedByLabel || "" },
-    { campo: "Departamentos", valor: (order.departments || []).join(", ") },
+    {
+      campo: "Departamentos",
+      valor: (order.departments || []).join(", ") || "Sin departamento",
+    },
     { campo: "Productos", valor: order.items?.length || 0 },
-  ]);
+  ];
+
+  infoRows.forEach((row) => {
+    const added = sheet.addRow(row);
+    applyCellBorders(added);
+  });
 
   sheet.addRow({});
+  const itemsTitle = sheet.addRow(["Partidas"]);
+  itemsTitle.font = { bold: true, size: 12 };
+
   const itemsHeader = sheet.addRow([
-    "Codigo",
+    "Código",
     "Producto",
     "Departamento",
     "Esperado",
     "Recibido",
     "Diferencia",
   ]);
-  itemsHeader.font = { bold: true };
+  applyHeaderStyle(itemsHeader);
 
   (order.items || []).forEach((item) => {
-    sheet.addRow([
+    const added = sheet.addRow([
       item.barcode || "",
       item.productName || "",
-      item.departmentName || "",
+      item.departmentName || "Sin departamento",
       item.expectedQty ?? "",
       item.receivedQty ?? "",
       item.differenceQty ?? "",
     ]);
+    applyCellBorders(added);
   });
+
+  sheet.getColumn(1).width = 16;
+  sheet.getColumn(2).width = 40;
+  sheet.getColumn(3).width = 24;
+  sheet.getColumn(4).width = 14;
+  sheet.getColumn(5).width = 14;
+  sheet.getColumn(6).width = 14;
 
   if (order.notes) {
     sheet.addRow({});
-    const noteHeader = sheet.addRow(["Notas del pedido"]);
-    noteHeader.font = { bold: true };
-    sheet.addRow([order.notes]);
+    const noteTitle = sheet.addRow(["Notas del pedido"]);
+    noteTitle.font = { bold: true, size: 12 };
+    const noteRow = sheet.addRow([order.notes]);
+    applyCellBorders(noteRow);
+    sheet.getColumn(1).width = Math.max(sheet.getColumn(1).width || 16, 70);
   }
 
   if (order.discrepancyNotes) {
     sheet.addRow({});
-    const discHeader = sheet.addRow(["Diferencias de recepcion"]);
-    discHeader.font = { bold: true };
-    sheet.addRow([order.discrepancyNotes]);
+    const discTitle = sheet.addRow(["Diferencias / Discrepancias"]);
+    discTitle.font = { bold: true, size: 12 };
+    const discRow = sheet.addRow([order.discrepancyNotes]);
+    applyCellBorders(discRow);
   }
 
   const differences = (order.items || []).filter(
@@ -91,29 +144,33 @@ export const exportStoreOrderToExcel = async (order) => {
 
   if (differences.length > 0) {
     sheet.addRow({});
+    const diffTitle = sheet.addRow(["Diferencias por partida"]);
+    diffTitle.font = { bold: true, size: 12 };
+
     const diffHeader = sheet.addRow([
-      "Codigo",
+      "Código",
       "Producto",
       "Departamento",
       "Diferencia",
       "Tipo",
     ]);
-    diffHeader.font = { bold: true };
+    applyHeaderStyle(diffHeader);
 
     differences.forEach((item) => {
       const diff = Number(item.differenceQty);
       const isSurplus = diff > 0;
-      sheet.addRow([
+      const added = sheet.addRow([
         item.barcode || "",
         item.productName || "",
-        item.departmentName || "",
+        item.departmentName || "Sin departamento",
         isSurplus ? `+${diff}` : diff,
         isSurplus ? "Sobra" : "Falta",
       ]);
+      applyCellBorders(added);
     });
   }
 
-  const fileName = `Pedido-${order.orderNumber || "sin-folio"}.xlsx`;
+  const fileName = `Pedido_${order.orderNumber || "sin-folio"}.xlsx`;
   await saveExcel(workbook, fileName);
   return true;
 };

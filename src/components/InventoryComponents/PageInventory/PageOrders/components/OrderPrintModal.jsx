@@ -7,8 +7,6 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
-import InfoIcon from "../../../../../assets/icons/circle-info-solid-full.svg";
-import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const STATUS_CLASS = {
   pending: styles.statusPending,
@@ -70,22 +68,6 @@ const OrderPrintModal = ({ order, onClose, onConfirm, onExportExcel }) => {
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title={
-        <div className={styles.printModalTitle}>
-          <img
-            src={InfoIcon}
-            alt=""
-            aria-hidden="true"
-            className={styles.printModalInfoIcon}
-          />
-          <div>
-            <div>Vista de impresión</div>
-            <div className={styles.printModalSubtitle}>
-              Revisa el contenido antes de imprimir o guardar como PDF.
-            </div>
-          </div>
-        </div>
-      }
       confirmText="Guardar PDF / Excel"
       cancelText="Cerrar"
       showCancel
