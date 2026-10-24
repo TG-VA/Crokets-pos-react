@@ -192,7 +192,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
                     <td className={styles.rowActions}>
                       <button
                         type="button"
-                        className={styles.iconButton}
+                        className={`${styles.iconButton} ${styles.deleteIconButton}`}
                         onClick={() => form.removeProduct(item.productId)}
                         aria-label={`Quitar ${item.productName}`}
                         disabled={form.isSaving}
@@ -247,6 +247,10 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
             <div className={styles.statBadge}>
               <span className={styles.metaLabel}>Unidades totales</span>
               <strong className={styles.statValue}>{formatQuantity(form.totalUnits)}</strong>
+            </div>
+            <div className={styles.statBadge}>
+              <span className={styles.metaLabel}>Costo total</span>
+              <strong className={styles.statValue}>{formatCurrency(form.totalCost || 0)}</strong>
             </div>
           </div>
         </div>

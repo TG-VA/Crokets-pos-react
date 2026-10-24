@@ -308,6 +308,11 @@
   background: transparent;
 }
 
+.deleteIconButton img {
+  filter: brightness(0) saturate(100%) invert(18%) sepia(72%) saturate(2274%)
+    hue-rotate(343deg) brightness(93%) contrast(95%);
+}
+
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .ghostButton:disabled {
@@ -1028,6 +1033,7 @@
 .saveOrderButton img {
   width: 17px;
   height: 17px;
+  filter: brightness(0) invert(1);
 }
 
 .draftSummaryDepts {

@@ -54,6 +54,17 @@ export const useCreateOrderForm = ({
     [items]
   );
 
+  const totalCost = useMemo(
+    () =>
+      items.reduce((total, item) => {
+        const quantity = Number(item.expectedQty);
+        const cost = Number(item.costPrice);
+        if (!Number.isFinite(quantity) || !Number.isFinite(cost)) return total;
+        return total + quantity * cost;
+      }, 0),
+    [items]
+  );
+
   const isValid = useMemo(() => {
     if (!orderName.trim() || !destinationBranchId) return false;
     if (items.length === 0) return false;
@@ -241,6 +252,7 @@ export const useCreateOrderForm = ({
     items,
     departmentSummary,
     totalUnits,
+    totalCost,
     isValid,
     isSaving,
     error,
