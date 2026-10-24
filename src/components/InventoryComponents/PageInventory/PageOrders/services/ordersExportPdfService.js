@@ -138,20 +138,32 @@ export const buildOrderPrintHtml = (order) => {
 </html>`;
 };
 
-export const printStoreOrder = (order) => {
+export const printStoreOrder = (order, preOpenedWindow = null) => {
   if (typeof window === "undefined" || !order) return false;
 
-  const printWindow = window.open("", "_blank", "width=900,height=700");
+  const printWindow =
+    preOpenedWindow && !preOpenedWindow.closed
+      ? preOpenedWindow
+      : window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
 
   if (!printWindow) return false;
 
-  printWindow.document.write(buildOrderPrintHtml(order));
-  printWindow.document.close();
-  printWindow.focus();
+  try {
+    printWindow.document.write(buildOrderPrintHtml(order));
+    printWindow.document.close();
+    printWindow.focus();
 
-  window.setTimeout(() => {
-    printWindow.print();
-  }, 250);
+    window.setTimeout(() => {
+      try {
+        printWindow.print();
+      } catch (err) {
+        console.error("Error al imprimir pedido:", err);
+      }
+    }, 250);
+  } catch (err) {
+    console.error("Error al abrir vista de impresión del pedido:", err);
+    return false;
+  }
 
   return true;
 };

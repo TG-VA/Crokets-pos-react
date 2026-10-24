@@ -72,18 +72,20 @@ const PageOrders = () => {
       </div>
 
       <OrderDetailModal
-        order={page.detailOrder}
-        onClose={page.closeDetail}
-        onPrint={(order) => {
-          page.closeDetail();
-          page.openPrint(order);
+        order={detailOrder}
+        onClose={closeDetailModal}
+        onPrint={(order, printWindow) => {
+          closeDetailModal();
+          openPrintModal(order, printWindow);
         }}
       />
 
       <OrderPrintModal
         order={page.printOrder}
         onClose={page.closePrint}
-        onConfirm={() => page.handlePrint(page.printOrder)}
+        onConfirm={(order, preOpenedWindow) =>
+          page.handlePrint(order || page.printOrder, preOpenedWindow)
+        }
       />
 
       <AdminAuthorizationModal

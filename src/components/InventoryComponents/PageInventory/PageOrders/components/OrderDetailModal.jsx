@@ -45,9 +45,25 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
   }, []);
 
   const handleExportPdf = () => {
+    if (typeof window === "undefined") return;
+
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "noopener,noreferrer,width=900,height=700"
+    );
+
     setExportOpen(false);
+
+    if (!printWindow) {
+      if (onPrint) {
+        onPrint(order);
+      }
+      return;
+    }
+
     if (onPrint) {
-      onPrint(order);
+      onPrint(order, printWindow);
     }
   };
 

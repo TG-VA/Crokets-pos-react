@@ -135,13 +135,14 @@ export const useOrdersPage = () => {
     setActiveTab("create");
   }, []);
 
-  const handlePrint = useCallback((order) => {
-    const opened = printStoreOrder(order);
+  const handlePrint = useCallback((order, preOpenedWindow = null) => {
+    const opened = printStoreOrder(order, preOpenedWindow);
 
     if (!opened) {
       setFeedback({
         tone: "error",
-        message: "No se pudo abrir la vista de impresion del pedido.",
+        message:
+          "No se pudo abrir la vista de impresión. Revisa el bloqueador de ventanas emergentes de tu navegador.",
       });
       return false;
     }
