@@ -229,14 +229,15 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
           <div className={styles.draftSummaryDepts}>
             <span className={styles.metaLabel}>Departamentos</span>
             <div className={styles.deptBadges}>
-              {form.departmentSummary.length > 0
-                ? form.departmentSummary.map((dept) => (
-                    <span key={dept} className={styles.deptBadge}>
-                      {dept}
-                    </span>
-                  ))
-                : <span className={styles.metaEmpty}>Sin departamento</span>
-              }
+              {form.departmentSummary.length > 0 ? (
+                form.departmentSummary.map((dept) => (
+                  <span key={dept} className={styles.deptBadge}>
+                    {dept}
+                  </span>
+                ))
+              ) : (
+                <span className={styles.metaEmpty}>Sin departamento</span>
+              )}
             </div>
           </div>
           <div className={styles.draftSummaryStats}>
@@ -246,11 +247,15 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
             </div>
             <div className={styles.statBadge}>
               <span className={styles.metaLabel}>Unidades totales</span>
-              <strong className={styles.statValue}>{formatQuantity(form.totalUnits)}</strong>
+              <strong className={styles.statValue}>
+                {formatQuantity(form.totalUnits)}
+              </strong>
             </div>
             <div className={styles.statBadge}>
               <span className={styles.metaLabel}>Costo total</span>
-              <strong className={styles.statValue}>{formatCurrency(form.totalCost || 0)}</strong>
+              <strong className={styles.statValue}>
+                {formatCurrency(form.totalCost || 0)}
+              </strong>
             </div>
           </div>
         </div>

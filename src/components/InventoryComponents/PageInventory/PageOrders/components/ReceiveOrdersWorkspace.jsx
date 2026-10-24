@@ -112,7 +112,9 @@ const ReceiveOrdersWorkspace = ({
                       <span className={styles.orderFolio}>
                         {order.orderNumber}
                       </span>
-                      <h3 className={styles.orderCardTitle}>{order.orderName}</h3>
+                      <h3 className={styles.orderCardTitle}>
+                        {order.orderName}
+                      </h3>
                     </div>
                     <span
                       className={[

@@ -72,11 +72,11 @@ const PageOrders = () => {
       </div>
 
       <OrderDetailModal
-        order={detailOrder}
-        onClose={closeDetailModal}
+        order={page.detailOrder}
+        onClose={page.closeDetail}
         onPrint={(order, printWindow) => {
-          closeDetailModal();
-          openPrintModal(order, printWindow);
+          page.closeDetail();
+          page.handlePrint(order, printWindow);
         }}
       />
 

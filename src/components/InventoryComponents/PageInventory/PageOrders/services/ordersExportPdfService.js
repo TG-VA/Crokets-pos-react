@@ -144,7 +144,7 @@ export const printStoreOrder = (order, preOpenedWindow = null) => {
   const printWindow =
     preOpenedWindow && !preOpenedWindow.closed
       ? preOpenedWindow
-      : window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+      : window.open("", "_blank", "width=900,height=700");
 
   if (!printWindow) return false;
 
