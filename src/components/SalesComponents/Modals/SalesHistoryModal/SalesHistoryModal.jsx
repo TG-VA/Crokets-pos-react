@@ -1087,21 +1087,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
           </div>
         </div>
 
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.closeFooterBtn}
-            onClick={onClose}
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.footerButtonIcon}
-              aria-hidden="true"
-            />{" "}
-            ESC - Cerrar
-          </button>
-        </div>
 
         {isNotesModalOpen && selectedTicket && (
           <div className={styles.notesOverlay}>

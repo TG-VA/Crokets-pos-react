@@ -656,14 +656,6 @@
   text-align: center;
 }
 
-.footer {
-  padding: 12px 24px;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-  background-color: #f8f9fa;
-}
-
 .closeFooterBtn {
   padding: 10px 24px;
   background-color: #27ae60;
