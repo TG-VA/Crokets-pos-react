@@ -91,6 +91,26 @@ describe("OrdersHistoryTable pagination", () => {
     expect(screen.getByText("Página 1 de 1")).toBeTruthy();
   });
 
+  it("deshabilita Limpiar filtros cuando no hay filtros activos", () => {
+    render(<OrdersHistoryTable orders={buildOrders(5)} />);
+
+    const clearButton = screen.getByRole("button", {
+      name: "Limpiar filtros",
+    });
+
+    expect(clearButton.disabled).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Estado"), {
+      target: { value: "pending" },
+    });
+
+    expect(clearButton.disabled).toBe(false);
+
+    fireEvent.click(clearButton);
+
+    expect(clearButton.disabled).toBe(true);
+  });
+
   it("muestra el estado vacio y oculta la paginacion sin resultados", () => {
     render(<OrdersHistoryTable orders={[]} />);
 

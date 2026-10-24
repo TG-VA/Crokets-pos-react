@@ -95,6 +95,13 @@ const OrdersHistoryTable = ({
     [filters, orders]
   );
 
+  const hasActiveFilters =
+    filters.status !== "all" ||
+    filters.fromBranchId !== "all" ||
+    filters.toBranchId !== "all" ||
+    filters.dateFrom !== null ||
+    filters.dateTo !== null;
+
   const {
     currentPage,
     totalPages,
@@ -284,6 +291,7 @@ const OrdersHistoryTable = ({
             type="button"
             className={styles.clearFiltersButton}
             onClick={handleClearFilters}
+            disabled={!hasActiveFilters}
           >
             <img src={CloseIcon} alt="" aria-hidden="true" />
             Limpiar filtros
