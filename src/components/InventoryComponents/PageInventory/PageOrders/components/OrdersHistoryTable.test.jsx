@@ -122,7 +122,7 @@ describe("OrdersHistoryTable pagination", () => {
     ).toBeTruthy();
   });
 
-  it("mantiene visibles las acciones de detalle e impresion por fila", () => {
+  it("mantiene visibles las acciones de detalle y exportar por fila", () => {
     const onOpenDetail = vi.fn();
     const onOpenPrint = vi.fn();
 
@@ -137,7 +137,7 @@ describe("OrdersHistoryTable pagination", () => {
     const row = getBodyRows()[0];
 
     fireEvent.click(within(row).getByRole("button", { name: /Ver detalle/ }));
-    fireEvent.click(within(row).getByRole("button", { name: /Imprimir/ }));
+    fireEvent.click(within(row).getByRole("button", { name: /Exportar/ }));
 
     expect(onOpenDetail).toHaveBeenCalledWith(
       expect.objectContaining({ id: "order-0" })

@@ -13,7 +13,7 @@ import { filterOrderHistory } from "../utils/ordersCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
-import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
+import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 import CloseIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const DATE_FORMAT = "dd/MM/yyyy";
@@ -336,9 +336,9 @@ const OrdersHistoryTable = ({
                       </span>
                     </td>
                     <td>
-                      {order.fromBranchName}
+                      {order.toBranchName}
                       <span className={styles.rowSubtext}>
-                        hacia {order.toBranchName}
+                        desde {order.fromBranchName}
                       </span>
                     </td>
                     <td>{formatOrderDateTime(order.sentAt)}</td>
@@ -372,15 +372,25 @@ const OrdersHistoryTable = ({
                         onClick={() => onOpenDetail(order)}
                         aria-label={`Ver detalle de ${order.orderNumber}`}
                       >
-                        <img src={EyeIcon} alt="" aria-hidden="true" />
+                        <img
+                          src={EyeIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className={styles.actionEyeIcon}
+                        />
                       </button>
                       <button
                         type="button"
                         className={styles.iconButton}
-                        onClick={() => onOpenPrint(order)}
-                        aria-label={`Imprimir ${order.orderNumber}`}
+                        onClick={() => onOpenPrint?.(order)}
+                        aria-label={`Exportar ${order.orderNumber}`}
                       >
-                        <img src={PrintIcon} alt="" aria-hidden="true" />
+                        <img
+                          src={ExportIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className={styles.actionExportIcon}
+                        />
                       </button>
                     </td>
                   </tr>

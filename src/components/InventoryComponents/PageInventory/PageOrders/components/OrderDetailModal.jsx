@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
@@ -7,7 +7,7 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
-import PrintIcon from "../../../../../assets/icons/print-solid-full.svg";
+import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const STATUS_CLASS = {
   pending: styles.statusPending,
@@ -19,11 +19,54 @@ const STATUS_CLASS = {
 
 const OrderDetailModal = ({ order, onClose, onPrint }) => {
   const status = getOrderStatusMeta(order?.status);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  useEffect(() => {
+    setExportOpen(false);
+  }, [order?.id]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target)
+      ) {
+        setExportOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleExportPdf = () => {
+    setExportOpen(false);
+    if (onPrint) {
+      onPrint(order);
+    }
+  };
+
+  const handleExportExcel = () => {
+    setExportOpen(false);
+    console.error("Exportación a Excel aún no implementada");
+  };
+
+  const differences = (order?.items || []).filter(
+    (item) =>
+      item?.differenceQty !== undefined &&
+      item?.differenceQty !== null &&
+      Number(item.differenceQty) !== 0
+  );
 
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title={order ? `Pedido ${order.orderNumber}` : "Detalle del pedido"}
+      title={
+        order
+          ? `Pedido ${order.orderNumber} - ${order.orderName}`
+          : "Detalle del pedido"
+      }
       confirmText="Cerrar"
       onConfirm={onClose}
       onClose={onClose}
@@ -35,7 +78,12 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
             <div>
               <h3 className={styles.detailTitle}>{order.orderName}</h3>
               <p className={styles.detailRoute}>
-                {order.fromBranchName} hacia {order.toBranchName}
+                <span className={styles.routeBadgeOrange}>
+                  Recibe {order.toBranchName}
+                </span>
+                <span className={styles.routeBadgeDark}>
+                  desde {order.fromBranchName}
+                </span>
               </p>
             </div>
             <span
@@ -75,10 +123,10 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
               <dt>Departamentos</dt>
               <dd>{order.departments.join(", ") || "Sin departamento"}</dd>
             </div>
-              <div>
-                <dt>Productos</dt>
-                <dd>{order.items?.length || 0}</dd>
-              </div>
+            <div>
+              <dt>Productos</dt>
+              <dd>{order.items?.length || 0}</dd>
+            </div>
           </dl>
 
           <div className={styles.tableWrapper}>
@@ -94,22 +142,34 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item) => (
-                  <tr key={item.id || item.productId}>
-                    <td>{item.barcode || "—"}</td>
-                    <td>{item.productName}</td>
-                    <td>{item.departmentName || "Sin departamento"}</td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.expectedQty)}
-                    </td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.receivedQty)}
-                    </td>
-                    <td className={styles.numeric}>
-                      {formatQuantity(item.differenceQty)}
-                    </td>
-                  </tr>
-                ))}
+                {order.items.map((item) => {
+                  const hasDifference =
+                    item?.differenceQty !== undefined &&
+                    item?.differenceQty !== null &&
+                    Number(item.differenceQty) !== 0;
+
+                  return (
+                    <tr
+                      key={item.id || item.productId}
+                      className={
+                        hasDifference ? styles.rowWithDifference : undefined
+                      }
+                    >
+                      <td>{item.barcode || "—"}</td>
+                      <td>{item.productName}</td>
+                      <td>{item.departmentName || "Sin departamento"}</td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.expectedQty)}
+                      </td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.receivedQty)}
+                      </td>
+                      <td className={styles.numeric}>
+                        {formatQuantity(item.differenceQty)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -128,15 +188,69 @@ const OrderDetailModal = ({ order, onClose, onPrint }) => {
             </div>
           ) : null}
 
-          <div className={styles.detailActions}>
+          {differences.length > 0 ? (
+            <div className={styles.differencesSection}>
+              <strong>Diferencias</strong>
+              <div className={styles.tableWrapper}>
+                <table className={styles.differencesTable}>
+                  <thead>
+                    <tr>
+                      <th>Codigo</th>
+                      <th>Producto</th>
+                      <th>Departamento</th>
+                      <th className={styles.numeric}>Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {differences.map((item) => {
+                      const diff = Number(item.differenceQty);
+                      const isSurplus = diff > 0;
+
+                      return (
+                        <tr key={item.id || item.productId}>
+                          <td>{item.barcode || "—"}</td>
+                          <td>{item.productName}</td>
+                          <td>{item.departmentName || "Sin departamento"}</td>
+                          <td className={styles.numeric}>
+                            {isSurplus ? `+${diff}` : diff}{" "}
+                            {isSurplus ? "(Sobra)" : "(Falta)"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+
+          <div className={styles.detailActions} ref={exportMenuRef}>
             <button
               type="button"
               className={styles.secondaryButton}
-              onClick={() => onPrint(order)}
+              onClick={() => setExportOpen((prev) => !prev)}
             >
-              <img src={PrintIcon} alt="" aria-hidden="true" />
-              Imprimir pedido
+              <img src={ExportIcon} alt="" aria-hidden="true" />
+              Exportar pedido
             </button>
+            {exportOpen ? (
+              <div className={styles.exportMenu}>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={handleExportPdf}
+                >
+                  Exportar a PDF
+                </button>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={handleExportExcel}
+                >
+                  Exportar a Excel
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

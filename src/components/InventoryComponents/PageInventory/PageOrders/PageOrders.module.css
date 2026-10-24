@@ -432,6 +432,9 @@
 .statusPending {
   background: var(--pendingBg);
   color: var(--pendingText);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
 }
 
 .statusSuccess {
@@ -715,6 +718,20 @@
   gap: 4px;
 }
 
+.actionEyeIcon {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
+}
+
+.actionExportIcon {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
+}
+
 .draftSummary {
   display: flex;
   flex-wrap: wrap;
@@ -923,6 +940,10 @@
 .detailRoute {
   margin: 0;
   color: #5c6b77;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .detailMeta {
@@ -953,9 +974,64 @@
   color: var(--warningText);
 }
 
+.rowWithDifference {
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.differencesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.differencesTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.differencesTable th,
+.differencesTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef3f6;
+  text-align: left;
+}
+
+.differencesTable .numeric {
+  text-align: right;
+}
+
 .detailActions {
   display: flex;
   justify-content: flex-end;
+  position: relative;
+}
+
+.exportMenu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(30, 45, 56, 0.12);
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 10;
+}
+
+.exportMenuItem {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.exportMenuItem:hover {
+  background: #f7fbfd;
 }
 
 .printPreview {
