@@ -89,8 +89,8 @@ describe("ordersCalculationService", () => {
 
   it("calcula totales y partidas pendientes", () => {
     const totals = getOrderTotals([
-      { expectedQty: 5, receivedQty: 3, differenceQty: -2 },
-      { expectedQty: 2, receivedQty: null, differenceQty: null },
+      { expectedQty: 5, receivedQty: 3, differenceQty: -2, costPrice: 10 },
+      { expectedQty: 2, receivedQty: null, differenceQty: null, costPrice: 5 },
     ]);
 
     expect(totals).toEqual({
@@ -98,6 +98,7 @@ describe("ordersCalculationService", () => {
       received: 3,
       difference: -2,
       pending: 1,
+      totalCost: 60,
     });
   });
 

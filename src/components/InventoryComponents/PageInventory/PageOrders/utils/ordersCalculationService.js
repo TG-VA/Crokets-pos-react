@@ -114,15 +114,17 @@ export const getOrderTotals = (items = []) =>
       const expected = asFiniteNumber(item.expectedQty) ?? 0;
       const received = asFiniteNumber(item.receivedQty);
       const difference = asFiniteNumber(item.differenceQty);
+      const cost = asFiniteNumber(item.costPrice);
 
       return {
         expected: totals.expected + expected,
         received: totals.received + (received ?? 0),
         difference: totals.difference + (difference ?? 0),
         pending: totals.pending + (received === null ? 1 : 0),
+        totalCost: totals.totalCost + (cost ?? 0) * expected,
       };
     },
-    { expected: 0, received: 0, difference: 0, pending: 0 }
+    { expected: 0, received: 0, difference: 0, pending: 0, totalCost: 0 }
   );
 
 export const getPendingOrdersCount = ({
