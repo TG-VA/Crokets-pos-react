@@ -16,7 +16,13 @@ const STATUS_CLASS = {
   neutral: styles.statusPending,
 };
 
-const OrderPrintModal = ({ order, onClose, onConfirm, onExportExcel }) => {
+const OrderPrintModal = ({
+  order,
+  onClose,
+  onConfirm,
+  onExportPdf,
+  onExportExcel,
+}) => {
   const status = getOrderStatusMeta(order?.status);
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef(null);
@@ -44,21 +50,10 @@ const OrderPrintModal = ({ order, onClose, onConfirm, onExportExcel }) => {
   }, []);
 
   const handleExportPdf = () => {
-    if (typeof window === "undefined") return;
-
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-
     setExportOpen(false);
-
-    if (!printWindow) {
-      if (onConfirm) {
-        onConfirm(order);
-      }
-      return;
-    }
-
-    if (onConfirm) {
-      onConfirm(order, printWindow);
+    const handler = onExportPdf || onConfirm;
+    if (typeof handler === "function") {
+      handler(order);
     }
   };
 

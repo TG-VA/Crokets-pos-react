@@ -138,18 +138,57 @@ export const buildOrderPrintHtml = (order) => {
 </html>`;
 };
 
-export const printStoreOrder = (order, preOpenedWindow = null) => {
-  if (typeof window === "undefined" || !order) return false;
+export const exportStoreOrderToPdf = async (order) => {
+  if (!order) {
+    return { success: false, message: "No hay pedido para exportar." };
+  }
 
-  const printWindow =
-    preOpenedWindow && !preOpenedWindow.closed
-      ? preOpenedWindow
-      : window.open("", "_blank", "width=900,height=700");
-
-  if (!printWindow) return false;
+  const html = buildOrderPrintHtml(order);
+  const fileName = `Pedido_${order.orderNumber || "pedido"}.pdf`;
 
   try {
-    printWindow.document.write(buildOrderPrintHtml(order));
+    if (
+      typeof window !== "undefined" &&
+      window.electronAPI &&
+      typeof window.electronAPI.invoke === "function"
+    ) {
+      const result = await window.electronAPI.invoke("export-order-pdf", {
+        html,
+        fileName,
+      });
+      return (
+        result || {
+          success: false,
+          message: "No se pudo exportar el pedido a PDF.",
+        }
+      );
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: "No se pudo exportar el pedido a PDF.",
+      error: error?.message || "PDF_EXPORT_FAILED",
+    };
+  }
+
+  try {
+    if (typeof window === "undefined") {
+      return {
+        success: false,
+        message: "No se pudo abrir la vista de impresión.",
+      };
+    }
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+
+    if (!printWindow) {
+      return {
+        success: false,
+        message: "No se pudo abrir la vista de impresión.",
+      };
+    }
+
+    printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
 
@@ -160,13 +199,19 @@ export const printStoreOrder = (order, preOpenedWindow = null) => {
         console.error("Error al imprimir pedido:", err);
       }
     }, 250);
-  } catch (err) {
-    console.error("Error al abrir vista de impresión del pedido:", err);
-    return false;
-  }
 
-  return true;
+    return { success: true };
+  } catch (error) {
+    console.error("Error al abrir vista de impresión del pedido:", error);
+    return {
+      success: false,
+      message: "No se pudo abrir la vista de impresión.",
+      error: error?.message || "PDF_EXPORT_FAILED",
+    };
+  }
 };
+
+export const printStoreOrder = exportStoreOrderToPdf;
 
 export const getOrderPrintTotal = (order) =>
   formatCurrency(

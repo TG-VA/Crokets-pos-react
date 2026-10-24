@@ -135,20 +135,32 @@ export const useOrdersPage = () => {
     setActiveTab("create");
   }, []);
 
-  const handlePrint = useCallback((order, preOpenedWindow = null) => {
-    const opened = printStoreOrder(order, preOpenedWindow);
+  const handlePrint = useCallback(async (order) => {
+    const result = await printStoreOrder(order);
 
-    if (!opened) {
-      setFeedback({
-        tone: "error",
-        message:
-          "No se pudo abrir la vista de impresión. Revisa el bloqueador de ventanas emergentes de tu navegador.",
-      });
+    if (result?.canceled) {
       return false;
     }
 
-    return true;
+    if (result?.success) {
+      setFeedback({
+        tone: "success",
+        message: "Pedido exportado a PDF correctamente.",
+      });
+      return true;
+    }
+
+    setFeedback({
+      tone: "error",
+      message: result?.message || "No se pudo exportar el pedido a PDF.",
+    });
+    return false;
   }, []);
+
+  const handleExportPdf = useCallback(
+    async (order) => handlePrint(order),
+    [handlePrint]
+  );
 
   return {
     activeTab,

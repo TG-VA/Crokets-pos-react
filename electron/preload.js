@@ -18,6 +18,7 @@ const allowedInvokeChannels = [
   "check-for-updates",
   "get-update-status",
   "quit-and-install-update",
+  "export-order-pdf",
 ];
 
 // Canales push (proceso principal -> renderer) que el renderer puede escuchar.

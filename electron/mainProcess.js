@@ -3,6 +3,7 @@ const {
   resolvePrintAvailability,
 } = require("./ticketPrintService");
 const cashDrawerService = require("./cashDrawerService");
+const { exportOrderPdf } = require("./orderPdfService");
 
 const ZOOM_MIN_DEFAULT = 0.5;
 const ZOOM_MAX_DEFAULT = 3;
@@ -124,6 +125,7 @@ function registerIpcHandlers({
   app,
   ipcMain,
   BrowserWindow,
+  dialog,
   store,
   randomUUID,
   zoomStateByWebContentsId,
@@ -259,6 +261,17 @@ function registerIpcHandlers({
         error: error?.message || "DRAWER_OPEN_FAILED",
       };
     }
+  });
+
+  ipcMain.handle("export-order-pdf", async (event, payload) => {
+    const parentWindow = BrowserWindow.fromWebContents(event.sender);
+    return exportOrderPdf({
+      BrowserWindow,
+      dialog,
+      parentWindow,
+      html: payload?.html,
+      fileName: payload?.fileName,
+    });
   });
 }
 

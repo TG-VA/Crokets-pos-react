@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const isDev = require("electron-is-dev");
 const Store = require("electron-store").default;
@@ -23,6 +23,7 @@ registerIpcHandlers({
   app,
   ipcMain,
   BrowserWindow,
+  dialog,
   store,
   randomUUID,
   zoomStateByWebContentsId,
