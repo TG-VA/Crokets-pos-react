@@ -41,6 +41,14 @@ async function exportOrderPdf({
       };
     }
 
+    if (typeof BrowserWindow !== "function") {
+      return {
+        success: false,
+        message: "No se pudo exportar el pedido a PDF.",
+        error: "BROWSERWINDOW_REQUIRED",
+      };
+    }
+
     pdfWindow = createPdfWindow(BrowserWindow);
     await loadDocument(pdfWindow, html);
 
@@ -54,13 +62,13 @@ async function exportOrderPdf({
         ? fileName.trim()
         : "Pedido.pdf";
 
-    const result = await dialog.showSaveDialog(parentWindow, {
+    const result = await dialog.showSaveDialog(parentWindow || undefined, {
       title: "Guardar pedido en PDF",
       defaultPath,
       filters: [{ name: "PDF", extensions: ["pdf"] }],
     });
 
-    if (result.canceled || !result.filePath) {
+    if (!result || result.canceled || !result.filePath) {
       return {
         success: true,
         canceled: true,

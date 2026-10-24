@@ -20,6 +20,7 @@ const IPC_CHANNELS = [
   "print-ticket",
   "open-cash-drawer",
   "get-printers",
+  "export-order-pdf",
 ];
 
 const originalPlatform = process.platform;
@@ -258,7 +259,7 @@ describe("electron mainProcess", () => {
   });
 
   describe("registerIpcHandlers", () => {
-    it("registra los diez canales esperados", () => {
+    it("registra los canales esperados", () => {
       const { handlers } = buildIpcHarness();
 
       expect(Object.keys(handlers).sort()).toEqual([...IPC_CHANNELS].sort());
