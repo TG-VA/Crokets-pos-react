@@ -1,21 +1,23 @@
-const { describe, it, expect, vi, beforeEach } = require("vitest");
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
 
-const writeFileMock = vi.fn(async () => undefined);
-vi.mock("fs", () => ({
-  promises: {
-    writeFile: writeFileMock,
-  },
-}));
-
-const {
+import {
   createPdfWindow,
   exportOrderPdf,
   loadDocument,
-} = require("./orderPdfService");
+} from "./orderPdfService";
 
 describe("orderPdfService", () => {
+  let writeFileSpy;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    writeFileSpy = vi
+      .spyOn(fs.promises, "writeFile")
+      .mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("createPdfWindow creates hidden window with hardened webPreferences", () => {
@@ -80,7 +82,7 @@ describe("orderPdfService", () => {
       fileName: "Pedido.pdf",
     });
 
-    expect(writeFileMock).toHaveBeenCalledWith(
+    expect(writeFileSpy).toHaveBeenCalledWith(
       "/tmp/pedido.pdf",
       expect.any(Buffer)
     );
@@ -112,7 +114,7 @@ describe("orderPdfService", () => {
       fileName: "Pedido.pdf",
     });
 
-    expect(writeFileMock).not.toHaveBeenCalled();
+    expect(writeFileSpy).not.toHaveBeenCalled();
     expect(result.canceled).toBe(true);
     expect(close).toHaveBeenCalled();
   });
