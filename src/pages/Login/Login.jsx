@@ -43,6 +43,8 @@ const Login = () => {
 
   const navigate = useNavigate();
   const usernameRef = useRef(null);
+  const passwordRef = useRef(null);
+  const recoverSessionButtonRef = useRef(null);
 
   // El formulario ya nace vacio en el estado inicial, de modo que no hace falta
   // ningun setState sincrono para limpiarlo: solo queda el efecto sobre el DOM.
@@ -53,6 +55,16 @@ const Login = () => {
 
     return () => clearTimeout(focusTimer);
   }, []);
+
+  useEffect(() => {
+    if (!recoverableSession) return;
+
+    const focusTimer = setTimeout(() => {
+      recoverSessionButtonRef.current?.focus();
+    }, 0);
+
+    return () => clearTimeout(focusTimer);
+  }, [recoverableSession]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -75,6 +87,13 @@ const Login = () => {
 
     if (!cleanUsername || !password.trim()) {
       setError("Por favor, complete todos los campos.");
+
+      if (!cleanUsername) {
+        usernameRef.current?.focus();
+      } else {
+        passwordRef.current?.focus();
+      }
+
       return;
     }
 
@@ -399,6 +418,7 @@ const Login = () => {
             <img src={lockIcon} alt="" className={styles.inputIcon} />
 
             <input
+              ref={passwordRef}
               id="password"
               autoComplete="off"
               className={styles.input}
@@ -448,6 +468,7 @@ const Login = () => {
             </div>
 
             <button
+              ref={recoverSessionButtonRef}
               type="button"
               className={styles.recoveryButton}
               onClick={handleRecoverSession}
