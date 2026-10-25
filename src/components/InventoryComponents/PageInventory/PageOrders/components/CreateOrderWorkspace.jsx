@@ -176,7 +176,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
                     <td className={styles.numeric}>
                       <input
                         type="text"
-                        inputMode="decimal"
+                        inputMode="numeric"
                         className={styles.quantityInput}
                         value={item.expectedQty}
                         onChange={(event) =>

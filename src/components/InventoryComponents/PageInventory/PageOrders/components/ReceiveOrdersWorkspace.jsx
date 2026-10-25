@@ -244,7 +244,7 @@ const ReceiveOrdersWorkspace = ({
                       <td className={styles.numeric}>
                         <input
                           type="text"
-                          inputMode="decimal"
+                          inputMode="numeric"
                           className={styles.quantityInput}
                           value={value}
                           onChange={(event) =>
