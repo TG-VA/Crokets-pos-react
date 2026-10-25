@@ -126,7 +126,7 @@ describe("ordersFormatters", () => {
       orderName: "PEDIDO SEMANAL",
       fromBranchName: "Matriz",
       toBranchName: "Sucursal Norte",
-      createdByLabel: "admin",
+      createdByLabel: "ADMIN",
       departments: ["Alimento"],
     });
     expect(result.items[0]).toMatchObject({
@@ -150,6 +150,21 @@ describe("toUpperLabel", () => {
   it("retorna cadena vacia ante nulos", () => {
     expect(toUpperLabel(null)).toBe("");
     expect(toUpperLabel(undefined)).toBe("");
+  });
+
+  it("normalizeStoreOrder expone los responsables en mayusculas", () => {
+    const order = normalizeStoreOrder({
+      created_by: { username: "juan" },
+      received_by: { username: "ana" },
+      items: [],
+    });
+
+    expect(order.createdByLabel).toBe("JUAN");
+    expect(order.receivedByLabel).toBe("ANA");
+  });
+
+  it("normalizeStoreOrder deja vacio al responsable ausente", () => {
+    expect(normalizeStoreOrder({ items: [] }).receivedByLabel).toBe("");
   });
 
   it("normalizeStoreOrder expone el nombre en mayusculas", () => {

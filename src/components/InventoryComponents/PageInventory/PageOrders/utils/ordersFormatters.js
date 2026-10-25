@@ -193,16 +193,16 @@ export const normalizeStoreOrder = (order) => {
       "Sucursal destino",
     createdByUserId: order.createdByUserId ?? order.created_by_user_id ?? "",
     receivedByUserId: order.receivedByUserId ?? order.received_by_user_id ?? "",
-    createdByLabel:
+    createdByLabel: toUpperLabel(
       order.createdBy?.username ??
-      order.created_by?.username ??
-      order.createdByLabel ??
-      "",
-    receivedByLabel:
+        order.created_by?.username ??
+        order.createdByLabel
+    ),
+    receivedByLabel: toUpperLabel(
       order.receivedBy?.username ??
-      order.received_by?.username ??
-      order.receivedByLabel ??
-      "",
+        order.received_by?.username ??
+        order.receivedByLabel
+    ),
     departments: getOrderDepartments({ ...order, items }),
     sentAt: order.sentAt ?? order.sent_at ?? order.createdAt ?? "",
     acceptedAt: order.acceptedAt ?? order.accepted_at ?? "",
