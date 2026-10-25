@@ -11,6 +11,8 @@ import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
 import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 
+const ORDER_CARD_PAGE_SIZES = [4, 8, 12];
+
 const getDifferenceClass = (difference) => {
   if (difference === null) return styles.differencePending;
   if (difference === 0) return styles.differenceOk;
@@ -52,9 +54,9 @@ const ReceiveOrdersWorkspace = ({
     handlePageSizeChange,
   } = usePagination({
     totalItems: pendingOrders.length,
-    defaultPageSize: 10,
-    pageSizeOptions: [5, 10, 25],
-    storageKey: "crokets_receive_orders_page_size",
+    defaultPageSize: 4,
+    pageSizeOptions: ORDER_CARD_PAGE_SIZES,
+    storageKey: "crokets_receive_orders_cards_page_size",
   });
 
   const paginatedPendingOrders = pageItems(pendingOrders);
@@ -164,7 +166,7 @@ const ReceiveOrdersWorkspace = ({
                 currentPage={currentPage}
                 totalPages={totalPages}
                 pageSize={pageSize}
-                pageSizeOptions={[5, 10, 25]}
+                pageSizeOptions={ORDER_CARD_PAGE_SIZES}
                 onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
                 totalItems={pendingOrders.length}
