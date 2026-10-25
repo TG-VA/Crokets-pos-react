@@ -15,9 +15,15 @@ describe("sanitizeIntegerQuantity", () => {
     expect(sanitizeIntegerQuantity(".5")).toBe("");
   });
 
-  it("drops negative signs and spaces", () => {
-    expect(sanitizeIntegerQuantity("-3")).toBe("3");
+  it("discards a negative capture instead of flipping its sign", () => {
+    expect(sanitizeIntegerQuantity("-3")).toBe("");
+    expect(sanitizeIntegerQuantity(" -3 ")).toBe("");
+    expect(sanitizeIntegerQuantity("\u22123")).toBe("");
+  });
+
+  it("drops spaces and non numeric noise", () => {
     expect(sanitizeIntegerQuantity(" 4 ")).toBe("4");
+    expect(sanitizeIntegerQuantity("1 2")).toBe("12");
   });
 
   it("removes leading zeros but keeps a single zero", () => {

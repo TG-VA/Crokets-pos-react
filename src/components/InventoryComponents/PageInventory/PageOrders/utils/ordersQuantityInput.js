@@ -1,10 +1,19 @@
 /**
  * Sanitiza una cantidad capturada en los formularios de pedidos.
- * El inventario solo admite unidades enteras, por lo que se conserva
- * unicamente la parte entera del valor capturado.
+ * El inventario solo admite unidades enteras, por lo que la mascara conserva
+ * unicamente la parte entera: el campo controlado muestra siempre el valor que
+ * se guarda en el estado, y tanto `ordersService` como la RPC rechazan
+ * cualquier cantidad fraccionaria que llegue por otra via.
+ *
+ * Una captura negativa se descarta completa en vez de quedarse con sus digitos:
+ * convertir `-3` en `3` inventaria una entrada que el usuario no pidio.
  */
 export const sanitizeIntegerQuantity = (value) => {
-  const raw = String(value ?? "").replace(/[^\d.,]/g, "");
+  const text = String(value ?? "").trim();
+
+  if (text.startsWith("-") || text.startsWith("\u2212")) return "";
+
+  const raw = text.replace(/[^\d.,]/g, "");
   const integerPart = raw.split(/[.,]/)[0] ?? "";
   const digits = integerPart.replace(/\D/g, "");
 
