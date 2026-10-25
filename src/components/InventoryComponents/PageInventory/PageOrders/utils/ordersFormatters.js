@@ -107,7 +107,11 @@ export const getOrderDifferenceLabel = (order) => {
 
   const notes = order.discrepancyNotes ?? order.discrepancy_notes ?? "";
 
-  return notes || "Sin diferencia";
+  if (notes) return notes;
+
+  return order.status === "accepted_with_difference"
+    ? "Con diferencia"
+    : "Sin diferencia";
 };
 
 export const getOrderNumber = (order) =>

@@ -64,6 +64,12 @@ describe("ordersFormatters", () => {
         discrepancy_notes: "Sobrantes: 1x Croqueta (+1)",
       })
     ).toBe("Sobrantes: 1x Croqueta (+1)");
+    expect(
+      getOrderDifferenceLabel({
+        status: "accepted_with_difference",
+        discrepancyNotes: "",
+      })
+    ).toBe("Con diferencia");
     expect(getOrderDifferenceLabel(null)).toBe("");
   });
 
