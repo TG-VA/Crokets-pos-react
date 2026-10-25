@@ -322,6 +322,47 @@
   width: fit-content;
 }
 
+.routeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.routeBadgeRole {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.branchBadgeOrigin {
+  background: rgba(16, 146, 177, 0.12);
+  color: var(--croketsBlueDark);
+}
+
+.branchBadgeDestination {
+  background: rgba(252, 137, 19, 0.16);
+  color: #9a4d00;
+}
+
+.routeCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.routeConnector {
+  color: #5c6b77;
+  font-weight: 600;
+}
+
 .primaryButton,
 .secondaryButton,
 .iconButton {
@@ -496,7 +537,7 @@
   margin: 0;
   font-weight: 700;
   color: #2a3d4a;
-  text-align: right;
+  justify-self: end;
 }
 
 .departmentChips {
@@ -588,6 +629,10 @@
 }
 
 .receiptRoute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: #607080;
 }

@@ -2,6 +2,7 @@ import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
 import { getOrderStatusMeta } from "../utils/ordersFormatters";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
+import BranchBadge from "./BranchBadge";
 import OrderPreviewSections from "./OrderPreviewSections";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
@@ -49,12 +50,9 @@ const OrderDetailModal = ({ order, onClose }) => {
             <div>
               <h3 className={styles.detailTitle}>{order.orderName}</h3>
               <p className={styles.detailRoute}>
-                <span className={styles.routeBadgeOrange}>
-                  Recibe {order.toBranchName}
-                </span>
-                <span className={styles.routeBadgeDark}>
-                  desde {order.fromBranchName}
-                </span>
+                <BranchBadge role="origin" name={order.fromBranchName} />
+                <span className={styles.routeConnector}>hacia</span>
+                <BranchBadge role="destination" name={order.toBranchName} />
               </p>
             </div>
             <span

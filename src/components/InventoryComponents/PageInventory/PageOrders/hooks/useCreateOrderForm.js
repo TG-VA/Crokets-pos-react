@@ -151,7 +151,7 @@ export const useCreateOrderForm = ({
     setItems([]);
     setError("");
     setSearchOpen(false);
-  }, []);
+  }, [setOrderName]);
 
   const originBranchId = currentBranch?.id;
 

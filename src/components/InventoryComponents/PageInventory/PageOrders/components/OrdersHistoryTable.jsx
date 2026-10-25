@@ -11,6 +11,7 @@ import { getPresetRange } from "../utils/ordersDateRange";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import BranchBadge from "./BranchBadge";
 import OrdersHistoryFilters from "./OrdersHistoryFilters";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
@@ -159,10 +160,16 @@ const OrdersHistoryTable = ({
                       </span>
                     </td>
                     <td>
-                      {order.toBranchName}
-                      <span className={styles.rowSubtext}>
-                        desde {order.fromBranchName}
-                      </span>
+                      <div className={styles.routeCell}>
+                        <BranchBadge
+                          role="origin"
+                          name={order.fromBranchName}
+                        />
+                        <BranchBadge
+                          role="destination"
+                          name={order.toBranchName}
+                        />
+                      </div>
                     </td>
                     <td>{formatOrderDateTime(order.sentAt)}</td>
                     <td>

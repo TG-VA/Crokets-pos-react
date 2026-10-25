@@ -4,6 +4,7 @@ import {
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
+import BranchBadge from "./BranchBadge";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
 import StoreIcon from "../../../../../assets/icons/store-solid-full.svg";
@@ -13,7 +14,17 @@ import BoxIcon from "../../../../../assets/icons/boxes-stacked-solid-full.svg";
 const PendingOrderCard = ({ order, onOpenDetail, onSelectOrder }) => {
   const status = getOrderStatusMeta(order.status);
   const metaItems = [
-    { icon: StoreIcon, label: "Origen", value: order.fromBranchName },
+    {
+      icon: StoreIcon,
+      label: "Origen",
+      value: (
+        <BranchBadge
+          role="origin"
+          name={order.fromBranchName}
+          showRole={false}
+        />
+      ),
+    },
     {
       icon: CalendarIcon,
       label: "Enviado",
@@ -22,7 +33,7 @@ const PendingOrderCard = ({ order, onOpenDetail, onSelectOrder }) => {
     {
       icon: BoxIcon,
       label: "Productos",
-      value: String(order.items.length),
+      value: order.items.length,
     },
   ];
 

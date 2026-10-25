@@ -2,6 +2,7 @@ import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
 import { getOrderStatusMeta } from "../utils/ordersFormatters";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
+import BranchBadge from "./BranchBadge";
 import OrderPreviewSections from "./OrderPreviewSections";
 
 const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
@@ -40,6 +41,11 @@ const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
               <h3 className={styles.detailTitle}>
                 {order.orderNumber} - {order.orderName}
               </h3>
+              <p className={styles.detailRoute}>
+                <BranchBadge role="origin" name={order.fromBranchName} />
+                <span className={styles.routeConnector}>hacia</span>
+                <BranchBadge role="destination" name={order.toBranchName} />
+              </p>
             </div>
             <span
               className={[

@@ -4,6 +4,7 @@ import styles from "../PageOrders.module.css";
 import { formatQuantity } from "../utils/ordersFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import BranchBadge from "./BranchBadge";
 import ChangeIcon from "../../../../../assets/icons/changeIcon.svg";
 import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import WarningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
@@ -82,7 +83,9 @@ const ReceiptPanel = ({
           <span className={styles.orderFolio}>{order.orderNumber}</span>
           <h3 className={styles.receiptTitle}>{order.orderName}</h3>
           <p className={styles.receiptRoute}>
-            {order.fromBranchName} hacia {order.toBranchName}
+            <BranchBadge role="origin" name={order.fromBranchName} />
+            <span className={styles.routeConnector}>hacia</span>
+            <BranchBadge role="destination" name={order.toBranchName} />
           </p>
         </div>
         <button
