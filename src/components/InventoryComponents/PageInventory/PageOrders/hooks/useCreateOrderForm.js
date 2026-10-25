@@ -11,13 +11,18 @@ export const useCreateOrderForm = ({
 }) => {
   const { user } = useAuth();
 
-  const [orderName, setOrderName] = useState("");
+  const [orderName, setOrderNameState] = useState("");
   const [destinationBranchId, setDestinationBranchId] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const setOrderName = useCallback((value) => {
+    // Sin trim: el usuario debe poder escribir espacios entre palabras.
+    setOrderNameState(String(value ?? "").toLocaleUpperCase("es-MX"));
+  }, []);
 
   const destinationOptions = useMemo(
     () =>

@@ -7,6 +7,7 @@ import {
   getNonIntegerReceiptItems,
 } from "../utils/ordersCalculationService";
 import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
+import { toUpperLabel } from "../utils/ordersFormatters";
 import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";
 
 export const fetchOrderBranchOptions = async (currentBranch) => {
@@ -136,7 +137,7 @@ export const createStoreOrder = async ({
   }));
 
   const { data, error } = await supabase.rpc("create_store_order", {
-    p_order_name: orderName.trim(),
+    p_order_name: toUpperLabel(orderName),
     p_from_branch_id: originBranchId,
     p_to_branch_id: destinationBranchId,
     p_user_id: user.id,

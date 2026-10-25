@@ -114,11 +114,21 @@ export const getOrderDifferenceLabel = (order) => {
     : "Sin diferencia";
 };
 
+/**
+ * Texto en mayusculas para nombres de pedido y responsables. Retorna cadena
+ * vacia ante valores nulos o no textuales para no lanzar excepciones.
+ */
+export const toUpperLabel = (value) => {
+  if (value === null || value === undefined) return "";
+
+  return String(value).trim().toLocaleUpperCase("es-MX");
+};
+
 export const getOrderNumber = (order) =>
   order?.orderNumber ?? order?.order_number ?? "";
 
 export const getOrderName = (order) =>
-  order?.orderName ?? order?.order_name ?? "";
+  toUpperLabel(order?.orderName ?? order?.order_name);
 
 export const getOrderDepartments = (order) => {
   const summary = order?.departmentsSummary ?? order?.departments_summary;

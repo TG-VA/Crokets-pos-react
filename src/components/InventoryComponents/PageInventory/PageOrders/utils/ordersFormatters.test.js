@@ -10,6 +10,7 @@ import {
   getOrderStatusMeta,
   normalizeStoreOrder,
   normalizeText,
+  toUpperLabel,
   parseOrderDate,
 } from "./ordersFormatters";
 
@@ -122,7 +123,7 @@ describe("ordersFormatters", () => {
 
     expect(result).toMatchObject({
       orderNumber: "PED-20261022-0001",
-      orderName: "Pedido semanal",
+      orderName: "PEDIDO SEMANAL",
       fromBranchName: "Matriz",
       toBranchName: "Sucursal Norte",
       createdByLabel: "admin",
@@ -138,5 +139,22 @@ describe("ordersFormatters", () => {
 
   it("regresa null al normalizar un pedido inexistente", () => {
     expect(normalizeStoreOrder(null)).toBeNull();
+  });
+});
+
+describe("toUpperLabel", () => {
+  it("convierte a mayusculas conservando acentos", () => {
+    expect(toUpperLabel("  reposición semanal ")).toBe("REPOSICIÓN SEMANAL");
+  });
+
+  it("retorna cadena vacia ante nulos", () => {
+    expect(toUpperLabel(null)).toBe("");
+    expect(toUpperLabel(undefined)).toBe("");
+  });
+
+  it("normalizeStoreOrder expone el nombre en mayusculas", () => {
+    expect(
+      normalizeStoreOrder({ order_name: "pedido norte", items: [] }).orderName
+    ).toBe("PEDIDO NORTE");
   });
 });

@@ -53,6 +53,24 @@ describe("ordersService", () => {
   });
 
   describe("createStoreOrder", () => {
+    it("envia el nombre del pedido en mayusculas y sin espacios sobrantes", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, orderId: "order-1" },
+        error: null,
+      });
+      fetchStoreOrderById.mockResolvedValue({ id: "order-1" });
+
+      await createStoreOrder({
+        ...baseDraft,
+        orderName: "  Reposición semanal ",
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "create_store_order",
+        expect.objectContaining({ p_order_name: "REPOSICIÓN SEMANAL" })
+      );
+    });
+
     it("rechaza cantidades fraccionarias antes de llamar a la RPC", async () => {
       await expect(
         createStoreOrder({
