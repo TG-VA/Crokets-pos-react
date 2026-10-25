@@ -104,12 +104,18 @@ y el proceso principal de Electron:
 | Facturación: ventas por facturar (datos)              | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
 | Smoke de render del renderer y guardas de ruta        | `src/App.test.jsx`                                                                 |
 | Pedidos: servicio de datos y conteo de pendientes     | `.../PageOrders/services/ordersService.test.js`                                    |
-| Pedidos: contexto de pendientes (polling de 30 s)     | `src/contexts/PendingOrdersContext.test.jsx`                                       |
+| Pedidos: contexto de pendientes (polling y realtime)  | `src/contexts/PendingOrdersContext.test.jsx`                                       |
 | Pedidos: mascara de cantidades enteras                | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
 | Pedidos: rango de fechas de los filtros               | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
 | Pedidos: formateadores y etiqueta de diferencia       | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                            | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
 | Pedidos: historial (tabla, filtros y paginacion)      | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
+| Pedidos: aviso de recepcion y diferencias             | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
+| Pedidos: detalle (paginacion y tabla de diferencias)  | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
+| Pedidos: panel de recepcion (paginacion y faltantes)  | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
+| Pedidos: servicio realtime                            | `.../PageOrders/services/ordersRealtimeService.test.js`                            |
+| Pedidos: contrato SQL de realtime                     | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
+| Modal base (acciones de footer)                       | `src/components/AppModal/AppModal.test.jsx`                                        |
 | Pedidos: contrato SQL de integridad                   | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 
 ### Cobertura transitiva del resolver de costo

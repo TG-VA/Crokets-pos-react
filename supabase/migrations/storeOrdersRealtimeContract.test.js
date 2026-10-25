@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 
 const MIGRATION = join(
   process.cwd(),
-  "supabase/migrations/20261025120000_store_orders_realtime.sql"
+  "supabase/migrations/20261025130000_store_orders_realtime.sql"
 );
 
 const normalizedSql = readFileSync(MIGRATION, "utf8").replace(/\s+/g, " ");
