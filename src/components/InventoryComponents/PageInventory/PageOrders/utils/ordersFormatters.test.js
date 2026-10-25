@@ -5,6 +5,7 @@ import {
   formatOrderDateTime,
   formatQuantity,
   getOrderDepartments,
+  getOrderDifferenceLabel,
   getOrderNumber,
   getOrderStatusMeta,
   normalizeStoreOrder,
@@ -39,6 +40,31 @@ describe("ordersFormatters", () => {
       "Aceptado con diferencia"
     );
     expect(getOrderStatusMeta("desconocido").label).toBe("desconocido");
+  });
+
+  it("etiqueta la diferencia segun el estado y las notas de recepcion", () => {
+    expect(getOrderDifferenceLabel({ status: "pending" })).toBe(
+      "Pendiente de recepcion"
+    );
+    expect(
+      getOrderDifferenceLabel({
+        status: "accepted",
+        discrepancyNotes: "",
+      })
+    ).toBe("Sin diferencia");
+    expect(
+      getOrderDifferenceLabel({
+        status: "accepted_with_difference",
+        discrepancyNotes: "Faltantes: 1x Croqueta (-1)",
+      })
+    ).toBe("Faltantes: 1x Croqueta (-1)");
+    expect(
+      getOrderDifferenceLabel({
+        status: "accepted_with_difference",
+        discrepancy_notes: "Sobrantes: 1x Croqueta (+1)",
+      })
+    ).toBe("Sobrantes: 1x Croqueta (+1)");
+    expect(getOrderDifferenceLabel(null)).toBe("");
   });
 
   it("lee folio y nombre desde formatos camel y snake", () => {

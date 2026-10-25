@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 import styles from "../PageOrders.module.css";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";

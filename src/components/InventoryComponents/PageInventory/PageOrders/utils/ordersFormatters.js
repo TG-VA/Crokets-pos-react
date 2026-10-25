@@ -100,6 +100,16 @@ export const getOrderStatusMeta = (status) =>
     description: "",
   };
 
+export const getOrderDifferenceLabel = (order) => {
+  if (!order) return "";
+
+  if (order.status === "pending") return "Pendiente de recepcion";
+
+  const notes = order.discrepancyNotes ?? order.discrepancy_notes ?? "";
+
+  return notes || "Sin diferencia";
+};
+
 export const getOrderNumber = (order) =>
   order?.orderNumber ?? order?.order_number ?? "";
 

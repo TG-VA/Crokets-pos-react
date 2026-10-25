@@ -122,6 +122,32 @@ describe("OrdersHistoryTable pagination", () => {
     ).toBeTruthy();
   });
 
+  it("distingue un pedido pendiente de uno sin diferencia", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[
+          {
+            ...buildOrder(0),
+            id: "pending",
+            orderNumber: "PED-001",
+            status: "pending",
+          },
+          {
+            ...buildOrder(1),
+            id: "accepted",
+            orderNumber: "PED-002",
+            status: "accepted",
+          },
+        ]}
+      />
+    );
+
+    const rows = getBodyRows();
+
+    expect(within(rows[0]).getByText("Pendiente de recepcion")).toBeTruthy();
+    expect(within(rows[1]).getByText("Sin diferencia")).toBeTruthy();
+  });
+
   it("mantiene visibles las acciones de detalle y exportar por fila", () => {
     const onOpenDetail = vi.fn();
     const onOpenPrint = vi.fn();

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
 import styles from "../PageOrders.module.css";
@@ -11,7 +11,7 @@ import TrashIcon from "../../../../../assets/icons/deleteIcon.svg";
 import SaveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
-const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
+const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const [code, setCode] = useState("");
 
   const handleCodeSubmit = (event) => {

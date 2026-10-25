@@ -1,5 +1,3 @@
-import React from "react";
-
 import styles from "./PageOrders.module.css";
 import { useOrdersPage } from "./hooks/useOrdersPage";
 import OrdersHeroSection from "./components/OrdersHeroSection";
@@ -47,7 +45,6 @@ const PageOrders = () => {
             onQuantityChange={page.receiveForm.setQuantity}
             getDifferencePreview={page.receiveForm.getDifferencePreview}
             onSubmit={page.receiveForm.submitReceipt}
-            onCreateOrder={(event) => page.handleTabSelect("create", event)}
             onOpenDetail={page.openDetail}
           />
         ) : null}
@@ -57,7 +54,6 @@ const PageOrders = () => {
             form={page.createForm}
             products={page.products}
             onSave={page.handleCreate}
-            onCancel={(event) => page.handleTabSelect("receive", event)}
           />
         ) : null}
 

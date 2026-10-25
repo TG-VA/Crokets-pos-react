@@ -1,5 +1,3 @@
-import React from "react";
-
 import styles from "../PageOrders.module.css";
 import XmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 

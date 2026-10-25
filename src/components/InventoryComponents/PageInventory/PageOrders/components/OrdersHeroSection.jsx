@@ -1,5 +1,3 @@
-import React from "react";
-
 import styles from "../PageOrders.module.css";
 import ReceiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";

@@ -1,24 +1,15 @@
-import React from "react";
-
 import styles from "../PageOrders.module.css";
 import {
   formatOrderDateTime,
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
+import { getStatusToneClass } from "../utils/ordersStatusClasses";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
 import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
-
-const TONE_CLASS = {
-  pending: styles.statusPending,
-  success: styles.statusSuccess,
-  warning: styles.statusWarning,
-  danger: styles.statusDanger,
-  neutral: styles.statusPending,
-};
 
 const getDifferenceClass = (difference) => {
   if (difference === null) return styles.differencePending;
@@ -48,7 +39,6 @@ const ReceiveOrdersWorkspace = ({
   onQuantityChange,
   getDifferencePreview,
   onSubmit,
-  onCreateOrder,
   onOpenDetail,
 }) => {
   const {
@@ -119,7 +109,7 @@ const ReceiveOrdersWorkspace = ({
                     <span
                       className={[
                         styles.statusBadge,
-                        TONE_CLASS[status.tone] || TONE_CLASS.neutral,
+                        getStatusToneClass(styles, status.tone),
                       ]
                         .filter(Boolean)
                         .join(" ")}
