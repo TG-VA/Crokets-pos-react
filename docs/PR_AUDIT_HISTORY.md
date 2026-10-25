@@ -2840,6 +2840,13 @@ procedimiento exacto queda en `docs/SUPABASE_MIGRATIONS.md`.
 | C7  | `difference_qty` es entero por derivación (`v_received - expected_qty` con ambos enteros), pero un pedido heredado `pending` con `expected_qty` fraccionario produciría una diferencia fraccionaria mientras los constraints sigan `NOT VALID` | `20261024120000:286`; riesgo documentado en `docs/SUPABASE_MIGRATIONS.md`. Se cierra al ejecutar `VALIDATE CONSTRAINT`                                                                                         | DIFERIDO  |
 | C8  | El folio se calcula con `count(*)` bajo lock asesor (`20261024120000:85-89`); el costo del conteo crece con los pedidos del día, no se midió el plan                                                                                           | Observación de performance; con el volumen actual (6 pedidos) es irrelevante y el índice único de `order_number` acota el reintento                                                                            | OBSERVADO |
 
+**Sobre el truncamiento de `sanitizeIntegerQuantity` (F2).** Se evaluó rechazar en vez de truncar y se
+conservó el truncamiento: el campo es controlado y muestra siempre el valor que se guarda en el estado
+(`2.9` se ve como `2` en el momento de capturarlo), y tanto `ordersService`
+(`validateOrderDraft`/`getNonIntegerReceiptItems`) como la RPC rechazan cualquier fracción que llegue
+por otra vía, así que no hay una conversión oculta. Lo que sí se corrigió es el signo: convertir `-3`
+en `3` inventaba una entrada que nadie capturó, y ahora la captura se descarta completa (C2).
+
 **Veredicto de la contra-auditoría:** los cuatro commits de auditoría (`901892d`, `99ca89f`,
 `0a67352`, `d99bff7`) sostienen lo que declaran: el lock asesor del folio, el
 `coalesce(auth.uid(), p_user_id)` y la guarda `_user_can_access_branch` condicionada a
