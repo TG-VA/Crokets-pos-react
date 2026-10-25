@@ -1087,7 +1087,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
           </div>
         </div>
 
-
         {isNotesModalOpen && selectedTicket && (
           <div className={styles.notesOverlay}>
             <div className={styles.notesModal}>

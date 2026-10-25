@@ -48,7 +48,6 @@ export const useSalesHistory = ({
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [dateFilter, setDateFilter] = useState(getTodayDateFilter);
   const [cashierFilter, setCashierFilter] = useState("all");
-  const [hasInitialSelection, setHasInitialSelection] = useState(false);
   const [tickets, setTickets] = useState([]);
   const [cashiers, setCashiers] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -68,6 +67,7 @@ export const useSalesHistory = ({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isPartialReturnOpen, setIsPartialReturnOpen] = useState(false);
   const handleSelectTicketRef = useRef(null);
+  const hasInitialSelectionRef = useRef(false);
 
   const closeAppModal = useCallback(
     () => setAppModal((p) => ({ ...p, isOpen: false })),
@@ -183,6 +183,17 @@ export const useSalesHistory = ({
       .then((nextTickets) => {
         if (cancelled) return;
         applyTickets(nextTickets);
+
+        // Al abrir el modal se selecciona la venta mas reciente una sola vez.
+        if (hasInitialSelectionRef.current) return;
+        if (!nextTickets.length) {
+          setSelectedTicket(null);
+          setCancelReason("");
+          setRefundMethodId("");
+          return;
+        }
+        hasInitialSelectionRef.current = true;
+        handleSelectTicketRef.current?.(nextTickets[0]);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -333,21 +344,13 @@ export const useSalesHistory = ({
     await loadReturnData(t.id);
   };
 
-  handleSelectTicketRef.current = handleSelectTicket;
+  useEffect(() => {
+    handleSelectTicketRef.current = handleSelectTicket;
+  });
 
   useEffect(() => {
-    if (!isOpen || hasInitialSelection || loadingTickets) return;
-
-    if (!tickets.length) {
-      setSelectedTicket(null);
-      setCancelReason("");
-      setRefundMethodId("");
-      return;
-    }
-
-    setHasInitialSelection(true);
-    handleSelectTicketRef.current?.(tickets[0]);
-  }, [isOpen, hasInitialSelection, loadingTickets, tickets]);
+    if (!isOpen) hasInitialSelectionRef.current = false;
+  }, [isOpen]);
 
   const executeCancelSale = async () => {
     const ticketBeforeCancel = { ...selectedTicket };
@@ -716,7 +719,6 @@ export const useSalesHistory = ({
     setIsNotesModalOpen(false);
     setPrintProcessing(false);
     setIsPartialReturnOpen(false);
-    setHasInitialSelection(false);
     closeAppModal();
   }, [closeAppModal]);
 

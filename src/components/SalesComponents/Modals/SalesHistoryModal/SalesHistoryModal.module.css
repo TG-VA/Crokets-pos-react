@@ -1035,14 +1035,6 @@
     brightness(90%) contrast(87%);
 }
 
-.footerButtonIcon {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  flex-shrink: 0;
-}
-
 .closeIcon,
 .notesCloseIcon {
   width: 18px;

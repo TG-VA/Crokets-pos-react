@@ -1,0 +1,115 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+
+vi.mock("../../services/salesHistoryService", () => ({
+  getPaymentMethodLabel: vi.fn(() => "EFECTIVO"),
+  getPaymentSummary: vi.fn(),
+  fetchPaymentMethods: vi.fn(),
+  fetchCashiers: vi.fn(),
+  buildCustomerPointsMaps: vi.fn(),
+  fetchTicketDetailsData: vi.fn(),
+  fetchProductsByIds: vi.fn(),
+  fetchSaleReturnsData: vi.fn(),
+  fetchCanceledSaleData: vi.fn(),
+  formatCurrency: vi.fn(),
+  executeCancelSaleTransaction: vi.fn(),
+  fetchHistoryTickets: vi.fn(),
+}));
+
+vi.mock("../../../../utils/ticketPrinter", () => ({ printTicket: vi.fn() }));
+vi.mock("../../../../services/printSettingsService", () => ({
+  getTicketPrintProfile: vi.fn(),
+  getSelectedPrinter: vi.fn(),
+  getTicketCopies: vi.fn(),
+  getTicketFeedLines: vi.fn(),
+}));
+vi.mock("../../../../services/ticketCustomizationService", () => ({
+  getTicketCustomization: vi.fn(),
+}));
+
+import {
+  fetchPaymentMethods,
+  fetchCashiers,
+  fetchTicketDetailsData,
+  fetchProductsByIds,
+  fetchSaleReturnsData,
+  fetchHistoryTickets,
+} from "../../services/salesHistoryService";
+import { useSalesHistory } from "./useSalesHistory";
+
+const TICKETS = [
+  { id: "s2", folio: "F-2", status: "completed", total: 200, payments: [] },
+  { id: "s1", folio: "F-1", status: "completed", total: 100, payments: [] },
+];
+
+const renderSalesHistory = (initialProps = { isOpen: true }) =>
+  renderHook(
+    ({ isOpen }) =>
+      useSalesHistory({
+        isOpen,
+        branchId: "b1",
+        user: { id: "u1" },
+        branch: { id: "b1" },
+        onSaleCancelled: vi.fn(),
+      }),
+    { initialProps }
+  );
+
+describe("useSalesHistory - seleccion inicial", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPaymentMethods.mockResolvedValue([]);
+    fetchCashiers.mockResolvedValue([]);
+    fetchHistoryTickets.mockResolvedValue(TICKETS);
+    fetchTicketDetailsData.mockResolvedValue({ details: [], kits: [] });
+    fetchProductsByIds.mockResolvedValue([]);
+    fetchSaleReturnsData.mockResolvedValue({ returns: [], returnItems: [] });
+  });
+
+  it("selecciona la venta mas reciente al abrir el modal", async () => {
+    const { result } = renderSalesHistory();
+
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+    expect(fetchTicketDetailsData).toHaveBeenCalledWith("s2");
+  });
+
+  it("no reemplaza la seleccion del usuario cuando la lista se recarga", async () => {
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    await act(async () => {
+      await result.current.handleSelectTicket(TICKETS[1]);
+    });
+    const callsBeforeReload = fetchHistoryTickets.mock.calls.length;
+    await act(async () => {
+      result.current.setCashierFilter("u9");
+    });
+
+    await waitFor(() =>
+      expect(fetchHistoryTickets.mock.calls.length).toBeGreaterThan(
+        callsBeforeReload
+      )
+    );
+    await waitFor(() => expect(result.current.loadingTickets).toBe(false));
+    expect(result.current.selectedTicket?.id).toBe("s1");
+  });
+
+  it("deja la seleccion vacia si no hay ventas", async () => {
+    fetchHistoryTickets.mockResolvedValue([]);
+    const { result } = renderSalesHistory();
+
+    await waitFor(() => expect(result.current.loadingTickets).toBe(false));
+    expect(result.current.selectedTicket).toBeNull();
+  });
+
+  it("vuelve a seleccionar la mas reciente al reabrir el modal", async () => {
+    const { result, rerender } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    rerender({ isOpen: false });
+    expect(result.current.selectedTicket).toBeNull();
+
+    rerender({ isOpen: true });
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+  });
+});
