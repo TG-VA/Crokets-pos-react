@@ -2818,3 +2818,32 @@ evidencia reproducible y pruebas de regresión, y los diferidos F9-F10 están re
 severidad y recomendación. Antes de desplegar, aplicar `20261024120000_store_orders_integrity.sql`
 con `supabase db push` y verificar `supabase migration list`; los constraints `NOT VALID` solo
 protegen filas nuevas hasta que se ejecute `VALIDATE CONSTRAINT`.
+
+### 8. Contra-auditoría y despliegue (24 oct 2026, misma rama)
+
+La migración `20261024120000_store_orders_integrity.sql` **quedó aplicada** al remoto con
+`supabase db push` (dry run previo: era la única pendiente). `supabase migration list` muestra
+Local = Remote y `supabase inspect db index-stats --linked` lista `public.store_orders_sent_at_idx`
+(16 kB). Pre-check de datos históricos sobre `store_order_items` (4 filas): 0 fraccionarios en
+`expected_qty` y 0 en `received_qty`. Los constraints siguen `NOT VALID` porque el `VALIDATE
+CONSTRAINT` requiere acceso SQL directo, que no estaba disponible en el equipo de auditoría; el
+procedimiento exacto queda en `docs/SUPABASE_MIGRATIONS.md`.
+
+| ID  | Hallazgo de la contra-auditoría                                                                                                                                                                                                                | Evidencia y corrección                                                                                                                                                                                         | Estado    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| C1  | Los campos de cantidad entera anunciaban teclado decimal (`inputMode="decimal"`), invitando una captura que la máscara descarta                                                                                                                | `CreateOrderWorkspace.jsx:179` y `ReceiveOrdersWorkspace.jsx:247` ahora usan `inputMode="numeric"`                                                                                                             | CORREGIDO |
+| C2  | La máscara fallaba abierta con negativos: `sanitizeIntegerQuantity("-3")` devolvía `"3"`, inventariando una entrada que nadie capturó                                                                                                          | `ordersQuantityInput.js:14` descarta la captura completa; `ordersQuantityInput.test.js` cubre el negativo pegado, con espacios y con signo menos tipográfico                                                   | CORREGIDO |
+| C3  | No existía prueba del intervalo de 30 s ni de que el polling no descargue el historial, que es el núcleo del hallazgo F1                                                                                                                       | `PendingOrdersContext.test.jsx:88` avanza 30 s con fake timers y exige una segunda llamada a `countPendingStoreOrders` y cero a `loadStoreOrders`; quitar el `setInterval` rompe el caso (mutación verificada) | CORREGIDO |
+| C4  | `getOrderDifferenceLabel` devolvía "Sin diferencia" para un pedido `accepted_with_difference` sin notas, contradiciendo su badge                                                                                                               | `ordersFormatters.js:113` cae a "Con diferencia" por estatus; caso en `ordersFormatters.test.js:72`                                                                                                            | CORREGIDO |
+| C5  | Warning de ESLint `React is defined but never used` en `NavbarInventory.test.jsx`, preexistente en `main`                                                                                                                                      | Import eliminado en commit aparte; el archivo queda sin warnings                                                                                                                                               | CORREGIDO |
+| C6  | La documentación de despliegue describía la migración como pendiente y la de pedidos como "no verificada de forma independiente"                                                                                                               | `docs/SUPABASE_MIGRATIONS.md` registra el push real, la verificación del índice, el pre-check y el `VALIDATE CONSTRAINT` pendiente; `docs/TESTING.md` indexa las suites nuevas                                 | CORREGIDO |
+| C7  | `difference_qty` es entero por derivación (`v_received - expected_qty` con ambos enteros), pero un pedido heredado `pending` con `expected_qty` fraccionario produciría una diferencia fraccionaria mientras los constraints sigan `NOT VALID` | `20261024120000:286`; riesgo documentado en `docs/SUPABASE_MIGRATIONS.md`. Se cierra al ejecutar `VALIDATE CONSTRAINT`                                                                                         | DIFERIDO  |
+| C8  | El folio se calcula con `count(*)` bajo lock asesor (`20261024120000:85-89`); el costo del conteo crece con los pedidos del día, no se midió el plan                                                                                           | Observación de performance; con el volumen actual (6 pedidos) es irrelevante y el índice único de `order_number` acota el reintento                                                                            | OBSERVADO |
+
+**Veredicto de la contra-auditoría:** los cuatro commits de auditoría (`901892d`, `99ca89f`,
+`0a67352`, `d99bff7`) sostienen lo que declaran: el lock asesor del folio, el
+`coalesce(auth.uid(), p_user_id)` y la guarda `_user_can_access_branch` condicionada a
+`auth.uid()` están en el SQL y en el contrato; el badge consulta solo el conteo por
+`(to_branch_id, status)`; `difference_qty` es entero por derivación. Las correcciones C1-C6 se
+aplicaron con pruebas y la suite queda en 179 archivos / 2423 casos. Queda pendiente únicamente el
+`VALIDATE CONSTRAINT` de los dos constraints de enteros.
