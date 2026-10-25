@@ -472,9 +472,27 @@
 }
 
 .orderMeta {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f6fafc;
+}
+
+.orderMetaItem {
+  display: grid;
+  grid-template-columns: 16px auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.orderMetaItem img {
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .orderMeta dt {
@@ -484,17 +502,78 @@
 
 .orderMeta dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
+  color: #2a3d4a;
+  text-align: right;
 }
 
-.orderDepartments {
+.departmentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 0;
-  color: #607080;
+  padding: 0;
+  list-style: none;
+}
+
+.departmentChip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--infoBg);
+  color: var(--infoText);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .orderCardActions {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.detailButton,
+.changeOrderButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 146, 177, 0.4);
+  background: var(--white);
+  color: var(--croketsBlueDark);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.detailButton:hover:not(:disabled),
+.changeOrderButton:hover:not(:disabled) {
+  background: var(--infoBg);
+  transform: translateY(-1px);
+}
+
+.detailButton:focus-visible,
+.changeOrderButton:focus-visible {
+  outline: 3px solid rgba(16, 146, 177, 0.24);
+  outline-offset: 2px;
+}
+
+.changeOrderButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detailButton img,
+.changeOrderButton img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .receiptPanel {
@@ -629,16 +708,63 @@
   justify-content: space-between;
 }
 
-.receiptHint {
+.receiptStatus {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #5c6b77;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.receiptHint img {
-  width: 16px;
-  height: 16px;
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.statusPill img {
+  width: 14px;
+  height: 14px;
+}
+
+.statusPillMissing {
+  background: var(--errorBg);
+  color: var(--errorText);
+  border: 1px solid rgba(177, 56, 56, 0.25);
+}
+
+.statusPillMissing img {
+  filter: brightness(0) saturate(100%) invert(26%) sepia(60%) saturate(1500%)
+    hue-rotate(335deg) brightness(90%) contrast(90%);
+}
+
+.statusPillOk {
+  background: var(--successBg);
+  color: var(--successText);
+  border: 1px solid rgba(29, 135, 81, 0.25);
+}
+
+.statusPillOk img {
+  filter: brightness(0) saturate(100%) invert(36%) sepia(60%) saturate(800%)
+    hue-rotate(100deg) brightness(90%) contrast(90%);
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--croketsBlueDark);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
 }
 
 .createForm {
