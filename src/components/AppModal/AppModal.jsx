@@ -74,6 +74,7 @@ const AppModal = ({
   onCancel,
   onClose,
   children = null,
+  footerActions = null,
   size = "default",
 }) => {
   const titleId = useId();
@@ -307,6 +308,10 @@ const AppModal = ({
         </div>
 
         <div className={styles.actions}>
+          {footerActions ? (
+            <div className={styles.footerActions}>{footerActions}</div>
+          ) : null}
+
           {showCancel && (
             <button
               type="button"

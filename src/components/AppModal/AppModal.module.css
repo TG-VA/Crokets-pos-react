@@ -145,6 +145,13 @@
   flex: 0 0 auto;
 }
 
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+}
+
 .cancelButton,
 .confirmButton {
   border: none;
