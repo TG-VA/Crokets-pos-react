@@ -8,18 +8,7 @@ import {
   getPendingOrders,
   isReceiptComplete,
 } from "../utils/ordersCalculationService";
-
-const sanitizeQuantity = (value) => {
-  const raw = String(value ?? "").replace(/[^\d.]/g, "");
-
-  if (!raw) return "";
-
-  const [integerPart, ...rest] = raw.split(".");
-
-  if (rest.length === 0) return integerPart;
-
-  return `${integerPart}.${rest.join("")}`;
-};
+import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
 export const useReceiveOrderForm = ({
   orders = [],
@@ -66,7 +55,7 @@ export const useReceiveOrderForm = ({
   }, []);
 
   const setQuantity = useCallback((productId, value) => {
-    const sanitized = sanitizeQuantity(value);
+    const sanitized = sanitizeIntegerQuantity(value);
 
     setQuantities((previous) => ({
       ...previous,

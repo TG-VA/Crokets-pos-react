@@ -2,18 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { createStoreOrder } from "../services/ordersService";
-
-const sanitizeQuantity = (value) => {
-  const raw = String(value ?? "").replace(/[^\d.]/g, "");
-
-  if (!raw) return "";
-
-  const [integerPart, ...rest] = raw.split(".");
-
-  if (rest.length === 0) return integerPart;
-
-  return `${integerPart}.${rest.join("")}`;
-};
+import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
 export const useCreateOrderForm = ({
   currentBranch,
@@ -133,7 +122,7 @@ export const useCreateOrderForm = ({
   );
 
   const updateQuantity = useCallback((productId, value) => {
-    const sanitized = sanitizeQuantity(value);
+    const sanitized = sanitizeIntegerQuantity(value);
 
     setItems((previous) =>
       previous.map((item) =>

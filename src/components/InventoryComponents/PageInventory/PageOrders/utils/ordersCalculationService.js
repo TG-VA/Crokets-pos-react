@@ -47,6 +47,13 @@ export const getMissingReceiptItems = (items = [], quantities = {}) =>
     (item) => !hasValidReceiptQuantity(quantities?.[item.productId])
   );
 
+export const getNonIntegerReceiptItems = (items = [], quantities = {}) =>
+  items.filter((item) => {
+    const received = parseReceiptQuantity(quantities?.[item.productId]);
+
+    return received !== null && !Number.isInteger(received);
+  });
+
 export const getReceivedQuantitiesPayload = (items = [], quantities = {}) => {
   const payload = {};
 
