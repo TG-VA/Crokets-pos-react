@@ -378,6 +378,9 @@
   height: 16px;
 }
 
+.primaryButton img {
+  filter: brightness(0) invert(1);
+}
 
 .emptyState {
   display: flex;
