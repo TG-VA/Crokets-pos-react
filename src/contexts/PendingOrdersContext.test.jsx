@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 
 vi.mock(
   "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService",
   () => ({
     countPendingStoreOrders: vi.fn(),
+    loadStoreOrders: vi.fn(),
   })
 );
 
@@ -15,7 +16,10 @@ vi.mock("./BranchContext", () => ({
   BranchProvider: ({ children }) => <>{children}</>,
 }));
 
-import { countPendingStoreOrders } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
+import {
+  countPendingStoreOrders,
+  loadStoreOrders,
+} from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
 import {
   PendingOrdersProvider,
   usePendingOrders,
@@ -47,6 +51,7 @@ describe("PendingOrdersContext - refresh", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -75,8 +80,31 @@ describe("PendingOrdersContext - refresh", () => {
 
     expect(countPendingStoreOrders).toHaveBeenCalledTimes(1);
     expect(countPendingStoreOrders).toHaveBeenCalledWith("branch-1");
+    expect(loadStoreOrders).not.toHaveBeenCalled();
     expect(screen.getByTestId("last-refresh").textContent).toBe("set");
     expect(screen.getByTestId("loading").textContent).toBe("false");
+  });
+
+  it("el polling de 30 s vuelve a pedir solo el conteo, no el historial", async () => {
+    vi.useFakeTimers();
+    countPendingStoreOrders.mockResolvedValue(2);
+
+    renderProvider();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(countPendingStoreOrders).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("count").textContent).toBe("2");
+
+    await act(async () => {
+      vi.advanceTimersByTime(30 * 1000);
+    });
+
+    expect(countPendingStoreOrders).toHaveBeenCalledTimes(2);
+    expect(countPendingStoreOrders).toHaveBeenLastCalledWith("branch-1");
+    expect(loadStoreOrders).not.toHaveBeenCalled();
   });
 
   it("no registra console.error ante un fallo de red", async () => {
