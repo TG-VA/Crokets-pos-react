@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import styles from "./SalesHistoryModal.module.css";
 import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
 import AppModal from "../../../AppModal/AppModal";
