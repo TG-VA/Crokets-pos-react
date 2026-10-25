@@ -9,6 +9,19 @@ vi.mock(
   })
 );
 
+let mockRealtimeOnChange = null;
+const mockUnsubscribe = vi.fn();
+
+vi.mock(
+  "../components/InventoryComponents/PageInventory/PageOrders/services/ordersRealtimeService",
+  () => ({
+    subscribeToStoreOrderChanges: ({ onChange }) => {
+      mockRealtimeOnChange = onChange;
+      return mockUnsubscribe;
+    },
+  })
+);
+
 let mockBranch = { id: "branch-1" };
 
 vi.mock("./BranchContext", () => ({
@@ -105,6 +118,38 @@ describe("PendingOrdersContext - refresh", () => {
     expect(countPendingStoreOrders).toHaveBeenCalledTimes(2);
     expect(countPendingStoreOrders).toHaveBeenLastCalledWith("branch-1");
     expect(loadStoreOrders).not.toHaveBeenCalled();
+  });
+
+  it("refresca el conteo al recibir un cambio realtime de pedidos", async () => {
+    countPendingStoreOrders.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("1");
+    });
+
+    await act(async () => {
+      mockRealtimeOnChange();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("2");
+    });
+  });
+
+  it("cierra la suscripcion realtime al desmontar", async () => {
+    countPendingStoreOrders.mockResolvedValue(0);
+
+    const { unmount } = renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    unmount();
+
+    expect(mockUnsubscribe).toHaveBeenCalled();
   });
 
   it("no registra console.error ante un fallo de red", async () => {

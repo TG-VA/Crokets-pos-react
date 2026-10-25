@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { countPendingStoreOrders } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
+import { subscribeToStoreOrderChanges } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersRealtimeService";
 import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 
@@ -77,6 +78,17 @@ export const PendingOrdersProvider = ({ children }) => {
       window.clearInterval(interval);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (!currentBranchId) return undefined;
+
+    return subscribeToStoreOrderChanges({
+      channelName: `pending-orders-${currentBranchId}`,
+      onChange: () => {
+        void refresh();
+      },
+    });
+  }, [currentBranchId, refresh]);
 
   const value = useMemo(
     () => ({

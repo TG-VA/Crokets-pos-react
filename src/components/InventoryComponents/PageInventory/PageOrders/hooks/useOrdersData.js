@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { usePendingOrders } from "../../../../../contexts/PendingOrdersContext";
@@ -6,10 +6,13 @@ import {
   fetchOrderBranchOptions,
   loadStoreOrders,
 } from "../services/ordersService";
+import { subscribeToStoreOrderChanges } from "../services/ordersRealtimeService";
 import {
   normalizeOrders,
   sortOrdersByDate,
 } from "../utils/ordersCalculationService";
+
+const REALTIME_DEBOUNCE_MS = 300;
 
 export const useOrdersData = () => {
   const { branch } = useBranch();
@@ -66,6 +69,33 @@ export const useOrdersData = () => {
 
     void run();
   }, [refreshData]);
+
+  const refreshDataRef = useRef(refreshData);
+
+  useEffect(() => {
+    refreshDataRef.current = refreshData;
+  });
+
+  useEffect(() => {
+    if (!currentBranchId) return undefined;
+
+    let timer = null;
+
+    const unsubscribe = subscribeToStoreOrderChanges({
+      channelName: `orders-data-${currentBranchId}`,
+      onChange: () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          void refreshDataRef.current({ showLoader: false });
+        }, REALTIME_DEBOUNCE_MS);
+      },
+    });
+
+    return () => {
+      window.clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [currentBranchId]);
 
   const upsertOrder = useCallback((updatedOrder) => {
     if (!updatedOrder?.id) return;
