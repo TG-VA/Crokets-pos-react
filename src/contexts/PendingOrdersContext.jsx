@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
@@ -7,37 +7,11 @@ import React, {
   useState,
 } from "react";
 
-import { loadStoreOrders } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
-import {
-  getPendingOrdersCount,
-  normalizeOrders,
-} from "../components/InventoryComponents/PageInventory/PageOrders/utils/ordersCalculationService";
+import { countPendingStoreOrders } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
+import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 
 const POLL_MS = 30 * 1000;
-
-const isNetworkError = (err) => {
-  if (!err) return false;
-  if (err instanceof TypeError) {
-    const msg = String(err.message || "").toLowerCase();
-    return (
-      msg.includes("failed to fetch") ||
-      msg.includes("networkerror") ||
-      msg.includes("network request failed") ||
-      msg.includes("err_internet_disconnected")
-    );
-  }
-  if (err?.name === "TypeError") {
-    const msg = String(err.message || "").toLowerCase();
-    if (/fetch/i.test(msg)) return true;
-  }
-  const msg = String(err?.message || "").toLowerCase();
-  return (
-    msg.includes("failed to fetch") ||
-    msg.includes("networkerror") ||
-    msg.includes("network request failed")
-  );
-};
 
 const PendingOrdersContext = createContext(null);
 
@@ -71,8 +45,9 @@ export const PendingOrdersProvider = ({ children }) => {
     setIsLoading(true);
 
     try {
-      const orders = normalizeOrders(await loadStoreOrders());
-      setPendingOrdersCount(getPendingOrdersCount({ orders, currentBranchId }));
+      const count = await countPendingStoreOrders(currentBranchId);
+
+      setPendingOrdersCount(count);
       setLastRefreshAt(new Date());
     } catch (err) {
       const isSchemaMissing = err?.code === "PGRST205" || err?.status === 404;

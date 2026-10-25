@@ -4,6 +4,7 @@ import {
   isReceiptComplete,
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
+  getNonIntegerReceiptItems,
 } from "../utils/ordersCalculationService";
 import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
 import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";
@@ -44,6 +45,22 @@ export const loadStoreOrders = async () => {
   return Array.isArray(data) ? data : [];
 };
 
+export const countPendingStoreOrders = async (branchId) => {
+  if (!branchId) return 0;
+
+  const { count, error } = await supabase
+    .from("store_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .eq("to_branch_id", branchId);
+
+  if (error) {
+    throw error;
+  }
+
+  return Number.isFinite(count) ? count : 0;
+};
+
 const validateOrderDraft = ({
   orderName,
   originBranchId,
@@ -77,14 +94,24 @@ const validateOrderDraft = ({
 
   const invalidItem = items.find((item) => {
     const quantity = Number(item.expectedQty);
-    return !Number.isFinite(quantity) || quantity <= 0;
+    return !Number.isInteger(quantity) || quantity <= 0;
   });
 
   if (invalidItem) {
     throw new Error(
-      `La cantidad esperada de ${invalidItem.productName || "un producto"} debe ser mayor a cero.`
+      `La cantidad esperada de ${invalidItem.productName || "un producto"} debe ser un numero entero mayor a cero.`
     );
   }
+};
+
+const fetchOrderSnapshotOrFail = async (orderId, failureMessage) => {
+  const order = await fetchStoreOrderById(orderId);
+
+  if (!order) {
+    throw new Error(failureMessage);
+  }
+
+  return order;
 };
 
 export const createStoreOrder = async ({
@@ -125,7 +152,10 @@ export const createStoreOrder = async ({
     throw new Error("La sucursal no confirmo la creacion del pedido.");
   }
 
-  return fetchStoreOrderById(data.orderId);
+  return fetchOrderSnapshotOrFail(
+    data.orderId,
+    "El pedido se creo, pero no se pudo recuperar su detalle. Recarga el historial antes de volver a intentarlo."
+  );
 };
 
 export const receiveStoreOrder = async ({
@@ -158,6 +188,19 @@ export const receiveStoreOrder = async ({
     );
   }
 
+  const nonIntegerItems = getNonIntegerReceiptItems(order.items, quantities);
+
+  if (nonIntegerItems.length > 0) {
+    const names = nonIntegerItems
+      .map((item) => item.productName)
+      .filter(Boolean)
+      .join(", ");
+
+    throw new Error(
+      `Captura cantidades enteras para recibir el pedido${names ? `: ${names}` : ""}.`
+    );
+  }
+
   const { data, error } = await supabase.rpc("receive_store_order", {
     p_order_id: order.id,
     p_to_branch_id: currentBranchId,
@@ -173,5 +216,8 @@ export const receiveStoreOrder = async ({
     throw new Error("La sucursal no confirmo la recepcion del pedido.");
   }
 
-  return fetchStoreOrderById(order.id);
+  return fetchOrderSnapshotOrFail(
+    order.id,
+    "La recepcion se registro, pero no se pudo recuperar el pedido. Recarga el historial antes de continuar."
+  );
 };

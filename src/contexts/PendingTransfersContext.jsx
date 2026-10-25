@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
@@ -9,32 +9,10 @@ import React, {
 
 import { loadTransferOrders } from "../components/InventoryComponents/PageInventory/PageTransfers/services/transfersService";
 import { getPendingReceiptsCount } from "../components/InventoryComponents/PageInventory/PageTransfers/utils/transfersUtils";
+import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 
 const POLL_MS = 10 * 1000;
-
-const isNetworkError = (err) => {
-  if (!err) return false;
-  if (err instanceof TypeError) {
-    const msg = String(err.message || "").toLowerCase();
-    return (
-      msg.includes("failed to fetch") ||
-      msg.includes("networkerror") ||
-      msg.includes("network request failed") ||
-      msg.includes("err_internet_disconnected")
-    );
-  }
-  if (err?.name === "TypeError") {
-    const msg = String(err.message || "").toLowerCase();
-    if (/fetch/i.test(msg)) return true;
-  }
-  const msg = String(err?.message || "").toLowerCase();
-  return (
-    msg.includes("failed to fetch") ||
-    msg.includes("networkerror") ||
-    msg.includes("network request failed")
-  );
-};
 
 const PendingTransfersContext = createContext(null);
 
