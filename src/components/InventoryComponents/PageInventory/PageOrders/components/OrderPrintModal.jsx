@@ -1,5 +1,3 @@
-import React from "react";
-
 import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
 import {
@@ -7,6 +5,7 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
+import { getOrderDifferences } from "../utils/ordersCalculationService";
 
 const STATUS_CLASS = {
   pending: styles.statusPending,
@@ -18,6 +17,7 @@ const STATUS_CLASS = {
 
 const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
   const status = getOrderStatusMeta(order?.status);
+  const differences = getOrderDifferences(order?.items);
 
   const handleExportExcel = async () => {
     if (typeof onExportExcel === "function") {
@@ -157,14 +157,58 @@ const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
             </div>
           ) : null}
 
+          {differences.length > 0 ? (
+            <div className={styles.differencesSection}>
+              <strong>Diferencias</strong>
+              <div className={styles.tableWrapper}>
+                <table className={styles.differencesTable}>
+                  <thead>
+                    <tr>
+                      <th>Codigo</th>
+                      <th>Producto</th>
+                      <th>Departamento</th>
+                      <th className={styles.numeric}>Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {differences.map((item) => {
+                      const diff = Number(item.differenceQty);
+                      const isPositive = diff > 0;
+                      const diffLabel = isPositive
+                        ? `+${formatQuantity(diff)}`
+                        : formatQuantity(diff);
+
+                      return (
+                        <tr key={item.id || item.productId}>
+                          <td>{item.barcode || "—"}</td>
+                          <td>{item.productName}</td>
+                          <td>{item.departmentName || "Sin departamento"}</td>
+                          <td className={styles.numeric}>
+                            <span
+                              className={
+                                isPositive
+                                  ? styles.differencePositive
+                                  : styles.differenceNegative
+                              }
+                            >
+                              {diffLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+
           {order.discrepancyNotes ? (
             <div className={`${styles.detailNote} ${styles.detailWarning}`}>
               <strong>Diferencias de recepcion</strong>
               <p>{order.discrepancyNotes}</p>
             </div>
           ) : null}
-
-
         </div>
       ) : null}
     </AppModal>

@@ -85,8 +85,8 @@ const ReceiveOrdersWorkspace = ({
             Sucursal activa: {currentBranchName || "Sin sucursal"}
           </span>
           <p className={styles.workspaceDescription}>
-            Captura manualmente la cantidad recibida de cada partida. El sistema
-            no precarga la cantidad esperada.
+            Captura manualmente la cantidad recibida de cada producto. El
+            sistema no precarga la cantidad esperada.
           </p>
         </div>
       </header>

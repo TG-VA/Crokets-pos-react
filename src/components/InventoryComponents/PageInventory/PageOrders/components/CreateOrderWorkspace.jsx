@@ -59,8 +59,8 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
             Crear pedido de abastecimiento
           </h2>
           <p className={styles.workspaceDescription}>
-            Selecciona la sucursal destino y las partidas. El folio se genera al
-            guardar el pedido.
+            Selecciona la sucursal destino y los productos. El folio se genera
+            al guardar el pedido.
           </p>
         </div>
       </header>
@@ -146,7 +146,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave, onCancel }) => {
         {form.items.length === 0 ? (
           <div className={styles.emptyState}>
             <img src={BoxIcon} alt="" aria-hidden="true" />
-            <h3>Sin partidas en el pedido</h3>
+            <h3>Sin productos en el pedido</h3>
             <p>Busca productos o captura un codigo para agregarlos.</p>
           </div>
         ) : (

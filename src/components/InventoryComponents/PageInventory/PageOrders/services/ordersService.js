@@ -154,7 +154,7 @@ export const receiveStoreOrder = async ({
     const missing = getMissingReceiptItems(order.items, quantities);
 
     throw new Error(
-      `Captura el conteo fisico de todas las partidas (${missing.length} pendiente(s)).`
+      `Captura el conteo fisico de todos los productos (${missing.length} pendiente(s)).`
     );
   }
 

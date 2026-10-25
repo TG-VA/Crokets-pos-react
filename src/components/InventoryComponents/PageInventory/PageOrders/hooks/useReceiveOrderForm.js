@@ -91,7 +91,7 @@ export const useReceiveOrderForm = ({
 
     if (!isComplete) {
       setError(
-        `Captura el conteo fisico de todas las partidas (${missingItems.length} pendiente(s)).`
+        `Captura el conteo fisico de todos los productos (${missingItems.length} pendiente(s)).`
       );
       return null;
     }

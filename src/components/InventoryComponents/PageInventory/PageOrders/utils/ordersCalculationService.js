@@ -127,6 +127,21 @@ export const getOrderTotals = (items = []) =>
     { expected: 0, received: 0, difference: 0, pending: 0, totalCost: 0 }
   );
 
+export const getOrderDifferences = (items = []) => {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => {
+      const differenceQty = asFiniteNumber(item?.differenceQty);
+      if (differenceQty === null || differenceQty === 0) return null;
+      return {
+        ...item,
+        differenceQty,
+      };
+    })
+    .filter(Boolean);
+};
+
 export const getPendingOrdersCount = ({
   orders = [],
   currentBranchId,

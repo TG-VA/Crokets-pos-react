@@ -1000,13 +1000,19 @@
   text-align: right;
 }
 
+.differencePositive {
+  color: var(--successText);
+}
+
+.differenceNegative {
+  color: var(--errorText);
+}
+
 .detailActions {
   display: flex;
   justify-content: flex-end;
   position: relative;
 }
-
-
 
 .printPreview {
   display: flex;

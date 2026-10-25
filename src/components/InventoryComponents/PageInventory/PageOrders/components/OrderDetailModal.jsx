@@ -1,5 +1,3 @@
-import React from "react";
-
 import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
 import {
@@ -7,6 +5,7 @@ import {
   formatQuantity,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
+import { getOrderDifferences } from "../utils/ordersCalculationService";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const STATUS_CLASS = {
@@ -30,12 +29,7 @@ const OrderDetailModal = ({ order, onClose }) => {
     }
   };
 
-  const differences = (order?.items || []).filter(
-    (item) =>
-      item?.differenceQty !== undefined &&
-      item?.differenceQty !== null &&
-      Number(item.differenceQty) !== 0
-  );
+  const differences = getOrderDifferences(order?.items);
 
   return (
     <AppModal
@@ -159,13 +153,6 @@ const OrderDetailModal = ({ order, onClose }) => {
             </div>
           ) : null}
 
-          {order.discrepancyNotes ? (
-            <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-              <strong>Diferencias de recepcion</strong>
-              <p>{order.discrepancyNotes}</p>
-            </div>
-          ) : null}
-
           {differences.length > 0 ? (
             <div className={styles.differencesSection}>
               <strong>Diferencias</strong>
@@ -181,8 +168,11 @@ const OrderDetailModal = ({ order, onClose }) => {
                   </thead>
                   <tbody>
                     {differences.map((item) => {
-                      const diff = Number(item.differenceQty);
-                      const isSurplus = diff > 0;
+                      const difference = item.differenceQty;
+                      const isPositive = difference > 0;
+                      const differenceLabel = isPositive
+                        ? `+${formatQuantity(difference)}`
+                        : formatQuantity(difference);
 
                       return (
                         <tr key={item.id || item.productId}>
@@ -190,8 +180,15 @@ const OrderDetailModal = ({ order, onClose }) => {
                           <td>{item.productName}</td>
                           <td>{item.departmentName || "Sin departamento"}</td>
                           <td className={styles.numeric}>
-                            {isSurplus ? `+${diff}` : diff}{" "}
-                            {isSurplus ? "(Sobra)" : "(Falta)"}
+                            <span
+                              className={
+                                isPositive
+                                  ? styles.differencePositive
+                                  : styles.differenceNegative
+                              }
+                            >
+                              {differenceLabel}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -199,6 +196,13 @@ const OrderDetailModal = ({ order, onClose }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          ) : null}
+
+          {order.discrepancyNotes ? (
+            <div className={`${styles.detailNote} ${styles.detailWarning}`}>
+              <strong>Diferencias de recepcion</strong>
+              <p>{order.discrepancyNotes}</p>
             </div>
           ) : null}
 

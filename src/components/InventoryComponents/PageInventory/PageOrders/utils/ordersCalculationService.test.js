@@ -6,6 +6,7 @@ import {
   filterOrderHistory,
   filterOrderProducts,
   getMissingReceiptItems,
+  getOrderDifferences,
   getOrderTotals,
   getPendingOrdersCount,
   getReceivedQuantitiesPayload,
@@ -193,5 +194,20 @@ describe("ordersCalculationService", () => {
     expect(result.map((order) => order.id)).toEqual(["new", "old"]);
     expect(result[1].items[0].productId).toBe("p1");
     expect(result[1].items[0].expectedQty).toBe(5);
+  });
+});
+
+describe("getOrderDifferences", () => {
+  it("filtra diferencias cero o nulas y normaliza el valor", () => {
+    const items = [
+      { differenceQty: -2, barcode: "A" },
+      { differenceQty: 0 },
+      { differenceQty: null },
+      { differenceQty: "3" },
+    ];
+    const result = getOrderDifferences(items);
+    expect(result).toHaveLength(2);
+    expect(result[0].differenceQty).toBe(-2);
+    expect(result[1].differenceQty).toBe(3);
   });
 });
