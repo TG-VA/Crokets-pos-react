@@ -511,12 +511,12 @@ backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo d
 
 ### branches
 
-| Columna                                | Tipo    | Notas                        |
-| -------------------------------------- | ------- | ---------------------------- |
-| id                                     | uuid    | PK                           |
-| code / name                            | varchar | NN, unicidad en create_branch |
-| phone / email / address / city / state | —       |                              |
-| timezone                               | text    | NN, default 'America/Cancun' |
+| Columna                                | Tipo    | Notas                                                                      |
+| -------------------------------------- | ------- | -------------------------------------------------------------------------- |
+| id                                     | uuid    | PK                                                                         |
+| code / name                            | varchar | NN, unicidad en create_branch                                              |
+| phone / email / address / city / state | —       |                                                                            |
+| timezone                               | text    | NN, default 'America/Cancun'                                               |
 | is_active                              | boolean | NN, default true — soft delete corporativo (sin hard delete con historial) |
 
 ### payment_methods
