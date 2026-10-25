@@ -154,7 +154,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
             <table className={styles.itemsTable}>
               <thead>
                 <tr>
-                  <th>Codigo</th>
+                  <th>Código</th>
                   <th>Producto</th>
                   <th>Departamento</th>
                   <th className={styles.numeric}>Costo</th>

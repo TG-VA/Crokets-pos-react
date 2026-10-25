@@ -66,7 +66,7 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
         <table className={styles.itemsTable}>
           <thead>
             <tr>
-              <th>Codigo</th>
+              <th>Código</th>
               <th>Producto</th>
               <th>Departamento</th>
               <th className={styles.numeric}>Esperado</th>
@@ -139,7 +139,7 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
             <table className={styles.differencesTable}>
               <thead>
                 <tr>
-                  <th>Codigo</th>
+                  <th>Código</th>
                   <th>Producto</th>
                   <th>Departamento</th>
                   <th className={styles.numeric}>Diferencia</th>

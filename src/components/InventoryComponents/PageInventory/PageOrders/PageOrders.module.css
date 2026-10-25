@@ -324,7 +324,6 @@
 
 .primaryButton,
 .secondaryButton,
-.ghostButton,
 .iconButton {
   display: inline-flex;
   align-items: center;
@@ -347,11 +346,6 @@
   border-color: rgba(16, 146, 177, 0.4);
 }
 
-.ghostButton {
-  background: transparent;
-  color: var(--croketsBlueDark);
-}
-
 .iconButton {
   padding: 6px;
   border-radius: 50%;
@@ -364,15 +358,13 @@
 }
 
 .primaryButton:disabled,
-.secondaryButton:disabled,
-.ghostButton:disabled {
+.secondaryButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .primaryButton img,
 .secondaryButton img,
-.ghostButton img,
 .iconButton img {
   width: 16px;
   height: 16px;
@@ -1114,11 +1106,6 @@
   background: var(--infoBg);
 }
 
-.detailWarning {
-  background: var(--warningBg);
-  color: var(--warningText);
-}
-
 .rowWithDifference {
   background: rgba(231, 76, 60, 0.05);
 }
@@ -1206,7 +1193,6 @@
 
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
-.ghostButton:focus-visible,
 .iconButton:focus-visible,
 .tab:focus-visible,
 .quantityInput:focus-visible,
