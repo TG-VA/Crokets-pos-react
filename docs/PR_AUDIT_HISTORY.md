@@ -2717,3 +2717,154 @@ quedan cerrados con evidencia reproducible y prueba de regresión propia, la aud
 encuentra vectores explotables y no hay cambios de salida en los tickets de producción. La rama queda
 lista para merge con el simulador, el ticket de prueba y el ticket real printing exactamente el mismo
 pie para la misma plantilla.
+
+---
+
+## Informe de Auditoría — RAMA `feat/orders-history-pagination` (24 de octubre de 2026)
+
+**Alcance:** módulo de Pedidos de abastecimiento entre sucursales (`PageOrders`), contexto global de
+pendientes, polling de 30 s, exportación a Excel, migración `20261022120000_create_store_orders.sql`
+y documentación asociada. Base `main` en `caecd40`; HEAD auditado `877a125` (34 commits, 38 archivos,
+6 535 inserciones antes de este informe). Esta auditoría agrega una migración nueva
+(`20261024120000`) y pruebas de regresión; no se editó ninguna migración existente.
+
+### 1. Hallazgos y acciones
+
+| ID  | Hallazgo                                                                                                                                                                                                                                     | Evidencia y corrección                                                                                                                                                                                                                                                                                                                                                              | Estado   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| F1  | El polling de 30 s descargaba el historial completo y competía con el fetch de la página (doble fetch)                                                                                                                                       | `PendingOrdersContext.jsx:48` ahora usa `countPendingStoreOrders()` (`ordersService.js:48-62`, consulta `head`/`count`); el historial ya no se re-descarga en cada tick. Prueba: `PendingOrdersContext.test.jsx`                                                                                                                                                                    | CERRADO  |
+| F2  | La UI y las RPC aceptaban cantidades fraccionarias, pero `inventory_movements.quantity`/`previous_stock`/`new_stock` son `integer`: el stock sumaba fracciones y el movimiento redondeaba, o el `check` fallaba (recibir 0.4 → `quantity=0`) | `sanitizeIntegerQuantity()` compartido (`ordersQuantityInput.js`) en creación y recepción; validación `Number.isInteger` en `ordersService.js:95-104`; `getNonIntegerReceiptItems()` (`ordersCalculationService.js:50`); constraints y RPC endurecidas en `20261024120000`. Pruebas: `ordersQuantityInput.test.js`, `ordersService.test.js`, `storeOrdersIntegrityContract.test.js` | CERRADO  |
+| F3  | Las mutaciones no validaban membresía de sucursal: un autenticado podía crear un pedido desde otra sucursal o recibirlo en otra pasando su UUID                                                                                              | `20261024120000` agrega guardas con `_user_can_access_branch()` en `create_store_order` (origen) y `receive_store_order` (destino), exentas para admin y para `service_role` (`auth.uid()` nulo). Contrato cubierto en `storeOrdersIntegrityContract.test.js`                                                                                                                       | CERRADO  |
+| F4  | `OrdersHistoryTable.jsx` tenía 425 líneas y duplicaba filtros, cálculo de fechas y secciones de vista previa entre detalle e impresión                                                                                                       | Extraídos `OrdersHistoryFilters.jsx`, `ordersDateRange.js`, `ordersStatusClasses.js` y `OrderPreviewSections.jsx`; la tabla queda en 248 líneas. Pruebas: `ordersDateRange.test.js`, `ordersStatusClasses.test.js`, `OrdersHistoryTable.test.jsx`                                                                                                                                   | CERRADO  |
+| F5  | El historial ordena por `sent_at` pero no existía índice que lo cubriera (el único compuesto empieza por `status`)                                                                                                                           | `20261024120000` crea `store_orders_sent_at_idx (sent_at desc)`                                                                                                                                                                                                                                                                                                                     | CERRADO  |
+| F6  | Si la RPC confirmaba pero el `select` posterior devolvía `null`, el flujo seguía con un pedido vacío                                                                                                                                         | `fetchOrderSnapshotOrFail()` (`ordersService.js:107-115`) convierte el caso en error explícito de recarga en creación y recepción                                                                                                                                                                                                                                                   | CERRADO  |
+| F7  | Detección de errores de red duplicada en los contextos de pendientes                                                                                                                                                                         | `src/utils/isNetworkError.js` compartido por `PendingOrdersContext` y `PendingTransfersContext`; prueba propia                                                                                                                                                                                                                                                                      | CERRADO  |
+| F8  | `store_orders`/`store_order_items` y sus RPC no aparecían en `SCHEMA.md` ni en `docs/SUPABASE_MIGRATIONS.md`; el commit `a833b06` afirmaba un despliegue sin cambiar archivos                                                                | Documentadas ambas tablas, las RPC y los estados de despliegue (22 oct: aplicada según el commit, no verificada; 24 oct: pendiente de aplicar)                                                                                                                                                                                                                                      | CERRADO  |
+| F9  | El Excel calcula "Costo total" con unidades esperadas; en pedidos con diferencia no es comparable con "Unidades recibidas"                                                                                                                   | `ordersCalculationService.js:131`; decisión de producto diferida a `KNOWN_ISSUES.md` #73                                                                                                                                                                                                                                                                                            | DIFERIDO |
+| F10 | Deuda menor: exports muertos, alias `/inventory/orders`, estatus `cancelled` sin flujo, CSS de 1 191 líneas, contraste bajo WCAG AA                                                                                                          | Registrado en `KNOWN_ISSUES.md` #74-#78 y priorizado en `BACKLOG.md`                                                                                                                                                                                                                                                                                                                | DIFERIDO |
+
+**Riesgos aceptados (sin cambio de código):** `search_path = public` y
+`coalesce(auth.uid(), p_user_id)` siguen el precedente documentado de `20260917200000` y
+`20261012150000` (`PERMISSIONS.md`); la lectura RLS `using (true)` entre sucursales es consistente
+con la decisión "authenticated de confianza" y queda registrada en `KNOWN_ISSUES.md` #79. El icono
+de candado de `OrdersRouteTabs.jsx:94-99` conserva un `alt` descriptivo (informa el bloqueo), que es
+el uso correcto de `alt` no vacío; no se modificó.
+
+### 2. Consistencia tabla vs detalle vs Excel
+
+- La etiqueta de diferencia se centralizó en `getOrderDifferenceLabel()` y se reutiliza en tabla,
+  detalle e impresión; los estados usan el mismo mapeo (`ordersStatusClasses.js`).
+- El detalle y la impresión comparten `OrderPreviewSections.jsx`, por lo que ya no pueden divergir en
+  partidas, totales ni notas de discrepancia.
+- El Excel mantiene una diferencia conocida y diferida: valúa el costo sobre lo esperado (F9).
+
+### 3. Filtros de fecha (bordes cubiertos)
+
+`ordersDateRange.test.js` fija: día completo con milisegundos (`00:00:00.000`–`23:59:59.999`), no
+mutación de la fecha de referencia, semana que inicia en lunes cuando la referencia es domingo,
+semana que cruza de mes, mes que cierra en el último día (incluido febrero bisiesto 2028) y preset
+desconocido tratado como "hoy". El cálculo usa la hora local del equipo para coincidir con la fecha
+visible en la tabla.
+
+### 4. Migración nueva (`20261024120000_store_orders_integrity.sql`)
+
+- Índice `store_orders_sent_at_idx`.
+- Constraints `store_order_items_expected_qty_integral` y `store_order_items_received_qty_integral`
+  con `NOT VALID`: validan escrituras nuevas sin fallar por filas históricas fraccionarias; para
+  cerrarlas del todo hace falta `VALIDATE CONSTRAINT` tras limpiar datos previos.
+- Redefinición de `create_store_order`/`receive_store_order` conservando folio con lock asesor,
+  reintentos por colisión, `for update` sobre `branch_inventory`, movimientos de entrada y notas.
+- Se reafirman `REVOKE`/`GRANT` (sin `anon` ni `PUBLIC`).
+- Estado: **pendiente de aplicar** al remoto; el registro de despliegue lo indica explícitamente.
+
+### 5. Verificación mecánica (salidas reales sobre el árbol auditado)
+
+```text
+npm run check:agents
+[OK] Verificacion de AGENTS.md completada con exito (0 emojis, 0 !important, 0 console.log/warn, EOF newlines conformes).
+
+ESLint incremental (34 archivos .js/.jsx/.mjs del diff)
+sin salida: 0 errores, 0 warnings.
+
+Prettier incremental (archivos .js/.jsx/.mjs/.json/.html/.css del diff)
+All matched files use Prettier code style!
+
+npm test (TZ=America/Cancun)
+Test Files  179 passed (179)
+     Tests  2421 passed (2421)
+
+npm run build:frontend
+✓ built in 4.39s
+(!) Some chunks are larger than 500 kB after minification.  (advertencia preexistente)
+```
+
+### 6. Checklist de `PR_REVIEW.md`
+
+| Sección                         | Resultado                                                                                                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| §0 bloqueantes previos          | F1-F8 cerrados con evidencia y prueba; F9-F10 diferidos con seguimiento                                                                                                                                            |
+| §1 funcionalidad y arquitectura | SRP/OCP/ISP/DIP: servicios, hooks y utilidades separados; la UI no importa `supabase`; tabla de 425 → 248 líneas                                                                                                   |
+| §2 corrección de datos y lógica | cantidades enteras alineadas con el ledger `integer`; diferencia y estatus unificados; bordes de fecha cubiertos                                                                                                   |
+| §3 estado y contexto global     | polling solo consulta conteo; sin doble fetch; guardas de refetch y de red                                                                                                                                         |
+| §4 estilos y UI                 | solo CSS Modules, sin `!important`, sin estilos inline nuevos; deuda de contraste y tamaño del CSS registrada                                                                                                      |
+| §5 convenciones y logs          | 0 emojis, 0 `console.log`/`console.warn`, `console.error` preservados, EOF newlines conformes                                                                                                                      |
+| §6 documentación                | `SCHEMA.md`, `docs/SUPABASE_MIGRATIONS.md`, `KNOWN_ISSUES.md` #72-#79, `BACKLOG.md` y este informe                                                                                                                 |
+| §7 a11y y calidad               | roles/`aria-*` conservados, iconos decorativos con `alt=""`, candado informativo con `alt` descriptivo; 37 pruebas nuevas en archivos nuevos más las agregadas a suites existentes, con la suite completa en verde |
+
+### 7. Veredicto final
+
+**APROBADO.** Los cinco comandos mecánicos pasan en verde, los hallazgos F1-F8 quedan cerrados con
+evidencia reproducible y pruebas de regresión, y los diferidos F9-F10 están registrados con
+severidad y recomendación. Antes de desplegar, aplicar `20261024120000_store_orders_integrity.sql`
+con `supabase db push` y verificar `supabase migration list`; los constraints `NOT VALID` solo
+protegen filas nuevas hasta que se ejecute `VALIDATE CONSTRAINT`.
+
+### 8. Contra-auditoría y despliegue (24 oct 2026, misma rama)
+
+La migración `20261024120000_store_orders_integrity.sql` **quedó aplicada** al remoto con
+`supabase db push` (dry run previo: era la única pendiente). `supabase migration list` muestra
+Local = Remote y `supabase inspect db index-stats --linked` lista `public.store_orders_sent_at_idx`
+(16 kB). Pre-check de datos históricos sobre `store_order_items` (4 filas): 0 fraccionarios en
+`expected_qty` y 0 en `received_qty`. Los constraints siguen `NOT VALID` porque el `VALIDATE
+CONSTRAINT` requiere acceso SQL directo, que no estaba disponible en el equipo de auditoría; el
+procedimiento exacto queda en `docs/SUPABASE_MIGRATIONS.md`.
+
+| ID  | Hallazgo de la contra-auditoría                                                                                                                                                                                                                | Evidencia y corrección                                                                                                                                                                                         | Estado    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| C1  | Los campos de cantidad entera anunciaban teclado decimal (`inputMode="decimal"`), invitando una captura que la máscara descarta                                                                                                                | `CreateOrderWorkspace.jsx:179` y `ReceiveOrdersWorkspace.jsx:247` ahora usan `inputMode="numeric"`                                                                                                             | CORREGIDO |
+| C2  | La máscara fallaba abierta con negativos: `sanitizeIntegerQuantity("-3")` devolvía `"3"`, inventariando una entrada que nadie capturó                                                                                                          | `ordersQuantityInput.js:14` descarta la captura completa; `ordersQuantityInput.test.js` cubre el negativo pegado, con espacios y con signo menos tipográfico                                                   | CORREGIDO |
+| C3  | No existía prueba del intervalo de 30 s ni de que el polling no descargue el historial, que es el núcleo del hallazgo F1                                                                                                                       | `PendingOrdersContext.test.jsx:88` avanza 30 s con fake timers y exige una segunda llamada a `countPendingStoreOrders` y cero a `loadStoreOrders`; quitar el `setInterval` rompe el caso (mutación verificada) | CORREGIDO |
+| C4  | `getOrderDifferenceLabel` devolvía "Sin diferencia" para un pedido `accepted_with_difference` sin notas, contradiciendo su badge                                                                                                               | `ordersFormatters.js:113` cae a "Con diferencia" por estatus; caso en `ordersFormatters.test.js:72`                                                                                                            | CORREGIDO |
+| C5  | Warning de ESLint `React is defined but never used` en `NavbarInventory.test.jsx`, preexistente en `main`                                                                                                                                      | Import eliminado en commit aparte; el archivo queda sin warnings                                                                                                                                               | CORREGIDO |
+| C6  | La documentación de despliegue describía la migración como pendiente y la de pedidos como "no verificada de forma independiente"                                                                                                               | `docs/SUPABASE_MIGRATIONS.md` registra el push real, la verificación del índice, el pre-check y el `VALIDATE CONSTRAINT` pendiente; `docs/TESTING.md` indexa las suites nuevas                                 | CORREGIDO |
+| C7  | `difference_qty` es entero por derivación (`v_received - expected_qty` con ambos enteros), pero un pedido heredado `pending` con `expected_qty` fraccionario produciría una diferencia fraccionaria mientras los constraints sigan `NOT VALID` | `20261024120000:286`; cerrado el 25 oct 2026 con `20261025120000_store_orders_integrity_validate.sql`: `convalidated = true` en ambos constraints. Ver `docs/SUPABASE_MIGRATIONS.md`                           | CERRADO   |
+| C8  | El folio se calcula con `count(*)` bajo lock asesor (`20261024120000:85-89`); el costo del conteo crece con los pedidos del día, no se midió el plan                                                                                           | Observación de performance; con el volumen actual (6 pedidos) es irrelevante y el índice único de `order_number` acota el reintento                                                                            | OBSERVADO |
+
+**Sobre el truncamiento de `sanitizeIntegerQuantity` (F2).** Se evaluó rechazar en vez de truncar y se
+conservó el truncamiento: el campo es controlado y muestra siempre el valor que se guarda en el estado
+(`2.9` se ve como `2` en el momento de capturarlo), y tanto `ordersService`
+(`validateOrderDraft`/`getNonIntegerReceiptItems`) como la RPC rechazan cualquier fracción que llegue
+por otra vía, así que no hay una conversión oculta. Lo que sí se corrigió es el signo: convertir `-3`
+en `3` inventaba una entrada que nadie capturó, y ahora la captura se descarta completa (C2).
+
+**Veredicto de la contra-auditoría:** los cuatro commits de auditoría (`901892d`, `99ca89f`,
+`0a67352`, `d99bff7`) sostienen lo que declaran: el lock asesor del folio, el
+`coalesce(auth.uid(), p_user_id)` y la guarda `_user_can_access_branch` condicionada a
+`auth.uid()` están en el SQL y en el contrato; el badge consulta solo el conteo por
+`(to_branch_id, status)`; `difference_qty` es entero por derivación. Las correcciones C1-C6 se
+aplicaron con pruebas y la suite queda en 179 archivos / 2423 casos. Queda pendiente únicamente el
+`VALIDATE CONSTRAINT` de los dos constraints de enteros.
+
+### 9. Cierre de C7 (25 oct 2026)
+
+El `VALIDATE CONSTRAINT` que C7 dejó diferido quedó ejecutado mediante la migración versionada
+`20261025120000_store_orders_integrity_validate.sql`, aplicada al remoto con `supabase db push`. El
+dry run previo confirmó que era la única migración pendiente y `supabase migration list` muestra
+Local = Remote en esa versión. La verificación directa con `supabase db query --linked` devolvió
+`convalidated = true` para `store_order_items_expected_qty_integral` y
+`store_order_items_received_qty_integral`.
+
+Con ambos constraints validados, el riesgo descrito en C7 (una diferencia fraccionaria derivada de
+una fila heredada con `expected_qty` fraccionario) deja de ser posible: PostgreSQL escaneó la tabla
+completa y garantiza enteros en todas las filas, no solo en las nuevas. El detalle operativo queda en
+`docs/SUPABASE_MIGRATIONS.md` (sección de validación y registro de despliegues).

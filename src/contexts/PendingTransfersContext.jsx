@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
@@ -9,6 +9,7 @@ import React, {
 
 import { loadTransferOrders } from "../components/InventoryComponents/PageInventory/PageTransfers/services/transfersService";
 import { getPendingReceiptsCount } from "../components/InventoryComponents/PageInventory/PageTransfers/utils/transfersUtils";
+import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 
 const POLL_MS = 10 * 1000;
@@ -47,6 +48,13 @@ export const PendingTransfersProvider = ({ children }) => {
       setPendingReceiptsCount(count);
       setLastRefreshAt(new Date());
     } catch (err) {
+      const isSchemaMissing = err?.code === "PGRST205" || err?.status === 404;
+      const isNet = isNetworkError(err);
+
+      if (isSchemaMissing || isNet) {
+        return;
+      }
+
       console.error("Error al refrescar recepciones pendientes:", err);
     } finally {
       setIsLoading(false);

@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (5 oct 2026)
+## Cobertura actual (24 oct 2026)
 
-106 archivos de test (**1557 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+179 archivos de test (**2423 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                  | Archivo                                                                            |
@@ -103,6 +103,14 @@ y el proceso principal de Electron:
 | Facturación: ventas por facturar (cálculos)           | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js`           |
 | Facturación: ventas por facturar (datos)              | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
 | Smoke de render del renderer y guardas de ruta        | `src/App.test.jsx`                                                                 |
+| Pedidos: servicio de datos y conteo de pendientes     | `.../PageOrders/services/ordersService.test.js`                                    |
+| Pedidos: contexto de pendientes (polling de 30 s)     | `src/contexts/PendingOrdersContext.test.jsx`                                       |
+| Pedidos: mascara de cantidades enteras                | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
+| Pedidos: rango de fechas de los filtros               | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
+| Pedidos: formateadores y etiqueta de diferencia       | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
+| Pedidos: clases de estatus                            | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
+| Pedidos: historial (tabla, filtros y paginacion)      | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
+| Pedidos: contrato SQL de integridad                   | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 
 ### Cobertura transitiva del resolver de costo
 
@@ -293,6 +301,22 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   pasaba en verde. Un reporte de kardex se usa para auditar el conteo fisico contra el teorico, asi
   que un truncamiento silencioso es el peor modo de fallo posible; por eso la prueba vive en el
   call-site de `Pagekardex.jsx` y no solo en el panel, que nunca ve las filas del reporte.
+
+- **Pedidos de abastecimiento: integridad de cantidades y polling del badge** (24 oct 2026, rama
+  `feat/orders-history-pagination`): `PendingOrdersContext.test.jsx` (6 casos) fija que el badge
+  consulta solo el conteo (`countPendingStoreOrders`) y que a los 30 s vuelve a pedir el conteo sin
+  descargar el historial (`loadStoreOrders` no se invoca); el caso del intervalo falla si se quita el
+  `setInterval` (verificado por mutación). `ordersService.test.js` (8 casos) fija que las cantidades
+  fraccionarias se rechazan antes de llamar a la RPC, tanto al crear como al recibir, y que una
+  relectura vacía del pedido se convierte en error explícito en vez de continuar con un snapshot nulo.
+  `ordersQuantityInput.test.js` (6 casos) fija la máscara entera: `2.5 -> 2` porque el campo controlado
+  muestra siempre el valor guardado, y una captura negativa se descarta completa (`-3 -> ""`) en vez de
+  convertirse en `3`. `ordersDateRange.test.js` (6 casos) fija los presets de fecha sin mutar la
+  referencia, y `ordersFormatters.test.js` la etiqueta de diferencia por estado.
+  `storeOrdersIntegrityContract.test.js` (9 casos) fija contra el SQL real el índice de historial, los
+  constraints `NOT VALID`, las guardas `_user_can_access_branch` solo cuando `auth.uid()` no es nulo,
+  el lock asesor del folio y los grants sin `anon`/`PUBLIC`. Las vistas de creación y recepción
+  (`CreateOrderWorkspace`/`ReceiveOrdersWorkspace`) siguen sin prueba de render o interacción.
 
 No hay todavía:
 

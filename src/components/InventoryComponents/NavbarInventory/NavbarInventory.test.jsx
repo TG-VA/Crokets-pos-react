@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -7,7 +6,12 @@ vi.mock("../../../contexts/PendingTransfersContext", () => ({
   usePendingTransfers: vi.fn(),
 }));
 
+vi.mock("../../../contexts/PendingOrdersContext", () => ({
+  usePendingOrders: vi.fn(),
+}));
+
 import { usePendingTransfers } from "../../../contexts/PendingTransfersContext";
+import { usePendingOrders } from "../../../contexts/PendingOrdersContext";
 import NavbarInventory from "./NavbarInventory";
 
 const renderNavbar = () =>
@@ -20,6 +24,7 @@ const renderNavbar = () =>
 describe("NavbarInventory - badge de traspasos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    usePendingOrders.mockReturnValue({ pendingOrdersCount: 0 });
   });
 
   it("renderiza el badge con el conteo cuando hay recepciones pendientes", () => {

@@ -2464,6 +2464,130 @@ representa únicamente el ancho del papel.
 
 ---
 
+### 72. El historial de pedidos se descarga completo y se filtra en el cliente
+
+**Estado:** Pendiente.
+
+**Severidad:** Media (escalabilidad).
+
+`loadStoreOrders()` (`ordersService.js`) trae todos los pedidos con sus partidas y el historial
+ordena/filtra/pagina en memoria. El polling de 30 s ya no vuelve a descargar el historial: el badge
+de pendientes usa `countPendingStoreOrders()` (consulta `head`/`count`), pero abrir o refrescar la
+vista sigue trayendo el dataset completo. Con años de pedidos el tiempo de carga y el payload crecen
+sin techo.
+
+**Solución recomendada:** RPC paginada en el servidor (rango de fechas, estatus, sucursal y texto)
+que devuelva solo la página visible más el total; conservar la consulta de conteo para el badge.
+
+---
+
+### 73. El Excel del pedido calcula el costo total con unidades esperadas
+
+**Estado:** Pendiente (decisión de producto).
+
+**Severidad:** Baja (puede confundir en pedidos con diferencia).
+
+`calculateOrderTotals()` (`ordersCalculationService.js:131`) acumula `cost_price * expected_qty`.
+En un pedido `accepted_with_difference`, el reporte muestra "Costo total" sobre lo esperado mientras
+"Unidades recibidas" refleja el conteo físico, de modo que ambas cifras no son comparables.
+
+**Solución recomendada:** decidir si el costo debe valuar lo recibido (y renombrar la etiqueta a
+"Costo recibido") o mantenerse como costo solicitado; en cualquier caso, etiquetarlo explícitamente.
+
+---
+
+### 74. El estatus `cancelled` existe pero no hay flujo para cancelar pedidos
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (funcionalidad incompleta).
+
+`store_orders_status_check` admite `cancelled`, el filtro de historial y los estilos lo contemplan,
+pero no existe RPC ni acción de UI para cancelar un pedido pendiente. Un pedido creado por error
+solo puede recibirse o quedar pendiente para siempre.
+
+**Solución recomendada:** RPC `cancel_store_order` (solo `pending`, con actor y motivo) o retirar el
+estatus y su filtro hasta que exista el flujo.
+
+---
+
+### 75. `PageOrders.module.css` concentra 1191 líneas para todo el módulo
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (mantenibilidad).
+
+El módulo de pedidos usa una sola hoja CSS para tabs, creación, recepción, historial, modales y
+vista de impresión. Ya se extrajeron componentes y utilidades, pero la hoja sigue siendo un cuello de
+botella para revisar y para Git.
+
+**Solución recomendada:** dividir por subdominio (`tabs`, `create`, `receive`, `history`, `modals`)
+y componer las clases desde cada componente.
+
+---
+
+### 76. Tokens de color del módulo de pedidos por debajo de WCAG AA
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (accesibilidad visual).
+
+Medido con los valores actuales del módulo: `#6d7b86` sobre blanco 4.35:1, `#7a8e9a` sobre
+`#f8fbfc` 3.28:1, badge de éxito 4.08:1, badge de advertencia 3.71:1, blanco sobre `#1092b1` 3.64:1
+y blanco sobre `#ff8a00` 2.36:1. El texto normal requiere 4.5:1.
+
+**Solución recomendada:** oscurecer los tokens de texto/badge hasta 4.5:1 conservando la paleta, y
+verificar los pares en el tema oscuro si se agrega.
+
+---
+
+### 77. Exports muertos en `ordersCalculationService.js`
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja (deuda).
+
+`buildDiscrepancyNotes()` (`:82`) y `filterOrderProducts()` (`:215`) solo se usan en sus pruebas; la
+UI ya no los consume. Mantenerlos sugiere que siguen siendo parte del contrato.
+
+**Solución recomendada:** eliminarlos junto con sus tests, o documentar para qué flujo futuro se
+conservan.
+
+---
+
+### 78. Ruta alias `/inventory/orders` duplicada
+
+**Estado:** Pendiente.
+
+**Severidad:** Baja.
+
+`Inventory.jsx` registra `/pedidos` y `/orders` hacia el mismo `PageOrders`. El alias no lo usa
+ningún enlace ni redirección y duplica la superficie de rutas.
+
+**Solución recomendada:** conservar solo `/pedidos` o agregar una redirección explícita si se
+necesita compatibilidad con enlaces externos.
+
+---
+
+### 79. RLS de pedidos permite lectura entre sucursales (riesgo aceptado)
+
+**Estado:** Aceptado (24 oct 2026).
+
+**Severidad:** Media (riesgo aceptado por decisión de producto).
+
+Las políticas `store_orders_select_authenticated` y `store_order_items_select_authenticated` usan
+`using (true)` para `authenticated`, por lo que cualquier usuario autenticado puede leer pedidos de
+todas las sucursales. Es consistente con la decisión documentada de "authenticated de confianza"
+(`PERMISSIONS.md`, `KNOWN_ISSUES.md` #10/#13) y con el resto de tablas operativas.
+
+Las mutaciones sí validan membresía de sucursal desde `20261024120000`
+(`_user_can_access_branch`, con excepción para administradores y `service_role`).
+
+**Solución recomendada (si cambia la decisión):** filtrar por `from_branch_id`/`to_branch_id`
+contra `user_branches` en las políticas y en las consultas del historial.
+
+---
+
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una

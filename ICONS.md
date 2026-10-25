@@ -26,6 +26,7 @@ Los iconos son archivos `.svg` sueltos en `src/assets/icons/`. Se importan como 
 | `eye-slash-solid-full.svg`    | Ocultar (ej. contraseña) |
 | `changeIcon.svg`              | Cambiar / intercambiar   |
 | `file-import-solid-full.svg`  | Importar archivo         |
+| `file-export-solid-full.svg`  | Exportar / descargar     |
 | `print-solid-full.svg`        | Imprimir                 |
 | `gear-solid-full.svg`         | Configuración / ajustes  |
 
