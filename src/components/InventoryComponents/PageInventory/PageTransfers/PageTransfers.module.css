@@ -674,8 +674,7 @@ tbody tr.clickableRow:focus-visible td {
 }
 
 tbody tr.clickableRow:hover td {
-  background: #f0fbfd;
-  box-shadow: inset 2px 0 0 0 var(--croketsBlue);
+  background: #f4fafc;
 }
 
 td.alignRight {
