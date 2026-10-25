@@ -87,6 +87,21 @@ describe("HistoryTable", () => {
     expect(onCancelClick).toHaveBeenCalledWith(orders[0]);
   });
 
+  it("pagina el historial de 10 en 10", () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+    }));
+    render(<HistoryTable {...defaultProps} transferHistory={many} />);
+    expect(screen.queryByText("TR-010")).toBeTruthy();
+    expect(screen.queryByText("TR-011")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("TR-011")).toBeTruthy();
+    expect(screen.queryByText("TR-001")).toBeNull();
+  });
+
   it("boton Cancelar esta deshabilitado durante submitting", () => {
     render(<HistoryTable {...defaultProps} submitting={true} />);
     expect(

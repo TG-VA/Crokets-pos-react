@@ -1,8 +1,13 @@
+import { useState } from "react";
+
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import styles from "../PageTransfers.module.css";
 import {
   formatTransferDateTime,
   getTransferStatusMetaForBranch,
 } from "../utils/transfersUtils";
+
+const PAGE_SIZE = 10;
 
 const HistoryTable = ({
   branch,
@@ -13,6 +18,15 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(transferHistory.length / PAGE_SIZE));
+  // Se acota al total por si el historial se reduce (ej. al recargar).
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = transferHistory.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
   return (
     <section className={styles.panel}>
       <div className={styles.panelHeader}>
@@ -41,7 +55,7 @@ const HistoryTable = ({
             </tr>
           </thead>
           <tbody>
-            {transferHistory.map((order) => {
+            {pageItems.map((order) => {
               const statusMeta = getTransferStatusMetaForBranch(
                 order,
                 branch?.id
@@ -121,6 +135,17 @@ const HistoryTable = ({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 ? (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={transferHistory.length}
+          pageSize={PAGE_SIZE}
+          itemsNoun="traspasos"
+          onPageChange={setPage}
+        />
+      ) : null}
     </section>
   );
 };
