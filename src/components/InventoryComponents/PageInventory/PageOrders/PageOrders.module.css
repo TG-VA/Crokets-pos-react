@@ -1027,10 +1027,38 @@
   color: var(--errorText);
 }
 
-.detailActions {
-  display: flex;
-  justify-content: flex-end;
-  position: relative;
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 11px;
+  border: 1px solid rgba(16, 146, 177, 0.4);
+  background: var(--white);
+  color: var(--croketsBlueDark);
+  font-size: 0.94rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.exportButton:hover {
+  background: var(--infoBg);
+  transform: translateY(-1px);
+}
+
+.exportButton:focus-visible {
+  outline: 3px solid rgba(16, 146, 177, 0.24);
+  outline-offset: 2px;
+}
+
+.exportButton img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .printPreview {

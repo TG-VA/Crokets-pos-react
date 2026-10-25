@@ -30,6 +30,18 @@ const OrderDetailModal = ({ order, onClose }) => {
       onConfirm={onClose}
       onClose={onClose}
       size="large"
+      footerActions={
+        order ? (
+          <button
+            type="button"
+            className={styles.exportButton}
+            onClick={handleExportExcel}
+          >
+            <img src={ExportIcon} alt="" aria-hidden="true" />
+            Exportar a Excel
+          </button>
+        ) : null
+      }
     >
       {order ? (
         <div className={styles.detailContent}>
@@ -58,17 +70,6 @@ const OrderDetailModal = ({ order, onClose }) => {
           </div>
 
           <OrderPreviewSections order={order} />
-
-          <div className={styles.detailActions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleExportExcel}
-            >
-              <img src={ExportIcon} alt="" aria-hidden="true" />
-              Exportar a Excel
-            </button>
-          </div>
         </div>
       ) : null}
     </AppModal>
