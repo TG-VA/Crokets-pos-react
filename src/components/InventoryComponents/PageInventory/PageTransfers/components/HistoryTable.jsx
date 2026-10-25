@@ -19,10 +19,19 @@ const HistoryTable = ({
   onCancelClick,
 }) => {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(transferHistory.length / PAGE_SIZE));
+  const [folioSearch, setFolioSearch] = useState("");
+  const searchKey = folioSearch.trim().toLowerCase();
+  const filteredHistory = searchKey
+    ? transferHistory.filter((order) =>
+        String(order.folio || "")
+          .toLowerCase()
+          .includes(searchKey)
+      )
+    : transferHistory;
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
   // Se acota al total por si el historial se reduce (ej. al recargar).
   const currentPage = Math.min(page, totalPages);
-  const pageItems = transferHistory.slice(
+  const pageItems = filteredHistory.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
@@ -37,6 +46,17 @@ const HistoryTable = ({
             relacionadas con esta sucursal.
           </p>
         </div>
+        <input
+          type="search"
+          className={`${styles.input} ${styles.historySearch}`}
+          placeholder="Buscar por folio"
+          aria-label="Buscar traspaso por folio"
+          value={folioSearch}
+          onChange={(event) => {
+            setFolioSearch(event.target.value);
+            setPage(1);
+          }}
+        />
       </div>
 
       <div className={styles.tableWrapper}>
@@ -125,10 +145,12 @@ const HistoryTable = ({
               );
             })}
 
-            {transferHistory.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <tr>
                 <td colSpan="9" className={styles.emptyRow}>
-                  Todavía no hay traspasos registrados para esta sucursal.
+                  {searchKey
+                    ? "No hay traspasos con ese folio."
+                    : "Todavía no hay traspasos registrados para esta sucursal."}
                 </td>
               </tr>
             ) : null}
@@ -140,7 +162,7 @@ const HistoryTable = ({
         <PaginationBar
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={transferHistory.length}
+          totalItems={filteredHistory.length}
           pageSize={PAGE_SIZE}
           itemsNoun="traspasos"
           onPageChange={setPage}

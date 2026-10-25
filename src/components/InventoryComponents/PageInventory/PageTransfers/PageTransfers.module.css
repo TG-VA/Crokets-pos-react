@@ -358,6 +358,12 @@
   box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.12);
 }
 
+.historySearch {
+  width: 260px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
 .tableCard {
   border: 1px solid #edf2f5;
   border-radius: 14px;

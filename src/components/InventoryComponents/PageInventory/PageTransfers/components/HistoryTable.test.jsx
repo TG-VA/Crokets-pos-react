@@ -102,6 +102,25 @@ describe("HistoryTable", () => {
     expect(screen.queryByText("TR-001")).toBeNull();
   });
 
+  it("filtra el historial por folio", () => {
+    const two = [
+      orders[0],
+      { ...orders[0], id: "t2", folio: "TR-020126-000002" },
+    ];
+    render(<HistoryTable {...defaultProps} transferHistory={two} />);
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "020126" },
+    });
+    expect(screen.queryByText("TR-020126-000002")).toBeTruthy();
+    expect(screen.queryByText("TR-010126-000001")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "zzz" },
+    });
+    expect(screen.getByText("No hay traspasos con ese folio.")).toBeTruthy();
+  });
+
   it("boton Cancelar esta deshabilitado durante submitting", () => {
     render(<HistoryTable {...defaultProps} submitting={true} />);
     expect(
