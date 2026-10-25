@@ -214,27 +214,27 @@
 }
 
 .feedbackSuccess {
-  background: var(--successBg);
-  color: var(--successText);
-  border-color: rgba(29, 135, 81, 0.2);
+  background: var(--successText);
+  color: var(--white);
+  border-color: var(--successText);
 }
 
 .feedbackWarning {
-  background: var(--warningBg);
-  color: var(--warningText);
-  border-color: rgba(181, 109, 0, 0.2);
+  background: var(--warningText);
+  color: var(--white);
+  border-color: var(--warningText);
 }
 
 .feedbackError {
-  background: var(--errorBg);
-  color: var(--errorText);
-  border-color: rgba(177, 56, 56, 0.2);
+  background: var(--errorText);
+  color: var(--white);
+  border-color: var(--errorText);
 }
 
 .feedbackInfo {
-  background: var(--infoBg);
-  color: var(--infoText);
-  border-color: rgba(16, 146, 177, 0.2);
+  background: var(--infoText);
+  color: var(--white);
+  border-color: var(--infoText);
 }
 
 .feedbackMessage {
@@ -242,14 +242,29 @@
 }
 
 .feedbackClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
   border: none;
+  border-radius: 50%;
   background: transparent;
   cursor: pointer;
+}
+
+.feedbackClose:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.feedbackClose:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 1px;
 }
 
 .feedbackClose img {
   width: 14px;
   height: 14px;
+  filter: brightness(0) invert(1);
 }
 
 .workspace {
@@ -362,6 +377,7 @@
   width: 16px;
   height: 16px;
 }
+
 
 .emptyState {
   display: flex;
