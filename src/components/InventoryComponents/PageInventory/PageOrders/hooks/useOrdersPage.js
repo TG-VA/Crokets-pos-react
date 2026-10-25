@@ -5,6 +5,7 @@ import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import {
+  buildReceiptFeedback,
   getPendingOrders,
   getOrderTotals,
 } from "../utils/ordersCalculationService";
@@ -62,14 +63,7 @@ export const useOrdersPage = () => {
       upsertOrder(receivedOrder);
       await syncAfterMutation();
 
-      const hasDifference = receivedOrder.status === "accepted_with_difference";
-
-      setFeedback({
-        tone: hasDifference ? "warning" : "success",
-        message: hasDifference
-          ? `Pedido ${receivedOrder.orderNumber} recibido con diferencias. ${receivedOrder.discrepancyNotes}`
-          : `Pedido ${receivedOrder.orderNumber} recibido correctamente. El inventario ya fue actualizado.`,
-      });
+      setFeedback(buildReceiptFeedback(receivedOrder));
     },
     [syncAfterMutation, upsertOrder]
   );
