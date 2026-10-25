@@ -31,6 +31,8 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 
 ## Prioridad Media (Infraestructura y Testing)
 
+- [ ] Paginar el historial de pedidos en el servidor (hoy se descarga completo y se filtra en el cliente; el badge de pendientes ya usa solo `count`) — ver `KNOWN_ISSUES.md` #72
+
 - [x] Configurar entorno de testing (Vitest + jsdom, `npm test`) — ver `KNOWN_ISSUES.md` #8
 - [x] Configurar linter (ESLint 9 + Prettier) con CI incremental sobre el diff — ver `KNOWN_ISSUES.md` #8
 - [x] Corregir errores críticos de ESLint y React 19 (`no-unsafe-finally`, refs en render y constantes) — **cerrado (28 sep 2026, rama `fix/react-hooks-and-eslint-zero-errors`)**. Los cinco puntos quedan resueltos y `npx eslint .` deja el repositorio en 0 errores: `react-hooks/set-state-in-effect` baja de 52 a 0, más los 4 `no-useless-escape`, 2 `no-undef` y 11 `preserve-manual-memoization` corregidos en la misma rama. Validado con `npm test` (1237 tests) y `npm run build:frontend` — ver `KNOWN_ISSUES.md` #56
@@ -67,3 +69,9 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Formatear los archivos que incumplen Prettier y bloquearán el paso incremental del CI al tocarse — resuelto (29 sep 2026, rama `style/global-prettier-format`): barrida global con `npx prettier --write .`, **370 archivos reformateados** (195 `.js`, 131 `.jsx`, 27 `.css`, 14 `.md`, 1 `.mjs`, 1 `.html`, 1 `.MD`; 355 de ellos matchean el filtro del CI), incluidos los tres más probables (`electron/preload.js`, `salesTicketService.js`, `useSalesHistory.js`). El reformateo quedó aislado en un commit `style:` exclusivo y verificado por comparación de AST (327 de 327 archivos JS/JSX con AST idéntico, sin cambios de lógica, imports ni contratos); `npx prettier --check .` en 0 incidencias, `npm test` 84 archivos / 1,278 tests en verde, `npm run build:frontend` EXIT 0, `npx eslint .` 0 errores y `git diff --check` limpio — ver `KNOWN_ISSUES.md` #61
 - [ ] Mover `normalizeDept` fuera de `useProductsList` para eliminar warning de `react-hooks/exhaustive-deps` — ver `KNOWN_ISSUES.md` #64
 - [ ] Evitar desmontaje de la tabla y controles durante `loadingProducts` en la lista de productos (UX flicker) — ver `KNOWN_ISSUES.md` #65
+- [ ] Decidir si el "Costo total" del Excel de pedidos valúa lo esperado o lo recibido y etiquetarlo en consecuencia — ver `KNOWN_ISSUES.md` #73
+- [ ] Definir el flujo de cancelación de pedidos o retirar el estatus `cancelled` del filtro y los estilos — ver `KNOWN_ISSUES.md` #74
+- [ ] Dividir `PageOrders.module.css` (1191 líneas) por subdominio (tabs, creación, recepción, historial, modales) — ver `KNOWN_ISSUES.md` #75
+- [ ] Llevar los tokens de color del módulo de pedidos a WCAG AA (4.5:1) — ver `KNOWN_ISSUES.md` #76
+- [ ] Eliminar o justificar los exports muertos `buildDiscrepancyNotes` y `filterOrderProducts` — ver `KNOWN_ISSUES.md` #77
+- [ ] Retirar la ruta alias `/inventory/orders` o convertirla en redirección explícita — ver `KNOWN_ISSUES.md` #78

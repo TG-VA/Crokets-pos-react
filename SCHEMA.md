@@ -34,6 +34,11 @@ resuelto desde `branch_inventory.cost_price` con fallback a `products.cost_price
 sobrecargas de `create_sale_transaction` quedaron redefinidas para congelar ese snapshot. No hay
 backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo desconocido).
 
+**Actualización (24 oct 2026) — rama `feat/orders-history-pagination`:** se documentan las tablas
+`store_orders`/`store_order_items` y las RPCs `create_store_order`/`receive_store_order` (migración
+`20261022120000`, con endurecimiento de cantidades enteras e índice de historial en
+`20261024120000`).
+
 **Convención:** `NN` = NOT NULL. FK se indica como `→ tabla.columna`.
 
 ---
@@ -262,6 +267,35 @@ backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo d
 | transfer_id           | uuid    | NN, → inventory_transfers.id |
 | product_id            | uuid    | NN, → products.id            |
 | quantity / cost_price | numeric | NN                           |
+
+### store_orders
+
+| Columna                                         | Tipo        | Notas                                                          |
+| ----------------------------------------------- | ----------- | -------------------------------------------------------------- |
+| id                                              | uuid        | PK                                                             |
+| order_number                                    | varchar(24) | NN, único (`PED-AAAAMMDD-NNNN`)                                |
+| order_name                                      | varchar     | NN                                                             |
+| from_branch_id / to_branch_id                   | uuid        | NN, → branches.id (deben ser distintas)                        |
+| created_by_user_id / received_by_user_id        | uuid        | → users.id                                                     |
+| status                                          | varchar(24) | `pending`, `accepted`, `accepted_with_difference`, `cancelled` |
+| departments_summary                             | text[]      | NN, default `{}`                                               |
+| notes / discrepancy_notes                       | text        |                                                                |
+| sent_at / accepted_at / created_at / updated_at | timestamptz | NN salvo `accepted_at`                                         |
+
+### store_order_items
+
+| Columna                                      | Tipo           | Notas                                     |
+| -------------------------------------------- | -------------- | ----------------------------------------- |
+| id                                           | uuid           | PK                                        |
+| order_id                                     | uuid           | NN, → store_orders.id (on delete cascade) |
+| product_id                                   | uuid           | NN, → products.id                         |
+| barcode / product_name                       | varchar        | `product_name` NN (snapshot)              |
+| department_id / department_name              | uuid / varchar | → departments.id                          |
+| expected_qty / received_qty / difference_qty | numeric(18,4)  | enteras; `expected_qty > 0`               |
+| cost_price                                   | numeric(18,4)  | NN, default 0 (snapshot)                  |
+
+`expected_qty` y `received_qty` solo admiten enteros (constraints `*_integral` de
+`20261024120000`): `inventory_movements.quantity`/`previous_stock`/`new_stock` son `integer`.
 
 ### price_changes
 
@@ -665,6 +699,7 @@ prefiere RPC atómica sobre cliente con múltiples queries.
 | `complete_sale`                                                                                                    | void                    | Legacy no transaccional                                                                                                                                                              |
 | `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`                                     | uuid / uuid / void      | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                                                                                       |
 | `import_products_transaction`                                                                                      | jsonb                   | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                                                                                                |
+| `create_store_order` / `receive_store_order`                                                                       | jsonb                   | Pedidos de abastecimiento entre sucursales (atómicas; cantidades enteras; `20261022120000` + `20261024120000`)                                                                       |
 | `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**                                                                                                                            |
 | `close_cash_register_session`                                                                                      | jsonb                   | Cierre de caja                                                                                                                                                                       |
 | `open_cash_register` / `get_cash_register_session`                                                                 | jsonb                   | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                                                                                    |

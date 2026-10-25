@@ -258,7 +258,7 @@ describe("electron mainProcess", () => {
   });
 
   describe("registerIpcHandlers", () => {
-    it("registra los diez canales esperados", () => {
+    it("registra los canales esperados", () => {
       const { handlers } = buildIpcHarness();
 
       expect(Object.keys(handlers).sort()).toEqual([...IPC_CHANNELS].sort());
