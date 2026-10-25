@@ -2837,7 +2837,7 @@ procedimiento exacto queda en `docs/SUPABASE_MIGRATIONS.md`.
 | C4  | `getOrderDifferenceLabel` devolvía "Sin diferencia" para un pedido `accepted_with_difference` sin notas, contradiciendo su badge                                                                                                               | `ordersFormatters.js:113` cae a "Con diferencia" por estatus; caso en `ordersFormatters.test.js:72`                                                                                                            | CORREGIDO |
 | C5  | Warning de ESLint `React is defined but never used` en `NavbarInventory.test.jsx`, preexistente en `main`                                                                                                                                      | Import eliminado en commit aparte; el archivo queda sin warnings                                                                                                                                               | CORREGIDO |
 | C6  | La documentación de despliegue describía la migración como pendiente y la de pedidos como "no verificada de forma independiente"                                                                                                               | `docs/SUPABASE_MIGRATIONS.md` registra el push real, la verificación del índice, el pre-check y el `VALIDATE CONSTRAINT` pendiente; `docs/TESTING.md` indexa las suites nuevas                                 | CORREGIDO |
-| C7  | `difference_qty` es entero por derivación (`v_received - expected_qty` con ambos enteros), pero un pedido heredado `pending` con `expected_qty` fraccionario produciría una diferencia fraccionaria mientras los constraints sigan `NOT VALID` | `20261024120000:286`; riesgo documentado en `docs/SUPABASE_MIGRATIONS.md`. Se cierra al ejecutar `VALIDATE CONSTRAINT`                                                                                         | DIFERIDO  |
+| C7  | `difference_qty` es entero por derivación (`v_received - expected_qty` con ambos enteros), pero un pedido heredado `pending` con `expected_qty` fraccionario produciría una diferencia fraccionaria mientras los constraints sigan `NOT VALID` | `20261024120000:286`; cerrado el 25 oct 2026 con `20261025120000_store_orders_integrity_validate.sql`: `convalidated = true` en ambos constraints. Ver `docs/SUPABASE_MIGRATIONS.md`                           | CERRADO   |
 | C8  | El folio se calcula con `count(*)` bajo lock asesor (`20261024120000:85-89`); el costo del conteo crece con los pedidos del día, no se midió el plan                                                                                           | Observación de performance; con el volumen actual (6 pedidos) es irrelevante y el índice único de `order_number` acota el reintento                                                                            | OBSERVADO |
 
 **Sobre el truncamiento de `sanitizeIntegerQuantity` (F2).** Se evaluó rechazar en vez de truncar y se
@@ -2854,3 +2854,17 @@ en `3` inventaba una entrada que nadie capturó, y ahora la captura se descarta 
 `(to_branch_id, status)`; `difference_qty` es entero por derivación. Las correcciones C1-C6 se
 aplicaron con pruebas y la suite queda en 179 archivos / 2423 casos. Queda pendiente únicamente el
 `VALIDATE CONSTRAINT` de los dos constraints de enteros.
+
+### 9. Cierre de C7 (25 oct 2026)
+
+El `VALIDATE CONSTRAINT` que C7 dejó diferido quedó ejecutado mediante la migración versionada
+`20261025120000_store_orders_integrity_validate.sql`, aplicada al remoto con `supabase db push`. El
+dry run previo confirmó que era la única migración pendiente y `supabase migration list` muestra
+Local = Remote en esa versión. La verificación directa con `supabase db query --linked` devolvió
+`convalidated = true` para `store_order_items_expected_qty_integral` y
+`store_order_items_received_qty_integral`.
+
+Con ambos constraints validados, el riesgo descrito en C7 (una diferencia fraccionaria derivada de
+una fila heredada con `expected_qty` fraccionario) deja de ser posible: PostgreSQL escaneó la tabla
+completa y garantiza enteros en todas las filas, no solo en las nuevas. El detalle operativo queda en
+`docs/SUPABASE_MIGRATIONS.md` (sección de validación y registro de despliegues).

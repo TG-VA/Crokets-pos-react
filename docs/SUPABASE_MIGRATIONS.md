@@ -169,32 +169,32 @@ El schema base quedó capturado en `00000000000000_remote_schema_baseline.sql`. 
   `supabase/scripts/schema_introspection.sql` y ya incorpora el estado completo tras el despliegue
   del 23 sep 2026 (50 tablas, 37 funciones, tablas de kits/devoluciones/config, snapshot de comisión).
 
-## Validación pendiente de los constraints de enteros (`20261024120000`)
+## Validación de los constraints de enteros (`20261024120000`)
 
 Los dos constraints se agregaron como `NOT VALID`: rechazan escrituras nuevas pero no escanearon las
 filas históricas. El pre-check del 24 oct 2026 sobre `store_order_items` (4 filas) no encontró
-fraccionarios en `expected_qty` ni en `received_qty`, así que se pueden validar. Falta ejecutar, con
-acceso SQL directo (SQL Editor o `psql` con la cadena de conexión fuera del repositorio):
+fraccionarios en `expected_qty` ni en `received_qty`.
 
-```sql
-alter table public.store_order_items
-  validate constraint store_order_items_expected_qty_integral;
-alter table public.store_order_items
-  validate constraint store_order_items_received_qty_integral;
+El 25 oct 2026 se ejecutó el `VALIDATE CONSTRAINT` mediante una migración versionada,
+`20261025120000_store_orders_integrity_validate.sql`, aplicada con `supabase db push` (el dry run
+previo confirmó que era la única pendiente). Resultado verificado contra el remoto con
+`supabase db query --linked`:
 
-select conname, convalidated
-from pg_constraint
-where conrelid = 'public.store_order_items'::regclass
-order by conname;
-```
+| Constraint                                | `convalidated` |
+| ----------------------------------------- | -------------- |
+| `store_order_items_expected_qty_integral` | `true`         |
+| `store_order_items_received_qty_integral` | `true`         |
 
-Mientras `convalidated` siga en `false`, las filas anteriores al 24 oct 2026 no están garantizadas
-como enteras y `difference_qty` puede ser fraccionario en pedidos heredados que aún estén `pending`.
+Con ambos constraints validados, PostgreSQL garantiza que todas las filas de `store_order_items`
+—incluidas las anteriores al 24 oct 2026— tienen `expected_qty` y `received_qty` enteros, por lo que
+`difference_qty` es entero por derivación también en pedidos heredados que sigan `pending`.
+`VALIDATE` solo escanea y bloquea brevemente la tabla; no reescribe datos.
 
 ## Registro de despliegues
 
 | Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 25 oct 2026 | `20261025120000_store_orders_integrity_validate.sql`                                                     | **Aplicada** con `supabase db push` (el dry run previo listó únicamente esta migración). `supabase migration list` muestra Local = Remote en `20261025120000`. Ejecuta `VALIDATE CONSTRAINT` sobre `store_order_items_expected_qty_integral` y `store_order_items_received_qty_integral`; `supabase db query --linked` devolvió `convalidated = true` para ambos. El push terminó sin error, lo que implica que no había filas fraccionarias que bloquearan el escaneo                                                                                                                                                                                                                                                                      |
 | 24 oct 2026 | `20261024120000_store_orders_integrity.sql`                                                              | **Aplicada** con `supabase db push` (dry run previo: era la única pendiente). Verificado con `supabase migration list` (Local = Remote) y con `supabase inspect db index-stats --linked`, que lista `public.store_orders_sent_at_idx`. Pre-check de datos históricos sobre `store_order_items` (4 filas): `expected_qty <> trunc(expected_qty)` = 0 y `received_qty` fraccionarias = 0. Los constraints `store_order_items_expected_qty_integral` y `store_order_items_received_qty_integral` quedaron `NOT VALID`: **falta `VALIDATE CONSTRAINT`**, que requiere una cadena de conexión utilizable (sin `DATABASE_URL` ni contraseña de base en el equipo de auditoría, y con Docker apagado). Hasta entonces solo garantizan filas nuevas |
 | 22 oct 2026 | `20261022120000_create_store_orders.sql`                                                                 | Pedidos de abastecimiento: tablas `store_orders`/`store_order_items` y RPCs `create_store_order`/`receive_store_order`. **Estado verificado** el 24 oct 2026 con `supabase migration list`: la versión figura en Local y Remote, por lo que el despliegue que afirmaba el commit `a833b06` sí ocurrió                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 20 oct 2026 | `20261020120000_branches_is_active_management.sql`                                                       | Gestión de sucursales: `branches.is_active` + RPCs `create_branch`/`set_branch_active`. Aplicado con `supabase db push` y verificado con `supabase migration list` (Local = Remote, 27 versiones) e introspección runtime por service role: ambas RPCs responden contratos de error válidos y las sucursales existentes (`POL`, `HUA`, `COB`, `SAN`, `TOR`) tienen `is_active = true`. Endurecido: el actor admin se fija server-side con `v_admin_id := coalesce(auth.uid(), p_admin_id)` para impedir suplantación de admin por parte de un usuario autenticado (mismo patrón que `20260917200000`)                                                                                                                                       |
