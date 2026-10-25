@@ -1,14 +1,31 @@
 import styles from "../PageOrders.module.css";
 import { formatOrderDateTime, formatQuantity } from "../utils/ordersFormatters";
 import { getOrderDifferences } from "../utils/ordersCalculationService";
+import { usePagination } from "../../../../../hooks/usePagination";
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
+
+const DETAIL_PAGE_SIZES = [10, 25, 50];
 
 /**
  * Cuerpo compartido del detalle y de la vista previa de exportacion.
  * Mantiene una sola fuente para metadatos, partidas, notas y diferencias,
  * de modo que ambas vistas no puedan divergir.
+ *
+ * `paginated` pagina la tabla de partidas (modal de detalle). La vista previa
+ * de impresion lo deja apagado para imprimir todas las partidas.
  */
-const OrderPreviewSections = ({ order }) => {
+const OrderPreviewSections = ({ order, paginated = false }) => {
   const differences = getOrderDifferences(order?.items);
+  const items = order?.items ?? [];
+
+  const pagination = usePagination({
+    totalItems: paginated ? items.length : 0,
+    defaultPageSize: 10,
+    pageSizeOptions: DETAIL_PAGE_SIZES,
+    storageKey: "crokets_order_detail_page_size",
+  });
+
+  const visibleItems = paginated ? pagination.pageItems(items) : items;
 
   if (!order) return null;
 
@@ -58,7 +75,7 @@ const OrderPreviewSections = ({ order }) => {
             </tr>
           </thead>
           <tbody>
-            {order.items?.map((item) => {
+            {visibleItems.map((item) => {
               const hasDifference =
                 item?.differenceQty !== undefined &&
                 item?.differenceQty !== null &&
@@ -90,6 +107,24 @@ const OrderPreviewSections = ({ order }) => {
         </table>
       </div>
 
+      {paginated && items.length > pagination.pageSize ? (
+        <div className={styles.paginationFooter}>
+          <PaginationBar
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            pageSizeOptions={DETAIL_PAGE_SIZES}
+            onPageChange={pagination.handlePageChange}
+            onPageSizeChange={pagination.handlePageSizeChange}
+            totalItems={items.length}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            itemsNoun="productos"
+            labelMode="range"
+          />
+        </div>
+      ) : null}
+
       {order.notes ? (
         <div className={styles.detailNote}>
           <strong>Notas del pedido</strong>
@@ -99,7 +134,7 @@ const OrderPreviewSections = ({ order }) => {
 
       {differences.length > 0 ? (
         <div className={styles.differencesSection}>
-          <strong>Diferencias</strong>
+          <strong>Diferencias de recepción</strong>
           <div className={styles.tableWrapper}>
             <table className={styles.differencesTable}>
               <thead>
@@ -140,13 +175,6 @@ const OrderPreviewSections = ({ order }) => {
               </tbody>
             </table>
           </div>
-        </div>
-      ) : null}
-
-      {order.discrepancyNotes ? (
-        <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-          <strong>Diferencias de recepcion</strong>
-          <p>{order.discrepancyNotes}</p>
         </div>
       ) : null}
     </>

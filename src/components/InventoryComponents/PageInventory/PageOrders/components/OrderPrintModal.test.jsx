@@ -42,7 +42,7 @@ describe("OrderPrintModal", () => {
 
     const differenceTable = screen.getAllByRole("table")[1];
 
-    expect(screen.getByText("Diferencias")).toBeTruthy();
+    expect(screen.getByText("Diferencias de recepción")).toBeTruthy();
     expect(screen.getByText("+2")).toBeTruthy();
     expect(within(differenceTable).getByText("-2")).toBeTruthy();
     expect(screen.queryByText("(Sobra)")).toBeNull();
