@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 
 vi.mock("../../services/salesHistoryService", () => ({
@@ -64,6 +64,30 @@ describe("useSalesHistory - seleccion inicial", () => {
     fetchTicketDetailsData.mockResolvedValue({ details: [], kits: [] });
     fetchProductsByIds.mockResolvedValue([]);
     fetchSaleReturnsData.mockResolvedValue({ returns: [], returnItems: [] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("al cerrar y reabrir el modal el filtro de fecha vuelve a hoy", async () => {
+    // Solo se simula Date: los temporizadores reales siguen sirviendo a waitFor.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 2, 15, 12, 0, 0));
+    const { result, rerender } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+    expect(result.current.dateFilter).toBe("2026-03-15");
+
+    await act(async () => {
+      result.current.setDateFilter("2026-01-01");
+    });
+    expect(result.current.dateFilter).toBe("2026-01-01");
+
+    rerender({ isOpen: false });
+    rerender({ isOpen: true });
+
+    expect(result.current.dateFilter).toBe("2026-03-15");
+    await waitFor(() => expect(result.current.loadingTickets).toBe(false));
   });
 
   it("selecciona la venta mas reciente al abrir el modal", async () => {
