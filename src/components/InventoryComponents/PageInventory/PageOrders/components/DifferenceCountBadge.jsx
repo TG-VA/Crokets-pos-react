@@ -1,20 +1,20 @@
 import styles from "../PageOrders.module.css";
 
 /**
- * Productos con diferencia de un pedido, con signo: faltantes en rojo (-N) y
- * sobrantes en azul (+N), solo los distintos de cero. `summary` nulo significa
+ * Productos con diferencia de un pedido, con etiqueta: "Faltante: N" en rojo
+ * y "Sobrante: N" en azul, solo los distintos de cero. `summary` nulo significa
  * que aun no hay recepcion y se muestra un guion; sin diferencias se muestra 0.
  */
 const BADGES = [
   {
     key: "shortages",
-    sign: "-",
+    text: "Faltante",
     className: styles.differenceShort,
     label: "productos con faltante",
   },
   {
     key: "overages",
-    sign: "+",
+    text: "Sobrante",
     className: styles.differenceOver,
     label: "productos con sobrante",
   },
@@ -46,8 +46,7 @@ const DifferenceCountBadge = ({ summary }) => {
           className={[styles.differenceBadge, badge.className].join(" ")}
           aria-label={`${summary[badge.key]} ${badge.label}`}
         >
-          {badge.sign}
-          {summary[badge.key]}
+          {badge.text}: {summary[badge.key]}
         </span>
       ))}
     </span>

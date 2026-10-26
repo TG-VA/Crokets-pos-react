@@ -248,8 +248,8 @@ se cierran solos).
 - Realtime: guia de prueba manual en `docs/plans/ORDERS_REALTIME_MANUAL_TEST.md`.
   La politica SELECT de `store_orders` es `authenticated` con `true`, por lo que
   RLS no bloquea los eventos. H10 sigue pendiente de ejecutarse a mano.
-- Diferencia del historial: badge rojo `-N` (productos con faltante) y azul
-  `+N` (productos con sobrante), `0` sin diferencias, guion si no hay recepcion.
+- Diferencia del historial: badge rojo `Faltante: N` (productos con faltante) y azul
+  `Sobrante: N` (productos con sobrante), `0` sin diferencias, guion si no hay recepcion.
 - `BranchBadge`: nombre en mayusculas y mas grande, antes del rol.
 - Modal de detalle: nombre y estado en el encabezado, fila de ruta con
   conector "hacia" (no existe icono de flecha en `src/assets/icons`) y metadatos

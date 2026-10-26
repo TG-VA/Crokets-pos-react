@@ -160,13 +160,13 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(differenceCell(rows[0]).textContent).toBe("—");
     expect(differenceCell(rows[1]).textContent).toBe("0");
-    expect(differenceCell(rows[2]).textContent).toBe("-1+1");
+    expect(differenceCell(rows[2]).textContent).toBe("Faltante: 1Sobrante: 1");
     expect(
       within(rows[2]).getByLabelText("1 productos con faltante").textContent
-    ).toBe("-1");
+    ).toBe("Faltante: 1");
     expect(
       within(rows[2]).getByLabelText("1 productos con sobrante").textContent
-    ).toBe("+1");
+    ).toBe("Sobrante: 1");
     expect(within(rows[2]).queryByText(/Faltantes/)).toBeNull();
   });
 
