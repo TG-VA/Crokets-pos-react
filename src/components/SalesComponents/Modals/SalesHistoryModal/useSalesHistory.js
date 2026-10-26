@@ -186,13 +186,13 @@ export const useSalesHistory = ({
 
         // Al abrir el modal se selecciona la venta mas reciente una sola vez.
         if (hasInitialSelectionRef.current) return;
+        hasInitialSelectionRef.current = true;
         if (!nextTickets.length) {
           setSelectedTicket(null);
           setCancelReason("");
           setRefundMethodId("");
           return;
         }
-        hasInitialSelectionRef.current = true;
         handleSelectTicketRef.current?.(nextTickets[0]);
       })
       .catch((e) => {

@@ -102,6 +102,23 @@ describe("useSalesHistory - seleccion inicial", () => {
     expect(result.current.selectedTicket).toBeNull();
   });
 
+  it("no autoselecciona al cambiar el filtro si la primera carga vino vacia", async () => {
+    fetchHistoryTickets.mockResolvedValueOnce([]);
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.loadingTickets).toBe(false));
+
+    await act(async () => {
+      result.current.setCashierFilter("u9");
+    });
+
+    await waitFor(() =>
+      expect(fetchHistoryTickets.mock.calls.length).toBeGreaterThan(1)
+    );
+    await waitFor(() => expect(result.current.loadingTickets).toBe(false));
+    expect(result.current.selectedTicket).toBeNull();
+    expect(fetchTicketDetailsData).not.toHaveBeenCalled();
+  });
+
   it("una respuesta tardia no selecciona una venta con el modal cerrado", async () => {
     let resolveTickets;
     fetchHistoryTickets.mockReturnValue(
