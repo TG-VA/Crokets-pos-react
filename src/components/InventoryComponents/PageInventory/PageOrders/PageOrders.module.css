@@ -366,7 +366,10 @@
 
 .routeConnector {
   color: #5c6b77;
+  font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .primaryButton,
@@ -1118,20 +1121,25 @@
 
 .detailHeader {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .detailTitle {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .detailRoute {
-  margin: 0;
-  color: #5c6b77;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f5f8fa;
 }
 
 .detailMeta {
@@ -1141,7 +1149,16 @@
   margin: 0;
 }
 
+.detailMeta > div {
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
 .detailMeta dt {
+  margin-bottom: 2px;
   font-size: 0.75rem;
   color: #6d7b86;
 }
@@ -1149,6 +1166,7 @@
 .detailMeta dd {
   margin: 0;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .detailNote {

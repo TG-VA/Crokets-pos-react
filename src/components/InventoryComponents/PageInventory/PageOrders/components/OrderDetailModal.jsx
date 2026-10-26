@@ -47,14 +47,7 @@ const OrderDetailModal = ({ order, onClose }) => {
       {order ? (
         <div className={styles.detailContent}>
           <div className={styles.detailHeader}>
-            <div>
-              <h3 className={styles.detailTitle}>{order.orderName}</h3>
-              <p className={styles.detailRoute}>
-                <BranchBadge role="origin" name={order.fromBranchName} />
-                <span className={styles.routeConnector}>hacia</span>
-                <BranchBadge role="destination" name={order.toBranchName} />
-              </p>
-            </div>
+            <h3 className={styles.detailTitle}>{order.orderName}</h3>
             <span
               className={[
                 styles.statusBadge,
@@ -65,6 +58,12 @@ const OrderDetailModal = ({ order, onClose }) => {
             >
               {status.label}
             </span>
+          </div>
+
+          <div className={styles.detailRoute}>
+            <BranchBadge role="origin" name={order.fromBranchName} />
+            <span className={styles.routeConnector}>hacia</span>
+            <BranchBadge role="destination" name={order.toBranchName} />
           </div>
 
           <OrderPreviewSections order={order} paginated />
