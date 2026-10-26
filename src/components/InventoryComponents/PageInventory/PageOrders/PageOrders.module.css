@@ -319,7 +319,7 @@
   background: rgba(16, 146, 177, 0.08);
   color: var(--croketsBlue);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   width: fit-content;
 }
 
@@ -480,6 +480,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .statusPending {
@@ -487,7 +488,7 @@
   color: var(--pendingText);
   padding: 4px 10px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusSuccess {
@@ -713,6 +714,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .differenceOk {
@@ -1225,10 +1227,6 @@
   gap: 16px;
 }
 
-.statusBadgeBold {
-  font-weight: 700;
-}
-
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
 .iconButton:focus-visible,
@@ -1356,7 +1354,7 @@
   background: rgba(16, 146, 177, 0.1);
   color: var(--croketsBlueDark);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .draftSummaryStats {

@@ -50,7 +50,6 @@ const OrderPrintModal = ({ order, onClose, onExportExcel }) => {
             <span
               className={[
                 styles.statusBadge,
-                styles.statusBadgeBold,
                 getStatusToneClass(styles, status.tone),
               ]
                 .filter(Boolean)
