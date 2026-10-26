@@ -116,6 +116,8 @@ y el proceso principal de Electron:
 | Pedidos: servicio realtime                             | `.../PageOrders/services/ordersRealtimeService.test.js`                            |
 | Pedidos: contrato SQL de realtime                      | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
 | Pedidos: badge de sucursal (nombre, mayusculas, rol)   | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
+| Pedidos: badge del nombre del pedido                   | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |
+| Pedidos: modal de detalle (titulo y badge de nombre)   | `.../PageOrders/components/OrderDetailModal.test.jsx`                              |
 | Pedidos: aviso con cierre automatico                   | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
 | Pedidos: estilos (clases definidas, badges en negrita) | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas         | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |

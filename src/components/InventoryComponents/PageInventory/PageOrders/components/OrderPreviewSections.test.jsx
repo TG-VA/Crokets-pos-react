@@ -48,4 +48,21 @@ describe("OrderPreviewSections", () => {
     expect(screen.getByText("Diferencias de recepción")).toBeTruthy();
     expect(screen.queryByText(/Faltantes: 1x/)).toBeNull();
   });
+
+  it("muestra las notas del pedido junto al resto de secciones", () => {
+    render(
+      <OrderPreviewSections
+        order={{ ...buildOrder(3), notes: "Entregar por la puerta trasera" }}
+      />
+    );
+
+    expect(screen.getByText("Notas del pedido")).toBeTruthy();
+    expect(screen.getByText("Entregar por la puerta trasera")).toBeTruthy();
+  });
+
+  it("omite el bloque de notas cuando el pedido no tiene", () => {
+    render(<OrderPreviewSections order={buildOrder(3)} />);
+
+    expect(screen.queryByText("Notas del pedido")).toBeNull();
+  });
 });
