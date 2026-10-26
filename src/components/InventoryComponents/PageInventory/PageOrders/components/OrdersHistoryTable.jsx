@@ -179,12 +179,12 @@ const OrdersHistoryTable = ({
                     <td>
                       <div className={styles.routeCell}>
                         <BranchBadge
-                          role="origin"
-                          name={order.fromBranchName}
-                        />
-                        <BranchBadge
                           role="destination"
                           name={order.toBranchName}
+                        />
+                        <BranchBadge
+                          role="origin"
+                          name={order.fromBranchName}
                         />
                       </div>
                     </td>

@@ -317,6 +317,19 @@ describe("OrdersHistoryTable ruta y destino bloqueado", () => {
     localStorage.clear();
   });
 
+  it("muestra el badge de destino antes que el de origen en la ruta", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} />);
+
+    const route = within(getBodyRows()[0])
+      .getByText("SUCURSAL NORTE")
+      .closest("div").parentElement;
+    const text = route.textContent;
+
+    expect(text.indexOf("SUCURSAL NORTE")).toBeLessThan(
+      text.indexOf("SUCURSAL CENTRO")
+    );
+  });
+
   it("deja el destino editable cuando no hay destino bloqueado", () => {
     render(<OrdersHistoryTable orders={buildOrders(1)} branches={branches} />);
 
