@@ -7,6 +7,7 @@ import {
   filterOrderHistory,
   filterOrderProducts,
   getMissingReceiptItems,
+  getOrderDifferenceCount,
   getOrderDifferences,
   getOrderTotals,
   getPendingOrdersCount,
@@ -249,5 +250,39 @@ describe("buildReceiptFeedback", () => {
     expect(feedback.message).toBe(
       "Pedido PED-3 recibido con 1 producto con diferencia."
     );
+  });
+});
+
+describe("getOrderDifferenceCount", () => {
+  it("retorna null en pedidos pendientes o cancelados", () => {
+    expect(
+      getOrderDifferenceCount({ status: "pending", items: [] })
+    ).toBeNull();
+    expect(
+      getOrderDifferenceCount({ status: "cancelled", items: [] })
+    ).toBeNull();
+  });
+
+  it("cuenta faltantes y sobrantes por producto", () => {
+    expect(
+      getOrderDifferenceCount({
+        status: "accepted_with_difference",
+        items: [
+          { differenceQty: -2 },
+          { differenceQty: 3 },
+          { differenceQty: 0 },
+          { differenceQty: null },
+        ],
+      })
+    ).toBe(2);
+  });
+
+  it("retorna 0 cuando se recibio sin diferencias", () => {
+    expect(
+      getOrderDifferenceCount({
+        status: "accepted",
+        items: [{ differenceQty: 0 }],
+      })
+    ).toBe(0);
   });
 });

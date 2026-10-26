@@ -150,6 +150,18 @@ export const getOrderDifferences = (items = []) => {
 };
 
 /**
+ * Numero de productos con diferencia (faltante o sobrante). Retorna null
+ * mientras el pedido no se ha recibido, para distinguirlo de "0 diferencias".
+ */
+export const getOrderDifferenceCount = (order) => {
+  if (!order || order.status === "pending" || order.status === "cancelled") {
+    return null;
+  }
+
+  return getOrderDifferences(order.items).length;
+};
+
+/**
  * Aviso de resultado de una recepcion. Con diferencias solo informa cuantos
  * productos difieren; el detalle vive en el modal del pedido.
  */

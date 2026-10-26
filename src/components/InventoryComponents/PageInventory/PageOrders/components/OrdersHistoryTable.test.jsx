@@ -122,7 +122,7 @@ describe("OrdersHistoryTable pagination", () => {
     ).toBeTruthy();
   });
 
-  it("distingue un pedido pendiente de uno sin diferencia", () => {
+  it("muestra solo el numero de productos con diferencia", () => {
     render(
       <OrdersHistoryTable
         orders={[
@@ -137,15 +137,42 @@ describe("OrdersHistoryTable pagination", () => {
             id: "accepted",
             orderNumber: "PED-002",
             status: "accepted",
+            items: [{ id: "i1", differenceQty: 0 }],
+          },
+          {
+            ...buildOrder(2),
+            id: "difference",
+            orderNumber: "PED-003",
+            status: "accepted_with_difference",
+            discrepancyNotes: "Faltantes: 1x Croqueta (-2)",
+            items: [
+              { id: "i1", differenceQty: -2 },
+              { id: "i2", differenceQty: 4 },
+              { id: "i3", differenceQty: 0 },
+            ],
           },
         ]}
       />
     );
 
     const rows = getBodyRows();
+    const differenceCell = (row) => row.querySelectorAll("td")[5];
 
-    expect(within(rows[0]).getByText("Pendiente de recepcion")).toBeTruthy();
-    expect(within(rows[1]).getByText("Sin diferencia")).toBeTruthy();
+    expect(differenceCell(rows[0]).textContent).toBe("—");
+    expect(differenceCell(rows[1]).textContent).toBe("0");
+    expect(differenceCell(rows[2]).textContent).toBe("2");
+    expect(within(rows[2]).queryByText(/Faltantes/)).toBeNull();
+  });
+
+  it("muestra origen y destino como badges", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} />);
+
+    const row = getBodyRows()[0];
+
+    expect(within(row).getByText("Origen")).toBeTruthy();
+    expect(within(row).getByText("Destino")).toBeTruthy();
+    expect(within(row).getByText(/Sucursal Centro/)).toBeTruthy();
+    expect(within(row).getByText(/Sucursal Norte/)).toBeTruthy();
   });
 
   it("mantiene visibles las acciones de detalle y exportar por fila", () => {

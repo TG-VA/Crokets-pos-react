@@ -198,9 +198,10 @@
   min-width: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--croketsBlue);
+  background: var(--croketsOrange);
   color: var(--white);
   font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .feedback {
@@ -1094,14 +1095,6 @@
   margin-top: 3px;
   font-size: 0.8rem;
   color: #6d7b86;
-}
-
-.discrepancyText {
-  display: block;
-  max-width: 260px;
-  white-space: pre-line;
-  font-size: 0.8rem;
-  color: var(--warningText);
 }
 
 .detailContent {

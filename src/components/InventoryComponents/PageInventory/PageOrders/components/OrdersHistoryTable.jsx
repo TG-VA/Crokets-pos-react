@@ -3,15 +3,18 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "../PageOrders.module.css";
 import {
   formatOrderDateTime,
-  getOrderDifferenceLabel,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
-import { filterOrderHistory } from "../utils/ordersCalculationService";
+import {
+  filterOrderHistory,
+  getOrderDifferenceCount,
+} from "../utils/ordersCalculationService";
 import { getPresetRange } from "../utils/ordersDateRange";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import BranchBadge from "./BranchBadge";
+import DifferenceCountBadge from "./DifferenceCountBadge";
 import OrdersHistoryFilters from "./OrdersHistoryFilters";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
@@ -185,15 +188,9 @@ const OrdersHistoryTable = ({
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={
-                          order.discrepancyNotes
-                            ? styles.discrepancyText
-                            : styles.rowSubtext
-                        }
-                      >
-                        {getOrderDifferenceLabel(order)}
-                      </span>
+                      <DifferenceCountBadge
+                        count={getOrderDifferenceCount(order)}
+                      />
                     </td>
                     <td className={styles.rowActions}>
                       <button

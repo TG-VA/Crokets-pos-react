@@ -100,20 +100,6 @@ export const getOrderStatusMeta = (status) =>
     description: "",
   };
 
-export const getOrderDifferenceLabel = (order) => {
-  if (!order) return "";
-
-  if (order.status === "pending") return "Pendiente de recepcion";
-
-  const notes = order.discrepancyNotes ?? order.discrepancy_notes ?? "";
-
-  if (notes) return notes;
-
-  return order.status === "accepted_with_difference"
-    ? "Con diferencia"
-    : "Sin diferencia";
-};
-
 /**
  * Texto en mayusculas para nombres de pedido y responsables. Retorna cadena
  * vacia ante valores nulos o no textuales para no lanzar excepciones.
