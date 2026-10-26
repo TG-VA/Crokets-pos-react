@@ -265,3 +265,14 @@ se cierran solos).
   (gris `#5c6b77` con texto blanco). No se uso naranja claro porque coincidiria
   con el destino de `BranchBadge`; azul y verde/amarillo/rojo ya significan
   origen y estado. Alcance: solo el modal de detalle (respuesta del usuario).
+- Historial, destino bloqueado: si el usuario no es administrador
+  (`checkUserIsAdmin` de `src/lib/permissionsService.js`: rol `admin` y usuario
+  activo, el mismo criterio de los demas modulos) el filtro "Destino" queda
+  deshabilitado y fijo a la sucursal activa; "Origen" sigue editable. La regla es
+  `utils/ordersHistoryDestinationLock.js`, el hook `useHistoryDestinationLock` la
+  alimenta con el rol y la sucursal, y `OrdersHistoryTable` aplica el destino
+  fijo al filtrado (tiene prioridad sobre el estado y "Limpiar filtros" no lo
+  libera). Sin sucursal activa el filtro queda libre para no bloquear con un
+  valor vacio. Mientras se resuelve el rol se asume no administrador.
+- Historial, ruta: en la columna "Ruta" de la tabla el destino va arriba y el
+  origen abajo; modal, impresion, tarjetas y recepcion conservan origen -> destino.

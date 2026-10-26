@@ -109,7 +109,9 @@ y el proceso principal de Electron:
 | Pedidos: rango de fechas de los filtros                | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
 | Pedidos: formateadores y etiqueta de diferencia        | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                             | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
-| Pedidos: historial (tabla, filtros y paginacion)       | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
+| Pedidos: historial (tabla, filtros, ruta)              | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
+| Pedidos: regla de destino bloqueado                    | `.../PageOrders/utils/ordersHistoryDestinationLock.test.js`                        |
+| Pedidos: hook de destino bloqueado                     | `.../PageOrders/hooks/useHistoryDestinationLock.test.js`                           |
 | Pedidos: aviso, diferencias y resumen con signo        | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
 | Pedidos: detalle (paginacion y tabla de diferencias)   | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
 | Pedidos: panel de recepcion (paginacion y faltantes)   | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
