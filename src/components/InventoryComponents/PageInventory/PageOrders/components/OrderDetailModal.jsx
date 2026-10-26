@@ -3,7 +3,6 @@ import styles from "../PageOrders.module.css";
 import { getOrderStatusMeta } from "../utils/ordersFormatters";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
 import BranchBadge from "./BranchBadge";
-import OrderNameBadge from "./OrderNameBadge";
 import OrderPreviewSections from "./OrderPreviewSections";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
@@ -23,7 +22,11 @@ const OrderDetailModal = ({ order, onClose }) => {
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title={order ? `Pedido ${order.orderNumber}` : "Detalle del pedido"}
+      title={
+        order
+          ? `Pedido ${order.orderNumber} - ${order.orderName}`
+          : "Detalle del pedido"
+      }
       confirmText="Cerrar"
       onConfirm={onClose}
       onClose={onClose}
@@ -44,9 +47,7 @@ const OrderDetailModal = ({ order, onClose }) => {
       {order ? (
         <div className={styles.detailContent}>
           <div className={styles.detailHeader}>
-            <h3 className={styles.detailTitle}>
-              <OrderNameBadge name={order.orderName} />
-            </h3>
+            <h3 className={styles.detailTitle}>{order.orderName}</h3>
             <span
               className={[
                 styles.statusBadge,

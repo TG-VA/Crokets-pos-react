@@ -254,14 +254,3 @@ se cierran solos).
 - Modal de detalle: nombre y estado en el encabezado, fila de ruta con
   conector "hacia" (no existe icono de flecha en `src/assets/icons`) y metadatos
   en tarjetas.
-- Modal de detalle, mas espacio: el titulo de `AppModal` pasa a `Pedido <numero>`
-  (el nombre ya va en el encabezado del cuerpo, antes estaba duplicado y se
-  envolvia con nombres largos); `AppModal` no se modifico porque `size="large"`
-  lo usan tambien `TransferDetailModal` y `OrderPrintModal`. La ruta
-  (`.detailContent .detailRoute` y `.detailContent .routeBadge`) y "Notas del
-  pedido" (`.detailNote`) tienen mas padding y separacion; la impresion y los
-  demas usos de `BranchBadge` conservan el tamano base.
-- `OrderNameBadge`: el nombre del pedido es una pastilla oscura neutra
-  (`--darkGray` con texto blanco). No se uso naranja claro porque coincidiria
-  con el destino de `BranchBadge`; azul y verde/amarillo/rojo ya significan
-  origen y estado. Alcance: solo el modal de detalle (respuesta del usuario).
