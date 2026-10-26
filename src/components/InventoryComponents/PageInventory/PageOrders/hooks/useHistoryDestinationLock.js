@@ -11,21 +11,24 @@ import { getHistoryDestinationLock } from "../utils/ordersHistoryDestinationLock
 export const useHistoryDestinationLock = (activeBranchId) => {
   const { user } = useAuth();
   const userId = user?.id;
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheck, setAdminCheck] = useState({
+    userId: null,
+    isAdmin: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
 
-    setIsAdmin(false);
-
     checkUserIsAdmin(userId).then((result) => {
-      if (!cancelled) setIsAdmin(result === true);
+      if (!cancelled) setAdminCheck({ userId, isAdmin: result === true });
     });
 
     return () => {
       cancelled = true;
     };
   }, [userId]);
+
+  const isAdmin = adminCheck.isAdmin && adminCheck.userId === userId;
 
   return useMemo(
     () => getHistoryDestinationLock({ isAdmin, activeBranchId }),
