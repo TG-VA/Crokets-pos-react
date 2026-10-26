@@ -122,6 +122,8 @@ export const useOrdersPage = () => {
     [createAccessGranted, user?.id]
   );
 
+  const dismissFeedback = useCallback(() => setFeedback(null), []);
+
   const handleAdminAuthorized = useCallback(() => {
     setAdminAuthOpen(false);
     setCreateAccessGranted(true);
@@ -134,7 +136,7 @@ export const useOrdersPage = () => {
     handleTabSelect,
     feedback,
     setFeedback,
-    dismissFeedback: () => setFeedback(null),
+    dismissFeedback,
     isLoading,
     error,
     orders,
