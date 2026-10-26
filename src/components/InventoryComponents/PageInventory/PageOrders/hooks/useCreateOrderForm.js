@@ -117,7 +117,7 @@ export const useCreateOrderForm = ({
       });
 
       if (!product) {
-        setError("No se encontro un producto con ese codigo.");
+        setError("No se encontró un producto con ese código.");
         return false;
       }
 

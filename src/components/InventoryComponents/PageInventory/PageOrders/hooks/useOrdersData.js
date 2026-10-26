@@ -53,7 +53,7 @@ export const useOrdersData = () => {
       } catch (err) {
         console.error("Error al cargar pedidos de abastecimiento:", err);
         setError(
-          "No se pudieron cargar los pedidos. Verifica la conexion e intenta de nuevo."
+          "No se pudieron cargar los pedidos. Verifica la conexión e intenta de nuevo."
         );
       } finally {
         setIsLoading(false);

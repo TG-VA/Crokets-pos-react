@@ -80,7 +80,7 @@ export const useReceiveOrderForm = ({
 
     if (!isComplete) {
       setError(
-        `Captura el conteo fisico de todos los productos (${missingItems.length} pendiente(s)).`
+        `Captura el conteo físico de todos los productos (${missingItems.length} pendiente(s)).`
       );
       return null;
     }
@@ -101,7 +101,7 @@ export const useReceiveOrderForm = ({
 
       return receivedOrder;
     } catch (err) {
-      setError(err?.message || "No se pudo registrar la recepcion.");
+      setError(err?.message || "No se pudo registrar la recepción.");
       return null;
     } finally {
       setIsSubmitting(false);

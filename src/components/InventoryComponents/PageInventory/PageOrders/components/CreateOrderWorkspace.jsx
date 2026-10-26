@@ -73,7 +73,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
               type="text"
               value={form.orderName}
               onChange={(event) => form.setOrderName(event.target.value)}
-              placeholder="Ej. Reposicion semanal"
+              placeholder="Ej. REPOSICIÓN SEMANAL"
               maxLength={160}
               disabled={form.isSaving}
             />
@@ -112,12 +112,12 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         <div className={styles.productPicker}>
           <form className={styles.codeForm} onSubmit={handleCodeSubmit}>
             <label className={styles.field}>
-              <span>Agregar por codigo de barras</span>
+              <span>Agregar por código de barras</span>
               <input
                 type="text"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                placeholder="Escanea o escribe el codigo"
+                placeholder="Escanea o escribe el código"
                 autoComplete="off"
                 disabled={form.isSaving}
               />
@@ -147,7 +147,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
           <div className={styles.emptyState}>
             <img src={BoxIcon} alt="" aria-hidden="true" />
             <h3>Sin productos en el pedido</h3>
-            <p>Busca productos o captura un codigo para agregarlos.</p>
+            <p>Busca productos o captura un código para agregarlos.</p>
           </div>
         ) : (
           <div className={styles.tableWrapper}>

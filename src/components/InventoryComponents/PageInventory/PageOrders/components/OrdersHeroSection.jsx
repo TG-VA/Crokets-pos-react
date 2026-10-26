@@ -2,7 +2,7 @@ import styles from "../PageOrders.module.css";
 import ReceiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 import ClockIcon from "../../../../../assets/icons/clock-solid-full.svg";
 import BoxesIcon from "../../../../../assets/icons/boxes-stacked-solid-full.svg";
-import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+import WarningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const OrdersHeroSection = ({ summary }) => {
   const metrics = [
@@ -22,11 +22,11 @@ const OrdersHeroSection = ({ summary }) => {
       id: "differences",
       label: "Con diferencia",
       value: summary.withDifference,
-      icon: CheckIcon,
+      icon: WarningIcon,
     },
     {
       id: "total",
-      label: "Pedidos historicos",
+      label: "Pedidos históricos",
       value: summary.totalOrders,
       icon: ReceiptIcon,
     },
@@ -38,8 +38,8 @@ const OrdersHeroSection = ({ summary }) => {
         <p className={styles.eyebrow}>Inventario</p>
         <h1 className={styles.title}>Pedidos de abastecimiento</h1>
         <p className={styles.description}>
-          Control de pedidos de abastecimiento con proveedores y recepción de
-          mercancía en sucursales.
+          Control de pedidos de abastecimiento entre sucursales y recepción de
+          mercancía.
         </p>
       </div>
 

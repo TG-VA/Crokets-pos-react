@@ -2,7 +2,7 @@ export const ORDER_STATUS_META = {
   pending: {
     label: "Pendiente",
     tone: "pending",
-    description: "Pedido enviado, pendiente de recepcion.",
+    description: "Pedido enviado, pendiente de recepción.",
   },
   accepted: {
     label: "Aceptado",

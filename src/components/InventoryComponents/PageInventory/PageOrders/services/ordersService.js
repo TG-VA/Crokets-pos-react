@@ -82,7 +82,7 @@ const validateOrderDraft = ({
   }
 
   if (!user?.id) {
-    throw new Error("No se detecto el usuario que genera el pedido.");
+    throw new Error("No se detectó el usuario que genera el pedido.");
   }
 
   if (!orderName || !orderName.trim()) {
@@ -150,12 +150,12 @@ export const createStoreOrder = async ({
   }
 
   if (!data?.success || !data?.orderId) {
-    throw new Error("La sucursal no confirmo la creacion del pedido.");
+    throw new Error("La sucursal no confirmó la creación del pedido.");
   }
 
   return fetchOrderSnapshotOrFail(
     data.orderId,
-    "El pedido se creo, pero no se pudo recuperar su detalle. Recarga el historial antes de volver a intentarlo."
+    "El pedido se creó, pero no se pudo recuperar su detalle. Recarga el historial antes de volver a intentarlo."
   );
 };
 
@@ -166,7 +166,7 @@ export const receiveStoreOrder = async ({
   user = null,
 }) => {
   if (!order?.id) {
-    throw new Error("Selecciona un pedido valido para recibir.");
+    throw new Error("Selecciona un pedido válido para recibir.");
   }
 
   if (!currentBranchId || order.toBranchId !== currentBranchId) {
@@ -178,14 +178,14 @@ export const receiveStoreOrder = async ({
   }
 
   if (!user?.id) {
-    throw new Error("No se detecto el usuario que recibe el pedido.");
+    throw new Error("No se detectó el usuario que recibe el pedido.");
   }
 
   if (!isReceiptComplete(order.items, quantities)) {
     const missing = getMissingReceiptItems(order.items, quantities);
 
     throw new Error(
-      `Captura el conteo fisico de todos los productos (${missing.length} pendiente(s)).`
+      `Captura el conteo físico de todos los productos (${missing.length} pendiente(s)).`
     );
   }
 
@@ -214,11 +214,11 @@ export const receiveStoreOrder = async ({
   }
 
   if (!data?.success) {
-    throw new Error("La sucursal no confirmo la recepcion del pedido.");
+    throw new Error("La sucursal no confirmó la recepción del pedido.");
   }
 
   return fetchOrderSnapshotOrFail(
     order.id,
-    "La recepcion se registro, pero no se pudo recuperar el pedido. Recarga el historial antes de continuar."
+    "La recepción se registró, pero no se pudo recuperar el pedido. Recarga el historial antes de continuar."
   );
 };
