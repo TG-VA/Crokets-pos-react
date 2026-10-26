@@ -61,6 +61,7 @@ const PageOrders = () => {
           <OrdersHistoryTable
             orders={page.orders}
             branches={page.branches}
+            lockedDestinationId={page.historyLockedDestinationId}
             onOpenDetail={page.openDetail}
             onOpenPrint={page.openPrint}
           />

@@ -16,6 +16,7 @@ const DATE_PRESETS = [
 const OrdersHistoryFilters = ({
   filters,
   branches = [],
+  isDestinationLocked = false,
   rangePreset = "custom",
   hasActiveFilters = false,
   onFilterChange,
@@ -66,6 +67,8 @@ const OrdersHistoryFilters = ({
         <span>Destino</span>
         <select
           value={filters.toBranchId}
+          disabled={isDestinationLocked}
+          aria-disabled={isDestinationLocked}
           onChange={(event) => onFilterChange("toBranchId", event.target.value)}
         >
           <option value="all">Todas</option>

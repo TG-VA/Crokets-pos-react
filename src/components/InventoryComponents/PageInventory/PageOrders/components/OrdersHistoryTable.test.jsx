@@ -297,3 +297,86 @@ describe("OrdersHistoryTable date filters", () => {
     ).toBe("false");
   });
 });
+
+describe("OrdersHistoryTable ruta y destino bloqueado", () => {
+  const branches = [
+    { id: "branch-origin", name: "Sucursal Centro" },
+    { id: "branch-destination", name: "Sucursal Norte" },
+    { id: "branch-other", name: "Sucursal Sur" },
+  ];
+
+  const otherDestinationOrder = {
+    ...buildOrder(1),
+    toBranchId: "branch-other",
+    toBranchName: "Sucursal Sur",
+  };
+
+  const getSelect = (name) => screen.getByLabelText(name);
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("deja el destino editable cuando no hay destino bloqueado", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} branches={branches} />);
+
+    expect(getSelect("Destino").disabled).toBe(false);
+    expect(getSelect("Origen").disabled).toBe(false);
+  });
+
+  it("fija y deshabilita el destino y deja el origen editable", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    const destination = getSelect("Destino");
+
+    expect(destination.disabled).toBe(true);
+    expect(destination.getAttribute("aria-disabled")).toBe("true");
+    expect(destination.value).toBe("branch-destination");
+    expect(getSelect("Origen").disabled).toBe(false);
+    expect(getBodyRows()).toHaveLength(1);
+    expect(screen.queryByText("SUCURSAL SUR")).toBeNull();
+  });
+
+  it("no libera el destino bloqueado al limpiar filtros", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    fireEvent.change(getSelect("Estado"), { target: { value: "cancelled" } });
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+
+    expect(getSelect("Destino").value).toBe("branch-destination");
+    expect(getBodyRows()).toHaveLength(1);
+  });
+
+  it("sigue la sucursal activa cuando cambia el destino bloqueado", () => {
+    const { rerender } = render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    rerender(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-other"
+      />
+    );
+
+    expect(getSelect("Destino").value).toBe("branch-other");
+    expect(screen.getByText("SUCURSAL SUR")).toBeTruthy();
+  });
+});

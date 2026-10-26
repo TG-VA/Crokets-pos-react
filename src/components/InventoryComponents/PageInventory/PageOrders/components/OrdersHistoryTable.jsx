@@ -30,21 +30,32 @@ const INITIAL_FILTERS = {
 const OrdersHistoryTable = ({
   orders = [],
   branches = [],
+  lockedDestinationId = null,
   onOpenDetail,
   onOpenPrint,
 }) => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [rangePreset, setRangePreset] = useState("custom");
 
+  const isDestinationLocked = Boolean(lockedDestinationId);
+
+  const effectiveFilters = useMemo(
+    () =>
+      isDestinationLocked
+        ? { ...filters, toBranchId: lockedDestinationId }
+        : filters,
+    [filters, isDestinationLocked, lockedDestinationId]
+  );
+
   const filteredOrders = useMemo(
-    () => filterOrderHistory(orders, filters),
-    [filters, orders]
+    () => filterOrderHistory(orders, effectiveFilters),
+    [effectiveFilters, orders]
   );
 
   const hasActiveFilters =
     filters.status !== "all" ||
     filters.fromBranchId !== "all" ||
-    filters.toBranchId !== "all" ||
+    (!isDestinationLocked && filters.toBranchId !== "all") ||
     filters.dateFrom !== null ||
     filters.dateTo !== null;
 
@@ -67,11 +78,13 @@ const OrdersHistoryTable = ({
 
   useEffect(() => {
     resetPagination();
-  }, [filters, resetPagination]);
+  }, [effectiveFilters, resetPagination]);
 
   const paginatedOrders = pageItems(filteredOrders);
 
   const handleFilterChange = (key, value) => {
+    if (key === "toBranchId" && isDestinationLocked) return;
+
     setFilters((previous) => ({
       ...previous,
       [key]: value,
@@ -116,8 +129,9 @@ const OrdersHistoryTable = ({
       </header>
 
       <OrdersHistoryFilters
-        filters={filters}
+        filters={effectiveFilters}
         branches={branches}
+        isDestinationLocked={isDestinationLocked}
         rangePreset={rangePreset}
         hasActiveFilters={hasActiveFilters}
         onFilterChange={handleFilterChange}

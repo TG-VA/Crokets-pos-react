@@ -10,6 +10,7 @@ import {
   getOrderTotals,
 } from "../utils/ordersCalculationService";
 import { useCreateOrderForm } from "./useCreateOrderForm";
+import { useHistoryDestinationLock } from "./useHistoryDestinationLock";
 import { useOrdersData } from "./useOrdersData";
 import { useReceiveOrderForm } from "./useReceiveOrderForm";
 
@@ -28,6 +29,8 @@ export const useOrdersPage = () => {
     syncAfterMutation,
     upsertOrder,
   } = useOrdersData();
+
+  const historyLockedDestinationId = useHistoryDestinationLock(currentBranchId);
 
   const [activeTab, setActiveTab] = useState("receive");
   const [feedback, setFeedback] = useState(null);
@@ -143,6 +146,7 @@ export const useOrdersPage = () => {
     branches,
     products,
     currentBranchId,
+    historyLockedDestinationId,
     currentBranch: branch,
     reloadData: refreshData,
     summary,

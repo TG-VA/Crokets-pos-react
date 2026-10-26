@@ -886,6 +886,14 @@
   resize: none;
 }
 
+.field select:disabled {
+  background: #eef2f5;
+  color: #6b7b88;
+  border-color: #dbe4ea;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 .productPicker {
   display: flex;
   flex-wrap: wrap;
