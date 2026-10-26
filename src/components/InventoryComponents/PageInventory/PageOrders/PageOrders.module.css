@@ -326,11 +326,16 @@
 .routeBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: fit-content;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.routeBadgeName {
+  font-size: 0.95rem;
   font-weight: 700;
 }
 

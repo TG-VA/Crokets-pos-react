@@ -177,8 +177,8 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(within(row).getByText("Origen")).toBeTruthy();
     expect(within(row).getByText("Destino")).toBeTruthy();
-    expect(within(row).getByText(/Sucursal Centro/)).toBeTruthy();
-    expect(within(row).getByText(/Sucursal Norte/)).toBeTruthy();
+    expect(within(row).getByText("SUCURSAL CENTRO")).toBeTruthy();
+    expect(within(row).getByText("SUCURSAL NORTE")).toBeTruthy();
   });
 
   it("mantiene visibles las acciones de detalle y exportar por fila", () => {

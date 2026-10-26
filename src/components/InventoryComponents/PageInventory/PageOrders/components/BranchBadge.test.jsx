@@ -8,13 +8,22 @@ describe("BranchBadge", () => {
     render(<BranchBadge role="origin" name="Huayacan" />);
 
     expect(screen.getByText("Origen")).toBeTruthy();
-    expect(screen.getByText(/Huayacan/)).toBeTruthy();
+    expect(screen.getByText("HUAYACAN")).toBeTruthy();
   });
 
   it("muestra el rol de destino junto al nombre", () => {
     render(<BranchBadge role="destination" name="Torres" />);
 
     expect(screen.getByText("Destino")).toBeTruthy();
+  });
+
+  it("muestra primero el nombre en mayusculas y despues el rol", () => {
+    const { container } = render(<BranchBadge role="origin" name="Huayacan" />);
+
+    expect(container.firstElementChild.textContent).toBe("HUAYACANOrigen");
+    expect(container.firstElementChild.firstElementChild.textContent).toBe(
+      "HUAYACAN"
+    );
   });
 
   it("usa clases distintas por rol", () => {
