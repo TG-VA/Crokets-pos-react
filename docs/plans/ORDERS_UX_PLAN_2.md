@@ -261,7 +261,7 @@ se cierran solos).
   (`.detailContent .detailRoute` y `.detailContent .routeBadge`) y "Notas del
   pedido" (`.detailNote`) tienen mas padding y separacion; la impresion y los
   demas usos de `BranchBadge` conservan el tamano base.
-- `OrderNameBadge`: el nombre del pedido es una pastilla oscura neutra
-  (`--darkGray` con texto blanco). No se uso naranja claro porque coincidiria
+- `OrderNameBadge`: el nombre del pedido es una pastilla gris
+  (gris `#5c6b77` con texto blanco). No se uso naranja claro porque coincidiria
   con el destino de `BranchBadge`; azul y verde/amarillo/rojo ya significan
   origen y estado. Alcance: solo el modal de detalle (respuesta del usuario).

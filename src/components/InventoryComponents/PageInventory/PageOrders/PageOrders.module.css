@@ -1199,17 +1199,17 @@
   padding: 10px 18px;
 }
 
-/* Nombre del pedido: pastilla oscura neutra. El naranja y el azul ya
-   significan destino y origen, y el verde, amarillo y rojo significan estado;
-   un tono neutro evita confundirlo con cualquiera de ellos. */
+/* Nombre del pedido: pastilla gris. El naranja y el azul ya significan
+   destino y origen, y el verde, amarillo y rojo significan estado; un gris
+   neutro evita confundirlo con cualquiera de ellos. */
 .orderNameBadge {
   display: inline-block;
   max-width: 100%;
-  padding: 6px 16px;
+  padding: 9px 22px;
   border-radius: 999px;
-  background: var(--darkGray);
+  background: #5c6b77;
   color: var(--white);
-  font-size: 1.05rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.3;
