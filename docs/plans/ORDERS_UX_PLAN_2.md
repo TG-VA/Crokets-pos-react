@@ -207,7 +207,7 @@ Al terminar, actualizar la descripcion del PR #176 con los cambios nuevos
 - `formatOrderName` y `formatPersonLabel`: mayusculas, acentos, vacio y nulo.
 - `ordersService`: `createStoreOrder` envia el nombre en mayusculas.
 - `BranchBadge`: clase por rol y texto de rol visible.
-- `OrdersHistoryTable`: columna "Diferencia" muestra solo el numero, "—" en
+- `OrdersHistoryTable`: columna "Diferencia" muestra badges con signo, "—" en
   pendientes y `0` sin diferencias; la ruta usa badges.
 - `OrderPreviewSections`: "Generado por" y "Recibido por" en mayusculas.
 - Contrato SQL de la migracion de mayusculas.
@@ -238,3 +238,19 @@ se cierran solos).
 - H5 ya estaba cubierto: los filtros ya se llaman "Origen" y "Destino".
 - H9 (esqueleto de carga) y H10 (prueba del realtime con dos sucursales) siguen
   pendientes de verificacion manual.
+
+### Segunda tanda (mismo PR #176)
+
+- Seguridad: `create_store_order` y `receive_store_order` tenian `EXECUTE` para
+  `anon`. La migracion `20261025200000_store_orders_revoke_anon.sql` (aplicada)
+  revoca `anon`/`PUBLIC` y solo acepta `p_user_id` con rol `service_role`.
+  Las demas RPC del modulo (traspasos) ya no tenian `anon`.
+- Realtime: guia de prueba manual en `docs/plans/ORDERS_REALTIME_MANUAL_TEST.md`.
+  La politica SELECT de `store_orders` es `authenticated` con `true`, por lo que
+  RLS no bloquea los eventos. H10 sigue pendiente de ejecutarse a mano.
+- Diferencia del historial: badge rojo `-N` (productos con faltante) y azul
+  `+N` (productos con sobrante), `0` sin diferencias, guion si no hay recepcion.
+- `BranchBadge`: nombre en mayusculas y mas grande, antes del rol.
+- Modal de detalle: nombre y estado en el encabezado, fila de ruta con
+  conector "hacia" (no existe icono de flecha en `src/assets/icons`) y metadatos
+  en tarjetas.

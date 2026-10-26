@@ -110,16 +110,17 @@ y el proceso principal de Electron:
 | Pedidos: formateadores y etiqueta de diferencia        | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                             | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
 | Pedidos: historial (tabla, filtros y paginacion)       | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
-| Pedidos: aviso de recepcion y diferencias              | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
+| Pedidos: aviso, diferencias y resumen con signo        | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
 | Pedidos: detalle (paginacion y tabla de diferencias)   | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
 | Pedidos: panel de recepcion (paginacion y faltantes)   | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
 | Pedidos: servicio realtime                             | `.../PageOrders/services/ordersRealtimeService.test.js`                            |
 | Pedidos: contrato SQL de realtime                      | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
-| Pedidos: badge de sucursal por rol                     | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
+| Pedidos: badge de sucursal (nombre, mayusculas, rol)   | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
 | Pedidos: aviso con cierre automatico                   | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
 | Pedidos: estilos (clases definidas, badges en negrita) | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas         | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
 | Modal base (acciones de footer)                        | `src/components/AppModal/AppModal.test.jsx`                                        |
+| Pedidos: contrato SQL de permisos (revoke anon)        | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
 | Pedidos: contrato SQL de integridad                    | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 
 ### Cobertura transitiva del resolver de costo
