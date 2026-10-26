@@ -90,6 +90,20 @@ describe("useSalesHistory - seleccion inicial", () => {
     await waitFor(() => expect(result.current.loadingTickets).toBe(false));
   });
 
+  it("el dia inicial es el local aunque ya sea el dia siguiente en UTC", async () => {
+    // 23:30 locales: con TZ=America/Cancun (npm test) ya son las 04:30 UTC del
+    // 26, y toISOString() devolvia ese dia, por lo que el historial abria vacio.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 25, 23, 30, 0));
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    expect(result.current.dateFilter).toBe("2026-10-25");
+    expect(fetchHistoryTickets).toHaveBeenCalledWith(
+      expect.objectContaining({ dateFilter: "2026-10-25" })
+    );
+  });
+
   it("selecciona la venta mas reciente al abrir el modal", async () => {
     const { result } = renderSalesHistory();
 
