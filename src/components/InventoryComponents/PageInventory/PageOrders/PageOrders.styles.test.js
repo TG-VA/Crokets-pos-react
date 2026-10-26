@@ -47,6 +47,7 @@ describe("estilos del modulo de pedidos", () => {
       "departmentChip",
       "statusPill",
       "routeBadge",
+      "orderNameBadge",
     ];
 
     const notBold = badgeClasses.filter(
