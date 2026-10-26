@@ -162,6 +162,23 @@ export const getOrderDifferenceCount = (order) => {
 };
 
 /**
+ * Productos con faltante y con sobrante de un pedido recibido. Retorna null
+ * mientras no hay recepcion (misma regla que `getOrderDifferenceCount`).
+ */
+export const getOrderDifferenceSummary = (order) => {
+  if (getOrderDifferenceCount(order) === null) {
+    return null;
+  }
+
+  const differences = getOrderDifferences(order.items);
+
+  return {
+    shortages: differences.filter((item) => item.differenceQty < 0).length,
+    overages: differences.filter((item) => item.differenceQty > 0).length,
+  };
+};
+
+/**
  * Aviso de resultado de una recepcion. Con diferencias solo informa cuantos
  * productos difieren; el detalle vive en el modal del pedido.
  */

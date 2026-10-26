@@ -717,6 +717,12 @@
   font-weight: 700;
 }
 
+.differenceGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .differenceOk {
   background: var(--successBg);
   color: var(--successText);

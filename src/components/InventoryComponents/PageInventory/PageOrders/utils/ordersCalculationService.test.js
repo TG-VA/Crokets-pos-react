@@ -8,6 +8,7 @@ import {
   filterOrderProducts,
   getMissingReceiptItems,
   getOrderDifferenceCount,
+  getOrderDifferenceSummary,
   getOrderDifferences,
   getOrderTotals,
   getPendingOrdersCount,
@@ -284,5 +285,39 @@ describe("getOrderDifferenceCount", () => {
         items: [{ differenceQty: 0 }],
       })
     ).toBe(0);
+  });
+});
+
+describe("getOrderDifferenceSummary", () => {
+  it("retorna null en pedidos pendientes o cancelados", () => {
+    expect(
+      getOrderDifferenceSummary({ status: "pending", items: [] })
+    ).toBeNull();
+    expect(
+      getOrderDifferenceSummary({ status: "cancelled", items: [] })
+    ).toBeNull();
+  });
+
+  it("separa productos con faltante y con sobrante", () => {
+    expect(
+      getOrderDifferenceSummary({
+        status: "accepted_with_difference",
+        items: [
+          { differenceQty: -2 },
+          { differenceQty: -1 },
+          { differenceQty: 5 },
+          { differenceQty: 0 },
+        ],
+      })
+    ).toEqual({ shortages: 2, overages: 1 });
+  });
+
+  it("retorna ceros cuando se recibio sin diferencias", () => {
+    expect(
+      getOrderDifferenceSummary({
+        status: "accepted",
+        items: [{ differenceQty: 0 }],
+      })
+    ).toEqual({ shortages: 0, overages: 0 });
   });
 });

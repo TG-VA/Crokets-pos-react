@@ -7,7 +7,7 @@ import {
 } from "../utils/ordersFormatters";
 import {
   filterOrderHistory,
-  getOrderDifferenceCount,
+  getOrderDifferenceSummary,
 } from "../utils/ordersCalculationService";
 import { getPresetRange } from "../utils/ordersDateRange";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
@@ -189,7 +189,7 @@ const OrdersHistoryTable = ({
                     </td>
                     <td>
                       <DifferenceCountBadge
-                        count={getOrderDifferenceCount(order)}
+                        summary={getOrderDifferenceSummary(order)}
                       />
                     </td>
                     <td className={styles.rowActions}>
