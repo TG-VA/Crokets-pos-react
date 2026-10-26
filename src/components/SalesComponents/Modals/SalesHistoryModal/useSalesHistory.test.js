@@ -102,6 +102,24 @@ describe("useSalesHistory - seleccion inicial", () => {
     expect(result.current.selectedTicket).toBeNull();
   });
 
+  it("una respuesta tardia no selecciona una venta con el modal cerrado", async () => {
+    let resolveTickets;
+    fetchHistoryTickets.mockReturnValue(
+      new Promise((resolve) => {
+        resolveTickets = resolve;
+      })
+    );
+    const { result, rerender } = renderSalesHistory();
+
+    rerender({ isOpen: false });
+    await act(async () => {
+      resolveTickets(TICKETS);
+    });
+
+    expect(result.current.selectedTicket).toBeNull();
+    expect(fetchTicketDetailsData).not.toHaveBeenCalled();
+  });
+
   it("vuelve a seleccionar la mas reciente al reabrir el modal", async () => {
     const { result, rerender } = renderSalesHistory();
     await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
