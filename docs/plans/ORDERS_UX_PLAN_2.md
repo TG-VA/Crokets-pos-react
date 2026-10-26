@@ -222,3 +222,19 @@ Al terminar, actualizar la descripcion del PR #176 con los cambios nuevos
 3. Aprobacion para aplicar al remoto la migracion de mayusculas (incluye
    actualizar los nombres existentes).
 4. Cierre automatico del aviso (H8): si o no.
+
+## Estado final
+
+Implementado en el PR #176. Respuestas del usuario: origen azul y destino
+naranja; la diferencia cuenta productos con faltante o sobrante; migracion
+aplicada al remoto; cierre automatico del aviso aprobado (8 s, los errores no
+se cierran solos).
+
+- La migracion de mayusculas quedo como `20261025190000` (la propuesta
+  `20261025140000` quedaba antes de la ultima version remota). Los 7 pedidos
+  existentes ya estaban en mayusculas, el `update` no cambio filas.
+- `statBadge` (tarjetas de resumen del formulario de crear pedido) no se toco:
+  es una tarjeta con etiqueta y valor, no una pildora.
+- H5 ya estaba cubierto: los filtros ya se llaman "Origen" y "Destino".
+- H9 (esqueleto de carga) y H10 (prueba del realtime con dos sucursales) siguen
+  pendientes de verificacion manual.
