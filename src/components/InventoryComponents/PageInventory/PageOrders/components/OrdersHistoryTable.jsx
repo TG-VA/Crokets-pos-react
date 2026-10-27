@@ -8,6 +8,7 @@ import {
 import {
   filterOrderHistory,
   getOrderDifferenceSummary,
+  getOrderItemStatusMatch,
 } from "../utils/ordersCalculationService";
 import { getPresetRange } from "../utils/ordersDateRange";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
@@ -21,6 +22,7 @@ import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const INITIAL_FILTERS = {
   status: "all",
+  itemStatus: "all",
   fromBranchId: "all",
   toBranchId: "all",
   dateFrom: null,
@@ -54,6 +56,7 @@ const OrdersHistoryTable = ({
 
   const hasActiveFilters =
     filters.status !== "all" ||
+    filters.itemStatus !== "all" ||
     filters.fromBranchId !== "all" ||
     (!isDestinationLocked && filters.toBranchId !== "all") ||
     filters.dateFrom !== null ||
@@ -122,8 +125,9 @@ const OrdersHistoryTable = ({
           <p className={styles.eyebrow}>Historial</p>
           <h2 className={styles.workspaceTitle}>Pedidos registrados</h2>
           <p className={styles.workspaceDescription}>
-            Consulta pedidos por estado, sucursal o rango de fechas. Puedes
-            abrir el detalle o exportar cualquier pedido a Excel.
+            Consulta pedidos por estado, estado de sus productos, sucursal o
+            rango de fechas. Puedes abrir el detalle o exportar cualquier pedido
+            a Excel.
           </p>
         </div>
       </header>
@@ -166,6 +170,10 @@ const OrdersHistoryTable = ({
             <tbody>
               {paginatedOrders.map((order) => {
                 const status = getOrderStatusMeta(order.status);
+                const itemStatusMatch = getOrderItemStatusMatch(
+                  order,
+                  effectiveFilters.itemStatus
+                );
 
                 return (
                   <tr key={order.id}>
@@ -175,6 +183,13 @@ const OrdersHistoryTable = ({
                       <span className={styles.rowSubtext}>
                         {order.departments.join(", ") || "Sin departamento"}
                       </span>
+                      {itemStatusMatch ? (
+                        <span className={styles.rowMatchHint}>
+                          {itemStatusMatch.label}:{" "}
+                          {itemStatusMatch.names.join(", ") ||
+                            itemStatusMatch.count}
+                        </span>
+                      ) : null}
                     </td>
                     <td>
                       <div className={styles.routeCell}>

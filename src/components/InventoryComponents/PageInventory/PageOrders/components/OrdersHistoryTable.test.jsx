@@ -393,3 +393,80 @@ describe("OrdersHistoryTable ruta y destino bloqueado", () => {
     expect(screen.getByText("SUCURSAL SUR")).toBeTruthy();
   });
 });
+
+describe("OrdersHistoryTable estado del producto", () => {
+  const shortageOrder = {
+    ...buildOrder(0),
+    status: "accepted_with_difference",
+    items: [
+      { productId: "p1", productName: "Shampoo", differenceQty: -1 },
+      { productId: "p2", productName: "Croqueta", differenceQty: 0 },
+    ],
+  };
+  const cleanOrder = {
+    ...buildOrder(1),
+    status: "accepted",
+    items: [{ productId: "p3", productName: "Juguete", differenceQty: 0 }],
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("filtra pedidos con al menos una partida en el estado y muestra cual coincide", () => {
+    render(<OrdersHistoryTable orders={[shortageOrder, cleanOrder]} />);
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    const rows = getBodyRows();
+
+    expect(rows).toHaveLength(1);
+    expect(getFirstOrderNumber()).toBe("PED-001");
+    expect(within(rows[0]).getByText("Faltante: Shampoo")).toBeTruthy();
+    expect(screen.getByText("1 de 2 pedidos")).toBeTruthy();
+  });
+
+  it("reinicia a la primera pagina al cambiar el estado del producto", () => {
+    const orders = Array.from({ length: 25 }, (_, index) => ({
+      ...buildOrder(index),
+      status: "accepted_with_difference",
+      items: [
+        {
+          productId: `p-${index}`,
+          productName: `Producto ${index}`,
+          differenceQty: -1,
+        },
+      ],
+    }));
+
+    render(<OrdersHistoryTable orders={orders} />);
+
+    clickNextPage();
+
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+    expect(getFirstOrderNumber()).toBe("PED-001");
+  });
+
+  it("vuelve a todos los pedidos al limpiar el filtro de producto", () => {
+    render(<OrdersHistoryTable orders={[shortageOrder, cleanOrder]} />);
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    expect(getBodyRows()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.getByLabelText("Estado del producto").value).toBe("all");
+  });
+});

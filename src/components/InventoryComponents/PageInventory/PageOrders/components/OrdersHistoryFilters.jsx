@@ -3,7 +3,10 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 import styles from "../PageOrders.module.css";
-import { ORDER_STATUS_FILTER_OPTIONS } from "../utils/ordersFormatters";
+import {
+  ORDER_ITEM_STATUS_FILTER_OPTIONS,
+  ORDER_STATUS_FILTER_OPTIONS,
+} from "../utils/ordersFormatters";
 import CloseIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const DATE_FORMAT = "dd/MM/yyyy";
@@ -38,6 +41,20 @@ const OrdersHistoryFilters = ({
           onChange={(event) => onFilterChange("status", event.target.value)}
         >
           {ORDER_STATUS_FILTER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className={styles.field}>
+        <span>Estado del producto</span>
+        <select
+          value={filters.itemStatus}
+          onChange={(event) => onFilterChange("itemStatus", event.target.value)}
+        >
+          {ORDER_ITEM_STATUS_FILTER_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

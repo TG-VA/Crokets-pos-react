@@ -1121,6 +1121,14 @@
   color: #6d7b86;
 }
 
+.rowMatchHint {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5b68;
+}
+
 .detailContent {
   display: flex;
   flex-direction: column;
