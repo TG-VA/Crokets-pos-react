@@ -34,6 +34,51 @@ export const ORDER_STATUS_FILTER_OPTIONS = [
   })),
 ];
 
+/**
+ * Estados de una partida del pedido. No viven en la base: se derivan del
+ * estado del pedido y de `difference_qty` de cada linea (ver
+ * `getOrderItemStatus`).
+ */
+export const ORDER_ITEM_STATUS_META = {
+  pending: {
+    label: "Pendiente",
+    tone: "pending",
+    description: "Partida pendiente de recibir.",
+  },
+  accepted: {
+    label: "Aceptado",
+    tone: "success",
+    description: "Partida recibida sin diferencia.",
+  },
+  shortage: {
+    label: "Faltante",
+    tone: "danger",
+    description: "Partida recibida con menos cantidad de la esperada.",
+  },
+  overage: {
+    label: "Sobrante",
+    tone: "warning",
+    description: "Partida recibida con mas cantidad de la esperada.",
+  },
+  cancelled: {
+    label: "Cancelado",
+    tone: "neutral",
+    description: "Partida de un pedido cancelado.",
+  },
+};
+
+/**
+ * Opciones del filtro por estado de las partidas. Se derivan del descriptor
+ * para no repetir el catalogo en el JSX.
+ */
+export const ORDER_ITEM_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(ORDER_ITEM_STATUS_META).map(([value, meta]) => ({
+    value,
+    label: meta.label,
+  })),
+];
+
 const isNil = (value) => value === null || value === undefined;
 
 export const normalizeText = (value) =>

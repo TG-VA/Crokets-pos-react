@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  ORDER_ITEM_STATUS_FILTER_OPTIONS,
   ORDER_STATUS_FILTER_OPTIONS,
   formatOrderDate,
   formatOrderDateTime,
@@ -49,6 +50,17 @@ describe("ordersFormatters", () => {
       { value: "pending", label: "Pendiente" },
       { value: "accepted", label: "Aceptado" },
       { value: "accepted_with_difference", label: "Aceptado con diferencia" },
+      { value: "cancelled", label: "Cancelado" },
+    ]);
+  });
+
+  it("expone las opciones del filtro por estado del producto", () => {
+    expect(ORDER_ITEM_STATUS_FILTER_OPTIONS).toEqual([
+      { value: "all", label: "Todos" },
+      { value: "pending", label: "Pendiente" },
+      { value: "accepted", label: "Aceptado" },
+      { value: "shortage", label: "Faltante" },
+      { value: "overage", label: "Sobrante" },
       { value: "cancelled", label: "Cancelado" },
     ]);
   });
