@@ -285,6 +285,8 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         products={products}
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
+        restrictLocalProducts
+        showLowStockFilter
       />
     </section>
   );

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
+import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createStoreOrder } from "../services/ordersService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -74,6 +75,13 @@ export const useCreateOrderForm = ({
 
       if (!productId) return false;
 
+      if (!isGlobalProduct(product)) {
+        setError(
+          "El producto es local o no global y no se puede enviar a otra sucursal."
+        );
+        return false;
+      }
+
       if (items.some((item) => item.productId === productId)) {
         return false;
       }
@@ -82,6 +90,7 @@ export const useCreateOrderForm = ({
         ...previous,
         {
           productId,
+          isGlobal: true,
           barcode: product.codigo ?? product.barcode ?? "",
           productName:
             product.descripcion ?? product.name ?? "Producto sin nombre",

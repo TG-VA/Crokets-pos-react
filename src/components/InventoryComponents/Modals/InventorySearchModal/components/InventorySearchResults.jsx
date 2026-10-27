@@ -1,5 +1,8 @@
-import React from "react";
-
+import {
+  getProductMinStock,
+  getProductStock,
+  isProductBelowMinimum,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../InventorySearchModal.module.css";
 
 const InventorySearchResults = ({
@@ -10,6 +13,8 @@ const InventorySearchResults = ({
   error = null,
   resultsListRef,
   isAlreadySelected,
+  isProductDisabled,
+  showLowStock = false,
   onProductClick,
 }) => {
   if (loading) {
@@ -34,11 +39,27 @@ const InventorySearchResults = ({
     <div className={styles.resultsList} ref={resultsListRef}>
       {products.map((product, index) => {
         const alreadySelected = isAlreadySelected?.(product) === true;
+        const disabled = isProductDisabled?.(product) === true;
+        const belowMinimum = showLowStock && isProductBelowMinimum(product);
+        const stock = getProductStock(product);
+        const minStock = getProductMinStock(product);
 
         const itemClassName = [
           styles.resultItem,
           index === selectedIndex ? styles.selectedResult : "",
           alreadySelected ? styles.alreadySelectedResult : "",
+          disabled ? styles.disabledResult : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        const stockClassName = [
+          styles.productStock,
+          belowMinimum
+            ? styles.lowStockText
+            : stock > 0
+              ? styles.inStock
+              : styles.outOfStock,
         ]
           .filter(Boolean)
           .join(" ");
@@ -48,9 +69,13 @@ const InventorySearchResults = ({
             key={product?.product_id ?? product?.id ?? product?.codigo ?? index}
             data-search-result
             className={itemClassName}
-            onClick={() => onProductClick?.(product, index)}
+            onClick={() => {
+              if (!disabled) {
+                onProductClick?.(product, index);
+              }
+            }}
             role="button"
-            aria-disabled={alreadySelected}
+            aria-disabled={alreadySelected || disabled}
           >
             <div className={styles.productInfo}>
               <div className={styles.productNameRow}>
@@ -60,11 +85,23 @@ const InventorySearchResults = ({
                     "Producto sin nombre"}
                 </div>
 
-                {alreadySelected && (
-                  <span className={styles.alreadySelectedBadge}>
-                    YA SELECCIONADO
-                  </span>
-                )}
+                <div className={styles.productBadges}>
+                  {alreadySelected ? (
+                    <span className={styles.alreadySelectedBadge}>
+                      YA SELECCIONADO
+                    </span>
+                  ) : null}
+
+                  {disabled ? (
+                    <span className={styles.localProductBadge}>
+                      Producto local o no global
+                    </span>
+                  ) : null}
+
+                  {belowMinimum ? (
+                    <span className={styles.lowStockBadge}>Bajo mínimo</span>
+                  ) : null}
+                </div>
               </div>
 
               <div className={styles.productDetails}>
@@ -79,15 +116,11 @@ const InventorySearchResults = ({
                   )}
                 </span>
 
-                <span
-                  className={`${styles.productStock} ${
-                    Number(product?.existencia ?? product?.stock ?? 0) > 0
-                      ? styles.inStock
-                      : styles.outOfStock
-                  }`}
-                >
-                  Stock: {product?.existencia ?? product?.stock ?? 0}
-                </span>
+                <span className={stockClassName}>Stock: {stock}</span>
+
+                {minStock > 0 ? (
+                  <span className={styles.productMin}>Mínimo: {minStock}</span>
+                ) : null}
 
                 <span className={styles.productCode}>
                   Dept:{" "}

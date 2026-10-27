@@ -103,6 +103,14 @@ const validateOrderDraft = ({
       `La cantidad esperada de ${invalidItem.productName || "un producto"} debe ser un numero entero mayor a cero.`
     );
   }
+
+  const localItem = items.find((item) => item?.isGlobal === false);
+
+  if (localItem) {
+    throw new Error(
+      `El producto ${localItem.productName || "seleccionado"} es local o no global y no se puede enviar a otra sucursal.`
+    );
+  }
 };
 
 const fetchOrderSnapshotOrFail = async (orderId, failureMessage) => {

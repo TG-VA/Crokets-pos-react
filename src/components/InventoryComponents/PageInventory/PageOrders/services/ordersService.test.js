@@ -82,6 +82,17 @@ describe("ordersService", () => {
       expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
+    it("rechaza productos locales antes de llamar a la RPC", async () => {
+      await expect(
+        createStoreOrder({
+          ...baseDraft,
+          items: [{ ...baseDraft.items[0], isGlobal: false }],
+        })
+      ).rejects.toThrow(/local o no global/);
+
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
     it("falla con mensaje explicito si la RPC crea el pedido pero no se puede releer", async () => {
       supabase.rpc.mockResolvedValue({
         data: { success: true, orderId: "order-1" },

@@ -116,6 +116,24 @@
   font-style: italic;
 }
 
+.lowStockFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lowStockFilter input {
+  width: 16px;
+  height: 16px;
+  accent-color: #1092b1;
+  cursor: pointer;
+}
+
 .resultsSection {
   height: 380px;
   display: flex;
@@ -356,4 +374,54 @@
   font-size: 0.68rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.productBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.localProductBadge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #5c6b77;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lowStockBadge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #b56d00;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.disabledResult {
+  background: #f1f3f4;
+  border-color: #bdc3c7;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.disabledResult:hover {
+  border-color: #bdc3c7;
+  box-shadow: none;
+}
+
+.lowStockText {
+  color: #b56d00;
+}
+
+.productMin {
+  color: #b56d00;
+  font-weight: 600;
 }
