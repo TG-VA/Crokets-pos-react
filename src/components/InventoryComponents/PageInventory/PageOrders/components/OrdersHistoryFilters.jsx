@@ -3,6 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 import styles from "../PageOrders.module.css";
+import { ORDER_STATUS_FILTER_OPTIONS } from "../utils/ordersFormatters";
 import CloseIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const DATE_FORMAT = "dd/MM/yyyy";
@@ -36,13 +37,11 @@ const OrdersHistoryFilters = ({
           value={filters.status}
           onChange={(event) => onFilterChange("status", event.target.value)}
         >
-          <option value="all">Todos</option>
-          <option value="pending">Pendiente</option>
-          <option value="accepted">Aceptado</option>
-          <option value="accepted_with_difference">
-            Aceptado con diferencia
-          </option>
-          <option value="cancelled">Cancelado</option>
+          {ORDER_STATUS_FILTER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </label>
 

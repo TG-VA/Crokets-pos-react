@@ -21,6 +21,19 @@ export const ORDER_STATUS_META = {
   },
 };
 
+/**
+ * Opciones del filtro de estado del historial. Se derivan de los estados
+ * reales del modulo para que una alta o un cambio de etiqueta no obligue a
+ * editar el JSX del filtro.
+ */
+export const ORDER_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(ORDER_STATUS_META).map(([value, meta]) => ({
+    value,
+    label: meta.label,
+  })),
+];
+
 const isNil = (value) => value === null || value === undefined;
 
 export const normalizeText = (value) =>

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  ORDER_STATUS_FILTER_OPTIONS,
   formatOrderDate,
   formatOrderDateTime,
   formatQuantity,
@@ -40,6 +41,16 @@ describe("ordersFormatters", () => {
       "Aceptado con diferencia"
     );
     expect(getOrderStatusMeta("desconocido").label).toBe("desconocido");
+  });
+
+  it("expone los estados reales como opciones de filtro con Todos al inicio", () => {
+    expect(ORDER_STATUS_FILTER_OPTIONS).toEqual([
+      { value: "all", label: "Todos" },
+      { value: "pending", label: "Pendiente" },
+      { value: "accepted", label: "Aceptado" },
+      { value: "accepted_with_difference", label: "Aceptado con diferencia" },
+      { value: "cancelled", label: "Cancelado" },
+    ]);
   });
 
   it("lee folio y nombre desde formatos camel y snake", () => {
