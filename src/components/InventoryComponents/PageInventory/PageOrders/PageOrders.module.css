@@ -1130,9 +1130,10 @@
 
 .detailHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px 12px;
 }
 
 .detailTitle {
@@ -1195,16 +1196,14 @@
   overflow-wrap: anywhere;
 }
 
-/* Variante espaciosa de la ruta solo dentro del modal de detalle; el
-   historial, las tarjetas y la impresion conservan el tamano base. */
+/* En el modal de detalle la ruta comparte la linea del nombre y el estado.
+   El historial, las tarjetas y la impresion conservan el tamano base. */
 .detailContent .detailRoute {
-  gap: 16px;
-  padding: 18px 24px;
-}
-
-.detailContent .routeBadge {
-  gap: 10px;
-  padding: 10px 18px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+  padding: 4px 10px;
 }
 
 /* Nombre del pedido: pastilla gris. El naranja y el azul ya significan
