@@ -313,3 +313,32 @@ se cierran solos).
 - Verificacion: `npm run check:agents`, `npm test` (195 archivos, 2509 casos),
   ESLint/Prettier sobre los archivos del diff y `npm run build:frontend` en
   verde.
+
+### Cuarta tanda (mismo PR #176)
+
+- Correccion de alcance: el filtro pedido en la tercera tanda era por el estado
+  de cada partida del pedido, no por el estado del pedido. El filtro de estado
+  del pedido ya existia y se conserva; esta tanda agrega el que faltaba.
+- Origen del estado por partida: `store_order_items` no tiene columna `status`.
+  El estado se deriva en `getOrderItemStatus` de
+  `utils/ordersCalculationService.js`: pedido `pending` -> Pendiente, pedido
+  `cancelled` -> Cancelado y, en un pedido recibido, `difference_qty` menor a
+  cero -> Faltante, mayor a cero -> Sobrante y cero -> Aceptado. Si la
+  diferencia no viene persistida se calcula con `expected_qty` y
+  `received_qty`; una partida sin conteo se considera Pendiente.
+- Opciones como configuracion: `ORDER_ITEM_STATUS_META` y
+  `ORDER_ITEM_STATUS_FILTER_OPTIONS` en `utils/ordersFormatters.js` exponen
+  Pendiente, Aceptado, Faltante, Sobrante y Cancelado, con "Todos" por defecto.
+  El JSX del filtro solo recorre el descriptor.
+- Semantica del filtro: la fila del historial sigue siendo un pedido, por lo
+  que se muestran los pedidos que tengan al menos una partida en ese estado.
+  Para dejar visible cual coincide, debajo del nombre del pedido se listan las
+  partidas encontradas con su etiqueta ("Faltante: Shampoo, Croqueta"); si no
+  hay nombres se muestra el conteo. Convive con el estado del pedido, las
+  sucursales, las fechas y la paginacion, y el cambio de filtro vuelve a la
+  pagina 1 con el efecto que ya reiniciaba la tabla.
+- Sin migracion ni cambio de RPC: `STORE_ORDER_SELECT` ya trae las partidas del
+  pedido, asi que la consulta del servicio de datos no cambio.
+- Tests: 13 nuevos (9 de reglas puras y filtrado combinado, 1 de las opciones y
+  3 de la tabla: filtrado, linea visible y reinicio de pagina). Total: 195
+  archivos y 2522 casos.
