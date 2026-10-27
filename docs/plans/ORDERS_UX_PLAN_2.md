@@ -276,3 +276,40 @@ se cierran solos).
   valor vacio. Mientras se resuelve el rol se asume no administrador.
 - Historial, ruta: en la columna "Ruta" de la tabla el destino va arriba y el
   origen abajo; modal, impresion, tarjetas y recepcion conservan origen -> destino.
+
+### Tercera tanda (mismo PR #176)
+
+- Modal de detalle, cabecera compacta: nombre, estado y ruta comparten una sola
+  fila con `flex-wrap`. La ruta ahora se lee destino primero y origen despues,
+  con el conector "desde"; en anchos reducidos los badges envuelven sin
+  desbordar. La impresion, el historial y las tarjetas conservan su orden.
+- Filtro de estado del historial: ya existia con los cuatro estados reales de
+  `store_orders` (`pending`, `accepted`, `accepted_with_difference`,
+  `cancelled`) y valor inicial "Todos". No se duplico: las opciones se
+  extrajeron a `ORDER_STATUS_FILTER_OPTIONS`, derivadas de `ORDER_STATUS_META`,
+  y el JSX solo las recorre. El reinicio a pagina 1 al cambiar filtros ya estaba
+  cubierto por `OrdersHistoryTable.test.jsx`.
+- Producto global/local: el criterio es `products.is_global` (`true` global,
+  `false` local), ya presente en el esquema y en el catalogo de sucursal. En la
+  busqueda de productos del pedido los locales se ven en gris, con el badge
+  "Producto local o no global", y no se pueden seleccionar. La regla tambien
+  vive en `useCreateOrderForm.addProduct` (bloquea clic y captura por codigo) y
+  en `validateOrderDraft` de `ordersService` (rechaza partidas con
+  `isGlobal: false` antes de llamar a la RPC). No se agrego migracion: la RPC
+  no cambio.
+- Bajo minimo: se usa la misma regla del reporte de inventario (`min_stock > 0`
+  y `stock <= min_stock`, omitiendo productos con `has_been_stocked === false`).
+  El modal muestra el badge "Bajo minimo", el stock y el minimo, y ofrece el
+  filtro "Solo bajo minimo".
+- Orden de la busqueda: alfabetico por nombre como criterio principal y
+  existencia ascendente como desempate cuando el nombre coincide; el codigo
+  cierra el orden para que sea determinista. Se eligio alfabetico principal
+  porque el usuario busca por nombre y la cantidad solo ayuda a priorizar
+  duplicados o nombres equivalentes.
+- Tests nuevos: `inventoryProductCalculationService.test.js` (reglas puras) e
+  `InventorySearchModal.test.jsx` (local deshabilitado, seleccion global,
+  badge y filtro de bajo minimo). `ordersService.test.js` cubre el rechazo de
+  partidas locales y `ordersFormatters.test.js` las opciones de estado.
+- Verificacion: `npm run check:agents`, `npm test` (195 archivos, 2509 casos),
+  ESLint/Prettier sobre los archivos del diff y `npm run build:frontend` en
+  verde.
