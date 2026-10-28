@@ -5,6 +5,8 @@ import {
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
   getNonIntegerReceiptItems,
+  normalizeReceiptNote,
+  validateReceiptNote,
 } from "../utils/ordersCalculationService";
 import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
 import { toUpperLabel } from "../utils/ordersFormatters";
@@ -171,6 +173,7 @@ export const receiveStoreOrder = async ({
   order,
   currentBranchId,
   quantities,
+  receiptNote = "",
   user = null,
 }) => {
   if (!order?.id) {
@@ -210,11 +213,22 @@ export const receiveStoreOrder = async ({
     );
   }
 
+  const receiptNoteError = validateReceiptNote({
+    items: order.items,
+    quantities,
+    note: receiptNote,
+  });
+
+  if (receiptNoteError) {
+    throw new Error(receiptNoteError);
+  }
+
   const { data, error } = await supabase.rpc("receive_store_order", {
     p_order_id: order.id,
     p_to_branch_id: currentBranchId,
     p_user_id: user.id,
     p_received_qty_map: getReceivedQuantitiesPayload(order.items, quantities),
+    p_receipt_notes: normalizeReceiptNote(receiptNote) || null,
   });
 
   if (error) {

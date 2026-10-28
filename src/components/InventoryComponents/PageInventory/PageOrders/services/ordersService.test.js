@@ -135,6 +135,73 @@ describe("ordersService", () => {
       expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
+    it("rechaza la recepcion con diferencias cuando no hay nota", async () => {
+      await expect(
+        receiveStoreOrder({
+          order: pendingOrder,
+          currentBranchId: "branch-2",
+          quantities: { "product-1": "1" },
+          user: { id: "user-1" },
+        })
+      ).rejects.toThrow(/nota de recepción es obligatoria/);
+
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it("rechaza una nota de solo espacios cuando hay diferencias", async () => {
+      await expect(
+        receiveStoreOrder({
+          order: pendingOrder,
+          currentBranchId: "branch-2",
+          quantities: { "product-1": "3" },
+          receiptNote: "   ",
+          user: { id: "user-1" },
+        })
+      ).rejects.toThrow(/nota de recepción es obligatoria/);
+    });
+
+    it("envia la nota de recepcion recortada a la RPC", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, orderId: "order-1" },
+        error: null,
+      });
+      fetchStoreOrderById.mockResolvedValue({ id: "order-1" });
+
+      await receiveStoreOrder({
+        order: pendingOrder,
+        currentBranchId: "branch-2",
+        quantities: { "product-1": "1" },
+        receiptNote: "  Faltó una bolsa  ",
+        user: { id: "user-1" },
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "receive_store_order",
+        expect.objectContaining({ p_receipt_notes: "Faltó una bolsa" })
+      );
+    });
+
+    it("envia null cuando la nota opcional queda vacia", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, orderId: "order-1" },
+        error: null,
+      });
+      fetchStoreOrderById.mockResolvedValue({ id: "order-1" });
+
+      await receiveStoreOrder({
+        order: pendingOrder,
+        currentBranchId: "branch-2",
+        quantities: { "product-1": "2" },
+        receiptNote: "   ",
+        user: { id: "user-1" },
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "receive_store_order",
+        expect.objectContaining({ p_receipt_notes: null })
+      );
+    });
+
     it("falla con mensaje explicito si la recepcion no se puede releer", async () => {
       supabase.rpc.mockResolvedValue({
         data: { success: true, orderId: "order-1" },
