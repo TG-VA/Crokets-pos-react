@@ -131,7 +131,11 @@ const OrderPreviewSections = ({ order }) => {
                 <tr
                   key={item.id || item.productId}
                   className={
-                    hasDifference ? styles.rowWithDifference : undefined
+                    hasDifference
+                      ? Number(item.differenceQty) < 0
+                        ? styles.rowWithShortage
+                        : styles.rowWithOverage
+                      : undefined
                   }
                 >
                   <td>{item.barcode || "—"}</td>

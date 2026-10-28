@@ -954,8 +954,12 @@
   color: #4a5b68;
 }
 
-.rowWithDifference {
+.rowWithShortage {
   background: rgba(231, 76, 60, 0.05);
+}
+
+.rowWithOverage {
+  background: var(--infoBg);
 }
 
 .exportButton {

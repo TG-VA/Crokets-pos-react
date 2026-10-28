@@ -45,6 +45,12 @@ describe("OrderPreviewSections", () => {
 
     expect(screen.getByText("-2")).toBeTruthy();
     expect(screen.getByText("+2")).toBeTruthy();
+    expect(screen.getByText("-2").closest("tr").className).toContain(
+      "rowWithShortage"
+    );
+    expect(screen.getByText("+2").closest("tr").className).toContain(
+      "rowWithOverage"
+    );
     expect(screen.queryByText("Diferencias de recepción")).toBeNull();
     expect(screen.queryByText(/Faltantes: 1x/)).toBeNull();
   });
