@@ -5,10 +5,10 @@ import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import {
-  buildReceiptFeedback,
   getPendingOrders,
   getOrderTotals,
 } from "../utils/ordersCalculationService";
+import { buildReceiptFeedback } from "../utils/ordersReceiptFeedback";
 import { useCreateOrderForm } from "./useCreateOrderForm";
 import { useHistoryDestinationLock } from "./useHistoryDestinationLock";
 import { useOrdersData } from "./useOrdersData";

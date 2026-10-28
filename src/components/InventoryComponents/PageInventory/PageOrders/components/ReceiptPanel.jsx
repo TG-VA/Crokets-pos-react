@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 import styles from "../PageOrders.module.css";
 import { formatQuantity } from "../utils/ordersFormatters";
-import { RECEIPT_NOTE_MAX_LENGTH } from "../utils/ordersCalculationService";
+import { RECEIPT_NOTE_MAX_LENGTH } from "../utils/receiptNoteCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import BranchBadge from "./BranchBadge";

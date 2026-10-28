@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  RECEIPT_NOTE_MAX_LENGTH,
   buildDiscrepancyNotes,
-  buildReceiptFeedback,
   calculateDifference,
   filterOrderHistory,
   filterOrderProducts,
@@ -17,12 +15,9 @@ import {
   getOrderTotals,
   getPendingOrdersCount,
   getReceivedQuantitiesPayload,
-  hasReceiptDifferences,
   isReceiptComplete,
   normalizeOrders,
-  normalizeReceiptNote,
   parseReceiptQuantity,
-  validateReceiptNote,
 } from "./ordersCalculationService";
 
 const items = [
@@ -96,65 +91,6 @@ describe("ordersCalculationService", () => {
 
   it("no genera notas cuando el conteo coincide", () => {
     expect(buildDiscrepancyNotes(items, { p1: "5", p2: "2" })).toBe("");
-  });
-
-  it("detecta diferencias en el conteo fisico", () => {
-    expect(hasReceiptDifferences(items, { p1: "4", p2: "2" })).toBe(true);
-    expect(hasReceiptDifferences(items, { p1: "5", p2: "3" })).toBe(true);
-    expect(hasReceiptDifferences(items, { p1: "5", p2: "2" })).toBe(false);
-    expect(hasReceiptDifferences(items, { p1: "5" })).toBe(false);
-    expect(hasReceiptDifferences([], {})).toBe(false);
-  });
-
-  it("normaliza la nota de recepcion y expone su maximo", () => {
-    expect(RECEIPT_NOTE_MAX_LENGTH).toBe(500);
-    expect(normalizeReceiptNote("  Llegó incompleto  ")).toBe(
-      "Llegó incompleto"
-    );
-    expect(normalizeReceiptNote("   ")).toBe("");
-    expect(normalizeReceiptNote(null)).toBe("");
-  });
-
-  it("no exige nota cuando el conteo coincide", () => {
-    expect(
-      validateReceiptNote({
-        items,
-        quantities: { p1: "5", p2: "2" },
-        note: "",
-      })
-    ).toBe("");
-  });
-
-  it("exige nota no vacia cuando hay diferencias", () => {
-    const quantities = { p1: "4", p2: "2" };
-
-    expect(hasReceiptDifferences(items, quantities)).toBe(true);
-    expect(validateReceiptNote({ items, quantities, note: "" })).toMatch(
-      /obligatoria cuando hay diferencias/
-    );
-    expect(validateReceiptNote({ items, quantities, note: "   " })).toMatch(
-      /obligatoria cuando hay diferencias/
-    );
-    expect(
-      validateReceiptNote({ items, quantities, note: "  Faltó una bolsa  " })
-    ).toBe("");
-  });
-
-  it("limita la longitud de la nota a 500 caracteres", () => {
-    expect(
-      validateReceiptNote({
-        items,
-        quantities: { p1: "5", p2: "2" },
-        note: "a".repeat(RECEIPT_NOTE_MAX_LENGTH),
-      })
-    ).toBe("");
-    expect(
-      validateReceiptNote({
-        items,
-        quantities: { p1: "5", p2: "2" },
-        note: "a".repeat(RECEIPT_NOTE_MAX_LENGTH + 1),
-      })
-    ).toMatch(/500 caracteres/);
   });
 
   it("calcula totales y partidas pendientes", () => {
@@ -278,45 +214,6 @@ describe("getOrderDifferences", () => {
     expect(result).toHaveLength(2);
     expect(result[0].differenceQty).toBe(-2);
     expect(result[1].differenceQty).toBe(3);
-  });
-});
-
-describe("buildReceiptFeedback", () => {
-  it("informa exito cuando no hay diferencias", () => {
-    const feedback = buildReceiptFeedback({
-      orderNumber: "PED-1",
-      items: [{ differenceQty: 0 }, { differenceQty: null }],
-    });
-
-    expect(feedback.tone).toBe("success");
-    expect(feedback.message).toContain("PED-1 recibido correctamente");
-  });
-
-  it("solo cuenta los productos con diferencia", () => {
-    const feedback = buildReceiptFeedback({
-      orderNumber: "PED-2",
-      items: [
-        { differenceQty: -1 },
-        { differenceQty: 2 },
-        { differenceQty: 0 },
-      ],
-    });
-
-    expect(feedback.tone).toBe("warning");
-    expect(feedback.message).toBe(
-      "Pedido PED-2 recibido con 2 productos con diferencia."
-    );
-  });
-
-  it("usa singular con una sola diferencia", () => {
-    const feedback = buildReceiptFeedback({
-      orderNumber: "PED-3",
-      items: [{ differenceQty: -1 }],
-    });
-
-    expect(feedback.message).toBe(
-      "Pedido PED-3 recibido con 1 producto con diferencia."
-    );
   });
 });
 

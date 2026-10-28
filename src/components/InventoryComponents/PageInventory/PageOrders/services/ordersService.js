@@ -5,9 +5,11 @@ import {
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
   getNonIntegerReceiptItems,
+} from "../utils/ordersCalculationService";
+import {
   normalizeReceiptNote,
   validateReceiptNote,
-} from "../utils/ordersCalculationService";
+} from "../utils/receiptNoteCalculationService";
 import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
 import { toUpperLabel } from "../utils/ordersFormatters";
 import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";

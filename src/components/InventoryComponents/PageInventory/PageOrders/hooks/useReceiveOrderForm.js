@@ -6,10 +6,12 @@ import {
   calculateDifference,
   getMissingReceiptItems,
   getPendingOrders,
-  hasReceiptDifferences,
   isReceiptComplete,
-  validateReceiptNote,
 } from "../utils/ordersCalculationService";
+import {
+  hasReceiptDifferences,
+  validateReceiptNote,
+} from "../utils/receiptNoteCalculationService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
 export const useReceiveOrderForm = ({
