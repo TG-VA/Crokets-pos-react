@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { countPendingStoreOrders } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersService";
-import { subscribeToStoreOrderChanges } from "../components/InventoryComponents/PageInventory/PageOrders/services/ordersRealtimeService";
+import { subscribeToStoreOrderChanges } from "../services/inventory/ordersRealtimeService";
 import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 

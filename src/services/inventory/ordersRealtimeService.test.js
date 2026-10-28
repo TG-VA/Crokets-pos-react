@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const bindings = [];
 let removedChannels = [];
 
-vi.mock("../../../../../lib/supabaseClient", () => {
+vi.mock("../../lib/supabaseClient", () => {
   const channel = (name) => {
     const api = {
       name,

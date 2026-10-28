@@ -3,7 +3,7 @@
 Verifica que `store_orders` (publicada en `supabase_realtime` por la migración
 `20261025130000_store_orders_realtime.sql`) actualiza la pantalla de Pedidos y el
 contador del navbar sin recargar. La suscripción vive en
-`PageOrders/services/ordersRealtimeService.js` y la consumen
+`src/services/inventory/ordersRealtimeService.js` y la consumen
 `PageOrders/hooks/useOrdersData.js` y `contexts/PendingOrdersContext.jsx`.
 
 ## Preparación

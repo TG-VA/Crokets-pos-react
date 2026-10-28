@@ -7,7 +7,7 @@
  * los eventos a los pedidos visibles para el usuario.
  */
 
-import { supabase } from "../../../../../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 /**
  * @param {object} params

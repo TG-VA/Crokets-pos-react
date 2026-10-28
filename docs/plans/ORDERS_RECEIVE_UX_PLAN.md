@@ -80,7 +80,7 @@ currentColor` como en `AppModal`, o `filter` solo si no hay alternativa).
 - D1. Hoy no hay realtime en pedidos: `useOrdersData` carga una vez y
   `PendingOrdersContext` hace polling cada 30 s. Un pedido enviado desde otra
   sucursal no aparece hasta salir y volver a entrar.
-- D2. Solucion: crear `ordersRealtimeService.js` en `PageOrders/services/`
+- D2. Solucion: crear `ordersRealtimeService.js` en `src/services/inventory/` (lo consume tambien un contexto global)
   con la misma forma que `customersRealtimeService.js`
   (`subscribeToTableChanges`, el cliente de Supabase confinado al servicio, DIP).
   Observar `store_orders` (y `store_order_items` si el listado depende de el)

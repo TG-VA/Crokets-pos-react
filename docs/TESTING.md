@@ -117,7 +117,7 @@ y el proceso principal de Electron:
 | Pedidos: aviso, diferencias y estado por partida       | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
 | Pedidos: detalle (paginacion y tabla de diferencias)   | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
 | Pedidos: panel de recepcion (paginacion y faltantes)   | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
-| Pedidos: servicio realtime                             | `.../PageOrders/services/ordersRealtimeService.test.js`                            |
+| Pedidos: servicio realtime                             | `src/services/inventory/ordersRealtimeService.test.js`                             |
 | Pedidos: contrato SQL de realtime                      | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
 | Pedidos: badge de sucursal (nombre, mayusculas, rol)   | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
 | Pedidos: badge del nombre del pedido                   | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |

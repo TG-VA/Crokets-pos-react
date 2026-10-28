@@ -6,7 +6,7 @@ import {
   fetchOrderBranchOptions,
   loadStoreOrders,
 } from "../services/ordersService";
-import { subscribeToStoreOrderChanges } from "../services/ordersRealtimeService";
+import { subscribeToStoreOrderChanges } from "../../../../../services/inventory/ordersRealtimeService";
 import {
   normalizeOrders,
   sortOrdersByDate,

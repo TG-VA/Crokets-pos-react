@@ -13,7 +13,7 @@ let mockRealtimeOnChange = null;
 const mockUnsubscribe = vi.fn();
 
 vi.mock(
-  "../components/InventoryComponents/PageInventory/PageOrders/services/ordersRealtimeService",
+  "../services/inventory/ordersRealtimeService",
   () => ({
     subscribeToStoreOrderChanges: ({ onChange }) => {
       mockRealtimeOnChange = onChange;
