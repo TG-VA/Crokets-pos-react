@@ -1,5 +1,4 @@
 import styles from "../PageOrders.module.css";
-import ReceiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 import {
   formatOrderDate,
   formatOrderDateTime,
@@ -134,13 +133,6 @@ const OrderPreviewSections = ({ order }) => {
           aria-labelledby="receipt-note-detail-title"
         >
           <header className={styles.receiptNoteHeader}>
-            <span className={styles.receiptNoteIconWrapper} aria-hidden="true">
-              <img
-                src={ReceiptIcon}
-                alt=""
-                className={styles.receiptNoteIcon}
-              />
-            </span>
             <strong
               id="receipt-note-detail-title"
               className={styles.receiptNoteTitle}

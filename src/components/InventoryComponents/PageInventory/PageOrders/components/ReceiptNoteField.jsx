@@ -1,5 +1,4 @@
 import styles from "../ReceiptNoteField.module.css";
-import ReceiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 import {
   getReceiptNoteCounter,
   RECEIPT_NOTE_MAX_LENGTH,
@@ -32,9 +31,6 @@ const ReceiptNoteField = ({
     >
       <header className={styles.header}>
         <div className={styles.heading}>
-          <span className={styles.iconWrapper} aria-hidden="true">
-            <img src={ReceiptIcon} alt="" className={styles.icon} />
-          </span>
           <label
             id="receipt-note-title"
             className={styles.title}

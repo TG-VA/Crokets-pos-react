@@ -26,24 +26,6 @@
   min-width: 0;
 }
 
-.iconWrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  border-radius: 9px;
-  background: var(--warningBg);
-}
-
-.icon {
-  width: 14px;
-  height: 14px;
-  filter: brightness(0) saturate(100%) invert(57%) sepia(78%) saturate(1564%)
-    hue-rotate(359deg) brightness(101%) contrast(98%);
-}
-
 .title {
   color: #26323b;
   font-weight: 700;

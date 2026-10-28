@@ -910,25 +910,6 @@
   gap: 8px;
 }
 
-.receiptNoteIconWrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-  border: 1px solid rgba(181, 109, 0, 0.2);
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.receiptNoteIcon {
-  width: 13px;
-  height: 13px;
-  filter: brightness(0) saturate(100%) invert(57%) sepia(78%) saturate(1564%)
-    hue-rotate(359deg) brightness(101%) contrast(98%);
-}
-
 .receiptNoteTitle {
   color: #5f4300;
 }
