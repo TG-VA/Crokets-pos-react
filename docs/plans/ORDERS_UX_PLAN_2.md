@@ -342,3 +342,41 @@ se cierran solos).
 - Tests: 13 nuevos (9 de reglas puras y filtrado combinado, 1 de las opciones y
   3 de la tabla: filtrado, linea visible y reinicio de pagina). Total: 195
   archivos y 2522 casos.
+
+### Quinta tanda (mismo PR #176): nota de recepcion
+
+- Columna nueva `store_orders.receipt_notes`. No se reutiliza
+  `discrepancy_notes`: esa la genera `receive_store_order` en el servidor con el
+  detalle de faltantes y sobrantes, mientras que la nota de recepcion la escribe
+  el usuario (contexto, causa o acuerdo con la sucursal origen). Mezclarlas
+  impediria distinguir el texto humano del resumen automatico.
+- Migracion `20261026120000_store_orders_receipt_notes.sql`: agrega la columna
+  con `if not exists`, elimina la firma anterior de `receive_store_order` y la
+  recrea con `p_receipt_notes text default null`. El servidor recalcula las
+  diferencias: si hay al menos una, exige `nullif(trim(p_receipt_notes), '')` y
+  limita la nota a 500 caracteres. Conserva `SECURITY DEFINER`, `search_path`,
+  la autorizacion por sucursal y los grants sin `anon`. **Pendiente de aplicar
+  al remoto** (no se ejecuto `supabase db push`).
+- Regla pura en `ordersCalculationService.js`: `hasReceiptDifferences`,
+  `normalizeReceiptNote` y `validateReceiptNote` (máximo
+  `RECEIPT_NOTE_MAX_LENGTH = 500`). La usan el hook y el servicio para que la
+  validacion del cliente y el mensaje sean unicos; la RPC vuelve a validar.
+- `useReceiveOrderForm` conserva `receiptNote`, deriva `isNoteRequired` y
+  `noteError`, limpia la nota al cambiar de pedido o recibirlo y bloquea
+  `canSubmit` mientras falte la nota obligatoria. `ReceiptPanel` muestra
+  "Nota (opcional)" o "Nota (obligatoria por diferencias)", el error accesible
+  y el maximo de 500 caracteres.
+- Visualizacion: `ordersDetailService` selecciona `receipt_notes`,
+  `normalizeStoreOrder` la expone como `receiptNotes` y
+  `OrderPreviewSections` muestra "Nota de recepción" solo si tiene valor, con
+  fondo de advertencia para distinguirla de "Notas del pedido". La impresion la
+  hereda del componente compartido y el resumen de Excel la agrega en la fila
+  13 cuando existe.
+- Realtime sin cambios: `loadStoreOrders` usa `STORE_ORDER_SELECT`, que ahora
+  incluye `receipt_notes`, y la recarga por evento ya reconstruye el pedido con
+  la nueva columna.
+- Tests nuevos: reglas puras (diferencias y nota), servicio (rechazo sin nota,
+  envio recortado y `null` opcional), panel (etiqueta, error y boton
+  bloqueado), detalle (muestra u omite la nota), formateador/Excel y contrato SQL
+  de la migracion.
+

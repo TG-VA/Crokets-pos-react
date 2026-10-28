@@ -128,6 +128,7 @@ y el proceso principal de Electron:
 | Modal base (acciones de footer)                        | `src/components/AppModal/AppModal.test.jsx`                                        |
 | Pedidos: contrato SQL de permisos (revoke anon)        | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
 | Pedidos: contrato SQL de integridad                    | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
+| Pedidos: contrato SQL de nota de recepcion             | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
 
 ### Cobertura transitiva del resolver de costo
 
