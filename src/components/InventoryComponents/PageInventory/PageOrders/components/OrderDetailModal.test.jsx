@@ -24,15 +24,15 @@ describe("OrderDetailModal", () => {
     expect(screen.getByText("NAJAR")).toBeTruthy();
   });
 
-  it("agrupa nombre, estado y ruta en una sola cabecera con destino antes que origen", () => {
+  it("agrupa nombre, estado y ruta en una sola cabecera con origen hacia destino", () => {
     render(<OrderDetailModal order={order} onClose={() => {}} />);
 
     const header = screen.getByText("NAJAR").closest("div");
     const text = header.textContent;
 
     expect(within(header).getByText("Pendiente")).toBeTruthy();
-    expect(within(header).getByText("desde")).toBeTruthy();
-    expect(text.indexOf("TORRES")).toBeLessThan(text.indexOf("HUAYACAN"));
+    expect(within(header).getByText("hacia")).toBeTruthy();
+    expect(text.indexOf("HUAYACAN")).toBeLessThan(text.indexOf("TORRES"));
   });
 
   it("muestra la nota de recepcion del pedido", () => {

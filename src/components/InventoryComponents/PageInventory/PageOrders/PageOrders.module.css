@@ -918,13 +918,13 @@
   font-weight: 600;
 }
 
-/* En el modal de detalle la ruta comparte la linea del nombre y el estado.
-   El historial y las tarjetas conservan el tamano base. */
+/* En el modal de detalle la ruta ocupa su propia linea, alineada a la
+   izquierda con el nombre y el estado. El historial y las tarjetas conservan
+   el tamano base. */
 .detailContent .detailRoute {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
   padding: 4px 10px;
 }
 

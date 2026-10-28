@@ -58,9 +58,9 @@ const OrderDetailModal = ({ order, onClose }) => {
               {status.label}
             </span>
             <div className={styles.detailRoute}>
-              <BranchBadge role="destination" name={order.toBranchName} />
-              <span className={styles.routeConnector}>desde</span>
               <BranchBadge role="origin" name={order.fromBranchName} />
+              <span className={styles.routeConnector}>hacia</span>
+              <BranchBadge role="destination" name={order.toBranchName} />
             </div>
           </div>
 
