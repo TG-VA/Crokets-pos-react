@@ -258,10 +258,10 @@ se cierran solos).
   (`.detailContent .detailRoute` y `.detailContent .routeBadge`) y "Notas del
   pedido" (`.detailNote`) tienen mas padding y separacion; la impresion y los
   demas usos de `BranchBadge` conservan el tamano base.
-- `OrderNameBadge`: el nombre del pedido es una pastilla gris
-  (gris `#5c6b77` con texto blanco). No se uso naranja claro porque coincidiria
-  con el destino de `BranchBadge`; azul y verde/amarillo/rojo ya significan
-  origen y estado. Alcance: solo el modal de detalle (respuesta del usuario).
+- `OrderNameBadge`: el nombre del pedido es un chip suave (`#eef2f5` de fondo,
+  texto `#26323b` y borde `#cfd8de`) con tipografia menor que antes. Un gris
+  solido se confundia con cancelado/deshabilitado y competia con los badges de
+  origen (azul) y destino (naranja). Alcance: solo el modal de detalle.
 - Historial, destino bloqueado: si el usuario no es administrador
   (`checkUserIsAdmin` de `src/lib/permissionsService.js`: rol `admin` y usuario
   activo, el mismo criterio de los demas modulos) el filtro "Destino" queda
