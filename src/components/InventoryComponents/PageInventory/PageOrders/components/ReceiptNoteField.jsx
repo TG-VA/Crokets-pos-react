@@ -30,15 +30,9 @@ const ReceiptNoteField = ({
         .join(" ")}
     >
       <header className={styles.header}>
-        <div className={styles.heading}>
-          <label
-            id="receipt-note-title"
-            className={styles.title}
-            htmlFor="receipt-note"
-          >
-            Nota de recepción
-          </label>
-        </div>
+        <label className={styles.title} htmlFor="receipt-note">
+          Nota de recepción
+        </label>
         <span
           className={[
             styles.pill,
@@ -80,7 +74,7 @@ const ReceiptNoteField = ({
           className={[styles.counter, COUNTER_TONE_CLASS[counter.tone]]
             .filter(Boolean)
             .join(" ")}
-          aria-live="polite"
+          aria-live={counter.tone === "neutral" ? "off" : "polite"}
         >
           {counter.text}
         </p>

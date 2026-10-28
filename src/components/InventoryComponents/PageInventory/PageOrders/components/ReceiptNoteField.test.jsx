@@ -92,4 +92,23 @@ describe("ReceiptNoteField", () => {
       "receipt-note-error receipt-note-counter"
     );
   });
+
+  it("solo anuncia el contador a lectores de pantalla cerca del limite", () => {
+    const { container, rerender } = renderField({ value: "Nota corta" });
+    const counter = () => container.querySelector("#receipt-note-counter");
+
+    expect(counter().getAttribute("aria-live")).toBe("off");
+
+    rerender(
+      <ReceiptNoteField
+        value={"a".repeat(450)}
+        isRequired={false}
+        error=""
+        isDisabled={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(counter().getAttribute("aria-live")).toBe("polite");
+  });
 });
