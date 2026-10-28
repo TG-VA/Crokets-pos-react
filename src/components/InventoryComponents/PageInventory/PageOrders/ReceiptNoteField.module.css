@@ -45,7 +45,7 @@
 
 .pillRequired {
   background: var(--warningBg);
-  color: var(--warningText);
+  color: #8a5300;
   border: 1px solid rgba(181, 109, 0, 0.3);
 }
 
@@ -89,7 +89,7 @@
 .help {
   margin: 0;
   font-size: 0.8rem;
-  color: #6d7b86;
+  color: #5a6873;
 }
 
 .error {
@@ -103,11 +103,11 @@
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
-  color: #6d7b86;
+  color: #5a6873;
 }
 
 .counterWarning {
-  color: var(--warningText);
+  color: #8a5300;
 }
 
 .counterError {
