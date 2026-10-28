@@ -588,7 +588,7 @@ describe("inventoryAddService", () => {
   });
 
   describe("precio de venta de sucursal", () => {
-    it("no sobrescribe sale_price cuando el producto llega sin precio", async () => {
+    it("no escribe sale_price en una fila existente cuando el producto llega sin precio", async () => {
       setupRow({
         id: "inv-1",
         stock: 5,
@@ -609,7 +609,7 @@ describe("inventoryAddService", () => {
       expect(payload).not.toHaveProperty("sale_price");
     });
 
-    it("conserva el sale_price cuando el producto trae precio", async () => {
+    it("no reescribe sale_price en una fila existente aunque el producto traiga precio", async () => {
       setupRow({
         id: "inv-1",
         stock: 5,
@@ -626,9 +626,8 @@ describe("inventoryAddService", () => {
         incomingCostPrice: 100,
       });
 
-      expect(selectQ.update).toHaveBeenCalledWith(
-        expect.objectContaining({ sale_price: 250 })
-      );
+      const payload = selectQ.update.mock.calls[0][0];
+      expect(payload).not.toHaveProperty("sale_price");
     });
   });
 });
