@@ -19,9 +19,13 @@ export const useHistoryDestinationLock = (activeBranchId) => {
   useEffect(() => {
     let cancelled = false;
 
-    checkUserIsAdmin(userId).then((result) => {
-      if (!cancelled) setAdminCheck({ userId, isAdmin: result === true });
-    });
+    checkUserIsAdmin(userId)
+      .then((result) => {
+        if (!cancelled) setAdminCheck({ userId, isAdmin: result === true });
+      })
+      .catch((err) => {
+        console.error("Error al verificar el rol del usuario:", err);
+      });
 
     return () => {
       cancelled = true;

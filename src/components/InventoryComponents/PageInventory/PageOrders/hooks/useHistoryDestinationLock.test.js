@@ -71,4 +71,17 @@ describe("useHistoryDestinationLock", () => {
 
     await waitFor(() => expect(result.current).toBe("b2"));
   });
+
+  it("mantiene el destino bloqueado si falla la verificacion de rol", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mocks.checkUserIsAdmin.mockRejectedValue(new Error("boom"));
+
+    const { result } = renderHook(() => useHistoryDestinationLock("b1"));
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(result.current).toBe("b1");
+
+    errorSpy.mockRestore();
+  });
 });
