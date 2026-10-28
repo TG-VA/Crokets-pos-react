@@ -59,7 +59,7 @@ export const RECEIPT_NOTE_MAX_LENGTH = 500;
 
 /**
  * Texto de la nota de recepcion sin espacios en los extremos. Acepta valores
- * nulos o no textuales sin lanzar excepciones (LSP).
+ * nulos o no textuales sin lanzar excepciones.
  */
 export const normalizeReceiptNote = (value) => (value ?? "").toString().trim();
 
