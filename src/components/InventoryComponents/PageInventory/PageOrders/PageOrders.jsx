@@ -35,6 +35,9 @@ const PageOrders = () => {
             pendingOrders={page.pendingOrders}
             selectedOrder={page.receiveForm.selectedOrder}
             quantities={page.receiveForm.quantities}
+            receiptNote={page.receiveForm.receiptNote}
+            isNoteRequired={page.receiveForm.isNoteRequired}
+            noteError={page.receiveForm.noteError}
             isComplete={page.receiveForm.isComplete}
             missingItems={page.receiveForm.missingItems}
             error={page.receiveForm.error || page.error}
@@ -43,6 +46,7 @@ const PageOrders = () => {
             currentBranchName={page.currentBranch?.name}
             onSelectOrder={page.receiveForm.selectOrder}
             onQuantityChange={page.receiveForm.setQuantity}
+            onReceiptNoteChange={page.receiveForm.setReceiptNote}
             getDifferencePreview={page.receiveForm.getDifferencePreview}
             onSubmit={page.receiveForm.submitReceipt}
             onOpenDetail={page.openDetail}

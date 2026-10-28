@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import styles from "../PageOrders.module.css";
 import { formatQuantity } from "../utils/ordersFormatters";
+import { RECEIPT_NOTE_MAX_LENGTH } from "../utils/ordersCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import BranchBadge from "./BranchBadge";
@@ -31,11 +32,15 @@ const ReceiptPanel = ({
   quantities,
   isComplete,
   missingItems,
+  receiptNote = "",
+  isNoteRequired = false,
+  noteError = "",
   error,
   isSubmitting,
   canSubmit,
   onChangeOrder,
   onQuantityChange,
+  onReceiptNoteChange,
   getDifferencePreview,
   onSubmit,
 }) => {
@@ -193,6 +198,41 @@ const ReceiptPanel = ({
           {error}
         </p>
       ) : null}
+
+      <div className={styles.receiptNoteField}>
+        <label className={styles.receiptNoteLabel} htmlFor="receipt-note">
+          {isNoteRequired
+            ? "Nota (obligatoria por diferencias)"
+            : "Nota (opcional)"}
+        </label>
+        <textarea
+          id="receipt-note"
+          className={styles.receiptNoteInput}
+          value={receiptNote}
+          onChange={(event) => onReceiptNoteChange?.(event.target.value)}
+          maxLength={RECEIPT_NOTE_MAX_LENGTH}
+          rows={3}
+          placeholder="Describe el faltante o sobrante"
+          aria-invalid={Boolean(noteError)}
+          aria-describedby={
+            noteError ? "receipt-note-error" : "receipt-note-help"
+          }
+          disabled={isSubmitting}
+        />
+        {noteError ? (
+          <p
+            id="receipt-note-error"
+            className={styles.inlineError}
+            role="alert"
+          >
+            {noteError}
+          </p>
+        ) : (
+          <p id="receipt-note-help" className={styles.receiptNoteHelp}>
+            Máximo {RECEIPT_NOTE_MAX_LENGTH} caracteres.
+          </p>
+        )}
+      </div>
 
       <footer className={styles.receiptFooter}>
         <div className={styles.receiptStatus} role="status" aria-live="polite">

@@ -756,6 +756,32 @@
   color: var(--errorText);
 }
 
+.receiptNoteField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receiptNoteLabel {
+  font-weight: 700;
+}
+
+.receiptNoteInput {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbe4ea;
+  font: inherit;
+  resize: vertical;
+}
+
+.receiptNoteHelp {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6d7b86;
+}
+
 .receiptFooter {
   display: flex;
   align-items: center;
@@ -1317,6 +1343,7 @@
 .iconButton:focus-visible,
 .tab:focus-visible,
 .quantityInput:focus-visible,
+.receiptNoteInput:focus-visible,
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible {

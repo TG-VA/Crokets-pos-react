@@ -83,4 +83,49 @@ describe("ReceiptPanel", () => {
 
     expect(screen.getByText("Conteo completo")).toBeTruthy();
   });
+
+  it("muestra la nota como opcional cuando no hay diferencias", () => {
+    renderPanel();
+
+    expect(screen.getByLabelText("Nota (opcional)")).toBeTruthy();
+  });
+
+  it("marca la nota como obligatoria y muestra el error con diferencias", () => {
+    renderPanel({
+      isNoteRequired: true,
+      noteError:
+        "La nota de recepción es obligatoria cuando hay diferencias en el conteo.",
+    });
+
+    expect(
+      screen.getByLabelText("Nota (obligatoria por diferencias)")
+    ).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toMatch(
+      /obligatoria cuando hay diferencias/
+    );
+  });
+
+  it("bloquea el registro mientras falta la nota obligatoria", () => {
+    renderPanel({
+      isNoteRequired: true,
+      noteError:
+        "La nota de recepción es obligatoria cuando hay diferencias en el conteo.",
+      canSubmit: false,
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Registrar recepción" }).disabled
+    ).toBe(true);
+  });
+
+  it("notifica los cambios de la nota", () => {
+    const onReceiptNoteChange = vi.fn();
+
+    renderPanel({ onReceiptNoteChange });
+    fireEvent.change(screen.getByLabelText("Nota (opcional)"), {
+      target: { value: "Faltó una bolsa" },
+    });
+
+    expect(onReceiptNoteChange).toHaveBeenCalledWith("Faltó una bolsa");
+  });
 });

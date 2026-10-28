@@ -6,7 +6,9 @@ import {
   calculateDifference,
   getMissingReceiptItems,
   getPendingOrders,
+  hasReceiptDifferences,
   isReceiptComplete,
+  validateReceiptNote,
 } from "../utils/ordersCalculationService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -19,6 +21,7 @@ export const useReceiveOrderForm = ({
 
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [quantities, setQuantities] = useState({});
+  const [receiptNote, setReceiptNoteState] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,9 +51,30 @@ export const useReceiveOrderForm = ({
     [quantities, selectedOrder]
   );
 
+  const isNoteRequired = useMemo(
+    () =>
+      selectedOrder
+        ? hasReceiptDifferences(selectedOrder.items, quantities)
+        : false,
+    [quantities, selectedOrder]
+  );
+
+  const noteError = useMemo(
+    () =>
+      selectedOrder
+        ? validateReceiptNote({
+            items: selectedOrder.items,
+            quantities,
+            note: receiptNote,
+          })
+        : "",
+    [quantities, receiptNote, selectedOrder]
+  );
+
   const selectOrder = useCallback((order) => {
     setSelectedOrderId(order?.id || "");
     setQuantities({});
+    setReceiptNoteState("");
     setError("");
   }, []);
 
@@ -64,6 +88,11 @@ export const useReceiveOrderForm = ({
     setError("");
   }, []);
 
+  const setReceiptNote = useCallback((value) => {
+    setReceiptNoteState(value);
+    setError("");
+  }, []);
+
   const getDifferencePreview = useCallback(
     (item) => calculateDifference(item.expectedQty, quantities[item.productId]),
     [quantities]
@@ -72,6 +101,7 @@ export const useReceiveOrderForm = ({
   const resetSelection = useCallback(() => {
     setSelectedOrderId("");
     setQuantities({});
+    setReceiptNoteState("");
     setError("");
   }, []);
 
@@ -85,6 +115,11 @@ export const useReceiveOrderForm = ({
       return null;
     }
 
+    if (noteError) {
+      setError(noteError);
+      return null;
+    }
+
     setError("");
     setIsSubmitting(true);
 
@@ -93,6 +128,7 @@ export const useReceiveOrderForm = ({
         order: selectedOrder,
         currentBranchId,
         quantities,
+        receiptNote,
         user,
       });
 
@@ -111,8 +147,10 @@ export const useReceiveOrderForm = ({
     isComplete,
     isSubmitting,
     missingItems.length,
+    noteError,
     onReceived,
     quantities,
+    receiptNote,
     resetSelection,
     selectedOrder,
     user,
@@ -123,13 +161,18 @@ export const useReceiveOrderForm = ({
     selectedOrder,
     selectedOrderId,
     quantities,
+    receiptNote,
+    isNoteRequired,
+    noteError,
     isComplete,
     missingItems,
     error,
     isSubmitting,
-    canSubmit: Boolean(selectedOrder) && isComplete && !isSubmitting,
+    canSubmit:
+      Boolean(selectedOrder) && isComplete && !isSubmitting && !noteError,
     selectOrder,
     setQuantity,
+    setReceiptNote,
     getDifferencePreview,
     resetSelection,
     submitReceipt,
