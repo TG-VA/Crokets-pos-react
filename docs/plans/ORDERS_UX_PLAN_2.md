@@ -380,4 +380,3 @@ se cierran solos).
   envio recortado y `null` opcional), panel (etiqueta, error y boton
   bloqueado), detalle (muestra u omite la nota), formateador/Excel y contrato SQL
   de la migracion.
-
