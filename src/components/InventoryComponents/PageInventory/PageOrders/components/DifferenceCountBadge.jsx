@@ -12,13 +12,13 @@ const BADGES = [
     key: "shortages",
     text: ORDER_ITEM_STATUS_META.shortage.label,
     className: ITEM_STATUS_DIFFERENCE_CLASS.shortage,
-    label: "productos con faltante",
+    label: "con faltante",
   },
   {
     key: "overages",
     text: ORDER_ITEM_STATUS_META.overage.label,
     className: ITEM_STATUS_DIFFERENCE_CLASS.overage,
-    label: "productos con sobrante",
+    label: "con sobrante",
   },
 ];
 
@@ -49,7 +49,9 @@ const DifferenceCountBadge = ({ summary }) => {
         <span
           key={badge.key}
           className={[styles.differenceBadge, badge.className].join(" ")}
-          aria-label={`${summary[badge.key]} ${badge.label}`}
+          aria-label={`${summary[badge.key]} ${
+            summary[badge.key] === 1 ? "producto" : "productos"
+          } ${badge.label}`}
         >
           {badge.text}: {summary[badge.key]}
         </span>

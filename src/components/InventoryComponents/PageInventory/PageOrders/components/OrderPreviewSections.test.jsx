@@ -138,8 +138,8 @@ describe("OrderPreviewSections", () => {
     render(<OrderPreviewSections order={order} />);
 
     expect(screen.getByText("Productos con diferencia")).toBeTruthy();
-    expect(screen.getByLabelText("1 productos con faltante")).toBeTruthy();
-    expect(screen.getByLabelText("1 productos con sobrante")).toBeTruthy();
+    expect(screen.getByLabelText("1 producto con faltante")).toBeTruthy();
+    expect(screen.getByLabelText("1 producto con sobrante")).toBeTruthy();
   });
 
   it("omite el resumen cuando no hay diferencias o el pedido sigue pendiente", () => {
