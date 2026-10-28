@@ -51,7 +51,7 @@ const updateInventoryRow = async ({
       is_active: true,
       has_been_stocked: true,
       cost_price: costPrice,
-      sale_price: salePrice,
+      ...(salePrice > 0 ? { sale_price: salePrice } : {}),
       updated_at: updatedAt,
     })
     .eq("id", inventoryRowId);
