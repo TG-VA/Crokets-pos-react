@@ -20,7 +20,7 @@ export const productUsesInventory = (product) =>
 
 export const getProductSalePrice = (product, inventoryByProduct = {}) => {
   const row = inventoryByProduct[product?.id];
-  if (row && row.sale_price !== null && row.sale_price !== undefined) {
+  if (row && Number(row.sale_price) > 0) {
     return toNumber(row.sale_price);
   }
   return toNumber(product?.sale_price);

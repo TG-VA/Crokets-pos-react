@@ -150,7 +150,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
         );
 
       const salePrice = Number(
-        inventoryRow.sale_price ?? productRow.sale_price ?? 0
+        inventoryRow.sale_price || productRow.sale_price || 0
       );
       const dInfo = applyDiscountToPrice(salePrice, discountRow);
 

@@ -470,7 +470,7 @@ export const useSearchModal = ({
                   isKit || !tracks || inv?.is_active !== false,
                 has_been_stocked:
                   isKit || !tracks || inv?.has_been_stocked === true,
-                branch_sale_price: Number(inv?.sale_price ?? p.sale_price ?? 0),
+                branch_sale_price: Number(inv?.sale_price || p.sale_price || 0),
                 branch_cost_price: Number(inv?.cost_price ?? p.cost_price ?? 0),
                 tracks_inventory: tracks,
               };

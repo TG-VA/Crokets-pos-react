@@ -60,7 +60,7 @@ export const validateProductForCart = async ({
     return {
       isValid: true,
       stock,
-      salePrice: inventoryRow.sale_price ?? product.sale_price,
+      salePrice: inventoryRow.sale_price || product.sale_price,
       costPrice: inventoryRow.cost_price ?? product.cost_price,
       tracksInventory: true,
     };

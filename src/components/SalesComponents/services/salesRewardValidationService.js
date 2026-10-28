@@ -103,7 +103,7 @@ export const processFreeRewardProduct = async ({
     }
 
     stock = Number(inventoryRow.stock || 0);
-    salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+    salePrice = Number(inventoryRow.sale_price || product.sale_price || 0);
     costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 
     const currentCartQuantity = getCartQuantityForProduct(
@@ -239,7 +239,7 @@ export const processDiscountRewardProduct = async ({
 
     stock = Number(inventoryRow.stock || 0);
     salePrice = Number(
-      originalUnitPrice ?? inventoryRow.sale_price ?? product.sale_price ?? 0
+      originalUnitPrice ?? (inventoryRow.sale_price || product.sale_price || 0)
     );
     costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 
