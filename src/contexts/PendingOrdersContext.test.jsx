@@ -10,10 +10,12 @@ vi.mock(
 );
 
 let mockRealtimeOnChange = null;
+let mockRealtimeFilters = null;
 const mockUnsubscribe = vi.fn();
 
 vi.mock("../services/inventory/ordersRealtimeService", () => ({
-  subscribeToStoreOrderChanges: ({ onChange }) => {
+  subscribeToStoreOrderChanges: ({ onChange, filters }) => {
+    mockRealtimeFilters = filters;
     mockRealtimeOnChange = onChange;
     return mockUnsubscribe;
   },
@@ -186,6 +188,18 @@ describe("PendingOrdersContext - refresh", () => {
     });
 
     expect(screen.getByTestId("count").textContent).toBe("2");
+  });
+
+  it("solo observa los pedidos dirigidos a la sucursal activa", async () => {
+    countPendingStoreOrders.mockResolvedValue(0);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    expect(mockRealtimeFilters).toEqual(["to_branch_id=eq.branch-1"]);
   });
 
   it("cierra la suscripcion realtime al desmontar", async () => {

@@ -57,6 +57,21 @@ describe("ordersRealtimeService", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  it("abre una suscripcion por cada filtro de fila", () => {
+    subscribeToStoreOrderChanges({
+      channelName: "orders-filtered",
+      onChange: vi.fn(),
+      filters: ["to_branch_id=eq.b1", "from_branch_id=eq.b1"],
+    });
+
+    const filters = bindings
+      .filter((b) => b.type === "postgres_changes")
+      .map((b) => b.filter.filter);
+
+    expect(filters).toEqual(["to_branch_id=eq.b1", "from_branch_id=eq.b1"]);
+    expect(bindings.filter((b) => b.type === "subscribe")).toHaveLength(1);
+  });
+
   it("cierra el canal al limpiar", () => {
     const unsubscribe = subscribeToStoreOrderChanges({
       channelName: "orders-cleanup",

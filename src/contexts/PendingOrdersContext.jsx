@@ -86,6 +86,7 @@ export const PendingOrdersProvider = ({ children }) => {
 
     const unsubscribe = subscribeToStoreOrderChanges({
       channelName: `pending-orders-${currentBranchId}`,
+      filters: [`to_branch_id=eq.${currentBranchId}`],
       onChange: () => {
         window.clearTimeout(timer);
         timer = window.setTimeout(() => {

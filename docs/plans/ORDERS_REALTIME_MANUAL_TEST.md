@@ -6,6 +6,12 @@ contador del navbar sin recargar. La suscripción vive en
 `src/services/inventory/ordersRealtimeService.js` y la consumen
 `PageOrders/hooks/useOrdersData.js` y `contexts/PendingOrdersContext.jsx`.
 
+Alcance de los eventos: el contador del navbar solo escucha los pedidos con
+`to_branch_id` igual a la sucursal activa. La lista de Pedidos observa toda la
+tabla, porque el historial muestra pedidos de todas las sucursales para un
+administrador y la política SELECT de `store_orders` es abierta a usuarios
+autenticados.
+
 ## Preparación
 
 1. Dos sesiones independientes: ventana normal con un usuario de la sucursal A (origen) y ventana
