@@ -33,9 +33,10 @@ describe("migracion 20261028190000 _apply_inventory_delta conserva sale_price", 
   const norm = sql.replace(/\s+/g, " ");
 
   it("el ON CONFLICT DO UPDATE no reescribe sale_price", () => {
-    const conflict = norm.slice(norm.indexOf("on conflict"));
+    const lower = norm.toLowerCase();
+    const conflict = lower.slice(lower.indexOf("on conflict (branch_id"));
     const updateSet = conflict.slice(0, conflict.indexOf("returning"));
-    expect(updateSet).not.toMatch(/sale_price\s*=/);
+    expect(updateSet).not.toMatch(/sale_price\s*=/i);
   });
 
   it("el alta de fila nueva sigue fijando sale_price", () => {
