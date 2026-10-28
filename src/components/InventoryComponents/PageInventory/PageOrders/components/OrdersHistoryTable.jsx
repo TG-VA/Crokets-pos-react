@@ -50,8 +50,18 @@ const OrdersHistoryTable = ({
   );
 
   const filteredOrders = useMemo(
-    () => filterOrderHistory(orders, effectiveFilters),
-    [effectiveFilters, orders]
+    () =>
+      filterOrderHistory(
+        orders,
+        isDestinationLocked
+          ? {
+              ...effectiveFilters,
+              toBranchId: "all",
+              involvedBranchId: lockedDestinationId,
+            }
+          : effectiveFilters
+      ),
+    [effectiveFilters, isDestinationLocked, lockedDestinationId, orders]
   );
 
   const hasActiveFilters =

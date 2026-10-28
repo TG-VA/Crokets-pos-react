@@ -344,6 +344,9 @@ export const filterOrderHistory = (orders = [], filters = {}) => {
   const itemStatus = normalizeHistoryFilterValue(filters.itemStatus);
   const fromBranchId = normalizeHistoryFilterValue(filters.fromBranchId);
   const toBranchId = normalizeHistoryFilterValue(filters.toBranchId);
+  const involvedBranchId = normalizeHistoryFilterValue(
+    filters.involvedBranchId
+  );
   const dateFrom = getDayBoundary(filters.dateFrom);
   const dateTo = getDayBoundary(filters.dateTo, true);
 
@@ -356,6 +359,14 @@ export const filterOrderHistory = (orders = [], filters = {}) => {
 
     if (fromBranchId && order.fromBranchId !== fromBranchId) return false;
     if (toBranchId && order.toBranchId !== toBranchId) return false;
+
+    if (
+      involvedBranchId &&
+      order.fromBranchId !== involvedBranchId &&
+      order.toBranchId !== involvedBranchId
+    ) {
+      return false;
+    }
 
     const sentAt = parseOrderDate(order.sentAt);
 

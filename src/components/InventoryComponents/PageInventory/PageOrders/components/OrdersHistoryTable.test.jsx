@@ -356,6 +356,26 @@ describe("OrdersHistoryTable ruta y destino bloqueado", () => {
     expect(screen.queryByText("SUCURSAL SUR")).toBeNull();
   });
 
+  it("con destino bloqueado conserva los pedidos enviados por la sucursal activa", () => {
+    const sentOrder = {
+      ...buildOrder(2),
+      fromBranchId: "branch-destination",
+      fromBranchName: "Sucursal Norte",
+      toBranchId: "branch-other",
+      toBranchName: "Sucursal Sur",
+    };
+
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder, sentOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    expect(getBodyRows()).toHaveLength(2);
+  });
+
   it("no libera el destino bloqueado al limpiar filtros", () => {
     render(
       <OrdersHistoryTable

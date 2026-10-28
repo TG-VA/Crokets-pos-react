@@ -468,6 +468,45 @@ describe("getOrderItemsByStatus", () => {
   });
 });
 
+describe("filterOrderHistory por sucursal involucrada", () => {
+  const received = {
+    ...baseOrder,
+    id: "in",
+    fromBranchId: "x",
+    toBranchId: "a",
+  };
+  const sent = { ...baseOrder, id: "out", fromBranchId: "a", toBranchId: "y" };
+  const unrelated = {
+    ...baseOrder,
+    id: "none",
+    fromBranchId: "x",
+    toBranchId: "y",
+  };
+
+  it("conserva pedidos donde la sucursal es origen o destino", () => {
+    expect(
+      filterOrderHistory([received, sent, unrelated], {
+        involvedBranchId: "a",
+      }).map((order) => order.id)
+    ).toEqual(["in", "out"]);
+  });
+
+  it("se combina con el filtro de origen", () => {
+    expect(
+      filterOrderHistory([received, sent, unrelated], {
+        involvedBranchId: "a",
+        fromBranchId: "x",
+      }).map((order) => order.id)
+    ).toEqual(["in"]);
+  });
+
+  it("no filtra con el valor all", () => {
+    expect(
+      filterOrderHistory([received, unrelated], { involvedBranchId: "all" })
+    ).toHaveLength(2);
+  });
+});
+
 describe("filterOrderHistory por estado del producto", () => {
   const receivedOrder = {
     ...baseOrder,
