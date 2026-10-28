@@ -940,6 +940,19 @@
   padding: 4px 10px;
 }
 
+.differenceSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.differenceSummaryLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4a5b68;
+}
+
 .rowWithDifference {
   background: rgba(231, 76, 60, 0.05);
 }

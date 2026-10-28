@@ -6,7 +6,9 @@ import {
   formatSignedQuantity,
 } from "../utils/ordersFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
+import { getOrderDifferenceSummary } from "../utils/ordersCalculationService";
 import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
+import DifferenceCountBadge from "./DifferenceCountBadge";
 import ItemsPaginationFooter, {
   ITEMS_PAGE_SIZES,
 } from "./ItemsPaginationFooter";
@@ -26,6 +28,7 @@ const OrderPreviewSections = ({ order }) => {
   });
 
   const visibleItems = pagination.pageItems(items);
+  const differenceSummary = getOrderDifferenceSummary(order);
   const receiptNoteMeta = [
     order?.receivedByLabel ? `Registrada por ${order.receivedByLabel}` : "",
     order?.acceptedAt ? formatOrderDate(order.acceptedAt) : "",
@@ -67,6 +70,43 @@ const OrderPreviewSections = ({ order }) => {
           <dd>{order.items?.length || 0}</dd>
         </div>
       </dl>
+
+      {differenceSummary &&
+      (differenceSummary.shortages > 0 || differenceSummary.overages > 0) ? (
+        <div className={styles.differenceSummary}>
+          <span className={styles.differenceSummaryLabel}>
+            Productos con diferencia
+          </span>
+          <DifferenceCountBadge summary={differenceSummary} />
+        </div>
+      ) : null}
+
+      {order.receiptNotes ? (
+        <section
+          className={styles.receiptNoteCard}
+          aria-labelledby="receipt-note-detail-title"
+        >
+          <header className={styles.receiptNoteHeader}>
+            <strong
+              id="receipt-note-detail-title"
+              className={styles.receiptNoteTitle}
+            >
+              Nota de recepción
+            </strong>
+          </header>
+          <p className={styles.receiptNoteText}>{order.receiptNotes}</p>
+          {receiptNoteMeta ? (
+            <p className={styles.receiptNoteMeta}>{receiptNoteMeta}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {order.notes ? (
+        <div className={styles.detailNote}>
+          <strong>Notas del pedido</strong>
+          <p>{order.notes}</p>
+        </div>
+      ) : null}
 
       <div className={styles.tableWrapper}>
         <table className={styles.itemsTable}>
@@ -131,33 +171,6 @@ const OrderPreviewSections = ({ order }) => {
           pagination={pagination}
           totalItems={items.length}
         />
-      ) : null}
-
-      {order.notes ? (
-        <div className={styles.detailNote}>
-          <strong>Notas del pedido</strong>
-          <p>{order.notes}</p>
-        </div>
-      ) : null}
-
-      {order.receiptNotes ? (
-        <section
-          className={styles.receiptNoteCard}
-          aria-labelledby="receipt-note-detail-title"
-        >
-          <header className={styles.receiptNoteHeader}>
-            <strong
-              id="receipt-note-detail-title"
-              className={styles.receiptNoteTitle}
-            >
-              Nota de recepción
-            </strong>
-          </header>
-          <p className={styles.receiptNoteText}>{order.receiptNotes}</p>
-          {receiptNoteMeta ? (
-            <p className={styles.receiptNoteMeta}>{receiptNoteMeta}</p>
-          ) : null}
-        </section>
       ) : null}
     </>
   );

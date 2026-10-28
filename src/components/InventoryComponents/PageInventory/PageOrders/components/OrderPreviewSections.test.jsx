@@ -123,4 +123,51 @@ describe("OrderPreviewSections", () => {
 
     expect(screen.queryByText("Nota de recepción")).toBeNull();
   });
+
+  it("resume arriba cuantos productos tienen faltante y sobrante", () => {
+    const order = buildOrder(4);
+
+    order.items[2] = { ...order.items[2], receivedQty: 12, differenceQty: 2 };
+
+    render(<OrderPreviewSections order={order} />);
+
+    expect(screen.getByText("Productos con diferencia")).toBeTruthy();
+    expect(screen.getByLabelText("1 productos con faltante")).toBeTruthy();
+    expect(screen.getByLabelText("1 productos con sobrante")).toBeTruthy();
+  });
+
+  it("omite el resumen cuando no hay diferencias o el pedido sigue pendiente", () => {
+    const clean = buildOrder(3).items.map((item) => ({
+      ...item,
+      receivedQty: item.expectedQty,
+      differenceQty: 0,
+    }));
+    const { rerender } = render(
+      <OrderPreviewSections order={{ ...buildOrder(3), items: clean }} />
+    );
+
+    expect(screen.queryByText("Productos con diferencia")).toBeNull();
+
+    rerender(
+      <OrderPreviewSections order={{ ...buildOrder(3), status: "pending" }} />
+    );
+
+    expect(screen.queryByText("Productos con diferencia")).toBeNull();
+  });
+
+  it("muestra la nota de recepcion antes de la tabla de partidas", () => {
+    render(
+      <OrderPreviewSections
+        order={{ ...buildOrder(3), receiptNotes: "Faltó una bolsa" }}
+      />
+    );
+
+    const note = screen.getByText("Faltó una bolsa");
+    const table = screen.getByRole("table");
+
+    expect(
+      note.compareDocumentPosition(table) &
+        window.Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
 });
