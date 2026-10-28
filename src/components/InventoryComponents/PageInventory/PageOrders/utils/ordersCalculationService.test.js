@@ -15,6 +15,7 @@ import {
   getOrderTotals,
   getPendingOrdersCount,
   getReceivedQuantitiesPayload,
+  isOrderReceived,
   isReceiptComplete,
   normalizeOrders,
   parseReceiptQuantity,
@@ -214,6 +215,19 @@ describe("getOrderDifferences", () => {
     expect(result).toHaveLength(2);
     expect(result[0].differenceQty).toBe(-2);
     expect(result[1].differenceQty).toBe(3);
+  });
+});
+
+describe("isOrderReceived", () => {
+  it("excluye pedidos pendientes, cancelados y vacios", () => {
+    expect(isOrderReceived({ status: "pending" })).toBe(false);
+    expect(isOrderReceived({ status: "cancelled" })).toBe(false);
+    expect(isOrderReceived(null)).toBe(false);
+  });
+
+  it("incluye pedidos aceptados con o sin diferencia", () => {
+    expect(isOrderReceived({ status: "accepted" })).toBe(true);
+    expect(isOrderReceived({ status: "accepted_with_difference" })).toBe(true);
   });
 });
 

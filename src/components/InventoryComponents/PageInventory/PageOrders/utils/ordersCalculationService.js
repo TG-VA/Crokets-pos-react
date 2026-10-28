@@ -151,23 +151,24 @@ export const getOrderDifferences = (items = []) => {
 };
 
 /**
+ * Un pedido pendiente o cancelado aun no tiene recepcion registrada.
+ */
+export const isOrderReceived = (order) =>
+  Boolean(order) && order.status !== "pending" && order.status !== "cancelled";
+
+/**
  * Numero de productos con diferencia (faltante o sobrante). Retorna null
  * mientras el pedido no se ha recibido, para distinguirlo de "0 diferencias".
  */
-export const getOrderDifferenceCount = (order) => {
-  if (!order || order.status === "pending" || order.status === "cancelled") {
-    return null;
-  }
-
-  return getOrderDifferences(order.items).length;
-};
+export const getOrderDifferenceCount = (order) =>
+  isOrderReceived(order) ? getOrderDifferences(order.items).length : null;
 
 /**
  * Productos con faltante y con sobrante de un pedido recibido. Retorna null
  * mientras no hay recepcion (misma regla que `getOrderDifferenceCount`).
  */
 export const getOrderDifferenceSummary = (order) => {
-  if (getOrderDifferenceCount(order) === null) {
+  if (!isOrderReceived(order)) {
     return null;
   }
 
