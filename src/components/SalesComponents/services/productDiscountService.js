@@ -1,3 +1,4 @@
+import { resolveBranchSalePrice } from "../../../utils/branchSalePrice";
 import { supabase } from "../../../lib/supabaseClient";
 
 export const toNumber = (value) => {
@@ -19,11 +20,7 @@ export const productUsesInventory = (product) =>
   product?.tracks_inventory !== false;
 
 export const getProductSalePrice = (product, inventoryByProduct = {}) => {
-  const row = inventoryByProduct[product?.id];
-  if (row && Number(row.sale_price) > 0) {
-    return toNumber(row.sale_price);
-  }
-  return toNumber(product?.sale_price);
+  return resolveBranchSalePrice(inventoryByProduct[product?.id], product);
 };
 
 export const calculateRewardDiscount = (
