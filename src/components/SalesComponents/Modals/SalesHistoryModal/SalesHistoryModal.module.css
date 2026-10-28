@@ -656,14 +656,6 @@
   text-align: center;
 }
 
-.footer {
-  padding: 12px 24px;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-  background-color: #f8f9fa;
-}
-
 .closeFooterBtn {
   padding: 10px 24px;
   background-color: #27ae60;
@@ -979,10 +971,6 @@
     width: 100%;
   }
 
-  .footer {
-    justify-content: center;
-  }
-
   .partialReturnSummaryRow,
   .totalRow,
   .returnItemRow {
@@ -1041,14 +1029,6 @@
   opacity: 0.75;
   filter: invert(49%) sepia(10%) saturate(539%) hue-rotate(167deg)
     brightness(90%) contrast(87%);
-}
-
-.footerButtonIcon {
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  flex-shrink: 0;
 }
 
 .closeIcon,

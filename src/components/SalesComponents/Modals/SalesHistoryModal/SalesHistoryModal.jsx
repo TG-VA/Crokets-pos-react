@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import styles from "./SalesHistoryModal.module.css";
 import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
 import AppModal from "../../../AppModal/AppModal";
@@ -1085,22 +1085,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
               </div>
             )}
           </div>
-        </div>
-
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.closeFooterBtn}
-            onClick={onClose}
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.footerButtonIcon}
-              aria-hidden="true"
-            />{" "}
-            ESC - Cerrar
-          </button>
         </div>
 
         {isNotesModalOpen && selectedTicket && (

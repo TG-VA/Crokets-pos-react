@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   getPaymentMethodLabel,
   getPaymentSummary,
@@ -28,6 +28,15 @@ import { getTicketCustomization } from "../../../../services/ticketCustomization
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 import { buildTicketFooter } from "../../../../utils/ticket/ticketFooterFormatters";
 
+const getTodayDateFilter = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 export const useSalesHistory = ({
   isOpen,
   branchId,
@@ -37,9 +46,7 @@ export const useSalesHistory = ({
 }) => {
   const [searchFolio, setSearchFolio] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [dateFilter, setDateFilter] = useState(
-    () => new Date().toISOString().split("T")[0]
-  );
+  const [dateFilter, setDateFilter] = useState(getTodayDateFilter);
   const [cashierFilter, setCashierFilter] = useState("all");
   const [tickets, setTickets] = useState([]);
   const [cashiers, setCashiers] = useState([]);
@@ -59,6 +66,11 @@ export const useSalesHistory = ({
   });
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isPartialReturnOpen, setIsPartialReturnOpen] = useState(false);
+  const handleSelectTicketRef = useRef(null);
+  // Guarda la fecha para la que ya se autoselecciono la venta mas reciente.
+  // Asi cada cambio de dia vuelve a autoseleccionar sin pisar la seleccion del
+  // usuario cuando solo cambian cajero, folio o metodos de pago.
+  const autoSelectedDateRef = useRef(null);
 
   const closeAppModal = useCallback(
     () => setAppModal((p) => ({ ...p, isOpen: false })),
@@ -174,11 +186,31 @@ export const useSalesHistory = ({
       .then((nextTickets) => {
         if (cancelled) return;
         applyTickets(nextTickets);
+
+        // Se autoselecciona la venta mas reciente una vez por fecha cargada.
+        // Una respuesta tardia la descarta el guard cancelled; la fecha de la
+        // peticion se guarda para detectar el cambio de dia.
+        const requestDate = ticketsRequestKey.dateFilter;
+        if (autoSelectedDateRef.current === requestDate) return;
+        autoSelectedDateRef.current = requestDate;
+        if (!nextTickets.length) {
+          setSelectedTicket(null);
+          setCancelReason("");
+          setRefundMethodId("");
+          return;
+        }
+        handleSelectTicketRef.current?.(nextTickets[0]);
       })
       .catch((e) => {
         if (cancelled) return;
         console.error(e);
         setTickets([]);
+        // Si el dia cambio, la venta seleccionada ya no pertenece a la lista.
+        if (autoSelectedDateRef.current !== ticketsRequestKey.dateFilter) {
+          setSelectedTicket(null);
+          setCancelReason("");
+          setRefundMethodId("");
+        }
         markSettled();
       });
 
@@ -323,6 +355,14 @@ export const useSalesHistory = ({
     await loadTicketDetail(t);
     await loadReturnData(t.id);
   };
+
+  useEffect(() => {
+    handleSelectTicketRef.current = handleSelectTicket;
+  });
+
+  useEffect(() => {
+    if (!isOpen) autoSelectedDateRef.current = null;
+  }, [isOpen]);
 
   const executeCancelSale = async () => {
     const ticketBeforeCancel = { ...selectedTicket };
@@ -684,6 +724,7 @@ export const useSalesHistory = ({
   const resetAll = useCallback(() => {
     setSelectedTicket(null);
     setSearchFolio("");
+    setDateFilter(getTodayDateFilter());
     setCashierFilter("all");
     setCancelReason("");
     setRefundMethodId("");
