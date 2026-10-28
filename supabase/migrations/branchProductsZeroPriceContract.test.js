@@ -27,3 +27,18 @@ describe("migracion 20261028180100 backfill de precio 0", () => {
     expect(sql).toContain("p.sale_price > 0");
   });
 });
+
+describe("migracion 20261028190000 _apply_inventory_delta conserva sale_price", () => {
+  const sql = read("20261028190000_apply_inventory_delta_keep_sale_price.sql");
+  const norm = sql.replace(/\s+/g, " ");
+
+  it("el ON CONFLICT DO UPDATE no reescribe sale_price", () => {
+    const conflict = norm.slice(norm.indexOf("on conflict"));
+    const updateSet = conflict.slice(0, conflict.indexOf("returning"));
+    expect(updateSet).not.toMatch(/sale_price\s*=/);
+  });
+
+  it("el alta de fila nueva sigue fijando sale_price", () => {
+    expect(norm).toMatch(/cost_price, sale_price, created_at, updated_at/);
+  });
+});
