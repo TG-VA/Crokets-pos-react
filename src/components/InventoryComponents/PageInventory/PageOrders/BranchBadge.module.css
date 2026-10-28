@@ -32,9 +32,9 @@
   color: #9a4d00;
 }
 
-/* Nombre del pedido: chip suave. El naranja y el azul ya significan destino y
-   origen, y el gris solido se confundia con cancelado/deshabilitado; un fondo
-   claro mantiene el nombre legible sin competir con la ruta. */
+/* Nombre del pedido: chip suave. El naranja y el azul significan destino y
+   origen, y un gris solido se leeria como cancelado; el fondo claro mantiene
+   el nombre legible sin competir con la ruta. */
 .orderNameBadge {
   display: inline-block;
   max-width: 100%;

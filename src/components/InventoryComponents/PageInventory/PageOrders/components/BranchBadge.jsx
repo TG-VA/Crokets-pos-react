@@ -4,7 +4,7 @@ import { toUpperLabel } from "../utils/ordersFormatters";
 /**
  * Color unico por rol en todo el modulo: quien envia (origen) en azul y quien
  * recibe (destino) en naranja. El rol tambien va en texto para no depender
- * solo del color (impresion y accesibilidad). El nombre va primero, en
+ * solo del color (accesibilidad). El nombre va primero, en
  * mayusculas y mas grande que el rol; los datos de la base no se modifican.
  */
 const ROLE_META = {
