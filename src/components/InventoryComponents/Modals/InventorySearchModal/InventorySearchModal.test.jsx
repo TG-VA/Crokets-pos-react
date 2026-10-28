@@ -1,0 +1,93 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import InventorySearchModal from "./InventorySearchModal";
+
+const products = [
+  {
+    id: "global-ok",
+    codigo: "G-1",
+    descripcion: "Alimento global",
+    departamento: "Alimento",
+    precio: 10,
+    existencia: 20,
+    minimo: 5,
+    is_global: true,
+  },
+  {
+    id: "global-low",
+    codigo: "G-2",
+    descripcion: "Shampoo global",
+    departamento: "Higiene",
+    precio: 20,
+    existencia: 2,
+    minimo: 5,
+    is_global: true,
+  },
+  {
+    id: "local",
+    codigo: "L-1",
+    descripcion: "Juguete local",
+    departamento: "Accesorios",
+    precio: 30,
+    existencia: 1,
+    minimo: 5,
+    is_global: false,
+  },
+];
+
+const renderModal = (props = {}) =>
+  render(
+    <InventorySearchModal
+      isOpen
+      onClose={() => {}}
+      products={products}
+      onSelect={() => {}}
+      restrictLocalProducts
+      showLowStockFilter
+      {...props}
+    />
+  );
+
+describe("InventorySearchModal reglas de pedidos", () => {
+  it("deshabilita los productos locales y muestra el motivo", () => {
+    const onSelect = vi.fn();
+
+    renderModal({ onSelect });
+
+    const localItem = screen
+      .getByText("Juguete local")
+      .closest("[data-search-result]");
+
+    expect(localItem.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByText("Producto local o no global")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("Juguete local"));
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("permite seleccionar un producto global", () => {
+    const onSelect = vi.fn();
+
+    renderModal({ onSelect });
+
+    fireEvent.click(screen.getByText("Alimento global"));
+
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "global-ok" })
+    );
+  });
+
+  it("marca los productos bajo minimo y los puede aislar con el filtro", () => {
+    renderModal();
+
+    expect(screen.getAllByText("Bajo mínimo")).toHaveLength(2);
+
+    fireEvent.click(screen.getByLabelText("Solo bajo mínimo"));
+
+    expect(screen.getByText("Shampoo global")).toBeTruthy();
+    expect(screen.getByText("Juguete local")).toBeTruthy();
+    expect(screen.queryByText("Alimento global")).toBeNull();
+  });
+});

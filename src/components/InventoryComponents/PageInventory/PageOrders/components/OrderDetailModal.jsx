@@ -2,6 +2,8 @@ import AppModal from "../../../../AppModal/AppModal";
 import styles from "../PageOrders.module.css";
 import { getOrderStatusMeta } from "../utils/ordersFormatters";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
+import BranchBadge from "./BranchBadge";
+import OrderNameBadge from "./OrderNameBadge";
 import OrderPreviewSections from "./OrderPreviewSections";
 import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
@@ -21,30 +23,30 @@ const OrderDetailModal = ({ order, onClose }) => {
   return (
     <AppModal
       isOpen={Boolean(order)}
-      title={
-        order
-          ? `Pedido ${order.orderNumber} - ${order.orderName}`
-          : "Detalle del pedido"
-      }
+      title={order ? `Pedido ${order.orderNumber}` : "Detalle del pedido"}
       confirmText="Cerrar"
       onConfirm={onClose}
       onClose={onClose}
       size="large"
+      footerActions={
+        order ? (
+          <button
+            type="button"
+            className={styles.exportButton}
+            onClick={handleExportExcel}
+          >
+            <img src={ExportIcon} alt="" aria-hidden="true" />
+            Exportar a Excel
+          </button>
+        ) : null
+      }
     >
       {order ? (
         <div className={styles.detailContent}>
           <div className={styles.detailHeader}>
-            <div>
-              <h3 className={styles.detailTitle}>{order.orderName}</h3>
-              <p className={styles.detailRoute}>
-                <span className={styles.routeBadgeOrange}>
-                  Recibe {order.toBranchName}
-                </span>
-                <span className={styles.routeBadgeDark}>
-                  desde {order.fromBranchName}
-                </span>
-              </p>
-            </div>
+            <h3 className={styles.detailTitle}>
+              <OrderNameBadge name={order.orderName} />
+            </h3>
             <span
               className={[
                 styles.statusBadge,
@@ -55,20 +57,14 @@ const OrderDetailModal = ({ order, onClose }) => {
             >
               {status.label}
             </span>
+            <div className={styles.detailRoute}>
+              <BranchBadge role="origin" name={order.fromBranchName} />
+              <span className={styles.routeConnector}>hacia</span>
+              <BranchBadge role="destination" name={order.toBranchName} />
+            </div>
           </div>
 
           <OrderPreviewSections order={order} />
-
-          <div className={styles.detailActions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleExportExcel}
-            >
-              <img src={ExportIcon} alt="" aria-hidden="true" />
-              Exportar a Excel
-            </button>
-          </div>
         </div>
       ) : null}
     </AppModal>

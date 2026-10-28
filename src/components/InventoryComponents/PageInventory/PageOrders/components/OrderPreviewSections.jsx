@@ -1,14 +1,40 @@
 import styles from "../PageOrders.module.css";
-import { formatOrderDateTime, formatQuantity } from "../utils/ordersFormatters";
-import { getOrderDifferences } from "../utils/ordersCalculationService";
+import {
+  formatOrderDate,
+  formatOrderDateTime,
+  formatQuantity,
+  formatSignedQuantity,
+} from "../utils/ordersFormatters";
+import { usePagination } from "../../../../../hooks/usePagination";
+import { getOrderDifferenceSummary } from "../utils/ordersCalculationService";
+import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
+import DifferenceCountBadge from "./DifferenceCountBadge";
+import ItemsPaginationFooter, {
+  ITEMS_PAGE_SIZES,
+} from "./ItemsPaginationFooter";
 
 /**
- * Cuerpo compartido del detalle y de la vista previa de exportacion.
- * Mantiene una sola fuente para metadatos, partidas, notas y diferencias,
- * de modo que ambas vistas no puedan divergir.
+ * Cuerpo del modal de detalle. Mantiene una sola fuente para metadatos,
+ * partidas, notas y diferencias.
  */
 const OrderPreviewSections = ({ order }) => {
-  const differences = getOrderDifferences(order?.items);
+  const items = order?.items ?? [];
+
+  const pagination = usePagination({
+    totalItems: items.length,
+    defaultPageSize: 10,
+    pageSizeOptions: ITEMS_PAGE_SIZES,
+    storageKey: "crokets_order_detail_page_size",
+  });
+
+  const visibleItems = pagination.pageItems(items);
+  const differenceSummary = getOrderDifferenceSummary(order);
+  const receiptNoteMeta = [
+    order?.receivedByLabel ? `Registrada por ${order.receivedByLabel}` : "",
+    order?.acceptedAt ? formatOrderDate(order.acceptedAt) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   if (!order) return null;
 
@@ -45,11 +71,48 @@ const OrderPreviewSections = ({ order }) => {
         </div>
       </dl>
 
+      {differenceSummary &&
+      (differenceSummary.shortages > 0 || differenceSummary.overages > 0) ? (
+        <div className={styles.differenceSummary}>
+          <span className={styles.differenceSummaryLabel}>
+            Productos con diferencia
+          </span>
+          <DifferenceCountBadge summary={differenceSummary} />
+        </div>
+      ) : null}
+
+      {order.receiptNotes ? (
+        <section
+          className={styles.receiptNoteCard}
+          aria-labelledby="receipt-note-detail-title"
+        >
+          <header className={styles.receiptNoteHeader}>
+            <strong
+              id="receipt-note-detail-title"
+              className={styles.receiptNoteTitle}
+            >
+              Nota de recepción
+            </strong>
+          </header>
+          <p className={styles.receiptNoteText}>{order.receiptNotes}</p>
+          {receiptNoteMeta ? (
+            <p className={styles.receiptNoteMeta}>{receiptNoteMeta}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {order.notes ? (
+        <div className={styles.detailNote}>
+          <strong>Notas del pedido</strong>
+          <p>{order.notes}</p>
+        </div>
+      ) : null}
+
       <div className={styles.tableWrapper}>
         <table className={styles.itemsTable}>
           <thead>
             <tr>
-              <th>Codigo</th>
+              <th>Código</th>
               <th>Producto</th>
               <th>Departamento</th>
               <th className={styles.numeric}>Esperado</th>
@@ -58,7 +121,7 @@ const OrderPreviewSections = ({ order }) => {
             </tr>
           </thead>
           <tbody>
-            {order.items?.map((item) => {
+            {visibleItems.map((item) => {
               const hasDifference =
                 item?.differenceQty !== undefined &&
                 item?.differenceQty !== null &&
@@ -68,7 +131,11 @@ const OrderPreviewSections = ({ order }) => {
                 <tr
                   key={item.id || item.productId}
                   className={
-                    hasDifference ? styles.rowWithDifference : undefined
+                    hasDifference
+                      ? Number(item.differenceQty) < 0
+                        ? styles.rowWithShortage
+                        : styles.rowWithOverage
+                      : undefined
                   }
                 >
                   <td>{item.barcode || "—"}</td>
@@ -81,7 +148,20 @@ const OrderPreviewSections = ({ order }) => {
                     {formatQuantity(item.receivedQty)}
                   </td>
                   <td className={styles.numeric}>
-                    {formatQuantity(item.differenceQty)}
+                    {hasDifference ? (
+                      <span
+                        className={[
+                          styles.differenceBadge,
+                          Number(item.differenceQty) < 0
+                            ? ITEM_STATUS_DIFFERENCE_CLASS.shortage
+                            : ITEM_STATUS_DIFFERENCE_CLASS.overage,
+                        ].join(" ")}
+                      >
+                        {formatSignedQuantity(item.differenceQty)}
+                      </span>
+                    ) : (
+                      formatQuantity(item.differenceQty)
+                    )}
                   </td>
                 </tr>
               );
@@ -90,64 +170,11 @@ const OrderPreviewSections = ({ order }) => {
         </table>
       </div>
 
-      {order.notes ? (
-        <div className={styles.detailNote}>
-          <strong>Notas del pedido</strong>
-          <p>{order.notes}</p>
-        </div>
-      ) : null}
-
-      {differences.length > 0 ? (
-        <div className={styles.differencesSection}>
-          <strong>Diferencias</strong>
-          <div className={styles.tableWrapper}>
-            <table className={styles.differencesTable}>
-              <thead>
-                <tr>
-                  <th>Codigo</th>
-                  <th>Producto</th>
-                  <th>Departamento</th>
-                  <th className={styles.numeric}>Diferencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {differences.map((item) => {
-                  const difference = Number(item.differenceQty);
-                  const isPositive = difference > 0;
-                  const differenceLabel = isPositive
-                    ? `+${formatQuantity(difference)}`
-                    : formatQuantity(difference);
-
-                  return (
-                    <tr key={item.id || item.productId}>
-                      <td>{item.barcode || "—"}</td>
-                      <td>{item.productName}</td>
-                      <td>{item.departmentName || "Sin departamento"}</td>
-                      <td className={styles.numeric}>
-                        <span
-                          className={
-                            isPositive
-                              ? styles.differencePositive
-                              : styles.differenceNegative
-                          }
-                        >
-                          {differenceLabel}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
-
-      {order.discrepancyNotes ? (
-        <div className={`${styles.detailNote} ${styles.detailWarning}`}>
-          <strong>Diferencias de recepcion</strong>
-          <p>{order.discrepancyNotes}</p>
-        </div>
+      {items.length > pagination.pageSize ? (
+        <ItemsPaginationFooter
+          pagination={pagination}
+          totalItems={items.length}
+        />
       ) : null}
     </>
   );

@@ -1,0 +1,108 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e3e9ee;
+  border-radius: 14px;
+  background: #fbfdfe;
+}
+
+.cardError {
+  border-color: rgba(177, 56, 56, 0.45);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  color: #26323b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pillRequired {
+  background: var(--warningBg);
+  color: #8a5300;
+  border: 1px solid rgba(181, 109, 0, 0.3);
+}
+
+.pillOptional {
+  background: #eef2f5;
+  color: #4a5b68;
+  border: 1px solid #dbe4ea;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1px solid #dbe4ea;
+  border-radius: 10px;
+  background: #f8fbfc;
+  color: var(--darkGray);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+  border-color: var(--croketsBlue);
+}
+
+.textarea[aria-invalid="true"] {
+  border-color: rgba(177, 56, 56, 0.55);
+}
+
+.meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.help {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #5a6873;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--errorText);
+}
+
+.counter {
+  margin: 0 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #5a6873;
+}
+
+.counterWarning {
+  color: #8a5300;
+}
+
+.counterError {
+  color: var(--errorText);
+}

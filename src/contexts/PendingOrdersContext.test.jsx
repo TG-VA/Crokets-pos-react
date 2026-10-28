@@ -9,6 +9,18 @@ vi.mock(
   })
 );
 
+let mockRealtimeOnChange = null;
+let mockRealtimeFilters = null;
+const mockUnsubscribe = vi.fn();
+
+vi.mock("../services/inventory/ordersRealtimeService", () => ({
+  subscribeToStoreOrderChanges: ({ onChange, filters }) => {
+    mockRealtimeFilters = filters;
+    mockRealtimeOnChange = onChange;
+    return mockUnsubscribe;
+  },
+}));
+
 let mockBranch = { id: "branch-1" };
 
 vi.mock("./BranchContext", () => ({
@@ -105,6 +117,103 @@ describe("PendingOrdersContext - refresh", () => {
     expect(countPendingStoreOrders).toHaveBeenCalledTimes(2);
     expect(countPendingStoreOrders).toHaveBeenLastCalledWith("branch-1");
     expect(loadStoreOrders).not.toHaveBeenCalled();
+  });
+
+  it("refresca el conteo al recibir un cambio realtime de pedidos", async () => {
+    countPendingStoreOrders.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("1");
+    });
+
+    await act(async () => {
+      mockRealtimeOnChange();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("2");
+    });
+  });
+
+  it("agrupa una rafaga de eventos realtime en una sola consulta", async () => {
+    countPendingStoreOrders.mockResolvedValue(1);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    vi.useFakeTimers();
+    countPendingStoreOrders.mockClear();
+
+    await act(async () => {
+      mockRealtimeOnChange();
+      mockRealtimeOnChange();
+      mockRealtimeOnChange();
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(countPendingStoreOrders).toHaveBeenCalledTimes(1);
+  });
+
+  it("no vuelve a marcar isLoading en refrescos posteriores a la primera carga", async () => {
+    let resolveSecond;
+
+    countPendingStoreOrders.mockResolvedValueOnce(1).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSecond = resolve;
+      })
+    );
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    vi.useFakeTimers();
+
+    await act(async () => {
+      mockRealtimeOnChange();
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(screen.getByTestId("loading").textContent).toBe("false");
+
+    await act(async () => {
+      resolveSecond(2);
+    });
+
+    expect(screen.getByTestId("count").textContent).toBe("2");
+  });
+
+  it("solo observa los pedidos dirigidos a la sucursal activa", async () => {
+    countPendingStoreOrders.mockResolvedValue(0);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    expect(mockRealtimeFilters).toEqual(["to_branch_id=eq.branch-1"]);
+  });
+
+  it("cierra la suscripcion realtime al desmontar", async () => {
+    countPendingStoreOrders.mockResolvedValue(0);
+
+    const { unmount } = renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    unmount();
+
+    expect(mockUnsubscribe).toHaveBeenCalled();
   });
 
   it("no registra console.error ante un fallo de red", async () => {

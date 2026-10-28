@@ -1,4 +1,5 @@
 import {
+  ORDER_ITEM_STATUS_META,
   parseOrderDate,
   normalizeText,
   normalizeStoreOrder,
@@ -149,6 +150,36 @@ export const getOrderDifferences = (items = []) => {
     .filter(Boolean);
 };
 
+/**
+ * Un pedido pendiente o cancelado aun no tiene recepcion registrada.
+ */
+export const isOrderReceived = (order) =>
+  Boolean(order) && order.status !== "pending" && order.status !== "cancelled";
+
+/**
+ * Numero de productos con diferencia (faltante o sobrante). Retorna null
+ * mientras el pedido no se ha recibido, para distinguirlo de "0 diferencias".
+ */
+export const getOrderDifferenceCount = (order) =>
+  isOrderReceived(order) ? getOrderDifferences(order.items).length : null;
+
+/**
+ * Productos con faltante y con sobrante de un pedido recibido. Retorna null
+ * mientras no hay recepcion (misma regla que `getOrderDifferenceCount`).
+ */
+export const getOrderDifferenceSummary = (order) => {
+  if (!isOrderReceived(order)) {
+    return null;
+  }
+
+  const differences = getOrderDifferences(order.items);
+
+  return {
+    shortages: differences.filter((item) => item.differenceQty < 0).length,
+    overages: differences.filter((item) => item.differenceQty > 0).length,
+  };
+};
+
 export const getPendingOrdersCount = ({
   orders = [],
   currentBranchId,
@@ -168,6 +199,53 @@ export const getPendingOrders = ({ orders = [], currentBranchId } = {}) => {
     (order) =>
       order?.status === "pending" && order?.toBranchId === currentBranchId
   );
+};
+
+/**
+ * Estado derivado de una partida. El pedido cancelado o pendiente manda sobre
+ * la linea; en un pedido recibido se usa `differenceQty` y, si no viene
+ * persistida, se calcula con las cantidades.
+ */
+export const getOrderItemStatus = (item, orderStatus = "pending") => {
+  if (!item) return null;
+
+  if (orderStatus === "cancelled") return "cancelled";
+  if (orderStatus === "pending") return "pending";
+
+  const difference =
+    asFiniteNumber(item.differenceQty) ??
+    calculateDifference(item.expectedQty, item.receivedQty);
+
+  if (difference === null) return "pending";
+  if (difference < 0) return "shortage";
+  if (difference > 0) return "overage";
+
+  return "accepted";
+};
+
+export const getOrderItemsByStatus = (order, status) => {
+  if (!status || status === "all") return [];
+
+  return (order?.items ?? []).filter(
+    (item) => getOrderItemStatus(item, order?.status) === status
+  );
+};
+
+/**
+ * Partidas de un pedido que coinciden con el filtro, con la etiqueta visible
+ * para que el historial muestre cual linea provoco la coincidencia.
+ */
+export const getOrderItemStatusMatch = (order, status) => {
+  const items = getOrderItemsByStatus(order, status);
+
+  if (items.length === 0) return null;
+
+  return {
+    status,
+    label: ORDER_ITEM_STATUS_META[status]?.label ?? status,
+    count: items.length,
+    names: items.map((item) => item.productName).filter(Boolean),
+  };
 };
 
 const normalizeHistoryFilterValue = (value) => {
@@ -193,15 +271,32 @@ const getDayBoundary = (dateValue, endOfDay = false) => {
 
 export const filterOrderHistory = (orders = [], filters = {}) => {
   const status = normalizeHistoryFilterValue(filters.status);
+  const itemStatus = normalizeHistoryFilterValue(filters.itemStatus);
   const fromBranchId = normalizeHistoryFilterValue(filters.fromBranchId);
   const toBranchId = normalizeHistoryFilterValue(filters.toBranchId);
+  const involvedBranchId = normalizeHistoryFilterValue(
+    filters.involvedBranchId
+  );
   const dateFrom = getDayBoundary(filters.dateFrom);
   const dateTo = getDayBoundary(filters.dateTo, true);
 
   return orders.filter((order) => {
     if (status && order.status !== status) return false;
+
+    if (itemStatus && getOrderItemsByStatus(order, itemStatus).length === 0) {
+      return false;
+    }
+
     if (fromBranchId && order.fromBranchId !== fromBranchId) return false;
     if (toBranchId && order.toBranchId !== toBranchId) return false;
+
+    if (
+      involvedBranchId &&
+      order.fromBranchId !== involvedBranchId &&
+      order.toBranchId !== involvedBranchId
+    ) {
+      return false;
+    }
 
     const sentAt = parseOrderDate(order.sentAt);
 

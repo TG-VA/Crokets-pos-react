@@ -1,0 +1,119 @@
+.receiptPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 14px;
+  border: 1px solid #edf2f5;
+  padding: 18px;
+}
+
+.receiptHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.receiptTitle {
+  margin: 2px 0;
+}
+
+.receiptRoute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #607080;
+}
+
+.receiptProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  appearance: none;
+}
+
+.progressBar::-webkit-progress-bar {
+  background: var(--lightGray);
+  border-radius: 999px;
+}
+
+.progressBar::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--croketsBlue),
+    var(--croketsBlueDark)
+  );
+  border-radius: 999px;
+}
+
+.receiptFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.receiptStatus {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.statusPill img {
+  width: 14px;
+  height: 14px;
+}
+
+.statusPillMissing {
+  background: var(--errorBg);
+  color: var(--errorText);
+  border: 1px solid rgba(177, 56, 56, 0.25);
+}
+
+.statusPillMissing img {
+  filter: brightness(0) saturate(100%) invert(26%) sepia(60%) saturate(1500%)
+    hue-rotate(335deg) brightness(90%) contrast(90%);
+}
+
+.statusPillOk {
+  background: var(--successBg);
+  color: var(--successText);
+  border: 1px solid rgba(29, 135, 81, 0.25);
+}
+
+.statusPillOk img {
+  filter: brightness(0) saturate(100%) invert(36%) sepia(60%) saturate(800%)
+    hue-rotate(100deg) brightness(90%) contrast(90%);
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--croketsBlueDark);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}

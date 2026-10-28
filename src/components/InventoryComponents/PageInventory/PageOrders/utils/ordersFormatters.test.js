@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  ORDER_ITEM_STATUS_FILTER_OPTIONS,
+  ORDER_STATUS_FILTER_OPTIONS,
   formatOrderDate,
   formatOrderDateTime,
   formatQuantity,
+  formatSignedQuantity,
   getOrderDepartments,
-  getOrderDifferenceLabel,
   getOrderNumber,
   getOrderStatusMeta,
   normalizeStoreOrder,
   normalizeText,
+  toUpperLabel,
   parseOrderDate,
 } from "./ordersFormatters";
 
@@ -42,35 +45,25 @@ describe("ordersFormatters", () => {
     expect(getOrderStatusMeta("desconocido").label).toBe("desconocido");
   });
 
-  it("etiqueta la diferencia segun el estado y las notas de recepcion", () => {
-    expect(getOrderDifferenceLabel({ status: "pending" })).toBe(
-      "Pendiente de recepcion"
-    );
-    expect(
-      getOrderDifferenceLabel({
-        status: "accepted",
-        discrepancyNotes: "",
-      })
-    ).toBe("Sin diferencia");
-    expect(
-      getOrderDifferenceLabel({
-        status: "accepted_with_difference",
-        discrepancyNotes: "Faltantes: 1x Croqueta (-1)",
-      })
-    ).toBe("Faltantes: 1x Croqueta (-1)");
-    expect(
-      getOrderDifferenceLabel({
-        status: "accepted_with_difference",
-        discrepancy_notes: "Sobrantes: 1x Croqueta (+1)",
-      })
-    ).toBe("Sobrantes: 1x Croqueta (+1)");
-    expect(
-      getOrderDifferenceLabel({
-        status: "accepted_with_difference",
-        discrepancyNotes: "",
-      })
-    ).toBe("Con diferencia");
-    expect(getOrderDifferenceLabel(null)).toBe("");
+  it("expone los estados reales como opciones de filtro con Todos al inicio", () => {
+    expect(ORDER_STATUS_FILTER_OPTIONS).toEqual([
+      { value: "all", label: "Todos" },
+      { value: "pending", label: "Pendiente" },
+      { value: "accepted", label: "Aceptado" },
+      { value: "accepted_with_difference", label: "Aceptado con diferencia" },
+      { value: "cancelled", label: "Cancelado" },
+    ]);
+  });
+
+  it("expone las opciones del filtro por estado del producto", () => {
+    expect(ORDER_ITEM_STATUS_FILTER_OPTIONS).toEqual([
+      { value: "all", label: "Todos" },
+      { value: "pending", label: "Pendiente" },
+      { value: "accepted", label: "Aceptado" },
+      { value: "shortage", label: "Faltante" },
+      { value: "overage", label: "Sobrante" },
+      { value: "cancelled", label: "Cancelado" },
+    ]);
   });
 
   it("lee folio y nombre desde formatos camel y snake", () => {
@@ -106,6 +99,7 @@ describe("ordersFormatters", () => {
       to_branch: { name: "Sucursal Norte" },
       created_by: { username: "admin" },
       departments_summary: ["Alimento"],
+      receipt_notes: "  Llegó una bolsa abierta  ",
       sent_at: "2026-10-22T15:00:00.000Z",
       store_order_items: [
         {
@@ -122,11 +116,12 @@ describe("ordersFormatters", () => {
 
     expect(result).toMatchObject({
       orderNumber: "PED-20261022-0001",
-      orderName: "Pedido semanal",
+      orderName: "PEDIDO SEMANAL",
       fromBranchName: "Matriz",
       toBranchName: "Sucursal Norte",
-      createdByLabel: "admin",
+      createdByLabel: "ADMIN",
       departments: ["Alimento"],
+      receiptNotes: "Llegó una bolsa abierta",
     });
     expect(result.items[0]).toMatchObject({
       productId: "p1",
@@ -138,5 +133,49 @@ describe("ordersFormatters", () => {
 
   it("regresa null al normalizar un pedido inexistente", () => {
     expect(normalizeStoreOrder(null)).toBeNull();
+  });
+
+  it("deja la nota de recepcion vacia cuando el pedido no la tiene", () => {
+    expect(normalizeStoreOrder({ items: [] }).receiptNotes).toBe("");
+  });
+});
+
+describe("toUpperLabel", () => {
+  it("convierte a mayusculas conservando acentos", () => {
+    expect(toUpperLabel("  reposición semanal ")).toBe("REPOSICIÓN SEMANAL");
+  });
+
+  it("retorna cadena vacia ante nulos", () => {
+    expect(toUpperLabel(null)).toBe("");
+    expect(toUpperLabel(undefined)).toBe("");
+  });
+
+  it("normalizeStoreOrder expone los responsables en mayusculas", () => {
+    const order = normalizeStoreOrder({
+      created_by: { username: "juan" },
+      received_by: { username: "ana" },
+      items: [],
+    });
+
+    expect(order.createdByLabel).toBe("JUAN");
+    expect(order.receivedByLabel).toBe("ANA");
+  });
+
+  it("normalizeStoreOrder deja vacio al responsable ausente", () => {
+    expect(normalizeStoreOrder({ items: [] }).receivedByLabel).toBe("");
+  });
+
+  it("normalizeStoreOrder expone el nombre en mayusculas", () => {
+    expect(
+      normalizeStoreOrder({ order_name: "pedido norte", items: [] }).orderName
+    ).toBe("PEDIDO NORTE");
+  });
+
+  it("formatSignedQuantity agrega el signo a sobrantes y respeta faltantes", () => {
+    expect(formatSignedQuantity(2)).toBe("+2");
+    expect(formatSignedQuantity(-1)).toBe("-1");
+    expect(formatSignedQuantity(0)).toBe("0");
+    expect(formatSignedQuantity(null)).toBe("—");
+    expect(formatSignedQuantity("abc")).toBe("—");
   });
 });

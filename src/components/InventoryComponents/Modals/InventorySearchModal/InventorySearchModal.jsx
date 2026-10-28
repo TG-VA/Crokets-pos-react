@@ -1,5 +1,3 @@
-import React from "react";
-
 import InventorySearchResults from "./components/InventorySearchResults";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
 
@@ -14,6 +12,8 @@ const InventorySearchModal = ({
   onSelect,
   loading = false,
   error = null,
+  restrictLocalProducts = false,
+  showLowStockFilter = false,
 }) => {
   const {
     searchTerm,
@@ -21,9 +21,13 @@ const InventorySearchModal = ({
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
+    selectedProductIsDisabled,
+    belowMinimumOnly,
+    setBelowMinimumOnly,
     resultsListRef,
 
     isAlreadySelected,
+    isProductDisabled,
     handleSearchChange,
     handleProductClick,
     handleSelectProduct,
@@ -32,6 +36,7 @@ const InventorySearchModal = ({
     isOpen,
     products,
     selectedProductIds,
+    restrictLocalProducts,
     onClose,
     onSelect,
   });
@@ -83,6 +88,19 @@ const InventorySearchModal = ({
             <div className={styles.searchHelp}>
               <span>↑↓ Navegar • Enter - Seleccionar • ESC - Cerrar</span>
             </div>
+
+            {showLowStockFilter ? (
+              <label className={styles.lowStockFilter}>
+                <input
+                  type="checkbox"
+                  checked={belowMinimumOnly}
+                  onChange={(event) =>
+                    setBelowMinimumOnly(event.target.checked)
+                  }
+                />
+                Solo bajo mínimo
+              </label>
+            ) : null}
           </div>
 
           <div className={styles.resultsSection}>
@@ -105,6 +123,8 @@ const InventorySearchModal = ({
                 error={error}
                 resultsListRef={resultsListRef}
                 isAlreadySelected={isAlreadySelected}
+                isProductDisabled={isProductDisabled}
+                showLowStock={showLowStockFilter}
                 onProductClick={handleProductClick}
               />
             </div>
@@ -117,13 +137,25 @@ const InventorySearchModal = ({
               type="button"
               className={`${styles.actionButton} ${styles.selectButton}`}
               onClick={() => {
-                if (selectedProduct && !selectedProductIsOpen) {
+                if (
+                  selectedProduct &&
+                  !selectedProductIsOpen &&
+                  !selectedProductIsDisabled
+                ) {
                   handleSelectProduct(selectedProduct);
                 }
               }}
-              disabled={!selectedProduct || selectedProductIsOpen}
+              disabled={
+                !selectedProduct ||
+                selectedProductIsOpen ||
+                selectedProductIsDisabled
+              }
             >
-              {selectedProductIsOpen ? "Ya seleccionado" : "Seleccionar"}
+              {selectedProductIsOpen
+                ? "Ya seleccionado"
+                : selectedProductIsDisabled
+                  ? "Producto local"
+                  : "Seleccionar"}
             </button>
 
             <button

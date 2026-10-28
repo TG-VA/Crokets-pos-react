@@ -198,58 +198,10 @@
   min-width: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--croketsBlue);
+  background: var(--croketsOrange);
   color: var(--white);
   font-size: 0.75rem;
-}
-
-.feedback {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-}
-
-.feedbackSuccess {
-  background: var(--successBg);
-  color: var(--successText);
-  border-color: rgba(29, 135, 81, 0.2);
-}
-
-.feedbackWarning {
-  background: var(--warningBg);
-  color: var(--warningText);
-  border-color: rgba(181, 109, 0, 0.2);
-}
-
-.feedbackError {
-  background: var(--errorBg);
-  color: var(--errorText);
-  border-color: rgba(177, 56, 56, 0.2);
-}
-
-.feedbackInfo {
-  background: var(--infoBg);
-  color: var(--infoText);
-  border-color: rgba(16, 146, 177, 0.2);
-}
-
-.feedbackMessage {
-  white-space: pre-line;
-}
-
-.feedbackClose {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.feedbackClose img {
-  width: 14px;
-  height: 14px;
+  font-weight: 700;
 }
 
 .workspace {
@@ -303,13 +255,27 @@
   background: rgba(16, 146, 177, 0.08);
   color: var(--croketsBlue);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   width: fit-content;
+}
+
+.routeCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.routeConnector {
+  color: #5c6b77;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .primaryButton,
 .secondaryButton,
-.ghostButton,
 .iconButton {
   display: inline-flex;
   align-items: center;
@@ -332,11 +298,6 @@
   border-color: rgba(16, 146, 177, 0.4);
 }
 
-.ghostButton {
-  background: transparent;
-  color: var(--croketsBlueDark);
-}
-
 .iconButton {
   padding: 6px;
   border-radius: 50%;
@@ -349,18 +310,20 @@
 }
 
 .primaryButton:disabled,
-.secondaryButton:disabled,
-.ghostButton:disabled {
+.secondaryButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .primaryButton img,
 .secondaryButton img,
-.ghostButton img,
 .iconButton img {
   width: 16px;
   height: 16px;
+}
+
+.primaryButton img {
+  filter: brightness(0) invert(1);
 }
 
 .emptyState {
@@ -393,32 +356,11 @@
   gap: 14px;
 }
 
-.orderCard {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-radius: 14px;
-  border: 1px solid #edf2f5;
-  padding: 16px;
-  box-shadow: var(--shadow);
-}
-
-.orderCardHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
 .orderFolio {
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--croketsBlueDark);
-}
-
-.orderCardTitle {
-  margin: 2px 0 0;
-  color: #2a3d4a;
 }
 
 .statusBadge {
@@ -427,6 +369,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .statusPending {
@@ -434,7 +377,7 @@
   color: var(--pendingText);
   padding: 4px 10px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusSuccess {
@@ -452,81 +395,41 @@
   color: var(--errorText);
 }
 
-.orderMeta {
-  display: flex;
-  gap: 16px;
-  margin: 0;
-}
-
-.orderMeta dt {
-  font-size: 0.75rem;
-  color: #6d7b86;
-}
-
-.orderMeta dd {
-  margin: 0;
-  font-weight: 600;
-}
-
-.orderDepartments {
-  margin: 0;
-  color: #607080;
-}
-
-.orderCardActions {
-  display: flex;
-  justify-content: space-between;
-}
-
-.receiptPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-radius: 14px;
-  border: 1px solid #edf2f5;
-  padding: 18px;
-}
-
-.receiptHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.receiptTitle {
-  margin: 2px 0;
-}
-
-.receiptRoute {
-  margin: 0;
-  color: #607080;
-}
-
-.receiptProgress {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.progressBar {
-  width: 100%;
-  height: 6px;
+.detailButton,
+.changeOrderButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
   border-radius: 999px;
-  appearance: none;
+  border: 1px solid rgba(16, 146, 177, 0.4);
+  background: var(--white);
+  color: var(--croketsBlueDark);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    transform 0.16s ease;
 }
 
-.progressBar::-webkit-progress-bar {
-  background: var(--lightGray);
-  border-radius: 999px;
+.detailButton:hover:not(:disabled),
+.changeOrderButton:hover:not(:disabled) {
+  background: var(--infoBg);
+  transform: translateY(-1px);
 }
 
-.progressBar::-webkit-progress-value {
-  background: linear-gradient(
-    90deg,
-    var(--croketsBlue),
-    var(--croketsBlueDark)
-  );
-  border-radius: 999px;
+.detailButton:focus-visible,
+.changeOrderButton:focus-visible {
+  outline: 3px solid rgba(16, 146, 177, 0.24);
+  outline-offset: 2px;
+}
+
+.detailButton img,
+.changeOrderButton img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .tableWrapper {
@@ -577,6 +480,13 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.differenceGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .differenceOk {
@@ -602,24 +512,6 @@
 .inlineError {
   margin: 0;
   color: var(--errorText);
-}
-
-.receiptFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.receiptHint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #5c6b77;
-}
-
-.receiptHint img {
-  width: 16px;
-  height: 16px;
 }
 
 .createForm {
@@ -687,6 +579,14 @@
   resize: none;
 }
 
+.field select:disabled {
+  background: #eef2f5;
+  color: #6b7b88;
+  border-color: #dbe4ea;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 .productPicker {
   display: flex;
   flex-wrap: wrap;
@@ -725,13 +625,6 @@
     hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
-.actionExportIcon {
-  width: 16px;
-  height: 16px;
-  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
-    hue-rotate(160deg) brightness(92%) contrast(92%);
-}
-
 .draftSummary {
   display: flex;
   flex-wrap: wrap;
@@ -762,11 +655,6 @@
   padding-top: 12px;
   border-top: 1px solid #edf2f5;
   z-index: 2;
-}
-
-.formActionsRight {
-  display: flex;
-  gap: 10px;
 }
 
 .filterBar {
@@ -889,12 +777,6 @@
   outline-offset: 2px;
 }
 
-.filterClearButton {
-  height: 38px;
-  padding: 0 12px;
-  white-space: nowrap;
-}
-
 .resultsCount {
   margin: 0;
   color: #6d7b86;
@@ -914,46 +796,74 @@
   color: #6d7b86;
 }
 
-.discrepancyText {
+.rowMatchHint {
   display: block;
-  max-width: 260px;
-  white-space: pre-line;
-  font-size: 0.8rem;
-  color: var(--warningText);
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5b68;
 }
 
 .detailContent {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  padding-top: 8px;
 }
 
 .detailHeader {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px 12px;
 }
 
 .detailTitle {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .detailRoute {
-  margin: 0;
-  color: #5c6b77;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f5f8fa;
 }
 
 .detailMeta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
 }
 
+@media (max-width: 640px) {
+  .detailMeta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .detailMeta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.detailMeta > div {
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
 .detailMeta dt {
+  margin-bottom: 2px;
   font-size: 0.75rem;
   color: #6d7b86;
 }
@@ -961,79 +871,133 @@
 .detailMeta dd {
   margin: 0;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .detailNote {
-  padding: 10px 14px;
+  margin-top: 8px;
+  padding: 16px 20px;
   border-radius: 12px;
   background: var(--infoBg);
 }
 
-.detailWarning {
-  background: var(--warningBg);
-  color: var(--warningText);
+.detailNote strong {
+  display: block;
+  margin-bottom: 8px;
 }
 
-.rowWithDifference {
-  background: rgba(231, 76, 60, 0.05);
+.detailNote p {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.differencesSection {
+/* La nota de recepcion es una tarjeta con acento de advertencia para
+   distinguirse de las notas de creacion, que conservan el fondo informativo. */
+.receiptNoteCard {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 8px;
+  padding: 16px 20px;
+  border: 1px solid rgba(181, 109, 0, 0.22);
+  border-left: 4px solid var(--warningText);
+  border-radius: 12px;
+  background: var(--warningBg);
 }
 
-.differencesTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.differencesTable th,
-.differencesTable td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eef3f6;
-  text-align: left;
-}
-
-.differencesTable .numeric {
-  text-align: right;
-}
-
-.differencePositive {
-  color: var(--successText);
-}
-
-.differenceNegative {
-  color: var(--errorText);
-}
-
-.detailActions {
+.receiptNoteHeader {
   display: flex;
-  justify-content: flex-end;
-  position: relative;
+  align-items: center;
+  gap: 8px;
 }
 
-.printPreview {
+.receiptNoteTitle {
+  color: #5f4300;
+}
+
+.receiptNoteText {
+  margin: 0;
+  color: #3b2c10;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.receiptNoteMeta {
+  margin: 0;
+  color: #7a5a16;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* En el modal de detalle la ruta comparte la linea del nombre y el estado y
+   se alinea a la derecha. El historial y las tarjetas conservan el tamano
+   base. */
+.detailContent .detailRoute {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+  padding: 4px 10px;
+}
+
+.differenceSummary {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
-.printHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.statusBadgeBold {
+.differenceSummaryLabel {
+  font-size: 0.82rem;
   font-weight: 700;
+  color: #4a5b68;
+}
+
+.rowWithShortage {
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.rowWithOverage {
+  background: var(--infoBg);
+}
+
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 11px;
+  border: 1px solid rgba(16, 146, 177, 0.4);
+  background: var(--white);
+  color: var(--croketsBlueDark);
+  font-size: 0.94rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.exportButton:hover {
+  background: var(--infoBg);
+  transform: translateY(-1px);
+}
+
+.exportButton:focus-visible {
+  outline: 3px solid rgba(16, 146, 177, 0.24);
+  outline-offset: 2px;
+}
+
+.exportButton img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
-.ghostButton:focus-visible,
 .iconButton:focus-visible,
 .tab:focus-visible,
 .quantityInput:focus-visible,
@@ -1159,7 +1123,7 @@
   background: rgba(16, 146, 177, 0.1);
   color: var(--croketsBlueDark);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .draftSummaryStats {
@@ -1188,4 +1152,8 @@
 .metaEmpty {
   color: #9aacb8;
   font-size: 0.82rem;
+}
+.changeOrderButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

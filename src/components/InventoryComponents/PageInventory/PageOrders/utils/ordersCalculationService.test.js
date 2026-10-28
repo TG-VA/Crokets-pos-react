@@ -6,10 +6,16 @@ import {
   filterOrderHistory,
   filterOrderProducts,
   getMissingReceiptItems,
+  getOrderDifferenceCount,
+  getOrderDifferenceSummary,
   getOrderDifferences,
+  getOrderItemStatus,
+  getOrderItemStatusMatch,
+  getOrderItemsByStatus,
   getOrderTotals,
   getPendingOrdersCount,
   getReceivedQuantitiesPayload,
+  isOrderReceived,
   isReceiptComplete,
   normalizeOrders,
   parseReceiptQuantity,
@@ -209,5 +215,267 @@ describe("getOrderDifferences", () => {
     expect(result).toHaveLength(2);
     expect(result[0].differenceQty).toBe(-2);
     expect(result[1].differenceQty).toBe(3);
+  });
+});
+
+describe("isOrderReceived", () => {
+  it("excluye pedidos pendientes, cancelados y vacios", () => {
+    expect(isOrderReceived({ status: "pending" })).toBe(false);
+    expect(isOrderReceived({ status: "cancelled" })).toBe(false);
+    expect(isOrderReceived(null)).toBe(false);
+  });
+
+  it("incluye pedidos aceptados con o sin diferencia", () => {
+    expect(isOrderReceived({ status: "accepted" })).toBe(true);
+    expect(isOrderReceived({ status: "accepted_with_difference" })).toBe(true);
+  });
+});
+
+describe("getOrderDifferenceCount", () => {
+  it("retorna null en pedidos pendientes o cancelados", () => {
+    expect(
+      getOrderDifferenceCount({ status: "pending", items: [] })
+    ).toBeNull();
+    expect(
+      getOrderDifferenceCount({ status: "cancelled", items: [] })
+    ).toBeNull();
+  });
+
+  it("cuenta faltantes y sobrantes por producto", () => {
+    expect(
+      getOrderDifferenceCount({
+        status: "accepted_with_difference",
+        items: [
+          { differenceQty: -2 },
+          { differenceQty: 3 },
+          { differenceQty: 0 },
+          { differenceQty: null },
+        ],
+      })
+    ).toBe(2);
+  });
+
+  it("retorna 0 cuando se recibio sin diferencias", () => {
+    expect(
+      getOrderDifferenceCount({
+        status: "accepted",
+        items: [{ differenceQty: 0 }],
+      })
+    ).toBe(0);
+  });
+});
+
+describe("getOrderDifferenceSummary", () => {
+  it("retorna null en pedidos pendientes o cancelados", () => {
+    expect(
+      getOrderDifferenceSummary({ status: "pending", items: [] })
+    ).toBeNull();
+    expect(
+      getOrderDifferenceSummary({ status: "cancelled", items: [] })
+    ).toBeNull();
+  });
+
+  it("separa productos con faltante y con sobrante", () => {
+    expect(
+      getOrderDifferenceSummary({
+        status: "accepted_with_difference",
+        items: [
+          { differenceQty: -2 },
+          { differenceQty: -1 },
+          { differenceQty: 5 },
+          { differenceQty: 0 },
+        ],
+      })
+    ).toEqual({ shortages: 2, overages: 1 });
+  });
+
+  it("retorna ceros cuando se recibio sin diferencias", () => {
+    expect(
+      getOrderDifferenceSummary({
+        status: "accepted",
+        items: [{ differenceQty: 0 }],
+      })
+    ).toEqual({ shortages: 0, overages: 0 });
+  });
+});
+
+describe("getOrderItemStatus", () => {
+  it("marca todas las partidas como pendientes o canceladas segun el pedido", () => {
+    expect(getOrderItemStatus({ differenceQty: 0 }, "pending")).toBe("pending");
+    expect(getOrderItemStatus({ differenceQty: 0 }, "cancelled")).toBe(
+      "cancelled"
+    );
+  });
+
+  it("deriva el estado de la partida desde la diferencia recibida", () => {
+    expect(getOrderItemStatus({ differenceQty: 0 }, "accepted")).toBe(
+      "accepted"
+    );
+    expect(
+      getOrderItemStatus({ differenceQty: -2 }, "accepted_with_difference")
+    ).toBe("shortage");
+    expect(
+      getOrderItemStatus({ differenceQty: 3 }, "accepted_with_difference")
+    ).toBe("overage");
+  });
+
+  it("calcula la diferencia cuando el pedido no la trae persistida", () => {
+    expect(
+      getOrderItemStatus(
+        { expectedQty: 5, receivedQty: 4, differenceQty: null },
+        "accepted_with_difference"
+      )
+    ).toBe("shortage");
+    expect(
+      getOrderItemStatus(
+        { expectedQty: 5, receivedQty: 7, differenceQty: null },
+        "accepted_with_difference"
+      )
+    ).toBe("overage");
+  });
+
+  it("trata como pendiente una partida sin conteo recibido", () => {
+    expect(
+      getOrderItemStatus(
+        { expectedQty: 5, receivedQty: null, differenceQty: null },
+        "accepted"
+      )
+    ).toBe("pending");
+    expect(getOrderItemStatus(null, "accepted")).toBeNull();
+  });
+});
+
+describe("getOrderItemsByStatus", () => {
+  const order = {
+    status: "accepted_with_difference",
+    items: [
+      { productId: "p1", productName: "Croqueta", differenceQty: 0 },
+      { productId: "p2", productName: "Shampoo", differenceQty: -1 },
+      { productId: "p3", productName: "Juguete", differenceQty: 2 },
+    ],
+  };
+
+  it("devuelve las partidas que coinciden con el estado", () => {
+    expect(
+      getOrderItemsByStatus(order, "shortage").map((item) => item.productId)
+    ).toEqual(["p2"]);
+    expect(getOrderItemsByStatus(order, "overage")).toHaveLength(1);
+    expect(getOrderItemsByStatus(order, "accepted")).toHaveLength(1);
+    expect(getOrderItemsByStatus(order, "all")).toEqual([]);
+  });
+
+  it("resume etiqueta, conteo y nombres de las partidas que coinciden", () => {
+    expect(getOrderItemStatusMatch(order, "shortage")).toEqual({
+      status: "shortage",
+      label: "Faltante",
+      count: 1,
+      names: ["Shampoo"],
+    });
+    expect(getOrderItemStatusMatch(order, "accepted").names).toEqual([
+      "Croqueta",
+    ]);
+    expect(getOrderItemStatusMatch(order, "pending")).toBeNull();
+    expect(getOrderItemStatusMatch(order, "all")).toBeNull();
+  });
+});
+
+describe("filterOrderHistory por sucursal involucrada", () => {
+  const received = {
+    ...baseOrder,
+    id: "in",
+    fromBranchId: "x",
+    toBranchId: "a",
+  };
+  const sent = { ...baseOrder, id: "out", fromBranchId: "a", toBranchId: "y" };
+  const unrelated = {
+    ...baseOrder,
+    id: "none",
+    fromBranchId: "x",
+    toBranchId: "y",
+  };
+
+  it("conserva pedidos donde la sucursal es origen o destino", () => {
+    expect(
+      filterOrderHistory([received, sent, unrelated], {
+        involvedBranchId: "a",
+      }).map((order) => order.id)
+    ).toEqual(["in", "out"]);
+  });
+
+  it("se combina con el filtro de origen", () => {
+    expect(
+      filterOrderHistory([received, sent, unrelated], {
+        involvedBranchId: "a",
+        fromBranchId: "x",
+      }).map((order) => order.id)
+    ).toEqual(["in"]);
+  });
+
+  it("no filtra con el valor all", () => {
+    expect(
+      filterOrderHistory([received, unrelated], { involvedBranchId: "all" })
+    ).toHaveLength(2);
+  });
+});
+
+describe("filterOrderHistory por estado del producto", () => {
+  const receivedOrder = {
+    ...baseOrder,
+    id: "received",
+    status: "accepted_with_difference",
+    items: [
+      { productId: "p1", productName: "Croqueta", differenceQty: 0 },
+      { productId: "p2", productName: "Shampoo", differenceQty: -1 },
+    ],
+  };
+  const cleanOrder = {
+    ...baseOrder,
+    id: "clean",
+    status: "accepted",
+    items: [{ productId: "p3", productName: "Juguete", differenceQty: 0 }],
+  };
+  const pendingOrder = { ...baseOrder, id: "pending" };
+
+  it("conserva los pedidos con al menos una partida en ese estado", () => {
+    const orders = [receivedOrder, cleanOrder, pendingOrder];
+
+    expect(
+      filterOrderHistory(orders, { itemStatus: "shortage" }).map(
+        (order) => order.id
+      )
+    ).toEqual(["received"]);
+    expect(
+      filterOrderHistory(orders, { itemStatus: "accepted" }).map(
+        (order) => order.id
+      )
+    ).toEqual(["received", "clean"]);
+    expect(
+      filterOrderHistory(orders, { itemStatus: "pending" }).map(
+        (order) => order.id
+      )
+    ).toEqual(["pending"]);
+  });
+
+  it("convive con el filtro de estado del pedido", () => {
+    const orders = [receivedOrder, cleanOrder, pendingOrder];
+
+    expect(
+      filterOrderHistory(orders, {
+        status: "accepted",
+        itemStatus: "shortage",
+      })
+    ).toHaveLength(0);
+    expect(
+      filterOrderHistory(orders, {
+        status: "accepted_with_difference",
+        itemStatus: "shortage",
+      })
+    ).toHaveLength(1);
+  });
+
+  it("ignora el filtro cuando vale all", () => {
+    expect(
+      filterOrderHistory([receivedOrder, cleanOrder], { itemStatus: "all" })
+    ).toHaveLength(2);
   });
 });

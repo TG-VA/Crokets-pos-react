@@ -70,7 +70,7 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Estado"), {
+    fireEvent.change(screen.getByLabelText("Estado del pedido"), {
       target: { value: "pending" },
     });
 
@@ -100,7 +100,7 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(clearButton.disabled).toBe(true);
 
-    fireEvent.change(screen.getByLabelText("Estado"), {
+    fireEvent.change(screen.getByLabelText("Estado del pedido"), {
       target: { value: "pending" },
     });
 
@@ -122,7 +122,7 @@ describe("OrdersHistoryTable pagination", () => {
     ).toBeTruthy();
   });
 
-  it("distingue un pedido pendiente de uno sin diferencia", () => {
+  it("muestra solo el numero de productos con diferencia", () => {
     render(
       <OrdersHistoryTable
         orders={[
@@ -137,40 +137,65 @@ describe("OrdersHistoryTable pagination", () => {
             id: "accepted",
             orderNumber: "PED-002",
             status: "accepted",
+            items: [{ id: "i1", differenceQty: 0 }],
+          },
+          {
+            ...buildOrder(2),
+            id: "difference",
+            orderNumber: "PED-003",
+            status: "accepted_with_difference",
+            discrepancyNotes: "Faltantes: 1x Croqueta (-2)",
+            items: [
+              { id: "i1", differenceQty: -2 },
+              { id: "i2", differenceQty: 4 },
+              { id: "i3", differenceQty: 0 },
+            ],
           },
         ]}
       />
     );
 
     const rows = getBodyRows();
+    const differenceCell = (row) => row.querySelectorAll("td")[5];
 
-    expect(within(rows[0]).getByText("Pendiente de recepcion")).toBeTruthy();
-    expect(within(rows[1]).getByText("Sin diferencia")).toBeTruthy();
+    expect(differenceCell(rows[0]).textContent).toBe("—");
+    expect(differenceCell(rows[1]).textContent).toBe("0");
+    expect(differenceCell(rows[2]).textContent).toBe("Faltante: 1Sobrante: 1");
+    expect(
+      within(rows[2]).getByLabelText("1 producto con faltante").textContent
+    ).toBe("Faltante: 1");
+    expect(
+      within(rows[2]).getByLabelText("1 producto con sobrante").textContent
+    ).toBe("Sobrante: 1");
+    expect(within(rows[2]).queryByText(/Faltantes/)).toBeNull();
   });
 
-  it("mantiene visibles las acciones de detalle y exportar por fila", () => {
+  it("muestra origen y destino como badges", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} />);
+
+    const row = getBodyRows()[0];
+
+    expect(within(row).getByText("Origen")).toBeTruthy();
+    expect(within(row).getByText("Destino")).toBeTruthy();
+    expect(within(row).getByText("SUCURSAL CENTRO")).toBeTruthy();
+    expect(within(row).getByText("SUCURSAL NORTE")).toBeTruthy();
+  });
+
+  it("abre el detalle desde la accion de la fila", () => {
     const onOpenDetail = vi.fn();
-    const onOpenPrint = vi.fn();
 
     render(
-      <OrdersHistoryTable
-        orders={buildOrders(1)}
-        onOpenDetail={onOpenDetail}
-        onOpenPrint={onOpenPrint}
-      />
+      <OrdersHistoryTable orders={buildOrders(1)} onOpenDetail={onOpenDetail} />
     );
 
     const row = getBodyRows()[0];
 
     fireEvent.click(within(row).getByRole("button", { name: /Ver detalle/ }));
-    fireEvent.click(within(row).getByRole("button", { name: /Exportar/ }));
 
     expect(onOpenDetail).toHaveBeenCalledWith(
       expect.objectContaining({ id: "order-0" })
     );
-    expect(onOpenPrint).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "order-0" })
-    );
+    expect(within(row).queryByRole("button", { name: /Exportar/ })).toBeNull();
   });
 });
 
@@ -262,5 +287,200 @@ describe("OrdersHistoryTable date filters", () => {
     expect(
       screen.getByRole("button", { name: "Hoy" }).getAttribute("aria-pressed")
     ).toBe("false");
+  });
+});
+
+describe("OrdersHistoryTable ruta y destino bloqueado", () => {
+  const branches = [
+    { id: "branch-origin", name: "Sucursal Centro" },
+    { id: "branch-destination", name: "Sucursal Norte" },
+    { id: "branch-other", name: "Sucursal Sur" },
+  ];
+
+  const otherDestinationOrder = {
+    ...buildOrder(1),
+    toBranchId: "branch-other",
+    toBranchName: "Sucursal Sur",
+  };
+
+  const getSelect = (name) => screen.getByLabelText(name);
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("muestra el badge de destino antes que el de origen en la ruta", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} />);
+
+    const route = within(getBodyRows()[0])
+      .getByText("SUCURSAL NORTE")
+      .closest("div").parentElement;
+    const text = route.textContent;
+
+    expect(text.indexOf("SUCURSAL NORTE")).toBeLessThan(
+      text.indexOf("SUCURSAL CENTRO")
+    );
+  });
+
+  it("deja el destino editable cuando no hay destino bloqueado", () => {
+    render(<OrdersHistoryTable orders={buildOrders(1)} branches={branches} />);
+
+    expect(getSelect("Destino").disabled).toBe(false);
+    expect(getSelect("Origen").disabled).toBe(false);
+  });
+
+  it("fija y deshabilita el destino y deja el origen editable", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    const destination = getSelect("Destino");
+
+    expect(destination.disabled).toBe(true);
+    expect(destination.getAttribute("aria-disabled")).toBe("true");
+    expect(destination.value).toBe("branch-destination");
+    expect(getSelect("Origen").disabled).toBe(false);
+    expect(getBodyRows()).toHaveLength(1);
+    expect(screen.queryByText("SUCURSAL SUR")).toBeNull();
+  });
+
+  it("con destino bloqueado conserva los pedidos enviados por la sucursal activa", () => {
+    const sentOrder = {
+      ...buildOrder(2),
+      fromBranchId: "branch-destination",
+      fromBranchName: "Sucursal Norte",
+      toBranchId: "branch-other",
+      toBranchName: "Sucursal Sur",
+    };
+
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder, sentOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    expect(getBodyRows()).toHaveLength(2);
+  });
+
+  it("no libera el destino bloqueado al limpiar filtros", () => {
+    render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    fireEvent.change(getSelect("Estado del pedido"), {
+      target: { value: "cancelled" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+
+    expect(getSelect("Destino").value).toBe("branch-destination");
+    expect(getBodyRows()).toHaveLength(1);
+  });
+
+  it("sigue la sucursal activa cuando cambia el destino bloqueado", () => {
+    const { rerender } = render(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-destination"
+      />
+    );
+
+    rerender(
+      <OrdersHistoryTable
+        orders={[buildOrder(0), otherDestinationOrder]}
+        branches={branches}
+        lockedDestinationId="branch-other"
+      />
+    );
+
+    expect(getSelect("Destino").value).toBe("branch-other");
+    expect(screen.getByText("SUCURSAL SUR")).toBeTruthy();
+  });
+});
+
+describe("OrdersHistoryTable estado del producto", () => {
+  const shortageOrder = {
+    ...buildOrder(0),
+    status: "accepted_with_difference",
+    items: [
+      { productId: "p1", productName: "Shampoo", differenceQty: -1 },
+      { productId: "p2", productName: "Croqueta", differenceQty: 0 },
+    ],
+  };
+  const cleanOrder = {
+    ...buildOrder(1),
+    status: "accepted",
+    items: [{ productId: "p3", productName: "Juguete", differenceQty: 0 }],
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("filtra pedidos con al menos una partida en el estado y muestra cual coincide", () => {
+    render(<OrdersHistoryTable orders={[shortageOrder, cleanOrder]} />);
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    const rows = getBodyRows();
+
+    expect(rows).toHaveLength(1);
+    expect(getFirstOrderNumber()).toBe("PED-001");
+    expect(within(rows[0]).getByText("Faltante: Shampoo")).toBeTruthy();
+    expect(screen.getByText("1 de 2 pedidos")).toBeTruthy();
+  });
+
+  it("reinicia a la primera pagina al cambiar el estado del producto", () => {
+    const orders = Array.from({ length: 25 }, (_, index) => ({
+      ...buildOrder(index),
+      status: "accepted_with_difference",
+      items: [
+        {
+          productId: `p-${index}`,
+          productName: `Producto ${index}`,
+          differenceQty: -1,
+        },
+      ],
+    }));
+
+    render(<OrdersHistoryTable orders={orders} />);
+
+    clickNextPage();
+
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+    expect(getFirstOrderNumber()).toBe("PED-001");
+  });
+
+  it("vuelve a todos los pedidos al limpiar el filtro de producto", () => {
+    render(<OrdersHistoryTable orders={[shortageOrder, cleanOrder]} />);
+
+    fireEvent.change(screen.getByLabelText("Estado del producto"), {
+      target: { value: "shortage" },
+    });
+
+    expect(getBodyRows()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.getByLabelText("Estado del producto").value).toBe("all");
   });
 });

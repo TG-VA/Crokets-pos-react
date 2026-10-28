@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import useInventorySearchKeyboard from "./useInventorySearchKeyboard";
 import useInventorySearchResults from "./useInventorySearchResults";
@@ -8,6 +8,7 @@ const useInventorySearchModal = ({
   isOpen = false,
   products = [],
   selectedProductIds = [],
+  restrictLocalProducts = false,
   onClose,
   onSelect,
 } = {}) => {
@@ -20,20 +21,27 @@ const useInventorySearchModal = ({
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
+    selectedProductIsDisabled,
+    belowMinimumOnly,
+    setBelowMinimumOnly,
+    clearBelowMinimumFilter,
 
     isAlreadySelected,
+    isProductDisabled,
     handleSearchChange: updateSearchTerm,
     clearSearch,
   } = useInventorySearchResults({
     products,
     selectedProductIds,
     selectedIndex,
+    restrictLocalProducts,
   });
 
   const resetSearch = useCallback(() => {
     clearSearch();
+    clearBelowMinimumFilter();
     setSelectedIndex(-1);
-  }, [clearSearch]);
+  }, [clearBelowMinimumFilter, clearSearch]);
 
   const handleClose = useCallback(() => {
     resetSearch();
@@ -42,7 +50,11 @@ const useInventorySearchModal = ({
 
   const handleSelectProduct = useCallback(
     (product) => {
-      if (!product || isAlreadySelected(product)) {
+      if (
+        !product ||
+        isProductDisabled(product) ||
+        isAlreadySelected(product)
+      ) {
         return false;
       }
 
@@ -56,11 +68,15 @@ const useInventorySearchModal = ({
 
       return true;
     },
-    [handleClose, isAlreadySelected, onSelect]
+    [handleClose, isAlreadySelected, isProductDisabled, onSelect]
   );
 
   const handleProductClick = useCallback(
     (product, index) => {
+      if (isProductDisabled(product)) {
+        return false;
+      }
+
       setSelectedIndex(index);
 
       if (isAlreadySelected(product)) {
@@ -69,7 +85,7 @@ const useInventorySearchModal = ({
 
       return handleSelectProduct(product);
     },
-    [handleSelectProduct, isAlreadySelected]
+    [handleSelectProduct, isAlreadySelected, isProductDisabled]
   );
 
   const handleSearchChange = useCallback(
@@ -109,11 +125,15 @@ const useInventorySearchModal = ({
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
+    selectedProductIsDisabled,
+    belowMinimumOnly,
+    setBelowMinimumOnly,
     resultsListRef,
 
     setSelectedIndex,
 
     isAlreadySelected,
+    isProductDisabled,
     handleSearchChange,
     handleProductClick,
     handleSelectProduct,

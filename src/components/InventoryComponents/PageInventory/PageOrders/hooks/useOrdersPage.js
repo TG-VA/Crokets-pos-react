@@ -8,7 +8,9 @@ import {
   getPendingOrders,
   getOrderTotals,
 } from "../utils/ordersCalculationService";
+import { buildReceiptFeedback } from "../utils/ordersReceiptFeedback";
 import { useCreateOrderForm } from "./useCreateOrderForm";
+import { useHistoryDestinationLock } from "./useHistoryDestinationLock";
 import { useOrdersData } from "./useOrdersData";
 import { useReceiveOrderForm } from "./useReceiveOrderForm";
 
@@ -28,12 +30,13 @@ export const useOrdersPage = () => {
     upsertOrder,
   } = useOrdersData();
 
+  const historyLockedDestinationId = useHistoryDestinationLock(currentBranchId);
+
   const [activeTab, setActiveTab] = useState("receive");
   const [feedback, setFeedback] = useState(null);
   const [createAccessGranted, setCreateAccessGranted] = useState(false);
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const [detailOrder, setDetailOrder] = useState(null);
-  const [printOrder, setPrintOrder] = useState(null);
 
   const pendingOrders = useMemo(
     () => getPendingOrders({ orders, currentBranchId }),
@@ -62,14 +65,7 @@ export const useOrdersPage = () => {
       upsertOrder(receivedOrder);
       await syncAfterMutation();
 
-      const hasDifference = receivedOrder.status === "accepted_with_difference";
-
-      setFeedback({
-        tone: hasDifference ? "warning" : "success",
-        message: hasDifference
-          ? `Pedido ${receivedOrder.orderNumber} recibido con diferencias. ${receivedOrder.discrepancyNotes}`
-          : `Pedido ${receivedOrder.orderNumber} recibido correctamente. El inventario ya fue actualizado.`,
-      });
+      setFeedback(buildReceiptFeedback(receivedOrder));
     },
     [syncAfterMutation, upsertOrder]
   );
@@ -128,6 +124,8 @@ export const useOrdersPage = () => {
     [createAccessGranted, user?.id]
   );
 
+  const dismissFeedback = useCallback(() => setFeedback(null), []);
+
   const handleAdminAuthorized = useCallback(() => {
     setAdminAuthOpen(false);
     setCreateAccessGranted(true);
@@ -140,13 +138,14 @@ export const useOrdersPage = () => {
     handleTabSelect,
     feedback,
     setFeedback,
-    dismissFeedback: () => setFeedback(null),
+    dismissFeedback,
     isLoading,
     error,
     orders,
     branches,
     products,
     currentBranchId,
+    historyLockedDestinationId,
     currentBranch: branch,
     reloadData: refreshData,
     summary,
@@ -161,8 +160,5 @@ export const useOrdersPage = () => {
     detailOrder,
     openDetail: (order) => setDetailOrder(order),
     closeDetail: () => setDetailOrder(null),
-    printOrder,
-    openPrint: (order) => setPrintOrder(order),
-    closePrint: () => setPrintOrder(null),
   };
 };

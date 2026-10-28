@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
+import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createStoreOrder } from "../services/ordersService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -11,13 +12,18 @@ export const useCreateOrderForm = ({
 }) => {
   const { user } = useAuth();
 
-  const [orderName, setOrderName] = useState("");
+  const [orderName, setOrderNameState] = useState("");
   const [destinationBranchId, setDestinationBranchId] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const setOrderName = useCallback((value) => {
+    // Sin trim: el usuario debe poder escribir espacios entre palabras.
+    setOrderNameState(String(value ?? "").toLocaleUpperCase("es-MX"));
+  }, []);
 
   const destinationOptions = useMemo(
     () =>
@@ -69,6 +75,13 @@ export const useCreateOrderForm = ({
 
       if (!productId) return false;
 
+      if (!isGlobalProduct(product)) {
+        setError(
+          "El producto es local o no global y no se puede enviar a otra sucursal."
+        );
+        return false;
+      }
+
       if (items.some((item) => item.productId === productId)) {
         return false;
       }
@@ -77,6 +90,7 @@ export const useCreateOrderForm = ({
         ...previous,
         {
           productId,
+          isGlobal: true,
           barcode: product.codigo ?? product.barcode ?? "",
           productName:
             product.descripcion ?? product.name ?? "Producto sin nombre",
@@ -112,7 +126,7 @@ export const useCreateOrderForm = ({
       });
 
       if (!product) {
-        setError("No se encontro un producto con ese codigo.");
+        setError("No se encontró un producto con ese código.");
         return false;
       }
 
@@ -146,7 +160,7 @@ export const useCreateOrderForm = ({
     setItems([]);
     setError("");
     setSearchOpen(false);
-  }, []);
+  }, [setOrderName]);
 
   const originBranchId = currentBranch?.id;
 

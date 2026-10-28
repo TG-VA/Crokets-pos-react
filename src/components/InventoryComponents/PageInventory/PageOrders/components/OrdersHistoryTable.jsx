@@ -3,20 +3,25 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "../PageOrders.module.css";
 import {
   formatOrderDateTime,
-  getOrderDifferenceLabel,
   getOrderStatusMeta,
 } from "../utils/ordersFormatters";
-import { filterOrderHistory } from "../utils/ordersCalculationService";
+import {
+  filterOrderHistory,
+  getOrderDifferenceSummary,
+  getOrderItemStatusMatch,
+} from "../utils/ordersCalculationService";
 import { getPresetRange } from "../utils/ordersDateRange";
 import { getStatusToneClass } from "../utils/ordersStatusClasses";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import BranchBadge from "./BranchBadge";
+import DifferenceCountBadge from "./DifferenceCountBadge";
 import OrdersHistoryFilters from "./OrdersHistoryFilters";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
-import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const INITIAL_FILTERS = {
   status: "all",
+  itemStatus: "all",
   fromBranchId: "all",
   toBranchId: "all",
   dateFrom: null,
@@ -26,21 +31,42 @@ const INITIAL_FILTERS = {
 const OrdersHistoryTable = ({
   orders = [],
   branches = [],
+  lockedDestinationId = null,
   onOpenDetail,
-  onOpenPrint,
 }) => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [rangePreset, setRangePreset] = useState("custom");
 
+  const isDestinationLocked = Boolean(lockedDestinationId);
+
+  const effectiveFilters = useMemo(
+    () =>
+      isDestinationLocked
+        ? { ...filters, toBranchId: lockedDestinationId }
+        : filters,
+    [filters, isDestinationLocked, lockedDestinationId]
+  );
+
   const filteredOrders = useMemo(
-    () => filterOrderHistory(orders, filters),
-    [filters, orders]
+    () =>
+      filterOrderHistory(
+        orders,
+        isDestinationLocked
+          ? {
+              ...effectiveFilters,
+              toBranchId: "all",
+              involvedBranchId: lockedDestinationId,
+            }
+          : effectiveFilters
+      ),
+    [effectiveFilters, isDestinationLocked, lockedDestinationId, orders]
   );
 
   const hasActiveFilters =
     filters.status !== "all" ||
+    filters.itemStatus !== "all" ||
     filters.fromBranchId !== "all" ||
-    filters.toBranchId !== "all" ||
+    (!isDestinationLocked && filters.toBranchId !== "all") ||
     filters.dateFrom !== null ||
     filters.dateTo !== null;
 
@@ -63,11 +89,13 @@ const OrdersHistoryTable = ({
 
   useEffect(() => {
     resetPagination();
-  }, [filters, resetPagination]);
+  }, [effectiveFilters, resetPagination]);
 
   const paginatedOrders = pageItems(filteredOrders);
 
   const handleFilterChange = (key, value) => {
+    if (key === "toBranchId" && isDestinationLocked) return;
+
     setFilters((previous) => ({
       ...previous,
       [key]: value,
@@ -105,15 +133,17 @@ const OrdersHistoryTable = ({
           <p className={styles.eyebrow}>Historial</p>
           <h2 className={styles.workspaceTitle}>Pedidos registrados</h2>
           <p className={styles.workspaceDescription}>
-            Consulta pedidos por estado, sucursal o rango de fechas. Puedes
-            abrir el detalle o exportar cualquier pedido a Excel.
+            Consulta pedidos por estado, estado de sus productos, sucursal o
+            rango de fechas. Abre el detalle para revisar partidas, notas y
+            exportar el pedido a Excel.
           </p>
         </div>
       </header>
 
       <OrdersHistoryFilters
-        filters={filters}
+        filters={effectiveFilters}
         branches={branches}
+        isDestinationLocked={isDestinationLocked}
         rangePreset={rangePreset}
         hasActiveFilters={hasActiveFilters}
         onFilterChange={handleFilterChange}
@@ -148,6 +178,10 @@ const OrdersHistoryTable = ({
             <tbody>
               {paginatedOrders.map((order) => {
                 const status = getOrderStatusMeta(order.status);
+                const itemStatusMatch = getOrderItemStatusMatch(
+                  order,
+                  effectiveFilters.itemStatus
+                );
 
                 return (
                   <tr key={order.id}>
@@ -157,12 +191,25 @@ const OrdersHistoryTable = ({
                       <span className={styles.rowSubtext}>
                         {order.departments.join(", ") || "Sin departamento"}
                       </span>
+                      {itemStatusMatch ? (
+                        <span className={styles.rowMatchHint}>
+                          {itemStatusMatch.label}:{" "}
+                          {itemStatusMatch.names.join(", ") ||
+                            itemStatusMatch.count}
+                        </span>
+                      ) : null}
                     </td>
                     <td>
-                      {order.toBranchName}
-                      <span className={styles.rowSubtext}>
-                        desde {order.fromBranchName}
-                      </span>
+                      <div className={styles.routeCell}>
+                        <BranchBadge
+                          role="destination"
+                          name={order.toBranchName}
+                        />
+                        <BranchBadge
+                          role="origin"
+                          name={order.fromBranchName}
+                        />
+                      </div>
                     </td>
                     <td>{formatOrderDateTime(order.sentAt)}</td>
                     <td>
@@ -178,15 +225,9 @@ const OrdersHistoryTable = ({
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={
-                          order.discrepancyNotes
-                            ? styles.discrepancyText
-                            : styles.rowSubtext
-                        }
-                      >
-                        {getOrderDifferenceLabel(order)}
-                      </span>
+                      <DifferenceCountBadge
+                        summary={getOrderDifferenceSummary(order)}
+                      />
                     </td>
                     <td className={styles.rowActions}>
                       <button
@@ -200,19 +241,6 @@ const OrdersHistoryTable = ({
                           alt=""
                           aria-hidden="true"
                           className={styles.actionEyeIcon}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        onClick={() => onOpenPrint?.(order)}
-                        aria-label={`Exportar ${order.orderNumber}`}
-                      >
-                        <img
-                          src={ExportIcon}
-                          alt=""
-                          aria-hidden="true"
-                          className={styles.actionExportIcon}
                         />
                       </button>
                     </td>

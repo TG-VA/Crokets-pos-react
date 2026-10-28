@@ -6,7 +6,12 @@ import {
   getMissingReceiptItems,
   getNonIntegerReceiptItems,
 } from "../utils/ordersCalculationService";
+import {
+  normalizeReceiptNote,
+  validateReceiptNote,
+} from "../utils/receiptNoteCalculationService";
 import { getBranchFallback } from "../../PageTransfers/utils/transfersCalculationService";
+import { toUpperLabel } from "../utils/ordersFormatters";
 import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";
 
 export const fetchOrderBranchOptions = async (currentBranch) => {
@@ -81,7 +86,7 @@ const validateOrderDraft = ({
   }
 
   if (!user?.id) {
-    throw new Error("No se detecto el usuario que genera el pedido.");
+    throw new Error("No se detectó el usuario que genera el pedido.");
   }
 
   if (!orderName || !orderName.trim()) {
@@ -100,6 +105,14 @@ const validateOrderDraft = ({
   if (invalidItem) {
     throw new Error(
       `La cantidad esperada de ${invalidItem.productName || "un producto"} debe ser un numero entero mayor a cero.`
+    );
+  }
+
+  const localItem = items.find((item) => item?.isGlobal === false);
+
+  if (localItem) {
+    throw new Error(
+      `El producto ${localItem.productName || "seleccionado"} es local o no global y no se puede enviar a otra sucursal.`
     );
   }
 };
@@ -136,7 +149,7 @@ export const createStoreOrder = async ({
   }));
 
   const { data, error } = await supabase.rpc("create_store_order", {
-    p_order_name: orderName.trim(),
+    p_order_name: toUpperLabel(orderName),
     p_from_branch_id: originBranchId,
     p_to_branch_id: destinationBranchId,
     p_user_id: user.id,
@@ -149,12 +162,12 @@ export const createStoreOrder = async ({
   }
 
   if (!data?.success || !data?.orderId) {
-    throw new Error("La sucursal no confirmo la creacion del pedido.");
+    throw new Error("La sucursal no confirmó la creación del pedido.");
   }
 
   return fetchOrderSnapshotOrFail(
     data.orderId,
-    "El pedido se creo, pero no se pudo recuperar su detalle. Recarga el historial antes de volver a intentarlo."
+    "El pedido se creó, pero no se pudo recuperar su detalle. Recarga el historial antes de volver a intentarlo."
   );
 };
 
@@ -162,10 +175,11 @@ export const receiveStoreOrder = async ({
   order,
   currentBranchId,
   quantities,
+  receiptNote = "",
   user = null,
 }) => {
   if (!order?.id) {
-    throw new Error("Selecciona un pedido valido para recibir.");
+    throw new Error("Selecciona un pedido válido para recibir.");
   }
 
   if (!currentBranchId || order.toBranchId !== currentBranchId) {
@@ -177,14 +191,14 @@ export const receiveStoreOrder = async ({
   }
 
   if (!user?.id) {
-    throw new Error("No se detecto el usuario que recibe el pedido.");
+    throw new Error("No se detectó el usuario que recibe el pedido.");
   }
 
   if (!isReceiptComplete(order.items, quantities)) {
     const missing = getMissingReceiptItems(order.items, quantities);
 
     throw new Error(
-      `Captura el conteo fisico de todos los productos (${missing.length} pendiente(s)).`
+      `Captura el conteo físico de todos los productos (${missing.length} pendiente(s)).`
     );
   }
 
@@ -201,11 +215,22 @@ export const receiveStoreOrder = async ({
     );
   }
 
+  const receiptNoteError = validateReceiptNote({
+    items: order.items,
+    quantities,
+    note: receiptNote,
+  });
+
+  if (receiptNoteError) {
+    throw new Error(receiptNoteError);
+  }
+
   const { data, error } = await supabase.rpc("receive_store_order", {
     p_order_id: order.id,
     p_to_branch_id: currentBranchId,
     p_user_id: user.id,
     p_received_qty_map: getReceivedQuantitiesPayload(order.items, quantities),
+    p_receipt_notes: normalizeReceiptNote(receiptNote) || null,
   });
 
   if (error) {
@@ -213,11 +238,11 @@ export const receiveStoreOrder = async ({
   }
 
   if (!data?.success) {
-    throw new Error("La sucursal no confirmo la recepcion del pedido.");
+    throw new Error("La sucursal no confirmó la recepción del pedido.");
   }
 
   return fetchOrderSnapshotOrFail(
     order.id,
-    "La recepcion se registro, pero no se pudo recuperar el pedido. Recarga el historial antes de continuar."
+    "La recepción se registró, pero no se pudo recuperar el pedido. Recarga el historial antes de continuar."
   );
 };

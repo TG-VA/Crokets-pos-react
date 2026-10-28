@@ -2,7 +2,7 @@ export const ORDER_STATUS_META = {
   pending: {
     label: "Pendiente",
     tone: "pending",
-    description: "Pedido enviado, pendiente de recepcion.",
+    description: "Pedido enviado, pendiente de recepción.",
   },
   accepted: {
     label: "Aceptado",
@@ -20,6 +20,64 @@ export const ORDER_STATUS_META = {
     description: "Pedido cancelado.",
   },
 };
+
+/**
+ * Opciones del filtro de estado del historial. Se derivan de los estados
+ * reales del modulo para que una alta o un cambio de etiqueta no obligue a
+ * editar el JSX del filtro.
+ */
+export const ORDER_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(ORDER_STATUS_META).map(([value, meta]) => ({
+    value,
+    label: meta.label,
+  })),
+];
+
+/**
+ * Estados de una partida del pedido. No viven en la base: se derivan del
+ * estado del pedido y de `difference_qty` de cada linea (ver
+ * `getOrderItemStatus`).
+ */
+export const ORDER_ITEM_STATUS_META = {
+  pending: {
+    label: "Pendiente",
+    tone: "pending",
+    description: "Partida pendiente de recibir.",
+  },
+  accepted: {
+    label: "Aceptado",
+    tone: "success",
+    description: "Partida recibida sin diferencia.",
+  },
+  shortage: {
+    label: "Faltante",
+    tone: "danger",
+    description: "Partida recibida con menos cantidad de la esperada.",
+  },
+  overage: {
+    label: "Sobrante",
+    tone: "warning",
+    description: "Partida recibida con mas cantidad de la esperada.",
+  },
+  cancelled: {
+    label: "Cancelado",
+    tone: "neutral",
+    description: "Partida de un pedido cancelado.",
+  },
+};
+
+/**
+ * Opciones del filtro por estado de las partidas. Se derivan del descriptor
+ * para no repetir el catalogo en el JSX.
+ */
+export const ORDER_ITEM_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Todos" },
+  ...Object.entries(ORDER_ITEM_STATUS_META).map(([value, meta]) => ({
+    value,
+    label: meta.label,
+  })),
+];
 
 const isNil = (value) => value === null || value === undefined;
 
@@ -77,6 +135,18 @@ export const formatQuantity = (value, fallback = "—") => {
   }).format(numeric);
 };
 
+/**
+ * Cantidad con signo explicito para diferencias: "+2" para sobrantes, "-1"
+ * para faltantes. Sin valor numerico devuelve `fallback`.
+ */
+export const formatSignedQuantity = (value, fallback = "—") => {
+  const formatted = formatQuantity(value, fallback);
+
+  if (formatted === fallback) return fallback;
+
+  return Number(value) > 0 ? `+${formatted}` : formatted;
+};
+
 export const formatCurrency = (value) => {
   const numeric = Number(value);
 
@@ -100,25 +170,21 @@ export const getOrderStatusMeta = (status) =>
     description: "",
   };
 
-export const getOrderDifferenceLabel = (order) => {
-  if (!order) return "";
+/**
+ * Texto en mayusculas para nombres de pedido y responsables. Retorna cadena
+ * vacia ante valores nulos o no textuales para no lanzar excepciones.
+ */
+export const toUpperLabel = (value) => {
+  if (value === null || value === undefined) return "";
 
-  if (order.status === "pending") return "Pendiente de recepcion";
-
-  const notes = order.discrepancyNotes ?? order.discrepancy_notes ?? "";
-
-  if (notes) return notes;
-
-  return order.status === "accepted_with_difference"
-    ? "Con diferencia"
-    : "Sin diferencia";
+  return String(value).trim().toLocaleUpperCase("es-MX");
 };
 
 export const getOrderNumber = (order) =>
   order?.orderNumber ?? order?.order_number ?? "";
 
 export const getOrderName = (order) =>
-  order?.orderName ?? order?.order_name ?? "";
+  toUpperLabel(order?.orderName ?? order?.order_name);
 
 export const getOrderDepartments = (order) => {
   const summary = order?.departmentsSummary ?? order?.departments_summary;
@@ -169,6 +235,9 @@ export const normalizeStoreOrder = (order) => {
     status: order.status ?? "pending",
     notes: order.notes ?? "",
     discrepancyNotes: order.discrepancyNotes ?? order.discrepancy_notes ?? "",
+    receiptNotes: (order.receiptNotes ?? order.receipt_notes ?? "")
+      .toString()
+      .trim(),
     fromBranchId: order.fromBranchId ?? order.from_branch_id ?? "",
     toBranchId: order.toBranchId ?? order.to_branch_id ?? "",
     fromBranchName:
@@ -183,16 +252,16 @@ export const normalizeStoreOrder = (order) => {
       "Sucursal destino",
     createdByUserId: order.createdByUserId ?? order.created_by_user_id ?? "",
     receivedByUserId: order.receivedByUserId ?? order.received_by_user_id ?? "",
-    createdByLabel:
+    createdByLabel: toUpperLabel(
       order.createdBy?.username ??
-      order.created_by?.username ??
-      order.createdByLabel ??
-      "",
-    receivedByLabel:
+        order.created_by?.username ??
+        order.createdByLabel
+    ),
+    receivedByLabel: toUpperLabel(
       order.receivedBy?.username ??
-      order.received_by?.username ??
-      order.receivedByLabel ??
-      "",
+        order.received_by?.username ??
+        order.receivedByLabel
+    ),
     departments: getOrderDepartments({ ...order, items }),
     sentAt: order.sentAt ?? order.sent_at ?? order.createdAt ?? "",
     acceptedAt: order.acceptedAt ?? order.accepted_at ?? "",

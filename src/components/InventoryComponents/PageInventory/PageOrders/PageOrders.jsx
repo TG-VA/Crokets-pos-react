@@ -7,7 +7,6 @@ import ReceiveOrdersWorkspace from "./components/ReceiveOrdersWorkspace";
 import CreateOrderWorkspace from "./components/CreateOrderWorkspace";
 import OrdersHistoryTable from "./components/OrdersHistoryTable";
 import OrderDetailModal from "./components/OrderDetailModal";
-import OrderPrintModal from "./components/OrderPrintModal";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
 const PageOrders = () => {
@@ -35,6 +34,9 @@ const PageOrders = () => {
             pendingOrders={page.pendingOrders}
             selectedOrder={page.receiveForm.selectedOrder}
             quantities={page.receiveForm.quantities}
+            receiptNote={page.receiveForm.receiptNote}
+            isNoteRequired={page.receiveForm.isNoteRequired}
+            noteError={page.receiveForm.noteError}
             isComplete={page.receiveForm.isComplete}
             missingItems={page.receiveForm.missingItems}
             error={page.receiveForm.error || page.error}
@@ -43,6 +45,7 @@ const PageOrders = () => {
             currentBranchName={page.currentBranch?.name}
             onSelectOrder={page.receiveForm.selectOrder}
             onQuantityChange={page.receiveForm.setQuantity}
+            onReceiptNoteChange={page.receiveForm.setReceiptNote}
             getDifferencePreview={page.receiveForm.getDifferencePreview}
             onSubmit={page.receiveForm.submitReceipt}
             onOpenDetail={page.openDetail}
@@ -61,15 +64,13 @@ const PageOrders = () => {
           <OrdersHistoryTable
             orders={page.orders}
             branches={page.branches}
+            lockedDestinationId={page.historyLockedDestinationId}
             onOpenDetail={page.openDetail}
-            onOpenPrint={page.openPrint}
           />
         ) : null}
       </div>
 
       <OrderDetailModal order={page.detailOrder} onClose={page.closeDetail} />
-
-      <OrderPrintModal order={page.printOrder} onClose={page.closePrint} />
 
       <AdminAuthorizationModal
         isOpen={page.adminAuthOpen}

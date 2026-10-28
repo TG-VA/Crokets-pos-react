@@ -1,0 +1,51 @@
+.routeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.routeBadgeName {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.routeBadgeRole {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.branchBadgeOrigin {
+  background: rgba(16, 146, 177, 0.12);
+  color: var(--croketsBlueDark);
+}
+
+.branchBadgeDestination {
+  background: rgba(252, 137, 19, 0.16);
+  color: #9a4d00;
+}
+
+/* Nombre del pedido: chip suave. El naranja y el azul significan destino y
+   origen, y un gris solido se leeria como cancelado; el fondo claro mantiene
+   el nombre legible sin competir con la ruta. */
+.orderNameBadge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: #26323b;
+  border: 1px solid #cfd8de;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}

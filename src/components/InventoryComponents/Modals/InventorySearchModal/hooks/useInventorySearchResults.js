@@ -1,21 +1,22 @@
 import { useCallback, useMemo, useState } from "react";
 
+import {
+  filterInventorySearchProducts,
+  isGlobalProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
+
 const getProductId = (product) => {
   return product?.product_id ?? product?.id ?? null;
-};
-
-const normalizeSearchValue = (value) => {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
 };
 
 const useInventorySearchResults = ({
   products = [],
   selectedProductIds = [],
   selectedIndex = -1,
+  restrictLocalProducts = false,
 } = {}) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [belowMinimumOnly, setBelowMinimumOnly] = useState(false);
 
   const selectedIds = useMemo(() => {
     const source = Array.isArray(selectedProductIds) ? selectedProductIds : [];
@@ -36,41 +37,29 @@ const useInventorySearchResults = ({
     [selectedIds]
   );
 
-  const searchResults = useMemo(() => {
-    const source = Array.isArray(products) ? products : [];
+  const isProductDisabled = useCallback(
+    (product) => restrictLocalProducts && !isGlobalProduct(product),
+    [restrictLocalProducts]
+  );
 
-    const term = normalizeSearchValue(searchTerm);
-
-    if (!term) {
-      return source.slice(0, 100);
-    }
-
-    return source
-      .filter((product) => {
-        const code = normalizeSearchValue(product?.codigo ?? product?.barcode);
-
-        const description = normalizeSearchValue(
-          product?.descripcion ?? product?.name
-        );
-
-        const department = normalizeSearchValue(
-          product?.departamento ?? product?.department_name
-        );
-
-        return (
-          code.includes(term) ||
-          description.includes(term) ||
-          department.includes(term)
-        );
-      })
-      .slice(0, 100);
-  }, [products, searchTerm]);
+  const searchResults = useMemo(
+    () =>
+      filterInventorySearchProducts(products, {
+        searchTerm,
+        belowMinimumOnly,
+      }).slice(0, 100),
+    [belowMinimumOnly, products, searchTerm]
+  );
 
   const selectedProduct =
     selectedIndex >= 0 ? (searchResults[selectedIndex] ?? null) : null;
 
   const selectedProductIsOpen = selectedProduct
     ? isAlreadySelected(selectedProduct)
+    : false;
+
+  const selectedProductIsDisabled = selectedProduct
+    ? isProductDisabled(selectedProduct)
     : false;
 
   const handleSearchChange = useCallback((value) => {
@@ -81,13 +70,22 @@ const useInventorySearchResults = ({
     setSearchTerm("");
   }, []);
 
+  const clearBelowMinimumFilter = useCallback(() => {
+    setBelowMinimumOnly(false);
+  }, []);
+
   return {
     searchTerm,
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
+    selectedProductIsDisabled,
+    belowMinimumOnly,
+    setBelowMinimumOnly,
+    clearBelowMinimumFilter,
 
     isAlreadySelected,
+    isProductDisabled,
     handleSearchChange,
     clearSearch,
   };
