@@ -657,11 +657,6 @@
   z-index: 2;
 }
 
-.formActionsRight {
-  display: flex;
-  gap: 10px;
-}
-
 .filterBar {
   display: flex;
   flex-wrap: wrap;
@@ -780,12 +775,6 @@
 .quickButton:focus-visible {
   outline: 2px solid var(--croketsBlue);
   outline-offset: 2px;
-}
-
-.filterClearButton {
-  height: 38px;
-  padding: 0 12px;
-  white-space: nowrap;
 }
 
 .resultsCount {
@@ -930,7 +919,7 @@
 }
 
 /* En el modal de detalle la ruta comparte la linea del nombre y el estado.
-   El historial, las tarjetas y la impresion conservan el tamano base. */
+   El historial y las tarjetas conservan el tamano base. */
 .detailContent .detailRoute {
   display: inline-flex;
   flex-wrap: wrap;
