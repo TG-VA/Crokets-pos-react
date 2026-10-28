@@ -164,7 +164,9 @@ export const fetchKitData = async (kitProductId, branchId) => {
 export const fetchProductStocksAcrossBranches = async (productId) => {
   const { data: stockRows, error: stockError } = await supabase
     .from("branch_inventory")
-    .select("branch_id, stock, is_active, has_been_stocked, sale_price")
+    .select(
+      "branch_id, stock, is_active, has_been_stocked, sale_price, products:product_id ( sale_price )"
+    )
     .eq("product_id", productId);
   if (stockError) throw stockError;
 

@@ -320,7 +320,7 @@ export const useSearchModal = ({
                   : 0,
               is_active: row.is_active !== false,
               has_been_stocked: !!row.has_been_stocked,
-              sale_price: Number(row.sale_price || 0),
+              sale_price: resolveBranchSalePrice(row, row.products),
               is_current_branch: row.branch_id === branch?.id,
             };
           })
