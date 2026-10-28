@@ -36,10 +36,16 @@ describe("OrderPreviewSections", () => {
     expect(screen.queryByText("Producto 10")).toBeNull();
   });
 
-  it("muestra la tabla Diferencias de recepcion y no el texto de notas", () => {
-    render(<OrderPreviewSections order={buildOrder(3)} />);
+  it("marca la diferencia de cada partida con signo y sin repetir una seccion aparte", () => {
+    const order = buildOrder(3);
 
-    expect(screen.getByText("Diferencias de recepción")).toBeTruthy();
+    order.items[1] = { ...order.items[1], receivedQty: 12, differenceQty: 2 };
+
+    render(<OrderPreviewSections order={order} />);
+
+    expect(screen.getByText("-2")).toBeTruthy();
+    expect(screen.getByText("+2")).toBeTruthy();
+    expect(screen.queryByText("Diferencias de recepción")).toBeNull();
     expect(screen.queryByText(/Faltantes: 1x/)).toBeNull();
   });
 

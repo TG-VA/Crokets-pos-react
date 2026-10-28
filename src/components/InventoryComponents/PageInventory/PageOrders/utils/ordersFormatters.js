@@ -135,6 +135,18 @@ export const formatQuantity = (value, fallback = "—") => {
   }).format(numeric);
 };
 
+/**
+ * Cantidad con signo explicito para diferencias: "+2" para sobrantes, "-1"
+ * para faltantes. Sin valor numerico devuelve `fallback`.
+ */
+export const formatSignedQuantity = (value, fallback = "—") => {
+  const formatted = formatQuantity(value, fallback);
+
+  if (formatted === fallback) return fallback;
+
+  return Number(value) > 0 ? `+${formatted}` : formatted;
+};
+
 export const formatCurrency = (value) => {
   const numeric = Number(value);
 

@@ -6,6 +6,7 @@ import {
   formatOrderDate,
   formatOrderDateTime,
   formatQuantity,
+  formatSignedQuantity,
   getOrderDepartments,
   getOrderNumber,
   getOrderStatusMeta,
@@ -168,5 +169,13 @@ describe("toUpperLabel", () => {
     expect(
       normalizeStoreOrder({ order_name: "pedido norte", items: [] }).orderName
     ).toBe("PEDIDO NORTE");
+  });
+
+  it("formatSignedQuantity agrega el signo a sobrantes y respeta faltantes", () => {
+    expect(formatSignedQuantity(2)).toBe("+2");
+    expect(formatSignedQuantity(-1)).toBe("-1");
+    expect(formatSignedQuantity(0)).toBe("0");
+    expect(formatSignedQuantity(null)).toBe("—");
+    expect(formatSignedQuantity("abc")).toBe("—");
   });
 });

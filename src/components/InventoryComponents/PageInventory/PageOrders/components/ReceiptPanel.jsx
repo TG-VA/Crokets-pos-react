@@ -4,7 +4,10 @@ import styles from "../PageOrders.module.css";
 import receiptStyles from "../ReceiptPanel.module.css";
 import { getOrderItemStatus } from "../utils/ordersCalculationService";
 import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
-import { formatQuantity } from "../utils/ordersFormatters";
+import {
+  formatQuantity,
+  formatSignedQuantity,
+} from "../utils/ordersFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
 import BranchBadge from "./BranchBadge";
 import ReceiptNoteField from "./ReceiptNoteField";
@@ -24,8 +27,7 @@ const getDifferenceClass = (difference) =>
 const getDifferenceLabel = (difference) => {
   if (difference === null) return "Pendiente";
   if (difference === 0) return "Sin diferencia";
-  if (difference > 0) return `+${formatQuantity(difference)}`;
-  return formatQuantity(difference);
+  return formatSignedQuantity(difference);
 };
 
 const ReceiptPanel = ({

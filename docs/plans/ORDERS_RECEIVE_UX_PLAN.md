@@ -54,6 +54,9 @@ existentes (`--croketsOrange`, `--croketsBlueDark`, `--errorText`, etc.).
   seccion titulada "Diferencias de recepcion" con la tabla; eliminar el bloque
   de texto del cuerpo. La tabla ya existe (`differencesTable`); reutilizarla.
   Considerar paginarla tambien si hay muchas diferencias.
+  Reemplazado despues: la seccion repetia la columna Diferencia de la tabla de
+  partidas; ahora esa columna muestra la diferencia con signo y color y la
+  seccion aparte se elimino.
 - B4. El icono "i" del encabezado del modal (esquina superior izquierda,
   `AppModal` `.iconWrapper`) se aplasta cuando el contenido es largo, como al
   mostrar diferencias de recepcion. Causa probable: `.iconWrapper` tiene

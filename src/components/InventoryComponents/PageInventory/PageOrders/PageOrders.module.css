@@ -944,36 +944,6 @@
   background: rgba(231, 76, 60, 0.05);
 }
 
-.differencesSection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.differencesTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.differencesTable th,
-.differencesTable td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eef3f6;
-  text-align: left;
-}
-
-.differencesTable .numeric {
-  text-align: right;
-}
-
-.differencePositive {
-  color: var(--successText);
-}
-
-.differenceNegative {
-  color: var(--errorText);
-}
-
 .exportButton {
   display: inline-flex;
   align-items: center;

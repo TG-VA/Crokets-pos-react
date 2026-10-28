@@ -3,9 +3,10 @@ import {
   formatOrderDate,
   formatOrderDateTime,
   formatQuantity,
+  formatSignedQuantity,
 } from "../utils/ordersFormatters";
-import { getOrderDifferences } from "../utils/ordersCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
+import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
 import ItemsPaginationFooter, {
   ITEMS_PAGE_SIZES,
 } from "./ItemsPaginationFooter";
@@ -15,7 +16,6 @@ import ItemsPaginationFooter, {
  * partidas, notas y diferencias.
  */
 const OrderPreviewSections = ({ order }) => {
-  const differences = getOrderDifferences(order?.items);
   const items = order?.items ?? [];
 
   const pagination = usePagination({
@@ -104,7 +104,20 @@ const OrderPreviewSections = ({ order }) => {
                     {formatQuantity(item.receivedQty)}
                   </td>
                   <td className={styles.numeric}>
-                    {formatQuantity(item.differenceQty)}
+                    {hasDifference ? (
+                      <span
+                        className={[
+                          styles.differenceBadge,
+                          Number(item.differenceQty) < 0
+                            ? ITEM_STATUS_DIFFERENCE_CLASS.shortage
+                            : ITEM_STATUS_DIFFERENCE_CLASS.overage,
+                        ].join(" ")}
+                      >
+                        {formatSignedQuantity(item.differenceQty)}
+                      </span>
+                    ) : (
+                      formatQuantity(item.differenceQty)
+                    )}
                   </td>
                 </tr>
               );
@@ -145,52 +158,6 @@ const OrderPreviewSections = ({ order }) => {
             <p className={styles.receiptNoteMeta}>{receiptNoteMeta}</p>
           ) : null}
         </section>
-      ) : null}
-
-      {differences.length > 0 ? (
-        <div className={styles.differencesSection}>
-          <strong>Diferencias de recepción</strong>
-          <div className={styles.tableWrapper}>
-            <table className={styles.differencesTable}>
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Producto</th>
-                  <th>Departamento</th>
-                  <th className={styles.numeric}>Diferencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {differences.map((item) => {
-                  const difference = Number(item.differenceQty);
-                  const isPositive = difference > 0;
-                  const differenceLabel = isPositive
-                    ? `+${formatQuantity(difference)}`
-                    : formatQuantity(difference);
-
-                  return (
-                    <tr key={item.id || item.productId}>
-                      <td>{item.barcode || "—"}</td>
-                      <td>{item.productName}</td>
-                      <td>{item.departmentName || "Sin departamento"}</td>
-                      <td className={styles.numeric}>
-                        <span
-                          className={
-                            isPositive
-                              ? styles.differencePositive
-                              : styles.differenceNegative
-                          }
-                        >
-                          {differenceLabel}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
       ) : null}
     </>
   );
