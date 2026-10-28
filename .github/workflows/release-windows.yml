@@ -55,6 +55,8 @@ jobs:
         run: npx electron-builder --publish never
 
       - name: Upload installer artifact
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: pos-crokets-windows-installer
@@ -62,7 +64,7 @@ jobs:
             dist/*.exe
             dist/*.blockmap
             dist/latest.yml
-          retention-days: 14
+          retention-days: 1
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
