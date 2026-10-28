@@ -18,7 +18,6 @@ import BranchBadge from "./BranchBadge";
 import DifferenceCountBadge from "./DifferenceCountBadge";
 import OrdersHistoryFilters from "./OrdersHistoryFilters";
 import EyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
-import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
 
 const INITIAL_FILTERS = {
   status: "all",
@@ -34,7 +33,6 @@ const OrdersHistoryTable = ({
   branches = [],
   lockedDestinationId = null,
   onOpenDetail,
-  onOpenPrint,
 }) => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [rangePreset, setRangePreset] = useState("custom");
@@ -136,8 +134,8 @@ const OrdersHistoryTable = ({
           <h2 className={styles.workspaceTitle}>Pedidos registrados</h2>
           <p className={styles.workspaceDescription}>
             Consulta pedidos por estado, estado de sus productos, sucursal o
-            rango de fechas. Puedes abrir el detalle o exportar cualquier pedido
-            a Excel.
+            rango de fechas. Abre el detalle para revisar partidas, notas y
+            exportar el pedido a Excel.
           </p>
         </div>
       </header>
@@ -243,19 +241,6 @@ const OrdersHistoryTable = ({
                           alt=""
                           aria-hidden="true"
                           className={styles.actionEyeIcon}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        onClick={() => onOpenPrint?.(order)}
-                        aria-label={`Exportar ${order.orderNumber}`}
-                      >
-                        <img
-                          src={ExportIcon}
-                          alt=""
-                          aria-hidden="true"
-                          className={styles.actionExportIcon}
                         />
                       </button>
                     </td>

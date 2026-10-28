@@ -64,7 +64,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             </div>
           </div>
 
-          <OrderPreviewSections order={order} paginated />
+          <OrderPreviewSections order={order} />
         </div>
       ) : null}
     </AppModal>

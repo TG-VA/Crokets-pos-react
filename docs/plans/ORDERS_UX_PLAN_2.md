@@ -81,9 +81,6 @@ Huayacan" se ve sin estilo. Hay que definirlas.
   - `OrdersHistoryTable` (columna "Ruta": hoy `toBranchName` mas "desde ..." en
     texto gris).
   - `PendingOrderCard` (campo "Origen") y `ReceiptPanel` ("X hacia Y").
-  - `OrderPrintModal` / vista previa de impresion (mantener legible en
-    impresion: no depender solo del color, el texto "Origen"/"Destino" debe
-    permanecer).
 - Accesibilidad: el color no es la unica pista; el rol va en texto
   (`aria-label` o etiqueta visible). Verificar contraste AA del texto sobre el
   fondo claro.
@@ -136,7 +133,7 @@ historial.
 
 - Estandarizar con una sola regla: poner `font-weight: 700` en la definicion
   base de cada clase de badge (no en una clase aparte), y eliminar
-  `statusBadgeBold` y su uso en `OrderPrintModal`.
+  `statusBadgeBold`.
 - Sin `!important`. Verificar visualmente que `statusPending`, que hoy
   repite `padding`, `border-radius` y `font-weight: 600`, no pise la regla
   (resolver por orden de selectores).
@@ -257,7 +254,7 @@ se cierran solos).
 - Modal de detalle, mas espacio: el titulo de `AppModal` pasa a `Pedido <numero>`
   (el nombre ya va en el encabezado del cuerpo, antes estaba duplicado y se
   envolvia con nombres largos); `AppModal` no se modifico porque `size="large"`
-  lo usan tambien `TransferDetailModal` y `OrderPrintModal`. La ruta
+  lo usa tambien `TransferDetailModal`. La ruta
   (`.detailContent .detailRoute` y `.detailContent .routeBadge`) y "Notas del
   pedido" (`.detailNote`) tienen mas padding y separacion; la impresion y los
   demas usos de `BranchBadge` conservan el tamano base.
@@ -370,9 +367,8 @@ se cierran solos).
 - Visualizacion: `ordersDetailService` selecciona `receipt_notes`,
   `normalizeStoreOrder` la expone como `receiptNotes` y
   `OrderPreviewSections` muestra "Nota de recepción" solo si tiene valor, con
-  fondo de advertencia para distinguirla de "Notas del pedido". La impresion la
-  hereda del componente compartido y el resumen de Excel la agrega en la fila
-  13 cuando existe.
+  fondo de advertencia para distinguirla de "Notas del pedido". El resumen de
+  Excel la agrega en la fila 13 cuando existe.
 - Realtime sin cambios: `loadStoreOrders` usa `STORE_ORDER_SELECT`, que ahora
   incluye `receipt_notes`, y la recarga por evento ya reconstruye el pedido con
   la nueva columna.

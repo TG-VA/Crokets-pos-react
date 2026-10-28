@@ -46,9 +46,8 @@ existentes (`--croketsOrange`, `--croketsBlueDark`, `--errorText`, etc.).
   prop de acciones extra (por ejemplo `footerActions`, ReactNode renderizado en
   `.actions` antes del boton de confirmar). Cambio retrocompatible; probarlo.
 - B2. Paginacion de la tabla de partidas (pedidos de mas de 50 productos).
-  `OrderPreviewSections` es compartido con la vista previa de exportacion
-  (`OrderPrintModal`), asi que la paginacion debe ser opcional por prop
-  (`paginated`), activada solo en el modal de detalle. No paginar la impresion.
+  `OrderPreviewSections` pagina siempre; se elimino la vista previa de
+  impresion y la exportacion queda en el footer del detalle.
 - B3. Seccion "Diferencias de recepcion": mantener el titulo, pero mostrar una
   tabla con Codigo, Producto, Departamento y Diferencia (hoy hay una tabla
   "Diferencias" mas un bloque de texto `discrepancyNotes`). Unificar: una sola
@@ -182,8 +181,8 @@ currentColor` como en `AppModal`, o `filter` solo si no hay alternativa).
 - `usePagination` con 4 por pagina: pendingOrders de 9 produce 3 paginas.
 - Captura en pagina 2 se conserva al volver a pagina 1; `missingItems` cuenta
   todos los items.
-- `OrderPreviewSections`: `paginated` activo recorta filas; inactivo muestra
-  todas; la seccion "Diferencias de recepcion" renderiza tabla y no el texto.
+- `OrderPreviewSections`: pagina las partidas; la seccion "Diferencias de
+  recepcion" renderiza tabla y no el texto.
 - `AppModal`: `footerActions` se renderiza junto a "Cerrar".
 - Mensaje de recepcion con diferencias cuenta items, no concatena notas.
 - Servicio realtime: suscribe y limpia el canal; el contexto refresca al evento

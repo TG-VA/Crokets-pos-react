@@ -29,17 +29,11 @@ describe("OrderPreviewSections", () => {
     window.localStorage.clear();
   });
 
-  it("recorta las partidas cuando esta paginado", () => {
-    render(<OrderPreviewSections order={buildOrder(25)} paginated />);
+  it("pagina las partidas del detalle", () => {
+    render(<OrderPreviewSections order={buildOrder(25)} />);
 
     expect(screen.getByText("Producto 9")).toBeTruthy();
     expect(screen.queryByText("Producto 10")).toBeNull();
-  });
-
-  it("muestra todas las partidas cuando no esta paginado", () => {
-    render(<OrderPreviewSections order={buildOrder(25)} />);
-
-    expect(screen.getByText("Producto 24")).toBeTruthy();
   });
 
   it("muestra la tabla Diferencias de recepcion y no el texto de notas", () => {

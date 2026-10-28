@@ -37,7 +37,6 @@ export const useOrdersPage = () => {
   const [createAccessGranted, setCreateAccessGranted] = useState(false);
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const [detailOrder, setDetailOrder] = useState(null);
-  const [printOrder, setPrintOrder] = useState(null);
 
   const pendingOrders = useMemo(
     () => getPendingOrders({ orders, currentBranchId }),
@@ -161,8 +160,5 @@ export const useOrdersPage = () => {
     detailOrder,
     openDetail: (order) => setDetailOrder(order),
     closeDetail: () => setDetailOrder(null),
-    printOrder,
-    openPrint: (order) => setPrintOrder(order),
-    closePrint: () => setPrintOrder(null),
   };
 };

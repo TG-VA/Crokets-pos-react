@@ -181,29 +181,21 @@ describe("OrdersHistoryTable pagination", () => {
     expect(within(row).getByText("SUCURSAL NORTE")).toBeTruthy();
   });
 
-  it("mantiene visibles las acciones de detalle y exportar por fila", () => {
+  it("abre el detalle desde la accion de la fila", () => {
     const onOpenDetail = vi.fn();
-    const onOpenPrint = vi.fn();
 
     render(
-      <OrdersHistoryTable
-        orders={buildOrders(1)}
-        onOpenDetail={onOpenDetail}
-        onOpenPrint={onOpenPrint}
-      />
+      <OrdersHistoryTable orders={buildOrders(1)} onOpenDetail={onOpenDetail} />
     );
 
     const row = getBodyRows()[0];
 
     fireEvent.click(within(row).getByRole("button", { name: /Ver detalle/ }));
-    fireEvent.click(within(row).getByRole("button", { name: /Exportar/ }));
 
     expect(onOpenDetail).toHaveBeenCalledWith(
       expect.objectContaining({ id: "order-0" })
     );
-    expect(onOpenPrint).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "order-0" })
-    );
+    expect(within(row).queryByRole("button", { name: /Exportar/ })).toBeNull();
   });
 });
 

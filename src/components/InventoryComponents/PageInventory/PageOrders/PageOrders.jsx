@@ -7,7 +7,6 @@ import ReceiveOrdersWorkspace from "./components/ReceiveOrdersWorkspace";
 import CreateOrderWorkspace from "./components/CreateOrderWorkspace";
 import OrdersHistoryTable from "./components/OrdersHistoryTable";
 import OrderDetailModal from "./components/OrderDetailModal";
-import OrderPrintModal from "./components/OrderPrintModal";
 import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
 const PageOrders = () => {
@@ -67,14 +66,11 @@ const PageOrders = () => {
             branches={page.branches}
             lockedDestinationId={page.historyLockedDestinationId}
             onOpenDetail={page.openDetail}
-            onOpenPrint={page.openPrint}
           />
         ) : null}
       </div>
 
       <OrderDetailModal order={page.detailOrder} onClose={page.closeDetail} />
-
-      <OrderPrintModal order={page.printOrder} onClose={page.closePrint} />
 
       <AdminAuthorizationModal
         isOpen={page.adminAuthOpen}

@@ -7,25 +7,21 @@ import ItemsPaginationFooter, {
 } from "./ItemsPaginationFooter";
 
 /**
- * Cuerpo compartido del detalle y de la vista previa de exportacion.
- * Mantiene una sola fuente para metadatos, partidas, notas y diferencias,
- * de modo que ambas vistas no puedan divergir.
- *
- * `paginated` pagina la tabla de partidas (modal de detalle). La vista previa
- * de impresion lo deja apagado para imprimir todas las partidas.
+ * Cuerpo del modal de detalle. Mantiene una sola fuente para metadatos,
+ * partidas, notas y diferencias.
  */
-const OrderPreviewSections = ({ order, paginated = false }) => {
+const OrderPreviewSections = ({ order }) => {
   const differences = getOrderDifferences(order?.items);
   const items = order?.items ?? [];
 
   const pagination = usePagination({
-    totalItems: paginated ? items.length : 0,
+    totalItems: items.length,
     defaultPageSize: 10,
     pageSizeOptions: ITEMS_PAGE_SIZES,
     storageKey: "crokets_order_detail_page_size",
   });
 
-  const visibleItems = paginated ? pagination.pageItems(items) : items;
+  const visibleItems = pagination.pageItems(items);
 
   if (!order) return null;
 
@@ -107,7 +103,7 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
         </table>
       </div>
 
-      {paginated && items.length > pagination.pageSize ? (
+      {items.length > pagination.pageSize ? (
         <ItemsPaginationFooter
           pagination={pagination}
           totalItems={items.length}
