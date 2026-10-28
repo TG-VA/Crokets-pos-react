@@ -13,6 +13,7 @@ import { isNetworkError } from "../utils/isNetworkError";
 import { useBranch } from "./BranchContext";
 
 const POLL_MS = 30 * 1000;
+const REALTIME_DEBOUNCE_MS = 300;
 
 const PendingOrdersContext = createContext(null);
 
@@ -43,8 +44,6 @@ export const PendingOrdersProvider = ({ children }) => {
       return;
     }
 
-    setIsLoading(true);
-
     try {
       const count = await countPendingStoreOrders(currentBranchId);
 
@@ -66,6 +65,7 @@ export const PendingOrdersProvider = ({ children }) => {
 
   useEffect(() => {
     setPendingOrdersCount(0); // eslint-disable-line react-hooks/set-state-in-effect -- reset acotado al cambio de sucursal
+    setIsLoading(true);
     void refresh();
   }, [refresh]);
 
@@ -82,12 +82,22 @@ export const PendingOrdersProvider = ({ children }) => {
   useEffect(() => {
     if (!currentBranchId) return undefined;
 
-    return subscribeToStoreOrderChanges({
+    let timer = null;
+
+    const unsubscribe = subscribeToStoreOrderChanges({
       channelName: `pending-orders-${currentBranchId}`,
       onChange: () => {
-        void refresh();
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          void refresh();
+        }, REALTIME_DEBOUNCE_MS);
       },
     });
+
+    return () => {
+      window.clearTimeout(timer);
+      unsubscribe();
+    };
   }, [currentBranchId, refresh]);
 
   const value = useMemo(

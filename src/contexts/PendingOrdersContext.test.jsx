@@ -12,15 +12,12 @@ vi.mock(
 let mockRealtimeOnChange = null;
 const mockUnsubscribe = vi.fn();
 
-vi.mock(
-  "../services/inventory/ordersRealtimeService",
-  () => ({
-    subscribeToStoreOrderChanges: ({ onChange }) => {
-      mockRealtimeOnChange = onChange;
-      return mockUnsubscribe;
-    },
-  })
-);
+vi.mock("../services/inventory/ordersRealtimeService", () => ({
+  subscribeToStoreOrderChanges: ({ onChange }) => {
+    mockRealtimeOnChange = onChange;
+    return mockUnsubscribe;
+  },
+}));
 
 let mockBranch = { id: "branch-1" };
 
@@ -136,6 +133,59 @@ describe("PendingOrdersContext - refresh", () => {
     await waitFor(() => {
       expect(screen.getByTestId("count").textContent).toBe("2");
     });
+  });
+
+  it("agrupa una rafaga de eventos realtime en una sola consulta", async () => {
+    countPendingStoreOrders.mockResolvedValue(1);
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    vi.useFakeTimers();
+    countPendingStoreOrders.mockClear();
+
+    await act(async () => {
+      mockRealtimeOnChange();
+      mockRealtimeOnChange();
+      mockRealtimeOnChange();
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(countPendingStoreOrders).toHaveBeenCalledTimes(1);
+  });
+
+  it("no vuelve a marcar isLoading en refrescos posteriores a la primera carga", async () => {
+    let resolveSecond;
+
+    countPendingStoreOrders.mockResolvedValueOnce(1).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSecond = resolve;
+      })
+    );
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    vi.useFakeTimers();
+
+    await act(async () => {
+      mockRealtimeOnChange();
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(screen.getByTestId("loading").textContent).toBe("false");
+
+    await act(async () => {
+      resolveSecond(2);
+    });
+
+    expect(screen.getByTestId("count").textContent).toBe("2");
   });
 
   it("cierra la suscripcion realtime al desmontar", async () => {
