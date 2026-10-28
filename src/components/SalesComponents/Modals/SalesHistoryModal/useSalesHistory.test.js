@@ -217,6 +217,27 @@ describe("useSalesHistory - seleccion inicial", () => {
     expect(fetchTicketDetailsData).toHaveBeenCalledTimes(detailCallsBefore);
   });
 
+  it("si la carga de un dia nuevo falla limpia la seleccion del dia anterior", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchHistoryTickets.mockImplementation(({ dateFilter }) =>
+      dateFilter === "2026-03-16"
+        ? Promise.reject(new Error("fallo de red"))
+        : Promise.resolve(TICKETS)
+    );
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+    const detailCallsBefore = fetchTicketDetailsData.mock.calls.length;
+
+    await act(async () => {
+      result.current.setDateFilter("2026-03-16");
+    });
+
+    await waitFor(() => expect(result.current.selectedTicket).toBeNull());
+    expect(result.current.tickets).toEqual([]);
+    expect(fetchTicketDetailsData).toHaveBeenCalledTimes(detailCallsBefore);
+    errorSpy.mockRestore();
+  });
+
   it("una respuesta tardia de otro dia no pisa la seleccion del dia actual", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 2, 15, 12, 0, 0));

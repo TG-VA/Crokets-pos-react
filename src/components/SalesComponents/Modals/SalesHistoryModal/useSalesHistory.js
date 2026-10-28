@@ -188,8 +188,8 @@ export const useSalesHistory = ({
         applyTickets(nextTickets);
 
         // Se autoselecciona la venta mas reciente una vez por fecha cargada.
-        // La fecha se toma de la peticion, no del estado, para que una
-        // respuesta tardia de otro dia no marque el dia equivocado.
+        // Una respuesta tardia la descarta el guard cancelled; la fecha de la
+        // peticion se guarda para detectar el cambio de dia.
         const requestDate = ticketsRequestKey.dateFilter;
         if (autoSelectedDateRef.current === requestDate) return;
         autoSelectedDateRef.current = requestDate;
@@ -205,6 +205,12 @@ export const useSalesHistory = ({
         if (cancelled) return;
         console.error(e);
         setTickets([]);
+        // Si el dia cambio, la venta seleccionada ya no pertenece a la lista.
+        if (autoSelectedDateRef.current !== ticketsRequestKey.dateFilter) {
+          setSelectedTicket(null);
+          setCancelReason("");
+          setRefundMethodId("");
+        }
         markSettled();
       });
 
