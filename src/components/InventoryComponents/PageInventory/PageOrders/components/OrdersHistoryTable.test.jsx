@@ -70,7 +70,7 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Estado"), {
+    fireEvent.change(screen.getByLabelText("Estado del pedido"), {
       target: { value: "pending" },
     });
 
@@ -100,7 +100,7 @@ describe("OrdersHistoryTable pagination", () => {
 
     expect(clearButton.disabled).toBe(true);
 
-    fireEvent.change(screen.getByLabelText("Estado"), {
+    fireEvent.change(screen.getByLabelText("Estado del pedido"), {
       target: { value: "pending" },
     });
 
@@ -377,7 +377,9 @@ describe("OrdersHistoryTable ruta y destino bloqueado", () => {
       />
     );
 
-    fireEvent.change(getSelect("Estado"), { target: { value: "cancelled" } });
+    fireEvent.change(getSelect("Estado del pedido"), {
+      target: { value: "cancelled" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
 
     expect(getSelect("Destino").value).toBe("branch-destination");

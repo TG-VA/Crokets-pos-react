@@ -35,7 +35,7 @@ const OrdersHistoryFilters = ({
   >
     <div className={styles.filterGroup}>
       <label className={styles.field}>
-        <span>Estado</span>
+        <span>Estado del pedido</span>
         <select
           value={filters.status}
           onChange={(event) => onFilterChange("status", event.target.value)}
