@@ -37,6 +37,9 @@ y el proceso principal de Electron:
 | Reporte de inventario (datos)                          | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                       | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
 | Inventario: alta con CPP                               | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: ajuste sin reescribir precio               | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Precio de sucursal en 0 cae al catalogo                | `src/utils/branchSalePrice.test.js`                                                |
+| Contrato SQL de precio 0 por sucursal                  | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
 | Inventario: cálculo del CPP móvil                      | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
 | Inventario: proyección de CPP en interfaz              | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
 | Inventario: hook de captura de costo                   | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
