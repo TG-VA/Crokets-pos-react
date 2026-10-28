@@ -24,20 +24,24 @@ export const useOrdersData = () => {
   const [error, setError] = useState("");
 
   const currentBranchId = branch?.id || "";
+  const latestRequestRef = useRef(0);
 
   const refreshData = useCallback(
     async ({ showLoader = true } = {}) => {
+      const requestId = latestRequestRef.current + 1;
+      latestRequestRef.current = requestId;
+
       if (showLoader) {
         setIsLoading(true);
       }
-
-      setError("");
 
       try {
         const [ordersResult, branchesResult] = await Promise.allSettled([
           loadStoreOrders(),
           fetchOrderBranchOptions(branch),
         ]);
+
+        if (requestId !== latestRequestRef.current) return;
 
         if (branchesResult.status === "fulfilled") {
           setBranches(
@@ -50,13 +54,19 @@ export const useOrdersData = () => {
         }
 
         setOrders(normalizeOrders(ordersResult.value));
+        setError("");
       } catch (err) {
         console.error("Error al cargar pedidos de abastecimiento:", err);
-        setError(
-          "No se pudieron cargar los pedidos. Verifica la conexión e intenta de nuevo."
-        );
+
+        if (showLoader && requestId === latestRequestRef.current) {
+          setError(
+            "No se pudieron cargar los pedidos. Verifica la conexión e intenta de nuevo."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (requestId === latestRequestRef.current) {
+          setIsLoading(false);
+        }
       }
     },
     [branch]
