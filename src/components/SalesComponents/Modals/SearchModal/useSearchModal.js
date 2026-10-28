@@ -1,3 +1,4 @@
+import { resolveBranchSalePrice } from "../../../../utils/branchSalePrice";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   normalizeText,
@@ -319,7 +320,7 @@ export const useSearchModal = ({
                   : 0,
               is_active: row.is_active !== false,
               has_been_stocked: !!row.has_been_stocked,
-              sale_price: Number(row.sale_price || 0),
+              sale_price: resolveBranchSalePrice(row, row.products),
               is_current_branch: row.branch_id === branch?.id,
             };
           })
@@ -470,7 +471,7 @@ export const useSearchModal = ({
                   isKit || !tracks || inv?.is_active !== false,
                 has_been_stocked:
                   isKit || !tracks || inv?.has_been_stocked === true,
-                branch_sale_price: Number(inv?.sale_price ?? p.sale_price ?? 0),
+                branch_sale_price: resolveBranchSalePrice(inv, p),
                 branch_cost_price: Number(inv?.cost_price ?? p.cost_price ?? 0),
                 tracks_inventory: tracks,
               };

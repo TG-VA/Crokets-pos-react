@@ -1,3 +1,4 @@
+import { resolveBranchSalePrice } from "../../../utils/branchSalePrice";
 import {
   getCartQuantityForProduct,
   updateProductExistenceInCart,
@@ -103,7 +104,7 @@ export const processFreeRewardProduct = async ({
     }
 
     stock = Number(inventoryRow.stock || 0);
-    salePrice = Number(inventoryRow.sale_price ?? product.sale_price ?? 0);
+    salePrice = resolveBranchSalePrice(inventoryRow, product);
     costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 
     const currentCartQuantity = getCartQuantityForProduct(
@@ -239,7 +240,7 @@ export const processDiscountRewardProduct = async ({
 
     stock = Number(inventoryRow.stock || 0);
     salePrice = Number(
-      originalUnitPrice ?? inventoryRow.sale_price ?? product.sale_price ?? 0
+      originalUnitPrice ?? resolveBranchSalePrice(inventoryRow, product)
     );
     costPrice = Number(inventoryRow.cost_price ?? product.cost_price ?? 0);
 

@@ -586,4 +586,48 @@ describe("inventoryAddService", () => {
       expect(logInventoryMovement).not.toHaveBeenCalled();
     });
   });
+
+  describe("precio de venta de sucursal", () => {
+    it("no escribe sale_price en una fila existente cuando el producto llega sin precio", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 5,
+        has_been_stocked: true,
+        cost_price: 100,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: { ...baseProduct, precio: undefined },
+        quantity: 5,
+        incomingCostPrice: 100,
+      });
+
+      const payload = selectQ.update.mock.calls[0][0];
+      expect(payload).not.toHaveProperty("sale_price");
+    });
+
+    it("no reescribe sale_price en una fila existente aunque el producto traiga precio", async () => {
+      setupRow({
+        id: "inv-1",
+        stock: 5,
+        has_been_stocked: true,
+        cost_price: 100,
+      });
+      supabase.from.mockImplementation(() => selectQ);
+      selectQ.update.mockReturnValue(selectQ);
+
+      await addInventoryToProduct({
+        branchId: BRANCH_ID,
+        product: baseProduct,
+        quantity: 5,
+        incomingCostPrice: 100,
+      });
+
+      const payload = selectQ.update.mock.calls[0][0];
+      expect(payload).not.toHaveProperty("sale_price");
+    });
+  });
 });

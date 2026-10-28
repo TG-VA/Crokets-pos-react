@@ -41,7 +41,6 @@ const updateInventoryRow = async ({
   inventoryRowId,
   nextStock,
   costPrice,
-  salePrice,
   updatedAt,
 }) => {
   const { error } = await supabase
@@ -51,7 +50,6 @@ const updateInventoryRow = async ({
       is_active: true,
       has_been_stocked: true,
       cost_price: costPrice,
-      sale_price: salePrice,
       updated_at: updatedAt,
     })
     .eq("id", inventoryRowId);
@@ -146,7 +144,6 @@ export const addInventoryToProduct = async ({
       inventoryRowId: inventoryRow.id,
       nextStock: newStock,
       costPrice: newCostPrice,
-      salePrice,
       updatedAt: databaseTimestamp,
     });
   } else {

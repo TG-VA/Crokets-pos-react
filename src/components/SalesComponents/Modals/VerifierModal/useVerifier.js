@@ -1,3 +1,4 @@
+import { resolveBranchSalePrice } from "../../../../utils/branchSalePrice";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   applyDiscountToPrice,
@@ -149,9 +150,7 @@ export const useVerifier = ({ isOpen, onClose, onAddToSale, branch }) => {
           "Este producto no tiene inventario registrado en esta sucursal."
         );
 
-      const salePrice = Number(
-        inventoryRow.sale_price ?? productRow.sale_price ?? 0
-      );
+      const salePrice = resolveBranchSalePrice(inventoryRow, productRow);
       const dInfo = applyDiscountToPrice(salePrice, discountRow);
 
       const mappedProduct = {

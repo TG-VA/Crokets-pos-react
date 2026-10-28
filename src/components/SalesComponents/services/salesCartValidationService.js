@@ -1,3 +1,5 @@
+import { resolveBranchSalePrice } from "../../../utils/branchSalePrice";
+
 /**
  * Evalúa las reglas de negocio de inventario y kits para determinar
  * si un producto es apto para agregarse al carrito.
@@ -60,7 +62,7 @@ export const validateProductForCart = async ({
     return {
       isValid: true,
       stock,
-      salePrice: inventoryRow.sale_price ?? product.sale_price,
+      salePrice: resolveBranchSalePrice(inventoryRow, product),
       costPrice: inventoryRow.cost_price ?? product.cost_price,
       tracksInventory: true,
     };
