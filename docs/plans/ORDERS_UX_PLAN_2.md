@@ -361,14 +361,17 @@ se cierran solos).
   validacion del cliente y el mensaje sean unicos; la RPC vuelve a validar.
 - `useReceiveOrderForm` conserva `receiptNote`, deriva `isNoteRequired` y
   `noteError`, limpia la nota al cambiar de pedido o recibirlo y bloquea
-  `canSubmit` mientras falte la nota obligatoria. `ReceiptPanel` muestra
-  "Nota (opcional)" o "Nota (obligatoria por diferencias)", el error accesible
-  y el maximo de 500 caracteres.
+  `canSubmit` mientras falte la nota obligatoria. `ReceiptNoteField` la captura
+  como tarjeta con icono, titulo "Nota de recepción" y pastilla
+  "Obligatoria"/"Opcional"; el contador "N / 500" se calcula en
+  `getReceiptNoteCounter` y cambia a advertencia desde 450 y a error en 500.
 - Visualizacion: `ordersDetailService` selecciona `receipt_notes`,
   `normalizeStoreOrder` la expone como `receiptNotes` y
-  `OrderPreviewSections` muestra "Nota de recepción" solo si tiene valor, con
-  fondo de advertencia para distinguirla de "Notas del pedido". El resumen de
-  Excel la agrega en la fila 13 cuando existe.
+  `OrderPreviewSections` muestra "Nota de recepción" solo si tiene valor, como
+  tarjeta con acento de advertencia, texto con saltos de linea respetados y pie
+  "Registrada por ..." con la fecha de recepcion cuando existen. "Notas del
+  pedido" conserva su bloque informativo. El resumen de Excel la agrega en la
+  fila 13 cuando existe.
 - Realtime sin cambios: `loadStoreOrders` usa `STORE_ORDER_SELECT`, que ahora
   incluye `receipt_notes`, y la recarga por evento ya reconstruye el pedido con
   la nueva columna.

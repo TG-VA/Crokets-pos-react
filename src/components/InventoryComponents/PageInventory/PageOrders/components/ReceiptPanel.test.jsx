@@ -87,7 +87,8 @@ describe("ReceiptPanel", () => {
   it("muestra la nota como opcional cuando no hay diferencias", () => {
     renderPanel();
 
-    expect(screen.getByLabelText("Nota (opcional)")).toBeTruthy();
+    expect(screen.getByText("Opcional")).toBeTruthy();
+    expect(screen.getByLabelText("Nota de recepción")).toBeTruthy();
   });
 
   it("marca la nota como obligatoria y muestra el error con diferencias", () => {
@@ -97,9 +98,7 @@ describe("ReceiptPanel", () => {
         "La nota de recepción es obligatoria cuando hay diferencias en el conteo.",
     });
 
-    expect(
-      screen.getByLabelText("Nota (obligatoria por diferencias)")
-    ).toBeTruthy();
+    expect(screen.getByText("Obligatoria")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toMatch(
       /obligatoria cuando hay diferencias/
     );
@@ -122,7 +121,7 @@ describe("ReceiptPanel", () => {
     const onReceiptNoteChange = vi.fn();
 
     renderPanel({ onReceiptNoteChange });
-    fireEvent.change(screen.getByLabelText("Nota (opcional)"), {
+    fireEvent.change(screen.getByLabelText("Nota de recepción"), {
       target: { value: "Faltó una bolsa" },
     });
 

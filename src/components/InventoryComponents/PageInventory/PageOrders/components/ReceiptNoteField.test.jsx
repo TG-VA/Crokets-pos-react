@@ -19,7 +19,8 @@ describe("ReceiptNoteField", () => {
   it("indica si la nota es opcional u obligatoria", () => {
     const { rerender } = renderField();
 
-    expect(screen.getByText("Nota (opcional)")).toBeTruthy();
+    expect(screen.getByText("Nota de recepción")).toBeTruthy();
+    expect(screen.getByText("Opcional")).toBeTruthy();
 
     rerender(
       <ReceiptNoteField
@@ -31,7 +32,40 @@ describe("ReceiptNoteField", () => {
       />
     );
 
-    expect(screen.getByText("Nota (obligatoria por diferencias)")).toBeTruthy();
+    expect(screen.getByText("Obligatoria")).toBeTruthy();
+  });
+
+  it("muestra el contador y cambia de tono cerca del limite", () => {
+    const { rerender } = renderField();
+
+    expect(screen.getByText("0 / 500")).toBeTruthy();
+    expect(screen.getByRole("textbox").getAttribute("aria-describedby")).toBe(
+      "receipt-note-help receipt-note-counter"
+    );
+
+    rerender(
+      <ReceiptNoteField
+        value={"a".repeat(450)}
+        isRequired={false}
+        error=""
+        isDisabled={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("450 / 500").className).toContain("counterWarning");
+
+    rerender(
+      <ReceiptNoteField
+        value={"a".repeat(500)}
+        isRequired={false}
+        error=""
+        isDisabled={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("500 / 500").className).toContain("counterError");
   });
 
   it("notifica el texto escrito", () => {
@@ -53,6 +87,9 @@ describe("ReceiptNoteField", () => {
     );
     expect(screen.getByRole("textbox").getAttribute("aria-invalid")).toBe(
       "true"
+    );
+    expect(screen.getByRole("textbox").getAttribute("aria-describedby")).toBe(
+      "receipt-note-error receipt-note-counter"
     );
   });
 });

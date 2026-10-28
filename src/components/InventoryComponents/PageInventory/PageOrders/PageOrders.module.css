@@ -890,10 +890,62 @@
   overflow-wrap: anywhere;
 }
 
-/* La nota de recepcion usa el tono de advertencia para distinguirse de las
-   notas de creacion, que conservan el fondo informativo. */
-.detailReceiptNote {
+/* La nota de recepcion es una tarjeta con acento de advertencia para
+   distinguirse de las notas de creacion, que conservan el fondo informativo. */
+.receiptNoteCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 16px 20px;
+  border: 1px solid rgba(181, 109, 0, 0.22);
+  border-left: 4px solid var(--warningText);
+  border-radius: 12px;
   background: var(--warningBg);
+}
+
+.receiptNoteHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.receiptNoteIconWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(181, 109, 0, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.receiptNoteIcon {
+  width: 13px;
+  height: 13px;
+  filter: brightness(0) saturate(100%) invert(57%) sepia(78%) saturate(1564%)
+    hue-rotate(359deg) brightness(101%) contrast(98%);
+}
+
+.receiptNoteTitle {
+  color: #5f4300;
+}
+
+.receiptNoteText {
+  margin: 0;
+  color: #3b2c10;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.receiptNoteMeta {
+  margin: 0;
+  color: #7a5a16;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 /* En el modal de detalle la ruta comparte la linea del nombre y el estado.
@@ -979,7 +1031,6 @@
 .iconButton:focus-visible,
 .tab:focus-visible,
 .quantityInput:focus-visible,
-.receiptNoteInput:focus-visible,
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible {
@@ -1135,13 +1186,4 @@
 .changeOrderButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-.receiptNoteInput {
-  width: 100%;
-  min-height: 84px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #dbe4ea;
-  font: inherit;
-  resize: vertical;
 }

@@ -75,6 +75,35 @@ describe("OrderPreviewSections", () => {
     expect(screen.getByText("Faltó una bolsa de croqueta")).toBeTruthy();
   });
 
+  it("muestra autor y fecha de la nota de recepcion cuando existen", () => {
+    render(
+      <OrderPreviewSections
+        order={{
+          ...buildOrder(3),
+          receiptNotes: "Faltó una bolsa de croqueta",
+          receivedByLabel: "Ana",
+          acceptedAt: "2026-10-24T12:30:00.000Z",
+        }}
+      />
+    );
+
+    expect(screen.getByText("Registrada por Ana · 24/10/2026")).toBeTruthy();
+  });
+
+  it("omite autor y fecha de la nota de recepcion cuando no vienen", () => {
+    render(
+      <OrderPreviewSections
+        order={{
+          ...buildOrder(3),
+          receiptNotes: "Faltó una bolsa de croqueta",
+        }}
+      />
+    );
+
+    expect(screen.queryByText(/Registrada por/)).toBeNull();
+    expect(screen.queryByText("24/10/2026")).toBeNull();
+  });
+
   it("omite la nota de recepcion cuando es nula o vacia", () => {
     const { rerender } = render(
       <OrderPreviewSections order={{ ...buildOrder(3), receiptNotes: "" }} />

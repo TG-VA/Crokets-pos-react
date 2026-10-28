@@ -53,22 +53,6 @@
   border-radius: 999px;
 }
 
-.receiptNoteField {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.receiptNoteLabel {
-  font-weight: 700;
-}
-
-.receiptNoteHelp {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #6d7b86;
-}
-
 .receiptFooter {
   display: flex;
   align-items: center;

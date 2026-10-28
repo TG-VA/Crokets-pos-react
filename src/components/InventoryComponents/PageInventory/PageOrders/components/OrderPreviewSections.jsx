@@ -1,5 +1,10 @@
 import styles from "../PageOrders.module.css";
-import { formatOrderDateTime, formatQuantity } from "../utils/ordersFormatters";
+import ReceiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
+import {
+  formatOrderDate,
+  formatOrderDateTime,
+  formatQuantity,
+} from "../utils/ordersFormatters";
 import { getOrderDifferences } from "../utils/ordersCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
 import ItemsPaginationFooter, {
@@ -22,6 +27,12 @@ const OrderPreviewSections = ({ order }) => {
   });
 
   const visibleItems = pagination.pageItems(items);
+  const receiptNoteMeta = [
+    order?.receivedByLabel ? `Registrada por ${order.receivedByLabel}` : "",
+    order?.acceptedAt ? formatOrderDate(order.acceptedAt) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   if (!order) return null;
 
@@ -118,10 +129,30 @@ const OrderPreviewSections = ({ order }) => {
       ) : null}
 
       {order.receiptNotes ? (
-        <div className={`${styles.detailNote} ${styles.detailReceiptNote}`}>
-          <strong>Nota de recepción</strong>
-          <p>{order.receiptNotes}</p>
-        </div>
+        <section
+          className={styles.receiptNoteCard}
+          aria-labelledby="receipt-note-detail-title"
+        >
+          <header className={styles.receiptNoteHeader}>
+            <span className={styles.receiptNoteIconWrapper} aria-hidden="true">
+              <img
+                src={ReceiptIcon}
+                alt=""
+                className={styles.receiptNoteIcon}
+              />
+            </span>
+            <strong
+              id="receipt-note-detail-title"
+              className={styles.receiptNoteTitle}
+            >
+              Nota de recepción
+            </strong>
+          </header>
+          <p className={styles.receiptNoteText}>{order.receiptNotes}</p>
+          {receiptNoteMeta ? (
+            <p className={styles.receiptNoteMeta}>{receiptNoteMeta}</p>
+          ) : null}
+        </section>
       ) : null}
 
       {differences.length > 0 ? (

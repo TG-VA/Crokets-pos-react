@@ -1,12 +1,34 @@
 import { calculateDifference } from "./ordersCalculationService";
 
 export const RECEIPT_NOTE_MAX_LENGTH = 500;
+export const RECEIPT_NOTE_WARNING_THRESHOLD = 450;
 
 /**
  * Texto de la nota de recepcion sin espacios en los extremos. Acepta valores
  * nulos o no textuales sin lanzar excepciones.
  */
 export const normalizeReceiptNote = (value) => (value ?? "").toString().trim();
+
+/**
+ * Estado visual del contador de caracteres. El tono cambia antes de agotar el
+ * limite para que el usuario pueda corregir sin llegar al error.
+ */
+export const getReceiptNoteCounter = (value = "") => {
+  const length = (value ?? "").toString().length;
+  const tone =
+    length >= RECEIPT_NOTE_MAX_LENGTH
+      ? "error"
+      : length >= RECEIPT_NOTE_WARNING_THRESHOLD
+        ? "warning"
+        : "neutral";
+
+  return {
+    length,
+    maxLength: RECEIPT_NOTE_MAX_LENGTH,
+    text: `${length} / ${RECEIPT_NOTE_MAX_LENGTH}`,
+    tone,
+  };
+};
 
 /**
  * Verdadero si al menos una partida capturada difiere de lo esperado. Las

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   RECEIPT_NOTE_MAX_LENGTH,
+  RECEIPT_NOTE_WARNING_THRESHOLD,
+  getReceiptNoteCounter,
   hasReceiptDifferences,
   normalizeReceiptNote,
   validateReceiptNote,
@@ -28,6 +30,24 @@ describe("receiptNoteCalculationService", () => {
     );
     expect(normalizeReceiptNote("   ")).toBe("");
     expect(normalizeReceiptNote(null)).toBe("");
+  });
+
+  it("calcula el contador y su tono segun la longitud", () => {
+    expect(RECEIPT_NOTE_WARNING_THRESHOLD).toBe(450);
+    expect(getReceiptNoteCounter("")).toMatchObject({
+      length: 0,
+      maxLength: RECEIPT_NOTE_MAX_LENGTH,
+      text: "0 / 500",
+      tone: "neutral",
+    });
+    expect(getReceiptNoteCounter(null).text).toBe("0 / 500");
+    expect(getReceiptNoteCounter("a".repeat(449)).tone).toBe("neutral");
+    expect(getReceiptNoteCounter("a".repeat(450)).tone).toBe("warning");
+    expect(getReceiptNoteCounter("a".repeat(499)).tone).toBe("warning");
+    expect(getReceiptNoteCounter("a".repeat(500))).toMatchObject({
+      text: "500 / 500",
+      tone: "error",
+    });
   });
 
   it("no exige nota cuando el conteo coincide", () => {
