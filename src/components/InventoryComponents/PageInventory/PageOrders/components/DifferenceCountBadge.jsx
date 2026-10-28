@@ -1,4 +1,6 @@
 import styles from "../PageOrders.module.css";
+import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
+import { ORDER_ITEM_STATUS_META } from "../utils/ordersFormatters";
 
 /**
  * Productos con diferencia de un pedido, con etiqueta: "Faltante: N" en rojo
@@ -8,14 +10,14 @@ import styles from "../PageOrders.module.css";
 const BADGES = [
   {
     key: "shortages",
-    text: "Faltante",
-    className: styles.differenceShort,
+    text: ORDER_ITEM_STATUS_META.shortage.label,
+    className: ITEM_STATUS_DIFFERENCE_CLASS.shortage,
     label: "productos con faltante",
   },
   {
     key: "overages",
-    text: "Sobrante",
-    className: styles.differenceOver,
+    text: ORDER_ITEM_STATUS_META.overage.label,
+    className: ITEM_STATUS_DIFFERENCE_CLASS.overage,
     label: "productos con sobrante",
   },
 ];
@@ -30,7 +32,10 @@ const DifferenceCountBadge = ({ summary }) => {
   if (visible.length === 0) {
     return (
       <span
-        className={[styles.differenceBadge, styles.differenceOk].join(" ")}
+        className={[
+          styles.differenceBadge,
+          ITEM_STATUS_DIFFERENCE_CLASS.accepted,
+        ].join(" ")}
         aria-label="Sin diferencias"
       >
         0

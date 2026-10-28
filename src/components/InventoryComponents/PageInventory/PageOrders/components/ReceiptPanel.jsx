@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import styles from "../PageOrders.module.css";
+import { getOrderItemStatus } from "../utils/ordersCalculationService";
+import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
 import { formatQuantity } from "../utils/ordersFormatters";
 import { RECEIPT_NOTE_MAX_LENGTH } from "../utils/receiptNoteCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
@@ -13,12 +15,10 @@ import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
 
 const RECEIPT_PAGE_SIZES = [10, 25, 50];
 
-const getDifferenceClass = (difference) => {
-  if (difference === null) return styles.differencePending;
-  if (difference === 0) return styles.differenceOk;
-  if (difference > 0) return styles.differenceOver;
-  return styles.differenceShort;
-};
+const getDifferenceClass = (difference) =>
+  ITEM_STATUS_DIFFERENCE_CLASS[
+    getOrderItemStatus({ differenceQty: difference }, "accepted")
+  ];
 
 const getDifferenceLabel = (difference) => {
   if (difference === null) return "Pendiente";
