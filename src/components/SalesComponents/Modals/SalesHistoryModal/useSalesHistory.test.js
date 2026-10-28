@@ -185,4 +185,76 @@ describe("useSalesHistory - seleccion inicial", () => {
     rerender({ isOpen: true });
     await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
   });
+
+  it("al cambiar de dia selecciona la venta mas reciente de ese dia", async () => {
+    fetchHistoryTickets.mockImplementation(({ dateFilter }) =>
+      Promise.resolve(dateFilter === "2026-03-16" ? [TICKETS[1]] : TICKETS)
+    );
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    await act(async () => {
+      result.current.setDateFilter("2026-03-16");
+    });
+
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s1"));
+    expect(fetchTicketDetailsData).toHaveBeenLastCalledWith("s1");
+  });
+
+  it("al cambiar a un dia sin ventas limpia la seleccion y no pide detalle", async () => {
+    fetchHistoryTickets.mockImplementation(({ dateFilter }) =>
+      Promise.resolve(dateFilter === "2026-03-16" ? [] : TICKETS)
+    );
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+    const detailCallsBefore = fetchTicketDetailsData.mock.calls.length;
+
+    await act(async () => {
+      result.current.setDateFilter("2026-03-16");
+    });
+
+    await waitFor(() => expect(result.current.selectedTicket).toBeNull());
+    expect(fetchTicketDetailsData).toHaveBeenCalledTimes(detailCallsBefore);
+  });
+
+  it("una respuesta tardia de otro dia no pisa la seleccion del dia actual", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 2, 15, 12, 0, 0));
+    let resolveOldDay;
+    fetchHistoryTickets.mockImplementation(({ dateFilter }) => {
+      if (dateFilter === "2026-03-16") {
+        return new Promise((resolve) => {
+          resolveOldDay = resolve;
+        });
+      }
+      if (dateFilter === "2026-03-17") {
+        return Promise.resolve([
+          {
+            id: "s3",
+            folio: "F-3",
+            status: "completed",
+            total: 300,
+            payments: [],
+          },
+        ]);
+      }
+      return Promise.resolve(TICKETS);
+    });
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    await act(async () => {
+      result.current.setDateFilter("2026-03-16");
+    });
+    await act(async () => {
+      result.current.setDateFilter("2026-03-17");
+    });
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s3"));
+
+    await act(async () => {
+      resolveOldDay(TICKETS);
+    });
+
+    expect(result.current.selectedTicket?.id).toBe("s3");
+  });
 });

@@ -67,7 +67,10 @@ export const useSalesHistory = ({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isPartialReturnOpen, setIsPartialReturnOpen] = useState(false);
   const handleSelectTicketRef = useRef(null);
-  const hasInitialSelectionRef = useRef(false);
+  // Guarda la fecha para la que ya se autoselecciono la venta mas reciente.
+  // Asi cada cambio de dia vuelve a autoseleccionar sin pisar la seleccion del
+  // usuario cuando solo cambian cajero, folio o metodos de pago.
+  const autoSelectedDateRef = useRef(null);
 
   const closeAppModal = useCallback(
     () => setAppModal((p) => ({ ...p, isOpen: false })),
@@ -184,9 +187,12 @@ export const useSalesHistory = ({
         if (cancelled) return;
         applyTickets(nextTickets);
 
-        // Al abrir el modal se selecciona la venta mas reciente una sola vez.
-        if (hasInitialSelectionRef.current) return;
-        hasInitialSelectionRef.current = true;
+        // Se autoselecciona la venta mas reciente una vez por fecha cargada.
+        // La fecha se toma de la peticion, no del estado, para que una
+        // respuesta tardia de otro dia no marque el dia equivocado.
+        const requestDate = ticketsRequestKey.dateFilter;
+        if (autoSelectedDateRef.current === requestDate) return;
+        autoSelectedDateRef.current = requestDate;
         if (!nextTickets.length) {
           setSelectedTicket(null);
           setCancelReason("");
@@ -349,7 +355,7 @@ export const useSalesHistory = ({
   });
 
   useEffect(() => {
-    if (!isOpen) hasInitialSelectionRef.current = false;
+    if (!isOpen) autoSelectedDateRef.current = null;
   }, [isOpen]);
 
   const executeCancelSale = async () => {
