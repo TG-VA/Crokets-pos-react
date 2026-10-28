@@ -216,6 +216,10 @@ export const buildOrderSummaryWorksheet = ({ worksheet, model }) => {
   else if (summary.differenceNet > 0)
     diffNetCell.font = { color: { argb: "FF1E6B3A" }, bold: true };
 
+  if (summary.receiptNotes) {
+    addLabelValue(13, "Nota de recepción", summary.receiptNotes);
+  }
+
   if (differences.length > 0) {
     worksheet.mergeCells("A14:F14");
     const diffTitle = worksheet.getCell("A14");

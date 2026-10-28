@@ -65,4 +65,33 @@ describe("OrderPreviewSections", () => {
 
     expect(screen.queryByText("Notas del pedido")).toBeNull();
   });
+
+  it("muestra la nota de recepcion cuando existe", () => {
+    render(
+      <OrderPreviewSections
+        order={{
+          ...buildOrder(3),
+          notes: "Entregar por la puerta trasera",
+          receiptNotes: "Faltó una bolsa de croqueta",
+        }}
+      />
+    );
+
+    expect(screen.getByText("Nota de recepción")).toBeTruthy();
+    expect(screen.getByText("Faltó una bolsa de croqueta")).toBeTruthy();
+  });
+
+  it("omite la nota de recepcion cuando es nula o vacia", () => {
+    const { rerender } = render(
+      <OrderPreviewSections order={{ ...buildOrder(3), receiptNotes: "" }} />
+    );
+
+    expect(screen.queryByText("Nota de recepción")).toBeNull();
+
+    rerender(
+      <OrderPreviewSections order={{ ...buildOrder(3), receiptNotes: null }} />
+    );
+
+    expect(screen.queryByText("Nota de recepción")).toBeNull();
+  });
 });

@@ -1230,6 +1230,12 @@
   overflow-wrap: anywhere;
 }
 
+/* La nota de recepcion usa el tono de advertencia para distinguirse de las
+   notas de creacion, que conservan el fondo informativo. */
+.detailReceiptNote {
+  background: var(--warningBg);
+}
+
 /* En el modal de detalle la ruta comparte la linea del nombre y el estado.
    El historial, las tarjetas y la impresion conservan el tamano base. */
 .detailContent .detailRoute {

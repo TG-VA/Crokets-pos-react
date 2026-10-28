@@ -27,6 +27,7 @@ const baseOrder = {
   departments: ["ALIMENTOS"],
   notes: "Revisar faltantes",
   discrepancyNotes: "Algunos productos llegaron incompletos",
+  receiptNotes: "Faltó una bolsa de alimento",
   items: [
     {
       barcode: "AP0015",
@@ -114,6 +115,17 @@ describe("ordersWorkbookBuilder", () => {
     buildOrderSummaryWorksheet({ worksheet, model });
     expect(worksheet.name).toBe("Resumen");
     expect(worksheet.getCell("A1").value).toBe("PEDIDO DE ABASTECIMIENTO");
+  });
+
+  it("incluye la nota de recepcion en el resumen exportado", () => {
+    const model = buildOrderExportModel(baseOrder);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Resumen");
+    buildOrderSummaryWorksheet({ worksheet, model });
+
+    expect(model.summary.receiptNotes).toBe("Faltó una bolsa de alimento");
+    expect(worksheet.getCell("A13").value).toBe("Nota de recepción");
+    expect(worksheet.getCell("B13").value).toBe("Faltó una bolsa de alimento");
   });
 
   it("buildOrderSummaryWorksheet incluye footer con fecha", () => {

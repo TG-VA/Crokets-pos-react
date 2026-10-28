@@ -34,4 +34,27 @@ describe("OrderDetailModal", () => {
     expect(within(header).getByText("desde")).toBeTruthy();
     expect(text.indexOf("TORRES")).toBeLessThan(text.indexOf("HUAYACAN"));
   });
+
+  it("muestra la nota de recepcion del pedido", () => {
+    render(
+      <OrderDetailModal
+        order={{ ...order, receiptNotes: "Faltó una bolsa de croqueta" }}
+        onClose={() => {}}
+      />
+    );
+
+    expect(screen.getByText("Nota de recepción")).toBeTruthy();
+    expect(screen.getByText("Faltó una bolsa de croqueta")).toBeTruthy();
+  });
+
+  it("no muestra la seccion de nota de recepcion si es nula", () => {
+    render(
+      <OrderDetailModal
+        order={{ ...order, receiptNotes: null }}
+        onClose={() => {}}
+      />
+    );
+
+    expect(screen.queryByText("Nota de recepción")).toBeNull();
+  });
 });

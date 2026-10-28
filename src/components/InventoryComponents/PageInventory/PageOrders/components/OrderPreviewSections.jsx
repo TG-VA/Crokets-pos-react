@@ -132,6 +132,13 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
         </div>
       ) : null}
 
+      {order.receiptNotes ? (
+        <div className={`${styles.detailNote} ${styles.detailReceiptNote}`}>
+          <strong>Nota de recepción</strong>
+          <p>{order.receiptNotes}</p>
+        </div>
+      ) : null}
+
       {differences.length > 0 ? (
         <div className={styles.differencesSection}>
           <strong>Diferencias de recepción</strong>

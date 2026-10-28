@@ -38,6 +38,7 @@ export const STORE_ORDER_SELECT = `
   departments_summary,
   notes,
   discrepancy_notes,
+  receipt_notes,
   sent_at,
   accepted_at,
   created_at,

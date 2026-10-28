@@ -135,6 +135,7 @@ export const buildOrderSummaryData = (order) => {
     statusStyle,
     notes: order?.notes || "",
     discrepancyNotes: order?.discrepancyNotes || "",
+    receiptNotes: order?.receiptNotes || "",
   };
 };
 

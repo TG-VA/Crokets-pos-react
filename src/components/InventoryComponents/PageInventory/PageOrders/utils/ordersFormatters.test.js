@@ -98,6 +98,7 @@ describe("ordersFormatters", () => {
       to_branch: { name: "Sucursal Norte" },
       created_by: { username: "admin" },
       departments_summary: ["Alimento"],
+      receipt_notes: "  Llegó una bolsa abierta  ",
       sent_at: "2026-10-22T15:00:00.000Z",
       store_order_items: [
         {
@@ -119,6 +120,7 @@ describe("ordersFormatters", () => {
       toBranchName: "Sucursal Norte",
       createdByLabel: "ADMIN",
       departments: ["Alimento"],
+      receiptNotes: "Llegó una bolsa abierta",
     });
     expect(result.items[0]).toMatchObject({
       productId: "p1",
@@ -130,6 +132,10 @@ describe("ordersFormatters", () => {
 
   it("regresa null al normalizar un pedido inexistente", () => {
     expect(normalizeStoreOrder(null)).toBeNull();
+  });
+
+  it("deja la nota de recepcion vacia cuando el pedido no la tiene", () => {
+    expect(normalizeStoreOrder({ items: [] }).receiptNotes).toBe("");
   });
 });
 

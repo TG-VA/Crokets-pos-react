@@ -223,6 +223,9 @@ export const normalizeStoreOrder = (order) => {
     status: order.status ?? "pending",
     notes: order.notes ?? "",
     discrepancyNotes: order.discrepancyNotes ?? order.discrepancy_notes ?? "",
+    receiptNotes: (order.receiptNotes ?? order.receipt_notes ?? "")
+      .toString()
+      .trim(),
     fromBranchId: order.fromBranchId ?? order.from_branch_id ?? "",
     toBranchId: order.toBranchId ?? order.to_branch_id ?? "",
     fromBranchName:
