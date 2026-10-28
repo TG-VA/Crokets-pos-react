@@ -1,0 +1,83 @@
+.orderCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 14px;
+  border: 1px solid #edf2f5;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.orderCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.orderCardTitle {
+  margin: 2px 0 0;
+  color: #2a3d4a;
+}
+
+.orderMeta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f6fafc;
+}
+
+.orderMetaItem {
+  display: grid;
+  grid-template-columns: 16px auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.orderMetaItem img {
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
+}
+
+.orderMeta dt {
+  font-size: 0.75rem;
+  color: #6d7b86;
+}
+
+.orderMeta dd {
+  margin: 0;
+  font-weight: 700;
+  color: #2a3d4a;
+  justify-self: end;
+}
+
+.departmentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.departmentChip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--infoBg);
+  color: var(--infoText);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.orderCardActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}

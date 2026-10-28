@@ -3,14 +3,30 @@ import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 
 const MODULE_DIR = __dirname;
-const css = readFileSync(join(MODULE_DIR, "PageOrders.module.css"), "utf8");
 
-const definedClasses = new Set(
-  Array.from(css.matchAll(/\.([A-Za-z][\w-]*)/g)).map((match) => match[1])
+const readModuleCss = (file) => readFileSync(join(MODULE_DIR, file), "utf8");
+
+const cssFiles = readdirSync(MODULE_DIR).filter((file) =>
+  file.endsWith(".module.css")
 );
 
+const classesByFile = Object.fromEntries(
+  cssFiles.map((file) => [
+    file,
+    new Set(
+      Array.from(readModuleCss(file).matchAll(/\.([A-Za-z][\w-]*)/g)).map(
+        (match) => match[1]
+      )
+    ),
+  ])
+);
+
+const allCss = cssFiles.map(readModuleCss).join("\n");
+
 const getBlock = (className) => {
-  const match = css.match(new RegExp(`(?:^|\\n)\\.${className} \\{([^}]*)\\}`));
+  const match = allCss.match(
+    new RegExp(`(?:^|\\n)\\.${className} \\{([^}]*)\\}`)
+  );
 
   return match ? match[1] : "";
 };
@@ -20,16 +36,25 @@ const sourceFiles = readdirSync(join(MODULE_DIR, "components")).filter(
 );
 
 describe("estilos del modulo de pedidos", () => {
-  it("todas las clases usadas en los componentes existen en el CSS", () => {
+  it("todas las clases usadas en los componentes existen en su CSS", () => {
     const missing = [];
 
     sourceFiles.forEach((file) => {
       const source = readFileSync(join(MODULE_DIR, "components", file), "utf8");
+      const aliases = Object.fromEntries(
+        Array.from(
+          source.matchAll(/import (\w+) from "\.\.\/([\w]+\.module\.css)"/g)
+        ).map((match) => [match[1], match[2]])
+      );
 
-      Array.from(source.matchAll(/styles\.([A-Za-z]\w*)/g)).forEach((match) => {
-        if (!definedClasses.has(match[1])) {
-          missing.push(`${file}: ${match[1]}`);
-        }
+      Object.entries(aliases).forEach(([alias, cssFile]) => {
+        Array.from(
+          source.matchAll(new RegExp(`\\b${alias}\\.([A-Za-z]\\w*)`, "g"))
+        ).forEach((match) => {
+          if (!classesByFile[cssFile]?.has(match[1])) {
+            missing.push(`${file}: ${alias}.${match[1]}`);
+          }
+        });
       });
     });
 

@@ -1,4 +1,5 @@
 import styles from "../PageOrders.module.css";
+import cardStyles from "../PendingOrderCard.module.css";
 import {
   formatOrderDateTime,
   getOrderStatusMeta,
@@ -38,11 +39,11 @@ const PendingOrderCard = ({ order, onOpenDetail, onSelectOrder }) => {
   ];
 
   return (
-    <article className={styles.orderCard}>
-      <div className={styles.orderCardHeader}>
+    <article className={cardStyles.orderCard}>
+      <div className={cardStyles.orderCardHeader}>
         <div>
           <span className={styles.orderFolio}>{order.orderNumber}</span>
-          <h3 className={styles.orderCardTitle}>{order.orderName}</h3>
+          <h3 className={cardStyles.orderCardTitle}>{order.orderName}</h3>
         </div>
         <span
           className={[
@@ -56,9 +57,9 @@ const PendingOrderCard = ({ order, onOpenDetail, onSelectOrder }) => {
         </span>
       </div>
 
-      <dl className={styles.orderMeta}>
+      <dl className={cardStyles.orderMeta}>
         {metaItems.map((meta) => (
-          <div key={meta.label} className={styles.orderMetaItem}>
+          <div key={meta.label} className={cardStyles.orderMetaItem}>
             <img src={meta.icon} alt="" aria-hidden="true" />
             <dt>{meta.label}</dt>
             <dd>{meta.value}</dd>
@@ -66,19 +67,19 @@ const PendingOrderCard = ({ order, onOpenDetail, onSelectOrder }) => {
         ))}
       </dl>
 
-      <ul className={styles.departmentChips}>
+      <ul className={cardStyles.departmentChips}>
         {order.departments.length > 0 ? (
           order.departments.map((department) => (
-            <li key={department} className={styles.departmentChip}>
+            <li key={department} className={cardStyles.departmentChip}>
               {department}
             </li>
           ))
         ) : (
-          <li className={styles.departmentChip}>Sin departamento</li>
+          <li className={cardStyles.departmentChip}>Sin departamento</li>
         )}
       </ul>
 
-      <div className={styles.orderCardActions}>
+      <div className={cardStyles.orderCardActions}>
         <button
           type="button"
           className={styles.detailButton}

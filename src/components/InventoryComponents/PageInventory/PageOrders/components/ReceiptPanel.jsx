@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import styles from "../PageOrders.module.css";
+import receiptStyles from "../ReceiptPanel.module.css";
 import { getOrderItemStatus } from "../utils/ordersCalculationService";
 import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
 import { formatQuantity } from "../utils/ordersFormatters";
@@ -82,12 +83,12 @@ const ReceiptPanel = ({
   const visibleItems = pagination.pageItems(order.items);
 
   return (
-    <div className={styles.receiptPanel}>
-      <div className={styles.receiptHeader}>
+    <div className={receiptStyles.receiptPanel}>
+      <div className={receiptStyles.receiptHeader}>
         <div>
           <span className={styles.orderFolio}>{order.orderNumber}</span>
-          <h3 className={styles.receiptTitle}>{order.orderName}</h3>
-          <p className={styles.receiptRoute}>
+          <h3 className={receiptStyles.receiptTitle}>{order.orderName}</h3>
+          <p className={receiptStyles.receiptRoute}>
             <BranchBadge role="origin" name={order.fromBranchName} />
             <span className={styles.routeConnector}>hacia</span>
             <BranchBadge role="destination" name={order.toBranchName} />
@@ -104,12 +105,12 @@ const ReceiptPanel = ({
         </button>
       </div>
 
-      <div className={styles.receiptProgress}>
+      <div className={receiptStyles.receiptProgress}>
         <span>
           {capturedCount} de {order.items.length} productos capturados
         </span>
         <progress
-          className={styles.progressBar}
+          className={receiptStyles.progressBar}
           value={capturedCount}
           max={order.items.length}
           aria-label="Productos capturados"
@@ -197,17 +198,23 @@ const ReceiptPanel = ({
         onChange={onReceiptNoteChange}
       />
 
-      <footer className={styles.receiptFooter}>
-        <div className={styles.receiptStatus} role="status" aria-live="polite">
+      <footer className={receiptStyles.receiptFooter}>
+        <div
+          className={receiptStyles.receiptStatus}
+          role="status"
+          aria-live="polite"
+        >
           {isComplete ? (
-            <span className={`${styles.statusPill} ${styles.statusPillOk}`}>
+            <span
+              className={`${receiptStyles.statusPill} ${receiptStyles.statusPillOk}`}
+            >
               <img src={CheckIcon} alt="" aria-hidden="true" />
               Conteo completo
             </span>
           ) : (
             <>
               <span
-                className={`${styles.statusPill} ${styles.statusPillMissing}`}
+                className={`${receiptStyles.statusPill} ${receiptStyles.statusPillMissing}`}
               >
                 <img src={WarningIcon} alt="" aria-hidden="true" />
                 Faltan {missingItems.length}{" "}
@@ -217,7 +224,7 @@ const ReceiptPanel = ({
               {order.items.length > pageSize ? (
                 <button
                   type="button"
-                  className={styles.linkButton}
+                  className={receiptStyles.linkButton}
                   onClick={goToFirstMissing}
                 >
                   Ir al primer pendiente

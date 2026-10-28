@@ -1,4 +1,4 @@
-import styles from "../PageOrders.module.css";
+import badgeStyles from "../BranchBadge.module.css";
 import { toUpperLabel } from "../utils/ordersFormatters";
 
 /**
@@ -8,8 +8,11 @@ import { toUpperLabel } from "../utils/ordersFormatters";
  * mayusculas y mas grande que el rol; los datos de la base no se modifican.
  */
 const ROLE_META = {
-  origin: { label: "Origen", className: styles.branchBadgeOrigin },
-  destination: { label: "Destino", className: styles.branchBadgeDestination },
+  origin: { label: "Origen", className: badgeStyles.branchBadgeOrigin },
+  destination: {
+    label: "Destino",
+    className: badgeStyles.branchBadgeDestination,
+  },
 };
 
 const BranchBadge = ({ role, name, showRole = true }) => {
@@ -17,11 +20,13 @@ const BranchBadge = ({ role, name, showRole = true }) => {
 
   return (
     <span
-      className={[styles.routeBadge, meta.className].filter(Boolean).join(" ")}
+      className={[badgeStyles.routeBadge, meta.className]
+        .filter(Boolean)
+        .join(" ")}
     >
-      <span className={styles.routeBadgeName}>{toUpperLabel(name)}</span>
+      <span className={badgeStyles.routeBadgeName}>{toUpperLabel(name)}</span>
       {showRole ? (
-        <span className={styles.routeBadgeRole}>{meta.label}</span>
+        <span className={badgeStyles.routeBadgeRole}>{meta.label}</span>
       ) : null}
     </span>
   );

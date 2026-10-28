@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 
-import styles from "../PageOrders.module.css";
+import feedbackStyles from "../FeedbackBanner.module.css";
 import XmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const TONE_CLASS = {
-  success: styles.feedbackSuccess,
-  warning: styles.feedbackWarning,
-  error: styles.feedbackError,
-  info: styles.feedbackInfo,
+  success: feedbackStyles.feedbackSuccess,
+  warning: feedbackStyles.feedbackWarning,
+  error: feedbackStyles.feedbackError,
+  info: feedbackStyles.feedbackInfo,
 };
 
 const AUTO_DISMISS_MS = 8000;
@@ -33,14 +33,14 @@ const FeedbackBanner = ({ feedback, onDismiss }) => {
 
   return (
     <div
-      className={[styles.feedback, toneClass].filter(Boolean).join(" ")}
+      className={[feedbackStyles.feedback, toneClass].filter(Boolean).join(" ")}
       role={feedback.tone === "error" ? "alert" : "status"}
     >
-      <span className={styles.feedbackMessage}>{feedback.message}</span>
+      <span className={feedbackStyles.feedbackMessage}>{feedback.message}</span>
       {onDismiss ? (
         <button
           type="button"
-          className={styles.feedbackClose}
+          className={feedbackStyles.feedbackClose}
           onClick={onDismiss}
           aria-label="Cerrar aviso"
         >

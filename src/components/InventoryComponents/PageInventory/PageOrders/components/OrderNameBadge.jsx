@@ -1,4 +1,4 @@
-import styles from "../PageOrders.module.css";
+import badgeStyles from "../BranchBadge.module.css";
 import { toUpperLabel } from "../utils/ordersFormatters";
 
 /**
@@ -6,7 +6,7 @@ import { toUpperLabel } from "../utils/ordersFormatters";
  * por toUpperLabel para que llegue en mayusculas aunque el dato no lo este.
  */
 const OrderNameBadge = ({ name }) => (
-  <span className={styles.orderNameBadge}>{toUpperLabel(name)}</span>
+  <span className={badgeStyles.orderNameBadge}>{toUpperLabel(name)}</span>
 );
 
 export default OrderNameBadge;
