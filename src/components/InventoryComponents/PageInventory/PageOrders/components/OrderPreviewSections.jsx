@@ -2,9 +2,9 @@ import styles from "../PageOrders.module.css";
 import { formatOrderDateTime, formatQuantity } from "../utils/ordersFormatters";
 import { getOrderDifferences } from "../utils/ordersCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
-import PaginationBar from "../../../../PaginationBar/PaginationBar";
-
-const DETAIL_PAGE_SIZES = [10, 25, 50];
+import ItemsPaginationFooter, {
+  ITEMS_PAGE_SIZES,
+} from "./ItemsPaginationFooter";
 
 /**
  * Cuerpo compartido del detalle y de la vista previa de exportacion.
@@ -21,7 +21,7 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
   const pagination = usePagination({
     totalItems: paginated ? items.length : 0,
     defaultPageSize: 10,
-    pageSizeOptions: DETAIL_PAGE_SIZES,
+    pageSizeOptions: ITEMS_PAGE_SIZES,
     storageKey: "crokets_order_detail_page_size",
   });
 
@@ -108,21 +108,10 @@ const OrderPreviewSections = ({ order, paginated = false }) => {
       </div>
 
       {paginated && items.length > pagination.pageSize ? (
-        <div className={styles.paginationFooter}>
-          <PaginationBar
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            pageSizeOptions={DETAIL_PAGE_SIZES}
-            onPageChange={pagination.handlePageChange}
-            onPageSizeChange={pagination.handlePageSizeChange}
-            totalItems={items.length}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            itemsNoun="productos"
-            labelMode="range"
-          />
-        </div>
+        <ItemsPaginationFooter
+          pagination={pagination}
+          totalItems={items.length}
+        />
       ) : null}
 
       {order.notes ? (

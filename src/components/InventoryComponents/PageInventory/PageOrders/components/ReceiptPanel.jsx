@@ -6,14 +6,14 @@ import { ITEM_STATUS_DIFFERENCE_CLASS } from "../utils/differenceToneClasses";
 import { formatQuantity } from "../utils/ordersFormatters";
 import { RECEIPT_NOTE_MAX_LENGTH } from "../utils/receiptNoteCalculationService";
 import { usePagination } from "../../../../../hooks/usePagination";
-import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import BranchBadge from "./BranchBadge";
+import ItemsPaginationFooter, {
+  ITEMS_PAGE_SIZES,
+} from "./ItemsPaginationFooter";
 import ChangeIcon from "../../../../../assets/icons/changeIcon.svg";
 import CheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import WarningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
-
-const RECEIPT_PAGE_SIZES = [10, 25, 50];
 
 const getDifferenceClass = (difference) =>
   ITEM_STATUS_DIFFERENCE_CLASS[
@@ -50,7 +50,7 @@ const ReceiptPanel = ({
   const pagination = usePagination({
     totalItems: order.items.length,
     defaultPageSize: 10,
-    pageSizeOptions: RECEIPT_PAGE_SIZES,
+    pageSizeOptions: ITEMS_PAGE_SIZES,
     storageKey: "crokets_receipt_items_page_size",
   });
   const { currentPage, pageSize, handlePageChange } = pagination;
@@ -176,21 +176,11 @@ const ReceiptPanel = ({
       </div>
 
       {order.items.length > pageSize ? (
-        <div className={styles.paginationFooter}>
-          <PaginationBar
-            currentPage={currentPage}
-            totalPages={pagination.totalPages}
-            pageSize={pageSize}
-            pageSizeOptions={RECEIPT_PAGE_SIZES}
-            onPageChange={goToPage}
-            onPageSizeChange={pagination.handlePageSizeChange}
-            totalItems={order.items.length}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            itemsNoun="productos"
-            labelMode="range"
-          />
-        </div>
+        <ItemsPaginationFooter
+          pagination={pagination}
+          totalItems={order.items.length}
+          onPageChange={goToPage}
+        />
       ) : null}
 
       {error ? (
