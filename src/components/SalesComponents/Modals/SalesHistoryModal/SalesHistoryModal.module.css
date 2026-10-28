@@ -971,10 +971,6 @@
     width: 100%;
   }
 
-  .footer {
-    justify-content: center;
-  }
-
   .partialReturnSummaryRow,
   .totalRow,
   .returnItemRow {
