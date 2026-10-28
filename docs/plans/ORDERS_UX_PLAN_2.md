@@ -355,8 +355,9 @@ se cierran solos).
   recrea con `p_receipt_notes text default null`. El servidor recalcula las
   diferencias: si hay al menos una, exige `nullif(trim(p_receipt_notes), '')` y
   limita la nota a 500 caracteres. Conserva `SECURITY DEFINER`, `search_path`,
-  la autorizacion por sucursal y los grants sin `anon`. **Pendiente de aplicar
-  al remoto** (no se ejecuto `supabase db push`).
+  la autorizacion por sucursal y los grants sin `anon`. **Aplicada al remoto**
+  con `supabase db push --linked` el 28 oct 2026 (verificacion en
+  `docs/SUPABASE_MIGRATIONS.md`).
 - Regla pura en `ordersCalculationService.js`: `hasReceiptDifferences`,
   `normalizeReceiptNote` y `validateReceiptNote` (máximo
   `RECEIPT_NOTE_MAX_LENGTH = 500`). La usan el hook y el servicio para que la
