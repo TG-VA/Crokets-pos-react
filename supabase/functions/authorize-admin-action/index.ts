@@ -18,6 +18,11 @@ const jsonResponse = (body: unknown, status = 200) => {
   });
 };
 
+// Escapa los comodines de ILIKE para comparar el username como texto literal y
+// no como patron.
+const escapeLikePattern = (value: string) =>
+  value.replace(/[\\%_]/g, (char) => `\\${char}`);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -104,7 +109,7 @@ Deno.serve(async (req) => {
           name
         )
       `)
-      .eq("username", username)
+      .ilike("username", escapeLikePattern(username))
       .maybeSingle();
 
     if (adminUserError) {
