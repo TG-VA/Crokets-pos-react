@@ -1,3 +1,4 @@
+import { isNamedCustomer } from "../../services/publicCustomerService";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   getPaymentMethodLabel,
@@ -666,10 +667,9 @@ export const useSalesHistory = ({
           payments: paymentsForPrint,
           status: ticketForPrint.status,
           notes: ticketForPrint.notes || "",
-          customer_name:
-            ticketForPrint.client !== "PÚBLICO EN GENERAL"
-              ? ticketForPrint.client
-              : "",
+          customer_name: isNamedCustomer(ticketForPrint.client)
+            ? ticketForPrint.client
+            : "",
           customer_phone: ticketForPrint.customerPhone || "",
           points_earned: Number(ticketForPrint.pointsEarned || 0),
           points_returned: Number(ticketForPrint.pointsReturned || 0),
