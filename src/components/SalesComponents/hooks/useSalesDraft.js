@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useDidChange } from "../../../hooks/useDidChange";
 import { afterCommit } from "../../../utils/asyncUtils";
 
 const SALES_DRAFT_VERSION = 1;
@@ -66,9 +65,6 @@ const hasDraftDataToSave = ({
     barcode.trim().length > 0
   );
 };
-
-/** Clave estable para detectar cambios de borrador aunque no exista. */
-const NO_DRAFT_KEY = "__no_draft__";
 
 /** Plan vacio: no hay borrador que restaurar todavia. */
 const EMPTY_RESTORE_PLAN = {
@@ -216,13 +212,16 @@ const useSalesDraft = ({
 
   // --- Restauración inicial del borrador ---
   // El plan de restauración es estado derivado: se calcula durante el render en
-  // el momento en que cambia la clave del borrador. Antes se resolvía dentro de
-  // un efecto, con escrituras sincrónicas que provocaban un re-render en cascada
-  // y dejaban el borrador sin preparar durante una pasada.
+  // el momento en que cambia la clave del borrador. Se compara contra una clave
+  // inicializada en `null` para que la primera pasada tambien lo evalue (el
+  // borrador existe antes de montar la vista y `useDidChange` no lo detectaba).
   const [restorePlan, setRestorePlan] = useState(EMPTY_RESTORE_PLAN);
   const [restoreAppliedKey, setRestoreAppliedKey] = useState(null);
+  const [restoreEvaluatedKey, setRestoreEvaluatedKey] = useState(null);
 
-  if (useDidChange(draftKey ?? NO_DRAFT_KEY)) {
+  if (restoreEvaluatedKey !== draftKey) {
+    setRestoreEvaluatedKey(draftKey);
+
     const plan = readDraftRestorePlan({
       draftKey,
       sessionAcknowledgedKey,
