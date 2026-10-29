@@ -214,6 +214,15 @@ describe("Modales de Ventas: botones de cierre", () => {
           /^(esc\s*-\s*)?(cerrar|cancelar)$/i.test(button.textContent.trim())
         )
       ).toBe(false);
+
+      // El unico cierre es la X de la cabecera (aria-label o simbolo).
+      expect(
+        buttons.some(
+          (button) =>
+            button.getAttribute("aria-label") === "Cerrar modal" ||
+            button.textContent.trim() === "×"
+        )
+      ).toBe(true);
     }
   );
 });

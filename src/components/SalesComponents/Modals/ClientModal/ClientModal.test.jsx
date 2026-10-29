@@ -106,4 +106,16 @@ describe("ClientModal: puntos del cliente ya asignado", () => {
     expect(screen.getAllByText("10").length).toBeGreaterThan(0);
     errorSpy.mockRestore();
   });
+
+  it("cierra solo con la X: no hay Cancelar ni Cerrar en el pie", async () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar modal" })).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /cancelar|^cerrar$/i })
+    ).toBeNull();
+    await waitFor(() =>
+      expect(screen.getAllByText("10").length).toBeGreaterThan(0)
+    );
+  });
 });

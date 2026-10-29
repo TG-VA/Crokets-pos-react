@@ -266,4 +266,14 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
       ).toBeTruthy();
     });
   });
+
+  it("cierra solo con la X: el pie tiene unicamente F1, F2 y F4", () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar modal" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F1 - / })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F2 - / })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F4 - / })).toBeTruthy();
+    expect(screen.queryByText(/esc\s*-\s*cancelar/i)).toBeNull();
+  });
 });
