@@ -141,7 +141,8 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Dólares" }));
 
-    expect(screen.getByText("Adeudo exacto (USD):")).toBeTruthy();
+    expect(screen.getByText("Adeudo (USD):")).toBeTruthy();
+    expect(screen.queryByText("Adeudo exacto (USD):")).toBeNull();
     expect(screen.getByText("$9")).toBeTruthy();
   });
 

@@ -670,7 +670,7 @@ const PaymentModal = memo(
                     </div>
                     {hasValidExchangeRate && (
                       <div className={styles.paymentRow}>
-                        <span>Adeudo exacto (USD):</span>
+                        <span>Adeudo (USD):</span>
                         <span className={styles.equivalentAmount}>
                           ${dollarsDue}
                         </span>
