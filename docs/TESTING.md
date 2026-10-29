@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (29 oct 2026)
 
-227 archivos de test (**2734 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+228 archivos de test (**2738 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                   | Archivo                                                                            |
@@ -141,6 +141,7 @@ y el proceso principal de Electron:
 | Aplicar descuento: paginacion de resultados            | `.../Modals/ProductDiscountRewardModal/ProductDiscountRewardModal.test.jsx`        |
 | Aplicar recompensas: paginacion de productos           | `.../Modals/RewardProductSelectionModal/RewardProductSelectionModal.test.jsx`      |
 | Descuento y recompensas: boton de confirmar a la derec | `.../SalesComponents/Modals/rewardModalsFooter.styles.test.js`                     |
+| Asignar cliente: puntos vigentes del cliente asignado  | `.../SalesComponents/Modals/ClientModal/ClientModal.test.jsx`                      |
 | Venta en curso: carrito, cliente y expiracion          | `src/contexts/SalesCartContext.test.jsx`                                           |
 | Navbar: atajos bloqueados con modales abiertos         | `src/components/Navbar/hooks/useKeyboardShortcuts.test.jsx`                        |
 | Ventas: borrador (restauracion y guardado)             | `.../SalesComponents/hooks/useSalesDraft.test.js`                                  |
