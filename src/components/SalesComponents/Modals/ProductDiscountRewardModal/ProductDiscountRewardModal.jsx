@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, memo, useMemo } from "react";
 import styles from "./ProductDiscountRewardModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
+import ModalPaginatedList from "../../../ModalPaginatedList/ModalPaginatedList";
 import {
   useProductDiscountReward,
   formatCurrency,
@@ -9,6 +10,8 @@ import {
   toNumber,
   MIN_SEARCH_LENGTH,
 } from "./useProductDiscountReward";
+
+const PRODUCTS_PER_PAGE = 8;
 
 const ProductDiscountRewardModal = memo(
   ({ isOpen, reward, branchId, cartProducts, onClose, onConfirm }) => {
@@ -252,9 +255,12 @@ const ProductDiscountRewardModal = memo(
               </div>
             ) : (
               filteredProducts.length > 0 && (
-                <div className={styles.productList}>
-                  {/* AHORA ITERAMOS SOBRE LA LISTA ORDENADA */}
-                  {sortedFilteredProducts.map((p) => {
+                <ModalPaginatedList
+                  key={searchTerm.trim().toLowerCase()}
+                  items={sortedFilteredProducts}
+                  pageSize={PRODUCTS_PER_PAGE}
+                  listClassName={styles.productList}
+                  renderItem={(p) => {
                     const status = getInventoryStatus(p);
                     const discount = calculateRewardDiscount(
                       p,
@@ -331,8 +337,8 @@ const ProductDiscountRewardModal = memo(
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  }}
+                />
               )
             )}
 
