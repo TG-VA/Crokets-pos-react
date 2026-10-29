@@ -4,6 +4,9 @@ import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
 import AppModal from "../../../AppModal/AppModal";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
+import { useModalLayer } from "../../../../contexts/ModalStackContext";
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 import { useSalesHistory } from "./useSalesHistory";
 import {
   formatCurrency,
@@ -73,6 +76,16 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
     branch,
     onSaleCancelled,
   });
+
+  useModalLayer(isOpen, "sales-history-modal");
+
+  // Escape cierra el historial solo cuando ninguna capa interna lo esta
+  // consumiendo (aviso, devolucion parcial o notas del ticket).
+  useEscapeKey((event) => {
+    if (appModal.isOpen || isPartialReturnOpen || isNotesModalOpen) return;
+    event.preventDefault();
+    onClose();
+  }, isOpen);
 
   if (!isOpen) return null;
 
@@ -207,19 +220,12 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
       <div className={styles.modal}>
         <div className={styles.header}>
           <h2 className={styles.headerTitle}>HISTORIAL DE VENTAS</h2>
-          <button
-            type="button"
-            className={styles.closeButton}
+          <ModalCloseButton
             onClick={onClose}
-            aria-label="Cerrar historial de ventas"
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
+            ariaLabel="Cerrar historial de ventas"
+            className={styles.closeButton}
+            iconClassName={styles.closeIcon}
+          />
         </div>
 
         <div className={styles.content}>
@@ -459,23 +465,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                           .map((p) => p.reference)
                           .join(" / ")}
                       </span>
-                    </div>
-                  )}
-
-                  {getDerivedStatus(selectedTicket) === "partial_return" && (
-                    <div className={styles.partialReturnSummaryBox}>
-                      <div className={styles.partialReturnSummaryRow}>
-                        <span>Unidades actualmente en la venta:</span>
-                        <strong>{totalUnitsStillInSale}</strong>
-                      </div>
-                      <div className={styles.partialReturnSummaryRow}>
-                        <span>Máximo total que puedes devolver ahora:</span>
-                        <strong>{maxUnitsAllowedInOperation}</strong>
-                      </div>
-                      <div className={styles.partialReturnSummaryRow}>
-                        <span>Debe quedar al menos:</span>
-                        <strong>1 unidad en el ticket</strong>
-                      </div>
                     </div>
                   )}
 
@@ -1058,7 +1047,15 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                     </button>
                     <button
                       type="button"
-                      className={`${styles.actionBtn} ${styles.btnNotes}`}
+                      className={[
+                        styles.actionBtn,
+                        styles.btnNotes,
+                        selectedTicket?.notes?.trim()
+                          ? styles.btnNotesActive
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => setIsNotesModalOpen(true)}
                       disabled={!selectedTicket?.notes?.trim()}
                     >

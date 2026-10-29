@@ -34,6 +34,7 @@ import {
   fetchProductsByIds,
   fetchSaleReturnsData,
   fetchHistoryTickets,
+  executeCancelSaleTransaction,
 } from "../../services/salesHistoryService";
 import { useSalesHistory } from "./useSalesHistory";
 
@@ -236,6 +237,44 @@ describe("useSalesHistory - seleccion inicial", () => {
     expect(result.current.tickets).toEqual([]);
     expect(fetchTicketDetailsData).toHaveBeenCalledTimes(detailCallsBefore);
     errorSpy.mockRestore();
+  });
+
+  it("refresca en el mismo lugar el ticket recien cancelado", async () => {
+    let currentTickets = TICKETS;
+    fetchHistoryTickets.mockImplementation(() =>
+      Promise.resolve(currentTickets)
+    );
+    executeCancelSaleTransaction.mockResolvedValue(undefined);
+
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    act(() => {
+      result.current.setCancelReason("Producto defectuoso");
+      result.current.setRefundMethodId("pm-1");
+    });
+    act(() => {
+      result.current.handleCancelSale();
+    });
+
+    expect(result.current.appModal.isOpen).toBe(true);
+
+    currentTickets = [
+      {
+        ...TICKETS[0],
+        status: "cancelled",
+        cancelReason: "Producto defectuoso",
+      },
+      TICKETS[1],
+    ];
+
+    await act(async () => {
+      await result.current.appModal.onConfirm();
+    });
+
+    expect(result.current.selectedTicket?.id).toBe("s2");
+    expect(result.current.selectedTicket?.status).toBe("cancelled");
+    expect(result.current.tickets[0].status).toBe("cancelled");
   });
 
   it("una respuesta tardia de otro dia no pisa la seleccion del dia actual", async () => {

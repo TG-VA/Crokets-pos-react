@@ -145,14 +145,17 @@ export const useSalesHistory = ({
   );
 
   const loadTickets = useCallback(async () => {
-    if (!ticketsRequestKey) return;
+    if (!ticketsRequestKey) return [];
 
     try {
-      applyTickets(await fetchHistoryTickets(ticketsRequestKey));
+      const nextTickets = await fetchHistoryTickets(ticketsRequestKey);
+      applyTickets(nextTickets);
+      return nextTickets;
     } catch (e) {
       console.error(e);
       setTickets([]);
       markSettled();
+      return [];
     }
   }, [ticketsRequestKey, applyTickets, markSettled]);
 
@@ -375,10 +378,28 @@ export const useSalesHistory = ({
         cancelReason.trim(),
         refundMethodId
       );
-      await loadTickets();
 
-      const det = await loadTicketDetail(selectedTicket, false);
-      await loadReturnData(selectedTicket.id);
+      // La lista se recarga y el ticket cancelado se re-selecciona con los
+      // datos frescos para que el estado, el motivo y el detalle cambien en el
+      // mismo lugar sin obligar al usuario a volver a seleccionarlo.
+      const refreshedTickets = await loadTickets();
+      const refreshedTicket = refreshedTickets.find(
+        (ticket) => ticket.id === ticketBeforeCancel.id
+      );
+
+      const det = await loadTicketDetail(
+        refreshedTicket || ticketBeforeCancel,
+        false
+      );
+      await loadReturnData(ticketBeforeCancel.id);
+
+      if (refreshedTicket) {
+        setSelectedTicket((previous) =>
+          previous?.id === refreshedTicket.id
+            ? { ...previous, ...refreshedTicket }
+            : refreshedTicket
+        );
+      }
 
       if (onSaleCancelled) onSaleCancelled();
 
