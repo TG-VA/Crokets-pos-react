@@ -25,5 +25,3 @@ export const getSalesModalLayerIds = (flags = {}) =>
   SALES_MODAL_LAYERS.filter(([flag]) => Boolean(flags[flag])).map(
     ([, layerId]) => layerId
   );
-
-export const SALES_MODAL_FLAGS = SALES_MODAL_LAYERS.map(([flag]) => flag);

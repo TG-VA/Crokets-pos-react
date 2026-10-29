@@ -1,32 +1,47 @@
 import { describe, it, expect } from "vitest";
 
-import {
-  SALES_MODAL_FLAGS,
-  getSalesModalLayerIds,
-} from "./salesModalLayersService";
+import { getSalesModalLayerIds } from "./salesModalLayersService";
+
+// Contrato esperado, escrito a mano e independiente del descriptor.
+const EXPECTED_LAYERS = {
+  isExitModalOpen: "sales-exit",
+  isExitAuthModalOpen: "sales-exit-auth",
+  isEntryModalOpen: "sales-entry",
+  showPaymentModal: "sales-payment",
+  isClientModalOpen: "sales-client",
+  isVerifierModalOpen: "sales-verifier",
+  isSearchModalOpen: "sales-search",
+  isDiscountModalOpen: "sales-discount",
+  isPendingModalOpen: "sales-pending-ticket",
+  isChangeModalOpen: "sales-change-ticket",
+  isDeleteModalOpen: "sales-delete-ticket",
+  isDeleteItemModalOpen: "sales-delete-item",
+  isSalesHistoryModalOpen: "sales-history",
+  saleSuccessData: "sales-success",
+  isRewardProductModalOpen: "sales-reward-product",
+  isProductDiscountRewardModalOpen: "sales-product-discount",
+};
 
 describe("getSalesModalLayerIds", () => {
   it("no devuelve capas cuando no hay modales abiertos", () => {
     expect(getSalesModalLayerIds({})).toEqual([]);
   });
 
-  it.each(SALES_MODAL_FLAGS)(
-    "registra una capa cuando %s esta activa",
-    (flag) => {
-      const layers = getSalesModalLayerIds({ [flag]: true });
-
-      expect(layers).toHaveLength(1);
+  it.each(Object.entries(EXPECTED_LAYERS))(
+    "%s registra la capa %s",
+    (flag, layerId) => {
+      expect(getSalesModalLayerIds({ [flag]: true })).toEqual([layerId]);
     }
   );
 
-  it("asigna un identificador distinto a cada modal", () => {
+  it("devuelve todas las capas cuando todos los modales estan abiertos", () => {
     const all = Object.fromEntries(
-      SALES_MODAL_FLAGS.map((flag) => [flag, true])
+      Object.keys(EXPECTED_LAYERS).map((flag) => [flag, true])
     );
 
-    const layers = getSalesModalLayerIds(all);
-
-    expect(new Set(layers).size).toBe(SALES_MODAL_FLAGS.length);
+    expect(getSalesModalLayerIds(all).sort()).toEqual(
+      Object.values(EXPECTED_LAYERS).sort()
+    );
   });
 
   it("trata un objeto de venta exitosa como modal abierto", () => {
