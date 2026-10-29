@@ -55,15 +55,7 @@ const PartialReturnModal = memo(
     if (!isOpen) return null;
 
     return (
-      <div
-        className={styles.overlay}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }}
-      >
+      <div className={styles.overlay}>
         <div className={styles.modal}>
           <div className={styles.header}>
             <div>

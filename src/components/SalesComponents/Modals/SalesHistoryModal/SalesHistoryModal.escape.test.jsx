@@ -1,7 +1,11 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-const historyState = vi.hoisted(() => ({ notesOpen: false }));
+const historyState = vi.hoisted(() => ({
+  notesOpen: false,
+  partialReturnOpen: false,
+  setPartialReturnOpen: null,
+}));
 
 vi.mock("../../../../contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "u1" } }),
@@ -41,8 +45,8 @@ vi.mock("./useSalesHistory", () => ({
     setCancelReason: vi.fn(),
     refundMethodId: "",
     setRefundMethodId: vi.fn(),
-    isPartialReturnOpen: false,
-    setIsPartialReturnOpen: vi.fn(),
+    isPartialReturnOpen: historyState.partialReturnOpen,
+    setIsPartialReturnOpen: historyState.setPartialReturnOpen,
     appModal: { isOpen: false },
     isNotesModalOpen: historyState.notesOpen,
     setIsNotesModalOpen: vi.fn(),
@@ -59,6 +63,8 @@ import SalesHistoryModal from "./SalesHistoryModal";
 describe("SalesHistoryModal: Escape con capas internas", () => {
   beforeEach(() => {
     historyState.notesOpen = false;
+    historyState.partialReturnOpen = false;
+    historyState.setPartialReturnOpen = vi.fn();
   });
 
   it("cierra el historial con Escape cuando no hay capas internas", () => {
@@ -79,6 +85,33 @@ describe("SalesHistoryModal: Escape con capas internas", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
 
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("cierra solo la devolucion parcial con Escape y regresa al historial", () => {
+    historyState.partialReturnOpen = true;
+    const onClose = vi.fn();
+    render(<SalesHistoryModal isOpen onClose={onClose} />);
+
+    expect(screen.getByText("DEVOLUCIÓN PARCIAL")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(historyState.setPartialReturnOpen).toHaveBeenCalledWith(false);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("cierra la devolucion parcial con Escape aunque el foco este dentro del modal", () => {
+    historyState.partialReturnOpen = true;
+    const onClose = vi.fn();
+    render(<SalesHistoryModal isOpen onClose={onClose} />);
+
+    // Con el foco dentro del modal, la tecla nace en un elemento del overlay.
+    fireEvent.keyDown(screen.getByText("DEVOLUCIÓN PARCIAL"), {
+      key: "Escape",
+    });
+
+    expect(historyState.setPartialReturnOpen).toHaveBeenCalledWith(false);
     expect(onClose).not.toHaveBeenCalled();
   });
 });
