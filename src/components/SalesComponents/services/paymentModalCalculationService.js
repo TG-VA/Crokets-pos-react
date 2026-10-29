@@ -14,20 +14,21 @@ export const roundCurrency = (value) => {
 };
 
 /**
- * Redondeo hacia arriba a centavos. Para los adeudos en dolares garantiza que
- * el monto mostrado siempre cubra el total en MXN, sin dejar un faltante de
- * fracciones de centavo.
+ * Redondeo hacia arriba a dolares enteros. Los adeudos en dolares se muestran
+ * sin decimales y siempre cubren el total en MXN (19.29 USD se cobra como 20),
+ * aunque haya que dar cambio. El `toFixed(6)` evita subir un dolar por ruido
+ * de punto flotante.
  */
-export const ceilCurrency = (value) => {
+export const ceilWholeDollars = (value) => {
   const parsed = toNumber(value);
-  return Math.ceil(Number((parsed * 100).toFixed(6))) / 100;
+  return Math.ceil(Number(parsed.toFixed(6)));
 };
 
 export const isValidExchangeRate = (exchangeRate) => toNumber(exchangeRate) > 0;
 
 /**
- * Dolares exactos que faltan para cubrir un total en MXN.
- * Devuelve 0 cuando el total o el tipo de cambio no son validos.
+ * Dolares enteros que faltan para cubrir un total en MXN, redondeados hacia
+ * arriba. Devuelve 0 cuando el total o el tipo de cambio no son validos.
  */
 export const getDollarsDueInUsd = (totalMxn, exchangeRate) => {
   const total = roundCurrency(totalMxn);
@@ -35,7 +36,7 @@ export const getDollarsDueInUsd = (totalMxn, exchangeRate) => {
 
   if (total <= 0 || rate <= 0) return 0;
 
-  return ceilCurrency(total / rate);
+  return ceilWholeDollars(total / rate);
 };
 
 /**
@@ -59,9 +60,9 @@ export const getMixedRemainingUsd = ({
 };
 
 /**
- * Total pagado convertido a MXN segun el metodo seleccionado. Mantiene el mismo
- * redondeo que `getDollarsDueInUsd` para que la validacion de cobertura no
- * rechace pagos exactos por diferencias de punto flotante.
+ * Total pagado convertido a MXN segun el metodo seleccionado. Redondea a
+ * centavos para que la validacion de cobertura no rechace pagos exactos por
+ * diferencias de punto flotante.
  */
 export const getPaymentTotalInMxn = ({
   method,

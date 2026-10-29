@@ -672,7 +672,7 @@ const PaymentModal = memo(
                       <div className={styles.paymentRow}>
                         <span>Adeudo exacto (USD):</span>
                         <span className={styles.equivalentAmount}>
-                          ${dollarsDue.toFixed(2)}
+                          ${dollarsDue}
                         </span>
                       </div>
                     )}
@@ -771,7 +771,7 @@ const PaymentModal = memo(
                   <div className={styles.paymentRow}>
                     <span>Restante en USD:</span>
                     <span className={styles.equivalentAmount}>
-                      ${mixedRemainingUsd.toFixed(2)}
+                      ${mixedRemainingUsd}
                     </span>
                   </div>
                 )}

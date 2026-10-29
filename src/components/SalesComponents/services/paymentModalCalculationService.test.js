@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  ceilCurrency,
+  ceilWholeDollars,
   getDollarsDueInUsd,
   getMixedRemainingUsd,
   getPaymentTotalInMxn,
@@ -17,9 +17,14 @@ describe("paymentModalCalculationService", () => {
       expect(roundCurrency(null)).toBe(0);
     });
 
-    it("redondea hacia arriba para garantizar cobertura", () => {
-      expect(ceilCurrency(18.501)).toBe(18.51);
-      expect(ceilCurrency(18.5)).toBe(18.5);
+    it("redondea hacia arriba a dolares enteros para garantizar cobertura", () => {
+      expect(ceilWholeDollars(19.29)).toBe(20);
+      expect(ceilWholeDollars(18.01)).toBe(19);
+      expect(ceilWholeDollars(18)).toBe(18);
+    });
+
+    it("no sube un dolar por ruido de punto flotante", () => {
+      expect(ceilWholeDollars(20.000000000000004)).toBe(20);
     });
   });
 
@@ -29,9 +34,19 @@ describe("paymentModalCalculationService", () => {
       expect(getDollarsDueInUsd(100, 20)).toBe(5);
     });
 
-    it("redondea hacia arriba cuando el total no es divisible al centavo", () => {
-      expect(getDollarsDueInUsd(100, 18)).toBe(5.56);
-      expect(getDollarsDueInUsd(10, 3)).toBe(3.34);
+    it("redondea hacia arriba a dolares enteros cuando el total no es divisible", () => {
+      expect(getDollarsDueInUsd(100, 18)).toBe(6);
+      expect(getDollarsDueInUsd(10, 3)).toBe(4);
+      expect(getDollarsDueInUsd(357, 18.5)).toBe(20);
+    });
+
+    it("nunca devuelve un monto que deje sin cubrir el total", () => {
+      const total = 356.99;
+      const rate = 18.5;
+
+      expect(getDollarsDueInUsd(total, rate) * rate).toBeGreaterThanOrEqual(
+        total
+      );
     });
 
     it("devuelve 0 con total o tipo de cambio invalidos", () => {
@@ -73,7 +88,7 @@ describe("paymentModalCalculationService", () => {
           cashMxn: 50,
           exchangeRate: 18,
         })
-      ).toBe(2.78);
+      ).toBe(3);
     });
 
     it("devuelve 0 con tipo de cambio invalido o vacio", () => {

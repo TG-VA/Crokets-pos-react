@@ -142,7 +142,7 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dólares" }));
 
     expect(screen.getByText("Adeudo exacto (USD):")).toBeTruthy();
-    expect(screen.getByText("$8.11")).toBeTruthy();
+    expect(screen.getByText("$9")).toBeTruthy();
   });
 
   it("actualiza el restante en USD del pago mixto segun el efectivo capturado", () => {
@@ -151,13 +151,13 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
 
     expect(screen.getByText("Restante en USD:")).toBeTruthy();
-    expect(screen.getByText("$8.11")).toBeTruthy();
+    expect(screen.getByText("$9")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Efectivo:"), {
       target: { value: "50" },
     });
 
-    expect(screen.getByText("$5.41")).toBeTruthy();
+    expect(screen.getByText("$6")).toBeTruthy();
   });
 
   it("expande los ultimos 2 metodos para ocupar toda la fila cuando hay 5 visibles", () => {
