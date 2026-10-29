@@ -112,7 +112,7 @@ const DeleteItemModal = memo(
               className={styles.confirmButton}
               onClick={handleConfirm}
             >
-              ENTER - Eliminar
+              Eliminar
             </button>
           </div>
         </div>
