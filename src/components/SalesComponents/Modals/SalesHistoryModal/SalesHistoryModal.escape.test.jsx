@@ -4,6 +4,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 const historyState = vi.hoisted(() => ({
   notesOpen: false,
   partialReturnOpen: false,
+  appModal: { isOpen: false },
+  ticketOverrides: {},
   setPartialReturnOpen: null,
 }));
 
@@ -29,6 +31,7 @@ vi.mock("./useSalesHistory", () => ({
       notes: "Entregar bolsa extra.",
       items: [],
       payments: [],
+      ...historyState.ticketOverrides,
     },
     dateFilter: "2026-10-28",
     setDateFilter: vi.fn(),
@@ -47,7 +50,7 @@ vi.mock("./useSalesHistory", () => ({
     setRefundMethodId: vi.fn(),
     isPartialReturnOpen: historyState.partialReturnOpen,
     setIsPartialReturnOpen: historyState.setPartialReturnOpen,
-    appModal: { isOpen: false },
+    appModal: historyState.appModal,
     isNotesModalOpen: historyState.notesOpen,
     setIsNotesModalOpen: vi.fn(),
     closeAppModal: vi.fn(),
@@ -64,6 +67,8 @@ describe("SalesHistoryModal: Escape con capas internas", () => {
   beforeEach(() => {
     historyState.notesOpen = false;
     historyState.partialReturnOpen = false;
+    historyState.appModal = { isOpen: false };
+    historyState.ticketOverrides = {};
     historyState.setPartialReturnOpen = vi.fn();
   });
 
@@ -114,4 +119,45 @@ describe("SalesHistoryModal: Escape con capas internas", () => {
     expect(historyState.setPartialReturnOpen).toHaveBeenCalledWith(false);
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("no cierra el historial con Escape mientras hay un aviso abierto", () => {
+    historyState.appModal = {
+      isOpen: true,
+      type: "warning",
+      title: "Aviso",
+      message: "Revisa los datos",
+    };
+    const onClose = vi.fn();
+    render(<SalesHistoryModal isOpen onClose={onClose} />);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("SalesHistoryModal: resumen de puntos del cliente", () => {
+  beforeEach(() => {
+    historyState.notesOpen = false;
+    historyState.partialReturnOpen = false;
+    historyState.setPartialReturnOpen = vi.fn();
+    historyState.appModal = { isOpen: false };
+    historyState.ticketOverrides = { pointsEarned: 12 };
+  });
+
+  it("muestra el resumen para un cliente con nombre propio", () => {
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.getByText("Puntos del cliente")).toBeTruthy();
+  });
+
+  it.each(["PÚBLICO EN GENERAL", "Publico en general"])(
+    "oculta el resumen cuando el cliente es %j",
+    (client) => {
+      historyState.ticketOverrides = { pointsEarned: 12, client };
+      render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+      expect(screen.queryByText("Puntos del cliente")).toBeNull();
+    }
+  );
 });
