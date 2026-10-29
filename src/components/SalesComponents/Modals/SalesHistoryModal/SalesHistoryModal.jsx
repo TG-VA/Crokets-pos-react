@@ -1105,14 +1105,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                   ? selectedTicket.notes
                   : "Esta venta no tiene notas registradas."}
               </div>
-              <div className={styles.notesFooter}>
-                <button
-                  className={styles.closeFooterBtn}
-                  onClick={() => setIsNotesModalOpen(false)}
-                >
-                  Cerrar
-                </button>
-              </div>
             </div>
           </div>
         )}
