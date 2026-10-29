@@ -196,6 +196,8 @@ export const SalesCartProvider = ({ children }) => {
 
     if (!currentSaleClient?.id || !clientAssignedAt) return undefined;
 
+    // Cliente nuevo: se descarta la pausa del anterior. startedAt arranca en
+    // null por seguridad; la rama de modal abierto lo fija enseguida.
     if (tracking.assignedAt !== clientAssignedAt) {
       pauseTrackingRef.current = {
         assignedAt: clientAssignedAt,
