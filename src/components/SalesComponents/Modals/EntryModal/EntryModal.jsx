@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import styles from "./EntryModal.module.css";
 import EntryIcon from "../../../../assets/icons/entryIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const EntryModal = memo(({ isOpen, onClose, onSaveEntry }) => {
@@ -139,20 +138,6 @@ const EntryModal = memo(({ isOpen, onClose, onSaveEntry }) => {
               Registrar entrada de efectivo
             </span>
           </h2>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={closeEntryModal}
-            disabled={isSaving}
-            aria-label="Cerrar modal"
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
         </div>
 
         <div className={styles.modalBody}>

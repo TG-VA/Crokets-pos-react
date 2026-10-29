@@ -2,7 +2,6 @@ import React, { useEffect, memo, useCallback } from "react";
 import styles from "./DeleteItem.module.css";
 import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const DeleteItemModal = memo(
@@ -56,19 +55,6 @@ const DeleteItemModal = memo(
                 Eliminar artículo
               </span>
             </h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={onClose}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
           </div>
 
           <div className={styles.modalBody}>

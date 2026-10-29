@@ -2,7 +2,6 @@ import React, { useState, useEffect, memo, useCallback } from "react";
 import styles from "./NotesModal.module.css";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import { useModalLayer } from "../../../../contexts/ModalStackContext";
-import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
@@ -64,11 +63,6 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
       >
         <div className={styles.modalHeader}>
           <h2>Agregar Notas</h2>
-          <ModalCloseButton
-            onClick={handleClose}
-            className={styles.closeButton}
-            iconClassName={styles.closeIcon}
-          />
         </div>
 
         <div className={styles.notesModalBody}>

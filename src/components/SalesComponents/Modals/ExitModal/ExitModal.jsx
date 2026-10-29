@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import styles from "./ExitModal.module.css";
 import ExitIcon from "../../../../assets/icons/exitIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 import { getCashOperationSettings } from "../../../../services/cashOperationSettingsService";
 
@@ -138,20 +137,6 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
               Registrar salida de efectivo
             </span>
           </h2>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={handleClose}
-            disabled={isSaving}
-            aria-label="Cerrar modal"
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
         </div>
 
         <div className={styles.modalBody}>

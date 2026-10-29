@@ -4,7 +4,6 @@ import { useBranch } from "../../../../contexts/BranchContext";
 import AppModal from "../../../AppModal/AppModal";
 import { useSearchModal } from "./useSearchModal";
 import SearchIcon from "../../../../assets/icons/searchIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const SearchModal = memo(
   ({ isOpen, onClose, onAddToSale, productosEnVenta = [] }) => {
@@ -107,13 +106,6 @@ const SearchModal = memo(
                 Búsqueda de productos
               </span>
             </h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={handleClose}
-            >
-              <img src={XmarkIcon} alt="" className={styles.closeIcon} />
-            </button>
           </div>
 
           <div className={styles.searchModalBody}>
@@ -504,7 +496,7 @@ const SearchModal = memo(
                 className={`${styles.actionButton} ${styles.cancelButton}`}
                 onClick={handleClose}
               >
-                ESC - Cerrar
+                Cancelar
               </button>
             </div>
             <div className={styles.actionHints}>
