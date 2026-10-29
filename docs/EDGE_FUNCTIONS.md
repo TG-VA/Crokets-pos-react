@@ -44,12 +44,12 @@ método no es `POST`).
 ### Flujo de validación
 
 1. Busca el usuario por `username` en `public.users` con un cliente **service role**,
-   sin distinguir mayúsculas y escapando los comodines de `ILIKE` (`index.ts:96-108`).
-2. Verifica que el usuario exista, esté activo y tenga rol `admin` (`index.ts:122-145`).
+   sin distinguir mayúsculas y escapando los comodines de `ILIKE` (`index.ts:101-113`).
+2. Verifica que el usuario exista, esté activo y tenga rol `admin` (`index.ts:127-150`).
 3. Inicia sesión contra **Supabase Auth** con el email del usuario y la contraseña recibida, usando
-   un cliente **anon** (`index.ts:154-165`).
+   un cliente **anon** (`index.ts:159-170`).
 4. Confirma que el `id` autenticado coincide con el usuario administrador y cierra la sesión local
-   (`index.ts:167-176`).
+   (`index.ts:172-181`).
 
 ### Seguridad
 
