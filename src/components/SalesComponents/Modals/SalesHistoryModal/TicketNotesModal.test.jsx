@@ -64,6 +64,32 @@ describe("TicketNotesModal", () => {
     }
   );
 
+  it("es un dialogo accesible con el folio como nombre", () => {
+    renderModal();
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Notas del ticket 1042",
+    });
+
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("etiqueta cada chip para lectores de pantalla", () => {
+    renderModal();
+
+    expect(screen.getByText("Cajero:")).toBeTruthy();
+    expect(screen.getByText("Cliente:")).toBeTruthy();
+    expect(screen.getByText("Fecha:")).toBeTruthy();
+  });
+
+  it("muestra la fecha del ticket", () => {
+    renderModal();
+
+    const dateChip = screen.getByText("Fecha:").closest("li");
+
+    expect(dateChip.textContent).toMatch(/2026/);
+  });
+
   it("se cierra con Escape una sola vez", () => {
     const { onClose } = renderModal();
 

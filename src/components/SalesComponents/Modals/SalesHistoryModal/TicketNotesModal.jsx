@@ -1,4 +1,5 @@
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+import { useId } from "react";
 import styles from "./TicketNotesModal.module.css";
 import { formatDateTime } from "../../services/salesHistoryService";
 import { isNamedCustomer } from "../../services/publicCustomerService";
@@ -9,29 +10,42 @@ import ClockIcon from "../../../../assets/icons/clock-solid-full.svg";
 
 const buildMetaChips = (ticket) =>
   [
-    { key: "cashier", icon: UserIcon, value: ticket.cashier },
+    {
+      key: "cashier",
+      label: "Cajero",
+      icon: UserIcon,
+      value: ticket.cashier,
+    },
     {
       key: "client",
+      label: "Cliente",
       icon: UserIcon,
       value: isNamedCustomer(ticket.client) ? ticket.client.trim() : "",
     },
     {
       key: "date",
+      label: "Fecha",
       icon: ClockIcon,
       value: ticket.date ? formatDateTime(ticket.date) : "",
     },
   ].filter((chip) => chip.value);
 
 const TicketNotesModal = ({ ticket, onClose }) => {
+  const titleId = useId();
   const note = ticket.notes?.trim();
 
   useEscapeKey(onClose);
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         <div className={styles.header}>
-          <h3 className={styles.title}>
+          <h3 id={titleId} className={styles.title}>
             <img
               src={ReceiptIcon}
               alt=""
@@ -64,6 +78,7 @@ const TicketNotesModal = ({ ticket, onClose }) => {
                 className={styles.chipIcon}
                 aria-hidden="true"
               />
+              <span className={styles.visuallyHidden}>{chip.label}:</span>{" "}
               {chip.value}
             </li>
           ))}
