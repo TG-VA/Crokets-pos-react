@@ -2608,6 +2608,35 @@ al abrirse, lo que reduce la ventana pero no cierra el problema.
 (`sum(points)` por `customer_id`) con bloqueo de la fila del cliente y rechace el canje si no alcanza;
 restringir los inserts directos con RLS.
 
+### 81. Usuario `Fernando` sin email ni cuenta en Supabase Auth
+
+**Estado:** Abierto (29 oct 2026).
+
+**Severidad:** Media.
+
+La fila `52bf01a3-8c3a-4bdc-ada8-946f525c4322` de `public.users` (`fernando`, rol administrador) no
+tiene `email` ni cuenta correspondiente en `auth.users`. `authorize-admin-action` exige el email para
+reautenticar contra Supabase Auth, asi que Fernando no puede autorizar acciones protegidas ni iniciar
+sesion: la funcion responde "El usuario administrador no tiene email configurado.".
+
+**Solucion recomendada:** darlo de alta con la edge function `admin-create-user`, que crea la cuenta
+de Auth y el email, o desactivarlo si ya no se usa.
+
+### 82. `auth.users.user_metadata.username` conserva el casing anterior
+
+**Estado:** Abierto (29 oct 2026).
+
+**Severidad:** Baja (solo visual).
+
+La migracion `20261029120000_users_username_case_insensitive.sql` normalizo `public.users.username` a
+minusculas, pero `auth.users.user_metadata.username` de los usuarios existentes conserva el valor
+original (`CARLOS`, `GAEL`, `BRENDA`, `ALEXANDER`, `Fernando`). Ningun flujo lo usa como fuente de
+verdad — el login y la autorizacion de administradores leen `public.users.username` — pero puede
+aparecer con mayusculas en el panel de Supabase Auth.
+
+**Solucion recomendada:** actualizar la metadata con `auth.admin.updateUserById` cuando se edite cada
+usuario, o dejarlo como esta si la app no muestra ese campo.
+
 ---
 
 ## Cómo usar este documento

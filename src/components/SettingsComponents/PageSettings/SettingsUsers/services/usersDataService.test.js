@@ -244,12 +244,12 @@ describe("usersDataService", () => {
       expect(result.data.roleId).toBe("role-cashier");
     });
 
-    it("envia el username recortado y en mayusculas", async () => {
+    it("envia el username recortado y en minusculas", async () => {
       const { update } = buildUpdateMock({
         data: {
           id: "u1",
           name: "Ana",
-          username: "NUEVA",
+          username: "nueva",
           email: "ana@crokets.test",
           status: true,
           role_id: "role-admin",
@@ -261,17 +261,17 @@ describe("usersDataService", () => {
       const result = await updateUser({
         id: "u1",
         name: "Ana",
-        username: "  nueva  ",
+        username: "  NUEVA  ",
         roleId: "role-admin",
       });
 
       expect(update).toHaveBeenCalledWith({
         name: "Ana",
-        username: "NUEVA",
+        username: "nueva",
         role_id: "role-admin",
       });
       expect(result.success).toBe(true);
-      expect(result.data.username).toBe("NUEVA");
+      expect(result.data.username).toBe("nueva");
     });
 
     it("no consulta si no hay campos que actualizar", async () => {

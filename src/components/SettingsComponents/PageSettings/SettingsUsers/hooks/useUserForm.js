@@ -18,6 +18,14 @@ export const PASSWORD_MATCH_MESSAGE = "Las contraseñas coinciden";
 
 const LIVE_FEEDBACK_FIELDS = new Set(["username", "email", "confirmPassword"]);
 
+// El nombre completo se captura en mayusculas y el username en minusculas, que
+// es el formato que persiste usersDataService y que exige la base con
+// users_username_lowercase_check.
+const FIELD_CASING = {
+  name: (value) => value.toUpperCase(),
+  username: (value) => value.toLowerCase(),
+};
+
 const collectTakenValues = (existingUsers, currentUserId = null) => {
   const usernames = new Set();
   const emails = new Set();
@@ -67,7 +75,7 @@ const normalizeValues = (values) => ({
     .toUpperCase(),
   username: String(values.username || "")
     .trim()
-    .toUpperCase(),
+    .toLowerCase(),
   email: String(values.email || "")
     .trim()
     .toLowerCase(),
@@ -178,7 +186,12 @@ const useUserForm = ({
   );
 
   const handleChange = (field, value) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
+    const applyCasing = FIELD_CASING[field];
+
+    setValues((prev) => ({
+      ...prev,
+      [field]: applyCasing ? applyCasing(String(value ?? "")) : value,
+    }));
   };
 
   const handleBlur = (field) => {

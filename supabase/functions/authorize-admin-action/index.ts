@@ -1,5 +1,6 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { normalizeUsername } from "../_shared/normalizeUsername.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    const username = String(body?.username || "").trim().toLowerCase();
+    const username = normalizeUsername(body?.username);
     const password = String(body?.password || "").trim();
     const action = String(body?.action || "").trim();
     const targetId = body?.targetId || null;

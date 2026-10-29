@@ -1,5 +1,9 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  isValidUsername,
+  normalizeUsername,
+} from "../_shared/normalizeUsername.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,7 +109,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const cleanName = String(body?.name || "").trim();
-    const cleanUsername = String(body?.username || "").trim();
+    const cleanUsername = normalizeUsername(body?.username);
     const cleanEmail = String(body?.email || "")
       .trim()
       .toLowerCase();
@@ -116,6 +120,14 @@ Deno.serve(async (req) => {
       return jsonResponse({
         ok: false,
         message: "Completa nombre, usuario, correo y rol.",
+      });
+    }
+
+    if (!isValidUsername(cleanUsername)) {
+      return jsonResponse({
+        ok: false,
+        message:
+          "El usuario solo admite letras, numeros, punto, guion y guion bajo.",
       });
     }
 
