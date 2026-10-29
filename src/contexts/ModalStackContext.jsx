@@ -14,7 +14,6 @@ const ModalStackContext = createContext(null);
 
 const FALLBACK_CONTEXT = {
   hasOpenModals: false,
-  topLayerId: null,
   registerLayer: () => NOOP_UNREGISTER,
 };
 
@@ -38,7 +37,6 @@ export const ModalStackProvider = ({ children, initialLayers = [] }) => {
   const value = useMemo(
     () => ({
       hasOpenModals: layers.length > 0,
-      topLayerId: layers.length > 0 ? layers[layers.length - 1] : null,
       registerLayer,
     }),
     [layers, registerLayer]
@@ -58,8 +56,8 @@ export const useModalStack = () => {
 
 /**
  * Registra una capa modal mientras `isOpen` sea verdadero. El identificador
- * permite que las capas anidadas se apilen y que solo la superior reciba las
- * teclas locales que dependan de esa pila.
+ * evita registrar dos veces la misma capa; las teclas locales siguen
+ * resolviendose dentro de cada modal segun sus propias banderas anidadas.
  */
 export const useModalLayer = (isOpen, layerId) => {
   const { registerLayer } = useModalStack();

@@ -13,6 +13,7 @@ import {
   getDollarsDueInUsd,
   getMixedRemainingUsd,
   getPaymentTotalInMxn,
+  isValidExchangeRate,
 } from "../../services/paymentModalCalculationService";
 import {
   getPrintMode,
@@ -114,6 +115,8 @@ const PaymentModal = memo(
     const safeTotal = Number(total || 0);
     const isZeroTotalSale = safeTotal <= 0;
     const numericExchangeRate = toNumber(exchangeRate);
+    const hasValidExchangeRate = isValidExchangeRate(numericExchangeRate);
+    const acceptsUsdPayments = cashOpSettings.acceptUsdPayments !== false;
 
     const visiblePaymentMethods = useMemo(
       () =>
@@ -247,7 +250,7 @@ const PaymentModal = memo(
           const paidTotalMxn = getPaidTotalInMxn();
           if (
             ["Dolares", "Mixto"].includes(selectedPaymentMethod) &&
-            numericExchangeRate <= 0
+            !hasValidExchangeRate
           )
             return showAppWarning("Ingresa un tipo de cambio válido.");
           if (selectedPaymentMethod === "Efectivo" && toNumber(paidAmount) <= 0)
@@ -356,6 +359,7 @@ const PaymentModal = memo(
         getPaidTotalInMxn,
         selectedPaymentMethod,
         numericExchangeRate,
+        hasValidExchangeRate,
         paidAmount,
         dollarAmount,
         mixedPayments,
@@ -656,7 +660,7 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                {cashOpSettings.acceptUsdPayments !== false ? (
+                {acceptsUsdPayments ? (
                   <>
                     <div className={styles.paymentRow}>
                       <span>Tipo de cambio:</span>
@@ -664,7 +668,7 @@ const PaymentModal = memo(
                         ${numericExchangeRate.toFixed(2)} MXN
                       </span>
                     </div>
-                    {numericExchangeRate > 0 && (
+                    {hasValidExchangeRate && (
                       <div className={styles.paymentRow}>
                         <span>Adeudo exacto (USD):</span>
                         <span className={styles.equivalentAmount}>
@@ -735,7 +739,7 @@ const PaymentModal = memo(
                     />
                   </div>
                 </div>
-                {cashOpSettings.acceptUsdPayments !== false ? (
+                {acceptsUsdPayments ? (
                   <>
                     <div className={styles.paymentRow}>
                       <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
@@ -763,12 +767,14 @@ const PaymentModal = memo(
                     ${getPaidTotalInMxn().toFixed(2)}
                   </span>
                 </div>
-                <div className={styles.paymentRow}>
-                  <span>Restante en USD:</span>
-                  <span className={styles.equivalentAmount}>
-                    ${mixedRemainingUsd.toFixed(2)}
-                  </span>
-                </div>
+                {acceptsUsdPayments && hasValidExchangeRate && (
+                  <div className={styles.paymentRow}>
+                    <span>Restante en USD:</span>
+                    <span className={styles.equivalentAmount}>
+                      ${mixedRemainingUsd.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className={styles.paymentRow}>
                   <span>{changeLabel}</span>
                   <span className={styles.changeAmount}>{formattedChange}</span>

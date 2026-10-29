@@ -196,10 +196,6 @@ export const SalesCartProvider = ({ children }) => {
     setStockWarningMsg("");
   }
 
-  useEffect(() => {
-    productosRef.current = productos;
-  }, [productos]);
-
   const value = useMemo(
     () => ({
       productos,

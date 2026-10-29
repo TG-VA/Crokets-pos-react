@@ -16,7 +16,6 @@ describe("ModalStackContext", () => {
     const { result } = renderHook(() => useModalStack());
 
     expect(result.current.hasOpenModals).toBe(false);
-    expect(result.current.topLayerId).toBeNull();
   });
 
   it("registra y libera capas modales", () => {
@@ -32,14 +31,12 @@ describe("ModalStackContext", () => {
 
     rerender({ isOpen: true });
     expect(result.current.hasOpenModals).toBe(true);
-    expect(result.current.topLayerId).toBe("capa-1");
 
     rerender({ isOpen: false });
     expect(result.current.hasOpenModals).toBe(false);
-    expect(result.current.topLayerId).toBeNull();
   });
 
-  it("apila capas anidadas y deja arriba la ultima registrada", () => {
+  it("mantiene la pila activa mientras quede una capa registrada", () => {
     const { result, rerender } = renderHook(
       ({ firstOpen, secondOpen }) => {
         useModalLayer(firstOpen, "base");
@@ -52,14 +49,13 @@ describe("ModalStackContext", () => {
       }
     );
 
-    expect(result.current.topLayerId).toBe("base");
+    expect(result.current.hasOpenModals).toBe(true);
 
     rerender({ firstOpen: true, secondOpen: true });
     expect(result.current.hasOpenModals).toBe(true);
-    expect(result.current.topLayerId).toBe("anidada");
 
     rerender({ firstOpen: true, secondOpen: false });
-    expect(result.current.topLayerId).toBe("base");
+    expect(result.current.hasOpenModals).toBe(true);
 
     rerender({ firstOpen: false, secondOpen: false });
     expect(result.current.hasOpenModals).toBe(false);
@@ -75,7 +71,6 @@ describe("ModalStackContext", () => {
     });
 
     expect(result.current.hasOpenModals).toBe(true);
-    expect(result.current.topLayerId).toBe("inicial");
   });
 
   it("actualiza el valor de contexto al registrar en un acto", () => {

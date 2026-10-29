@@ -80,8 +80,11 @@ const AppModal = ({
 }) => {
   const titleId = useId();
   const messageId = useId();
+  // Identificador unico por instancia: dos avisos montados a la vez no deben
+  // compartir capa ni desregistrarse entre si.
+  const layerId = useId();
 
-  useModalLayer(isOpen, "app-modal");
+  useModalLayer(isOpen, layerId);
 
   const modalRef = useRef(null);
   const previousActiveElementRef = useRef(null);

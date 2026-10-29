@@ -84,6 +84,26 @@ describe("useSalesDraft: restauracion al montar", () => {
     expect(result.current.recoveredDraft).toBe(false);
   });
 
+  it("descarta el borrador guardado con otra sesion de caja", async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify(buildDraft({ cashSessionOpen: true }))
+    );
+    const onRestoreDraft = vi.fn();
+    const onOpenRecoveryModal = vi.fn();
+
+    const { result } = renderDraft({
+      onRestoreDraft,
+      onOpenRecoveryModal,
+      cashSessionOpen: false,
+    });
+
+    await waitFor(() => expect(result.current.draftReady).toBe(true));
+    expect(onRestoreDraft).not.toHaveBeenCalled();
+    expect(onOpenRecoveryModal).not.toHaveBeenCalled();
+    expect(result.current.recoveredDraft).toBe(false);
+  });
+
   it("queda listo sin borrador y no abre recuperacion", async () => {
     const onRestoreDraft = vi.fn();
     const onOpenRecoveryModal = vi.fn();

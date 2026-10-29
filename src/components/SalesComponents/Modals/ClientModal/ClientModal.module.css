@@ -80,6 +80,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-bottom: 12px;
 }
 
@@ -592,8 +593,6 @@
   border-radius: 10px;
   background: #dcfce7;
   border: 1px solid #86efac;
-  max-height: 165px;
-  overflow: hidden;
 }
 
 .selectedRewardBox > span {

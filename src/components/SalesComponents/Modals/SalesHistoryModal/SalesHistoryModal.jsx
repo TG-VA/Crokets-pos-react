@@ -4,7 +4,6 @@ import PartialReturnModal from "../PartialReturnModal/PartialReturnModal";
 import AppModal from "../../../AppModal/AppModal";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { useBranch } from "../../../../contexts/BranchContext";
-import { useModalLayer } from "../../../../contexts/ModalStackContext";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 import { useSalesHistory } from "./useSalesHistory";
@@ -76,8 +75,6 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
     branch,
     onSaleCancelled,
   });
-
-  useModalLayer(isOpen, "sales-history-modal");
 
   // Escape cierra el historial solo cuando ninguna capa interna lo esta
   // consumiendo (aviso, devolucion parcial o notas del ticket).

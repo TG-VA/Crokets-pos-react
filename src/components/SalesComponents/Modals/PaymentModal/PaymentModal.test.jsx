@@ -112,6 +112,7 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByLabelText("Tarjeta:")).toBeTruthy();
     expect(screen.queryByLabelText("Dólares (USD):")).toBeNull();
     expect(screen.queryByText(/T\.C\./)).toBeNull();
+    expect(screen.queryByText("Restante en USD:")).toBeNull();
   });
 
   it("muestra el tipo de cambio de configuracion como badge informativo en cobros en Dolares", () => {
