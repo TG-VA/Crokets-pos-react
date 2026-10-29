@@ -7,6 +7,7 @@ import { useBranch } from "../../../../contexts/BranchContext";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 import { useSalesHistory } from "./useSalesHistory";
+import TicketNotesModal from "./TicketNotesModal";
 import {
   formatCurrency,
   formatDateTime,
@@ -1082,31 +1083,10 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
         </div>
 
         {isNotesModalOpen && selectedTicket && (
-          <div className={styles.notesOverlay}>
-            <div className={styles.notesModal}>
-              <div className={styles.notesHeader}>
-                <h3>Notas del ticket {selectedTicket.folio}</h3>
-                <button
-                  type="button"
-                  className={styles.notesClose}
-                  onClick={() => setIsNotesModalOpen(false)}
-                  aria-label="Cerrar notas"
-                >
-                  <img
-                    src={XmarkIcon}
-                    alt=""
-                    className={styles.notesCloseIcon}
-                    aria-hidden="true"
-                  />
-                </button>
-              </div>
-              <div className={styles.notesContent}>
-                {selectedTicket.notes?.trim()
-                  ? selectedTicket.notes
-                  : "Esta venta no tiene notas registradas."}
-              </div>
-            </div>
-          </div>
+          <TicketNotesModal
+            ticket={selectedTicket}
+            onClose={() => setIsNotesModalOpen(false)}
+          />
         )}
 
         <AppModal

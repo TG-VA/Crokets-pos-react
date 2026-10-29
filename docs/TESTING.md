@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (29 oct 2026)
 
-228 archivos de test (**2744 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+229 archivos de test (**2748 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                   | Archivo                                                                            |
@@ -137,6 +137,7 @@ y el proceso principal de Electron:
 | Modales de captura de Ventas: sin X de cabecera        | `.../SalesComponents/Modals/modalCloseButtons.test.jsx`                            |
 | Ventas: capas modales registradas por cada setter      | `.../SalesComponents/hooks/useSalesModals.test.jsx`                                |
 | Historial: botones de accion (3 arriba y 2 abajo)      | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.styles.test.js`    |
+| Historial: modal Notas del ticket                      | `.../SalesComponents/Modals/SalesHistoryModal/TicketNotesModal.test.jsx`           |
 | Lista paginada compartida de modales                   | `src/components/ModalPaginatedList/ModalPaginatedList.test.jsx`                    |
 | Aplicar descuento: paginacion de resultados            | `.../Modals/ProductDiscountRewardModal/ProductDiscountRewardModal.test.jsx`        |
 | Aplicar recompensas: paginacion de productos           | `.../Modals/RewardProductSelectionModal/RewardProductSelectionModal.test.jsx`      |
