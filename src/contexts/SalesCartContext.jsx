@@ -174,8 +174,9 @@ export const SalesCartProvider = ({ children }) => {
   }, [identityKey, resetSalesState]);
 
   // La asignacion del cliente expira a los 5 minutos si la venta no se cobra.
-  // El plazo se pausa mientras haya un modal abierto (por ejemplo el cobro) para
-  // no quitar el cliente en pleno pago; al cerrarse se evalua de nuevo.
+  // Mientras haya un modal abierto (por ejemplo el cobro) el reloj se congela:
+  // el tiempo que dura la pausa se suma al plazo y, al cerrarse el modal, quedan
+  // los mismos minutos que habia al abrirlo.
   const expireClientAssignment = useCallback(() => {
     setCurrentSaleClient(null);
     setCurrentSaleReward(null);
@@ -184,12 +185,47 @@ export const SalesCartProvider = ({ children }) => {
     setActiveProductDiscountReward(null);
   }, [setCurrentSaleClient]);
 
+  const pauseTrackingRef = useRef({
+    assignedAt: null,
+    startedAt: null,
+    pausedMs: 0,
+  });
+
   useEffect(() => {
-    if (!currentSaleClient?.id || !clientAssignedAt || hasOpenModals) {
+    const tracking = pauseTrackingRef.current;
+
+    if (!currentSaleClient?.id || !clientAssignedAt) {
+      pauseTrackingRef.current = {
+        assignedAt: null,
+        startedAt: null,
+        pausedMs: 0,
+      };
       return undefined;
     }
 
-    const remaining = getClientExpiryRemainingMs(clientAssignedAt);
+    if (tracking.assignedAt !== clientAssignedAt) {
+      pauseTrackingRef.current = {
+        assignedAt: clientAssignedAt,
+        startedAt: null,
+        pausedMs: 0,
+      };
+    }
+
+    const current = pauseTrackingRef.current;
+
+    if (hasOpenModals) {
+      if (current.startedAt === null) current.startedAt = Date.now();
+      return undefined;
+    }
+
+    if (current.startedAt !== null) {
+      current.pausedMs += Date.now() - current.startedAt;
+      current.startedAt = null;
+    }
+
+    const remaining = getClientExpiryRemainingMs(
+      clientAssignedAt + current.pausedMs
+    );
     const timeoutId = setTimeout(expireClientAssignment, remaining);
 
     return () => clearTimeout(timeoutId);

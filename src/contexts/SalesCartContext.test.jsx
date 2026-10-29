@@ -133,6 +133,8 @@ describe("SalesCartContext: persistencia de la venta", () => {
       result.current.setCurrentSaleClient({ id: "c1", name: "Ana" });
       result.current.setCurrentSaleReward({ id: "r1" });
       result.current.setPendingFreeProductRewards([{ id: "r2" }]);
+      result.current.setPendingProductDiscountRewards([{ id: "r3" }]);
+      result.current.setActiveProductDiscountReward({ id: "r4" });
     });
 
     act(() => {
@@ -142,6 +144,8 @@ describe("SalesCartContext: persistencia de la venta", () => {
     expect(result.current.currentSaleClient).toBeNull();
     expect(result.current.currentSaleReward).toBeNull();
     expect(result.current.pendingFreeProductRewards).toEqual([]);
+    expect(result.current.pendingProductDiscountRewards).toEqual([]);
+    expect(result.current.activeProductDiscountReward).toBeNull();
   });
 
   describe("con un modal abierto", () => {
@@ -157,7 +161,7 @@ describe("SalesCartContext: persistencia de la venta", () => {
         { wrapper: stackWrapper }
       );
 
-    it("no expira el cliente mientras el cobro esta abierto", () => {
+    it("congela el plazo restante mientras el cobro esta abierto", () => {
       const { result } = renderWithStack();
 
       act(() => {
@@ -181,8 +185,45 @@ describe("SalesCartContext: persistencia de la venta", () => {
       act(() => {
         unregister();
       });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c1");
+
       act(() => {
-        vi.advanceTimersByTime(0);
+        vi.advanceTimersByTime(4999);
+      });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c1");
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.cart.currentSaleClient).toBeNull();
+    });
+
+    it("no pierde el cliente al cancelar un cobro que duro mas de cinco minutos", () => {
+      const { result } = renderWithStack();
+
+      act(() => {
+        result.current.cart.setCurrentSaleClient({ id: "c1", name: "Ana" });
+      });
+
+      let unregister;
+      act(() => {
+        unregister = result.current.stack.registerLayer("sales-payment");
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(SALE_CLIENT_EXPIRY_MS * 2);
+      });
+
+      act(() => {
+        unregister();
+      });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c1");
+
+      act(() => {
+        vi.advanceTimersByTime(SALE_CLIENT_EXPIRY_MS - 1000);
       });
       expect(result.current.cart.currentSaleClient).toBeNull();
     });
