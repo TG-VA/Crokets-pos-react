@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, memo, useCallback } from "react";
 import styles from "./DeleteTicketModal.module.css";
 import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
@@ -148,19 +147,6 @@ const DeleteTicketModal = memo(
                 Eliminar ticket pendiente
               </span>
             </h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={handleClose}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
           </div>
 
           <div className={styles.modalBody}>
@@ -291,7 +277,7 @@ const DeleteTicketModal = memo(
                 />
               </div>
               <div className={styles.actionHints}>
-                <span>↑↓ Navegar • Enter o Delete para eliminar</span>
+                <span>↑↓ Navegar • Enter para eliminar</span>
               </div>
             </div>
           )}
