@@ -250,14 +250,19 @@ backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo d
 
 ### inventory_transfers
 
-| Columna                       | Tipo        | Notas             |
-| ----------------------------- | ----------- | ----------------- |
-| id                            | uuid        | PK                |
-| from_branch_id / to_branch_id | uuid        | NN, → branches.id |
-| user_id                       | uuid        | NN, → users.id    |
-| status                        | varchar     | default 'pending' |
-| approved_at / completed_at    | timestamptz |                   |
-| notes                         | text        |                   |
+| Columna                       | Tipo        | Notas                     |
+| ----------------------------- | ----------- | ------------------------- |
+| id                            | uuid        | PK                        |
+| from_branch_id / to_branch_id | uuid        | NN, → branches.id         |
+| user_id                       | uuid        | NN, → users.id            |
+| status                        | varchar     | default 'pending_receipt' |
+| approved_at / completed_at    | timestamptz |                           |
+| notes                         | text        |                           |
+
+Flujo de estatus: nace en `pending_receipt` y, al recibirse, termina en
+`received_complete` o `received_with_difference` (según haya diferencias de
+cantidad); `cancelled` cierra una orden no recibida. Restricción:
+`inventory_transfers_status_ck`.
 
 ### inventory_transfer_items
 
@@ -700,7 +705,7 @@ prefiere RPC atómica sobre cliente con múltiples queries.
 | `create_kit_transaction` / `update_kit_transaction` / `delete_kit_transaction`                                     | uuid / uuid / void      | CRUD atómico de kits de productos (ver `KNOWN_ISSUES.md` #5, `20260923150000`)                                                                                                       |
 | `import_products_transaction`                                                                                      | jsonb                   | Importación masiva de productos (atómica, ver `KNOWN_ISSUES.md` #5, `20260923160000`)                                                                                                |
 | `create_store_order` / `receive_store_order`                                                                       | jsonb                   | Pedidos de abastecimiento entre sucursales (atómicas; cantidades enteras; `20261022120000` + `20261024120000`)                                                                       |
-| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**                                                                                                                            |
+| `create_transfer_order` / `receive_transfer_order` / `cancel_transfer_order`                                       | jsonb                   | Transferencias entre sucursales — **ya atómicas vía RPC**. `receive_transfer_order` recibe desde `pending_receipt` y termina en `received_complete` o `received_with_difference`     |
 | `close_cash_register_session`                                                                                      | jsonb                   | Cierre de caja                                                                                                                                                                       |
 | `open_cash_register` / `get_cash_register_session`                                                                 | jsonb                   | Apertura/consulta de caja (códigos `CASH_ALREADY_OPEN_*` y `CASH_INVALID_AMOUNT`)                                                                                                    |
 | `get_cash_max_opening_amount` / `update_cash_max_opening_amount`                                                   | numeric / void          | Tope de apertura desde `app_settings` (ver `KNOWN_ISSUES.md` #33)                                                                                                                    |
