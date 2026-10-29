@@ -105,7 +105,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const cleanName = String(body?.name || "").trim();
-    const cleanUsername = String(body?.username || "").trim();
+    const cleanUsername = String(body?.username || "")
+      .trim()
+      .toLowerCase();
     const cleanEmail = String(body?.email || "")
       .trim()
       .toLowerCase();

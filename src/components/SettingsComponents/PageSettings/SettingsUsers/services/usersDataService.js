@@ -101,7 +101,7 @@ export const updateUser = async ({ id, name, username, roleId }) => {
   }
 
   if (typeof username === "string") {
-    payload.username = username.trim().toUpperCase();
+    payload.username = username.trim().toLowerCase();
   }
 
   if (roleId) {
