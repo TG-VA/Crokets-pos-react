@@ -26,6 +26,10 @@ describe("paymentModalCalculationService", () => {
     it("no sube un dolar por ruido de punto flotante", () => {
       expect(ceilWholeDollars(20.000000000000004)).toBe(20);
     });
+
+    it("sube un dolar cuando la fraccion real es pequena pero existe", () => {
+      expect(ceilWholeDollars(20.0039)).toBe(21);
+    });
   });
 
   describe("getDollarsDueInUsd", () => {
@@ -38,6 +42,12 @@ describe("paymentModalCalculationService", () => {
       expect(getDollarsDueInUsd(100, 18)).toBe(6);
       expect(getDollarsDueInUsd(10, 3)).toBe(4);
       expect(getDollarsDueInUsd(357, 18.5)).toBe(20);
+    });
+
+    it("cubre el total cuando la fraccion de dolar es menor a un centavo de dolar", () => {
+      // 360.07 / 18 = 20.0038...: con solo dos decimales quedaria en 20 USD
+      // (360 MXN) y no cubriria el total.
+      expect(getDollarsDueInUsd(360.07, 18)).toBe(21);
     });
 
     it("nunca devuelve un monto que deje sin cubrir el total", () => {

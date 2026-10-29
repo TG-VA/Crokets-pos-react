@@ -206,8 +206,8 @@ const PaymentModal = memo(
         (toNumber(mixedPayments.efectivo) > 0 ||
           toNumber(mixedPayments.dolares) > 0));
 
-    // Adeudo informativo para pagos en dolares: se redondea hacia arriba al
-    // centavo para que el monto sugerido siempre cubra el total en MXN.
+    // Adeudo informativo para pagos en dolares: se redondea hacia arriba a
+    // dolares enteros para que el monto sugerido siempre cubra el total en MXN.
     const dollarsDue = getDollarsDueInUsd(safeTotal, numericExchangeRate);
     const mixedRemainingUsd = getMixedRemainingUsd({
       totalMxn: safeTotal,
