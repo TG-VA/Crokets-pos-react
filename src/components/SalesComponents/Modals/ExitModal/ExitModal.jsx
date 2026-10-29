@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import styles from "./ExitModal.module.css";
 import ExitIcon from "../../../../assets/icons/exitIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 import { getCashOperationSettings } from "../../../../services/cashOperationSettingsService";
 
 const ExitModal = memo(({ isOpen, onClose, onSave }) => {
@@ -191,14 +192,11 @@ const ExitModal = memo(({ isOpen, onClose, onSave }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button
-            type="button"
+          <ModalFooterCancelButton
             className={styles.cancelButton}
             onClick={handleClose}
             disabled={isSaving}
-          >
-            ESC - Cancelar
-          </button>
+          />
           <button
             type="button"
             className={styles.saveButton}

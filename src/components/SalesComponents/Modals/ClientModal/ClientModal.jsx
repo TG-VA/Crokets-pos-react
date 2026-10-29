@@ -9,6 +9,7 @@ import React, {
 import styles from "./ClientModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 
 import SearchIcon from "../../../../assets/icons/searchIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
@@ -382,19 +383,11 @@ const ClientModal = memo(
               <h2>Asignar cliente</h2>
               <p>Busca un cliente registrado para asociarlo a la venta.</p>
             </div>
-            <button
-              type="button"
-              className={styles.closeButton}
+            <ModalCloseButton
               onClick={closeModal}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
+              className={styles.closeButton}
+              iconClassName={styles.closeIcon}
+            />
           </div>
 
           <div className={styles.modalBody}>
@@ -690,13 +683,6 @@ const ClientModal = memo(
           </div>
 
           <div className={styles.modalActions}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={closeModal}
-            >
-              Esc - Cancelar
-            </button>
             <div className={styles.rightActions}>
               {currentSaleClient && (
                 <button

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import styles from "./EntryModal.module.css";
 import EntryIcon from "../../../../assets/icons/entryIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const EntryModal = memo(({ isOpen, onClose, onSaveEntry }) => {
   const [entryAmount, setEntryAmount] = useState("");
@@ -190,14 +191,11 @@ const EntryModal = memo(({ isOpen, onClose, onSaveEntry }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button
-            type="button"
+          <ModalFooterCancelButton
             className={styles.cancelButton}
             onClick={closeEntryModal}
             disabled={isSaving}
-          >
-            ESC - Cancelar
-          </button>
+          />
           <button
             type="button"
             className={styles.saveButton}

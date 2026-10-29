@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import styles from "../../pages/Sales/Sales.module.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
+import { useModalLayers } from "../../contexts/ModalStackContext";
 
 // Importar componentes de modales
 import ExitModal from "../../components/SalesComponents/Modals/ExitModal/ExitModal";
@@ -152,6 +153,27 @@ const Sales = () => {
     isProductDiscountRewardModalOpen,
     setProductDiscountRewardModalOpen,
   } = useSalesModals();
+
+  // Registra cada modal abierto de Ventas en una pila central. Mientras exista
+  // al menos una capa, los atajos globales (ventas y navegacion) se bloquean.
+  useModalLayers([
+    isExitModalOpen && "sales-exit",
+    isExitAuthModalOpen && "sales-exit-auth",
+    isEntryModalOpen && "sales-entry",
+    showPaymentModal && "sales-payment",
+    isClientModalOpen && "sales-client",
+    isVerifierModalOpen && "sales-verifier",
+    isSearchModalOpen && "sales-search",
+    isDiscountModalOpen && "sales-discount",
+    isPendingModalOpen && "sales-pending-ticket",
+    isChangeModalOpen && "sales-change-ticket",
+    isDeleteModalOpen && "sales-delete-ticket",
+    isDeleteItemModalOpen && "sales-delete-item",
+    isSalesHistoryModalOpen && "sales-history",
+    Boolean(saleSuccessData) && "sales-success",
+    isRewardProductModalOpen && "sales-reward-product",
+    isProductDiscountRewardModalOpen && "sales-product-discount",
+  ]);
 
   const { tableRef, gridTemplate, handleMouseDown } = useSalesTableColumns();
 

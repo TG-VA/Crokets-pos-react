@@ -5,6 +5,7 @@ import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import PercentIcon from "../../../../assets/icons/percent-solid-full.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const DiscountModal = memo(
   ({ isOpen, onClose, onApplyDiscount, selectedProduct }) => {
@@ -253,13 +254,10 @@ const DiscountModal = memo(
               >
                 Cambiar precio
               </button>
-              <button
-                type="button"
+              <ModalFooterCancelButton
                 className={styles.cancelBtn}
                 onClick={handleClose}
-              >
-                ESC - Cancelar
-              </button>
+              />
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import styles from "./DeleteItem.module.css";
 import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const DeleteItemModal = memo(
   ({ isOpen, onClose, onConfirmDelete, selectedProduct }) => {
@@ -116,13 +117,10 @@ const DeleteItemModal = memo(
           </div>
 
           <div className={styles.modalFooter}>
-            <button
-              type="button"
+            <ModalFooterCancelButton
               className={styles.cancelButton}
               onClick={onClose}
-            >
-              ESC - Cancelar
-            </button>
+            />
             <button
               type="button"
               className={styles.confirmButton}

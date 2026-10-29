@@ -3,6 +3,7 @@ import styles from "./ChangeTicketModal.module.css";
 import ChangeIcon from "../../../../assets/icons/changeIcon.svg";
 import PendingIcon from "../../../../assets/icons/pendingIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const ChangeTicketModal = memo(
   ({ isOpen, onClose, onSelectTicket, pendingTickets = [] }) => {
@@ -188,13 +189,10 @@ const ChangeTicketModal = memo(
                 >
                   Cambiar a este ticket
                 </button>
-                <button
-                  type="button"
+                <ModalFooterCancelButton
                   className={`${styles.actionButton} ${styles.cancelButton}`}
                   onClick={handleClose}
-                >
-                  ESC - Cancelar
-                </button>
+                />
               </div>
               <div className={styles.actionHints}>
                 <span>↑↓ Navegar • Enter para seleccionar</span>

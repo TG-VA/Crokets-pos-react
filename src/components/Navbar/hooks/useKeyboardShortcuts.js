@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useModalStack } from "../../../contexts/ModalStackContext";
+
 const isTypingTarget = (target) => {
   if (!target) return false;
 
@@ -16,9 +18,13 @@ const isTypingTarget = (target) => {
 
 export const useKeyboardShortcuts = (navItems) => {
   const navigate = useNavigate();
+  const { hasOpenModals } = useModalStack();
 
   useEffect(() => {
     const handleKeyDown = (event) => {
+      // Ningun atajo global navega mientras haya un modal abierto.
+      if (hasOpenModals) return;
+
       // Ignorar si el usuario está escribiendo en un input
       if (isTypingTarget(event.target)) return;
 
@@ -31,5 +37,5 @@ export const useKeyboardShortcuts = (navItems) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate, navItems]);
+  }, [navigate, navItems, hasOpenModals]);
 };

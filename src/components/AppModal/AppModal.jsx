@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef } from "react";
 
 import styles from "./AppModal.module.css";
+import { useModalLayer } from "../../contexts/ModalStackContext";
 
 const MODAL_TYPE_CONFIG = {
   info: {
@@ -79,6 +80,8 @@ const AppModal = ({
 }) => {
   const titleId = useId();
   const messageId = useId();
+
+  useModalLayer(isOpen, "app-modal");
 
   const modalRef = useRef(null);
   const previousActiveElementRef = useRef(null);
