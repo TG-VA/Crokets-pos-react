@@ -45,11 +45,7 @@ const PartialReturnModal = memo(
       e.stopPropagation();
       e.nativeEvent?.stopImmediatePropagation?.();
       e.stopImmediatePropagation?.();
-      if (appModal.isOpen) {
-        closeAppModal();
-      } else if (!processing) {
-        onClose();
-      }
+      if (!processing) onClose();
     }, isOpen);
 
     if (!isOpen) return null;
