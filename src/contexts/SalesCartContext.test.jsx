@@ -198,6 +198,80 @@ describe("SalesCartContext: persistencia de la venta", () => {
       expect(result.current.cart.currentSaleClient).toBeNull();
     });
 
+    it("acumula varias pausas sin contar el tiempo entre ellas", () => {
+      const { result } = renderWithStack();
+
+      act(() => {
+        result.current.cart.setCurrentSaleClient({ id: "c1", name: "Ana" });
+      });
+
+      const pauseFor = (ms) => {
+        let unregister;
+        act(() => {
+          unregister = result.current.stack.registerLayer("sales-payment");
+        });
+        act(() => {
+          vi.advanceTimersByTime(ms);
+        });
+        act(() => {
+          unregister();
+        });
+      };
+
+      act(() => {
+        vi.advanceTimersByTime(60 * 1000);
+      });
+      pauseFor(60 * 1000);
+      act(() => {
+        vi.advanceTimersByTime(120 * 1000);
+      });
+      pauseFor(30 * 1000);
+
+      // Corrieron 180 s sin pausa: quedan 120 s del plazo de 300 s.
+      act(() => {
+        vi.advanceTimersByTime(120 * 1000 - 1);
+      });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c1");
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.cart.currentSaleClient).toBeNull();
+    });
+
+    it("no arrastra la pausa de un cliente al siguiente cliente asignado", () => {
+      const { result } = renderWithStack();
+
+      act(() => {
+        result.current.cart.setCurrentSaleClient({ id: "c1", name: "Ana" });
+      });
+
+      let unregister;
+      act(() => {
+        unregister = result.current.stack.registerLayer("sales-payment");
+      });
+      act(() => {
+        vi.advanceTimersByTime(60 * 1000);
+      });
+      act(() => {
+        unregister();
+      });
+
+      act(() => {
+        result.current.cart.setCurrentSaleClient({ id: "c2", name: "Luis" });
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(SALE_CLIENT_EXPIRY_MS - 1);
+      });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c2");
+
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(result.current.cart.currentSaleClient).toBeNull();
+    });
+
     it("no pierde el cliente al cancelar un cobro que duro mas de cinco minutos", () => {
       const { result } = renderWithStack();
 

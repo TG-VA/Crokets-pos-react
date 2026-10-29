@@ -194,14 +194,7 @@ export const SalesCartProvider = ({ children }) => {
   useEffect(() => {
     const tracking = pauseTrackingRef.current;
 
-    if (!currentSaleClient?.id || !clientAssignedAt) {
-      pauseTrackingRef.current = {
-        assignedAt: null,
-        startedAt: null,
-        pausedMs: 0,
-      };
-      return undefined;
-    }
+    if (!currentSaleClient?.id || !clientAssignedAt) return undefined;
 
     if (tracking.assignedAt !== clientAssignedAt) {
       pauseTrackingRef.current = {
@@ -214,7 +207,7 @@ export const SalesCartProvider = ({ children }) => {
     const current = pauseTrackingRef.current;
 
     if (hasOpenModals) {
-      if (current.startedAt === null) current.startedAt = Date.now();
+      current.startedAt = Date.now();
       return undefined;
     }
 
