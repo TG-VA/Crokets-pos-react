@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (29 oct 2026)
 
-232 archivos de test (**2783 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+235 archivos de test (**2792 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                   | Archivo                                                                            |
@@ -40,6 +40,9 @@ y el proceso principal de Electron:
 | Inventario: ajuste sin reescribir precio               | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
 | Precio de sucursal en 0 cae al catalogo                | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                  | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
+| Contrato SQL de username insensible a mayusculas       | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
+| Contrato de authorize-admin-action (username)          | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
+| Contrato de admin-create-user (username)               | `supabase/functions/adminCreateUserUsernameContract.test.js`                       |
 | Inventario: cálculo del CPP móvil                      | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
 | Inventario: proyección de CPP en interfaz              | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
 | Inventario: hook de captura de costo                   | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
