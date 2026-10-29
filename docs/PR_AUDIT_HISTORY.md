@@ -2868,3 +2868,46 @@ Con ambos constraints validados, el riesgo descrito en C7 (una diferencia fracci
 una fila heredada con `expected_qty` fraccionario) deja de ser posible: PostgreSQL escaneó la tabla
 completa y garantiza enteros en todas las filas, no solo en las nuevas. El detalle operativo queda en
 `docs/SUPABASE_MIGRATIONS.md` (sección de validación y registro de despliegues).
+
+## Informe de Auditoría — PR #178 `fix/ux-modales-ventas-persistencia` (29 de octubre de 2026)
+
+Alcance: mejora de modales, atajos y persistencia de la venta en el módulo de Ventas. Se auditó en seis
+rondas con el agente `pr-auditor`; todas cerraron como **APROBADO CON OBSERVACIONES** y ninguna tuvo
+bloqueantes. Los 38 hilos inline quedaron respondidos con el commit que los atiende y resueltos.
+
+### 1. Rondas
+
+| Ronda | Head auditado | Hallazgos                                           | Resolución                                                                             |
+| ----- | ------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1     | `25318ac`     | 6 hallazgos                                         | Atendidos con commits atómicos; detalle en los hilos de la review                      |
+| 2     | `d9bc555`     | 5 sugerencias                                       | Atendidas con commits atómicos; detalle en los hilos de la review                      |
+| 3     | `f39a7e8`     | 6 sugerencias                                       | Atendidas con commits atómicos; detalle en los hilos de la review                      |
+| 4     | `b9d4191`     | 6 sugerencias                                       | Atendidas con commits atómicos; detalle en los hilos de la review                      |
+| 5     | `b1d135b`     | 3 importantes y 5 sugerencias (cobertura)           | Pruebas de paginación, de Escape con Notas abiertas y accesibilidad del modal de notas |
+| 6     | `9b473bb`     | 7 sugerencias (guardas de Escape, DRY, comentarios) | Ver sección 2                                                                          |
+
+### 2. Ronda 6 (delta `b1d135b..9b473bb`)
+
+Verificación sobre el head auditado: `npm test` 231 archivos / 2772 casos en verde, `build:frontend`
+correcto, `check:agents` OK, Prettier limpio, ESLint sin errores. La corrección de Escape en
+`PartialReturnModal` (retirar el `onKeyDown` del overlay, que detenía el evento nativo antes de llegar a
+`window`) se confirmó por mutación y no genera regresiones con aviso interno, `processing`, historial
+anidado ni atajos globales.
+
+| #   | Sugerencia                                                    | Resolución                                                                                                        |
+| --- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | `customerHasName` sin prueba                                  | Pruebas del resumen de puntos para cliente con nombre y variantes del cliente genérico                            |
+| 2   | DRY parcial de `isNamedCustomer`; hilo con respuesta inexacta | La copia impresa (`useSalesHistory.js`) usa `isNamedCustomer`; respuesta corregida en el hilo                     |
+| 3   | Rama `appModal.isOpen` inalcanzable en `PartialReturnModal`   | Rama eliminada: `AppModal` captura Escape en `window` antes; prueba con aviso abierto                             |
+| 4   | Guarda `!processing` sin prueba                               | Prueba que falla al reemplazar la guarda                                                                          |
+| 5   | Guarda `appModal.isOpen` del historial sin prueba             | Prueba de comportamiento agregada; no protege la guarda (redundante con `AppModal`), que se conserva como defensa |
+| 6   | `current.startedAt = null` sin prueba                         | Línea eliminada: dos auditorías confirmaron que no es alcanzable; `src/contexts` sigue en verde                   |
+| 7   | Comentario del margen contradice el valor de 52px             | Comentario corregido (footbar de unos 40px más 12px de respiro)                                                   |
+
+### 3. Estado al cierre
+
+`npm test`: 232 archivos / 2783 casos en verde. Pendiente de verificación humana en Electron: el
+Historial en 3 + 2, el modal "Asignar cliente" contra el footbar, las listas paginadas, el rediseño de
+"Notas del ticket", Escape en notas y en la devolución parcial, y la prueba manual de los cinco minutos
+con y sin modal abierto. La validación del saldo de puntos en el servidor sigue abierta como
+`KNOWN_ISSUES.md` #80 y se atenderá en un PR aparte.
