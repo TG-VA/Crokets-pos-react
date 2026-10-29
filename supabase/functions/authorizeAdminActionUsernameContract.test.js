@@ -8,14 +8,14 @@ const source = readFileSync(
 );
 
 describe("authorize-admin-action busca el username sin distinguir mayusculas", () => {
-  it("usa ilike en lugar de una comparacion sensible a mayusculas", () => {
-    expect(source).toMatch(/\.ilike\("username",/);
-    expect(source).not.toMatch(/\.eq\("username",/);
+  it("normaliza el username antes de consultar", () => {
+    expect(source).toContain("normalizeUsername(body?.username)");
   });
 
-  it("escapa los comodines de ilike antes de armar el patron", () => {
-    expect(source).toMatch(/\[\\\\%_\]/);
-    expect(source).toContain("escapeLikePattern(username)");
+  it("busca por igualdad en lugar de un patron LIKE", () => {
+    expect(source).toMatch(/\.eq\("username", username\)/);
+    expect(source).not.toMatch(/\.ilike\(/);
+    expect(source).not.toContain("escapeLikePattern");
   });
 
   it("conserva el mensaje generico de credenciales incorrectas", () => {
