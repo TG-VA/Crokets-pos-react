@@ -8,6 +8,7 @@ import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 import { useSalesHistory } from "./useSalesHistory";
 import TicketNotesModal from "./TicketNotesModal";
+import { isNamedCustomer } from "../../services/publicCustomerService";
 import {
   formatCurrency,
   formatDateTime,
@@ -191,9 +192,7 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
     rewardSummaryPoints > 0
   );
 
-  const customerHasName = Boolean(
-    selectedTicket?.client && selectedTicket.client !== "PÚBLICO EN GENERAL"
-  );
+  const customerHasName = Boolean(isNamedCustomer(selectedTicket?.client));
   const pointsEarnedSummary = Number(selectedTicket?.pointsEarned || 0);
   const pointsReturnedSummary = Number(selectedTicket?.pointsReturned || 0);
   const customerPointsBalance =

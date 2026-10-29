@@ -55,6 +55,15 @@ describe("TicketNotesModal", () => {
     expect(screen.queryByText("PÚBLICO EN GENERAL")).toBeNull();
   });
 
+  it.each(["Publico en general", "  PÚBLICO EN GENERAL  "])(
+    "omite el cliente publico aunque venga como %j",
+    (client) => {
+      renderModal({ ticket: { ...ticket, client } });
+
+      expect(screen.queryByText(client.trim())).toBeNull();
+    }
+  );
+
   it("se cierra con Escape una sola vez", () => {
     const { onClose } = renderModal();
 

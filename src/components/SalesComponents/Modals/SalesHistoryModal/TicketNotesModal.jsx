@@ -1,12 +1,11 @@
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import styles from "./TicketNotesModal.module.css";
 import { formatDateTime } from "../../services/salesHistoryService";
+import { isNamedCustomer } from "../../services/publicCustomerService";
 import ReceiptIcon from "../../../../assets/icons/receipt-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import UserIcon from "../../../../assets/icons/user-solid.svg";
 import ClockIcon from "../../../../assets/icons/clock-solid-full.svg";
-
-const PUBLIC_CLIENT = "PÚBLICO EN GENERAL";
 
 const buildMetaChips = (ticket) =>
   [
@@ -14,7 +13,7 @@ const buildMetaChips = (ticket) =>
     {
       key: "client",
       icon: UserIcon,
-      value: ticket.client !== PUBLIC_CLIENT ? ticket.client : "",
+      value: isNamedCustomer(ticket.client) ? ticket.client.trim() : "",
     },
     {
       key: "date",
