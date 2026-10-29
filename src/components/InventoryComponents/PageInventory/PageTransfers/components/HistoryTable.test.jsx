@@ -121,6 +121,37 @@ describe("HistoryTable", () => {
     expect(screen.getByText("No hay traspasos con ese folio.")).toBeTruthy();
   });
 
+  it("al filtrar por folio vuelve a la pagina 1", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `${i % 2 === 0 ? "PAR" : "IMPAR"}-${String(i + 1).padStart(3, "0")}`,
+    }));
+    render(<HistoryTable {...defaultProps} transferHistory={many} />);
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("PAR-001")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "PAR" },
+    });
+    expect(screen.queryByText("PAR-001")).toBeTruthy();
+  });
+
+  it("acota la pagina cuando el historial se reduce", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+    }));
+    const { rerender } = render(
+      <HistoryTable {...defaultProps} transferHistory={many} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    rerender(<HistoryTable {...defaultProps} transferHistory={[orders[0]]} />);
+    expect(screen.queryByText("TR-010126-000001")).toBeTruthy();
+  });
+
   it("boton Cancelar esta deshabilitado durante submitting", () => {
     render(<HistoryTable {...defaultProps} submitting={true} />);
     expect(

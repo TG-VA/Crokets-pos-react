@@ -1,13 +1,12 @@
 import { useState } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
 import {
   formatTransferDateTime,
   getTransferStatusMetaForBranch,
 } from "../utils/transfersUtils";
-
-const PAGE_SIZE = 10;
 
 const HistoryTable = ({
   branch,
@@ -18,7 +17,6 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
-  const [page, setPage] = useState(1);
   const [folioSearch, setFolioSearch] = useState("");
   const searchKey = folioSearch.trim().toLowerCase();
   const filteredHistory = searchKey
@@ -28,13 +26,14 @@ const HistoryTable = ({
           .includes(searchKey)
       )
     : transferHistory;
-  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
-  // Se acota al total por si el historial se reduce (ej. al recargar).
-  const currentPage = Math.min(page, totalPages);
-  const pageItems = filteredHistory.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    pageItems,
+    handlePageChange,
+    resetPagination,
+  } = usePagination({ totalItems: filteredHistory.length });
 
   return (
     <section className={styles.panel}>
@@ -54,7 +53,7 @@ const HistoryTable = ({
           value={folioSearch}
           onChange={(event) => {
             setFolioSearch(event.target.value);
-            setPage(1);
+            resetPagination();
           }}
         />
       </div>
@@ -75,7 +74,7 @@ const HistoryTable = ({
             </tr>
           </thead>
           <tbody>
-            {pageItems.map((order) => {
+            {pageItems(filteredHistory).map((order) => {
               const statusMeta = getTransferStatusMetaForBranch(
                 order,
                 branch?.id
@@ -163,9 +162,9 @@ const HistoryTable = ({
           currentPage={currentPage}
           totalPages={totalPages}
           totalItems={filteredHistory.length}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
           itemsNoun="traspasos"
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
         />
       ) : null}
     </section>
