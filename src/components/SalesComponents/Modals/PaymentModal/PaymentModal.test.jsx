@@ -135,6 +135,30 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
   });
 
+  it("muestra el adeudo exacto en USD debajo del tipo de cambio", () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dólares" }));
+
+    expect(screen.getByText("Adeudo exacto (USD):")).toBeTruthy();
+    expect(screen.getByText("$8.11")).toBeTruthy();
+  });
+
+  it("actualiza el restante en USD del pago mixto segun el efectivo capturado", () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
+
+    expect(screen.getByText("Restante en USD:")).toBeTruthy();
+    expect(screen.getByText("$8.11")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Efectivo:"), {
+      target: { value: "50" },
+    });
+
+    expect(screen.getByText("$5.41")).toBeTruthy();
+  });
+
   it("expande los ultimos 2 metodos para ocupar toda la fila cuando hay 5 visibles", () => {
     renderModal();
 

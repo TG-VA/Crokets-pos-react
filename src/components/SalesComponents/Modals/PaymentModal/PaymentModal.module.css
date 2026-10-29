@@ -25,7 +25,8 @@
     opacity 0.2s ease;
   font-size: 0.8rem;
   text-align: center;
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .modalActionBtn:hover:not(:disabled) {
