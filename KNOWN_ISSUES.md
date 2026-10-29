@@ -2610,8 +2610,6 @@ restringir los inserts directos con RLS.
 
 ---
 
----
-
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una
