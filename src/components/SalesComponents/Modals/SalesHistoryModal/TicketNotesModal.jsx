@@ -1,3 +1,4 @@
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 import styles from "./TicketNotesModal.module.css";
 import { formatDateTime } from "../../services/salesHistoryService";
 import ReceiptIcon from "../../../../assets/icons/receipt-solid-full.svg";
@@ -24,6 +25,8 @@ const buildMetaChips = (ticket) =>
 
 const TicketNotesModal = ({ ticket, onClose }) => {
   const note = ticket.notes?.trim();
+
+  useEscapeKey(onClose);
 
   return (
     <div className={styles.overlay}>

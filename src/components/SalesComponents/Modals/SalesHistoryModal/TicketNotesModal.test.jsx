@@ -54,4 +54,20 @@ describe("TicketNotesModal", () => {
 
     expect(screen.queryByText("PÚBLICO EN GENERAL")).toBeNull();
   });
+
+  it("se cierra con Escape una sola vez", () => {
+    const { onClose } = renderModal();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignora otras teclas", () => {
+    const { onClose } = renderModal();
+
+    fireEvent.keyDown(window, { key: "Enter" });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });
