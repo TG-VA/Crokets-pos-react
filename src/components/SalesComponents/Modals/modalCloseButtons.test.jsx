@@ -56,8 +56,6 @@ vi.mock("./RewardProductSelectionModal/useRewardProductSelection", () => ({
     selectedProductsByReward: {},
     searchByReward: {},
     setSearchByReward: vi.fn(),
-    expandedRewards: {},
-    setExpandedRewards: vi.fn(),
     loadingProducts: false,
     saving: false,
     setSaving: vi.fn(),

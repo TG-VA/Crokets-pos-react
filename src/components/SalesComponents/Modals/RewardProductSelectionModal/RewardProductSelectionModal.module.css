@@ -408,33 +408,6 @@
   font-weight: 900;
 }
 
-.showMoreButton {
-  width: 100%;
-  margin-top: 10px;
-  min-height: 38px;
-  border: 1px solid #bae6fd;
-  border-radius: 10px;
-  background: #e0f2fe;
-  color: #075985;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition:
-    background-color 0.16s ease,
-    transform 0.12s ease;
-}
-
-.showMoreButton:hover:not(:disabled) {
-  background: #bae6fd;
-  transform: translateY(-1px);
-}
-
-.showMoreButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .actions {
   flex-shrink: 0;
   display: flex;
