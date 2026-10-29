@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, memo, useCallback } from "react";
 import styles from "./DeleteTicketModal.module.css";
 import DeleteIcon from "../../../../assets/icons/deleteIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const DeleteTicketModal = memo(
   ({ isOpen, onClose, onDeleteTicket, pendingTickets = [] }) => {
@@ -104,14 +104,6 @@ const DeleteTicketModal = memo(
           e.preventDefault();
           return setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
         }
-        if (e.key === "Delete") {
-          e.preventDefault();
-          if (selectedIndex >= 0 && pendingTickets[selectedIndex])
-            handleShowConfirmation(
-              pendingTickets[selectedIndex],
-              selectedIndex
-            );
-        }
       };
 
       document.addEventListener("keydown", handleKeyDown, true);
@@ -147,19 +139,6 @@ const DeleteTicketModal = memo(
                 Eliminar ticket pendiente
               </span>
             </h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={handleClose}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
           </div>
 
           <div className={styles.modalBody}>
@@ -284,16 +263,13 @@ const DeleteTicketModal = memo(
                 >
                   Eliminar ticket seleccionado
                 </button>
-                <button
-                  type="button"
+                <ModalFooterCancelButton
                   className={`${styles.actionButton} ${styles.cancelButton}`}
                   onClick={handleClose}
-                >
-                  ESC - Cancelar
-                </button>
+                />
               </div>
               <div className={styles.actionHints}>
-                <span>↑↓ Navegar • Enter o Delete para eliminar</span>
+                <span>↑↓ Navegar • Enter para eliminar</span>
               </div>
             </div>
           )}

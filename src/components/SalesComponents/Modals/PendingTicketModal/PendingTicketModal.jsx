@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import styles from "./PendingTicketModal.module.css";
 import PendingIcon from "../../../../assets/icons/pendingIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const PendingTicketModal = memo(
   ({ isOpen, onClose, onAccept, currentTicketNumber }) => {
@@ -64,19 +64,6 @@ const PendingTicketModal = memo(
                 Ticket pendiente
               </span>
             </h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={handleClose}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
           </div>
 
           <div className={styles.modalBody}>
@@ -106,13 +93,10 @@ const PendingTicketModal = memo(
             >
               Aceptar
             </button>
-            <button
-              type="button"
+            <ModalFooterCancelButton
               className={`${styles.actionButton} ${styles.cancelButton}`}
               onClick={handleClose}
-            >
-              Esc - Cancelar
-            </button>
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef } from "react";
 
 import styles from "./AppModal.module.css";
+import { useModalLayer } from "../../contexts/ModalStackContext";
 
 const MODAL_TYPE_CONFIG = {
   info: {
@@ -79,6 +80,11 @@ const AppModal = ({
 }) => {
   const titleId = useId();
   const messageId = useId();
+  // Identificador unico por instancia: dos avisos montados a la vez no deben
+  // compartir capa ni desregistrarse entre si.
+  const layerId = useId();
+
+  useModalLayer(isOpen, layerId);
 
   const modalRef = useRef(null);
   const previousActiveElementRef = useRef(null);

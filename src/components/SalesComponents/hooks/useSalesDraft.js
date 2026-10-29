@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useDidChange } from "../../../hooks/useDidChange";
 import { afterCommit } from "../../../utils/asyncUtils";
 
 const SALES_DRAFT_VERSION = 1;
@@ -67,12 +66,10 @@ const hasDraftDataToSave = ({
   );
 };
 
-/** Clave estable para detectar cambios de borrador aunque no exista. */
-const NO_DRAFT_KEY = "__no_draft__";
-
 /** Plan vacio: no hay borrador que restaurar todavia. */
 const EMPTY_RESTORE_PLAN = {
   ready: false,
+  stale: false,
   draft: null,
   showModal: false,
   message: null,
@@ -81,18 +78,19 @@ const EMPTY_RESTORE_PLAN = {
 };
 
 /**
- * Lee el borrador persistido y decide que hay que hacer con el, sin escribir
- * estado ni tocar el almacenamiento.
+ * Lee el borrador persistido y decide que hay que hacer con el. Solo consulta
+ * el almacenamiento: no escribe estado ni modifica localStorage/sessionStorage,
+ * de modo que puede invocarse durante el render.
  *
- * Es una funcion pura a proposito: la decision de como queda la pantalla se toma
- * durante el render y los efectos de la aplicacion (avisar al padre, marcar la
- * sesion como viva, abrir el modal de recuperacion) quedan en un efecto aparte.
- * Asi no hace falta un setState sincrono dentro de un efecto.
+ * La aplicacion del plan (avisar al padre, marcar la sesion como viva, abrir el
+ * modal de recuperacion) queda en un efecto aparte, evitando un setState
+ * sincrono dentro de un efecto.
  */
 const readDraftRestorePlan = ({
   draftKey,
   sessionAcknowledgedKey,
   sessionAliveKey,
+  cashSessionOpen,
 }) => {
   if (!draftKey) {
     return EMPTY_RESTORE_PLAN;
@@ -109,6 +107,16 @@ const readDraftRestorePlan = ({
 
     if (!draft || draft.version !== SALES_DRAFT_VERSION) {
       return { ...EMPTY_RESTORE_PLAN, ready: true };
+    }
+
+    // Un borrador guardado con otro estado de caja (abierta/cerrada) ya no
+    // pertenece a la sesion actual: se descarta en vez de reponer el carrito.
+    // Los borradores antiguos sin marca se conservan por compatibilidad.
+    if (
+      typeof draft.cashSessionOpen === "boolean" &&
+      draft.cashSessionOpen !== Boolean(cashSessionOpen)
+    ) {
+      return { ...EMPTY_RESTORE_PLAN, ready: true, stale: true };
     }
 
     const recoverable = hasRecoverableDraftData(draft);
@@ -152,9 +160,11 @@ const readDraftRestorePlan = ({
 const useSalesDraft = ({
   branchId,
   userId,
+  cashSessionOpen = false,
   productos = [],
   pendingTickets = [],
   currentSaleClient = null,
+  clientAssignedAt = null,
   currentSaleReward = null,
   ticketNumber = 1,
   saleToken = null,
@@ -216,17 +226,27 @@ const useSalesDraft = ({
 
   // --- Restauración inicial del borrador ---
   // El plan de restauración es estado derivado: se calcula durante el render en
-  // el momento en que cambia la clave del borrador. Antes se resolvía dentro de
-  // un efecto, con escrituras sincrónicas que provocaban un re-render en cascada
-  // y dejaban el borrador sin preparar durante una pasada.
+  // el momento en que cambia la clave del borrador. Se compara contra una clave
+  // inicializada en `null` para que la primera pasada tambien lo evalue (el
+  // borrador existe antes de montar la vista y `useDidChange` no lo detectaba).
   const [restorePlan, setRestorePlan] = useState(EMPTY_RESTORE_PLAN);
   const [restoreAppliedKey, setRestoreAppliedKey] = useState(null);
+  const [restoreEvaluatedKey, setRestoreEvaluatedKey] = useState(null);
 
-  if (useDidChange(draftKey ?? NO_DRAFT_KEY)) {
+  // La clave incluye el estado de caja para volver a evaluar el borrador si la
+  // sesion cambia sin salir de la vista de Ventas.
+  const restoreKey = draftKey
+    ? `${draftKey}_${cashSessionOpen ? "open" : "closed"}`
+    : null;
+
+  if (restoreEvaluatedKey !== restoreKey) {
+    setRestoreEvaluatedKey(restoreKey);
+
     const plan = readDraftRestorePlan({
       draftKey,
       sessionAcknowledgedKey,
       sessionAliveKey,
+      cashSessionOpen,
     });
 
     setRestorePlan(plan);
@@ -245,6 +265,10 @@ const useSalesDraft = ({
 
     afterCommit(() => {
       if (cancelled) return;
+
+      if (restorePlan.stale) {
+        localStorage.removeItem(draftKey);
+      }
 
       if (restorePlan.error) {
         console.error("Error restaurando venta en curso:", restorePlan.error);
@@ -272,7 +296,7 @@ const useSalesDraft = ({
       }
 
       // El guardado automatico permanece bloqueado hasta este punto.
-      setRestoreAppliedKey(draftKey);
+      setRestoreAppliedKey(restoreKey);
     });
 
     return () => {
@@ -280,6 +304,7 @@ const useSalesDraft = ({
     };
   }, [
     draftKey,
+    restoreKey,
     restorePlan,
     sessionAliveKey,
     dismissRecoveredDraft,
@@ -291,7 +316,7 @@ const useSalesDraft = ({
     // El guardado espera a que el plan de restauracion se haya aplicado: si
     // corriera en la misma pasada, escribiria con los datos previos a la
     // restauracion y borraria el borrador recien recuperado.
-    if (!draftReady || !draftKey || restoreAppliedKey !== draftKey) return;
+    if (!draftReady || !draftKey || restoreAppliedKey !== restoreKey) return;
 
     const shouldSave = hasDraftDataToSave({
       productos,
@@ -313,8 +338,10 @@ const useSalesDraft = ({
       savedAt: new Date().toISOString(),
       branchId: branchId || null,
       userId: userId || null,
+      cashSessionOpen: Boolean(cashSessionOpen),
       productos,
       currentSaleClient,
+      clientAssignedAt,
       currentSaleReward,
       ticketNumber,
       saleToken,
@@ -334,12 +361,15 @@ const useSalesDraft = ({
   }, [
     draftReady,
     restoreAppliedKey,
+    restoreKey,
     draftKey,
     branchId,
     userId,
+    cashSessionOpen,
     productos,
     pendingTickets,
     currentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     ticketNumber,
     saleToken,

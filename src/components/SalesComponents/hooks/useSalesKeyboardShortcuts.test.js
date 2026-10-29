@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { createElement } from "react";
 import { renderHook, act } from "@testing-library/react";
 
 import useSalesKeyboardShortcuts from "./useSalesKeyboardShortcuts";
+import { ModalStackProvider } from "../../../contexts/ModalStackContext";
 
 const createProps = (overrides = {}) => ({
   productos: [
@@ -231,6 +233,36 @@ describe("useSalesKeyboardShortcuts", () => {
     expect(closeSpy).toHaveBeenCalledWith(false);
 
     document.body.removeChild(input);
+  });
+
+  it("bloquea todos los atajos globales mientras la pila modal tenga una capa", () => {
+    const paymentSpy = vi.fn();
+    const pendingSpy = vi.fn();
+
+    renderHook(
+      () =>
+        useSalesKeyboardShortcuts(
+          createProps({
+            openPaymentFlow: paymentSpy,
+            setPendingModalOpen: pendingSpy,
+          })
+        ),
+      {
+        wrapper: ({ children }) =>
+          createElement(
+            ModalStackProvider,
+            { initialLayers: ["payment-modal"] },
+            children
+          ),
+      }
+    );
+
+    dispatchKey("F12");
+    dispatchKey("F6");
+    dispatchKey("ArrowDown");
+
+    expect(paymentSpy).not.toHaveBeenCalled();
+    expect(pendingSpy).not.toHaveBeenCalled();
   });
 
   it("retira el listener de teclado al desmontar usando la misma funcion", () => {

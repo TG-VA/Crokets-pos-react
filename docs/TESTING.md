@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (27 oct 2026)
+## Cobertura actual (29 oct 2026)
 
-195 archivos de test (**2522 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+232 archivos de test (**2783 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                   | Archivo                                                                            |
@@ -128,7 +128,30 @@ y el proceso principal de Electron:
 | Pedidos: aviso con cierre automatico                   | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
 | Pedidos: estilos (clases definidas, badges en negrita) | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas         | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
-| Modal base (acciones de footer)                        | `src/components/AppModal/AppModal.test.jsx`                                        |
+| Modal base (footer y capa en la pila de modales)       | `src/components/AppModal/AppModal.test.jsx`                                        |
+| Pila de modales (capas y bloqueo de atajos)            | `src/contexts/ModalStackContext.test.jsx`                                          |
+| Modal base: boton de cancelar de pie (etiqueta)        | `src/components/ModalControls/ModalFooterCancelButton.test.jsx`                    |
+| Notas de venta: sin X, con Cancelar y Guardar          | `.../SalesComponents/Modals/NotesModal/NotesModal.test.jsx`                        |
+| Eliminar articulo: etiqueta y Enter                    | `.../SalesComponents/Modals/DeleteItemModal/DeleteItemModal.test.jsx`              |
+| Eliminar ticket pendiente: sin X ni Delete             | `.../SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal.test.jsx`          |
+| Modales de captura de Ventas: sin X de cabecera        | `.../SalesComponents/Modals/modalCloseButtons.test.jsx`                            |
+| Ventas: capas modales registradas por cada setter      | `.../SalesComponents/hooks/useSalesModals.test.jsx`                                |
+| Historial: botones de accion (3 arriba y 2 abajo)      | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.styles.test.js`    |
+| Historial: modal Notas del ticket                      | `.../SalesComponents/Modals/SalesHistoryModal/TicketNotesModal.test.jsx`           |
+| Historial: Escape con Notas abiertas                   | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.escape.test.jsx`   |
+| Devolucion parcial: Escape                             | `.../SalesComponents/Modals/PartialReturnModal/PartialReturnModal.escape.test.jsx` |
+| Lista paginada compartida de modales                   | `src/components/ModalPaginatedList/ModalPaginatedList.test.jsx`                    |
+| Aplicar descuento: paginacion de resultados            | `.../Modals/ProductDiscountRewardModal/ProductDiscountRewardModal.test.jsx`        |
+| Aplicar recompensas: paginacion de productos           | `.../Modals/RewardProductSelectionModal/RewardProductSelectionModal.test.jsx`      |
+| Descuento y recompensas: boton de confirmar a la derec | `.../SalesComponents/Modals/rewardModalsFooter.styles.test.js`                     |
+| Asignar cliente: puntos vigentes del cliente asignado  | `.../SalesComponents/Modals/ClientModal/ClientModal.test.jsx`                      |
+| Cliente publico en general: deteccion de nombre        | `.../SalesComponents/services/publicCustomerService.test.js`                       |
+| Venta en curso: carrito, cliente y expiracion          | `src/contexts/SalesCartContext.test.jsx`                                           |
+| Navbar: atajos bloqueados con modales abiertos         | `src/components/Navbar/hooks/useKeyboardShortcuts.test.jsx`                        |
+| Ventas: borrador (restauracion y guardado)             | `.../SalesComponents/hooks/useSalesDraft.test.js`                                  |
+| Ventas: borrador con cliente expirado                  | `.../SalesComponents/hooks/useSalesStateActions.test.js`                           |
+| Ventas: expiracion del cliente asignado                | `.../SalesComponents/services/salesClientExpiryService.test.js`                    |
+| Ventas: descriptor de capas modales                    | `.../SalesComponents/services/salesModalLayersService.test.js`                     |
 | Pedidos: contrato SQL de permisos (revoke anon)        | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
 | Pedidos: contrato SQL de integridad                    | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 | Pedidos: contrato SQL de nota de recepcion             | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |

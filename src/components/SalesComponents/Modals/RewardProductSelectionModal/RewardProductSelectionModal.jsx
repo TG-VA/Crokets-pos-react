@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, memo } from "react";
 import styles from "./RewardProductSelectionModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import {
-  useRewardProductSelection,
-  INITIAL_VISIBLE_PRODUCTS,
-} from "./useRewardProductSelection";
+import ModalPaginatedList from "../../../ModalPaginatedList/ModalPaginatedList";
+import { useRewardProductSelection } from "./useRewardProductSelection";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+
+const PRODUCTS_PER_PAGE = 5;
 
 const RewardProductSelectionModal = memo(
   ({
@@ -21,8 +21,6 @@ const RewardProductSelectionModal = memo(
       selectedProductsByReward,
       searchByReward,
       setSearchByReward,
-      expandedRewards,
-      setExpandedRewards,
       loadingProducts,
       saving,
       setSaving,
@@ -146,14 +144,8 @@ const RewardProductSelectionModal = memo(
                   const filteredOptions = getFilteredOptionsForReward(
                     reward.id
                   );
-                  const isExpanded = Boolean(expandedRewards[reward.id]);
                   const search = String(searchByReward[reward.id] || "").trim();
-                  const visibleOptions =
-                    search || isExpanded
-                      ? filteredOptions
-                      : filteredOptions.slice(0, INITIAL_VISIBLE_PRODUCTS);
-                  const hasManyProducts =
-                    options.length > INITIAL_VISIBLE_PRODUCTS;
+                  const hasManyProducts = options.length > PRODUCTS_PER_PAGE;
 
                   const requiredQty = svc.getRewardQuantity(reward);
                   const selectedQty = getSelectedQuantityForReward(reward.id);
@@ -203,10 +195,6 @@ const RewardProductSelectionModal = memo(
                                     ...p,
                                     [reward.id]: e.target.value,
                                   }));
-                                  setExpandedRewards((p) => ({
-                                    ...p,
-                                    [reward.id]: false,
-                                  }));
                                 }}
                                 disabled={saving}
                                 placeholder="Buscar producto dentro de esta recompensa..."
@@ -233,8 +221,12 @@ const RewardProductSelectionModal = memo(
                               No hay productos con esa búsqueda.
                             </div>
                           ) : (
-                            <div className={styles.productList}>
-                              {visibleOptions.map(({ product }) => {
+                            <ModalPaginatedList
+                              key={`${reward.id}-${search.toLowerCase()}`}
+                              items={filteredOptions}
+                              pageSize={PRODUCTS_PER_PAGE}
+                              listClassName={styles.productList}
+                              renderItem={({ product }) => {
                                 const status = getInventoryStatus(product);
                                 const qty = getSelectedQuantityForProduct(
                                   reward.id,
@@ -317,25 +309,8 @@ const RewardProductSelectionModal = memo(
                                     </div>
                                   </div>
                                 );
-                              })}
-                            </div>
-                          )}
-                          {hasManyProducts && !search && (
-                            <button
-                              type="button"
-                              className={styles.showMoreButton}
-                              onClick={() =>
-                                setExpandedRewards((p) => ({
-                                  ...p,
-                                  [reward.id]: !p[reward.id],
-                                }))
-                              }
-                              disabled={saving}
-                            >
-                              {isExpanded
-                                ? "Ver menos productos"
-                                : `Ver ${options.length - INITIAL_VISIBLE_PRODUCTS} producto${options.length - INITIAL_VISIBLE_PRODUCTS !== 1 ? "s" : ""} más`}
-                            </button>
+                              }}
+                            />
                           )}
                         </>
                       )}
@@ -347,14 +322,6 @@ const RewardProductSelectionModal = memo(
           </div>
 
           <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={onClose}
-              disabled={saving || appModal.isOpen}
-            >
-              Cancelar
-            </button>
             <button
               type="button"
               className={styles.confirmButton}

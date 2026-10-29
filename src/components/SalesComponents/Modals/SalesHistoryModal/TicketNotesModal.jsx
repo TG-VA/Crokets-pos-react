@@ -1,0 +1,101 @@
+import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+import { useId } from "react";
+import styles from "./TicketNotesModal.module.css";
+import { formatDateTime } from "../../services/salesHistoryService";
+import { isNamedCustomer } from "../../services/publicCustomerService";
+import ReceiptIcon from "../../../../assets/icons/receipt-solid-full.svg";
+import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import UserIcon from "../../../../assets/icons/user-solid.svg";
+import ClockIcon from "../../../../assets/icons/clock-solid-full.svg";
+
+const buildMetaChips = (ticket) =>
+  [
+    {
+      key: "cashier",
+      label: "Cajero",
+      icon: UserIcon,
+      value: ticket.cashier,
+    },
+    {
+      key: "client",
+      label: "Cliente",
+      icon: UserIcon,
+      value: isNamedCustomer(ticket.client) ? ticket.client.trim() : "",
+    },
+    {
+      key: "date",
+      label: "Fecha",
+      icon: ClockIcon,
+      value: ticket.date ? formatDateTime(ticket.date) : "",
+    },
+  ].filter((chip) => chip.value);
+
+const TicketNotesModal = ({ ticket, onClose }) => {
+  const titleId = useId();
+  const note = ticket.notes?.trim();
+
+  useEscapeKey(onClose);
+
+  return (
+    <div className={styles.overlay}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <div className={styles.header}>
+          <h3 id={titleId} className={styles.title}>
+            <img
+              src={ReceiptIcon}
+              alt=""
+              className={styles.titleIcon}
+              aria-hidden="true"
+            />
+            Notas del ticket {ticket.folio}
+          </h3>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Cerrar notas"
+          >
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+
+        <ul className={styles.meta}>
+          {buildMetaChips(ticket).map((chip) => (
+            <li key={chip.key} className={styles.chip}>
+              <img
+                src={chip.icon}
+                alt=""
+                className={styles.chipIcon}
+                aria-hidden="true"
+              />
+              <span className={styles.visuallyHidden}>{chip.label}:</span>{" "}
+              {chip.value}
+            </li>
+          ))}
+        </ul>
+
+        <div className={styles.body}>
+          {note ? (
+            <p className={styles.note}>{ticket.notes}</p>
+          ) : (
+            <p className={styles.empty}>
+              Esta venta no tiene notas registradas.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TicketNotesModal;

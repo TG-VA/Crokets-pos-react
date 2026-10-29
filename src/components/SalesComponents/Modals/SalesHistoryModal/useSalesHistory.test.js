@@ -34,7 +34,11 @@ import {
   fetchProductsByIds,
   fetchSaleReturnsData,
   fetchHistoryTickets,
+  executeCancelSaleTransaction,
+  buildCustomerPointsMaps,
+  getPaymentSummary,
 } from "../../services/salesHistoryService";
+import { printTicket } from "../../../../utils/ticketPrinter";
 import { useSalesHistory } from "./useSalesHistory";
 
 const TICKETS = [
@@ -238,6 +242,44 @@ describe("useSalesHistory - seleccion inicial", () => {
     errorSpy.mockRestore();
   });
 
+  it("refresca en el mismo lugar el ticket recien cancelado", async () => {
+    let currentTickets = TICKETS;
+    fetchHistoryTickets.mockImplementation(() =>
+      Promise.resolve(currentTickets)
+    );
+    executeCancelSaleTransaction.mockResolvedValue(undefined);
+
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    act(() => {
+      result.current.setCancelReason("Producto defectuoso");
+      result.current.setRefundMethodId("pm-1");
+    });
+    act(() => {
+      result.current.handleCancelSale();
+    });
+
+    expect(result.current.appModal.isOpen).toBe(true);
+
+    currentTickets = [
+      {
+        ...TICKETS[0],
+        status: "cancelled",
+        cancelReason: "Producto defectuoso",
+      },
+      TICKETS[1],
+    ];
+
+    await act(async () => {
+      await result.current.appModal.onConfirm();
+    });
+
+    expect(result.current.selectedTicket?.id).toBe("s2");
+    expect(result.current.selectedTicket?.status).toBe("cancelled");
+    expect(result.current.tickets[0].status).toBe("cancelled");
+  });
+
   it("una respuesta tardia de otro dia no pisa la seleccion del dia actual", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 2, 15, 12, 0, 0));
@@ -277,5 +319,51 @@ describe("useSalesHistory - seleccion inicial", () => {
     });
 
     expect(result.current.selectedTicket?.id).toBe("s3");
+  });
+});
+
+describe("useSalesHistory - copia impresa", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPaymentMethods.mockResolvedValue([]);
+    fetchCashiers.mockResolvedValue([]);
+    fetchTicketDetailsData.mockResolvedValue({ details: [], kits: [] });
+    fetchProductsByIds.mockResolvedValue([]);
+    fetchSaleReturnsData.mockResolvedValue({ returns: [], returnItems: [] });
+    buildCustomerPointsMaps.mockResolvedValue({});
+    getPaymentSummary.mockReturnValue({
+      amountReceived: 0,
+      changeAmount: 0,
+      paymentsForPrint: [],
+    });
+    printTicket.mockResolvedValue({ success: true });
+  });
+
+  const printCopyFor = async (client) => {
+    fetchHistoryTickets.mockResolvedValue([{ ...TICKETS[0], client }]);
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.selectedTicket?.id).toBe("s2"));
+
+    await act(async () => {
+      await result.current.handlePrintCopy();
+    });
+
+    return printTicket.mock.calls[0][0];
+  };
+
+  it("imprime el nombre de un cliente con nombre propio", async () => {
+    const ticketText = await printCopyFor("Juan Perez");
+
+    expect(ticketText).toContain("Cliente: JUAN PEREZ");
+  });
+
+  it.each([
+    "PÚBLICO EN GENERAL",
+    "Publico en general",
+    "  público en general ",
+  ])("imprime el cliente generico cuando el nombre es %j", async (client) => {
+    const ticketText = await printCopyFor(client);
+
+    expect(ticketText).toContain("Cliente: PÚBLICO EN GENERAL");
   });
 });

@@ -8,8 +8,6 @@ import {
 import { useDidChange } from "../../../../hooks/useDidChange";
 import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 
-export const INITIAL_VISIBLE_PRODUCTS = 3;
-
 export const useRewardProductSelection = ({
   isOpen,
   rewards,
@@ -20,7 +18,6 @@ export const useRewardProductSelection = ({
   const [inventoryByProduct, setInventoryByProduct] = useState({});
   const [selectedProductsByReward, setSelectedProductsByReward] = useState({});
   const [searchByReward, setSearchByReward] = useState({});
-  const [expandedRewards, setExpandedRewards] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [appModal, setAppModal] = useState({
@@ -111,7 +108,6 @@ export const useRewardProductSelection = ({
     if (isOpen) {
       setSelectedProductsByReward({});
       setSearchByReward({});
-      setExpandedRewards({});
       setSaving(false);
       setError("");
       closeAppModal();
@@ -314,8 +310,6 @@ export const useRewardProductSelection = ({
     selectedProductsByReward,
     searchByReward,
     setSearchByReward,
-    expandedRewards,
-    setExpandedRewards,
     loadingProducts,
     saving,
     setSaving,

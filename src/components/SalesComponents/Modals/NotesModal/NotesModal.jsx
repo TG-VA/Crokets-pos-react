@@ -1,10 +1,13 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import styles from "./NotesModal.module.css";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import { useModalLayer } from "../../../../contexts/ModalStackContext";
+import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 
 const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
   const [notes, setNotes] = useState(initialNotes);
+
+  useModalLayer(isOpen, "notes-modal");
 
   const handleClose = useCallback(
     (e) => {
@@ -60,18 +63,6 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
       >
         <div className={styles.modalHeader}>
           <h2>Agregar Notas</h2>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={handleClose}
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
         </div>
 
         <div className={styles.notesModalBody}>
@@ -89,13 +80,10 @@ const NotesModal = memo(({ isOpen, onClose, onSave, initialNotes = "" }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button
-            type="button"
-            className={styles.cancelButton}
+          <ModalFooterCancelButton
             onClick={handleClose}
-          >
-            ESC - Cancelar
-          </button>
+            className={styles.cancelButton}
+          />
           <button
             type="button"
             className={styles.saveButton}

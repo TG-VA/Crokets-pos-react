@@ -1,0 +1,20 @@
+.closeButton {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeIcon {
+  display: block;
+  pointer-events: none;
+}
+
+.cancelButton {
+  border: none;
+  cursor: pointer;
+  font-weight: 900;
+}

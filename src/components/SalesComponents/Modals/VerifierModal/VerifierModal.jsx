@@ -229,13 +229,6 @@ const VerifierModal = memo(({ isOpen, onClose, onAddToSale }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button
-            type="button"
-            className={styles.cancelButton}
-            onClick={handleClose}
-          >
-            ESC - Cerrar
-          </button>
           {product && (
             <button
               type="button"

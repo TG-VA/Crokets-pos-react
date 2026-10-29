@@ -1,15 +1,26 @@
 import { useEffect, useRef } from "react";
+import { useModalStack } from "../../../contexts/ModalStackContext";
 import { isSameCartItem } from "../utils/salesCartUtils";
 
 const useSalesKeyboardShortcuts = (props) => {
   const stateRef = useRef(props);
+  const { hasOpenModals } = useModalStack();
+  const hasOpenModalsRef = useRef(hasOpenModals);
 
   useEffect(() => {
     stateRef.current = props;
   });
 
   useEffect(() => {
+    hasOpenModalsRef.current = hasOpenModals;
+  }, [hasOpenModals]);
+
+  useEffect(() => {
     const handleKeyDown = (event) => {
+      // Con cualquier capa modal abierta, los atajos globales quedan
+      // deshabilitados. Cada modal maneja sus propias teclas locales.
+      if (hasOpenModalsRef.current) return;
+
       const {
         productos,
         selectedProduct,

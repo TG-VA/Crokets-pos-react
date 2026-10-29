@@ -9,6 +9,7 @@ import React, {
 import styles from "./ClientModal.module.css";
 import { supabase } from "../../../../lib/supabaseClient";
 import AppModal from "../../../AppModal/AppModal";
+import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 
 import SearchIcon from "../../../../assets/icons/searchIcon.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
@@ -49,6 +50,7 @@ const ClientModal = memo(
     const [searchTerm, setSearchTerm] = useState("");
     const [clients, setClients] = useState([]);
     const [selectedClient, setSelectedClient] = useState(currentSaleClient);
+    const [livePointsById, setLivePointsById] = useState({});
     const [selectedRewards, setSelectedRewards] = useState([]);
     const [rewards, setRewards] = useState([]);
     const [loadingRewards, setLoadingRewards] = useState(false);
@@ -105,6 +107,20 @@ const ClientModal = memo(
         }),
         {}
       );
+    };
+
+    // El cliente asignado guarda un snapshot de sus puntos. Al abrir el modal se
+    // consulta el saldo vigente porque otra sucursal pudo sumar o descontar.
+    const refreshAssignedClientPoints = async (clientId) => {
+      try {
+        const pointsByCustomer = await loadCustomerPoints([clientId]);
+        setLivePointsById((previous) => ({
+          ...previous,
+          [clientId]: formatPoints(pointsByCustomer[clientId]),
+        }));
+      } catch (err) {
+        console.error("Error actualizando los puntos del cliente:", err);
+      }
     };
 
     const loadRewards = async () => {
@@ -203,10 +219,17 @@ const ClientModal = memo(
         return showAppWarning(
           "Selecciona un cliente para asignarlo a la venta."
         );
-      onAssignClient?.(selectedClient, selectedRewards);
+      const livePoints = livePointsById[selectedClient.id];
+      onAssignClient?.(
+        livePoints === undefined
+          ? selectedClient
+          : { ...selectedClient, points: livePoints },
+        selectedRewards
+      );
       closeModal();
     }, [
       selectedClient,
+      livePointsById,
       selectedRewards,
       onAssignClient,
       showAppWarning,
@@ -238,8 +261,10 @@ const ClientModal = memo(
         setSearchTerm("");
         setClients(currentSaleClient ? [currentSaleClient] : []);
         setLoadingClients(false);
+        setLivePointsById({});
         closeAppModal();
         loadRewards();
+        if (currentClientId) refreshAssignedClientPoints(currentClientId);
       }
     }, [isOpen, currentSaleClient, closeAppModal]);
 
@@ -274,7 +299,9 @@ const ClientModal = memo(
       return () => document.removeEventListener("keydown", handleKeyDown, true);
     }, [isOpen, selectedClient, appModal.isOpen, closeModal, handleAssign]);
 
-    const clientPoints = Number(selectedClient?.points || 0);
+    const clientPoints = Number(
+      livePointsById[selectedClient?.id] ?? selectedClient?.points ?? 0
+    );
     const activeRewards = useMemo(
       () =>
         !selectedClient?.id
@@ -382,19 +409,11 @@ const ClientModal = memo(
               <h2>Asignar cliente</h2>
               <p>Busca un cliente registrado para asociarlo a la venta.</p>
             </div>
-            <button
-              type="button"
-              className={styles.closeButton}
+            <ModalCloseButton
               onClick={closeModal}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
+              className={styles.closeButton}
+              iconClassName={styles.closeIcon}
+            />
           </div>
 
           <div className={styles.modalBody}>
@@ -506,7 +525,11 @@ const ClientModal = memo(
                         </div>
                       </div>
                       <div className={styles.clientPoints}>
-                        <strong>{formatPoints(client.points)}</strong>
+                        <strong>
+                          {formatPoints(
+                            livePointsById[client.id] ?? client.points
+                          )}
+                        </strong>
                         <span>pts</span>
                       </div>
                     </button>
@@ -690,13 +713,6 @@ const ClientModal = memo(
           </div>
 
           <div className={styles.modalActions}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={closeModal}
-            >
-              Esc - Cancelar
-            </button>
             <div className={styles.rightActions}>
               {currentSaleClient && (
                 <button

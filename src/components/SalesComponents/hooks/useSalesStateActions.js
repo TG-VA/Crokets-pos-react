@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 
+import { isSaleClientExpired } from "../services/salesClientExpiryService";
+
 const useSalesStateActions = ({
   setProductos,
   productosRef,
@@ -31,8 +33,15 @@ const useSalesStateActions = ({
       if (productosRef) productosRef.current = restoredProducts;
 
       setSelectedProduct(null);
-      setCurrentSaleClient(draft?.currentSaleClient || null);
-      setCurrentSaleReward(draft?.currentSaleReward || null);
+      // Un cliente que ya expiro en el contexto no debe recuperar otros 5 minutos
+      // desde el borrador al volver a la vista de Ventas.
+      const clientExpired = isSaleClientExpired(draft?.clientAssignedAt);
+      setCurrentSaleClient(
+        clientExpired ? null : draft?.currentSaleClient || null
+      );
+      setCurrentSaleReward(
+        clientExpired ? null : draft?.currentSaleReward || null
+      );
       setTicketNumber(Number(draft?.ticketNumber || 1));
       setSaleToken(draft?.saleToken || null);
       setSaleNotes(draft?.saleNotes || "");

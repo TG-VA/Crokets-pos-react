@@ -53,36 +53,6 @@
   filter: brightness(0) invert(1);
 }
 
-.closeButton {
-  width: 42px;
-  height: 42px;
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background-color 0.2s ease,
-    transform 0.15s ease;
-}
-
-.closeButton:hover {
-  background: rgba(255, 255, 255, 0.14);
-  transform: scale(1.03);
-}
-
-.closeIcon {
-  width: 25px;
-  height: 25px;
-  display: block;
-  filter: brightness(0) invert(1);
-  pointer-events: none;
-}
-
 .searchModalBody {
   padding: 22px 24px 18px;
   flex-grow: 1;

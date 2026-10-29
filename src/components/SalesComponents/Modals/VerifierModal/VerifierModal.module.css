@@ -368,7 +368,7 @@
 
 .modalActions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 18px 24px;
   background: #f8f9fa;
@@ -376,7 +376,6 @@
   gap: 12px;
 }
 
-.cancelButton,
 .addButton {
   padding: 12px 22px;
   border: none;
@@ -389,17 +388,6 @@
     transform 0.15s ease,
     box-shadow 0.2s ease;
   min-width: 190px;
-}
-
-.cancelButton {
-  background: #6c757d;
-  color: #ffffff;
-}
-
-.cancelButton:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.25);
 }
 
 .addButton {
@@ -463,7 +451,6 @@
     gap: 10px;
   }
 
-  .cancelButton,
   .addButton {
     width: 100%;
     min-width: 0;

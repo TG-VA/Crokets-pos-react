@@ -64,7 +64,7 @@ import { isSameCartItem } from "../../components/SalesComponents/utils/salesCart
 const EMPTY_REWARDS = [];
 
 const Sales = () => {
-  const { user } = useAuth();
+  const { user, cashRegistered } = useAuth();
   const { branch } = useBranch();
 
   // === REFERENCIA PARA EL FOCO AUTOMÁTICO ===
@@ -91,6 +91,7 @@ const Sales = () => {
   const {
     currentSaleClient,
     setCurrentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     setCurrentSaleReward,
     pendingFreeProductRewards,
@@ -190,9 +191,11 @@ const Sales = () => {
   const { draftReady, clearSalesDraft } = useSalesDraft({
     branchId: branch?.id,
     userId: user?.id,
+    cashSessionOpen: cashRegistered,
     productos,
     pendingTickets,
     currentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     ticketNumber,
     saleToken,

@@ -2586,6 +2586,28 @@ Las mutaciones sí validan membresía de sucursal desde `20261024120000`
 **Solución recomendada (si cambia la decisión):** filtrar por `from_branch_id`/`to_branch_id`
 contra `user_branches` en las políticas y en las consultas del historial.
 
+### 80. El canje de puntos no valida el saldo en el servidor
+
+**Estado:** Abierto (29 oct 2026).
+
+**Severidad:** Alta (riesgo real, no urgente).
+
+Los RPC de venta (`create_sale_transaction`, `cancel_sale_transaction`,
+`create_partial_return_transaction`) no reciben ni validan puntos ni recompensas. El canje se
+registra despues de la venta, desde el cliente, con inserts directos a `customer_points` y
+`sale_reward_redemptions` (`salesRewardsService.js`, `salesCustomerPointsService.js`,
+`salesPostSaleService.js`). Esos inserts usan los puntos calculados en el cliente y no comprueban que
+el saldo alcance; la unica proteccion es la idempotencia por `related_sale_id` y `source='reward'`. La
+policy de `sale_reward_redemptions` es `FOR INSERT ... WITH CHECK (true)`.
+
+Impacto: un saldo desactualizado en pantalla (por ejemplo, puntos descontados desde otra sucursal)
+puede dejar el saldo del cliente en negativo. El modal "Asignar cliente" ya consulta el saldo vigente
+al abrirse, lo que reduce la ventana pero no cierra el problema.
+
+**Solucion recomendada:** mover el canje a un RPC transaccional que recalcule el saldo
+(`sum(points)` por `customer_id`) con bloqueo de la fila del cliente y rechace el canje si no alcanza;
+restringir los inserts directos con RLS.
+
 ---
 
 ## Cómo usar este documento

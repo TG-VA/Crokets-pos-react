@@ -2,9 +2,10 @@ import React, { memo } from "react";
 import styles from "./PartialReturnModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import ChangeIcon from "../../../../assets/icons/changeIcon.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 import { usePartialReturn, formatCurrency } from "./usePartialReturn";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
+import { useModalLayer } from "../../../../contexts/ModalStackContext";
+import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 
 const PartialReturnModal = memo(
   ({
@@ -14,6 +15,8 @@ const PartialReturnModal = memo(
     paymentMethods = [],
     onReturnCreated,
   }) => {
+    useModalLayer(isOpen, "partial-return-modal");
+
     const {
       itemsWithLimits,
       quantities,
@@ -42,25 +45,13 @@ const PartialReturnModal = memo(
       e.stopPropagation();
       e.nativeEvent?.stopImmediatePropagation?.();
       e.stopImmediatePropagation?.();
-      if (appModal.isOpen) {
-        closeAppModal();
-      } else if (!processing) {
-        onClose();
-      }
+      if (!processing) onClose();
     }, isOpen);
 
     if (!isOpen) return null;
 
     return (
-      <div
-        className={styles.overlay}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }}
-      >
+      <div className={styles.overlay}>
         <div className={styles.modal}>
           <div className={styles.header}>
             <div>
@@ -79,20 +70,12 @@ const PartialReturnModal = memo(
                 Folio: <strong>{selectedTicket?.folio || "—"}</strong>
               </div>
             </div>
-            <button
-              type="button"
-              className={styles.closeButton}
+            <ModalCloseButton
               onClick={onClose}
               disabled={processing}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
+              className={styles.closeButton}
+              iconClassName={styles.closeIcon}
+            />
           </div>
 
           <div className={styles.content}>
@@ -343,14 +326,6 @@ const PartialReturnModal = memo(
               </div>
             </div>
             <div className={styles.footerActions}>
-              <button
-                type="button"
-                className={`${styles.actionButton} ${styles.secondaryButton}`}
-                onClick={onClose}
-                disabled={processing}
-              >
-                Cerrar
-              </button>
               <button
                 type="button"
                 className={`${styles.actionButton} ${styles.primaryButton}`}

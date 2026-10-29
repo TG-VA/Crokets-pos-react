@@ -112,6 +112,7 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     expect(screen.getByLabelText("Tarjeta:")).toBeTruthy();
     expect(screen.queryByLabelText("Dólares (USD):")).toBeNull();
     expect(screen.queryByText(/T\.C\./)).toBeNull();
+    expect(screen.queryByText("Restante en USD:")).toBeNull();
   });
 
   it("muestra el tipo de cambio de configuracion como badge informativo en cobros en Dolares", () => {
@@ -133,6 +134,31 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
 
     expect(screen.getByText("(T.C. $18.50 MXN)")).toBeTruthy();
+  });
+
+  it("muestra el adeudo exacto en USD debajo del tipo de cambio", () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dólares" }));
+
+    expect(screen.getByText("Adeudo (USD):")).toBeTruthy();
+    expect(screen.queryByText("Adeudo exacto (USD):")).toBeNull();
+    expect(screen.getByText("$9")).toBeTruthy();
+  });
+
+  it("actualiza el restante en USD del pago mixto segun el efectivo capturado", () => {
+    renderModal();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
+
+    expect(screen.getByText("Restante en USD:")).toBeTruthy();
+    expect(screen.getByText("$9")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Efectivo:"), {
+      target: { value: "50" },
+    });
+
+    expect(screen.getByText("$6")).toBeTruthy();
   });
 
   it("expande los ultimos 2 metodos para ocupar toda la fila cuando hay 5 visibles", () => {
@@ -239,5 +265,15 @@ describe("PaymentModal: modo de impresion y accesibilidad", () => {
         screen.getByLabelText("Información de Transferencia:")
       ).toBeTruthy();
     });
+  });
+
+  it("cierra solo con la X: el pie tiene unicamente F1, F2 y F4", () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar modal" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F1 - / })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F2 - / })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^F4 - / })).toBeTruthy();
+    expect(screen.queryByText(/esc\s*-\s*cancelar/i)).toBeNull();
   });
 });

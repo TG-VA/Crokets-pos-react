@@ -8,7 +8,13 @@ import DollarsIcon from "../../../../assets/icons/dollar-sign-solid-full.svg";
 import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
 import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
+import {
+  getDollarsDueInUsd,
+  getMixedRemainingUsd,
+  getPaymentTotalInMxn,
+  isValidExchangeRate,
+} from "../../services/paymentModalCalculationService";
 import {
   getPrintMode,
   PRINT_MODE_CONFIRM,
@@ -109,6 +115,8 @@ const PaymentModal = memo(
     const safeTotal = Number(total || 0);
     const isZeroTotalSale = safeTotal <= 0;
     const numericExchangeRate = toNumber(exchangeRate);
+    const hasValidExchangeRate = isValidExchangeRate(numericExchangeRate);
+    const acceptsUsdPayments = cashOpSettings.acceptUsdPayments !== false;
 
     const visiblePaymentMethods = useMemo(
       () =>
@@ -153,23 +161,19 @@ const PaymentModal = memo(
 
     const getPaidTotalInMxn = useCallback(() => {
       if (isZeroTotalSale) return 0;
-      switch (selectedPaymentMethod) {
-        case "Efectivo":
-          return toNumber(paidAmount);
-        case "Dolares":
-          return toNumber(dollarAmount) * numericExchangeRate;
-        case "Mixto":
-          return (
-            toNumber(mixedPayments.efectivo) +
-            toNumber(mixedPayments.tarjeta) +
-            toNumber(mixedPayments.dolares) * numericExchangeRate
-          );
-        case "Terminal":
-        case "Transferencia":
-          return safeTotal;
-        default:
-          return 0;
+      if (
+        selectedPaymentMethod === "Terminal" ||
+        selectedPaymentMethod === "Transferencia"
+      ) {
+        return safeTotal;
       }
+
+      return getPaymentTotalInMxn({
+        method: selectedPaymentMethod,
+        amount: selectedPaymentMethod === "Dolares" ? dollarAmount : paidAmount,
+        exchangeRate: numericExchangeRate,
+        mixed: mixedPayments,
+      });
     }, [
       isZeroTotalSale,
       selectedPaymentMethod,
@@ -201,6 +205,16 @@ const PaymentModal = memo(
       (selectedPaymentMethod === "Mixto" &&
         (toNumber(mixedPayments.efectivo) > 0 ||
           toNumber(mixedPayments.dolares) > 0));
+
+    // Adeudo informativo para pagos en dolares: se redondea hacia arriba a
+    // dolares enteros para que el monto sugerido siempre cubra el total en MXN.
+    const dollarsDue = getDollarsDueInUsd(safeTotal, numericExchangeRate);
+    const mixedRemainingUsd = getMixedRemainingUsd({
+      totalMxn: safeTotal,
+      cashMxn: mixedPayments.efectivo,
+      cardMxn: mixedPayments.tarjeta,
+      exchangeRate: numericExchangeRate,
+    });
 
     const resetModalState = useCallback(() => {
       const cashOps = getCashOperationSettings();
@@ -236,7 +250,7 @@ const PaymentModal = memo(
           const paidTotalMxn = getPaidTotalInMxn();
           if (
             ["Dolares", "Mixto"].includes(selectedPaymentMethod) &&
-            numericExchangeRate <= 0
+            !hasValidExchangeRate
           )
             return showAppWarning("Ingresa un tipo de cambio válido.");
           if (selectedPaymentMethod === "Efectivo" && toNumber(paidAmount) <= 0)
@@ -345,6 +359,7 @@ const PaymentModal = memo(
         getPaidTotalInMxn,
         selectedPaymentMethod,
         numericExchangeRate,
+        hasValidExchangeRate,
         paidAmount,
         dollarAmount,
         mixedPayments,
@@ -554,20 +569,12 @@ const PaymentModal = memo(
         >
           <div className={styles.modalHeader}>
             <h2>{isZeroTotalSale ? "FINALIZAR CANJE" : "COBRAR"}</h2>
-            <button
-              type="button"
-              className={styles.closeButton}
+            <ModalCloseButton
               onClick={closePaymentModal}
               disabled={effectiveProcessing}
-              aria-label="Cerrar modal"
-            >
-              <img
-                src={XmarkIcon}
-                alt=""
-                className={styles.closeIcon}
-                aria-hidden="true"
-              />
-            </button>
+              className={styles.closeButton}
+              iconClassName={styles.closeIcon}
+            />
           </div>
 
           <div className={styles.totalDisplay}>${safeTotal.toFixed(2)}</div>
@@ -653,13 +660,23 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                {cashOpSettings.acceptUsdPayments !== false ? (
-                  <div className={styles.paymentRow}>
-                    <span>Tipo de cambio:</span>
-                    <span className={styles.exchangeRateBadge}>
-                      ${numericExchangeRate.toFixed(2)} MXN
-                    </span>
-                  </div>
+                {acceptsUsdPayments ? (
+                  <>
+                    <div className={styles.paymentRow}>
+                      <span>Tipo de cambio:</span>
+                      <span className={styles.exchangeRateBadge}>
+                        ${numericExchangeRate.toFixed(2)} MXN
+                      </span>
+                    </div>
+                    {hasValidExchangeRate && (
+                      <div className={styles.paymentRow}>
+                        <span>Adeudo (USD):</span>
+                        <span className={styles.equivalentAmount}>
+                          ${dollarsDue}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 ) : null}
                 <div className={styles.paymentRow}>
                   <label htmlFor="payment-usd-amount">Pagó Con (USD):</label>
@@ -722,7 +739,7 @@ const PaymentModal = memo(
                     />
                   </div>
                 </div>
-                {cashOpSettings.acceptUsdPayments !== false ? (
+                {acceptsUsdPayments ? (
                   <>
                     <div className={styles.paymentRow}>
                       <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
@@ -750,6 +767,14 @@ const PaymentModal = memo(
                     ${getPaidTotalInMxn().toFixed(2)}
                   </span>
                 </div>
+                {acceptsUsdPayments && hasValidExchangeRate && (
+                  <div className={styles.paymentRow}>
+                    <span>Restante en USD:</span>
+                    <span className={styles.equivalentAmount}>
+                      ${mixedRemainingUsd}
+                    </span>
+                  </div>
+                )}
                 <div className={styles.paymentRow}>
                   <span>{changeLabel}</span>
                   <span className={styles.changeAmount}>{formattedChange}</span>
@@ -818,14 +843,6 @@ const PaymentModal = memo(
                 : isZeroTotalSale
                   ? "F2 - Finalizar canje sin imprimir"
                   : "F2 - Cobrar sin imprimir"}
-            </button>
-            <button
-              type="button"
-              className={styles.modalActionBtn}
-              onClick={closePaymentModal}
-              disabled={effectiveProcessing}
-            >
-              {effectiveProcessing ? "Procesando..." : "ESC - Cancelar"}
             </button>
             <button
               type="button"

@@ -1,0 +1,147 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+const db = vi.hoisted(() => ({ pointRows: [], customers: [], fail: false }));
+
+// Consulta encadenable y "await-able" que resuelve segun la tabla consultada.
+vi.mock("../../../../lib/supabaseClient", () => {
+  const buildQuery = (table) => {
+    const result = () => ({
+      data:
+        table === "customer_points"
+          ? db.pointRows
+          : table === "customers"
+            ? db.customers
+            : [],
+      error:
+        table === "customer_points" && db.fail ? { message: "falla" } : null,
+    });
+    const query = {
+      select: () => query,
+      eq: () => query,
+      neq: () => query,
+      in: () => query,
+      or: () => query,
+      order: () => query,
+      limit: () => query,
+      then: (resolve, reject) =>
+        Promise.resolve(result()).then(resolve, reject),
+    };
+    return query;
+  };
+
+  return { supabase: { from: (table) => buildQuery(table) } };
+});
+
+import ClientModal from "./ClientModal";
+
+const ASSIGNED_CLIENT = {
+  id: "c1",
+  name: "Ana",
+  phone: "5551234567",
+  points: 10,
+};
+
+const renderModal = (props = {}) =>
+  render(
+    <ClientModal
+      isOpen
+      onClose={() => {}}
+      onAssignClient={() => {}}
+      currentSaleClient={ASSIGNED_CLIENT}
+      {...props}
+    />
+  );
+
+describe("ClientModal: puntos del cliente ya asignado", () => {
+  beforeEach(() => {
+    db.pointRows = [];
+    db.customers = [];
+    db.fail = false;
+  });
+
+  it("muestra los puntos actuales cuando cambiaron en otra sucursal", async () => {
+    db.pointRows = [
+      { customer_id: "c1", points: 20 },
+      { customer_id: "c1", points: 5 },
+    ];
+
+    renderModal();
+
+    await waitFor(() =>
+      expect(screen.getAllByText("25").length).toBeGreaterThan(0)
+    );
+    expect(screen.queryByText("10")).toBeNull();
+  });
+
+  it("refleja puntos descontados en otra sucursal", async () => {
+    db.pointRows = [{ customer_id: "c1", points: 4 }];
+
+    renderModal();
+
+    await waitFor(() =>
+      expect(screen.getAllByText("4").length).toBeGreaterThan(0)
+    );
+    expect(screen.queryByText("10")).toBeNull();
+  });
+
+  it("entrega el saldo vigente al reasignar el cliente a la venta", async () => {
+    db.pointRows = [{ customer_id: "c1", points: 25 }];
+    const onAssignClient = vi.fn();
+
+    renderModal({ onAssignClient });
+
+    await waitFor(() =>
+      expect(screen.getAllByText("25").length).toBeGreaterThan(0)
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Asignar cliente/ }));
+
+    expect(onAssignClient).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "c1", points: 25 }),
+      []
+    );
+  });
+
+  it("conserva el snapshot si la consulta de puntos falla", async () => {
+    db.fail = true;
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    renderModal();
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(screen.getAllByText("10").length).toBeGreaterThan(0);
+    errorSpy.mockRestore();
+  });
+
+  it("muestra los puntos vigentes en la fila del cliente asignado al elegir otro", async () => {
+    db.pointRows = [
+      { customer_id: "c1", points: 25 },
+      { customer_id: "c2", points: 7 },
+    ];
+    db.customers = [{ id: "c2", name: "Beto", phone: "5559876543" }];
+
+    renderModal();
+
+    fireEvent.change(screen.getByPlaceholderText(/buscar/i), {
+      target: { value: "be" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: /Beto/ }));
+
+    const assignedRow = await screen.findByRole("button", { name: /Ana/ });
+
+    await waitFor(() => expect(assignedRow.textContent).toContain("25"));
+    expect(assignedRow.textContent).not.toContain("10");
+  });
+
+  it("cierra solo con la X: no hay Cancelar ni Cerrar en el pie", async () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar modal" })).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /cancelar|^cerrar$/i })
+    ).toBeNull();
+    await waitFor(() =>
+      expect(screen.getAllByText("10").length).toBeGreaterThan(0)
+    );
+  });
+});
