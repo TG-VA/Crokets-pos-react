@@ -445,7 +445,6 @@
   background: #ffffff;
 }
 
-.cancelButton,
 .confirmButton {
   border: none;
   border-radius: 10px;
@@ -460,31 +459,20 @@
     transform 0.12s ease;
 }
 
-.cancelButton {
-  background: #6b7280;
-  color: #ffffff;
-}
-
 .confirmButton {
   background: #1092b1;
   color: #ffffff;
   min-width: 180px;
 }
 
-.cancelButton:hover:not(:disabled),
 .confirmButton:hover:not(:disabled) {
   transform: translateY(-1px);
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #4b5563;
 }
 
 .confirmButton:hover:not(:disabled) {
   background: #0d7a94;
 }
 
-.cancelButton:disabled,
 .confirmButton:disabled {
   opacity: 0.62;
   cursor: not-allowed;
@@ -532,7 +520,6 @@
     flex-direction: column;
   }
 
-  .cancelButton,
   .confirmButton {
     width: 100%;
   }

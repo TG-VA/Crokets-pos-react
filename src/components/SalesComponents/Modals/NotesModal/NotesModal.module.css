@@ -41,34 +41,6 @@
   font-size: 1.2rem;
 }
 
-.closeButton {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-}
-
-.closeButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.closeIcon {
-  display: block;
-  width: 14px;
-  height: 14px;
-  filter: brightness(0) invert(1);
-  pointer-events: none;
-}
-
 /* Modal Body */
 .notesModalBody {
   padding: 1.5rem;
