@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (29 oct 2026)
 
-221 archivos de test (**2710 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+222 archivos de test (**2712 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                   | Archivo                                                                            |
@@ -133,6 +133,7 @@ y el proceso principal de Electron:
 | Modal base: boton de cancelar de pie (etiqueta)        | `src/components/ModalControls/ModalFooterCancelButton.test.jsx`                    |
 | Notas de venta: sin X, con Cancelar y Guardar          | `.../SalesComponents/Modals/NotesModal/NotesModal.test.jsx`                        |
 | Eliminar articulo: etiqueta y Enter                    | `.../SalesComponents/Modals/DeleteItemModal/DeleteItemModal.test.jsx`              |
+| Eliminar ticket pendiente: sin X ni Delete             | `.../SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal.test.jsx`           |
 | Modales de captura de Ventas: sin X de cabecera        | `.../SalesComponents/Modals/modalCloseButtons.test.jsx`                            |
 | Ventas: capas modales registradas por cada setter      | `.../SalesComponents/hooks/useSalesModals.test.jsx`                                |
 | Venta en curso: carrito, cliente y expiracion          | `src/contexts/SalesCartContext.test.jsx`                                           |
