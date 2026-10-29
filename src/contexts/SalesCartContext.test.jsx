@@ -107,7 +107,11 @@ describe("SalesCartContext: persistencia de la venta", () => {
     expect(sessionStorage.getItem("sales_client_assignment_b1_u1")).toBeNull();
   });
 
-  it("vacia la venta cuando cambia la sesion de caja", () => {
+  it.each([
+    ["la sesion de caja", () => (authState.cashRegistered = false)],
+    ["el usuario", () => (authState.user = { id: "u2" })],
+    ["la sucursal", () => (branchState.branch = { id: "b2" })],
+  ])("vacia la venta cuando cambia %s", (_label, changeIdentity) => {
     const { result, rerender } = renderCart();
 
     act(() => {
@@ -115,7 +119,7 @@ describe("SalesCartContext: persistencia de la venta", () => {
       result.current.setCurrentSaleClient({ id: "c1", name: "Ana" });
     });
 
-    authState.cashRegistered = false;
+    changeIdentity();
     rerender();
 
     expect(result.current.productos).toEqual([]);
