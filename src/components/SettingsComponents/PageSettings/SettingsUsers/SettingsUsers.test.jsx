@@ -238,7 +238,7 @@ describe("SettingsUsers", () => {
       target: { value: "Nuevo Cajero" },
     });
     fireEvent.change(screen.getByLabelText("Usuario"), {
-      target: { value: "nuevo" },
+      target: { value: "NUEVO" },
     });
     fireEvent.change(screen.getByLabelText("Correo electrónico"), {
       target: { value: "nuevo@crokets.test" },
@@ -255,7 +255,7 @@ describe("SettingsUsers", () => {
     await waitFor(() =>
       expect(createUser).toHaveBeenCalledWith({
         name: "NUEVO CAJERO",
-        username: "NUEVO",
+        username: "nuevo",
         email: "nuevo@crokets.test",
         roleId: "role-cashier",
         password: "secreto123",
@@ -311,7 +311,7 @@ describe("SettingsUsers", () => {
     });
   });
 
-  it("convierte a mayusculas el nombre y el usuario mientras se escriben", async () => {
+  it("convierte a mayusculas el nombre y a minusculas el usuario mientras se escriben", async () => {
     mockLoadSuccess();
 
     render(<SettingsUsers />);
@@ -324,10 +324,10 @@ describe("SettingsUsers", () => {
     const usernameInput = screen.getByLabelText("Usuario");
 
     fireEvent.change(nameInput, { target: { value: "carlos perez" } });
-    fireEvent.change(usernameInput, { target: { value: "cperez" } });
+    fireEvent.change(usernameInput, { target: { value: "CPEREZ" } });
 
     expect(nameInput.value).toBe("CARLOS PEREZ");
-    expect(usernameInput.value).toBe("CPEREZ");
+    expect(usernameInput.value).toBe("cperez");
   });
 
   it("permite editar el usuario y conserva correo e id en solo lectura", async () => {
@@ -384,7 +384,7 @@ describe("SettingsUsers", () => {
       expect(updateUser).toHaveBeenCalledWith({
         id: "u1",
         name: "ANA ACTUALIZADA",
-        username: "ANA",
+        username: "ana",
         roleId: "role-admin",
       })
     );
@@ -420,7 +420,7 @@ describe("SettingsUsers", () => {
       expect(updateUser).toHaveBeenCalledWith({
         id: "u1",
         name: "ANA TORRES",
-        username: "NUEVA",
+        username: "nueva",
         roleId: "role-admin",
       })
     );

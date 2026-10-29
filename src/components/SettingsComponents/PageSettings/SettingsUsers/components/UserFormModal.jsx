@@ -161,9 +161,7 @@ const UserFormModal = ({
                 .join(" ")}
               value={values.name}
               autoFocus
-              onChange={(event) =>
-                handleChange("name", event.target.value.toUpperCase())
-              }
+              onChange={(event) => handleChange("name", event.target.value)}
               onBlur={() => handleBlur("name")}
               disabled={saving}
               aria-invalid={nameError ? "true" : undefined}
@@ -194,7 +192,6 @@ const UserFormModal = ({
               maxLength={USERNAME_MAX_LENGTH}
               className={[
                 styles.formInput,
-                styles.uppercaseInput,
                 usernameError
                   ? styles.fieldInvalid
                   : usernameSuccess
@@ -204,9 +201,7 @@ const UserFormModal = ({
                 .filter(Boolean)
                 .join(" ")}
               value={values.username}
-              onChange={(event) =>
-                handleChange("username", event.target.value.toUpperCase())
-              }
+              onChange={(event) => handleChange("username", event.target.value)}
               onBlur={() => handleBlur("username")}
               disabled={saving}
               aria-invalid={usernameError ? "true" : undefined}

@@ -339,7 +339,7 @@ describe("useUserForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("normaliza nombre y usuario en mayusculas y correo en minusculas", () => {
+  it("normaliza el nombre en mayusculas y el usuario y correo en minusculas", () => {
     const onSubmit = vi.fn();
     const { result } = renderHook(() =>
       useUserForm({
@@ -359,9 +359,29 @@ describe("useUserForm", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       name: "ANA TORRES",
-      username: "ANA",
+      username: "ana",
       email: "ana@crokets.test",
     });
+  });
+
+  it("captura el username en minusculas aunque se escriba en mayusculas", () => {
+    const { result } = renderHook(() =>
+      useUserForm({ mode: USER_FORM_CREATE, onSubmit: vi.fn() })
+    );
+
+    act(() => result.current.handleChange("username", "CARLOS"));
+
+    expect(result.current.values.username).toBe("carlos");
+  });
+
+  it("mantiene el nombre completo en mayusculas mientras se escribe", () => {
+    const { result } = renderHook(() =>
+      useUserForm({ mode: USER_FORM_CREATE, onSubmit: vi.fn() })
+    );
+
+    act(() => result.current.handleChange("name", "carlos perez"));
+
+    expect(result.current.values.name).toBe("CARLOS PEREZ");
   });
 
   it("preserva las mayusculas y minusculas exactas de la contrasena", () => {
@@ -426,7 +446,7 @@ describe("useUserForm", () => {
     act(() => result.current.handleSubmit({ preventDefault: vi.fn() }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0].username).toBe("NUEVO");
+    expect(onSubmit.mock.calls[0][0].username).toBe("nuevo");
   });
 
   it("no marca error si en edicion se usa el username de otro usuario", () => {
