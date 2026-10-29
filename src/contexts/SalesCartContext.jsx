@@ -11,10 +11,8 @@ import {
 import { useAuth } from "./AuthContext";
 import { useBranch } from "./BranchContext";
 import { useDidChange } from "../hooks/useDidChange";
-import {
-  getClientExpiryRemainingMs,
-  isSaleClientExpired,
-} from "../components/SalesComponents/services/salesClientExpiryService";
+import { useModalStack } from "./ModalStackContext";
+import { getClientExpiryRemainingMs } from "../components/SalesComponents/services/salesClientExpiryService";
 
 const SalesCartContext = createContext(null);
 
@@ -48,6 +46,7 @@ const readStoredAssignment = (storageKey) => {
 export const SalesCartProvider = ({ children }) => {
   const { user, cashRegistered } = useAuth();
   const { branch } = useBranch();
+  const { hasOpenModals } = useModalStack();
 
   const [productos, setProductosState] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -175,21 +174,31 @@ export const SalesCartProvider = ({ children }) => {
   }, [identityKey, resetSalesState]);
 
   // La asignacion del cliente expira a los 5 minutos si la venta no se cobra.
-  useEffect(() => {
-    if (!currentSaleClient?.id || !clientAssignedAt) return undefined;
+  // El plazo se pausa mientras haya un modal abierto (por ejemplo el cobro) para
+  // no quitar el cliente en pleno pago; al cerrarse se evalua de nuevo.
+  const expireClientAssignment = useCallback(() => {
+    setCurrentSaleClient(null);
+    setCurrentSaleReward(null);
+    setPendingFreeProductRewards([]);
+    setPendingProductDiscountRewards([]);
+    setActiveProductDiscountReward(null);
+  }, [setCurrentSaleClient]);
 
-    if (isSaleClientExpired(clientAssignedAt)) {
-      setCurrentSaleClient(null);
+  useEffect(() => {
+    if (!currentSaleClient?.id || !clientAssignedAt || hasOpenModals) {
       return undefined;
     }
 
     const remaining = getClientExpiryRemainingMs(clientAssignedAt);
-    const timeoutId = setTimeout(() => {
-      setCurrentSaleClient(null);
-    }, remaining);
+    const timeoutId = setTimeout(expireClientAssignment, remaining);
 
     return () => clearTimeout(timeoutId);
-  }, [clientAssignedAt, currentSaleClient?.id, setCurrentSaleClient]);
+  }, [
+    clientAssignedAt,
+    currentSaleClient?.id,
+    expireClientAssignment,
+    hasOpenModals,
+  ]);
 
   const cartIsEmpty = productos.length === 0;
   if (useDidChange(cartIsEmpty) && cartIsEmpty) {

@@ -17,6 +17,7 @@ vi.mock("./BranchContext", () => ({
 }));
 
 import { SalesCartProvider, useSalesCartContext } from "./SalesCartContext";
+import { ModalStackProvider, useModalStack } from "./ModalStackContext";
 import { SALE_CLIENT_EXPIRY_MS } from "../components/SalesComponents/services/salesClientExpiryService";
 
 const wrapper = ({ children }) => (
@@ -119,5 +120,67 @@ describe("SalesCartContext: persistencia de la venta", () => {
 
     expect(result.current.productos).toEqual([]);
     expect(result.current.currentSaleClient).toBeNull();
+  });
+
+  it("limpia las recompensas al expirar el cliente", () => {
+    const { result } = renderCart();
+
+    act(() => {
+      result.current.setCurrentSaleClient({ id: "c1", name: "Ana" });
+      result.current.setCurrentSaleReward({ id: "r1" });
+      result.current.setPendingFreeProductRewards([{ id: "r2" }]);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(SALE_CLIENT_EXPIRY_MS);
+    });
+
+    expect(result.current.currentSaleClient).toBeNull();
+    expect(result.current.currentSaleReward).toBeNull();
+    expect(result.current.pendingFreeProductRewards).toEqual([]);
+  });
+
+  describe("con un modal abierto", () => {
+    const stackWrapper = ({ children }) => (
+      <ModalStackProvider>
+        <SalesCartProvider>{children}</SalesCartProvider>
+      </ModalStackProvider>
+    );
+
+    const renderWithStack = () =>
+      renderHook(
+        () => ({ cart: useSalesCartContext(), stack: useModalStack() }),
+        { wrapper: stackWrapper }
+      );
+
+    it("no expira el cliente mientras el cobro esta abierto", () => {
+      const { result } = renderWithStack();
+
+      act(() => {
+        result.current.cart.setCurrentSaleClient({ id: "c1", name: "Ana" });
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(SALE_CLIENT_EXPIRY_MS - 5000);
+      });
+
+      let unregister;
+      act(() => {
+        unregister = result.current.stack.registerLayer("sales-payment");
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(60 * 1000);
+      });
+      expect(result.current.cart.currentSaleClient?.id).toBe("c1");
+
+      act(() => {
+        unregister();
+      });
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(result.current.cart.currentSaleClient).toBeNull();
+    });
   });
 });
