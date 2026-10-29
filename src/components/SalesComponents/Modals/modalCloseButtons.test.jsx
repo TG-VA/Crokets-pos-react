@@ -34,6 +34,77 @@ vi.mock("./SearchModal/useSearchModal", () => ({
   }),
 }));
 
+vi.mock("./VerifierModal/useVerifier", () => ({
+  useVerifier: () => ({
+    barcode: "",
+    setBarcode: vi.fn(),
+    product: null,
+    kitItems: [],
+    isLoading: false,
+    error: "",
+    inputRef: { current: null },
+    handleClose: vi.fn(),
+    handleSearchProduct: vi.fn(),
+    handleAddToSale: vi.fn(),
+    canAddToSale: false,
+  }),
+}));
+
+vi.mock("./RewardProductSelectionModal/useRewardProductSelection", () => ({
+  useRewardProductSelection: () => ({
+    rewardProducts: {},
+    selectedProductsByReward: {},
+    searchByReward: {},
+    setSearchByReward: vi.fn(),
+    expandedRewards: {},
+    setExpandedRewards: vi.fn(),
+    loadingProducts: false,
+    saving: false,
+    setSaving: vi.fn(),
+    error: "",
+    appModal: { isOpen: false },
+    closeAppModal: vi.fn(),
+    freeProductRewards: [],
+    getInventoryStatus: vi.fn(),
+    getSelectedQuantityForReward: () => 0,
+    getSelectedQuantityForProduct: () => 0,
+    getFilteredOptionsForReward: () => [],
+    handleAddProduct: vi.fn(),
+    handleSubtractProduct: vi.fn(),
+    svc: { getRewardQuantity: () => 0 },
+  }),
+}));
+
+vi.mock(
+  "./ProductDiscountRewardModal/useProductDiscountReward",
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    useProductDiscountReward: () => ({
+      searchTerm: "",
+      setSearchTerm: vi.fn(),
+      inventoryByProduct: {},
+      loadingProducts: false,
+      saving: false,
+      setSaving: vi.fn(),
+      error: "",
+      setError: vi.fn(),
+      appModal: { isOpen: false },
+      closeAppModal: vi.fn(),
+      showAppWarning: vi.fn(),
+      rewardQuantity: 1,
+      rewardRedeemQuantity: 1,
+      totalUnitsToApply: 1,
+      selectedProductsCount: 0,
+      selectedProducts: [],
+      filteredProducts: [],
+      getInventoryStatus: vi.fn(),
+      handleAddProduct: vi.fn(),
+      handleSubtractProduct: vi.fn(),
+      productUsesInventory: () => false,
+    }),
+  })
+);
+
 import PendingTicketModal from "./PendingTicketModal/PendingTicketModal";
 import ChangeTicketModal from "./ChangeTicketModal/ChangeTicketModal";
 import SearchModal from "./SearchModal/SearchModal";
@@ -41,6 +112,9 @@ import EntryModal from "./EntryModal/EntryModal";
 import ExitModal from "./ExitModal/ExitModal";
 import DeleteItemModal from "./DeleteItemModal/DeleteItemModal";
 import DiscountModal from "./DiscountModal/DiscountModal";
+import VerifierModal from "./VerifierModal/VerifierModal";
+import RewardProductSelectionModal from "./RewardProductSelectionModal/RewardProductSelectionModal";
+import ProductDiscountRewardModal from "./ProductDiscountRewardModal/ProductDiscountRewardModal";
 
 const noop = () => {};
 
@@ -100,11 +174,48 @@ describe("Modales de Ventas: botones de cierre", () => {
       render(modal);
 
       expect(screen.queryByRole("button", { name: "Cerrar modal" })).toBeNull();
+      const buttons = screen.getAllByRole("button");
+
+      // Un unico boton de cierre en el pie y ningun texto con la tecla Esc.
       expect(
-        screen.getAllByRole("button").some((button) => {
-          return button.textContent.trim() === "Cancelar";
-        })
-      ).toBe(true);
+        buttons.filter((button) => button.textContent.trim() === "Cancelar")
+      ).toHaveLength(1);
+      expect(
+        buttons.some((button) => /cerrar|esc\s*-/i.test(button.textContent))
+      ).toBe(false);
+    }
+  );
+
+  const MODALS_WITH_ONLY_X = [
+    ["Verificador de precios", <VerifierModal isOpen onClose={noop} />],
+    [
+      "Aplicar recompensas",
+      <RewardProductSelectionModal isOpen onClose={noop} onConfirm={noop} />,
+    ],
+    [
+      "Aplicar descuento",
+      <ProductDiscountRewardModal
+        isOpen
+        reward={{ id: "r1" }}
+        cartProducts={[]}
+        onClose={noop}
+        onConfirm={noop}
+      />,
+    ],
+  ];
+
+  it.each(MODALS_WITH_ONLY_X)(
+    "%s no tiene boton de cierre redundante en el pie",
+    (_name, modal) => {
+      render(modal);
+
+      const buttons = screen.getAllByRole("button");
+
+      expect(
+        buttons.some((button) =>
+          /^(esc\s*-\s*)?(cerrar|cancelar)$/i.test(button.textContent.trim())
+        )
+      ).toBe(false);
     }
   );
 });
