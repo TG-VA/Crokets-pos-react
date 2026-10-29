@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
-const hookState = vi.hoisted(() => ({ rewardProducts: [] }));
+const hookState = vi.hoisted(() => ({ rewardProducts: [], search: "" }));
 
 vi.mock("./useRewardProductSelection", () => ({
   useRewardProductSelection: () => ({
     rewardProducts: hookState.rewardProducts,
     selectedProductsByReward: {},
-    searchByReward: {},
+    searchByReward: { r1: hookState.search },
     setSearchByReward: vi.fn(),
     loadingProducts: false,
     saving: false,
@@ -32,6 +32,15 @@ vi.mock("./useRewardProductSelection", () => ({
 
 import RewardProductSelectionModal from "./RewardProductSelectionModal";
 
+const buildModal = () => (
+  <RewardProductSelectionModal
+    isOpen
+    onClose={() => {}}
+    onConfirm={() => {}}
+    rewards={[{ id: "r1" }]}
+  />
+);
+
 const renderModal = (count) => {
   hookState.rewardProducts = Array.from({ length: count }, (_, index) => ({
     reward_id: "r1",
@@ -43,14 +52,9 @@ const renderModal = (count) => {
     },
   }));
 
-  return render(
-    <RewardProductSelectionModal
-      isOpen
-      onClose={() => {}}
-      onConfirm={() => {}}
-      rewards={[{ id: "r1" }]}
-    />
-  );
+  hookState.search = "";
+
+  return render(buildModal());
 };
 
 describe("RewardProductSelectionModal: paginacion de productos", () => {
@@ -72,5 +76,17 @@ describe("RewardProductSelectionModal: paginacion de productos", () => {
     renderModal(12);
 
     expect(screen.queryByText(/producto.* más/)).toBeNull();
+  });
+
+  it("vuelve a la primera pagina cuando cambia la busqueda", () => {
+    const { rerender } = renderModal(12);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    hookState.search = "ali";
+    rerender(buildModal());
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
   });
 });

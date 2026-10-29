@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
-const hookState = vi.hoisted(() => ({ products: [] }));
+const hookState = vi.hoisted(() => ({ products: [], searchTerm: "cr" }));
 
 vi.mock("./useProductDiscountReward", async (importOriginal) => ({
   ...(await importOriginal()),
   useProductDiscountReward: () => ({
-    searchTerm: "cr",
+    searchTerm: hookState.searchTerm,
     setSearchTerm: vi.fn(),
     inventoryByProduct: {},
     loadingProducts: false,
@@ -40,18 +40,21 @@ const buildProducts = (count) =>
     sale_price: 100,
   }));
 
+const buildModal = () => (
+  <ProductDiscountRewardModal
+    isOpen
+    reward={{ id: "r1", discount_type: "percentage", discount_value: 10 }}
+    cartProducts={[]}
+    onClose={() => {}}
+    onConfirm={() => {}}
+  />
+);
+
 const renderModal = (count) => {
   hookState.products = buildProducts(count);
+  hookState.searchTerm = "cr";
 
-  return render(
-    <ProductDiscountRewardModal
-      isOpen
-      reward={{ id: "r1", discount_type: "percentage", discount_value: 10 }}
-      cartProducts={[]}
-      onClose={() => {}}
-      onConfirm={() => {}}
-    />
-  );
+  return render(buildModal());
 };
 
 describe("ProductDiscountRewardModal: paginacion de resultados", () => {
@@ -67,5 +70,17 @@ describe("ProductDiscountRewardModal: paginacion de resultados", () => {
 
     expect(screen.getAllByText(/^CROQUETA \d+$/)).toHaveLength(8);
     expect(screen.queryByRole("button", { name: "Siguiente" })).toBeNull();
+  });
+
+  it("vuelve a la primera pagina cuando cambia la busqueda", () => {
+    const { rerender } = renderModal(20);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    hookState.searchTerm = "croq";
+    rerender(buildModal());
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
   });
 });
