@@ -8,10 +8,14 @@ const source = readFileSync(
 );
 
 describe("admin-create-user normaliza el username en origen", () => {
-  it("guarda el username en minusculas y sin espacios", () => {
+  it("guarda el username normalizado con el helper compartido", () => {
     expect(source).toMatch(
-      /const cleanUsername = String\(body\?\.username \|\| ""\)\s*\.trim\(\)\s*\.toLowerCase\(\);/
+      /const cleanUsername = normalizeUsername\(body\?\.username\);/
     );
+  });
+
+  it("rechaza en el servidor un username con formato invalido", () => {
+    expect(source).toMatch(/!isValidUsername\(cleanUsername\)/);
   });
 
   it("usa el username normalizado en user_metadata y en users.insert", () => {
