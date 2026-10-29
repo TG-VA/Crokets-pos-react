@@ -214,7 +214,6 @@ export const SalesCartProvider = ({ children }) => {
 
     if (current.startedAt !== null) {
       current.pausedMs += Date.now() - current.startedAt;
-      current.startedAt = null;
     }
 
     const remaining = getClientExpiryRemainingMs(

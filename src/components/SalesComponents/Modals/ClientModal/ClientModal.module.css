@@ -5,7 +5,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* Margen inferior para no chocar con el footbar fijo (aprox. 40px). */
+  /* Reserva solo abajo el alto del footbar fijo (aprox. 40px) mas un respiro de 12px. */
   padding: 16px 16px 52px;
   box-sizing: border-box;
   z-index: 1000;
