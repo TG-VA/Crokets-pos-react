@@ -43,13 +43,16 @@ método no es `POST`).
 
 ### Flujo de validación
 
-1. Busca el usuario por `username` en `public.users` con un cliente **service role**,
-   sin distinguir mayúsculas y escapando los comodines de `ILIKE` (`index.ts:101-113`).
-2. Verifica que el usuario exista, esté activo y tenga rol `admin` (`index.ts:127-150`).
+1. Normaliza el `username` recibido (minúsculas y sin espacios) con
+   `_shared/normalizeUsername.ts` y lo busca por igualdad en `public.users` con un cliente **service
+   role** (`index.ts:97-109`). La base garantiza ese formato con la restricción
+   `users_username_lowercase_check`, por lo que no se arma un patrón `LIKE` y `*`, `%` o `_` se
+   comparan como texto literal.
+2. Verifica que el usuario exista, esté activo y tenga rol `admin` (`index.ts:123-146`).
 3. Inicia sesión contra **Supabase Auth** con el email del usuario y la contraseña recibida, usando
-   un cliente **anon** (`index.ts:159-170`).
+   un cliente **anon** (`index.ts:155-166`).
 4. Confirma que el `id` autenticado coincide con el usuario administrador y cierra la sesión local
-   (`index.ts:172-181`).
+   (`index.ts:168-177`).
 
 ### Seguridad
 
