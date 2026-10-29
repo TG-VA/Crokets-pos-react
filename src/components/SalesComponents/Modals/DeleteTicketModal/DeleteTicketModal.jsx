@@ -104,14 +104,6 @@ const DeleteTicketModal = memo(
           e.preventDefault();
           return setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
         }
-        if (e.key === "Delete") {
-          e.preventDefault();
-          if (selectedIndex >= 0 && pendingTickets[selectedIndex])
-            handleShowConfirmation(
-              pendingTickets[selectedIndex],
-              selectedIndex
-            );
-        }
       };
 
       document.addEventListener("keydown", handleKeyDown, true);

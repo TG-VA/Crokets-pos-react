@@ -1,5 +1,5 @@
 import { beforeAll, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import DeleteTicketModal from "./DeleteTicketModal";
 
@@ -30,5 +30,23 @@ describe("DeleteTicketModal: cierre y ayuda de teclado", () => {
 
     expect(screen.queryByRole("button", { name: "Cerrar modal" })).toBeNull();
     expect(screen.getByText("↑↓ Navegar • Enter para eliminar")).toBeTruthy();
+  });
+
+  it("Delete no abre la confirmacion y Enter si", () => {
+    render(
+      <DeleteTicketModal
+        isOpen
+        onClose={() => {}}
+        onDeleteTicket={() => {}}
+        pendingTickets={TICKETS}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: "ArrowDown" });
+    fireEvent.keyDown(document, { key: "Delete" });
+    expect(screen.queryByText("¿Estás seguro?")).toBeNull();
+
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(screen.getByText("¿Estás seguro?")).toBeTruthy();
   });
 });
