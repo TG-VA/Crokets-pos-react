@@ -9,6 +9,7 @@ export const useSalesRewardsState = () => {
   const {
     currentSaleClient,
     setCurrentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     setCurrentSaleReward,
     pendingFreeProductRewards,
@@ -22,6 +23,7 @@ export const useSalesRewardsState = () => {
   return {
     currentSaleClient,
     setCurrentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     setCurrentSaleReward,
     pendingFreeProductRewards,

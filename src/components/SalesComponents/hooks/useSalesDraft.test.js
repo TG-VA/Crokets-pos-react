@@ -115,3 +115,29 @@ describe("useSalesDraft: restauracion al montar", () => {
     expect(onOpenRecoveryModal).not.toHaveBeenCalled();
   });
 });
+
+describe("useSalesDraft: guardado automatico", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it("guarda la marca de asignacion del cliente en el borrador", async () => {
+    const { result } = renderHook(() =>
+      useSalesDraft({
+        branchId: "b1",
+        userId: "u1",
+        productos: [{ id: "p1", cantidad: 1 }],
+        currentSaleClient: { id: "c1", name: "Ana" },
+        clientAssignedAt: 1700000000000,
+      })
+    );
+
+    await waitFor(() => expect(result.current.draftReady).toBe(true));
+    await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull());
+
+    expect(JSON.parse(localStorage.getItem(DRAFT_KEY)).clientAssignedAt).toBe(
+      1700000000000
+    );
+  });
+});

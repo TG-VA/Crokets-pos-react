@@ -92,6 +92,7 @@ const Sales = () => {
   const {
     currentSaleClient,
     setCurrentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     setCurrentSaleReward,
     pendingFreeProductRewards,
@@ -216,6 +217,7 @@ const Sales = () => {
     productos,
     pendingTickets,
     currentSaleClient,
+    clientAssignedAt,
     currentSaleReward,
     ticketNumber,
     saleToken,
