@@ -525,7 +525,11 @@ const ClientModal = memo(
                         </div>
                       </div>
                       <div className={styles.clientPoints}>
-                        <strong>{formatPoints(client.points)}</strong>
+                        <strong>
+                          {formatPoints(
+                            livePointsById[client.id] ?? client.points
+                          )}
+                        </strong>
                         <span>pts</span>
                       </div>
                     </button>

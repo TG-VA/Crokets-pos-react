@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-const db = vi.hoisted(() => ({ pointRows: [], fail: false }));
+const db = vi.hoisted(() => ({ pointRows: [], customers: [], fail: false }));
 
 // Consulta encadenable y "await-able" que resuelve segun la tabla consultada.
 vi.mock("../../../../lib/supabaseClient", () => {
   const buildQuery = (table) => {
     const result = () => ({
-      data: table === "customer_points" ? db.pointRows : [],
+      data:
+        table === "customer_points"
+          ? db.pointRows
+          : table === "customers"
+            ? db.customers
+            : [],
       error:
         table === "customer_points" && db.fail ? { message: "falla" } : null,
     });
@@ -51,6 +56,7 @@ const renderModal = (props = {}) =>
 describe("ClientModal: puntos del cliente ya asignado", () => {
   beforeEach(() => {
     db.pointRows = [];
+    db.customers = [];
     db.fail = false;
   });
 
@@ -105,6 +111,26 @@ describe("ClientModal: puntos del cliente ya asignado", () => {
     await waitFor(() => expect(errorSpy).toHaveBeenCalled());
     expect(screen.getAllByText("10").length).toBeGreaterThan(0);
     errorSpy.mockRestore();
+  });
+
+  it("muestra los puntos vigentes en la fila del cliente asignado al elegir otro", async () => {
+    db.pointRows = [
+      { customer_id: "c1", points: 25 },
+      { customer_id: "c2", points: 7 },
+    ];
+    db.customers = [{ id: "c2", name: "Beto", phone: "5559876543" }];
+
+    renderModal();
+
+    fireEvent.change(screen.getByPlaceholderText(/buscar/i), {
+      target: { value: "be" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: /Beto/ }));
+
+    const assignedRow = await screen.findByRole("button", { name: /Ana/ });
+
+    await waitFor(() => expect(assignedRow.textContent).toContain("25"));
+    expect(assignedRow.textContent).not.toContain("10");
   });
 
   it("cierra solo con la X: no hay Cancelar ni Cerrar en el pie", async () => {
