@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, memo } from "react";
 import styles from "./RewardProductSelectionModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 import {
   useRewardProductSelection,
   INITIAL_VISIBLE_PRODUCTS,
@@ -348,12 +347,6 @@ const RewardProductSelectionModal = memo(
           </div>
 
           <div className={styles.actions}>
-            <ModalFooterCancelButton
-              className={styles.cancelButton}
-              onClick={onClose}
-              disabled={saving || appModal.isOpen}
-              label="Cancelar"
-            />
             <button
               type="button"
               className={styles.confirmButton}

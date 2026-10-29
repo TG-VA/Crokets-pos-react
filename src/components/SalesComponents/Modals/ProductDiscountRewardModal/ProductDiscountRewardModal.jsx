@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, memo, useMemo } from "react";
 import styles from "./ProductDiscountRewardModal.module.css";
 import AppModal from "../../../AppModal/AppModal";
-import ModalFooterCancelButton from "../../../ModalControls/ModalFooterCancelButton";
 import {
   useProductDiscountReward,
   formatCurrency,
@@ -360,12 +359,6 @@ const ProductDiscountRewardModal = memo(
           </div>
 
           <div className={styles.actions}>
-            <ModalFooterCancelButton
-              className={styles.cancelButton}
-              onClick={onClose}
-              disabled={saving}
-              label="Cancelar"
-            />
             <button
               type="button"
               className={styles.confirmButton}
