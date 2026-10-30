@@ -1,8 +1,3 @@
-import {
-  getProductMinStock,
-  getProductStock,
-  isProductBelowMinimum,
-} from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../InventorySearchModal.module.css";
 
 const InventorySearchResults = ({
@@ -14,7 +9,6 @@ const InventorySearchResults = ({
   resultsListRef,
   isAlreadySelected,
   isProductDisabled,
-  showLowStock = false,
   onProductClick,
 }) => {
   if (loading) {
@@ -40,26 +34,12 @@ const InventorySearchResults = ({
       {products.map((product, index) => {
         const alreadySelected = isAlreadySelected?.(product) === true;
         const disabled = isProductDisabled?.(product) === true;
-        const belowMinimum = showLowStock && isProductBelowMinimum(product);
-        const stock = getProductStock(product);
-        const minStock = getProductMinStock(product);
 
         const itemClassName = [
           styles.resultItem,
           index === selectedIndex ? styles.selectedResult : "",
           alreadySelected ? styles.alreadySelectedResult : "",
           disabled ? styles.disabledResult : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        const stockClassName = [
-          styles.productStock,
-          belowMinimum
-            ? styles.lowStockText
-            : stock > 0
-              ? styles.inStock
-              : styles.outOfStock,
         ]
           .filter(Boolean)
           .join(" ");
@@ -97,10 +77,6 @@ const InventorySearchResults = ({
                       Producto local o no global
                     </span>
                   ) : null}
-
-                  {belowMinimum ? (
-                    <span className={styles.lowStockBadge}>Bajo mínimo</span>
-                  ) : null}
                 </div>
               </div>
 
@@ -115,12 +91,6 @@ const InventorySearchResults = ({
                     2
                   )}
                 </span>
-
-                <span className={stockClassName}>Stock: {stock}</span>
-
-                {minStock > 0 ? (
-                  <span className={styles.productMin}>Mínimo: {minStock}</span>
-                ) : null}
 
                 <span className={styles.productCode}>
                   Dept:{" "}

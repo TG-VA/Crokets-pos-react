@@ -16,7 +16,6 @@ const useInventorySearchResults = ({
   restrictLocalProducts = false,
 } = {}) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [belowMinimumOnly, setBelowMinimumOnly] = useState(false);
 
   const selectedIds = useMemo(() => {
     const source = Array.isArray(selectedProductIds) ? selectedProductIds : [];
@@ -43,12 +42,8 @@ const useInventorySearchResults = ({
   );
 
   const searchResults = useMemo(
-    () =>
-      filterInventorySearchProducts(products, {
-        searchTerm,
-        belowMinimumOnly,
-      }).slice(0, 100),
-    [belowMinimumOnly, products, searchTerm]
+    () => filterInventorySearchProducts(products, { searchTerm }).slice(0, 100),
+    [products, searchTerm]
   );
 
   const selectedProduct =
@@ -70,20 +65,12 @@ const useInventorySearchResults = ({
     setSearchTerm("");
   }, []);
 
-  const clearBelowMinimumFilter = useCallback(() => {
-    setBelowMinimumOnly(false);
-  }, []);
-
   return {
     searchTerm,
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
-    clearBelowMinimumFilter,
-
     isAlreadySelected,
     isProductDisabled,
     handleSearchChange,

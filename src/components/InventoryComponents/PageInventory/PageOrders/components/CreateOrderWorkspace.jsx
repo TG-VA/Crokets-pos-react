@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
+import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
 import { usePagination } from "../../../../../hooks/usePagination";
@@ -13,6 +14,12 @@ import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
 const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const [code, setCode] = useState("");
+
+  // El pedido solo mueve productos del catalogo global entre sucursales.
+  const globalProducts = useMemo(
+    () => products.filter(isGlobalProduct),
+    [products]
+  );
 
   const handleCodeSubmit = (event) => {
     event.preventDefault();
@@ -282,11 +289,9 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
       <InventorySearchModal
         isOpen={form.searchOpen}
         onClose={() => form.setSearchOpen(false)}
-        products={products}
+        products={globalProducts}
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
-        restrictLocalProducts
-        showLowStockFilter
       />
     </section>
   );

@@ -44,7 +44,6 @@ const renderModal = (props = {}) =>
       products={products}
       onSelect={() => {}}
       restrictLocalProducts
-      showLowStockFilter
       {...props}
     />
   );
@@ -79,15 +78,12 @@ describe("InventorySearchModal reglas de pedidos", () => {
     );
   });
 
-  it("marca los productos bajo minimo y los puede aislar con el filtro", () => {
+  it("no muestra stock, minimo ni filtro de bajo minimo", () => {
     renderModal();
 
-    expect(screen.getAllByText("Bajo mínimo")).toHaveLength(2);
-
-    fireEvent.click(screen.getByLabelText("Solo bajo mínimo"));
-
-    expect(screen.getByText("Shampoo global")).toBeTruthy();
-    expect(screen.getByText("Juguete local")).toBeTruthy();
-    expect(screen.queryByText("Alimento global")).toBeNull();
+    expect(screen.queryByText(/Stock:/)).toBeNull();
+    expect(screen.queryByText(/Mínimo:/)).toBeNull();
+    expect(screen.queryByText("Bajo mínimo")).toBeNull();
+    expect(screen.queryByLabelText("Solo bajo mínimo")).toBeNull();
   });
 });

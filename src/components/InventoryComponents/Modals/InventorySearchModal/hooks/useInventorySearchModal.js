@@ -22,10 +22,6 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
-    clearBelowMinimumFilter,
-
     isAlreadySelected,
     isProductDisabled,
     handleSearchChange: updateSearchTerm,
@@ -39,9 +35,8 @@ const useInventorySearchModal = ({
 
   const resetSearch = useCallback(() => {
     clearSearch();
-    clearBelowMinimumFilter();
     setSelectedIndex(-1);
-  }, [clearBelowMinimumFilter, clearSearch]);
+  }, [clearSearch]);
 
   const handleClose = useCallback(() => {
     resetSearch();
@@ -126,8 +121,6 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
     resultsListRef,
 
     setSelectedIndex,

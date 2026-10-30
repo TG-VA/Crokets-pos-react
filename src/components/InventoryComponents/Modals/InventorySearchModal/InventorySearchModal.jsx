@@ -13,7 +13,6 @@ const InventorySearchModal = ({
   loading = false,
   error = null,
   restrictLocalProducts = false,
-  showLowStockFilter = false,
 }) => {
   const {
     searchTerm,
@@ -22,8 +21,6 @@ const InventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
     resultsListRef,
 
     isAlreadySelected,
@@ -88,19 +85,6 @@ const InventorySearchModal = ({
             <div className={styles.searchHelp}>
               <span>↑↓ Navegar • Enter - Seleccionar • ESC - Cerrar</span>
             </div>
-
-            {showLowStockFilter ? (
-              <label className={styles.lowStockFilter}>
-                <input
-                  type="checkbox"
-                  checked={belowMinimumOnly}
-                  onChange={(event) =>
-                    setBelowMinimumOnly(event.target.checked)
-                  }
-                />
-                Solo bajo mínimo
-              </label>
-            ) : null}
           </div>
 
           <div className={styles.resultsSection}>
@@ -124,7 +108,6 @@ const InventorySearchModal = ({
                 resultsListRef={resultsListRef}
                 isAlreadySelected={isAlreadySelected}
                 isProductDisabled={isProductDisabled}
-                showLowStock={showLowStockFilter}
                 onProductClick={handleProductClick}
               />
             </div>
