@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
+import ProductInsightsModal from "./ProductInsightsModal";
 import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
@@ -14,6 +15,7 @@ import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
 const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const [code, setCode] = useState("");
+  const [insightsProduct, setInsightsProduct] = useState(null);
 
   // El pedido solo mueve productos del catalogo global entre sucursales.
   const globalProducts = useMemo(
@@ -174,7 +176,14 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
                   <tr key={item.productId}>
                     <td>{item.barcode || "—"}</td>
                     <td className={styles.productNameCell}>
-                      {item.productName}
+                      <button
+                        type="button"
+                        className={styles.productNameButton}
+                        onClick={() => setInsightsProduct(item)}
+                        aria-label={`Ver detalle de ${item.productName}`}
+                      >
+                        {item.productName}
+                      </button>
                     </td>
                     <td>{item.departmentName}</td>
                     <td className={styles.numeric}>
@@ -292,6 +301,11 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         products={globalProducts}
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
+      />
+
+      <ProductInsightsModal
+        product={insightsProduct}
+        onClose={() => setInsightsProduct(null)}
       />
     </section>
   );
