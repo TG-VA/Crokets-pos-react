@@ -55,6 +55,28 @@ describe("ordersDateRange", () => {
     expect(december.dateTo).toEqual(new Date(2026, 11, 31, 23, 59, 59, 999));
   });
 
+  it("calcula la primera y la segunda quincena del calendario", () => {
+    const first = getPresetRange("fortnight", new Date(2026, 9, 15, 12, 0, 0));
+
+    expect(first.dateFrom).toEqual(new Date(2026, 9, 1, 0, 0, 0, 0));
+    expect(first.dateTo).toEqual(new Date(2026, 9, 15, 23, 59, 59, 999));
+
+    const second = getPresetRange("fortnight", new Date(2026, 9, 16, 0, 0, 0));
+
+    expect(second.dateFrom).toEqual(new Date(2026, 9, 16, 0, 0, 0, 0));
+    expect(second.dateTo).toEqual(new Date(2026, 9, 31, 23, 59, 59, 999));
+  });
+
+  it("cierra la segunda quincena en el ultimo dia de febrero bisiesto", () => {
+    const { dateFrom, dateTo } = getPresetRange(
+      "fortnight",
+      new Date(2028, 1, 20, 12, 0, 0)
+    );
+
+    expect(dateFrom).toEqual(new Date(2028, 1, 16, 0, 0, 0, 0));
+    expect(dateTo).toEqual(new Date(2028, 1, 29, 23, 59, 59, 999));
+  });
+
   it("trata cualquier preset desconocido como today", () => {
     const { dateFrom, dateTo } = getPresetRange(
       "custom",

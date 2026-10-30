@@ -11,7 +11,8 @@ const endOfDay = (value) => {
 };
 
 /**
- * Rango local (lunes a domingo) para los presets del historial de pedidos.
+ * Rango local para los presets de pedidos: semana (lunes a domingo), quincena
+ * (1 al 15 o 16 al fin de mes) y mes.
  * Las fechas se calculan con la hora local del equipo para que el filtro
  * coincida con la fecha que el usuario ve en la tabla.
  */
@@ -26,6 +27,19 @@ export const getPresetRange = (preset, referenceDate = new Date()) => {
     dateTo.setDate(dateTo.getDate() + 6);
 
     return { dateFrom, dateTo };
+  }
+
+  if (preset === "fortnight") {
+    const year = referenceDate.getFullYear();
+    const month = referenceDate.getMonth();
+    const isFirstHalf = referenceDate.getDate() <= 15;
+
+    return {
+      dateFrom: new Date(year, month, isFirstHalf ? 1 : 16, 0, 0, 0, 0),
+      dateTo: isFirstHalf
+        ? new Date(year, month, 15, 23, 59, 59, 999)
+        : new Date(year, month + 1, 0, 23, 59, 59, 999),
+    };
   }
 
   if (preset === "month") {
