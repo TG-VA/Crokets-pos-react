@@ -10,7 +10,13 @@
   font-size: 0.85rem;
 }
 
-.filterBar {
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dateRange {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -60,7 +66,7 @@
 }
 
 .datePickerPopper {
-  z-index: 1200;
+  z-index: 100000;
 }
 
 .datePickerCalendar {
@@ -143,8 +149,42 @@
   text-align: right;
 }
 
-.lowStock {
-  color: #b56d00;
+.branchBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(16, 146, 177, 0.12);
+  color: var(--croketsBlueDark);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stockCell {
+  font-weight: 700;
+}
+
+.stockLow {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.stockHigh {
+  background: #e3f2fb;
+  color: #0b5f9a;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.legendItem {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 

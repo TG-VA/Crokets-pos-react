@@ -14,7 +14,9 @@ const row = {
   branch_name: "Centro",
   stock: 4,
   min_stock: 5,
+  max_stock: 20,
   units_sold: 3,
+  redeemed_units: 1,
   revenue: 90,
 };
 
@@ -36,10 +38,11 @@ describe("useProductInsightsDetail", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.rows[0].belowMinimum).toBe(true);
+    expect(result.current.rows[0].stockLevel).toBe("low");
     expect(result.current.totals).toEqual({
       stock: 4,
       unitsSold: 3,
+      redeemedUnits: 1,
       revenue: 90,
     });
     expect(mocks.fetchInsights).toHaveBeenCalledWith(
@@ -63,6 +66,24 @@ describe("useProductInsightsDetail", () => {
 
     const lastCall = mocks.fetchInsights.mock.calls.at(-1)[0];
     expect([1, 16]).toContain(lastCall.dateFrom.getDate());
+  });
+
+  it("calcula el mes calendario al elegir mes", async () => {
+    mocks.fetchInsights.mockResolvedValue([row]);
+
+    const { result } = renderHook(() =>
+      useProductInsightsDetail({ productId: "p1" })
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.selectPreset("month"));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const lastCall = mocks.fetchInsights.mock.calls.at(-1)[0];
+    expect(lastCall.dateFrom.getDate()).toBe(1);
+    expect(lastCall.dateTo.getDate()).toBeGreaterThanOrEqual(28);
   });
 
   it("no consulta con rango invalido y marca custom al editar fechas", async () => {
