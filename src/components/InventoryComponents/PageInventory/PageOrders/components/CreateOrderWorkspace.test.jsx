@@ -32,35 +32,48 @@ const buildForm = (overrides = {}) => ({
   ...overrides,
 });
 
+const HINT = "Selecciona la sucursal destino para buscar productos";
+
 const getSearchButton = () =>
   screen.getByRole("button", { name: /Buscar productos/ });
+const getCodeInput = () => screen.getByPlaceholderText(/Escanea o escribe/);
+const getAddButton = () => screen.getByRole("button", { name: /Agregar$/ });
 
-describe("CreateOrderWorkspace buscar productos", () => {
-  it("bloquea la busqueda hasta elegir la sucursal destino", () => {
+describe("CreateOrderWorkspace sin sucursal destino", () => {
+  it("deshabilita codigo, Agregar y Buscar productos", () => {
     const form = buildForm();
 
     render(<CreateOrderWorkspace form={form} products={[]} />);
 
+    expect(getCodeInput().disabled).toBe(true);
+    expect(getAddButton().disabled).toBe(true);
     expect(getSearchButton().disabled).toBe(true);
-    expect(
-      screen.getByText("Selecciona la sucursal destino para buscar productos.")
-    ).toBeTruthy();
 
     fireEvent.click(getSearchButton());
     expect(form.setSearchOpen).not.toHaveBeenCalled();
   });
 
-  it("habilita la busqueda cuando ya hay sucursal destino", () => {
+  it("muestra el aviso junto a Agregar por codigo de barras", () => {
+    render(<CreateOrderWorkspace form={buildForm()} products={[]} />);
+
+    const label = screen.getByText(HINT).closest("label");
+
+    expect(label.textContent).toContain("Agregar por código de barras");
+  });
+});
+
+describe("CreateOrderWorkspace con sucursal destino", () => {
+  it("habilita el codigo, Agregar (con texto) y Buscar productos", () => {
     const form = buildForm({ destinationBranchId: "b2" });
 
     render(<CreateOrderWorkspace form={form} products={[]} />);
 
+    expect(getCodeInput().disabled).toBe(false);
     expect(getSearchButton().disabled).toBe(false);
-    expect(
-      screen.queryByText(
-        "Selecciona la sucursal destino para buscar productos."
-      )
-    ).toBeNull();
+    expect(screen.queryByText(HINT)).toBeNull();
+
+    fireEvent.change(getCodeInput(), { target: { value: "7501" } });
+    expect(getAddButton().disabled).toBe(false);
 
     fireEvent.click(getSearchButton());
     expect(form.setSearchOpen).toHaveBeenCalledWith(true);

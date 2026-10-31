@@ -44,6 +44,8 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const handleCodeSubmit = (event) => {
     event.preventDefault();
 
+    if (!hasDestination) return;
+
     if (form.handleCodeSubmit(code)) {
       setCode("");
     }
@@ -139,20 +141,27 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         <div className={styles.productPicker}>
           <form className={styles.codeForm} onSubmit={handleCodeSubmit}>
             <label className={styles.field}>
-              <span>Agregar por código de barras</span>
+              <span className={styles.fieldLabelRow}>
+                <span>Agregar por código de barras</span>
+                {hasDestination ? null : (
+                  <span className={styles.fieldHint}>
+                    Selecciona la sucursal destino para buscar productos
+                  </span>
+                )}
+              </span>
               <input
                 type="text"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
                 placeholder="Escanea o escribe el código"
                 autoComplete="off"
-                disabled={form.isSaving}
+                disabled={form.isSaving || !hasDestination}
               />
             </label>
             <button
               type="submit"
               className={styles.secondaryButton}
-              disabled={!code.trim() || form.isSaving}
+              disabled={!code.trim() || form.isSaving || !hasDestination}
             >
               <img src={PlusIcon} alt="" aria-hidden="true" />
               Agregar
@@ -173,11 +182,6 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
             <img src={SearchIcon} alt="" aria-hidden="true" />
             Buscar productos
           </button>
-          {hasDestination ? null : (
-            <span className={styles.pickerHint}>
-              Selecciona la sucursal destino para buscar productos.
-            </span>
-          )}
         </div>
 
         {form.items.length === 0 ? (

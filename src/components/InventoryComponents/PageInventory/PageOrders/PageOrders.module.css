@@ -615,10 +615,17 @@
   align-items: flex-end;
 }
 
-.pickerHint {
-  align-self: center;
+.fieldLabelRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.field .fieldHint {
   color: #6d7b86;
   font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .codeForm {
