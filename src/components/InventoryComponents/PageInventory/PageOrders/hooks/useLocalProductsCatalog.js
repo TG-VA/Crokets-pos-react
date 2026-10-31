@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { fetchLocalProductsCatalog } from "../services/localProductsCatalogService";
 
 export const useLocalProductsCatalog = () => {
   const [localProducts, setLocalProducts] = useState([]);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +20,9 @@ export const useLocalProductsCatalog = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [version]);
 
-  return localProducts;
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+
+  return { localProducts, reload };
 };
