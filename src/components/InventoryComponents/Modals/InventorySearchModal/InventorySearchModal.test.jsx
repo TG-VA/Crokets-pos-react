@@ -101,6 +101,26 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByText(/^\$/)).toBeNull();
   });
 
+  it("no lista los kits porque su inventario depende de sus componentes", () => {
+    renderModal({
+      products: [
+        ...products,
+        {
+          id: "kit-1",
+          codigo: "K-1",
+          descripcion: "Kit de bienvenida",
+          departamento: "Kits",
+          precio: 99,
+          is_global: true,
+          is_kit: true,
+        },
+      ],
+    });
+
+    expect(screen.getByText("Alimento global")).toBeTruthy();
+    expect(screen.queryByText("Kit de bienvenida")).toBeNull();
+  });
+
   it("no muestra stock, minimo ni filtro de bajo minimo", () => {
     renderModal();
 
