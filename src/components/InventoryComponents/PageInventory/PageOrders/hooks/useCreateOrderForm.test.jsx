@@ -1,12 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { act, render, renderHook } from "@testing-library/react";
 
 vi.mock("../../../../../contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "u1" } }),
 }));
+vi.mock("../../../../../contexts/BranchContext", () => ({
+  useBranch: () => ({ branch: { id: "b1" } }),
+}));
 vi.mock("../services/ordersService", () => ({ createStoreOrder: vi.fn() }));
 
+import { OrderDraftProvider } from "../../../../../contexts/OrderDraftContext";
 import { useCreateOrderForm } from "./useCreateOrderForm";
+
+const wrapper = ({ children }) => (
+  <OrderDraftProvider>{children}</OrderDraftProvider>
+);
 
 const buildProduct = (overrides = {}) => ({
   id: "p1",
@@ -19,12 +27,14 @@ const buildProduct = (overrides = {}) => ({
 });
 
 const renderForm = (products) =>
-  renderHook(() =>
-    useCreateOrderForm({
-      currentBranch: { id: "b1" },
-      branches: [],
-      products,
-    })
+  renderHook(
+    () =>
+      useCreateOrderForm({
+        currentBranch: { id: "b1" },
+        branches: [],
+        products,
+      }),
+    { wrapper }
   );
 
 describe("useCreateOrderForm productos permitidos", () => {
@@ -65,5 +75,31 @@ describe("useCreateOrderForm productos permitidos", () => {
 
     expect(added).toBe(false);
     expect(result.current.items).toHaveLength(0);
+  });
+});
+
+describe("useCreateOrderForm persistencia del borrador", () => {
+  it("conserva el borrador al desmontar y volver a montar el formulario", () => {
+    const props = { currentBranch: { id: "b1" }, branches: [], products: [] };
+    let form;
+    const Form = () => {
+      form = useCreateOrderForm(props);
+      return null;
+    };
+    const App = ({ show }) => (
+      <OrderDraftProvider>{show ? <Form /> : null}</OrderDraftProvider>
+    );
+
+    const { rerender } = render(<App show />);
+    act(() => {
+      form.setOrderName("pedido a");
+      form.addProduct(buildProduct());
+    });
+
+    rerender(<App show={false} />);
+    rerender(<App show />);
+
+    expect(form.orderName).toBe("PEDIDO A");
+    expect(form.items).toHaveLength(1);
   });
 });
