@@ -151,25 +151,6 @@ const ProductInsightsModal = ({ product, onClose }) => {
             </tr>
           </tfoot>
         </table>
-        <ul className={styles.legend} aria-label="Significado de los colores">
-          {LEGEND_LEVELS.map((level) => {
-            const meta = STOCK_LEVEL_META[level];
-
-            return (
-              <li key={level} className={styles.legendItem}>
-                <span
-                  className={joinClasses(
-                    styles.legendBadge,
-                    meta.badgeClassName
-                  )}
-                >
-                  {meta.label}
-                </span>
-                <span className={styles.legendText}>{meta.description}</span>
-              </li>
-            );
-          })}
-        </ul>
       </div>
     );
   };
@@ -184,16 +165,42 @@ const ProductInsightsModal = ({ product, onClose }) => {
     >
       {product ? (
         <div className={styles.content}>
-          <header className={styles.productHeader}>
-            <span className={styles.productLabel}>Producto</span>
-            <h3 className={styles.productName}>{product.productName}</h3>
-            <span className={styles.productCodeChip}>
-              <span className={styles.productCodeLabel}>Código</span>
-              <span className={styles.productCodeValue}>
-                {product.barcode || "—"}
+          <div className={styles.topRow}>
+            <header className={styles.productHeader}>
+              <span className={styles.productLabel}>Producto</span>
+              <h3 className={styles.productName}>{product.productName}</h3>
+              <span className={styles.productCodeChip}>
+                <span className={styles.productCodeLabel}>Código</span>
+                <span className={styles.productCodeValue}>
+                  {product.barcode || "—"}
+                </span>
               </span>
-            </span>
-          </header>
+            </header>
+            <ul
+              className={styles.legend}
+              aria-label="Significado de los colores"
+            >
+              {LEGEND_LEVELS.map((level) => {
+                const meta = STOCK_LEVEL_META[level];
+
+                return (
+                  <li key={level} className={styles.legendItem}>
+                    <span
+                      className={joinClasses(
+                        styles.legendBadge,
+                        meta.badgeClassName
+                      )}
+                    >
+                      {meta.label}
+                    </span>
+                    <span className={styles.legendText}>
+                      {meta.description}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           <div className={styles.filters}>
             <div

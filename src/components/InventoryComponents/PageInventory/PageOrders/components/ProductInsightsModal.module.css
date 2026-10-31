@@ -4,7 +4,15 @@
   gap: 16px;
 }
 
-\.productHeader {
+.topRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.productHeader {
+  flex: 1 1 280px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -238,8 +246,10 @@
 .legend {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 14px 0 0;
+  flex: 1 1 340px;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
