@@ -23,6 +23,7 @@ const InventorySearchResults = ({
   isAlreadySelected,
   isProductDisabled,
   onProductClick,
+  onLocalProductDoubleClick,
 }) => {
   if (loading) {
     return <div className={styles.emptyMessage}>Cargando inventario...</div>;
@@ -67,6 +68,11 @@ const InventorySearchResults = ({
             onClick={() => {
               if (!disabled) {
                 onProductClick?.(product, index);
+              }
+            }}
+            onDoubleClick={() => {
+              if (disabled) {
+                onLocalProductDoubleClick?.(product);
               }
             }}
             role="button"

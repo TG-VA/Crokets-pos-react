@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks/useLocalProductsCatalog", () => ({
-  useLocalProductsCatalog: () => [],
+  useLocalProductsCatalog: () => ({ localProducts: [], reload: () => {} }),
 }));
 
 import CreateOrderWorkspace from "./CreateOrderWorkspace";

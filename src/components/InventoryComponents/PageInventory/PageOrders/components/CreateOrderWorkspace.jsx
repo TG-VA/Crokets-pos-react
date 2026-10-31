@@ -21,7 +21,8 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const [code, setCode] = useState("");
   const [insightsProduct, setInsightsProduct] = useState(null);
 
-  const localProducts = useLocalProductsCatalog();
+  const { localProducts, reload: reloadLocalProducts } =
+    useLocalProductsCatalog();
 
   const destinationBranchName = form.destinationOptions.find(
     (branchOption) => branchOption.id === form.destinationBranchId
@@ -334,6 +335,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
         restrictLocalProducts
+        onProductPromoted={reloadLocalProducts}
       />
 
       <ProductInsightsModal

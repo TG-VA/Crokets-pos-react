@@ -9,6 +9,7 @@ const useInventorySearchModal = ({
   products = [],
   selectedProductIds = [],
   restrictLocalProducts = false,
+  keyboardEnabled = true,
   onClose,
   onSelect,
 } = {}) => {
@@ -104,7 +105,7 @@ const useInventorySearchModal = ({
   }
 
   useInventorySearchKeyboard({
-    isOpen,
+    isOpen: isOpen && keyboardEnabled,
     searchResults,
     selectedIndex,
     setSelectedIndex,

@@ -43,7 +43,7 @@ const MakeGlobalConfirmModal = ({
         <div className={styles.header}>
           <div>
             <h2 id={titleId}>Volver global este producto</h2>
-            <p>{product.nombre ?? product.name}</p>
+            <p>{product.descripcion ?? product.nombre ?? product.name}</p>
           </div>
           <button
             type="button"

@@ -1,7 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import InventorySearchModal from "./InventorySearchModal";
+
+const { promoteProductToGlobal } = vi.hoisted(() => ({
+  promoteProductToGlobal: vi.fn(),
+}));
+
+vi.mock(
+  "../../PageInventory/PageOrders/services/promoteProductToGlobalService",
+  () => ({ promoteProductToGlobal })
+);
 
 const products = [
   {
@@ -128,5 +137,55 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByText(/Mínimo:/)).toBeNull();
     expect(screen.queryByText("Bajo mínimo")).toBeNull();
     expect(screen.queryByLabelText("Solo bajo mínimo")).toBeNull();
+  });
+
+  describe("volver global un producto local", () => {
+    beforeEach(() => {
+      promoteProductToGlobal.mockReset();
+      promoteProductToGlobal.mockResolvedValue({ success: true });
+    });
+
+    it("abre la confirmacion al hacer doble clic en un producto local", () => {
+      renderModal();
+
+      fireEvent.doubleClick(screen.getByText("Juguete local"));
+
+      expect(screen.getByText("Volver global este producto")).toBeTruthy();
+    });
+
+    it("no abre la confirmacion con un producto global", () => {
+      renderModal();
+
+      fireEvent.doubleClick(screen.getByText("Alimento global"));
+
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
+    });
+
+    it("promueve el producto, avisa al padre y cierra la confirmacion", async () => {
+      const onProductPromoted = vi.fn();
+      renderModal({ onProductPromoted });
+
+      fireEvent.doubleClick(screen.getByText("Juguete local"));
+      fireEvent.change(screen.getByRole("textbox", { name: /CONFIRMAR/ }), {
+        target: { value: "CONFIRMAR" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Volver global" }));
+
+      await waitFor(() => expect(onProductPromoted).toHaveBeenCalledTimes(1));
+      expect(promoteProductToGlobal).toHaveBeenCalledWith("local");
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
+    });
+
+    it("Escape cierra solo la confirmacion y no el buscador", () => {
+      const onClose = vi.fn();
+      renderModal({ onClose });
+
+      fireEvent.doubleClick(screen.getByText("Juguete local"));
+      expect(screen.getByText("Volver global este producto")).toBeTruthy();
+      fireEvent.keyDown(window, { key: "Escape" });
+
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
+      expect(onClose).not.toHaveBeenCalled();
+    });
   });
 });

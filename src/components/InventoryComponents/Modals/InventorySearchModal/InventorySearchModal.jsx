@@ -1,5 +1,9 @@
+import { useCallback, useState } from "react";
+
 import InventorySearchResults from "./components/InventorySearchResults";
+import MakeGlobalConfirmModal from "./components/MakeGlobalConfirmModal";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
+import usePromoteLocalProduct from "./hooks/usePromoteLocalProduct";
 
 import styles from "./InventorySearchModal.module.css";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
@@ -13,7 +17,27 @@ const InventorySearchModal = ({
   loading = false,
   error = null,
   restrictLocalProducts = false,
+  onProductPromoted,
 }) => {
+  const [promotingProduct, setPromotingProduct] = useState(null);
+
+  const handlePromoted = useCallback(() => {
+    setPromotingProduct(null);
+    onProductPromoted?.();
+  }, [onProductPromoted]);
+
+  const {
+    saving: promoting,
+    error: promoteError,
+    promote,
+    resetError: resetPromoteError,
+  } = usePromoteLocalProduct({ onSuccess: handlePromoted });
+
+  const cancelPromotion = () => {
+    setPromotingProduct(null);
+    resetPromoteError();
+  };
+
   const {
     searchTerm,
     selectedIndex,
@@ -34,6 +58,7 @@ const InventorySearchModal = ({
     products,
     selectedProductIds,
     restrictLocalProducts,
+    keyboardEnabled: !promotingProduct,
     onClose,
     onSelect,
   });
@@ -109,6 +134,7 @@ const InventorySearchModal = ({
                 isAlreadySelected={isAlreadySelected}
                 isProductDisabled={isProductDisabled}
                 onProductClick={handleProductClick}
+                onLocalProductDoubleClick={setPromotingProduct}
               />
             </div>
           </div>
@@ -155,6 +181,16 @@ const InventorySearchModal = ({
           </div>
         </div>
       </div>
+
+      <MakeGlobalConfirmModal
+        product={promotingProduct}
+        saving={promoting}
+        error={promoteError}
+        onClose={cancelPromotion}
+        onConfirm={() =>
+          promote(promotingProduct.product_id ?? promotingProduct.id)
+        }
+      />
     </div>
   );
 };
