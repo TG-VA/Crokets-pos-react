@@ -4,10 +4,57 @@
   gap: 16px;
 }
 
-.productCode {
-  margin: 0;
+\.productHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1px solid #d6edf3;
+  border-left: 5px solid var(--croketsBlue);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f4fbfd 0%, #ffffff 100%);
+}
+
+.productLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #6d7b86;
+}
+
+.productName {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--croketsBlueDark);
+  overflow-wrap: anywhere;
+}
+
+.productCodeChip {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #cfd8de;
+  border-radius: 8px;
+  background: var(--white);
   font-size: 0.85rem;
+}
+
+.productCodeLabel {
+  padding: 3px 10px;
+  background: #eef2f5;
+  color: #5a7080;
+  font-weight: 700;
+}
+
+.productCodeValue {
+  padding: 3px 12px;
+  color: #26323b;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .filters {
@@ -164,30 +211,6 @@
   font-weight: 700;
 }
 
-.stockLow {
-  background: #fdecea;
-  color: #b3261e;
-}
-
-.stockHigh {
-  background: #e3f2fb;
-  color: #0b5f9a;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
-}
-
-.legendItem {
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .message {
   margin: 0;
   padding: 24px 0;
@@ -198,4 +221,59 @@
 .errorMessage {
   margin: 0;
   color: var(--errorText);
+}
+
+.rowLow td {
+  background: #fdecea;
+  color: #b3261e;
+  border-top-color: #f5c6c2;
+}
+
+.rowHigh td {
+  background: #e3f2fb;
+  color: #0b5f9a;
+  border-top-color: #bfdff3;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendBadge {
+  flex-shrink: 0;
+  min-width: 110px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.legendLow {
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f5c6c2;
+}
+
+.legendHigh {
+  background: #e3f2fb;
+  color: #0b5f9a;
+  border: 1px solid #bfdff3;
+}
+
+.legendText {
+  font-size: 0.82rem;
+  color: #5a7080;
 }

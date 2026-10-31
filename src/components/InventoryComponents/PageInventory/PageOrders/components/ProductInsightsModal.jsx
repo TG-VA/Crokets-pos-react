@@ -23,9 +23,23 @@ const DATE_PRESETS = [
 ];
 
 const STOCK_LEVEL_META = {
-  [STOCK_LEVEL.LOW]: { className: styles.stockLow, label: "Bajo mínimo" },
-  [STOCK_LEVEL.HIGH]: { className: styles.stockHigh, label: "Sobre máximo" },
+  [STOCK_LEVEL.LOW]: {
+    rowClassName: styles.rowLow,
+    badgeClassName: styles.legendLow,
+    label: "Bajo mínimo",
+    description:
+      "El stock de la sucursal es igual o menor al mínimo configurado. Conviene reabastecerla.",
+  },
+  [STOCK_LEVEL.HIGH]: {
+    rowClassName: styles.rowHigh,
+    badgeClassName: styles.legendHigh,
+    label: "Sobre máximo",
+    description:
+      "El stock de la sucursal supera el máximo configurado. No necesita más producto.",
+  },
 };
+
+const LEGEND_LEVELS = [STOCK_LEVEL.LOW, STOCK_LEVEL.HIGH];
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -87,20 +101,17 @@ const ProductInsightsModal = ({ product, onClose }) => {
               const levelMeta = STOCK_LEVEL_META[row.stockLevel];
 
               return (
-                <tr key={row.branchId}>
+                <tr
+                  key={row.branchId}
+                  className={levelMeta?.rowClassName}
+                  title={levelMeta?.label}
+                >
                   <td>
                     <span className={styles.branchBadge}>
                       {toUpperLabel(row.branchName)}
                     </span>
                   </td>
-                  <td
-                    className={joinClasses(
-                      styles.numeric,
-                      styles.stockCell,
-                      levelMeta?.className
-                    )}
-                    title={levelMeta?.label}
-                  >
+                  <td className={joinClasses(styles.numeric, styles.stockCell)}>
                     {formatQuantity(row.stock)}
                   </td>
                   <td className={styles.numeric}>
@@ -140,14 +151,25 @@ const ProductInsightsModal = ({ product, onClose }) => {
             </tr>
           </tfoot>
         </table>
-        <p className={styles.legend}>
-          <span className={joinClasses(styles.legendItem, styles.stockLow)}>
-            Bajo mínimo
-          </span>
-          <span className={joinClasses(styles.legendItem, styles.stockHigh)}>
-            Sobre máximo
-          </span>
-        </p>
+        <ul className={styles.legend} aria-label="Significado de los colores">
+          {LEGEND_LEVELS.map((level) => {
+            const meta = STOCK_LEVEL_META[level];
+
+            return (
+              <li key={level} className={styles.legendItem}>
+                <span
+                  className={joinClasses(
+                    styles.legendBadge,
+                    meta.badgeClassName
+                  )}
+                >
+                  {meta.label}
+                </span>
+                <span className={styles.legendText}>{meta.description}</span>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     );
   };
@@ -155,7 +177,7 @@ const ProductInsightsModal = ({ product, onClose }) => {
   return (
     <AppModal
       isOpen={Boolean(product)}
-      title={product?.productName ?? "Detalle del producto"}
+      title="Detalle del producto"
       confirmText="Cerrar"
       onConfirm={onClose}
       onClose={onClose}
@@ -163,7 +185,16 @@ const ProductInsightsModal = ({ product, onClose }) => {
     >
       {product ? (
         <div className={styles.content}>
-          <p className={styles.productCode}>Código: {product.barcode || "—"}</p>
+          <header className={styles.productHeader}>
+            <span className={styles.productLabel}>Producto</span>
+            <h3 className={styles.productName}>{product.productName}</h3>
+            <span className={styles.productCodeChip}>
+              <span className={styles.productCodeLabel}>Código</span>
+              <span className={styles.productCodeValue}>
+                {product.barcode || "—"}
+              </span>
+            </span>
+          </header>
 
           <div className={styles.filters}>
             <div
