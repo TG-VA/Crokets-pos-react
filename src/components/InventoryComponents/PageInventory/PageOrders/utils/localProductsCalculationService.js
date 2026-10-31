@@ -15,7 +15,9 @@ export const groupLocalProductsByBranch = (rows = []) => {
     const product = getRelation(row?.products);
     const branch = getRelation(row?.branches);
 
-    if (!product?.id || product.is_global === true) return;
+    if (!product?.id || product.is_global === true || product.is_kit === true) {
+      return;
+    }
 
     if (!productsById.has(product.id)) {
       productsById.set(product.id, {

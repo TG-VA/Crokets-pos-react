@@ -94,6 +94,7 @@ const PRODUCT_SELECT_FIELDS = `
   department_id,
   status,
   is_global,
+  is_kit,
   sale_type,
   unit,
   tax,

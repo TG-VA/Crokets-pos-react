@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
 import ProductInsightsModal from "./ProductInsightsModal";
-import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
+import {
+  isGlobalProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
 import { useLocalProductsCatalog } from "../hooks/useLocalProductsCatalog";
@@ -20,10 +23,16 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
 
   const localProducts = useLocalProductsCatalog();
 
-  // El pedido solo mueve productos globales; los locales se listan para que
-  // se vea a que sucursal pertenecen, pero no se pueden seleccionar.
+  // El pedido solo mueve productos globales que no sean kits; los locales se
+  // listan para que se vea a que sucursal pertenecen, pero no se pueden
+  // seleccionar.
   const searchableProducts = useMemo(
-    () => [...products.filter(isGlobalProduct), ...localProducts],
+    () => [
+      ...products.filter(
+        (product) => isGlobalProduct(product) && !isKitProduct(product)
+      ),
+      ...localProducts,
+    ],
     [products, localProducts]
   );
 

@@ -18,6 +18,7 @@ export const fetchLocalProductsCatalog = async () => {
         barcode,
         name,
         is_global,
+        is_kit,
         status,
         department:departments ( name )
       )

@@ -43,6 +43,15 @@ describe("groupLocalProductsByBranch", () => {
     expect(result.map((product) => product.id)).toEqual(["p1", "p2"]);
   });
 
+  it("descarta los kits porque su inventario depende de sus componentes", () => {
+    const result = groupLocalProductsByBranch([
+      buildRow("p1", "Centro"),
+      buildRow("k1", "Centro", { is_kit: true }),
+    ]);
+
+    expect(result.map((product) => product.id)).toEqual(["p1"]);
+  });
+
   it("usa Sin departamento y tolera entradas invalidas", () => {
     const [product] = groupLocalProductsByBranch([
       buildRow("p1", "Centro", { department: null }),

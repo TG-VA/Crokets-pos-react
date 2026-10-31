@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
-import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
+import {
+  isGlobalProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createStoreOrder } from "../services/ordersService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -74,6 +77,13 @@ export const useCreateOrderForm = ({
       const productId = product?.product_id ?? product?.id;
 
       if (!productId) return false;
+
+      if (isKitProduct(product)) {
+        setError(
+          "Los kits no se pueden pedir: su inventario depende de sus componentes."
+        );
+        return false;
+      }
 
       if (!isGlobalProduct(product)) {
         setError(
