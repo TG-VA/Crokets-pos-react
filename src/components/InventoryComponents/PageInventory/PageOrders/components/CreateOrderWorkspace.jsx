@@ -5,6 +5,7 @@ import ProductInsightsModal from "./ProductInsightsModal";
 import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
+import { useLocalProductsCatalog } from "../hooks/useLocalProductsCatalog";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import SearchIcon from "../../../../../assets/icons/searchIcon.svg";
@@ -17,10 +18,13 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
   const [code, setCode] = useState("");
   const [insightsProduct, setInsightsProduct] = useState(null);
 
-  // El pedido solo mueve productos del catalogo global entre sucursales.
-  const globalProducts = useMemo(
-    () => products.filter(isGlobalProduct),
-    [products]
+  const localProducts = useLocalProductsCatalog();
+
+  // El pedido solo mueve productos globales; los locales se listan para que
+  // se vea a que sucursal pertenecen, pero no se pueden seleccionar.
+  const searchableProducts = useMemo(
+    () => [...products.filter(isGlobalProduct), ...localProducts],
+    [products, localProducts]
   );
 
   const handleCodeSubmit = (event) => {
@@ -298,9 +302,10 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
       <InventorySearchModal
         isOpen={form.searchOpen}
         onClose={() => form.setSearchOpen(false)}
-        products={globalProducts}
+        products={searchableProducts}
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
+        restrictLocalProducts
       />
 
       <ProductInsightsModal

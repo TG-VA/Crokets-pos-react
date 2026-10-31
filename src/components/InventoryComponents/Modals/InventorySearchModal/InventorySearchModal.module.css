@@ -353,6 +353,13 @@
   gap: 6px;
 }
 
+.localProductHint {
+  margin-top: 6px;
+  color: #6d4c00;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .localProductBadge {
   flex-shrink: 0;
   padding: 4px 8px;

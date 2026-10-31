@@ -78,6 +78,29 @@ describe("InventorySearchModal reglas de pedidos", () => {
     );
   });
 
+  it("indica a que sucursal pertenece un producto local y como habilitarlo", () => {
+    renderModal({
+      products: [
+        {
+          id: "local-owned",
+          codigo: "L-9",
+          descripcion: "Collar local",
+          departamento: "Accesorios",
+          is_global: false,
+          localBranchNames: ["Centro", "Norte"],
+        },
+      ],
+    });
+
+    expect(screen.getByText("Producto local de Centro, Norte")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Debe cambiarse a global manualmente en el punto de venta de esas sucursales."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText(/^\$/)).toBeNull();
+  });
+
   it("no muestra stock, minimo ni filtro de bajo minimo", () => {
     renderModal();
 

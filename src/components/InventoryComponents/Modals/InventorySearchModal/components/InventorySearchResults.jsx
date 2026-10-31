@@ -1,5 +1,18 @@
 import styles from "../InventorySearchModal.module.css";
 
+const getLocalOwners = (product) =>
+  Array.isArray(product?.localBranchNames) ? product.localBranchNames : [];
+
+const getLocalBadgeLabel = (owners) =>
+  owners.length > 0
+    ? `Producto local de ${owners.join(", ")}`
+    : "Producto local o no global";
+
+const getLocalHint = (owners) =>
+  owners.length > 1
+    ? "Debe cambiarse a global manualmente en el punto de venta de esas sucursales."
+    : "Debe cambiarse a global manualmente en el punto de venta de esa sucursal.";
+
 const InventorySearchResults = ({
   products = [],
   selectedIndex = -1,
@@ -34,6 +47,8 @@ const InventorySearchResults = ({
       {products.map((product, index) => {
         const alreadySelected = isAlreadySelected?.(product) === true;
         const disabled = isProductDisabled?.(product) === true;
+        const localOwners = getLocalOwners(product);
+        const price = product?.precio ?? product?.sale_price;
 
         const itemClassName = [
           styles.resultItem,
@@ -74,7 +89,7 @@ const InventorySearchResults = ({
 
                   {disabled ? (
                     <span className={styles.localProductBadge}>
-                      Producto local o no global
+                      {getLocalBadgeLabel(localOwners)}
                     </span>
                   ) : null}
                 </div>
@@ -85,12 +100,11 @@ const InventorySearchResults = ({
                   Código: {product?.codigo ?? product?.barcode ?? "—"}
                 </span>
 
-                <span className={styles.productPrice}>
-                  $
-                  {Number(product?.precio ?? product?.sale_price ?? 0).toFixed(
-                    2
-                  )}
-                </span>
+                {price !== undefined && price !== null ? (
+                  <span className={styles.productPrice}>
+                    ${Number(price).toFixed(2)}
+                  </span>
+                ) : null}
 
                 <span className={styles.productCode}>
                   Dept:{" "}
@@ -99,6 +113,12 @@ const InventorySearchResults = ({
                     "Sin departamento"}
                 </span>
               </div>
+
+              {disabled && localOwners.length > 0 ? (
+                <div className={styles.localProductHint}>
+                  {getLocalHint(localOwners)}
+                </div>
+              ) : null}
             </div>
           </div>
         );
