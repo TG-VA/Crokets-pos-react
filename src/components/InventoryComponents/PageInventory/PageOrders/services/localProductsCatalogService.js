@@ -30,5 +30,11 @@ export const fetchLocalProductsCatalog = async () => {
 
   if (error) throw error;
 
+  if (data.length >= MAX_LOCAL_ROWS) {
+    console.error(
+      `Catalogo de productos locales truncado en ${MAX_LOCAL_ROWS} filas; algunos productos locales pueden no aparecer.`
+    );
+  }
+
   return groupLocalProductsByBranch(data);
 };

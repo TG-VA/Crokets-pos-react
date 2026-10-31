@@ -68,4 +68,25 @@ describe("OrderDraftContext", () => {
     rerender();
     expect(result.current.orderName).toBe("");
   });
+
+  it("nunca expone el borrador anterior en el render tras cambiar de sucursal", () => {
+    const seen = [];
+    const { result, rerender } = renderHook(
+      () => {
+        const draft = useOrderDraft();
+        seen.push(draft.orderName);
+        return draft;
+      },
+      { wrapper }
+    );
+
+    act(() => result.current.setOrderName("X"));
+    seen.length = 0;
+
+    branchState.branch = { id: "b2" };
+    rerender();
+
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen).not.toContain("X");
+  });
 });

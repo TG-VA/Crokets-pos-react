@@ -117,4 +117,30 @@ describe("useProductInsightsDetail", () => {
     );
     expect(console.error).toHaveBeenCalled();
   });
+
+  it("ignora la respuesta tardia de una consulta anterior", async () => {
+    let resolveFirst;
+    let resolveSecond;
+    mocks.fetchInsights
+      .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+      .mockReturnValueOnce(new Promise((resolve) => (resolveSecond = resolve)));
+
+    const { result } = renderHook(() =>
+      useProductInsightsDetail({ productId: "p1" })
+    );
+
+    act(() => result.current.selectPreset("month"));
+
+    await act(async () => {
+      resolveSecond([{ ...row, branch_name: "Nueva" }]);
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      resolveFirst([{ ...row, branch_name: "Vieja" }]);
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.rows.map((r) => r.branchName)).toEqual(["Nueva"]);
+  });
 });

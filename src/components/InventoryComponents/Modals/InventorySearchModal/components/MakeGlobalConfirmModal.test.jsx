@@ -66,4 +66,27 @@ describe("MakeGlobalConfirmModal", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("limpia la palabra escrita al cerrar y reabrir el modal", () => {
+    const props = { onClose: () => {}, onConfirm: () => {} };
+    const { rerender } = render(
+      <MakeGlobalConfirmModal product={product} {...props} />
+    );
+    fireEvent.change(screen.getByLabelText(/escribe confirmar/i), {
+      target: { value: "CONFIRMAR" },
+    });
+
+    rerender(<MakeGlobalConfirmModal product={null} {...props} />);
+    rerender(
+      <MakeGlobalConfirmModal
+        product={{ nombre: "OTRO", codigo: "456" }}
+        {...props}
+      />
+    );
+
+    expect(screen.getByLabelText(/escribe confirmar/i).value).toBe("");
+    expect(screen.getByRole("button", { name: /volver global/i }).disabled).toBe(
+      true
+    );
+  });
 });

@@ -38,6 +38,22 @@ describe("fetchLocalProductsCatalog", () => {
     expect(result[0].localBranchNames).toEqual(["Centro"]);
   });
 
+  it("registra console.error cuando la consulta alcanza el limite", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.result = {
+      data: Array.from({ length: 5000 }, (_, i) => ({
+        products: { id: `p${i}`, name: "x", is_global: false },
+        branches: { name: "Centro" },
+      })),
+      error: null,
+    };
+
+    await fetchLocalProductsCatalog();
+
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("truncado"));
+    errorSpy.mockRestore();
+  });
+
   it("propaga el error de la consulta", async () => {
     const failure = new Error("fallo");
     mocks.result = { data: null, error: failure };

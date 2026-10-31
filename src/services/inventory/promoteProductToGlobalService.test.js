@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ result: { data: null, error: null } }));
 
-vi.mock("../../../../../lib/supabaseClient", () => ({
+vi.mock("../../lib/supabaseClient", () => ({
   supabase: { rpc: vi.fn(() => Promise.resolve(mocks.result)) },
 }));
 
-import { supabase } from "../../../../../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 import { promoteProductToGlobal } from "./promoteProductToGlobalService";
 
 describe("promoteProductToGlobal", () => {

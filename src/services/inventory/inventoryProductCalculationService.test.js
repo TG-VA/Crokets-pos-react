@@ -161,12 +161,4 @@ describe("filterInventorySearchProducts", () => {
       )
     ).toEqual(["bajo", "sin-minimo", "ok"]);
   });
-
-  it("filtra solo los productos bajo minimo", () => {
-    expect(
-      filterInventorySearchProducts(products, {
-        belowMinimumOnly: true,
-      }).map((item) => item.id)
-    ).toEqual(["bajo"]);
-  });
 });

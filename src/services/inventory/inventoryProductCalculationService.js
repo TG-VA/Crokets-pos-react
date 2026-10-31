@@ -101,13 +101,11 @@ const matchesSearchTerm = (product, term) => {
 
 export const filterInventorySearchProducts = (
   products = [],
-  { searchTerm = "", belowMinimumOnly = false } = {}
+  { searchTerm = "" } = {}
 ) => {
   const term = normalizeSearchValue(searchTerm);
 
   return sortProductsByNameAndStock(products).filter((product) => {
-    if (belowMinimumOnly && !isProductBelowMinimum(product)) return false;
-
     return matchesSearchTerm(product, term);
   });
 };

@@ -50,6 +50,23 @@ describe("useCreateOrderForm productos permitidos", () => {
     expect(result.current.items).toHaveLength(1);
   });
 
+  it.each([
+    ["local", false],
+    ["sin marcar", null],
+  ])("rechaza un producto %s", (_label, isGlobal) => {
+    const product = buildProduct({ is_global: isGlobal });
+    const { result } = renderForm([product]);
+
+    let added;
+    act(() => {
+      added = result.current.addProduct(product);
+    });
+
+    expect(added).toBe(false);
+    expect(result.current.items).toHaveLength(0);
+    expect(result.current.error).toContain("no global");
+  });
+
   it("rechaza un kit aunque sea global", () => {
     const kit = buildProduct({ id: "k1", is_kit: true });
     const { result } = renderForm([kit]);

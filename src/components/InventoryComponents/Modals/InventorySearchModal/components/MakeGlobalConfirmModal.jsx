@@ -14,10 +14,12 @@ const CONSEQUENCES = [
   "Revertirlo despues no es limpio si otras sucursales ya crearon inventario.",
 ];
 
-const MakeGlobalConfirmModal = ({
+// El contenido vive en un componente interno que se desmonta cuando no hay
+// producto, para que la palabra escrita no sobreviva al cerrar y reabrir.
+const MakeGlobalConfirmContent = ({
   product,
-  saving = false,
-  error = null,
+  saving,
+  error,
   onClose,
   onConfirm,
 }) => {
@@ -25,9 +27,7 @@ const MakeGlobalConfirmModal = ({
   const titleId = useId();
   const inputId = useId();
 
-  useEscapeKey(onClose, Boolean(product) && !saving);
-
-  if (!product) return null;
+  useEscapeKey(onClose, !saving);
 
   const canConfirm = typed === CONFIRM_WORD && !saving;
 
@@ -108,6 +108,27 @@ const MakeGlobalConfirmModal = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const MakeGlobalConfirmModal = ({
+  product,
+  saving = false,
+  error = null,
+  onClose,
+  onConfirm,
+}) => {
+  if (!product) return null;
+
+  return (
+    <MakeGlobalConfirmContent
+      key={product.product_id ?? product.id ?? product.codigo}
+      product={product}
+      saving={saving}
+      error={error}
+      onClose={onClose}
+      onConfirm={onConfirm}
+    />
   );
 };
 

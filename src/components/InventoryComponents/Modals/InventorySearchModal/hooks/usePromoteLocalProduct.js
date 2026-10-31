@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { promoteProductToGlobal } from "../../../PageInventory/PageOrders/services/promoteProductToGlobalService";
+import { promoteProductToGlobal } from "../../../../../services/inventory/promoteProductToGlobalService";
 
 const usePromoteLocalProduct = ({ onSuccess } = {}) => {
   const [saving, setSaving] = useState(false);

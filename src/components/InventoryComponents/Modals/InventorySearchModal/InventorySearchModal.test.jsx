@@ -8,7 +8,7 @@ const { promoteProductToGlobal } = vi.hoisted(() => ({
 }));
 
 vi.mock(
-  "../../PageInventory/PageOrders/services/promoteProductToGlobalService",
+  "../../../../services/inventory/promoteProductToGlobalService",
   () => ({ promoteProductToGlobal })
 );
 

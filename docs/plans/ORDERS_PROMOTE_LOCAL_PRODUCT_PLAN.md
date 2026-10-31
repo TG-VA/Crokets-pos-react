@@ -52,7 +52,7 @@ puede agregar al pedido.
 - Nota: `products` no tiene RLS en la base remota (verificado), asi que la
   validacion del RPC protege el camino de la app pero no impide un update
   directo con la clave anon. Endurecerlo es otro trabajo.
-- Servicio `promoteProductToGlobalService.js` y hook `usePromoteLocalProduct`
+- Servicio `src/services/inventory/promoteProductToGlobalService.js` y hook `usePromoteLocalProduct`
   para que la interfaz no importe `supabase`.
 - `MakeGlobalConfirmModal` en la carpeta del modal de busqueda, con CSS Module.
 - `InventorySearchResults` recibe `onLocalProductDoubleClick`;

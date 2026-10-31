@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ promote: vi.fn() }));
 
 vi.mock(
-  "../../../PageInventory/PageOrders/services/promoteProductToGlobalService",
+  "../../../../../services/inventory/promoteProductToGlobalService",
   () => ({ promoteProductToGlobal: mocks.promote })
 );
 
