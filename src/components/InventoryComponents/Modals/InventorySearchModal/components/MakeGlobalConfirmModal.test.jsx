@@ -85,8 +85,8 @@ describe("MakeGlobalConfirmModal", () => {
     );
 
     expect(screen.getByLabelText(/escribe confirmar/i).value).toBe("");
-    expect(screen.getByRole("button", { name: /volver global/i }).disabled).toBe(
-      true
-    );
+    expect(
+      screen.getByRole("button", { name: /volver global/i }).disabled
+    ).toBe(true);
   });
 });

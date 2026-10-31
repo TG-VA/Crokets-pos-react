@@ -7,10 +7,9 @@ const { promoteProductToGlobal } = vi.hoisted(() => ({
   promoteProductToGlobal: vi.fn(),
 }));
 
-vi.mock(
-  "../../../../services/inventory/promoteProductToGlobalService",
-  () => ({ promoteProductToGlobal })
-);
+vi.mock("../../../../services/inventory/promoteProductToGlobalService", () => ({
+  promoteProductToGlobal,
+}));
 
 const products = [
   {
