@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
@@ -19,13 +19,15 @@ const HistoryTable = ({
 }) => {
   const [folioSearch, setFolioSearch] = useState("");
   const searchKey = folioSearch.trim().toLowerCase();
-  const filteredHistory = searchKey
-    ? transferHistory.filter((order) =>
-        String(order.folio || "")
-          .toLowerCase()
-          .includes(searchKey)
-      )
-    : transferHistory;
+  const filteredHistory = useMemo(
+    () =>
+      searchKey
+        ? transferHistory.filter((order) =>
+            `${order.folio ?? ""}`.toLowerCase().includes(searchKey)
+          )
+        : transferHistory,
+    [transferHistory, searchKey]
+  );
   const {
     currentPage,
     totalPages,
