@@ -104,7 +104,7 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.getByText("Producto local de Centro, Norte")).toBeTruthy();
     expect(
       screen.getByText(
-        "Debe cambiarse a global manualmente en el punto de venta de esas sucursales."
+        "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esas sucursales."
       )
     ).toBeTruthy();
     expect(screen.queryByText(/^\$/)).toBeNull();

@@ -10,8 +10,8 @@ const getLocalBadgeLabel = (owners) =>
 
 const getLocalHint = (owners) =>
   owners.length > 1
-    ? "Debe cambiarse a global manualmente en el punto de venta de esas sucursales."
-    : "Debe cambiarse a global manualmente en el punto de venta de esa sucursal.";
+    ? "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esas sucursales."
+    : "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esa sucursal.";
 
 const InventorySearchResults = ({
   products = [],
