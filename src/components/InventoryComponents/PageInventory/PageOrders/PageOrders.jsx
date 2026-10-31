@@ -56,6 +56,7 @@ const PageOrders = () => {
           <CreateOrderWorkspace
             form={page.createForm}
             products={page.products}
+            onProductsReload={page.reloadProducts}
             onSave={page.handleCreate}
           />
         ) : null}

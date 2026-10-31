@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
 import ProductInsightsModal from "./ProductInsightsModal";
@@ -17,12 +17,22 @@ import TrashIcon from "../../../../../assets/icons/deleteIcon.svg";
 import SaveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
-const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
+const CreateOrderWorkspace = ({
+  form,
+  products = [],
+  onSave,
+  onProductsReload,
+}) => {
   const [code, setCode] = useState("");
   const [insightsProduct, setInsightsProduct] = useState(null);
 
   const { localProducts, reload: reloadLocalProducts } =
     useLocalProductsCatalog();
+
+  const handleProductPromoted = useCallback(() => {
+    reloadLocalProducts();
+    onProductsReload?.();
+  }, [reloadLocalProducts, onProductsReload]);
 
   const destinationBranchName = form.destinationOptions.find(
     (branchOption) => branchOption.id === form.destinationBranchId
@@ -335,7 +345,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
         restrictLocalProducts
-        onProductPromoted={reloadLocalProducts}
+        onProductPromoted={handleProductPromoted}
       />
 
       <ProductInsightsModal
