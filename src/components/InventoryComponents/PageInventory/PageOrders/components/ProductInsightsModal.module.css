@@ -28,6 +28,13 @@
   overflow-wrap: anywhere;
 }
 
+.productMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .productCodeChip {
   display: inline-flex;
   align-items: stretch;

@@ -10,6 +10,7 @@ import {
   toUpperLabel,
 } from "../utils/ordersFormatters";
 import { STOCK_LEVEL } from "../utils/productInsightsCalculationService";
+import BranchBadge from "./BranchBadge";
 import styles from "./ProductInsightsModal.module.css";
 
 const DATE_FORMAT = "dd/MM/yyyy";
@@ -43,7 +44,11 @@ const LEGEND_LEVELS = [STOCK_LEVEL.LOW, STOCK_LEVEL.HIGH];
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 
-const ProductInsightsModal = ({ product, onClose }) => {
+const ProductInsightsModal = ({
+  product,
+  destinationBranchName = "",
+  onClose,
+}) => {
   const {
     preset,
     dateFrom,
@@ -187,12 +192,17 @@ const ProductInsightsModal = ({ product, onClose }) => {
           <header className={styles.productHeader}>
             <span className={styles.productLabel}>Producto</span>
             <h3 className={styles.productName}>{product.productName}</h3>
-            <span className={styles.productCodeChip}>
-              <span className={styles.productCodeLabel}>Código</span>
-              <span className={styles.productCodeValue}>
-                {product.barcode || "—"}
+            <div className={styles.productMeta}>
+              <span className={styles.productCodeChip}>
+                <span className={styles.productCodeLabel}>Código</span>
+                <span className={styles.productCodeValue}>
+                  {product.barcode || "—"}
+                </span>
               </span>
-            </span>
+              {destinationBranchName ? (
+                <BranchBadge role="destination" name={destinationBranchName} />
+              ) : null}
+            </div>
           </header>
 
           <div className={styles.filters}>

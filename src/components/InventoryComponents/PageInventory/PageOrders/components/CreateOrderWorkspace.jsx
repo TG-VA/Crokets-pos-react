@@ -23,6 +23,11 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
 
   const localProducts = useLocalProductsCatalog();
 
+  const destinationBranchName = form.destinationOptions.find(
+    (branchOption) => branchOption.id === form.destinationBranchId
+  )?.name;
+  const hasDestination = Boolean(form.destinationBranchId);
+
   // El pedido solo mueve productos globales que no sean kits; los locales se
   // listan para que se vea a que sucursal pertenecen, pero no se pueden
   // seleccionar.
@@ -158,11 +163,21 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
             type="button"
             className={styles.secondaryButton}
             onClick={() => form.setSearchOpen(true)}
-            disabled={form.isSaving}
+            disabled={form.isSaving || !hasDestination}
+            title={
+              hasDestination
+                ? undefined
+                : "Selecciona primero la sucursal destino"
+            }
           >
             <img src={SearchIcon} alt="" aria-hidden="true" />
             Buscar productos
           </button>
+          {hasDestination ? null : (
+            <span className={styles.pickerHint}>
+              Selecciona la sucursal destino para buscar productos.
+            </span>
+          )}
         </div>
 
         {form.items.length === 0 ? (
@@ -319,6 +334,7 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
 
       <ProductInsightsModal
         product={insightsProduct}
+        destinationBranchName={destinationBranchName}
         onClose={() => setInsightsProduct(null)}
       />
     </section>

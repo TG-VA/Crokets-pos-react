@@ -615,6 +615,12 @@
   align-items: flex-end;
 }
 
+.pickerHint {
+  align-self: center;
+  color: #6d7b86;
+  font-size: 0.82rem;
+}
+
 .codeForm {
   display: flex;
   align-items: flex-end;
