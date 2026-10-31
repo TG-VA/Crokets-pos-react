@@ -177,7 +177,6 @@ const ProductInsightsModal = ({ product, onClose }) => {
   return (
     <AppModal
       isOpen={Boolean(product)}
-      title="Detalle del producto"
       confirmText="Cerrar"
       onConfirm={onClose}
       onClose={onClose}
