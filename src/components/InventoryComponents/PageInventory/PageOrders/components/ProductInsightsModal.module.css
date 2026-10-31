@@ -9,11 +9,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  padding: 14px 18px;
-  border: 1px solid #d6edf3;
-  border-left: 5px solid var(--croketsBlue);
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f4fbfd 0%, #ffffff 100%);
 }
 
 .productLabel {
