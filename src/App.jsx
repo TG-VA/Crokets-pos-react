@@ -23,6 +23,7 @@ import { PendingTransfersProvider } from "./contexts/PendingTransfersContext";
 import { PendingOrdersProvider } from "./contexts/PendingOrdersContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import { ModalStackProvider } from "./contexts/ModalStackContext";
+import { OrderDraftProvider } from "./contexts/OrderDraftContext";
 import { SalesCartProvider } from "./contexts/SalesCartContext";
 import useResponsiveScale from "./hooks/useResponsiveScale";
 import AuthGuard from "./components/AuthGuard/AuthGuard";
@@ -186,9 +187,11 @@ function App({ RouterComponent = Router } = {}) {
           <PendingTransfersProvider>
             <PendingOrdersProvider>
               <ModalStackProvider>
-                <SalesCartProvider>
-                  <AppRoutes RouterComponent={RouterComponent} />
-                </SalesCartProvider>
+                <OrderDraftProvider>
+                  <SalesCartProvider>
+                    <AppRoutes RouterComponent={RouterComponent} />
+                  </SalesCartProvider>
+                </OrderDraftProvider>
               </ModalStackProvider>
             </PendingOrdersProvider>
           </PendingTransfersProvider>
