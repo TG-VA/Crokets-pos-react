@@ -1,9 +1,17 @@
-import {
-  getProductMinStock,
-  getProductStock,
-  isProductBelowMinimum,
-} from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../InventorySearchModal.module.css";
+
+const getLocalOwners = (product) =>
+  Array.isArray(product?.localBranchNames) ? product.localBranchNames : [];
+
+const getLocalBadgeLabel = (owners) =>
+  owners.length > 0
+    ? `Producto local de ${owners.join(", ")}`
+    : "Producto local o no global";
+
+const getLocalHint = (owners) =>
+  owners.length > 1
+    ? "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esas sucursales."
+    : "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esa sucursal.";
 
 const InventorySearchResults = ({
   products = [],
@@ -14,8 +22,8 @@ const InventorySearchResults = ({
   resultsListRef,
   isAlreadySelected,
   isProductDisabled,
-  showLowStock = false,
   onProductClick,
+  onLocalProductDoubleClick,
 }) => {
   if (loading) {
     return <div className={styles.emptyMessage}>Cargando inventario...</div>;
@@ -40,26 +48,14 @@ const InventorySearchResults = ({
       {products.map((product, index) => {
         const alreadySelected = isAlreadySelected?.(product) === true;
         const disabled = isProductDisabled?.(product) === true;
-        const belowMinimum = showLowStock && isProductBelowMinimum(product);
-        const stock = getProductStock(product);
-        const minStock = getProductMinStock(product);
+        const localOwners = getLocalOwners(product);
+        const price = product?.precio ?? product?.sale_price;
 
         const itemClassName = [
           styles.resultItem,
           index === selectedIndex ? styles.selectedResult : "",
           alreadySelected ? styles.alreadySelectedResult : "",
           disabled ? styles.disabledResult : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        const stockClassName = [
-          styles.productStock,
-          belowMinimum
-            ? styles.lowStockText
-            : stock > 0
-              ? styles.inStock
-              : styles.outOfStock,
         ]
           .filter(Boolean)
           .join(" ");
@@ -72,6 +68,11 @@ const InventorySearchResults = ({
             onClick={() => {
               if (!disabled) {
                 onProductClick?.(product, index);
+              }
+            }}
+            onDoubleClick={() => {
+              if (disabled) {
+                onLocalProductDoubleClick?.(product);
               }
             }}
             role="button"
@@ -94,12 +95,8 @@ const InventorySearchResults = ({
 
                   {disabled ? (
                     <span className={styles.localProductBadge}>
-                      Producto local o no global
+                      {getLocalBadgeLabel(localOwners)}
                     </span>
-                  ) : null}
-
-                  {belowMinimum ? (
-                    <span className={styles.lowStockBadge}>Bajo mínimo</span>
                   ) : null}
                 </div>
               </div>
@@ -109,17 +106,10 @@ const InventorySearchResults = ({
                   Código: {product?.codigo ?? product?.barcode ?? "—"}
                 </span>
 
-                <span className={styles.productPrice}>
-                  $
-                  {Number(product?.precio ?? product?.sale_price ?? 0).toFixed(
-                    2
-                  )}
-                </span>
-
-                <span className={stockClassName}>Stock: {stock}</span>
-
-                {minStock > 0 ? (
-                  <span className={styles.productMin}>Mínimo: {minStock}</span>
+                {price !== undefined && price !== null ? (
+                  <span className={styles.productPrice}>
+                    ${Number(price).toFixed(2)}
+                  </span>
                 ) : null}
 
                 <span className={styles.productCode}>
@@ -129,6 +119,12 @@ const InventorySearchResults = ({
                     "Sin departamento"}
                 </span>
               </div>
+
+              {disabled && localOwners.length > 0 ? (
+                <div className={styles.localProductHint}>
+                  {getLocalHint(localOwners)}
+                </div>
+              ) : null}
             </div>
           </div>
         );

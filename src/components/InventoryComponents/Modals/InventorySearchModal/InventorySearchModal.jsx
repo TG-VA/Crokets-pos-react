@@ -1,5 +1,9 @@
+import { useCallback, useState } from "react";
+
 import InventorySearchResults from "./components/InventorySearchResults";
+import MakeGlobalConfirmModal from "./components/MakeGlobalConfirmModal";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
+import usePromoteLocalProduct from "./hooks/usePromoteLocalProduct";
 
 import styles from "./InventorySearchModal.module.css";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
@@ -13,8 +17,27 @@ const InventorySearchModal = ({
   loading = false,
   error = null,
   restrictLocalProducts = false,
-  showLowStockFilter = false,
+  onProductPromoted,
 }) => {
+  const [promotingProduct, setPromotingProduct] = useState(null);
+
+  const handlePromoted = useCallback(() => {
+    setPromotingProduct(null);
+    onProductPromoted?.();
+  }, [onProductPromoted]);
+
+  const {
+    saving: promoting,
+    error: promoteError,
+    promote,
+    resetError: resetPromoteError,
+  } = usePromoteLocalProduct({ onSuccess: handlePromoted });
+
+  const cancelPromotion = () => {
+    setPromotingProduct(null);
+    resetPromoteError();
+  };
+
   const {
     searchTerm,
     selectedIndex,
@@ -22,8 +45,6 @@ const InventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
     resultsListRef,
 
     isAlreadySelected,
@@ -37,6 +58,7 @@ const InventorySearchModal = ({
     products,
     selectedProductIds,
     restrictLocalProducts,
+    keyboardEnabled: !promotingProduct,
     onClose,
     onSelect,
   });
@@ -88,19 +110,6 @@ const InventorySearchModal = ({
             <div className={styles.searchHelp}>
               <span>↑↓ Navegar • Enter - Seleccionar • ESC - Cerrar</span>
             </div>
-
-            {showLowStockFilter ? (
-              <label className={styles.lowStockFilter}>
-                <input
-                  type="checkbox"
-                  checked={belowMinimumOnly}
-                  onChange={(event) =>
-                    setBelowMinimumOnly(event.target.checked)
-                  }
-                />
-                Solo bajo mínimo
-              </label>
-            ) : null}
           </div>
 
           <div className={styles.resultsSection}>
@@ -124,8 +133,8 @@ const InventorySearchModal = ({
                 resultsListRef={resultsListRef}
                 isAlreadySelected={isAlreadySelected}
                 isProductDisabled={isProductDisabled}
-                showLowStock={showLowStockFilter}
                 onProductClick={handleProductClick}
+                onLocalProductDoubleClick={setPromotingProduct}
               />
             </div>
           </div>
@@ -172,6 +181,16 @@ const InventorySearchModal = ({
           </div>
         </div>
       </div>
+
+      <MakeGlobalConfirmModal
+        product={promotingProduct}
+        saving={promoting}
+        error={promoteError}
+        onClose={cancelPromotion}
+        onConfirm={() =>
+          promote(promotingProduct.product_id ?? promotingProduct.id)
+        }
+      />
     </div>
   );
 };

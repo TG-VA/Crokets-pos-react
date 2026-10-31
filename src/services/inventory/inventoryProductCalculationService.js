@@ -24,6 +24,12 @@ export const getProductMinStock = (product) =>
 export const isGlobalProduct = (product) => product?.is_global === true;
 
 /**
+ * Un kit no maneja inventario propio: su disponibilidad depende de los
+ * productos que lo componen, por lo que no se puede mover ni pedir.
+ */
+export const isKitProduct = (product) => product?.is_kit === true;
+
+/**
  * Misma regla que el reporte de inventario: hay bajo minimo cuando existe un
  * minimo configurado y la existencia es igual o menor a el. Los productos sin
  * inventario inicial no cuentan como bajo minimo porque aun no tienen una
@@ -95,13 +101,11 @@ const matchesSearchTerm = (product, term) => {
 
 export const filterInventorySearchProducts = (
   products = [],
-  { searchTerm = "", belowMinimumOnly = false } = {}
+  { searchTerm = "" } = {}
 ) => {
   const term = normalizeSearchValue(searchTerm);
 
   return sortProductsByNameAndStock(products).filter((product) => {
-    if (belowMinimumOnly && !isProductBelowMinimum(product)) return false;
-
     return matchesSearchTerm(product, term);
   });
 };

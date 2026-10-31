@@ -9,6 +9,7 @@ const useInventorySearchModal = ({
   products = [],
   selectedProductIds = [],
   restrictLocalProducts = false,
+  keyboardEnabled = true,
   onClose,
   onSelect,
 } = {}) => {
@@ -22,10 +23,6 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
-    clearBelowMinimumFilter,
-
     isAlreadySelected,
     isProductDisabled,
     handleSearchChange: updateSearchTerm,
@@ -39,9 +36,8 @@ const useInventorySearchModal = ({
 
   const resetSearch = useCallback(() => {
     clearSearch();
-    clearBelowMinimumFilter();
     setSelectedIndex(-1);
-  }, [clearBelowMinimumFilter, clearSearch]);
+  }, [clearSearch]);
 
   const handleClose = useCallback(() => {
     resetSearch();
@@ -109,7 +105,7 @@ const useInventorySearchModal = ({
   }
 
   useInventorySearchKeyboard({
-    isOpen,
+    isOpen: isOpen && keyboardEnabled,
     searchResults,
     selectedIndex,
     setSelectedIndex,
@@ -126,8 +122,6 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
     resultsListRef,
 
     setSelectedIndex,

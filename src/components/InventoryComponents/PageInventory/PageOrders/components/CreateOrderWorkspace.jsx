@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import InventorySearchModal from "../../../Modals/InventorySearchModal/InventorySearchModal";
+import ProductInsightsModal from "./ProductInsightsModal";
+import {
+  isGlobalProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import styles from "../PageOrders.module.css";
 import { formatCurrency, formatQuantity } from "../utils/ordersFormatters";
+import { useLocalProductsCatalog } from "../hooks/useLocalProductsCatalog";
 import { usePagination } from "../../../../../hooks/usePagination";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import SearchIcon from "../../../../../assets/icons/searchIcon.svg";
@@ -11,11 +17,45 @@ import TrashIcon from "../../../../../assets/icons/deleteIcon.svg";
 import SaveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import BoxIcon from "../../../../../assets/icons/box-solid-full.svg";
 
-const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
+const CreateOrderWorkspace = ({
+  form,
+  products = [],
+  onSave,
+  onProductsReload,
+}) => {
   const [code, setCode] = useState("");
+  const [insightsProduct, setInsightsProduct] = useState(null);
+
+  const { localProducts, reload: reloadLocalProducts } =
+    useLocalProductsCatalog();
+
+  const handleProductPromoted = useCallback(() => {
+    reloadLocalProducts();
+    onProductsReload?.();
+  }, [reloadLocalProducts, onProductsReload]);
+
+  const destinationBranchName = form.destinationOptions.find(
+    (branchOption) => branchOption.id === form.destinationBranchId
+  )?.name;
+  const hasDestination = Boolean(form.destinationBranchId);
+
+  // El pedido solo mueve productos globales que no sean kits; los locales se
+  // listan para que se vea a que sucursal pertenecen, pero no se pueden
+  // seleccionar.
+  const searchableProducts = useMemo(
+    () => [
+      ...products.filter(
+        (product) => isGlobalProduct(product) && !isKitProduct(product)
+      ),
+      ...localProducts,
+    ],
+    [products, localProducts]
+  );
 
   const handleCodeSubmit = (event) => {
     event.preventDefault();
+
+    if (!hasDestination) return;
 
     if (form.handleCodeSubmit(code)) {
       setCode("");
@@ -112,20 +152,27 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
         <div className={styles.productPicker}>
           <form className={styles.codeForm} onSubmit={handleCodeSubmit}>
             <label className={styles.field}>
-              <span>Agregar por código de barras</span>
+              <span className={styles.fieldLabelRow}>
+                <span>Agregar por código de barras</span>
+                {hasDestination ? null : (
+                  <span className={styles.fieldHint}>
+                    Selecciona la sucursal destino para buscar productos
+                  </span>
+                )}
+              </span>
               <input
                 type="text"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
                 placeholder="Escanea o escribe el código"
                 autoComplete="off"
-                disabled={form.isSaving}
+                disabled={form.isSaving || !hasDestination}
               />
             </label>
             <button
               type="submit"
               className={styles.secondaryButton}
-              disabled={!code.trim() || form.isSaving}
+              disabled={!code.trim() || form.isSaving || !hasDestination}
             >
               <img src={PlusIcon} alt="" aria-hidden="true" />
               Agregar
@@ -136,7 +183,12 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
             type="button"
             className={styles.secondaryButton}
             onClick={() => form.setSearchOpen(true)}
-            disabled={form.isSaving}
+            disabled={form.isSaving || !hasDestination}
+            title={
+              hasDestination
+                ? undefined
+                : "Selecciona primero la sucursal destino"
+            }
           >
             <img src={SearchIcon} alt="" aria-hidden="true" />
             Buscar productos
@@ -167,7 +219,14 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
                   <tr key={item.productId}>
                     <td>{item.barcode || "—"}</td>
                     <td className={styles.productNameCell}>
-                      {item.productName}
+                      <button
+                        type="button"
+                        className={styles.productNameButton}
+                        onClick={() => setInsightsProduct(item)}
+                        aria-label={`Ver detalle de ${item.productName}`}
+                      >
+                        {item.productName}
+                      </button>
                     </td>
                     <td>{item.departmentName}</td>
                     <td className={styles.numeric}>
@@ -282,11 +341,17 @@ const CreateOrderWorkspace = ({ form, products = [], onSave }) => {
       <InventorySearchModal
         isOpen={form.searchOpen}
         onClose={() => form.setSearchOpen(false)}
-        products={products}
+        products={searchableProducts}
         selectedProductIds={form.selectedProductIds}
         onSelect={form.addProduct}
         restrictLocalProducts
-        showLowStockFilter
+        onProductPromoted={handleProductPromoted}
+      />
+
+      <ProductInsightsModal
+        product={insightsProduct}
+        destinationBranchName={destinationBranchName}
+        onClose={() => setInsightsProduct(null)}
       />
     </section>
   );

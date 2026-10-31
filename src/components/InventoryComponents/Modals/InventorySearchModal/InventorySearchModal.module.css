@@ -116,24 +116,6 @@
   font-style: italic;
 }
 
-.lowStockFilter {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  color: #2c3e50;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.lowStockFilter input {
-  width: 16px;
-  height: 16px;
-  accent-color: #1092b1;
-  cursor: pointer;
-}
-
 .resultsSection {
   height: 380px;
   display: flex;
@@ -236,18 +218,6 @@
   color: #27ae60;
   font-weight: 700;
   font-size: 0.9rem;
-}
-
-.productStock {
-  font-weight: 600;
-}
-
-.inStock {
-  color: #27ae60;
-}
-
-.outOfStock {
-  color: #e74c3c;
 }
 
 .modalActions {
@@ -383,22 +353,18 @@
   gap: 6px;
 }
 
+.localProductHint {
+  margin-top: 6px;
+  color: #6d4c00;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .localProductBadge {
   flex-shrink: 0;
   padding: 4px 8px;
   border-radius: 4px;
   background: #5c6b77;
-  color: white;
-  font-size: 0.68rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.lowStockBadge {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #b56d00;
   color: white;
   font-size: 0.68rem;
   font-weight: 800;
@@ -415,13 +381,4 @@
 .disabledResult:hover {
   border-color: #bdc3c7;
   box-shadow: none;
-}
-
-.lowStockText {
-  color: #b56d00;
-}
-
-.productMin {
-  color: #b56d00;
-  font-weight: 600;
 }

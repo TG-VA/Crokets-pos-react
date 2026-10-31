@@ -16,150 +16,158 @@ componentes). No hay carpeta central de tests.
 237 archivos de test (**2801 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
-| Área                                                   | Archivo                                                                            |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Formatters de producto                                 | `src/services/products/productFormatters.test.js`                                  |
-| CRUD de productos                                      | `src/services/products/productCrudService.test.js`                                 |
-| Lista de productos (paginacion server-side y teclado)  | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
-| Importación de productos                               | `.../ProductsImport/services/productsImportService.test.js`                        |
-| Utilidades de importación                              | `.../ProductsImport/utils/importUtils.test.js`                                     |
-| Kits / promociones                                     | `.../ProductsPromotions/services/productKitsService.test.js`                       |
-| Reporte de caja                                        | `.../PageCashReport/services/cashReportService.test.js`                            |
-| Reporte de caja (hook y filtro de sucursal)            | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
-| Reporte de comisiones                                  | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |
-| Reporte de productos (consulta y sucursal "ALL")       | `.../PageProductsReport/services/productReportsService.test.js`                    |
-| Reporte de productos (selector desacoplado)            | `.../PageProductsReport/PageProductsReport.test.jsx`                               |
-| Reporte de clientes (consulta y sucursal "ALL")        | `.../PageCustomersReport/services/customersReportService.test.js`                  |
-| Reporte de clientes (selector desacoplado)             | `.../PageCustomersReport/PageCustomersReport.test.jsx`                             |
-| Reporte de inventario (selector y url)                 | `.../PageInventoryReport/PageInventoryReport.test.jsx`                             |
-| Reporte de rentabilidad (selector y reset)             | `.../PageProfitabilityReport/PageProfitabilityReport.test.jsx`                     |
-| Reporte de rentabilidad                                | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
-| Reporte de inventario (datos)                          | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
-| Reporte de inventario (cálculos)                       | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
-| Inventario: alta con CPP                               | `.../PageAdd/services/inventoryAddService.test.js`                                 |
-| Inventario: ajuste sin reescribir precio               | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
-| Precio de sucursal en 0 cae al catalogo                | `src/utils/branchSalePrice.test.js`                                                |
-| Contrato SQL de precio 0 por sucursal                  | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
-| Contrato SQL de username insensible a mayusculas       | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
-| Contrato SQL del CHECK de username en minusculas       | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
-| Contrato de authorize-admin-action (username)          | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
-| Contrato de admin-create-user (username)               | `supabase/functions/adminCreateUserUsernameContract.test.js`                       |
-| Normalizacion de username (helper compartido)          | `supabase/functions/normalizeUsername.test.js`                                     |
-| Inventario: cálculo del CPP móvil                      | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
-| Inventario: proyección de CPP en interfaz              | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
-| Inventario: hook de captura de costo                   | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
-| Inventario: componente de captura de costo             | `.../PageAdd/components/InventoryAddCostEntry.test.jsx`                            |
-| Inventario: movimientos (payload de costo)             | `src/utils/inventoryMovements.test.js`                                             |
-| Corte de cajero (cálculos)                             | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
-| Corte de cajero (servicios de datos)                   | `src/pages/CashCut/services/cashCutReportService.test.js`                          |
-| Corte de cajero (detalle histórico)                    | `src/pages/CashCut/services/cashCutDetailService.test.js`                          |
-| Corte de cajero (hook principal)                       | `src/pages/CashCut/hooks/useCashCutReport.test.js`                                 |
-| Corte de cajero (hook de modales)                      | `src/pages/CashCut/hooks/useCashCutDetail.test.js`                                 |
-| Corte de cajero (formateadores)                        | `src/pages/CashCut/utils/cashCutFormatters.test.js`                                |
-| Corte impreso (builder de ancho fijo)                  | `src/utils/cashCutBuilder.test.js`                                                 |
-| Ticket: generación e impresión                         | `src/utils/ticketPrinter.test.js`                                                  |
-| Modal de recompensas (cálculos)                        | `.../RewardModal/rewardModalCalculationService.test.js`                            |
-| Modal de recompensas (hook)                            | `.../RewardModal/useRewardModal.test.js`                                           |
-| Totales de venta                                       | `.../SalesComponents/hooks/test/useSalesTotals.test.js`                            |
-| Venta transaccional (RPC)                              | `.../SalesComponents/services/salesTransactionService.test.js`                     |
-| Contrato SQL de RPCs transaccionales                   | `supabase/migrations/transactionalRpcsContract.test.js`                            |
-| Contrato SQL del snapshot de costo de venta            | `supabase/migrations/costSnapshotContract.test.js`                                 |
-| Proceso principal de Electron                          | `electron/mainProcess.test.js`                                                     |
-| Impresión de tickets (proceso principal)               | `electron/ticketPrintService.test.js`                                              |
-| Utilidades async                                       | `src/utils/asyncUtils.test.js`                                                     |
-| Paginación global                                      | `src/hooks/usePagination.test.js`                                                  |
-| Navegación protegida                                   | `src/hooks/useProtectedNavigation.test.js`                                         |
-| Secciones protegidas                                   | `src/config/adminProtectedSections.test.js`                                        |
-| Guard de rutas                                         | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
-| Sucursal por dispositivo (RPC)                         | `src/services/deviceBranchService.test.js`                                         |
-| Caja: sesión y apertura (RPC)                          | `src/services/cashRegisterService.test.js`                                         |
-| Caja: configuración operativa (remoto y offline)       | `src/services/cashOperationSettingsService.test.js`                                |
-| Caja: configuración operativa (hook y vista)           | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
-| Ticket: golden de salida                               | `src/utils/ticket/ticketBuilder.test.js`                                           |
-| Ticket: primitivas de layout                           | `src/utils/ticket/ticketLayoutFormatters.test.js`                                  |
-| Ticket: formateadores de fecha                         | `src/utils/ticket/ticketDateFormatters.test.js`                                    |
-| Ticket: extracción de items                            | `src/utils/ticket/ticketItemFormatters.test.js`                                    |
-| Ticket: servicios de recompensas                       | `src/utils/ticket/ticketRewardService.test.js`                                     |
-| Ticket: servicios de pagos                             | `src/utils/ticket/ticketPaymentService.test.js`                                    |
-| Ticket: formateadores de sucursal                      | `src/utils/ticket/ticketBranchFormatters.test.js`                                  |
-| Ticket: servicios de puntos                            | `src/utils/ticket/ticketPointsService.test.js`                                     |
-| Ticket: secciones                                      | `src/utils/ticket/ticketSections.test.js`                                          |
-| Reportes: ciclo de vida del dashboard                  | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
-| Kardex: lectura de movimientos                         | `.../PageKardex/services/kardexService.test.js`                                    |
-| Kardex: formateadores                                  | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
-| Kardex: tabla (columnas de valuacion)                  | `.../PageKardex/components/KardexTable.test.jsx`                                   |
-| Kardex: panel con paginacion                           | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
-| Kardex: exportador Excel                               | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
-| Kardex: exportacion sobre el dataset completo          | `.../PageKardex/Pagekardex.test.jsx`                                               |
-| Ventas: sincronización de columnas                     | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
-| Ventas: atajos de teclado                              | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
-| Facturación: validación fiscal                         | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
-| Facturación: catálogos (usos CFDI, regímenes, C.P.)    | `.../InvoicesComponents/services/invoicesCatalogService.test.js`                   |
-| Facturación: suscripciones realtime                    | `.../InvoicesComponents/services/invoicesRealtimeService.test.js`                  |
-| Facturación: formateadores compartidos                 | `.../InvoicesComponents/utils/invoiceFormatters.test.js`                           |
-| Facturación: cliente fiscal (cálculos)                 | `.../Modals/FiscalCustomerModal/services/fiscalCustomerCalculationService.test.js` |
-| Facturación: cliente fiscal (datos)                    | `.../Modals/FiscalCustomerModal/services/fiscalCustomerService.test.js`            |
-| Facturación: factura de venta (cálculos)               | `.../Modals/InvoiceSaleModal/services/invoiceSaleCalculationService.test.js`       |
-| Facturación: factura de venta (datos)                  | `.../Modals/InvoiceSaleModal/services/invoiceSaleService.test.js`                  |
-| Facturación: clientes fiscales (cálculos)              | `.../InvoiceCustomers/services/invoiceCustomersCalculationService.test.js`         |
-| Facturación: clientes fiscales (datos)                 | `.../InvoiceCustomers/services/invoiceCustomersService.test.js`                    |
-| Facturación: ajustes del emisor (cálculos)             | `.../InvoiceSettings/services/invoiceSettingsCalculationService.test.js`           |
-| Facturación: ajustes del emisor (datos)                | `.../InvoiceSettings/services/invoiceSettingsService.test.js`                      |
-| Facturación: historial (cálculos)                      | `.../InvoicesHistory/services/invoicesHistoryCalculationService.test.js`           |
-| Facturación: historial (datos del reporte)             | `.../InvoicesHistory/services/invoicesHistoryReportService.test.js`                |
-| Facturación: historial (detalle 360)                   | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js`                |
-| Facturación: ventas por facturar (cálculos)            | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js`           |
-| Facturación: ventas por facturar (datos)               | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
-| Smoke de render del renderer y guardas de ruta         | `src/App.test.jsx`                                                                 |
-| Pedidos: servicio de datos y conteo de pendientes      | `.../PageOrders/services/ordersService.test.js`                                    |
-| Pedidos: contexto de pendientes (polling y realtime)   | `src/contexts/PendingOrdersContext.test.jsx`                                       |
-| Pedidos: mascara de cantidades enteras                 | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
-| Pedidos: rango de fechas de los filtros                | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
-| Pedidos: formateadores y opciones de estado            | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
-| Pedidos: clases de estatus                             | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
-| Pedidos: reglas de producto global y bajo minimo       | `src/services/inventory/inventoryProductCalculationService.test.js`                |
-| Pedidos: busqueda de productos (locales y bajo minimo) | `.../Modals/InventorySearchModal/InventorySearchModal.test.jsx`                    |
-| Pedidos: historial (filtros de pedido y producto)      | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
-| Pedidos: regla de destino bloqueado                    | `.../PageOrders/utils/ordersHistoryDestinationLock.test.js`                        |
-| Pedidos: hook de destino bloqueado                     | `.../PageOrders/hooks/useHistoryDestinationLock.test.js`                           |
-| Pedidos: aviso, diferencias y estado por partida       | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
-| Pedidos: detalle (paginacion y tabla de diferencias)   | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
-| Pedidos: panel de recepcion (paginacion y faltantes)   | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
-| Pedidos: servicio realtime                             | `src/services/inventory/ordersRealtimeService.test.js`                             |
-| Pedidos: contrato SQL de realtime                      | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
-| Pedidos: badge de sucursal (nombre, mayusculas, rol)   | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
-| Pedidos: badge del nombre del pedido                   | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |
-| Pedidos: modal de detalle (cabecera, titulo y ruta)    | `.../PageOrders/components/OrderDetailModal.test.jsx`                              |
-| Pedidos: aviso con cierre automatico                   | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
-| Pedidos: estilos (clases definidas, badges en negrita) | `.../PageOrders/PageOrders.styles.test.js`                                         |
-| Pedidos: contrato SQL de nombres en mayusculas         | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
-| Modal base (footer y capa en la pila de modales)       | `src/components/AppModal/AppModal.test.jsx`                                        |
-| Pila de modales (capas y bloqueo de atajos)            | `src/contexts/ModalStackContext.test.jsx`                                          |
-| Modal base: boton de cancelar de pie (etiqueta)        | `src/components/ModalControls/ModalFooterCancelButton.test.jsx`                    |
-| Notas de venta: sin X, con Cancelar y Guardar          | `.../SalesComponents/Modals/NotesModal/NotesModal.test.jsx`                        |
-| Eliminar articulo: etiqueta y Enter                    | `.../SalesComponents/Modals/DeleteItemModal/DeleteItemModal.test.jsx`              |
-| Eliminar ticket pendiente: sin X ni Delete             | `.../SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal.test.jsx`          |
-| Modales de captura de Ventas: sin X de cabecera        | `.../SalesComponents/Modals/modalCloseButtons.test.jsx`                            |
-| Ventas: capas modales registradas por cada setter      | `.../SalesComponents/hooks/useSalesModals.test.jsx`                                |
-| Historial: botones de accion (3 arriba y 2 abajo)      | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.styles.test.js`    |
-| Historial: modal Notas del ticket                      | `.../SalesComponents/Modals/SalesHistoryModal/TicketNotesModal.test.jsx`           |
-| Historial: Escape con Notas abiertas                   | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.escape.test.jsx`   |
-| Devolucion parcial: Escape                             | `.../SalesComponents/Modals/PartialReturnModal/PartialReturnModal.escape.test.jsx` |
-| Lista paginada compartida de modales                   | `src/components/ModalPaginatedList/ModalPaginatedList.test.jsx`                    |
-| Aplicar descuento: paginacion de resultados            | `.../Modals/ProductDiscountRewardModal/ProductDiscountRewardModal.test.jsx`        |
-| Aplicar recompensas: paginacion de productos           | `.../Modals/RewardProductSelectionModal/RewardProductSelectionModal.test.jsx`      |
-| Descuento y recompensas: boton de confirmar a la derec | `.../SalesComponents/Modals/rewardModalsFooter.styles.test.js`                     |
-| Asignar cliente: puntos vigentes del cliente asignado  | `.../SalesComponents/Modals/ClientModal/ClientModal.test.jsx`                      |
-| Cliente publico en general: deteccion de nombre        | `.../SalesComponents/services/publicCustomerService.test.js`                       |
-| Venta en curso: carrito, cliente y expiracion          | `src/contexts/SalesCartContext.test.jsx`                                           |
-| Navbar: atajos bloqueados con modales abiertos         | `src/components/Navbar/hooks/useKeyboardShortcuts.test.jsx`                        |
-| Ventas: borrador (restauracion y guardado)             | `.../SalesComponents/hooks/useSalesDraft.test.js`                                  |
-| Ventas: borrador con cliente expirado                  | `.../SalesComponents/hooks/useSalesStateActions.test.js`                           |
-| Ventas: expiracion del cliente asignado                | `.../SalesComponents/services/salesClientExpiryService.test.js`                    |
-| Ventas: descriptor de capas modales                    | `.../SalesComponents/services/salesModalLayersService.test.js`                     |
-| Pedidos: contrato SQL de permisos (revoke anon)        | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
-| Pedidos: contrato SQL de integridad                    | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
-| Pedidos: contrato SQL de nota de recepcion             | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
+| Área                                                      | Archivo                                                                            |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Formatters de producto                                    | `src/services/products/productFormatters.test.js`                                  |
+| CRUD de productos                                         | `src/services/products/productCrudService.test.js`                                 |
+| Lista de productos (paginacion server-side y teclado)     | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
+| Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
+| Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
+| Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
+| Reporte de caja                                           | `.../PageCashReport/services/cashReportService.test.js`                            |
+| Reporte de caja (hook y filtro de sucursal)               | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
+| Reporte de comisiones                                     | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |
+| Reporte de productos (consulta y sucursal "ALL")          | `.../PageProductsReport/services/productReportsService.test.js`                    |
+| Reporte de productos (selector desacoplado)               | `.../PageProductsReport/PageProductsReport.test.jsx`                               |
+| Reporte de clientes (consulta y sucursal "ALL")           | `.../PageCustomersReport/services/customersReportService.test.js`                  |
+| Reporte de clientes (selector desacoplado)                | `.../PageCustomersReport/PageCustomersReport.test.jsx`                             |
+| Reporte de inventario (selector y url)                    | `.../PageInventoryReport/PageInventoryReport.test.jsx`                             |
+| Reporte de rentabilidad (selector y reset)                | `.../PageProfitabilityReport/PageProfitabilityReport.test.jsx`                     |
+| Reporte de rentabilidad                                   | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
+| Reporte de inventario (datos)                             | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
+| Reporte de inventario (cálculos)                          | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
+| Inventario: alta con CPP                                  | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
+| Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
+| Contrato SQL de username insensible a mayusculas          | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
+| Contrato SQL del CHECK de username en minusculas          | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
+| Contrato de authorize-admin-action (username)             | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
+| Contrato de admin-create-user (username)                  | `supabase/functions/adminCreateUserUsernameContract.test.js`                       |
+| Normalizacion de username (helper compartido)             | `supabase/functions/normalizeUsername.test.js`                                     |
+| Inventario: cálculo del CPP móvil                         | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
+| Inventario: proyección de CPP en interfaz                 | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
+| Inventario: hook de captura de costo                      | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
+| Inventario: componente de captura de costo                | `.../PageAdd/components/InventoryAddCostEntry.test.jsx`                            |
+| Inventario: movimientos (payload de costo)                | `src/utils/inventoryMovements.test.js`                                             |
+| Corte de cajero (cálculos)                                | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
+| Corte de cajero (servicios de datos)                      | `src/pages/CashCut/services/cashCutReportService.test.js`                          |
+| Corte de cajero (detalle histórico)                       | `src/pages/CashCut/services/cashCutDetailService.test.js`                          |
+| Corte de cajero (hook principal)                          | `src/pages/CashCut/hooks/useCashCutReport.test.js`                                 |
+| Corte de cajero (hook de modales)                         | `src/pages/CashCut/hooks/useCashCutDetail.test.js`                                 |
+| Corte de cajero (formateadores)                           | `src/pages/CashCut/utils/cashCutFormatters.test.js`                                |
+| Corte impreso (builder de ancho fijo)                     | `src/utils/cashCutBuilder.test.js`                                                 |
+| Ticket: generación e impresión                            | `src/utils/ticketPrinter.test.js`                                                  |
+| Modal de recompensas (cálculos)                           | `.../RewardModal/rewardModalCalculationService.test.js`                            |
+| Modal de recompensas (hook)                               | `.../RewardModal/useRewardModal.test.js`                                           |
+| Totales de venta                                          | `.../SalesComponents/hooks/test/useSalesTotals.test.js`                            |
+| Venta transaccional (RPC)                                 | `.../SalesComponents/services/salesTransactionService.test.js`                     |
+| Contrato SQL de RPCs transaccionales                      | `supabase/migrations/transactionalRpcsContract.test.js`                            |
+| Contrato SQL del snapshot de costo de venta               | `supabase/migrations/costSnapshotContract.test.js`                                 |
+| Proceso principal de Electron                             | `electron/mainProcess.test.js`                                                     |
+| Impresión de tickets (proceso principal)                  | `electron/ticketPrintService.test.js`                                              |
+| Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
+| Paginación global                                         | `src/hooks/usePagination.test.js`                                                  |
+| Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
+| Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
+| Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
+| Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
+| Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
+| Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
+| Caja: configuración operativa (hook y vista)              | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
+| Ticket: golden de salida                                  | `src/utils/ticket/ticketBuilder.test.js`                                           |
+| Ticket: primitivas de layout                              | `src/utils/ticket/ticketLayoutFormatters.test.js`                                  |
+| Ticket: formateadores de fecha                            | `src/utils/ticket/ticketDateFormatters.test.js`                                    |
+| Ticket: extracción de items                               | `src/utils/ticket/ticketItemFormatters.test.js`                                    |
+| Ticket: servicios de recompensas                          | `src/utils/ticket/ticketRewardService.test.js`                                     |
+| Ticket: servicios de pagos                                | `src/utils/ticket/ticketPaymentService.test.js`                                    |
+| Ticket: formateadores de sucursal                         | `src/utils/ticket/ticketBranchFormatters.test.js`                                  |
+| Ticket: servicios de puntos                               | `src/utils/ticket/ticketPointsService.test.js`                                     |
+| Ticket: secciones                                         | `src/utils/ticket/ticketSections.test.js`                                          |
+| Reportes: ciclo de vida del dashboard                     | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
+| Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
+| Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
+| Kardex: tabla (columnas de valuacion)                     | `.../PageKardex/components/KardexTable.test.jsx`                                   |
+| Kardex: panel con paginacion                              | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
+| Kardex: exportador Excel                                  | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
+| Kardex: exportacion sobre el dataset completo             | `.../PageKardex/Pagekardex.test.jsx`                                               |
+| Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
+| Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
+| Facturación: validación fiscal                            | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
+| Facturación: catálogos (usos CFDI, regímenes, C.P.)       | `.../InvoicesComponents/services/invoicesCatalogService.test.js`                   |
+| Facturación: suscripciones realtime                       | `.../InvoicesComponents/services/invoicesRealtimeService.test.js`                  |
+| Facturación: formateadores compartidos                    | `.../InvoicesComponents/utils/invoiceFormatters.test.js`                           |
+| Facturación: cliente fiscal (cálculos)                    | `.../Modals/FiscalCustomerModal/services/fiscalCustomerCalculationService.test.js` |
+| Facturación: cliente fiscal (datos)                       | `.../Modals/FiscalCustomerModal/services/fiscalCustomerService.test.js`            |
+| Facturación: factura de venta (cálculos)                  | `.../Modals/InvoiceSaleModal/services/invoiceSaleCalculationService.test.js`       |
+| Facturación: factura de venta (datos)                     | `.../Modals/InvoiceSaleModal/services/invoiceSaleService.test.js`                  |
+| Facturación: clientes fiscales (cálculos)                 | `.../InvoiceCustomers/services/invoiceCustomersCalculationService.test.js`         |
+| Facturación: clientes fiscales (datos)                    | `.../InvoiceCustomers/services/invoiceCustomersService.test.js`                    |
+| Facturación: ajustes del emisor (cálculos)                | `.../InvoiceSettings/services/invoiceSettingsCalculationService.test.js`           |
+| Facturación: ajustes del emisor (datos)                   | `.../InvoiceSettings/services/invoiceSettingsService.test.js`                      |
+| Facturación: historial (cálculos)                         | `.../InvoicesHistory/services/invoicesHistoryCalculationService.test.js`           |
+| Facturación: historial (datos del reporte)                | `.../InvoicesHistory/services/invoicesHistoryReportService.test.js`                |
+| Facturación: historial (detalle 360)                      | `.../InvoicesHistory/services/invoicesHistoryDetailService.test.js`                |
+| Facturación: ventas por facturar (cálculos)               | `.../InvoicesPending/services/invoicesPendingCalculationService.test.js`           |
+| Facturación: ventas por facturar (datos)                  | `.../InvoicesPending/services/invoicesPendingService.test.js`                      |
+| Smoke de render del renderer y guardas de ruta            | `src/App.test.jsx`                                                                 |
+| Pedidos: servicio de datos y conteo de pendientes         | `.../PageOrders/services/ordersService.test.js`                                    |
+| Pedidos: contexto de pendientes (polling y realtime)      | `src/contexts/PendingOrdersContext.test.jsx`                                       |
+| Pedidos: mascara de cantidades enteras                    | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
+| Pedidos: rango de fechas de los filtros                   | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
+| Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
+| Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
+| Pedidos: reglas de producto global                        | `src/services/inventory/inventoryProductCalculationService.test.js`                |
+| Pedidos: busqueda de productos (locales y globales)       | `.../Modals/InventorySearchModal/InventorySearchModal.test.jsx`                    |
+| Pedidos: borrador persistente por usuario y sucursal      | `src/contexts/OrderDraftContext.test.jsx`                                          |
+| Pedidos: detalle de producto por sucursal (hook)          | `.../PageOrders/hooks/useProductInsightsDetail.test.js`                            |
+| Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
+| Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
+| Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
+| Pedidos: hook para volver global un producto local        | `.../Modals/InventorySearchModal/hooks/usePromoteLocalProduct.test.js`             |
+| Pedidos: servicio para volver global un producto          | `src/services/inventory/promoteProductToGlobalService.test.js`                     |
+| Pedidos: contrato SQL de producto con is_global nulo      | `supabase/migrations/promoteProductNullIsGlobalContract.test.js`                   |
+| Pedidos: historial (filtros de pedido y producto)         | `.../PageOrders/components/OrdersHistoryTable.test.jsx`                            |
+| Pedidos: regla de destino bloqueado                       | `.../PageOrders/utils/ordersHistoryDestinationLock.test.js`                        |
+| Pedidos: hook de destino bloqueado                        | `.../PageOrders/hooks/useHistoryDestinationLock.test.js`                           |
+| Pedidos: aviso, diferencias y estado por partida          | `.../PageOrders/utils/ordersCalculationService.test.js`                            |
+| Pedidos: detalle (paginacion y tabla de diferencias)      | `.../PageOrders/components/OrderPreviewSections.test.jsx`                          |
+| Pedidos: panel de recepcion (paginacion y faltantes)      | `.../PageOrders/components/ReceiptPanel.test.jsx`                                  |
+| Pedidos: servicio realtime                                | `src/services/inventory/ordersRealtimeService.test.js`                             |
+| Pedidos: contrato SQL de realtime                         | `supabase/migrations/storeOrdersRealtimeContract.test.js`                          |
+| Pedidos: badge de sucursal (nombre, mayusculas, rol)      | `.../PageOrders/components/BranchBadge.test.jsx`                                   |
+| Pedidos: badge del nombre del pedido                      | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |
+| Pedidos: modal de detalle (cabecera, titulo y ruta)       | `.../PageOrders/components/OrderDetailModal.test.jsx`                              |
+| Pedidos: aviso con cierre automatico                      | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
+| Pedidos: estilos (clases definidas, badges en negrita)    | `.../PageOrders/PageOrders.styles.test.js`                                         |
+| Pedidos: contrato SQL de nombres en mayusculas            | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
+| Modal base (footer y capa en la pila de modales)          | `src/components/AppModal/AppModal.test.jsx`                                        |
+| Pila de modales (capas y bloqueo de atajos)               | `src/contexts/ModalStackContext.test.jsx`                                          |
+| Modal base: boton de cancelar de pie (etiqueta)           | `src/components/ModalControls/ModalFooterCancelButton.test.jsx`                    |
+| Notas de venta: sin X, con Cancelar y Guardar             | `.../SalesComponents/Modals/NotesModal/NotesModal.test.jsx`                        |
+| Eliminar articulo: etiqueta y Enter                       | `.../SalesComponents/Modals/DeleteItemModal/DeleteItemModal.test.jsx`              |
+| Eliminar ticket pendiente: sin X ni Delete                | `.../SalesComponents/Modals/DeleteTicketModal/DeleteTicketModal.test.jsx`          |
+| Modales de captura de Ventas: sin X de cabecera           | `.../SalesComponents/Modals/modalCloseButtons.test.jsx`                            |
+| Ventas: capas modales registradas por cada setter         | `.../SalesComponents/hooks/useSalesModals.test.jsx`                                |
+| Historial: botones de accion (3 arriba y 2 abajo)         | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.styles.test.js`    |
+| Historial: modal Notas del ticket                         | `.../SalesComponents/Modals/SalesHistoryModal/TicketNotesModal.test.jsx`           |
+| Historial: Escape con Notas abiertas                      | `.../SalesComponents/Modals/SalesHistoryModal/SalesHistoryModal.escape.test.jsx`   |
+| Devolucion parcial: Escape                                | `.../SalesComponents/Modals/PartialReturnModal/PartialReturnModal.escape.test.jsx` |
+| Lista paginada compartida de modales                      | `src/components/ModalPaginatedList/ModalPaginatedList.test.jsx`                    |
+| Aplicar descuento: paginacion de resultados               | `.../Modals/ProductDiscountRewardModal/ProductDiscountRewardModal.test.jsx`        |
+| Aplicar recompensas: paginacion de productos              | `.../Modals/RewardProductSelectionModal/RewardProductSelectionModal.test.jsx`      |
+| Descuento y recompensas: boton de confirmar a la derec    | `.../SalesComponents/Modals/rewardModalsFooter.styles.test.js`                     |
+| Asignar cliente: puntos vigentes del cliente asignado     | `.../SalesComponents/Modals/ClientModal/ClientModal.test.jsx`                      |
+| Cliente publico en general: deteccion de nombre           | `.../SalesComponents/services/publicCustomerService.test.js`                       |
+| Venta en curso: carrito, cliente y expiracion             | `src/contexts/SalesCartContext.test.jsx`                                           |
+| Navbar: atajos bloqueados con modales abiertos            | `src/components/Navbar/hooks/useKeyboardShortcuts.test.jsx`                        |
+| Ventas: borrador (restauracion y guardado)                | `.../SalesComponents/hooks/useSalesDraft.test.js`                                  |
+| Ventas: borrador con cliente expirado                     | `.../SalesComponents/hooks/useSalesStateActions.test.js`                           |
+| Ventas: expiracion del cliente asignado                   | `.../SalesComponents/services/salesClientExpiryService.test.js`                    |
+| Ventas: descriptor de capas modales                       | `.../SalesComponents/services/salesModalLayersService.test.js`                     |
+| Pedidos: contrato SQL de permisos (revoke anon)           | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
+| Pedidos: contrato SQL de integridad                       | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
+| Pedidos: contrato SQL de nota de recepcion                | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
 
 ### Cobertura transitiva del resolver de costo
 
@@ -367,6 +375,19 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   el lock asesor del folio y los grants sin `anon`/`PUBLIC`. Las vistas de creación y recepción
   (`CreateOrderWorkspace`/`ReceiveOrdersWorkspace`) siguen sin prueba de render o interacción; la
   busqueda de productos que alimenta al primero ya tiene prueba de render y de sus reglas puras.
+
+- **Pedidos: detalle por sucursal, borrador y volver global un producto local** (31 oct 2026, rama
+  `feat/pedidos-detalle-producto-sucursal`): `MakeGlobalConfirmModal.test.jsx` fija que la palabra de
+  confirmación escrita se borra al cerrar y reabrir el modal. `OrderDraftContext.test.jsx` fija que el
+  borrador anterior nunca se expone tras un cambio de sucursal; la guarda derivada del contexto es
+  equivalente al reinicio durante el render, por lo que quitarla no rompe ninguna prueba. El borrador
+  vive solo en memoria: sobrevive a la navegación pero no a recargar la aplicación.
+  `useProductInsightsDetail.test.js` fija que se ignora la respuesta tardía de una consulta anterior.
+  `useCreateOrderForm.test.jsx` fija que se rechazan productos locales (`false`) y sin marcar (`null`).
+  `localProductsCatalogService.test.js` fija el `console.error` al alcanzar el límite de 5000 filas.
+  `promoteProductNullIsGlobalContract.test.js` (2 casos) lee la migración `20261031130000` y fija
+  `coalesce(v_product.is_global, false)` y los grants; falla si se cambia a `true` (verificado por
+  mutación). Esa migración está pendiente de aplicar en remoto.
 
 No hay todavía:
 

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   filterInventorySearchProducts,
   isGlobalProduct,
+  isKitProduct,
 } from "../../../../../services/inventory/inventoryProductCalculationService";
 
 const getProductId = (product) => {
@@ -16,7 +17,6 @@ const useInventorySearchResults = ({
   restrictLocalProducts = false,
 } = {}) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [belowMinimumOnly, setBelowMinimumOnly] = useState(false);
 
   const selectedIds = useMemo(() => {
     const source = Array.isArray(selectedProductIds) ? selectedProductIds : [];
@@ -43,12 +43,14 @@ const useInventorySearchResults = ({
   );
 
   const searchResults = useMemo(
+    // Un kit no tiene inventario propio, por lo que ningun flujo del buscador
+    // (pedidos, ajustes, traspasos, kardex, altas) debe ofrecerlo.
     () =>
-      filterInventorySearchProducts(products, {
-        searchTerm,
-        belowMinimumOnly,
-      }).slice(0, 100),
-    [belowMinimumOnly, products, searchTerm]
+      filterInventorySearchProducts(
+        products.filter((product) => !isKitProduct(product)),
+        { searchTerm }
+      ).slice(0, 100),
+    [products, searchTerm]
   );
 
   const selectedProduct =
@@ -70,20 +72,12 @@ const useInventorySearchResults = ({
     setSearchTerm("");
   }, []);
 
-  const clearBelowMinimumFilter = useCallback(() => {
-    setBelowMinimumOnly(false);
-  }, []);
-
   return {
     searchTerm,
     searchResults,
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
-    belowMinimumOnly,
-    setBelowMinimumOnly,
-    clearBelowMinimumFilter,
-
     isAlreadySelected,
     isProductDisabled,
     handleSearchChange,

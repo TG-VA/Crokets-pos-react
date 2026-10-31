@@ -17,7 +17,7 @@ import { useReceiveOrderForm } from "./useReceiveOrderForm";
 export const useOrdersPage = () => {
   const { user } = useAuth();
   const { branch } = useBranch();
-  const { products } = useProducts();
+  const { products, refreshProducts } = useProducts();
 
   const {
     orders,
@@ -144,6 +144,7 @@ export const useOrdersPage = () => {
     orders,
     branches,
     products,
+    reloadProducts: refreshProducts,
     currentBranchId,
     historyLockedDestinationId,
     currentBranch: branch,

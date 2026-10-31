@@ -5,6 +5,7 @@ import {
   getProductMinStock,
   getProductStock,
   isGlobalProduct,
+  isKitProduct,
   isProductBelowMinimum,
   sortProductsByNameAndStock,
 } from "./inventoryProductCalculationService";
@@ -26,6 +27,15 @@ describe("isGlobalProduct", () => {
     expect(isGlobalProduct(product({ is_global: false }))).toBe(false);
     expect(isGlobalProduct(product({ is_global: undefined }))).toBe(false);
     expect(isGlobalProduct(null)).toBe(false);
+  });
+});
+
+describe("isKitProduct", () => {
+  it("solo considera kit el producto marcado explicitamente", () => {
+    expect(isKitProduct(product({ is_kit: true }))).toBe(true);
+    expect(isKitProduct(product({ is_kit: false }))).toBe(false);
+    expect(isKitProduct(product())).toBe(false);
+    expect(isKitProduct(null)).toBe(false);
   });
 });
 
@@ -150,13 +160,5 @@ describe("filterInventorySearchProducts", () => {
         (item) => item.id
       )
     ).toEqual(["bajo", "sin-minimo", "ok"]);
-  });
-
-  it("filtra solo los productos bajo minimo", () => {
-    expect(
-      filterInventorySearchProducts(products, {
-        belowMinimumOnly: true,
-      }).map((item) => item.id)
-    ).toEqual(["bajo"]);
   });
 });

@@ -466,6 +466,27 @@
   max-width: 320px;
 }
 
+.productNameButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--croketsBlue);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.productNameButton:hover {
+  text-decoration: underline;
+}
+
+.productNameButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}
+
 .quantityInput {
   width: 110px;
   min-height: 40px;
@@ -592,6 +613,19 @@
   flex-wrap: wrap;
   gap: 10px;
   align-items: flex-end;
+}
+
+.fieldLabelRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.field .fieldHint {
+  color: #6d7b86;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .codeForm {

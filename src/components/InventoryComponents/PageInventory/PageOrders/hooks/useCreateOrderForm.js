@@ -1,7 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
-import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
+import { useOrderDraft } from "../../../../../contexts/OrderDraftContext";
+import {
+  isGlobalProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createStoreOrder } from "../services/ordersService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -12,18 +16,29 @@ export const useCreateOrderForm = ({
 }) => {
   const { user } = useAuth();
 
-  const [orderName, setOrderNameState] = useState("");
-  const [destinationBranchId, setDestinationBranchId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [items, setItems] = useState([]);
+  // El borrador vive en el contexto para sobrevivir a la navegacion entre modulos.
+  const {
+    orderName,
+    setOrderName: setOrderNameState,
+    destinationBranchId,
+    setDestinationBranchId,
+    notes,
+    setNotes,
+    items,
+    setItems,
+    clearDraft,
+  } = useOrderDraft();
   const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const setOrderName = useCallback((value) => {
-    // Sin trim: el usuario debe poder escribir espacios entre palabras.
-    setOrderNameState(String(value ?? "").toLocaleUpperCase("es-MX"));
-  }, []);
+  const setOrderName = useCallback(
+    (value) => {
+      // Sin trim: el usuario debe poder escribir espacios entre palabras.
+      setOrderNameState(String(value ?? "").toLocaleUpperCase("es-MX"));
+    },
+    [setOrderNameState]
+  );
 
   const destinationOptions = useMemo(
     () =>
@@ -75,6 +90,13 @@ export const useCreateOrderForm = ({
 
       if (!productId) return false;
 
+      if (isKitProduct(product)) {
+        setError(
+          "Los kits no se pueden pedir: su inventario depende de sus componentes."
+        );
+        return false;
+      }
+
       if (!isGlobalProduct(product)) {
         setError(
           "El producto es local o no global y no se puede enviar a otra sucursal."
@@ -106,7 +128,7 @@ export const useCreateOrderForm = ({
       setError("");
       return true;
     },
-    [items]
+    [items, setItems]
   );
 
   const handleCodeSubmit = useCallback(
@@ -135,32 +157,35 @@ export const useCreateOrderForm = ({
     [addProduct, products]
   );
 
-  const updateQuantity = useCallback((productId, value) => {
-    const sanitized = sanitizeIntegerQuantity(value);
+  const updateQuantity = useCallback(
+    (productId, value) => {
+      const sanitized = sanitizeIntegerQuantity(value);
 
-    setItems((previous) =>
-      previous.map((item) =>
-        item.productId === productId
-          ? { ...item, expectedQty: sanitized }
-          : item
-      )
-    );
-  }, []);
+      setItems((previous) =>
+        previous.map((item) =>
+          item.productId === productId
+            ? { ...item, expectedQty: sanitized }
+            : item
+        )
+      );
+    },
+    [setItems]
+  );
 
-  const removeProduct = useCallback((productId) => {
-    setItems((previous) =>
-      previous.filter((item) => item.productId !== productId)
-    );
-  }, []);
+  const removeProduct = useCallback(
+    (productId) => {
+      setItems((previous) =>
+        previous.filter((item) => item.productId !== productId)
+      );
+    },
+    [setItems]
+  );
 
   const resetForm = useCallback(() => {
-    setOrderName("");
-    setDestinationBranchId("");
-    setNotes("");
-    setItems([]);
+    clearDraft();
     setError("");
     setSearchOpen(false);
-  }, [setOrderName]);
+  }, [clearDraft]);
 
   const originBranchId = currentBranch?.id;
 
