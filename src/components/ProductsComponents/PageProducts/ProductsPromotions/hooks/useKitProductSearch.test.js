@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, render, act, waitFor } from "@testing-library/react";
 import { useKitProductSearch } from "./useKitProductSearch";
 
 const mockFetchMissing = vi.hoisted(() => vi.fn());
@@ -45,6 +45,30 @@ describe("useKitProductSearch aviso de producto local", () => {
     expect(props.onSelectProduct).toHaveBeenCalled();
     expect(props.onClose).toHaveBeenCalled();
     expect(mockFetchMissing).toHaveBeenCalledWith(9);
+  });
+
+  it("pasa las sucursales faltantes como badges en children del aviso", async () => {
+    mockFetchMissing.mockResolvedValue([
+      { id: 2, name: "Norte" },
+      { id: 3, name: "Coba" },
+    ]);
+    const { props, hook } = setup();
+
+    act(() =>
+      hook.result.current.handleSelect({
+        id: 9,
+        name: "ALIMENTO",
+        is_global: false,
+      })
+    );
+
+    await waitFor(() => expect(props.showAppAlert).toHaveBeenCalledTimes(1));
+    const { children } = props.showAppAlert.mock.calls[0][0];
+    expect(children).toBeTruthy();
+
+    const view = render(children);
+    expect(view.getByText("Norte")).toBeTruthy();
+    expect(view.getByText("Coba")).toBeTruthy();
   });
 
   it("no consulta cobertura en productos globales", async () => {
