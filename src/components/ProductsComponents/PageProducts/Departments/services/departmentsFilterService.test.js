@@ -55,3 +55,24 @@ describe("filterDepartments", () => {
     expect(filterDepartments(null, { search: "x" })).toEqual([]);
   });
 });
+
+describe("filterDepartments casos borde", () => {
+  const edge = [
+    { id: 5, name: "LÁCTEOS Y DERIVADOS", status: true },
+    { id: 6, name: "Árboles", status: true, commission_enabled: false },
+    { id: 7, name: "SIN DATOS", status: undefined, commission_enabled: null },
+  ];
+
+  it("encuentra nombres acentuados sin acento y viceversa", () => {
+    expect(ids(filterDepartments(edge, { search: "lacteos" }))).toEqual([5]);
+    expect(ids(filterDepartments(edge, { search: "árboles" }))).toEqual([6]);
+    expect(ids(filterDepartments(edge, { search: "arboles" }))).toEqual([6]);
+  });
+
+  it("trata estatus ausente como activo y comision nula como sin comision", () => {
+    expect(ids(filterDepartments(edge, { status: "active" }))).toContain(7);
+    expect(ids(filterDepartments(edge, { commission: "without" }))).toContain(
+      7
+    );
+  });
+});

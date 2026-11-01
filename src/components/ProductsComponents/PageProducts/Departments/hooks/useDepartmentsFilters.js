@@ -3,7 +3,8 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import { filterDepartments } from "../services/departmentsFilterService";
 
 const INITIAL_FILTERS = { search: "", status: "all", commission: "all" };
-const PAGE_SIZE_OPTIONS = [8];
+const PAGE_SIZE = 8;
+const PAGE_SIZE_OPTIONS = [PAGE_SIZE];
 
 export const useDepartmentsFilters = (departments) => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -15,7 +16,7 @@ export const useDepartmentsFilters = (departments) => {
 
   const pagination = usePagination({
     totalItems: filteredDepartments.length,
-    defaultPageSize: 8,
+    defaultPageSize: PAGE_SIZE,
     pageSizeOptions: PAGE_SIZE_OPTIONS,
   });
   const { resetPagination, pageItems } = pagination;
