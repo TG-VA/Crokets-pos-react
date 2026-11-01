@@ -1,4 +1,5 @@
 import styles from "../ProductsPromotions.module.css";
+import { sanitizeIntegerInput } from "../services/kitInputSanitizers";
 
 const KitSelectedProductsSection = ({
   selectedProducts,
@@ -13,7 +14,7 @@ const KitSelectedProductsSection = ({
       <div className={styles.listArea}>
         {selectedProducts.length === 0 ? (
           <div className={styles.emptyState}>
-            No hay productos seleccionados
+            No hay productos seleccionados. Presiona F10 para buscar
           </div>
         ) : (
           <div className={styles.selectedList}>
@@ -45,13 +46,15 @@ const KitSelectedProductsSection = ({
 
                   <input
                     className={styles.productQty}
-                    type="number"
-                    min="1"
-                    step="1"
+                    type="text"
+                    inputMode="numeric"
                     value={product.quantity}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) =>
-                      updateProductQuantity(product.id, e.target.value)
+                      updateProductQuantity(
+                        product.id,
+                        sanitizeIntegerInput(e.target.value)
+                      )
                     }
                   />
                 </div>

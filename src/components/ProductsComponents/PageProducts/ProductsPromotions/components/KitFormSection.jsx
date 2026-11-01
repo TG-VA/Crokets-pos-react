@@ -1,4 +1,8 @@
 import styles from "../ProductsPromotions.module.css";
+import {
+  sanitizeDecimalInput,
+  sanitizeIntegerInput,
+} from "../services/kitInputSanitizers";
 
 const KitFormSection = ({
   form,
@@ -8,7 +12,6 @@ const KitFormSection = ({
   kitPrice,
   kitDiscount,
   kitDiscountPercent,
-  onOpenSearchModal,
 }) => {
   return (
     <div className={styles.formColumn}>
@@ -41,12 +44,13 @@ const KitFormSection = ({
         <label className={styles.label}>Precio kit</label>
         <input
           className={styles.input}
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
           placeholder="0.00"
           value={form.price}
-          onChange={(e) => updateField("price", e.target.value)}
+          onChange={(e) =>
+            updateField("price", sanitizeDecimalInput(e.target.value))
+          }
         />
       </div>
 
@@ -55,13 +59,16 @@ const KitFormSection = ({
         <div className={styles.limitInputContainer}>
           <input
             className={styles.input}
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="1"
-            step="1"
             placeholder="1"
             value={form.max_kits_per_sale}
-            onChange={(e) => updateField("max_kits_per_sale", e.target.value)}
+            onChange={(e) =>
+              updateField(
+                "max_kits_per_sale",
+                sanitizeIntegerInput(e.target.value)
+              )
+            }
           />
           <span className={styles.limitHelperText}>
             * El límite se aplica de forma individual para cada sucursal.
@@ -81,17 +88,6 @@ const KitFormSection = ({
             </span>
           )}
         </div>
-      </div>
-
-      <div className={styles.formRow}>
-        <label className={styles.label}>Agregar producto</label>
-        <button
-          type="button"
-          className={[styles.btn, styles.btnSave].join(" ")}
-          onClick={onOpenSearchModal}
-        >
-          F10 - Buscar producto
-        </button>
       </div>
     </div>
   );

@@ -1,7 +1,22 @@
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import { KIT_STATUS_FILTERS } from "../services/kitsFilterService";
 import styles from "../ProductsPromotions.module.css";
+
+const STATUS_OPTIONS = [
+  { value: KIT_STATUS_FILTERS.ALL, label: "Todos" },
+  { value: KIT_STATUS_FILTERS.ACTIVE, label: "Activos" },
+  { value: KIT_STATUS_FILTERS.INACTIVE, label: "Inactivos" },
+];
 
 const KitRegisteredListSection = ({
   kits,
+  visibleKits,
+  totalKits,
+  searchTerm,
+  onSearchTermChange,
+  status,
+  onStatusChange,
+  pagination,
   editingKit,
   handleEditKit,
   handleToggleKitStatus,
@@ -11,12 +26,39 @@ const KitRegisteredListSection = ({
     <div className={styles.card}>
       <div className={styles.cardHeader}>Kits registrados</div>
 
+      <div className={styles.kitsFilters}>
+        <input
+          type="text"
+          className={styles.kitsSearchInput}
+          aria-label="Buscar kits por nombre o código"
+          placeholder="Buscar por nombre o código"
+          value={searchTerm}
+          onChange={(e) => onSearchTermChange(e.target.value)}
+        />
+        <select
+          className={styles.kitsStatusSelect}
+          aria-label="Filtrar kits por estado"
+          value={status}
+          onChange={(e) => onStatusChange(e.target.value)}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className={styles.cardContent}>
         {kits.length === 0 ? (
           <div className={styles.emptyState}>No hay kits registrados</div>
+        ) : visibleKits.length === 0 ? (
+          <div className={styles.emptyState}>
+            Ningún kit coincide con la búsqueda
+          </div>
         ) : (
           <div className={styles.kitsList}>
-            {kits.map((kit) => (
+            {visibleKits.map((kit) => (
               <div
                 key={kit.id}
                 className={[
@@ -27,7 +69,9 @@ const KitRegisteredListSection = ({
                   .join(" ")}
               >
                 <div>
-                  <strong>{kit.products?.name || "KIT"}</strong>
+                  <span className={styles.kitNameBadge}>
+                    {kit.products?.name || "KIT"}
+                  </span>
                   <div className={styles.productMeta}>
                     Código: {kit.products?.barcode || "Sin código"} · Precio: $
                     {Number(kit.products?.sale_price || 0).toFixed(2)}
@@ -78,6 +122,21 @@ const KitRegisteredListSection = ({
           </div>
         )}
       </div>
+
+      {totalKits > 0 && (
+        <PaginationBar
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          pageSize={pagination.pageSize}
+          pageSizeOptions={[pagination.pageSize]}
+          onPageChange={pagination.handlePageChange}
+          onPageSizeChange={pagination.handlePageSizeChange}
+          totalItems={totalKits}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          itemsNoun="kits"
+        />
+      )}
     </div>
   );
 };

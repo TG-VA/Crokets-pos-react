@@ -302,11 +302,6 @@
   overflow-y: auto;
 }
 
-.kitsList {
-  display: flex;
-  flex-direction: column;
-}
-
 .kitRow {
   display: grid;
   grid-template-columns: 1fr 120px 280px;
@@ -317,16 +312,21 @@
 }
 
 .kitStatus {
+  justify-self: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
   font-weight: 700;
   text-align: center;
 }
 
 .kitStatusActive {
-  color: var(--successColor);
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .kitStatusInactive {
-  color: var(--errorColor);
+  background-color: #fee2e2;
+  color: #991b1b;
 }
 
 .kitActions {
@@ -379,15 +379,6 @@
 .searchHeader h2 {
   margin: 0;
   font-size: 1.5rem;
-}
-
-.searchCloseButton {
-  background: transparent;
-  border: none;
-  color: var(--white);
-  font-size: 28px;
-  cursor: pointer;
-  line-height: 1;
 }
 
 .searchBody {
@@ -569,4 +560,72 @@
 .selectedProductItem {
   background-color: #e6f3ff;
   border-radius: 6px;
+}
+
+.searchResultTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scopeBadge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scopeBadgeGlobal {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.scopeBadgeLocal {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.kitNameBadge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background-color: #e0f2fe;
+  color: #075985;
+  font-weight: 700;
+}
+
+.kitsFilters {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+}
+
+.kitsSearchInput,
+.kitsStatusSelect {
+  height: 40px;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.kitsSearchInput {
+  flex: 1;
+}
+
+.kitsSearchInput:focus,
+.kitsStatusSelect:focus {
+  border-color: var(--croketsBlue);
+}
+
+.btnIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+  filter: brightness(0) invert(1);
 }
