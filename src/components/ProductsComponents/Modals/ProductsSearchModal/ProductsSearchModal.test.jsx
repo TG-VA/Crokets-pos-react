@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import ProductsSearchModal from "./ProductsSearchModal";
 
 const renderModal = () =>
@@ -26,5 +26,19 @@ describe("ProductsSearchModal", () => {
   it("no muestra la pista F10", () => {
     renderModal();
     expect(screen.queryByText(/F10/)).toBeNull();
+  });
+
+  it("cierra con la tecla Escape", () => {
+    const onClose = vi.fn();
+    render(
+      <ProductsSearchModal
+        isOpen
+        onClose={onClose}
+        onSelect={vi.fn()}
+        products={[]}
+      />
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

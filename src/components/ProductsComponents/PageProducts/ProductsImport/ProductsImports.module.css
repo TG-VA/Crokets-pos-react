@@ -95,12 +95,6 @@
   background-color: rgba(39, 174, 96, 0.05);
 }
 
-.uploadPrompt .icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 20px;
-}
-
 .folderIcon {
   display: block;
   width: 56px;
