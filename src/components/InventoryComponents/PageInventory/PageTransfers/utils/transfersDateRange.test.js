@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  clampRangeToToday,
   filterTransfersByDateRange,
   getPresetRange,
 } from "./transfersDateRange";
@@ -66,6 +67,36 @@ describe("transfersDateRange", () => {
 
     expect(dateFrom).toEqual(new Date(2026, 9, 24, 0, 0, 0, 0));
     expect(dateTo).toEqual(new Date(2026, 9, 24, 23, 59, 59, 999));
+  });
+});
+
+describe("clampRangeToToday", () => {
+  it("recorta el fin de semana y de mes a hoy", () => {
+    const referenceDate = new Date(2026, 9, 21, 12, 0, 0);
+
+    const week = clampRangeToToday(
+      getPresetRange("week", referenceDate),
+      referenceDate
+    );
+    expect(week.dateFrom).toEqual(new Date(2026, 9, 19, 0, 0, 0, 0));
+    expect(week.dateTo).toEqual(new Date(2026, 9, 21, 23, 59, 59, 999));
+
+    const month = clampRangeToToday(
+      getPresetRange("month", referenceDate),
+      referenceDate
+    );
+    expect(month.dateFrom).toEqual(new Date(2026, 9, 1, 0, 0, 0, 0));
+    expect(month.dateTo).toEqual(new Date(2026, 9, 21, 23, 59, 59, 999));
+  });
+
+  it("no altera un rango que ya termina hoy o antes", () => {
+    const referenceDate = new Date(2026, 9, 21, 12, 0, 0);
+
+    const today = clampRangeToToday(
+      getPresetRange("today", referenceDate),
+      referenceDate
+    );
+    expect(today.dateTo).toEqual(new Date(2026, 9, 21, 23, 59, 59, 999));
   });
 });
 

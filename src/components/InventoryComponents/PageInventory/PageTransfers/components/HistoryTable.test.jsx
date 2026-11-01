@@ -220,7 +220,7 @@ describe("HistoryTable filtros por rango de fechas", () => {
     expect(screen.queryByText("TR-19")).toBeTruthy();
     expect(screen.queryByText("TR-18")).toBeNull();
     expect(screen.getByLabelText("Desde").value).toBe("19/10/2026");
-    expect(screen.getByLabelText("Hasta").value).toBe("25/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
   });
 
   it("limpia el rango y restablece todos los traspasos", () => {
@@ -279,6 +279,86 @@ describe("HistoryTable filtros por rango de fechas", () => {
 
     expect(screen.queryByText("TR-20")).toBeNull();
     expect(screen.getByText("No hay traspasos con esos filtros.")).toBeTruthy();
+  });
+
+  it("combina folio y rango para mostrar solo la interseccion", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "TR-20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-21")).toBeNull();
+    expect(screen.queryByText("TR-19")).toBeNull();
+  });
+
+  it("recorta Hasta a hoy en los presets de semana y mes", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+
+    fireEvent.click(screen.getByRole("button", { name: "Este mes" }));
+    expect(screen.getByLabelText("Desde").value).toBe("01/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+  });
+
+  it("desmarca el preset al editar una fecha a mano", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    const todayButton = screen.getByRole("button", { name: "Hoy" });
+    fireEvent.click(todayButton);
+    expect(todayButton.getAttribute("aria-pressed")).toBe("true");
+
+    const fromInput = screen.getByLabelText("Desde");
+    fireEvent.change(fromInput, { target: { value: "20/10/2026" } });
+    fireEvent.blur(fromInput);
+
+    expect(fromInput.value).toBe("20/10/2026");
+    expect(todayButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("vuelve a la pagina 1 al cambiar el rango", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("TR-001")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+    expect(screen.queryByText("TR-001")).toBeTruthy();
   });
 
   it("deshabilita Limpiar filtros sin rango activo", () => {

@@ -48,6 +48,22 @@ export const getPresetRange = (preset, referenceDate = new Date()) => {
   };
 };
 
+/**
+ * Evita que los presets de semana o mes dejen "Hasta" en una fecha futura,
+ * que el DatePicker no puede seleccionar por su maxDate.
+ */
+export const clampRangeToToday = (
+  { dateFrom, dateTo },
+  referenceDate = new Date()
+) => {
+  const todayEnd = endOfDay(referenceDate);
+
+  return {
+    dateFrom,
+    dateTo: dateTo && dateTo > todayEnd ? todayEnd : dateTo,
+  };
+};
+
 const isWithinRange = (date, dateFrom, dateTo) => {
   if (!date) return false;
 

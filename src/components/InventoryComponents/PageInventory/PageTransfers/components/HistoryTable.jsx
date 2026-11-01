@@ -5,6 +5,7 @@ import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
 import HistoryFilters from "./HistoryFilters";
 import {
+  clampRangeToToday,
   filterTransfersByDateRange,
   formatTransferDateTime,
   getPresetRange,
@@ -74,7 +75,7 @@ const HistoryTable = ({
   };
 
   const handleRangePreset = (preset) => {
-    setDateRange(getPresetRange(preset));
+    setDateRange(clampRangeToToday(getPresetRange(preset)));
     setRangePreset(preset);
     resetPagination();
   };
