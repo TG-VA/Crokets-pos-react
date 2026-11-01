@@ -20,9 +20,21 @@ describe("useKitsList", () => {
     const { result } = renderHook(() => useKitsList(makeKits(9)));
     act(() => result.current.pagination.handlePageChange(3));
     expect(result.current.pagination.currentPage).toBe(3);
+    act(() => result.current.setStatus("all"));
+    expect(result.current.pagination.currentPage).toBe(1);
+    act(() => result.current.pagination.handlePageChange(3));
     act(() => result.current.setStatus("inactive"));
     expect(result.current.pagination.currentPage).toBe(1);
     expect(result.current.filteredKits.every((k) => !k.is_active)).toBe(true);
+  });
+
+  it("regresa a la primera pagina al cambiar el texto de busqueda", () => {
+    const { result } = renderHook(() => useKitsList(makeKits(9)));
+    act(() => result.current.pagination.handlePageChange(3));
+    expect(result.current.pagination.currentPage).toBe(3);
+    act(() => result.current.setSearchTerm("kit"));
+    expect(result.current.filteredKits).toHaveLength(9);
+    expect(result.current.pagination.currentPage).toBe(1);
   });
 
   it("filtra por texto", () => {
