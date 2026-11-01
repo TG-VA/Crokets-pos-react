@@ -95,11 +95,11 @@ const KitFormSection = ({
       <div className={styles.searchProductRow}>
         <button
           type="button"
-          className={[styles.btn, styles.btnSave].join(" ")}
+          className={[styles.btn, styles.btnSearch].join(" ")}
           onClick={onOpenSearch}
         >
           <img src={searchIcon} alt="" className={styles.btnIcon} />
-          Buscar producto (F10)
+          Buscar producto
         </button>
       </div>
     </div>

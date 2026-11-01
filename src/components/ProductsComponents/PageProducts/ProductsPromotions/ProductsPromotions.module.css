@@ -74,8 +74,14 @@
 }
 
 .searchProductRow {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  gap: 12px;
+}
+
+.searchProductRow .btnSearch {
+  grid-column: 2;
+  width: 100%;
 }
 
 .label {
@@ -277,6 +283,14 @@
 
 .btnSave {
   background-color: var(--croketsOrange);
+}
+
+.btnSearch {
+  background-color: var(--croketsBlue);
+}
+
+.btnSearch:hover:not(:disabled) {
+  background-color: var(--croketsBlueDark);
 }
 
 .btnDelete,
