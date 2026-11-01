@@ -53,6 +53,21 @@ describe("filterKits", () => {
     ).toEqual([1, 4]);
   });
 
+  it("filtra por vigencia programada y vencida", () => {
+    const now = new Date("2026-11-10T12:00:00Z");
+    const dated = [
+      { id: 10, is_active: true, ends_on: "2026-11-09", products: {} },
+      { id: 11, is_active: true, starts_on: "2026-11-11", products: {} },
+      { id: 12, is_active: true, ends_on: "2026-11-10", products: {} },
+      { id: 13, is_active: false, ends_on: "2026-11-09", products: {} },
+    ];
+    const ids = (status) => filterKits(dated, { status, now }).map((k) => k.id);
+    expect(ids("expired")).toEqual([10]);
+    expect(ids("scheduled")).toEqual([11]);
+    expect(ids("active")).toEqual([12]);
+    expect(ids("inactive")).toEqual([13]);
+  });
+
   it("tolera entradas invalidas", () => {
     expect(filterKits(null)).toEqual([]);
   });
