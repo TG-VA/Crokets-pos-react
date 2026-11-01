@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { createElement, useState, useEffect, useRef } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
 import { useDidChange } from "../../../../../hooks/useDidChange";
 import { fetchMissingBranchesForProduct } from "../services/kitBranchCoverageService";
+import BranchBadgeList from "../components/BranchBadgeList";
 import { buildMissingBranchesMessage } from "../services/kitBranchCoverageCalculationService";
 
 export const useKitProductSearch = ({
@@ -60,7 +61,8 @@ export const useKitProductSearch = ({
       showAppAlert({
         type: "warning",
         title: "Producto local",
-        message: buildMissingBranchesMessage(product.name, missing),
+        message: buildMissingBranchesMessage(product.name),
+        children: createElement(BranchBadgeList, { branches: missing }),
       });
     } catch (error) {
       console.error("Error al validar cobertura por sucursal:", error);

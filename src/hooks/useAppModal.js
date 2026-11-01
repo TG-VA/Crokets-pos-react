@@ -10,6 +10,7 @@ export const useAppModal = () => {
     cancelText: "Cancelar",
     showCancel: false,
     loading: false,
+    children: null,
     onConfirm: null,
     onCancel: null,
   });
@@ -19,6 +20,7 @@ export const useAppModal = () => {
       ...prev,
       isOpen: false,
       loading: false,
+      children: null,
       onConfirm: null,
       onCancel: null,
     }));
@@ -29,6 +31,7 @@ export const useAppModal = () => {
     title = "Aviso",
     message = "",
     confirmText = "Entendido",
+    children = null,
     onConfirm = null,
   }) => {
     setAppModal({
@@ -40,6 +43,7 @@ export const useAppModal = () => {
       cancelText: "Cancelar",
       showCancel: false,
       loading: false,
+      children,
       onConfirm: onConfirm || closeAppModal,
       onCancel: closeAppModal,
     });
@@ -69,6 +73,7 @@ export const useAppModal = () => {
       cancelText,
       showCancel: true,
       loading: false,
+      children: null,
       onConfirm: async () => {
         closeAppModal();
 

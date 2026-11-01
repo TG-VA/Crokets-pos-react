@@ -58,6 +58,7 @@ const ProductsPromotions = () => {
               kitPrice={kitPrice}
               kitDiscount={kitDiscount}
               kitDiscountPercent={kitDiscountPercent}
+              onOpenSearch={() => setShowSearchModal(true)}
             />
 
             <KitSelectedProductsSection
@@ -110,6 +111,7 @@ const ProductsPromotions = () => {
         confirmText={appModal.confirmText}
         cancelText={appModal.cancelText}
         showCancel={appModal.showCancel}
+        children={appModal.children}
         onConfirm={appModal.onConfirm || closeAppModal}
         onCancel={appModal.onCancel || closeAppModal}
         onClose={closeAppModal}

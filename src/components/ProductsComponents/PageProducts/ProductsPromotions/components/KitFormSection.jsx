@@ -1,3 +1,4 @@
+import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import styles from "../ProductsPromotions.module.css";
 import {
   sanitizeDecimalInput,
@@ -12,6 +13,7 @@ const KitFormSection = ({
   kitPrice,
   kitDiscount,
   kitDiscountPercent,
+  onOpenSearch,
 }) => {
   return (
     <div className={styles.formColumn}>
@@ -88,6 +90,17 @@ const KitFormSection = ({
             </span>
           )}
         </div>
+      </div>
+
+      <div className={styles.searchProductRow}>
+        <button
+          type="button"
+          className={[styles.btn, styles.btnSave].join(" ")}
+          onClick={onOpenSearch}
+        >
+          <img src={searchIcon} alt="" className={styles.btnIcon} />
+          Buscar producto (F10)
+        </button>
       </div>
     </div>
   );

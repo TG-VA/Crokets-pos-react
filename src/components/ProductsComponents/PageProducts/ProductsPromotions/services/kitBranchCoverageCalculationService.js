@@ -12,11 +12,5 @@ export const computeMissingBranches = (activeBranches, inventoryRows) => {
   );
 };
 
-export const buildMissingBranchesMessage = (productName, missingBranches) => {
-  const names = (missingBranches || [])
-    .map((branch) => branch.name)
-    .filter(Boolean)
-    .join(", ");
-
-  return `El producto "${productName}" es local y no está disponible en: ${names}. Podrás agregarlo al kit, pero esas sucursales no podrán surtirlo.`;
-};
+export const buildMissingBranchesMessage = (productName) =>
+  `El producto "${productName}" es local y no está disponible en las sucursales listadas abajo. Podrás agregarlo al kit, pero esas sucursales no podrán surtirlo.`;
