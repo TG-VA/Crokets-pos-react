@@ -24,8 +24,8 @@
   flex: 1;
   min-height: 0;
   box-sizing: border-box;
-  margin-top: 30px;
-  padding-top: 28px;
+  margin-top: 16px;
+  padding-top: 20px;
 
   display: flex;
   flex-direction: column;
@@ -68,12 +68,12 @@
 .dropZone {
   border: 3px dashed var(--mediumGray);
   border-radius: 12px;
-  padding: 42px 20px;
+  padding: 24px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: #fafafa;
-  min-height: 220px;
+  min-height: 160px;
 
   display: flex;
   flex-direction: column;
@@ -99,6 +99,18 @@
   width: 64px;
   height: 64px;
   margin-bottom: 20px;
+}
+
+.folderIcon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  background-color: var(--croketsBlue);
+  mask-image: url("../../../../assets/icons/folder-solid-full.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
 }
 
 .uploadPrompt h3 {
@@ -218,27 +230,31 @@
 
 .instructions {
   margin-top: 4px;
-  padding: 20px;
+  padding: 12px 16px;
   background-color: #f8f9fa;
   border-radius: 8px;
   border-left: 4px solid var(--croketsOrange);
 }
 
 .instructions h3 {
-  margin: 0 0 15px 0;
+  margin: 0 0 8px 0;
   color: var(--darkGray);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .instructions ul {
   margin: 0;
   padding-left: 20px;
   color: #555;
+  columns: 2;
+  column-gap: 32px;
+  font-size: 0.9rem;
 }
 
 .instructions li {
-  margin-bottom: 8px;
-  line-height: 1.5;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  break-inside: avoid;
 }
 
 .summaryGrid {
@@ -355,6 +371,10 @@
 }
 
 @media (max-width: 720px) {
+  .instructions ul {
+    columns: 1;
+  }
+
   .actions {
     flex-direction: column;
   }
