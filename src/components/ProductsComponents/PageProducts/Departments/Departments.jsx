@@ -1,7 +1,12 @@
 import React from "react";
 import AppModal from "../../../AppModal/AppModal";
 import styles from "./Departments.module.css";
+import PaginationBar from "../../../PaginationBar/PaginationBar";
+import DepartmentsFilters from "./DepartmentsFilters";
 import { useDepartments } from "./hooks/useDepartments";
+import { useDepartmentsFilters } from "./hooks/useDepartmentsFilters";
+
+const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 
 const Departments = () => {
   const {
@@ -19,38 +24,58 @@ const Departments = () => {
     handleToggleStatus,
   } = useDepartments();
 
+  const {
+    filters,
+    setFilter,
+    totalFiltered,
+    visibleDepartments,
+    pagination,
+    pageSizeOptions,
+  } = useDepartmentsFilters(sortedDepartments);
+
   return (
     <>
       <div className={styles.container}>
         <div className={styles.sidebar}>
           <button
             type="button"
-            className={`${styles.sidebarHeader} ${
-              selectedId === "new" ? styles.activeItem : ""
-            }`}
+            className={joinClasses(
+              styles.sidebarHeader,
+              selectedId === "new" && styles.activeItem
+            )}
             onClick={handleCreate}
           >
             + Crear nuevo departamento
           </button>
 
+          <DepartmentsFilters filters={filters} onChange={setFilter} />
+
           <ul className={styles.departmentList}>
-            {sortedDepartments.map((dept) => {
+            {visibleDepartments.length === 0 && (
+              <li className={styles.emptyList}>
+                No hay departamentos que coincidan.
+              </li>
+            )}
+            {visibleDepartments.map((dept) => {
               const isInactive = dept.status === false;
 
               return (
                 <li
                   key={dept.id}
-                  className={`${styles.departmentItem} ${
-                    selectedId === dept.id ? styles.activeItem : ""
-                  } ${isInactive ? styles.inactiveItem : ""}`}
+                  className={joinClasses(
+                    styles.departmentItem,
+                    selectedId === dept.id && styles.activeItem,
+                    isInactive && styles.inactiveItem
+                  )}
                   onClick={() => handleSelect(dept.id)}
                 >
                   <div className={styles.departmentName}>{dept.name}</div>
 
                   <span
-                    className={`${styles.statusBadge} ${
+                    className={joinClasses(
+                      styles.statusBadge,
                       isInactive ? styles.statusInactive : styles.statusActive
-                    }`}
+                    )}
                   >
                     {isInactive ? "Inactivo" : "Activo"}
                   </span>
@@ -58,6 +83,19 @@ const Departments = () => {
               );
             })}
           </ul>
+
+          <PaginationBar
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            pageSizeOptions={pageSizeOptions}
+            onPageChange={pagination.handlePageChange}
+            onPageSizeChange={pagination.handlePageSizeChange}
+            totalItems={totalFiltered}
+            labelMode="pageCount"
+            itemsNoun="departamentos"
+            modal
+          />
         </div>
 
         <div className={styles.content}>
@@ -78,11 +116,12 @@ const Departments = () => {
 
             {selectedId !== "new" && selectedDept && (
               <span
-                className={`${styles.headerBadge} ${
+                className={joinClasses(
+                  styles.headerBadge,
                   selectedDept.status === false
                     ? styles.statusInactive
                     : styles.statusActive
-                }`}
+                )}
               >
                 {selectedDept.status === false ? "Inactivo" : "Activo"}
               </span>
@@ -197,7 +236,7 @@ const Departments = () => {
             <div className={styles.actions}>
               <button
                 type="submit"
-                className={`${styles.button} ${styles.primaryButton}`}
+                className={joinClasses(styles.button, styles.primaryButton)}
                 disabled={saving}
               >
                 {saving
@@ -210,11 +249,12 @@ const Departments = () => {
               {selectedId !== "new" && selectedDept && (
                 <button
                   type="button"
-                  className={`${styles.button} ${
+                  className={joinClasses(
+                    styles.button,
                     selectedDept.status === false
                       ? styles.successButton
                       : styles.dangerButton
-                  }`}
+                  )}
                   onClick={handleToggleStatus}
                   disabled={saving}
                 >
