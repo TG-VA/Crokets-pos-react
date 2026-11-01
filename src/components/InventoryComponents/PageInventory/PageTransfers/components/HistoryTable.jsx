@@ -16,6 +16,22 @@ const INITIAL_DATE_RANGE = {
   dateTo: null,
 };
 
+const getEmptyHistoryMessage = ({ hasFolio, hasDateRange }) => {
+  if (hasFolio && hasDateRange) {
+    return "No hay traspasos con esos filtros.";
+  }
+
+  if (hasFolio) {
+    return "No hay traspasos con ese folio.";
+  }
+
+  if (hasDateRange) {
+    return "No hay traspasos en el rango de fechas seleccionado.";
+  }
+
+  return "Todavía no hay traspasos registrados para esta sucursal.";
+};
+
 const HistoryTable = ({
   branch,
   transferHistory,
@@ -73,12 +89,10 @@ const HistoryTable = ({
   const hasActiveFilters = Boolean(
     searchKey || dateRange.dateFrom || dateRange.dateTo
   );
-  const hasActiveDateRange = Boolean(dateRange.dateFrom || dateRange.dateTo);
-  const emptyMessage = searchKey
-    ? "No hay traspasos con ese folio."
-    : hasActiveDateRange
-      ? "No hay traspasos en el rango de fechas seleccionado."
-      : "Todavía no hay traspasos registrados para esta sucursal.";
+  const emptyMessage = getEmptyHistoryMessage({
+    hasFolio: Boolean(searchKey),
+    hasDateRange: Boolean(dateRange.dateFrom || dateRange.dateTo),
+  });
 
   return (
     <section className={styles.panel}>

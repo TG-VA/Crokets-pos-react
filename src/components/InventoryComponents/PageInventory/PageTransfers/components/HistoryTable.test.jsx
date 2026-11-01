@@ -263,6 +263,24 @@ describe("HistoryTable filtros por rango de fechas", () => {
     ).toBeTruthy();
   });
 
+  it("usa un mensaje combinado cuando folio y fechas no arrojan resultados", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "TR-20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-20")).toBeNull();
+    expect(screen.getByText("No hay traspasos con esos filtros.")).toBeTruthy();
+  });
+
   it("deshabilita Limpiar filtros sin rango activo", () => {
     render(<HistoryTable {...defaultProps} />);
     expect(
