@@ -283,9 +283,24 @@
 
 .panelHeader {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
+}
+
+.panelHeading {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.panelHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 1 auto;
 }
 
 .panelTitle {
@@ -370,9 +385,160 @@
 }
 
 .historySearch {
-  width: 260px;
+  width: 200px;
+  height: 34px;
   max-width: 100%;
   flex-shrink: 0;
+}
+
+.historyFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dateField span {
+  color: #31414d;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.datePickerWrapper {
+  display: inline-block;
+}
+
+.datePickerWrapper :global(.react-datepicker-wrapper) {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
+.dateInput {
+  width: 104px;
+  height: 34px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border: 1px solid #dbe4ea;
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.8rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--croketsBlue);
+  box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
+}
+
+.datePickerPopper {
+  z-index: 100;
+}
+
+.datePickerCalendar {
+  border: 1px solid var(--mediumGray);
+  box-shadow: var(--shadow);
+  font-family: inherit;
+}
+
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quickButton {
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid #dbe4ea;
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--darkGray);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.quickButton:hover {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  color: var(--croketsBlue);
+}
+
+.quickButtonActive {
+  border-color: var(--croketsBlue);
+  background: #e8f7fb;
+  color: var(--croketsBlue);
+}
+
+.quickButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}
+
+.clearFiltersButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 11px;
+  box-sizing: border-box;
+  border: 1.5px solid #dbe4ea;
+  border-radius: 999px;
+  background: var(--white);
+  color: #5a7080;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.clearFiltersButton:hover:not(:disabled) {
+  border-color: var(--croketsBlue);
+  background: #eef9fb;
+  color: var(--croketsBlue);
+}
+
+.clearFiltersButton:focus-visible {
+  outline: 2px solid var(--croketsBlue);
+  outline-offset: 2px;
+}
+
+.clearFiltersButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clearFiltersButton img {
+  width: 12px;
+  height: 12px;
+  filter: brightness(0) saturate(100%) invert(37%) sepia(96%) saturate(538%)
+    hue-rotate(160deg) brightness(92%) contrast(92%);
 }
 
 .tableCard {
@@ -876,5 +1042,13 @@ td.alignRight.detailErrorText {
 @media (max-width: 720px) {
   .tabBar {
     grid-template-columns: 1fr;
+  }
+
+  .dateField {
+    flex: 1 1 140px;
+  }
+
+  .dateInput {
+    width: 100%;
   }
 }

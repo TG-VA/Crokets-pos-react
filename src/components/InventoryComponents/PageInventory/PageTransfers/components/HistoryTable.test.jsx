@@ -159,3 +159,116 @@ describe("HistoryTable", () => {
     ).toBe(true);
   });
 });
+
+describe("HistoryTable filtros por rango de fechas", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 21, 12, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const buildOrderAt = (date, id, folio) => ({
+    ...orders[0],
+    id,
+    folio,
+    createdAt: date.toISOString(),
+    receivedAt: null,
+  });
+
+  const history = [
+    buildOrderAt(new Date(2026, 9, 20, 8, 0, 0), "t1", "TR-20"),
+    buildOrderAt(new Date(2026, 9, 21, 8, 0, 0), "t2", "TR-21"),
+    buildOrderAt(new Date(2026, 9, 19, 8, 0, 0), "t3", "TR-19"),
+  ];
+
+  it("filtra los traspasos de hoy con el preset Hoy", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeNull();
+    expect(screen.getByLabelText("Desde").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+  });
+
+  it("filtra de lunes a domingo con el preset Esta semana", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[
+          ...history,
+          buildOrderAt(new Date(2026, 9, 18, 8, 0, 0), "t4", "TR-18"),
+        ]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(screen.queryByText("TR-18")).toBeNull();
+    expect(screen.getByLabelText("Desde").value).toBe("19/10/2026");
+    expect(screen.getByLabelText("Hasta").value).toBe("25/10/2026");
+  });
+
+  it("limpia el rango y restablece todos los traspasos", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+    expect(screen.queryByText("TR-20")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(screen.getByLabelText("Desde").value).toBe("");
+    expect(
+      screen.getByRole("button", { name: "Hoy" }).getAttribute("aria-pressed")
+    ).toBe("false");
+  });
+
+  it("muestra un mensaje propio cuando no hay traspasos en el rango", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[
+          buildOrderAt(new Date(2026, 9, 1, 8, 0, 0), "t1", "TR-01"),
+        ]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(
+      screen.getByText("No hay traspasos en el rango de fechas seleccionado.")
+    ).toBeTruthy();
+  });
+
+  it("deshabilita Limpiar filtros sin rango activo", () => {
+    render(<HistoryTable {...defaultProps} />);
+    expect(
+      screen
+        .getByRole("button", { name: "Limpiar filtros" })
+        .hasAttribute("disabled")
+    ).toBe(true);
+  });
+});
