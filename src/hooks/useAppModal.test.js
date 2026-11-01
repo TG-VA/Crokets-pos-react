@@ -35,3 +35,26 @@ describe("useAppModal children", () => {
     expect(result.current.appModal.children).toBeNull();
   });
 });
+
+describe("useAppModal branches", () => {
+  it("inicia sin branches", () => {
+    const { result } = renderHook(() => useAppModal());
+
+    expect(result.current.appModal.branches).toEqual([]);
+  });
+
+  it("showAppAlert conserva branches y closeAppModal y showAppConfirm los limpian", () => {
+    const { result } = renderHook(() => useAppModal());
+    const branches = [{ id: 1, name: "Norte" }];
+
+    act(() => result.current.showAppAlert({ branches }));
+    expect(result.current.appModal.branches).toEqual(branches);
+
+    act(() => result.current.closeAppModal());
+    expect(result.current.appModal.branches).toEqual([]);
+
+    act(() => result.current.showAppAlert({ branches }));
+    act(() => result.current.showAppConfirm({ onConfirm: vi.fn() }));
+    expect(result.current.appModal.branches).toEqual([]);
+  });
+});

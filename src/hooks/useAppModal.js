@@ -11,6 +11,7 @@ export const useAppModal = () => {
     showCancel: false,
     loading: false,
     children: null,
+    branches: [],
     onConfirm: null,
     onCancel: null,
   });
@@ -21,6 +22,7 @@ export const useAppModal = () => {
       isOpen: false,
       loading: false,
       children: null,
+      branches: [],
       onConfirm: null,
       onCancel: null,
     }));
@@ -32,6 +34,7 @@ export const useAppModal = () => {
     message = "",
     confirmText = "Entendido",
     children = null,
+    branches = [],
     onConfirm = null,
   }) => {
     setAppModal({
@@ -44,6 +47,7 @@ export const useAppModal = () => {
       showCancel: false,
       loading: false,
       children,
+      branches,
       onConfirm: onConfirm || closeAppModal,
       onCancel: closeAppModal,
     });
@@ -74,6 +78,7 @@ export const useAppModal = () => {
       showCancel: true,
       loading: false,
       children: null,
+      branches: [],
       onConfirm: async () => {
         closeAppModal();
 

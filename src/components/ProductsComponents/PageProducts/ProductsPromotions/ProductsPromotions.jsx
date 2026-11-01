@@ -7,6 +7,7 @@ import KitActionsSection from "./components/KitActionsSection";
 import KitRegisteredListSection from "./components/KitRegisteredListSection";
 import { useKitsList } from "./hooks/useKitsList";
 import KitProductSearchModal from "./components/KitProductSearchModal";
+import BranchBadgeList from "./components/BranchBadgeList";
 
 const ProductsPromotions = () => {
   const {
@@ -111,11 +112,16 @@ const ProductsPromotions = () => {
         confirmText={appModal.confirmText}
         cancelText={appModal.cancelText}
         showCancel={appModal.showCancel}
-        children={appModal.children}
         onConfirm={appModal.onConfirm || closeAppModal}
         onCancel={appModal.onCancel || closeAppModal}
         onClose={closeAppModal}
-      />
+      >
+        {appModal.branches.length > 0 ? (
+          <BranchBadgeList branches={appModal.branches} />
+        ) : (
+          appModal.children
+        )}
+      </AppModal>
     </div>
   );
 };
