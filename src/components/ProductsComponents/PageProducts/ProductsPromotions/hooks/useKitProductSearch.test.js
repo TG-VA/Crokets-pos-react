@@ -47,6 +47,28 @@ describe("useKitProductSearch aviso de producto local", () => {
     expect(mockFetchMissing).toHaveBeenCalledWith(9);
   });
 
+  it("pasa las sucursales faltantes como datos en branches del aviso", async () => {
+    const missing = [
+      { id: 2, name: "Norte" },
+      { id: 3, name: "Coba" },
+    ];
+    mockFetchMissing.mockResolvedValue(missing);
+    const { props, hook } = setup();
+
+    act(() =>
+      hook.result.current.handleSelect({
+        id: 9,
+        name: "ALIMENTO",
+        is_global: false,
+      })
+    );
+
+    await waitFor(() => expect(props.showAppAlert).toHaveBeenCalledTimes(1));
+    const alert = props.showAppAlert.mock.calls[0][0];
+    expect(alert.branches).toEqual(missing);
+    expect(alert.children).toBeUndefined();
+  });
+
   it("no consulta cobertura en productos globales", async () => {
     const { props, hook } = setup();
     act(() =>

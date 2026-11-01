@@ -1,5 +1,5 @@
 import saveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
-import clearIcon from "../../../../../assets/icons/broom-solid-full.svg";
+import clearIcon from "../../../../../assets/icons/deleteIcon.svg";
 import removeIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import styles from "../ProductsPromotions.module.css";
 

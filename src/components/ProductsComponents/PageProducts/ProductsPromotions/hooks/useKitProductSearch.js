@@ -60,7 +60,8 @@ export const useKitProductSearch = ({
       showAppAlert({
         type: "warning",
         title: "Producto local",
-        message: buildMissingBranchesMessage(product.name, missing),
+        message: buildMissingBranchesMessage(product.name),
+        branches: missing,
       });
     } catch (error) {
       console.error("Error al validar cobertura por sucursal:", error);

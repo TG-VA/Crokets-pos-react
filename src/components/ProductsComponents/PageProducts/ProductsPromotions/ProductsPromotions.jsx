@@ -7,6 +7,7 @@ import KitActionsSection from "./components/KitActionsSection";
 import KitRegisteredListSection from "./components/KitRegisteredListSection";
 import { useKitsList } from "./hooks/useKitsList";
 import KitProductSearchModal from "./components/KitProductSearchModal";
+import BranchBadgeList from "./components/BranchBadgeList";
 
 const ProductsPromotions = () => {
   const {
@@ -58,6 +59,7 @@ const ProductsPromotions = () => {
               kitPrice={kitPrice}
               kitDiscount={kitDiscount}
               kitDiscountPercent={kitDiscountPercent}
+              onOpenSearch={() => setShowSearchModal(true)}
             />
 
             <KitSelectedProductsSection
@@ -113,7 +115,13 @@ const ProductsPromotions = () => {
         onConfirm={appModal.onConfirm || closeAppModal}
         onCancel={appModal.onCancel || closeAppModal}
         onClose={closeAppModal}
-      />
+      >
+        {appModal.branches.length > 0 ? (
+          <BranchBadgeList branches={appModal.branches} />
+        ) : (
+          appModal.children
+        )}
+      </AppModal>
     </div>
   );
 };

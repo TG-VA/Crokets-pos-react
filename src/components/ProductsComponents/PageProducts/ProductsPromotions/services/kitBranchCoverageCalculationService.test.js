@@ -42,12 +42,9 @@ describe("computeMissingBranches", () => {
 });
 
 describe("buildMissingBranchesMessage", () => {
-  it("nombra las sucursales faltantes", () => {
-    const message = buildMissingBranchesMessage("Croqueta", [
-      { id: "b2", name: "Norte" },
-      { id: "b3", name: "Sur" },
-    ]);
+  it("nombra el producto sin listar sucursales", () => {
+    const message = buildMissingBranchesMessage("Croqueta");
     expect(message).toContain("Croqueta");
-    expect(message).toContain("Norte, Sur");
+    expect(message).toContain("es local");
   });
 });
