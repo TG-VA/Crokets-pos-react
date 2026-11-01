@@ -57,10 +57,11 @@ export const clampRangeToToday = (
   referenceDate = new Date()
 ) => {
   const todayEnd = endOfDay(referenceDate);
+  const exceedsToday = Boolean(dateTo && dateTo.getTime() > todayEnd.getTime());
 
   return {
     dateFrom,
-    dateTo: dateTo && dateTo > todayEnd ? todayEnd : dateTo,
+    dateTo: exceedsToday ? todayEnd : dateTo,
   };
 };
 

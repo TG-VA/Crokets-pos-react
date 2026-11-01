@@ -87,12 +87,11 @@ const HistoryTable = ({
     resetPagination();
   };
 
-  const hasActiveFilters = Boolean(
-    searchKey || dateRange.dateFrom || dateRange.dateTo
-  );
+  const hasDateRange = Boolean(dateRange.dateFrom || dateRange.dateTo);
+  const hasActiveFilters = Boolean(searchKey || hasDateRange);
   const emptyMessage = getEmptyHistoryMessage({
     hasFolio: Boolean(searchKey),
-    hasDateRange: Boolean(dateRange.dateFrom || dateRange.dateTo),
+    hasDateRange,
   });
 
   return (

@@ -22,6 +22,11 @@
   --errorBg: #fdecec;
   --errorText: #b13838;
   --shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
+  --filterControlHeight: 34px;
+  --filterControlRadius: 8px;
+  --filterControlBorder: #dbe4ea;
+  --filterControlHoverBg: #eef9fb;
+  --filterControlActiveBg: #e8f7fb;
 }
 
 .content {
@@ -397,12 +402,6 @@
   align-items: flex-end;
   justify-content: flex-end;
   gap: 6px;
-
-  --filterControlHeight: 34px;
-  --filterControlRadius: 8px;
-  --filterControlBorder: #dbe4ea;
-  --filterControlHoverBg: #eef9fb;
-  --filterControlActiveBg: #e8f7fb;
 }
 
 .dateField {
