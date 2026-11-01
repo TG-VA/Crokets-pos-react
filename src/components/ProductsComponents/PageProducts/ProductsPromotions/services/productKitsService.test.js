@@ -87,6 +87,27 @@ describe("productKitsService", () => {
     });
   });
 
+  describe("vigencia en payload", () => {
+    it("envia starts_on y ends_on como YYYY-MM-DD", async () => {
+      supabase.rpc.mockResolvedValue({ data: "kit1", error: null });
+
+      await createNewKitTransaction(
+        {
+          barcode: "KIT1",
+          description: "Pack",
+          price: 100,
+          starts_on: "2026-12-01",
+          ends_on: "2026-12-31T00:00:00",
+        },
+        [{ id: "c1", quantity: 1 }]
+      );
+
+      const payload = supabase.rpc.mock.calls[0][1].p_kit_product;
+      expect(payload.starts_on).toBe("2026-12-01");
+      expect(payload.ends_on).toBe("2026-12-31");
+    });
+  });
+
   describe("checkKitDuplicates", () => {
     it("detecta barcode duplicado", async () => {
       productsQ.maybeSingle.mockResolvedValue({
@@ -154,6 +175,8 @@ describe("productKitsService", () => {
           name: "Pack",
           sale_price: 100,
           max_kits_per_sale: 3,
+          starts_on: null,
+          ends_on: null,
         },
         p_kit_items: [
           { component_product_id: "c1", quantity: 2 },
@@ -216,6 +239,8 @@ describe("productKitsService", () => {
           name: "Pack",
           sale_price: 120,
           max_kits_per_sale: 4,
+          starts_on: null,
+          ends_on: null,
         },
         p_kit_items: [{ component_product_id: "c1", quantity: 2 }],
       });
