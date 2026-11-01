@@ -3,7 +3,6 @@ import styles from "./ProductsImports.module.css";
 import { formatCurrency } from "./utils/importUtils";
 import { useProductsImport } from "./hooks/useProductsImport";
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
-import folderIcon from "../../../../assets/icons/folder-solid-full.svg";
 
 const ProductsImports = () => {
   const {
@@ -112,7 +111,7 @@ const ProductsImports = () => {
               </div>
             ) : (
               <div className={styles.uploadPrompt}>
-                <img src={folderIcon} alt="" className={styles.icon} />
+                <span className={styles.folderIcon} aria-hidden="true" />
                 <h3>Arrastra tu archivo aquí o haz clic para buscar</h3>
                 <p>Soporta archivos Excel (.xlsx) y CSV</p>
               </div>

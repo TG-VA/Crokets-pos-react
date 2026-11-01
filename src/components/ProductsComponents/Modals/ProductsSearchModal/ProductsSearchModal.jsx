@@ -1,7 +1,6 @@
 import React from "react";
 import styles from "./ProductsSearchModal.module.css";
 import { useProductSearchModal } from "../hooks/useProductSearchModal";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
   const {
@@ -21,14 +20,6 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
       <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2>Búsqueda de Productos</h2>
-          <button className={styles.closeButton} onClick={handleClose}>
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
         </div>
 
         <div className={styles.searchModalBody}>
@@ -146,12 +137,8 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
               className={[styles.actionButton, styles.cancelButton].join(" ")}
               onClick={handleClose}
             >
-              ESC - Cerrar
+              Cerrar
             </button>
-          </div>
-
-          <div className={styles.actionHints}>
-            <span>F10 - Buscar productos</span>
           </div>
         </div>
       </div>
