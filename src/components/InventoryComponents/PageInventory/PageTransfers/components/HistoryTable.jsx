@@ -64,11 +64,15 @@ const HistoryTable = ({
   };
 
   const handleClearFilters = () => {
+    setFolioSearch("");
     setDateRange(INITIAL_DATE_RANGE);
     setRangePreset("custom");
     resetPagination();
   };
 
+  const hasActiveFilters = Boolean(
+    searchKey || dateRange.dateFrom || dateRange.dateTo
+  );
   const hasActiveDateRange = Boolean(dateRange.dateFrom || dateRange.dateTo);
   const emptyMessage = searchKey
     ? "No hay traspasos con ese folio."
@@ -92,6 +96,7 @@ const HistoryTable = ({
             dateFrom={dateRange.dateFrom}
             dateTo={dateRange.dateTo}
             rangePreset={rangePreset}
+            hasActiveFilters={hasActiveFilters}
             onDateChange={handleDateChange}
             onRangePreset={handleRangePreset}
             onClearFilters={handleClearFilters}

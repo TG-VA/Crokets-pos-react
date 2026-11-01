@@ -17,12 +17,11 @@ const HistoryFilters = ({
   dateFrom,
   dateTo,
   rangePreset,
+  hasActiveFilters = false,
   onDateChange,
   onRangePreset,
   onClearFilters,
 }) => {
-  const hasActiveRange = Boolean(dateFrom || dateTo);
-
   return (
     <div
       className={styles.historyFilters}
@@ -93,7 +92,7 @@ const HistoryFilters = ({
         type="button"
         className={styles.clearFiltersButton}
         onClick={onClearFilters}
-        disabled={!hasActiveRange}
+        disabled={!hasActiveFilters}
       >
         <img src={CloseIcon} alt="" aria-hidden="true" />
         Limpiar filtros

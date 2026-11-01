@@ -271,4 +271,45 @@ describe("HistoryTable filtros por rango de fechas", () => {
         .hasAttribute("disabled")
     ).toBe(true);
   });
+
+  it("limpia tambien el folio escrito y se habilita por si solo", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    const clearButton = screen.getByRole("button", { name: "Limpiar filtros" });
+    expect(clearButton.hasAttribute("disabled")).toBe(true);
+
+    const folioInput = screen.getByLabelText("Buscar traspaso por folio");
+    fireEvent.change(folioInput, { target: { value: "TR-20" } });
+
+    expect(screen.queryByText("TR-21")).toBeNull();
+    expect(clearButton.hasAttribute("disabled")).toBe(false);
+
+    fireEvent.click(clearButton);
+
+    expect(folioInput.value).toBe("");
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(clearButton.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("no se habilita con folio compuesto solo de espacios", () => {
+    render(<HistoryTable {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "   " },
+    });
+
+    expect(
+      screen
+        .getByRole("button", { name: "Limpiar filtros" })
+        .hasAttribute("disabled")
+    ).toBe(true);
+  });
 });
