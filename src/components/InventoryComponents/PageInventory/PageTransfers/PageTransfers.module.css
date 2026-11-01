@@ -397,6 +397,12 @@
   align-items: flex-end;
   justify-content: flex-end;
   gap: 6px;
+
+  --filterControlHeight: 34px;
+  --filterControlRadius: 8px;
+  --filterControlBorder: #dbe4ea;
+  --filterControlHoverBg: #eef9fb;
+  --filterControlActiveBg: #e8f7fb;
 }
 
 .dateField {
@@ -425,11 +431,11 @@
 
 .dateInput {
   width: 104px;
-  height: 34px;
+  height: var(--filterControlHeight);
   padding: 0 8px;
   box-sizing: border-box;
-  border: 1px solid #dbe4ea;
-  border-radius: 8px;
+  border: 1px solid var(--filterControlBorder);
+  border-radius: var(--filterControlRadius);
   background: var(--white);
   color: var(--darkGray);
   font-family: inherit;
@@ -462,10 +468,10 @@
 }
 
 .quickButton {
-  height: 34px;
+  height: var(--filterControlHeight);
   padding: 0 9px;
-  border: 1px solid #dbe4ea;
-  border-radius: 8px;
+  border: 1px solid var(--filterControlBorder);
+  border-radius: var(--filterControlRadius);
   background: var(--white);
   color: var(--darkGray);
   font-family: inherit;
@@ -481,13 +487,13 @@
 
 .quickButton:hover {
   border-color: var(--croketsBlue);
-  background: #eef9fb;
+  background: var(--filterControlHoverBg);
   color: var(--croketsBlue);
 }
 
 .quickButtonActive {
   border-color: var(--croketsBlue);
-  background: #e8f7fb;
+  background: var(--filterControlActiveBg);
   color: var(--croketsBlue);
 }
 
@@ -500,10 +506,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 34px;
+  height: var(--filterControlHeight);
   padding: 0 11px;
   box-sizing: border-box;
-  border: 1.5px solid #dbe4ea;
+  border: 1.5px solid var(--filterControlBorder);
   border-radius: 999px;
   background: var(--white);
   color: #5a7080;
@@ -520,7 +526,7 @@
 
 .clearFiltersButton:hover:not(:disabled) {
   border-color: var(--croketsBlue);
-  background: #eef9fb;
+  background: var(--filterControlHoverBg);
   color: var(--croketsBlue);
 }
 
