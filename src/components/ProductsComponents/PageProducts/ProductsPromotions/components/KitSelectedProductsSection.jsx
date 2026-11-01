@@ -14,7 +14,7 @@ const KitSelectedProductsSection = ({
       <div className={styles.listArea}>
         {selectedProducts.length === 0 ? (
           <div className={styles.emptyState}>
-            No hay productos seleccionados
+            No hay productos seleccionados. Presiona F10 para buscar
           </div>
         ) : (
           <div className={styles.selectedList}>

@@ -24,6 +24,11 @@ y el proceso principal de Electron:
 | Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
 | Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
 | Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
+| Kits (filtro por estado y texto, sin acentos)             | `.../ProductsPromotions/services/kitsFilterService.test.js`                        |
+| Kits (lista, paginacion y filtros)                        | `.../ProductsPromotions/hooks/useKitsList.test.js`                                 |
+| Kits (busqueda de producto y alerta de cobertura)         | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
+| Kits (cobertura por sucursal)                             | `.../ProductsPromotions/services/kitBranchCoverageCalculationService.test.js`      |
+| Kits (sanitizado de entradas)                             | `.../ProductsPromotions/services/kitInputSanitizers.test.js`                       |
 | Reporte de caja                                           | `.../PageCashReport/services/cashReportService.test.js`                            |
 | Reporte de caja (hook y filtro de sucursal)               | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
 | Reporte de comisiones                                     | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |

@@ -30,12 +30,14 @@ const KitRegisteredListSection = ({
         <input
           type="text"
           className={styles.kitsSearchInput}
+          aria-label="Buscar kits por nombre o código"
           placeholder="Buscar por nombre o código"
           value={searchTerm}
           onChange={(e) => onSearchTermChange(e.target.value)}
         />
         <select
           className={styles.kitsStatusSelect}
+          aria-label="Filtrar kits por estado"
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
         >
