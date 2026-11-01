@@ -20,6 +20,16 @@ describe("migracion branch_products_global_scope", () => {
     expect(sql).toContain("bi2.is_active = true");
   });
 
+  it("ignora sucursales desactivadas", () => {
+    expect(sql).toContain("b.is_active = true");
+  });
+
+  it("deja el arreglo vacio para productos globales", () => {
+    expect(sql).toMatch(
+      /when r\.is_global then '\{\}'::text\[\]\s+else coalesce\(/
+    );
+  });
+
   it("no concede EXECUTE a anon", () => {
     expect(sql).toMatch(/revoke[^;]*from anon/i);
     expect(sql).toMatch(/grant execute[^;]*to authenticated/i);

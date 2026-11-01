@@ -214,7 +214,11 @@ const ProductsList = () => {
                 </td>
                 <td>
                   <ProductScopeCell
-                    isGlobal={product.is_global === true}
+                    isGlobal={
+                      typeof product.is_global === "boolean"
+                        ? product.is_global
+                        : null
+                    }
                     branchNames={product.local_branch_names}
                   />
                 </td>

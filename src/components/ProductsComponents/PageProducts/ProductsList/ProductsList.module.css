@@ -472,3 +472,7 @@
   background: #e0f2fe;
   color: #075985;
 }
+
+.scopeUnknown {
+  color: var(--color-text-muted, #6b7280);
+}

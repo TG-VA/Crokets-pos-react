@@ -5,6 +5,10 @@ const joinClasses = (...classes) => classes.filter(Boolean).join(" ");
 const ProductScopeCell = ({ isGlobal, branchNames }) => {
   const names = Array.isArray(branchNames) ? branchNames : [];
 
+  if (typeof isGlobal !== "boolean") {
+    return <span className={styles.scopeUnknown}>-</span>;
+  }
+
   return (
     <div className={styles.scopeCell}>
       <span

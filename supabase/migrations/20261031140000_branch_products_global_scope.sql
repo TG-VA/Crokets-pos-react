@@ -109,6 +109,7 @@ begin
             on b.id = bi2.branch_id
           where bi2.product_id = r.product_id
             and bi2.is_active = true
+            and b.is_active = true
         ),
         '{}'::text[]
       )
