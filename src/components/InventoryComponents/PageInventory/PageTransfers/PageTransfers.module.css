@@ -168,28 +168,25 @@
 }
 
 .tabBar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.segmentedControl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
-  background: #eef2f6;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  gap: 10px;
 }
 
 .tabButton {
-  border: 1px solid transparent;
-  border-radius: 9px;
-  padding: 9px 14px;
-  background: transparent;
-  color: #475569;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #edf2f5;
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: var(--white);
+  color: var(--darkGray);
+  text-align: left;
+  box-shadow: var(--shadow);
   transition:
     background 0.18s ease,
     box-shadow 0.18s ease,
@@ -199,49 +196,63 @@
 }
 
 .tabButton:hover {
-  background: rgba(255, 255, 255, 0.65);
-  color: var(--darkGray);
+  border-color: rgba(16, 146, 177, 0.22);
+  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.1);
 }
 
 .tabButton:focus-visible {
   outline: 2px solid var(--croketsBlue);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 .tabButtonActive {
-  background: var(--white);
-  color: var(--darkGray);
-  border-color: rgba(16, 146, 177, 0.45);
-  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.12);
+  border-color: rgba(16, 146, 177, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(16, 146, 177, 0.12),
+    rgba(255, 138, 0, 0.08)
+  );
 }
 
-.tabLabelRow {
+.tabTop {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  filter: brightness(0) saturate(100%) invert(57%) sepia(78%) saturate(1564%)
+    hue-rotate(359deg) brightness(101%) contrast(98%);
+}
+
+.tabLabel {
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--darkGray);
 }
 
 .tabBadge {
-  min-width: 24px;
-  height: 24px;
-  padding: 0 7px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   border-radius: 999px;
   background: var(--croketsOrange);
   color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.tabHint {
+.tabDescription {
   margin: 0;
   color: #6d7b86;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   line-height: 1.4;
 }
 
@@ -844,7 +855,6 @@ td.alignRight.detailErrorText {
 }
 
 @media (max-width: 900px) {
-  .segmentedControl,
   .receiptMeta,
   .detailHeaderGrid,
   .detailTotalsInline {
@@ -860,5 +870,11 @@ td.alignRight.detailErrorText {
   .tableToolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 720px) {
+  .tabBar {
+    grid-template-columns: 1fr;
   }
 }
