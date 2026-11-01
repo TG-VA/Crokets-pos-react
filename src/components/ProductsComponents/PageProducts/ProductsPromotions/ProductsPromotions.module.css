@@ -346,6 +346,24 @@
   color: #991b1b;
 }
 
+.kitStatusScheduled {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.kitStatusExpired {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.datePickerWrapper {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
 .kitActions {
   display: grid;
   grid-template-columns: repeat(3, 92px);

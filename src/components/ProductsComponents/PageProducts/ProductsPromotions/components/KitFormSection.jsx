@@ -1,9 +1,17 @@
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import styles from "../ProductsPromotions.module.css";
 import {
   sanitizeDecimalInput,
   sanitizeIntegerInput,
 } from "../services/kitInputSanitizers";
+import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
+
+const VALIDITY_FIELDS = [
+  { field: "starts_on", label: "Vigente desde", range: "selectsStart" },
+  { field: "ends_on", label: "Vigente hasta", range: "selectsEnd" },
+];
 
 const KitFormSection = ({
   form,
@@ -77,6 +85,39 @@ const KitFormSection = ({
           </span>
         </div>
       </div>
+
+      {VALIDITY_FIELDS.map(({ field, label, range }, index) => (
+        <div key={field} className={styles.formRow}>
+          <label className={styles.label}>{label}</label>
+          <div className={styles.limitInputContainer}>
+            <DatePicker
+              {...{ [range]: true }}
+              selected={parseDateOnly(form[field])}
+              onChange={(date) => updateField(field, formatDateOnly(date))}
+              startDate={parseDateOnly(form.starts_on)}
+              endDate={parseDateOnly(form.ends_on)}
+              minDate={
+                field === "ends_on" ? parseDateOnly(form.starts_on) : null
+              }
+              maxDate={
+                field === "starts_on" ? parseDateOnly(form.ends_on) : null
+              }
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Sin límite"
+              isClearable
+              className={styles.input}
+              wrapperClassName={styles.datePickerWrapper}
+              showPopperArrow={false}
+            />
+            {index === VALIDITY_FIELDS.length - 1 && (
+              <span className={styles.limitHelperText}>
+                * Opcional. Sin fecha no hay límite. Ambas fechas son inclusivas
+                y se evalúan con la zona horaria de la sucursal.
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
 
       <div className={styles.formRow}>
         <label className={styles.label}>Precio real</label>

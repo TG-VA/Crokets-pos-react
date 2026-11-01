@@ -9,6 +9,11 @@ import {
   toggleKitStatus,
   softDeleteKitTransaction,
 } from "../services/productKitsService";
+import {
+  KIT_VALIDITY_STATUS,
+  getKitValidityStatus,
+  validateKitDateRange,
+} from "../services/kitValidityCalculationService";
 
 export const useProductsPromotions = () => {
   const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
@@ -19,6 +24,8 @@ export const useProductsPromotions = () => {
     description: "",
     price: "",
     max_kits_per_sale: "1",
+    starts_on: "",
+    ends_on: "",
   });
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [kits, setKits] = useState([]);
@@ -62,6 +69,8 @@ export const useProductsPromotions = () => {
       description: "",
       price: "",
       max_kits_per_sale: "1",
+      starts_on: "",
+      ends_on: "",
     });
     setSelectedProducts([]);
     setSelectedProductId(null);
@@ -229,6 +238,15 @@ export const useProductsPromotions = () => {
       });
       return false;
     }
+    const dateRangeError = validateKitDateRange(form.starts_on, form.ends_on);
+    if (dateRangeError) {
+      showAppAlert({
+        type: "warning",
+        title: "Vigencia inválida",
+        message: dateRangeError,
+      });
+      return false;
+    }
     if (selectedProducts.length === 0) {
       showAppAlert({
         type: "warning",
@@ -295,6 +313,8 @@ export const useProductsPromotions = () => {
         description: cleanDescription,
         price: kitPriceValue,
         max_kits_per_sale: maxKitsValue,
+        starts_on: form.starts_on || null,
+        ends_on: form.ends_on || null,
       };
 
       if (editingKit) {
@@ -337,6 +357,8 @@ export const useProductsPromotions = () => {
         description: kit.products?.name || "",
         price: String(Number(kit.products?.sale_price || 0)),
         max_kits_per_sale: String(Number(kit.products?.max_kits_per_sale ?? 1)),
+        starts_on: kit.starts_on || "",
+        ends_on: kit.ends_on || "",
       });
       setSelectedProducts(
         (items || [])
@@ -388,12 +410,18 @@ export const useProductsPromotions = () => {
   const handleToggleKitStatus = async (kit) => {
     if (!kit?.id) return;
     const nextStatus = !kit.is_active;
+    const outsideValidity =
+      nextStatus &&
+      [KIT_VALIDITY_STATUS.EXPIRED, KIT_VALIDITY_STATUS.SCHEDULED].includes(
+        getKitValidityStatus({ ...kit, is_active: true })
+      );
+    const activateMessage = outsideValidity
+      ? "Este kit está fuera de su vigencia, por lo que seguirá sin poder venderse aunque se active. Para venderlo, edita sus fechas de vigencia. ¿Deseas activarlo de todos modos?"
+      : "¿Deseas activar este kit?";
     showAppConfirm({
       type: "warning",
       title: nextStatus ? "Activar kit" : "Desactivar kit",
-      message: nextStatus
-        ? "¿Deseas activar este kit?"
-        : "¿Deseas desactivar este kit?",
+      message: nextStatus ? activateMessage : "¿Deseas desactivar este kit?",
       confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
       cancelText: "No, regresar",
       onConfirm: () => executeToggleKitStatus(kit, nextStatus),
