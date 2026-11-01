@@ -440,3 +440,35 @@
     min-width: unset;
   }
 }
+
+.scopeCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.scopeBadge,
+.branchChip {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scopeGlobal {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scopeLocal {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.branchChip {
+  background: #e0f2fe;
+  color: #075985;
+}

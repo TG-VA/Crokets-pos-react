@@ -1,6 +1,7 @@
 import styles from "./ProductsList.module.css";
 import { useProductsList } from "./hooks/useProductsList";
 import PaginationBar from "../../../../components/PaginationBar/PaginationBar";
+import ProductScopeCell from "./ProductScopeCell";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const ProductsList = () => {
@@ -179,6 +180,7 @@ const ProductsList = () => {
               <th>Departamento</th>
               <th>Costo</th>
               <th>Precio</th>
+              <th>Alcance</th>
             </tr>
           </thead>
 
@@ -209,6 +211,12 @@ const ProductsList = () => {
                 </td>
                 <td className={styles.priceCell}>
                   {formatMoney(product.precio)}
+                </td>
+                <td>
+                  <ProductScopeCell
+                    isGlobal={product.is_global === true}
+                    branchNames={product.local_branch_names}
+                  />
                 </td>
               </tr>
             ))}
