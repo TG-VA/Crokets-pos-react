@@ -33,13 +33,6 @@ const KitProductSearchModal = ({
       <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchHeader}>
           <h2>Búsqueda de productos</h2>
-          <button
-            type="button"
-            className={styles.searchCloseButton}
-            onClick={onClose}
-          >
-            ×
-          </button>
         </div>
 
         <div className={styles.searchBody}>
@@ -81,7 +74,19 @@ const KitProductSearchModal = ({
                   onClick={() => setSelectedIndex(index)}
                   onDoubleClick={() => handleSelect(product)}
                 >
-                  <strong>{product.name}</strong>
+                  <div className={styles.searchResultTitle}>
+                    <strong>{product.name}</strong>
+                    <span
+                      className={[
+                        styles.scopeBadge,
+                        product.is_global === false
+                          ? styles.scopeBadgeLocal
+                          : styles.scopeBadgeGlobal,
+                      ].join(" ")}
+                    >
+                      {product.is_global === false ? "Local" : "Global"}
+                    </span>
+                  </div>
                   <div className={styles.searchResultMeta}>
                     Código: {product.barcode || "Sin código"} · Precio: $
                     {Number(product.sale_price || 0).toFixed(2)}
@@ -115,7 +120,7 @@ const KitProductSearchModal = ({
             ].join(" ")}
             onClick={onClose}
           >
-            ESC - Cerrar
+            Cerrar
           </button>
         </div>
       </div>

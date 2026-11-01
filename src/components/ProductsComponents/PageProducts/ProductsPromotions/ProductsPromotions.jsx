@@ -5,6 +5,7 @@ import KitFormSection from "./components/KitFormSection";
 import KitSelectedProductsSection from "./components/KitSelectedProductsSection";
 import KitActionsSection from "./components/KitActionsSection";
 import KitRegisteredListSection from "./components/KitRegisteredListSection";
+import { useKitsList } from "./hooks/useKitsList";
 import KitProductSearchModal from "./components/KitProductSearchModal";
 
 const ProductsPromotions = () => {
@@ -36,6 +37,7 @@ const ProductsPromotions = () => {
     handleSoftDeleteKit,
     showAppAlert,
   } = useProductsPromotions();
+  const kitsList = useKitsList(kits);
 
   return (
     <div className={styles.container}>
@@ -56,7 +58,6 @@ const ProductsPromotions = () => {
               kitPrice={kitPrice}
               kitDiscount={kitDiscount}
               kitDiscountPercent={kitDiscountPercent}
-              onOpenSearchModal={() => setShowSearchModal(true)}
             />
 
             <KitSelectedProductsSection
@@ -79,6 +80,13 @@ const ProductsPromotions = () => {
 
         <KitRegisteredListSection
           kits={kits}
+          visibleKits={kitsList.visibleKits}
+          totalKits={kitsList.filteredKits.length}
+          searchTerm={kitsList.searchTerm}
+          onSearchTermChange={kitsList.setSearchTerm}
+          status={kitsList.status}
+          onStatusChange={kitsList.setStatus}
+          pagination={kitsList.pagination}
           editingKit={editingKit}
           handleEditKit={handleEditKit}
           handleToggleKitStatus={handleToggleKitStatus}

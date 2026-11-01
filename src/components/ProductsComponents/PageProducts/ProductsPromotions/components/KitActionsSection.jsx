@@ -1,3 +1,6 @@
+import saveIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+import clearIcon from "../../../../../assets/icons/broom-solid-full.svg";
+import removeIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import styles from "../ProductsPromotions.module.css";
 
 const KitActionsSection = ({
@@ -17,6 +20,7 @@ const KitActionsSection = ({
           onClick={handleSaveKit}
           disabled={saving}
         >
+          <img src={saveIcon} alt="" className={styles.btnIcon} />
           {saving
             ? "Guardando..."
             : editingKit
@@ -30,6 +34,7 @@ const KitActionsSection = ({
           onClick={handleClearForm}
           disabled={saving}
         >
+          <img src={clearIcon} alt="" className={styles.btnIcon} />
           Limpiar
         </button>
       </div>
@@ -41,6 +46,7 @@ const KitActionsSection = ({
           onClick={removeSelectedProduct}
           disabled={!selectedProductId}
         >
+          <img src={removeIcon} alt="" className={styles.btnIcon} />
           Remover seleccionado
         </button>
       </div>

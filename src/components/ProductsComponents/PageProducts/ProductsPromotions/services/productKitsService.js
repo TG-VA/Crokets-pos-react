@@ -125,7 +125,7 @@ export const fetchActiveNonKitProducts = async () => {
   const { data, error } = await supabase
     .from("products")
     .select(
-      `id, barcode, name, cost_price, sale_price, status, is_kit, tracks_inventory`
+      `id, barcode, name, cost_price, sale_price, status, is_kit, is_global, tracks_inventory`
     )
     .eq("status", true)
     .eq("is_kit", false)
