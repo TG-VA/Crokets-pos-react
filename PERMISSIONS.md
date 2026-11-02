@@ -116,6 +116,13 @@ modelo vigente es `authenticated` de confianza. Se documenta como **riesgo acept
 acciones administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
 autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.
 
+**Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
+En Promociones y Kits, los botones Editar y Eliminar solo se muestran si el hook `useIsAdmin`
+(`src/hooks/useIsAdmin.js`, sobre `checkUserIsAdmin`) confirma que el usuario es administrador. Es
+**gateo de interfaz, no un control de seguridad**: entra en el riesgo aceptado de
+`KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.
+Aplicarlo en base de datos requeriría una migración.
+
 ### Endurecimiento de RPCs transaccionales (`20260917200000`, 17 sep 2026)
 
 Las RPCs que mueven dinero o inventario (`create_sale_transaction` ×3, `cancel_sale_transaction`,
