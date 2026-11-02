@@ -117,7 +117,7 @@ acciones administrativas en el cliente (#38) **no es un control de seguridad** y
 autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.
 
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
-En Promociones y Kits, los botones Editar y Eliminar solo se muestran si el hook `useIsAdmin`
+En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se muestran si el hook `useIsAdmin`
 (`src/hooks/useIsAdmin.js`, sobre `checkUserIsAdmin`) confirma que el usuario es administrador. Es
 **gateo de interfaz, no un control de seguridad**: entra en el riesgo aceptado de
 `KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.

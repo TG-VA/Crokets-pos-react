@@ -2911,3 +2911,24 @@ Historial en 3 + 2, el modal "Asignar cliente" contra el footbar, las listas pag
 "Notas del ticket", Escape en notas y en la devolución parcial, y la prueba manual de los cinco minutos
 con y sin modal abierto. La validación del saldo de puntos en el servidor sigue abierta como
 `KNOWN_ISSUES.md` #80 y se atenderá en un PR aparte.
+
+## Informe de Auditoría — PR #186 `feat/kits-vigencia-por-fechas` (1 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 2 importantes, 2 sugerencias). Head `18f6af0`,
+base `d4e5c08`. Commits auditados: `48e9270`, `0577e67`, `1ca1c82`, `18f6af0`. Ejecución: 284
+archivos / 3057 tests verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0 errores (1 warning
+preexistente en `useKitProductSearch.js:134`). Mutaciones: 9 ejecutadas, 7 detectadas, 2 sobreviven.
+
+### Correcciones aplicadas
+
+| #   | Hallazgo                                                              | Resolución                                                                              |
+| --- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 1   | El formulario de renovación se cierra con rango inválido              | `handleRenewKitValidity` recibe `onSuccess`; el formulario se cierra solo si se guardó  |
+| 2   | "Renovar vigencia" fuera del gateo de administrador                   | El botón depende de `canManageKits`; documentado en `PERMISSIONS.md`                    |
+| 3   | Mutación sobreviviente en `useIsAdmin.js:35`                          | Prueba con `rerender` que cambia de usuario; la mutación ahora se detecta               |
+| 4   | Mutación sobreviviente en `kitBranchCoverageCalculationService.js:22` | Prueba de `groupBranchNamesByProduct` con filas inactivas; la mutación ahora se detecta |
+
+### Estado al cierre
+
+`npm test`: 284 archivos / 3061 casos en verde. Pendiente de verificación humana en Electron
+(`npm run dev`) con sesión de administrador y de no administrador.
