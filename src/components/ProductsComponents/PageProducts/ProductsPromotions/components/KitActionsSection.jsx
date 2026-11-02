@@ -68,7 +68,14 @@ const KitActionsSection = ({
 
       {!isFormComplete && missingFields.length > 0 && (
         <div className={styles.missingFieldsHint} role="status">
-          Falta: {missingFields.join(", ")}
+          <span>Falta:</span>
+          <ul className={styles.missingFieldsList}>
+            {missingFields.map((field) => (
+              <li key={field} className={styles.missingFieldBadge}>
+                {field}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

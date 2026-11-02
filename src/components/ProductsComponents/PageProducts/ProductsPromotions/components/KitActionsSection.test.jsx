@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import KitActionsSection from "./KitActionsSection";
 
 const baseProps = {
@@ -23,9 +23,13 @@ describe("KitActionsSection", () => {
       />
     );
 
-    expect(screen.getByRole("status").textContent).toBe(
-      "Falta: codigo de barras, precio"
-    );
+    const hint = screen.getByRole("status");
+    expect(within(hint).getByText("Falta:")).toBeTruthy();
+    expect(
+      within(hint)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent)
+    ).toEqual(["codigo de barras", "precio"]);
     expect(screen.getByRole("button", { name: "Guardar kit" }).disabled).toBe(
       true
     );

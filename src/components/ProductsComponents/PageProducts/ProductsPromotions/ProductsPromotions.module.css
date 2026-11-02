@@ -262,8 +262,32 @@
 
 .missingFieldsHint {
   flex: 0 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   font-size: 0.85rem;
   color: var(--text-secondary, #6b7280);
+}
+
+.missingFieldsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.missingFieldBadge {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: #fee2e2;
+  color: #991b1b;
 }
 
 .leftButtons,
