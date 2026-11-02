@@ -288,6 +288,7 @@
   white-space: nowrap;
   background-color: #fee2e2;
   color: #991b1b;
+  text-transform: uppercase;
 }
 
 .leftButtons,
