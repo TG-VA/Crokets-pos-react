@@ -70,8 +70,7 @@ const KitRegisteredListSection = ({
   const [renewingKitId, setRenewingKitId] = useState(null);
 
   const handleSubmitRenew = (kit, range) => {
-    handleRenewKitValidity(kit, range);
-    setRenewingKitId(null);
+    handleRenewKitValidity(kit, range, () => setRenewingKitId(null));
   };
 
   return (
@@ -145,8 +144,9 @@ const KitRegisteredListSection = ({
               const validityStatus = getKitValidityStatus(kit);
               const badge = VALIDITY_BADGES[validityStatus];
               const canRenew =
-                validityStatus === KIT_VALIDITY_STATUS.EXPIRED ||
-                Boolean(expiringKitIds?.has(kit.id));
+                canManageKits &&
+                (validityStatus === KIT_VALIDITY_STATUS.EXPIRED ||
+                  Boolean(expiringKitIds?.has(kit.id)));
               return (
                 <div
                   key={kit.id}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import KitRegisteredListSection from "./KitRegisteredListSection";
 
 const makeKit = (id, endsOn) => ({
@@ -122,10 +122,25 @@ describe("KitRegisteredListSection renovar vigencia", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Guardar vigencia" }));
 
-    expect(props.handleRenewKitValidity).toHaveBeenCalledWith(props.kits[0], {
-      starts_on: null,
-      ends_on: "2026-12-31",
-    });
+    expect(props.handleRenewKitValidity).toHaveBeenCalledWith(
+      props.kits[0],
+      { starts_on: null, ends_on: "2026-12-31" },
+      expect.any(Function)
+    );
+  });
+
+  it("el formulario sigue abierto hasta que la renovacion se confirma", () => {
+    const props = buildProps();
+    render(<KitRegisteredListSection {...props} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Renovar vigencia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar vigencia" }));
+
+    expect(screen.getByLabelText("Nueva fecha de fin")).toBeTruthy();
+
+    const onSuccess = props.handleRenewKitValidity.mock.calls[0][2];
+    act(() => onSuccess());
+    expect(screen.queryByLabelText("Nueva fecha de fin")).toBeNull();
   });
 
   it("cancelar cierra el formulario sin enviar", () => {
@@ -156,6 +171,9 @@ describe("KitRegisteredListSection gateo por rol", () => {
 
     expect(screen.queryByRole("button", { name: "Editar" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Eliminar" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Renovar vigencia" })
+    ).toBeNull();
     expect(screen.getByText("Kit 1")).toBeTruthy();
   });
 });

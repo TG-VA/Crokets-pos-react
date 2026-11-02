@@ -44,4 +44,17 @@ describe("useIsAdmin", () => {
     expect(result.current).toBe(false);
     expect(checkUserIsAdmin).not.toHaveBeenCalled();
   });
+
+  it("al cambiar de usuario no conserva el rol del anterior", async () => {
+    checkUserIsAdmin.mockResolvedValueOnce(true);
+    const { result, rerender } = renderHook(() => useIsAdmin());
+    await waitFor(() => expect(result.current).toBe(true));
+
+    checkUserIsAdmin.mockReturnValueOnce(new Promise(() => {}));
+    authState.user = { id: "user-2" };
+    rerender();
+
+    expect(result.current).toBe(false);
+    expect(checkUserIsAdmin).toHaveBeenLastCalledWith("user-2");
+  });
 });

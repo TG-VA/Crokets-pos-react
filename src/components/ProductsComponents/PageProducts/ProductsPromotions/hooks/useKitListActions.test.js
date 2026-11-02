@@ -96,6 +96,34 @@ describe("useKitListActions.handleRenewKitValidity", () => {
     expect(renewKitValidity).not.toHaveBeenCalled();
   });
 
+  it("llama a onSuccess solo tras renovar con exito", async () => {
+    const onSuccess = vi.fn();
+    const { result, showAppConfirm } = setup();
+    await waitFor(() => expect(fetchKits).toHaveBeenCalled());
+
+    act(() => {
+      result.current.handleRenewKitValidity(
+        kit,
+        { starts_on: "2026-12-31", ends_on: "2026-11-01" },
+        onSuccess
+      );
+    });
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.handleRenewKitValidity(
+        kit,
+        { starts_on: null, ends_on: "2026-12-31" },
+        onSuccess
+      );
+    });
+    expect(onSuccess).not.toHaveBeenCalled();
+    await act(async () => {
+      await showAppConfirm.mock.calls[0][0].onConfirm();
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
   it("si el servicio falla muestra error y registra console.error", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     renewKitValidity.mockRejectedValueOnce(new Error("boom"));

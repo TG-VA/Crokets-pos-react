@@ -132,10 +132,11 @@ export const useKitListActions = ({
     await executeSoftDeleteKit(kit);
   };
 
-  const executeRenewKitValidity = async (kit, range) => {
+  const executeRenewKitValidity = async (kit, range, onSuccess) => {
     try {
       await renewKitValidity(kit.id, range);
       await loadKits();
+      onSuccess?.();
       showAppAlert({
         type: "success",
         title: "Vigencia renovada",
@@ -151,7 +152,8 @@ export const useKitListActions = ({
     }
   };
 
-  const handleRenewKitValidity = (kit, { starts_on, ends_on }) => {
+  // `onSuccess` permite a la vista cerrar su formulario solo si se guardo.
+  const handleRenewKitValidity = (kit, { starts_on, ends_on }, onSuccess) => {
     if (!kit?.id) return;
     const rangeError = validateKitDateRange(starts_on, ends_on);
     if (rangeError) {
@@ -168,7 +170,8 @@ export const useKitListActions = ({
       message: `¿Deseas actualizar las fechas de vigencia del kit "${kit.products?.name || "KIT"}"?`,
       confirmText: "Sí, renovar",
       cancelText: "No, regresar",
-      onConfirm: () => executeRenewKitValidity(kit, { starts_on, ends_on }),
+      onConfirm: () =>
+        executeRenewKitValidity(kit, { starts_on, ends_on }, onSuccess),
     });
   };
 
