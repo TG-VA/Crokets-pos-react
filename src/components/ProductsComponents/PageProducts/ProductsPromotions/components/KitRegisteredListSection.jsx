@@ -199,16 +199,6 @@ const KitRegisteredListSection = ({
                       {kit.is_active ? "Desactivar" : "Activar"}
                     </button>
 
-                    {canRenew && (
-                      <button
-                        type="button"
-                        className={[styles.btn, styles.btnSave].join(" ")}
-                        onClick={() => setRenewingKitId(kit.id)}
-                      >
-                        Renovar vigencia
-                      </button>
-                    )}
-
                     {canManageKits && (
                       <button
                         type="button"
@@ -216,6 +206,20 @@ const KitRegisteredListSection = ({
                         onClick={() => handleSoftDeleteKit(kit)}
                       >
                         Eliminar
+                      </button>
+                    )}
+
+                    {canRenew && (
+                      <button
+                        type="button"
+                        className={[
+                          styles.btn,
+                          styles.btnSave,
+                          styles.kitActionWide,
+                        ].join(" ")}
+                        onClick={() => setRenewingKitId(kit.id)}
+                      >
+                        Renovar vigencia
                       </button>
                     )}
                   </div>

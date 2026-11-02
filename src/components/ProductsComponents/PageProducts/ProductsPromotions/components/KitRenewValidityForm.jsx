@@ -1,4 +1,7 @@
 import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
 import styles from "../ProductsPromotions.module.css";
 
 /**
@@ -18,23 +21,39 @@ const KitRenewValidityForm = ({ kit, onSubmit, onCancel }) => {
     <form className={styles.renewForm} onSubmit={handleSubmit}>
       <label className={styles.renewField}>
         Nueva fecha de inicio
-        <input
-          type="date"
+        <DatePicker
+          selected={parseDateOnly(startsOn)}
+          onChange={(date) => setStartsOn(formatDateOnly(date))}
+          selectsStart
+          startDate={parseDateOnly(startsOn)}
+          endDate={parseDateOnly(endsOn)}
+          maxDate={parseDateOnly(endsOn)}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Sin límite"
+          isClearable
           className={styles.input}
-          value={startsOn}
-          onChange={(e) => setStartsOn(e.target.value)}
+          wrapperClassName={styles.datePickerWrapper}
+          showPopperArrow={false}
         />
       </label>
       <label className={styles.renewField}>
         Nueva fecha de fin
-        <input
-          type="date"
+        <DatePicker
+          selected={parseDateOnly(endsOn)}
+          onChange={(date) => setEndsOn(formatDateOnly(date))}
+          selectsEnd
+          startDate={parseDateOnly(startsOn)}
+          endDate={parseDateOnly(endsOn)}
+          minDate={parseDateOnly(startsOn)}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Sin límite"
+          isClearable
           className={styles.input}
-          value={endsOn}
-          onChange={(e) => setEndsOn(e.target.value)}
+          wrapperClassName={styles.datePickerWrapper}
+          showPopperArrow={false}
         />
       </label>
-      <div className={styles.kitActions}>
+      <div className={styles.renewActions}>
         <button
           type="submit"
           className={[styles.btn, styles.btnSave].join(" ")}

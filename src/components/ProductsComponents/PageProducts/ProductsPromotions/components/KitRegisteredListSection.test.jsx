@@ -118,7 +118,7 @@ describe("KitRegisteredListSection renovar vigencia", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Renovar vigencia" }));
     fireEvent.change(screen.getByLabelText("Nueva fecha de fin"), {
-      target: { value: "2026-12-31" },
+      target: { value: "31/12/2026" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Guardar vigencia" }));
 

@@ -477,6 +477,11 @@
   justify-content: center;
 }
 
+.kitActions .kitActionWide {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 /* Modal de búsqueda */
 .searchOverlay {
   position: fixed;
@@ -837,7 +842,14 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 12px;
-  padding-top: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.renewActions {
+  display: flex;
+  gap: 8px;
 }
 
 .renewField {
