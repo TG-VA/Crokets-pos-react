@@ -16,9 +16,18 @@ describe("validateKitForm", () => {
     expect(validateKitForm(validForm, products)).toBeNull();
   });
 
-  it("acepta sin fechas de vigencia", () => {
+  it("acepta sin fechas de vigencia con Sin limite marcado", () => {
     expect(
-      validateKitForm({ ...validForm, starts_on: "", ends_on: "" }, products)
+      validateKitForm(
+        {
+          ...validForm,
+          starts_on: "",
+          ends_on: "",
+          no_starts_on: true,
+          no_ends_on: true,
+        },
+        products
+      )
     ).toBeNull();
   });
 
@@ -85,5 +94,28 @@ describe("validateKitForm", () => {
       title: "Código requerido",
       message: "Captura el código de barras del kit.",
     });
+  });
+});
+
+describe("validateKitForm vigencia sin definir", () => {
+  it("rechaza fecha de inicio vacia sin Sin limite", () => {
+    const error = validateKitForm({ ...validForm, starts_on: "" }, products);
+    expect(error?.title).toBe("Vigencia requerida");
+  });
+
+  it("rechaza fecha de fin vacia sin Sin limite", () => {
+    const error = validateKitForm({ ...validForm, ends_on: "" }, products);
+    expect(error?.title).toBe("Vigencia requerida");
+  });
+
+  it("acepta fechas vacias con Sin limite marcado", () => {
+    const form = {
+      ...validForm,
+      starts_on: "",
+      ends_on: "",
+      no_starts_on: true,
+      no_ends_on: true,
+    };
+    expect(validateKitForm(form, products)).toBeNull();
   });
 });

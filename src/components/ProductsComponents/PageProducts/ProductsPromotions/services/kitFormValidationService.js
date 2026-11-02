@@ -33,6 +33,16 @@ export const validateKitForm = (form, selectedProducts) => {
   if (!Number.isInteger(maxKits) || maxKits < 1) {
     return { title: "Límite inválido", message: MAX_KITS_MESSAGE };
   }
+  if (
+    (!form.starts_on && !form.no_starts_on) ||
+    (!form.ends_on && !form.no_ends_on)
+  ) {
+    return {
+      title: "Vigencia requerida",
+      message:
+        'Captura las fechas de vigencia o marca "Sin fecha límite" en las que no apliquen.',
+    };
+  }
   const dateRangeError = validateKitDateRange(form.starts_on, form.ends_on);
   if (dateRangeError) {
     return { title: "Vigencia inválida", message: dateRangeError };

@@ -28,17 +28,29 @@ describe("isKitFormComplete", () => {
     }
   );
 
-  it("acepta sin fechas de vigencia", () => {
+  it("acepta sin fechas de vigencia con Sin limite marcado", () => {
     expect(
-      isKitFormComplete({ ...validForm, starts_on: "", ends_on: "" }, products)
+      isKitFormComplete(
+        {
+          ...validForm,
+          starts_on: "",
+          ends_on: "",
+          no_starts_on: true,
+          no_ends_on: true,
+        },
+        products
+      )
     ).toBe(true);
   });
 
   it.each(["starts_on", "ends_on"])("acepta con solo %s", (key) => {
     const other = key === "starts_on" ? "ends_on" : "starts_on";
-    expect(isKitFormComplete({ ...validForm, [other]: "" }, products)).toBe(
-      true
-    );
+    expect(
+      isKitFormComplete(
+        { ...validForm, [other]: "", [`no_${other}`]: true },
+        products
+      )
+    ).toBe(true);
   });
 
   it("rechaza sin productos", () => {
@@ -79,13 +91,25 @@ describe("getMissingKitFields", () => {
       "cantidades",
     ]);
   });
+});
 
-  it("nunca pide fechas", () => {
-    expect(
-      getMissingKitFields(
-        { ...validForm, starts_on: "", ends_on: "" },
-        products
-      )
-    ).toEqual([]);
+describe("getMissingKitFields vigencia", () => {
+  it("marca las fechas vacias sin Sin limite", () => {
+    const form = { ...validForm, starts_on: "", ends_on: "" };
+    expect(getMissingKitFields(form, products)).toEqual([
+      "vigente desde",
+      "vigente hasta",
+    ]);
+  });
+
+  it("acepta fechas vacias con Sin limite marcado", () => {
+    const form = {
+      ...validForm,
+      starts_on: "",
+      ends_on: "",
+      no_starts_on: true,
+      no_ends_on: true,
+    };
+    expect(getMissingKitFields(form, products)).toEqual([]);
   });
 });
