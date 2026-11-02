@@ -28,7 +28,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Las tarjetas conservan su altura; el contenedor hace scroll si no caben. */
+.innerContainer > .card {
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .header {
