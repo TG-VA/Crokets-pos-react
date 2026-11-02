@@ -67,7 +67,7 @@ const KitRenewValidityForm = ({ kit, onSubmit, onCancel }) => {
         </button>
         <button
           type="button"
-          className={[styles.btn, styles.btnRemove].join(" ")}
+          className={[styles.btn, styles.btnOutlineNeutral].join(" ")}
           onClick={onCancel}
         >
           Cancelar

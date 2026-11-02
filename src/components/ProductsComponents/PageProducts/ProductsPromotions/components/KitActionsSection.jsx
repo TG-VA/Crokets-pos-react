@@ -33,7 +33,7 @@ const KitActionsSection = ({
 
         <button
           type="button"
-          className={[styles.btn, styles.btnDelete].join(" ")}
+          className={[styles.btn, styles.btnOutlineNeutral].join(" ")}
           onClick={handleClearForm}
           disabled={saving}
         >
@@ -44,7 +44,7 @@ const KitActionsSection = ({
         {editingKit && (
           <button
             type="button"
-            className={[styles.btn, styles.btnCancel].join(" ")}
+            className={[styles.btn, styles.btnOutlineNeutral].join(" ")}
             onClick={handleCancelEdit}
             disabled={saving}
           >

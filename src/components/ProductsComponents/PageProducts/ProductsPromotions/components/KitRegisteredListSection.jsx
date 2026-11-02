@@ -181,7 +181,9 @@ const KitRegisteredListSection = ({
                     {canManageKits && (
                       <button
                         type="button"
-                        className={[styles.btn, styles.btnSave].join(" ")}
+                        className={[styles.btn, styles.btnOutlineBlue].join(
+                          " "
+                        )}
                         onClick={() => handleEditKit(kit)}
                       >
                         Editar
@@ -192,7 +194,9 @@ const KitRegisteredListSection = ({
                       type="button"
                       className={[
                         styles.btn,
-                        kit.is_active ? styles.btnDelete : styles.btnSave,
+                        kit.is_active
+                          ? styles.btnOutlineNeutral
+                          : styles.btnOutlineSuccess,
                       ].join(" ")}
                       onClick={() => handleToggleKitStatus(kit)}
                     >
@@ -202,7 +206,9 @@ const KitRegisteredListSection = ({
                     {canManageKits && (
                       <button
                         type="button"
-                        className={[styles.btn, styles.btnRemove].join(" ")}
+                        className={[styles.btn, styles.btnOutlineDanger].join(
+                          " "
+                        )}
                         onClick={() => handleSoftDeleteKit(kit)}
                       >
                         Eliminar
