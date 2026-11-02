@@ -93,7 +93,7 @@ export const fetchKitItems = async (kitId) => {
   const { data, error } = await supabase
     .from("product_kit_items")
     .select(
-      `id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit)`
+      `id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit, is_global)`
     )
     .eq("kit_id", kitId)
     .order("created_at", { ascending: true });
@@ -107,6 +107,19 @@ export const toggleKitStatus = async (kitId, nextStatus) => {
   const { error } = await supabase
     .from("product_kits")
     .update({ is_active: nextStatus, updated_at: now })
+    .eq("id", kitId);
+  if (error) throw error;
+  return true;
+};
+
+/**
+ * Renueva la vigencia de un kit. Solo actualiza las fechas (NULL = sin limite).
+ */
+export const renewKitValidity = async (kitId, { starts_on, ends_on }) => {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("product_kits")
+    .update({ starts_on, ends_on, updated_at: now })
     .eq("id", kitId);
   if (error) throw error;
   return true;

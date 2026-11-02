@@ -12,6 +12,7 @@ import {
   updateKitTransaction,
   fetchKitItems,
   toggleKitStatus,
+  renewKitValidity,
   softDeleteKitTransaction,
   fetchActiveNonKitProducts,
 } from "./productKitsService";
@@ -304,6 +305,35 @@ describe("productKitsService", () => {
       await expect(toggleKitStatus("kit1", true)).rejects.toThrow(
         "toggle fail"
       );
+    });
+  });
+
+  describe("renewKitValidity", () => {
+    it("actualiza solo las fechas de vigencia del kit", async () => {
+      const result = await renewKitValidity("kit1", {
+        starts_on: "2026-11-01",
+        ends_on: "2026-11-30",
+      });
+
+      expect(result).toBe(true);
+      const payload = kitsQ.update.mock.calls[0][0];
+      expect(Object.keys(payload).sort()).toEqual([
+        "ends_on",
+        "starts_on",
+        "updated_at",
+      ]);
+      expect(payload.starts_on).toBe("2026-11-01");
+      expect(payload.ends_on).toBe("2026-11-30");
+    });
+
+    it("propaga errores del update", async () => {
+      kitsQ.update.mockReturnValue(
+        thenableQuery({ data: null, error: { message: "renew fail" } })
+      );
+
+      await expect(
+        renewKitValidity("kit1", { starts_on: null, ends_on: "2026-11-30" })
+      ).rejects.toThrow("renew fail");
     });
   });
 

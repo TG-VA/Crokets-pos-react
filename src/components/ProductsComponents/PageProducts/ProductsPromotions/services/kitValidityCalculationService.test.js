@@ -4,6 +4,7 @@ import {
   getKitValidityStatus,
   getTodayInTimezone,
   isKitAvailable,
+  isKitExpiringSoon,
   validateKitDateRange,
 } from "./kitValidityCalculationService";
 
@@ -95,5 +96,37 @@ describe("validateKitDateRange", () => {
   it("rechaza fechas con formato invalido", () => {
     expect(validateKitDateRange("10/11/2026", "")).toMatch(/inicio/);
     expect(validateKitDateRange("", "x")).toMatch(/fin/);
+  });
+});
+
+describe("isKitExpiringSoon", () => {
+  const TODAY = "2026-11-10";
+  const kit = (ends_on, extra = {}) => ({ is_active: true, ends_on, ...extra });
+
+  it("marca kits que vencen dentro del umbral, inclusive", () => {
+    expect(isKitExpiringSoon(kit("2026-11-10"), TODAY)).toBe(true);
+    expect(isKitExpiringSoon(kit("2026-11-13"), TODAY)).toBe(true);
+  });
+
+  it("no marca kits que vencen despues del umbral", () => {
+    expect(isKitExpiringSoon(kit("2026-11-14"), TODAY)).toBe(false);
+  });
+
+  it("respeta un umbral personalizado", () => {
+    expect(isKitExpiringSoon(kit("2026-11-14"), TODAY, 7)).toBe(true);
+  });
+
+  it("no considera vencidos ni kits sin fecha de fin", () => {
+    expect(isKitExpiringSoon(kit("2026-11-09"), TODAY)).toBe(false);
+    expect(isKitExpiringSoon(kit(null), TODAY)).toBe(false);
+  });
+
+  it("no considera kits inactivos ni programados", () => {
+    expect(
+      isKitExpiringSoon(kit("2026-11-12", { is_active: false }), TODAY)
+    ).toBe(false);
+    expect(
+      isKitExpiringSoon(kit("2026-11-12", { starts_on: "2026-11-11" }), TODAY)
+    ).toBe(false);
   });
 });

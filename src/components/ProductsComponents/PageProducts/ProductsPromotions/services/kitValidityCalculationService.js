@@ -64,6 +64,28 @@ export const getKitValidityStatus = (
 export const isKitAvailable = (kit, options) =>
   getKitValidityStatus(kit, options) === KIT_VALIDITY_STATUS.ACTIVE;
 
+const addDaysToDateOnly = (dateOnly, days) => {
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days))
+    .toISOString()
+    .slice(0, 10);
+};
+
+/**
+ * Indica si un kit activo y ya iniciado vence dentro de `days` dias (inclusive,
+ * contando hoy). `today` es una fecha YYYY-MM-DD inyectada por el llamador.
+ */
+export const isKitExpiringSoon = (kit, today, days = 3) => {
+  const todayDate = normalizeDateOnly(today);
+  const endsOn = normalizeDateOnly(kit?.ends_on);
+  if (!kit?.is_active || !todayDate || !endsOn) return false;
+
+  const startsOn = normalizeDateOnly(kit.starts_on);
+  if (startsOn && todayDate < startsOn) return false;
+
+  return endsOn >= todayDate && endsOn <= addDaysToDateOnly(todayDate, days);
+};
+
 /**
  * Valida el rango capturado en el formulario. Devuelve un mensaje de error
  * o null cuando el rango es valido o esta vacio.

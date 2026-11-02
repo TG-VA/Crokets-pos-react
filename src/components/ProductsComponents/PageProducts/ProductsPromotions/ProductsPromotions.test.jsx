@@ -35,6 +35,8 @@ vi.mock("./components/KitRegisteredListSection", () => ({
   default: () => null,
 }));
 vi.mock("./components/KitProductSearchModal", () => ({ default: () => null }));
+vi.mock("./components/KitDeleteConfirmModal", () => ({ default: () => null }));
+vi.mock("../../../../hooks/useIsAdmin", () => ({ useIsAdmin: () => false }));
 vi.mock("../../../AppModal/AppModal", () => ({
   default: ({ children }) => <div data-testid="app-modal">{children}</div>,
 }));

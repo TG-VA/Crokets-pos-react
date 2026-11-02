@@ -8,6 +8,8 @@ import KitRegisteredListSection from "./components/KitRegisteredListSection";
 import { useKitsList } from "./hooks/useKitsList";
 import KitProductSearchModal from "./components/KitProductSearchModal";
 import BranchBadgeList from "./components/BranchBadgeList";
+import KitDeleteConfirmModal from "./components/KitDeleteConfirmModal";
+import { useIsAdmin } from "../../../../hooks/useIsAdmin";
 
 const ProductsPromotions = () => {
   const {
@@ -28,7 +30,11 @@ const ProductsPromotions = () => {
     kitPrice,
     kitDiscount,
     kitDiscountPercent,
+    kitMarginWarning,
     handleClearForm,
+    handleCancelEdit,
+    isFormComplete,
+    missingFields,
     addProductToKit,
     updateProductQuantity,
     removeSelectedProduct,
@@ -36,8 +42,13 @@ const ProductsPromotions = () => {
     handleEditKit,
     handleToggleKitStatus,
     handleSoftDeleteKit,
+    handleRenewKitValidity,
+    deletingKit,
+    confirmSoftDeleteKit,
+    cancelSoftDeleteKit,
     showAppAlert,
   } = useProductsPromotions();
+  const isAdmin = useIsAdmin();
   const kitsList = useKitsList(kits);
 
   return (
@@ -59,6 +70,7 @@ const ProductsPromotions = () => {
               kitPrice={kitPrice}
               kitDiscount={kitDiscount}
               kitDiscountPercent={kitDiscountPercent}
+              kitMarginWarning={kitMarginWarning}
               onOpenSearch={() => setShowSearchModal(true)}
             />
 
@@ -73,8 +85,11 @@ const ProductsPromotions = () => {
           <KitActionsSection
             handleSaveKit={handleSaveKit}
             saving={saving}
+            isFormComplete={isFormComplete}
+            missingFields={missingFields}
             editingKit={editingKit}
             handleClearForm={handleClearForm}
+            handleCancelEdit={handleCancelEdit}
             removeSelectedProduct={removeSelectedProduct}
             selectedProductId={selectedProductId}
           />
@@ -88,11 +103,20 @@ const ProductsPromotions = () => {
           onSearchTermChange={kitsList.setSearchTerm}
           status={kitsList.status}
           onStatusChange={kitsList.setStatus}
+          sortCriterion={kitsList.sortCriterion}
+          onSortCriterionChange={kitsList.setSortCriterion}
+          expiringCount={kitsList.expiringCount}
+          expiringKitIds={kitsList.expiringKitIds}
+          expiringOnly={kitsList.expiringOnly}
+          onToggleExpiringOnly={kitsList.toggleExpiringOnly}
           pagination={kitsList.pagination}
+          pageSizeOptions={kitsList.pageSizeOptions}
           editingKit={editingKit}
           handleEditKit={handleEditKit}
           handleToggleKitStatus={handleToggleKitStatus}
           handleSoftDeleteKit={handleSoftDeleteKit}
+          handleRenewKitValidity={handleRenewKitValidity}
+          canManageKits={isAdmin}
         />
       </div>
 
@@ -102,6 +126,14 @@ const ProductsPromotions = () => {
         onSelectProduct={addProductToKit}
         showAppAlert={showAppAlert}
         appModalIsOpen={appModal.isOpen}
+        addedProductIds={selectedProducts.map((p) => p.id)}
+      />
+
+      <KitDeleteConfirmModal
+        key={deletingKit?.id ?? "none"}
+        kit={deletingKit}
+        onConfirm={confirmSoftDeleteKit}
+        onCancel={cancelSoftDeleteKit}
       />
 
       <AppModal

@@ -175,12 +175,24 @@
 }
 
 .listArea {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 220px;
-  max-height: 320px;
   padding: 10px;
   background-color: var(--white);
-  overflow-y: auto;
+}
+
+.productNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.productBranches {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: #92400e;
 }
 
 .emptyState {
@@ -192,6 +204,7 @@
 
 .selectedList {
   display: flex;
+  flex: 1;
   flex-direction: column;
 }
 
@@ -241,9 +254,16 @@
 
 .actionsSection {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.missingFieldsHint {
+  flex: 0 0 100%;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
 }
 
 .leftButtons,
@@ -285,6 +305,14 @@
   background-color: var(--croketsOrange);
 }
 
+.btnSaveWide {
+  min-width: 170px;
+}
+
+.btnCancel {
+  background-color: #8a949e;
+}
+
 .btnSearch {
   background-color: var(--croketsBlue);
 }
@@ -321,8 +349,8 @@
 
 .kitRow {
   display: grid;
-  grid-template-columns: 1fr 120px 280px;
-  gap: 10px;
+  grid-template-columns: 1fr 150px 280px;
+  gap: 16px;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #eeeeee;
@@ -354,6 +382,41 @@
 .kitStatusExpired {
   background-color: #fef3c7;
   color: #92400e;
+}
+
+.unlimitedCheck {
+  display: inline-block;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.unlimitedInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.unlimitedBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--croketsBlue);
+  border-radius: 999px;
+  color: var(--croketsBlue);
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.unlimitedInput:checked + .unlimitedBadge {
+  background-color: var(--croketsBlue);
+  color: var(--white);
+}
+
+.unlimitedInput:focus-visible + .unlimitedBadge {
+  box-shadow: var(--shadow-focus);
 }
 
 .datePickerWrapper {
@@ -475,6 +538,28 @@
 .searchResultItem:hover,
 .searchResultSelected {
   background: #e6f7ff;
+}
+
+.searchResultItem.searchResultDisabled {
+  background: var(--lightGray);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.searchResultItem.searchResultDisabled strong,
+.searchResultDisabled .searchResultMeta {
+  color: #888888;
+}
+
+.addedBadge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: var(--mediumGray);
+  color: var(--darkGray);
 }
 
 .searchResultItem strong {
@@ -682,4 +767,56 @@
   white-space: nowrap;
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.expiringStrip {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid #fcd34d;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expiringStrip:hover {
+  background-color: #fde68a;
+}
+
+.expiringStripActive {
+  background-color: #fde68a;
+}
+
+.expiringBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.renewForm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.renewField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.marginWarning {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--warningColor);
 }

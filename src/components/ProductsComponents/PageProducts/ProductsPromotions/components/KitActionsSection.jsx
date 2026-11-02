@@ -6,8 +6,11 @@ import styles from "../ProductsPromotions.module.css";
 const KitActionsSection = ({
   handleSaveKit,
   saving,
+  isFormComplete,
+  missingFields,
   editingKit,
   handleClearForm,
+  handleCancelEdit,
   removeSelectedProduct,
   selectedProductId,
 }) => {
@@ -16,9 +19,9 @@ const KitActionsSection = ({
       <div className={styles.leftButtons}>
         <button
           type="button"
-          className={[styles.btn, styles.btnSave].join(" ")}
+          className={[styles.btn, styles.btnSave, styles.btnSaveWide].join(" ")}
           onClick={handleSaveKit}
-          disabled={saving}
+          disabled={saving || !isFormComplete}
         >
           <img src={saveIcon} alt="" className={styles.btnIcon} />
           {saving
@@ -37,6 +40,18 @@ const KitActionsSection = ({
           <img src={clearIcon} alt="" className={styles.btnIcon} />
           Limpiar
         </button>
+
+        {editingKit && (
+          <button
+            type="button"
+            className={[styles.btn, styles.btnCancel].join(" ")}
+            onClick={handleCancelEdit}
+            disabled={saving}
+          >
+            <img src={removeIcon} alt="" className={styles.btnIcon} />
+            Cancelar
+          </button>
+        )}
       </div>
 
       <div className={styles.rightButtons}>
@@ -50,6 +65,12 @@ const KitActionsSection = ({
           Remover seleccionado
         </button>
       </div>
+
+      {!isFormComplete && missingFields.length > 0 && (
+        <div className={styles.missingFieldsHint} role="status">
+          Falta: {missingFields.join(", ")}
+        </div>
+      )}
     </div>
   );
 };

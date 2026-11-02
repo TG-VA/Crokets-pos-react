@@ -1,10 +1,21 @@
+import { useState } from "react";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { KIT_STATUS_FILTERS } from "../services/kitsFilterService";
+import { KIT_SORT_CRITERIA } from "../services/kitsSortService";
 import {
   KIT_VALIDITY_STATUS,
   getKitValidityStatus,
 } from "../services/kitValidityCalculationService";
+import KitRenewValidityForm from "./KitRenewValidityForm";
 import styles from "../ProductsPromotions.module.css";
+
+const SORT_OPTIONS = [
+  { value: "", label: "Sin orden" },
+  { value: KIT_SORT_CRITERIA.EXPIRY, label: "Vencimiento" },
+  { value: KIT_SORT_CRITERIA.DESCRIPTION, label: "Descripción" },
+  { value: KIT_SORT_CRITERIA.PRICE, label: "Precio" },
+  { value: KIT_SORT_CRITERIA.STATUS, label: "Estado" },
+];
 
 const STATUS_OPTIONS = [
   { value: KIT_STATUS_FILTERS.ALL, label: "Todos" },
@@ -41,12 +52,28 @@ const KitRegisteredListSection = ({
   onSearchTermChange,
   status,
   onStatusChange,
+  sortCriterion,
+  onSortCriterionChange,
+  expiringCount,
+  expiringKitIds,
+  expiringOnly,
+  onToggleExpiringOnly,
   pagination,
+  pageSizeOptions,
   editingKit,
   handleEditKit,
   handleToggleKitStatus,
   handleSoftDeleteKit,
+  handleRenewKitValidity,
+  canManageKits = false,
 }) => {
+  const [renewingKitId, setRenewingKitId] = useState(null);
+
+  const handleSubmitRenew = (kit, range) => {
+    handleRenewKitValidity(kit, range);
+    setRenewingKitId(null);
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>Kits registrados</div>
@@ -72,7 +99,38 @@ const KitRegisteredListSection = ({
             </option>
           ))}
         </select>
+        <select
+          className={styles.kitsStatusSelect}
+          aria-label="Ordenar kits"
+          value={sortCriterion ?? ""}
+          onChange={(e) => onSortCriterionChange(e.target.value || null)}
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
+
+      {expiringCount > 0 && (
+        <button
+          type="button"
+          className={[
+            styles.expiringStrip,
+            expiringOnly ? styles.expiringStripActive : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-pressed={expiringOnly}
+          onClick={onToggleExpiringOnly}
+        >
+          {expiringCount === 1
+            ? "1 kit por vencer"
+            : `${expiringCount} kits por vencer`}
+          {expiringOnly ? " (mostrar todos)" : " (ver solo estos)"}
+        </button>
+      )}
 
       <div className={styles.cardContent}>
         {kits.length === 0 ? (
@@ -84,7 +142,11 @@ const KitRegisteredListSection = ({
         ) : (
           <div className={styles.kitsList}>
             {visibleKits.map((kit) => {
-              const badge = VALIDITY_BADGES[getKitValidityStatus(kit)];
+              const validityStatus = getKitValidityStatus(kit);
+              const badge = VALIDITY_BADGES[validityStatus];
+              const canRenew =
+                validityStatus === KIT_VALIDITY_STATUS.EXPIRED ||
+                Boolean(expiringKitIds?.has(kit.id));
               return (
                 <div
                   key={kit.id}
@@ -111,14 +173,20 @@ const KitRegisteredListSection = ({
                     {badge.label}
                   </span>
 
+                  {expiringKitIds?.has(kit.id) && (
+                    <span className={styles.expiringBadge}>Por vencer</span>
+                  )}
+
                   <div className={styles.kitActions}>
-                    <button
-                      type="button"
-                      className={[styles.btn, styles.btnSave].join(" ")}
-                      onClick={() => handleEditKit(kit)}
-                    >
-                      Editar
-                    </button>
+                    {canManageKits && (
+                      <button
+                        type="button"
+                        className={[styles.btn, styles.btnSave].join(" ")}
+                        onClick={() => handleEditKit(kit)}
+                      >
+                        Editar
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -131,14 +199,34 @@ const KitRegisteredListSection = ({
                       {kit.is_active ? "Desactivar" : "Activar"}
                     </button>
 
-                    <button
-                      type="button"
-                      className={[styles.btn, styles.btnRemove].join(" ")}
-                      onClick={() => handleSoftDeleteKit(kit)}
-                    >
-                      Eliminar
-                    </button>
+                    {canRenew && (
+                      <button
+                        type="button"
+                        className={[styles.btn, styles.btnSave].join(" ")}
+                        onClick={() => setRenewingKitId(kit.id)}
+                      >
+                        Renovar vigencia
+                      </button>
+                    )}
+
+                    {canManageKits && (
+                      <button
+                        type="button"
+                        className={[styles.btn, styles.btnRemove].join(" ")}
+                        onClick={() => handleSoftDeleteKit(kit)}
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </div>
+
+                  {renewingKitId === kit.id && (
+                    <KitRenewValidityForm
+                      kit={kit}
+                      onSubmit={handleSubmitRenew}
+                      onCancel={() => setRenewingKitId(null)}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -151,7 +239,7 @@ const KitRegisteredListSection = ({
           currentPage={pagination.currentPage}
           totalPages={pagination.totalPages}
           pageSize={pagination.pageSize}
-          pageSizeOptions={[pagination.pageSize]}
+          pageSizeOptions={pageSizeOptions ?? [pagination.pageSize]}
           onPageChange={pagination.handlePageChange}
           onPageSizeChange={pagination.handlePageSizeChange}
           totalItems={totalKits}

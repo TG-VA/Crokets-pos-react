@@ -1,6 +1,7 @@
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
+import { KIT_MARGIN_WARNING } from "../services/kitMarginCalculationService";
 import styles from "../ProductsPromotions.module.css";
 import {
   sanitizeDecimalInput,
@@ -9,9 +10,26 @@ import {
 import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
 
 const VALIDITY_FIELDS = [
-  { field: "starts_on", label: "Vigente desde", range: "selectsStart" },
-  { field: "ends_on", label: "Vigente hasta", range: "selectsEnd" },
+  {
+    field: "starts_on",
+    flag: "no_starts_on",
+    label: "Vigente desde",
+    range: "selectsStart",
+  },
+  {
+    field: "ends_on",
+    flag: "no_ends_on",
+    label: "Vigente hasta",
+    range: "selectsEnd",
+  },
 ];
+
+const MARGIN_WARNING_MESSAGES = {
+  [KIT_MARGIN_WARNING.NO_DISCOUNT]:
+    "El precio del kit no ofrece ahorro frente a la suma de sus productos.",
+  [KIT_MARGIN_WARNING.BELOW_COST]:
+    "El precio del kit es menor que el costo de sus productos (venta a pérdida).",
+};
 
 const KitFormSection = ({
   form,
@@ -21,6 +39,7 @@ const KitFormSection = ({
   kitPrice,
   kitDiscount,
   kitDiscountPercent,
+  kitMarginWarning,
   onOpenSearch,
 }) => {
   return (
@@ -86,7 +105,7 @@ const KitFormSection = ({
         </div>
       </div>
 
-      {VALIDITY_FIELDS.map(({ field, label, range }, index) => (
+      {VALIDITY_FIELDS.map(({ field, flag, label, range }, index) => (
         <div key={field} className={styles.formRow}>
           <label className={styles.label}>{label}</label>
           <div className={styles.limitInputContainer}>
@@ -104,11 +123,24 @@ const KitFormSection = ({
               }
               dateFormat="dd/MM/yyyy"
               placeholderText="Sin límite"
+              disabled={Boolean(form[flag])}
               isClearable
               className={styles.input}
               wrapperClassName={styles.datePickerWrapper}
               showPopperArrow={false}
             />
+            <label className={styles.unlimitedCheck}>
+              <input
+                type="checkbox"
+                className={styles.unlimitedInput}
+                checked={Boolean(form[flag])}
+                onChange={(e) => {
+                  updateField(flag, e.target.checked);
+                  if (e.target.checked) updateField(field, "");
+                }}
+              />
+              <span className={styles.unlimitedBadge}>Sin fecha límite</span>
+            </label>
             {index === VALIDITY_FIELDS.length - 1 && (
               <span className={styles.limitHelperText}>
                 * Opcional. Sin fecha no hay límite. Ambas fechas son inclusivas
@@ -131,6 +163,11 @@ const KitFormSection = ({
             </span>
           )}
         </div>
+        {MARGIN_WARNING_MESSAGES[kitMarginWarning] && (
+          <p className={styles.marginWarning} role="status">
+            {MARGIN_WARNING_MESSAGES[kitMarginWarning]}
+          </p>
+        )}
       </div>
 
       <div className={styles.searchProductRow}>

@@ -1,133 +1,56 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { validateKitForm } from "../services/kitFormValidationService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import { useKitForm } from "./useKitForm";
+import { useKitListActions } from "./useKitListActions";
+import { getKitMarginWarning } from "../services/kitMarginCalculationService";
 import {
-  fetchKits,
   checkKitDuplicates,
   createNewKitTransaction,
   updateKitTransaction,
   fetchKitItems,
-  toggleKitStatus,
-  softDeleteKitTransaction,
 } from "../services/productKitsService";
-import {
-  KIT_VALIDITY_STATUS,
-  getKitValidityStatus,
-  validateKitDateRange,
-} from "../services/kitValidityCalculationService";
 
 export const useProductsPromotions = () => {
   const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
     useAppModal();
 
-  const [form, setForm] = useState({
-    barcode: "",
-    description: "",
-    price: "",
-    max_kits_per_sale: "1",
-    starts_on: "",
-    ends_on: "",
+  const kitForm = useKitForm({ showAppAlert, showAppConfirm });
+  const {
+    form,
+    selectedProducts,
+    editingKit,
+    setEditingKit,
+    resetForm,
+    handleCancelEdit,
+    loadKitIntoForm,
+  } = kitForm;
+
+  // El listener de teclado se registra pocas veces; la ref evita un cierre obsoleto.
+  const cancelEditRef = useRef(handleCancelEdit);
+  useEffect(() => {
+    cancelEditRef.current = handleCancelEdit;
   });
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [kits, setKits] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState(null);
+
+  const {
+    kits,
+    loadKits,
+    handleToggleKitStatus,
+    handleSoftDeleteKit,
+    deletingKit,
+    confirmSoftDeleteKit,
+    cancelSoftDeleteKit,
+    handleRenewKitValidity,
+  } = useKitListActions({
+    editingKit,
+    setEditingKit,
+    resetForm,
+    showAppAlert,
+    showAppConfirm,
+  });
+
   const [saving, setSaving] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [editingKit, setEditingKit] = useState(null);
-
-  const barcodeInputRef = useRef(null);
-
-  const selectedProductsTotal = useMemo(() => {
-    return selectedProducts.reduce(
-      (sum, product) =>
-        sum + Number(product.sale_price || 0) * Number(product.quantity || 0),
-      0
-    );
-  }, [selectedProducts]);
-
-  const kitPrice = Number(form.price || 0);
-  const kitDiscount = useMemo(
-    () =>
-      selectedProductsTotal <= 0 || kitPrice <= 0
-        ? 0
-        : selectedProductsTotal - kitPrice,
-    [selectedProductsTotal, kitPrice]
-  );
-  const kitDiscountPercent = useMemo(
-    () =>
-      selectedProductsTotal <= 0 || kitDiscount <= 0
-        ? 0
-        : (kitDiscount / selectedProductsTotal) * 100,
-    [selectedProductsTotal, kitDiscount]
-  );
-
-  const updateField = (key, value) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
-
-  const resetForm = () => {
-    setForm({
-      barcode: "",
-      description: "",
-      price: "",
-      max_kits_per_sale: "1",
-      starts_on: "",
-      ends_on: "",
-    });
-    setSelectedProducts([]);
-    setSelectedProductId(null);
-    setEditingKit(null);
-    setTimeout(() => barcodeInputRef.current?.focus(), 0);
-  };
-
-  const handleClearForm = () => {
-    const hasData =
-      form.barcode.trim() ||
-      form.description.trim() ||
-      String(form.price).trim() ||
-      selectedProducts.length > 0 ||
-      editingKit;
-    if (!hasData) return resetForm();
-
-    showAppConfirm({
-      type: "warning",
-      title: editingKit ? "Cancelar edición" : "Limpiar formulario",
-      message: editingKit
-        ? "¿Deseas cancelar la edición y limpiar el formulario?"
-        : "¿Deseas limpiar el formulario del kit?",
-      confirmText: editingKit ? "Sí, cancelar edición" : "Sí, limpiar",
-      cancelText: "No, regresar",
-      onConfirm: resetForm,
-    });
-  };
-
-  // Recarga imperativa tras crear, editar o eliminar; el efecto de montaje llama
-  // directo a `fetchKits` para no escribir estado de forma sincrona.
-  const loadKits = useCallback(async () => {
-    try {
-      setKits(await fetchKits());
-    } catch (error) {
-      console.error("Error cargando kits:", error);
-      setKits([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetchKits()
-      .then((data) => {
-        if (cancelled) return;
-        setKits(data);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        console.error("Error cargando kits:", error);
-        setKits([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -138,7 +61,7 @@ export const useProductsPromotions = () => {
       }
       if (e.key === "Escape" && editingKit && !showSearchModal) {
         e.preventDefault();
-        resetForm();
+        cancelEditRef.current();
       }
     };
     window.addEventListener("keydown", handleKeyDown, { capture: true });
@@ -146,128 +69,11 @@ export const useProductsPromotions = () => {
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [editingKit, showSearchModal, appModal.isOpen]);
 
-  const addProductToKit = (product) => {
-    if (!product?.id) return;
-    if (product.is_kit)
-      return showAppAlert({
-        type: "warning",
-        title: "Kit no permitido",
-        message: "No puedes agregar un kit dentro de otro kit.",
-      });
-    if (selectedProducts.some((p) => p.id === product.id))
-      return showAppAlert({
-        type: "warning",
-        title: "Producto repetido",
-        message: "Este producto ya está agregado al kit.",
-      });
-
-    setSelectedProducts((prev) => [
-      ...prev,
-      {
-        id: product.id,
-        barcode: product.barcode || "",
-        name: product.name || "Producto",
-        sale_price: Number(product.sale_price || 0),
-        cost_price: Number(product.cost_price || 0),
-        quantity: 1,
-      },
-    ]);
-    setSelectedProductId(product.id);
-  };
-
-  const updateProductQuantity = (productId, value) => {
-    const quantity = Number(value);
-    setSelectedProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId
-          ? {
-              ...p,
-              quantity:
-                Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
-            }
-          : p
-      )
-    );
-  };
-
-  const removeSelectedProduct = () => {
-    if (!selectedProductId)
-      return showAppAlert({
-        type: "warning",
-        title: "Producto requerido",
-        message: "Selecciona un producto del kit para removerlo.",
-      });
-    setSelectedProducts((prev) =>
-      prev.filter((p) => p.id !== selectedProductId)
-    );
-    setSelectedProductId(null);
-  };
-
   const validateForm = () => {
-    if (!form.barcode.trim()) {
-      showAppAlert({
-        type: "warning",
-        title: "Código requerido",
-        message: "Captura el código de barras del kit.",
-      });
-      return false;
-    }
-    if (!form.description.trim()) {
-      showAppAlert({
-        type: "warning",
-        title: "Descripción requerida",
-        message: "Captura la descripción del kit.",
-      });
-      return false;
-    }
-    if (!Number.isFinite(Number(form.price)) || Number(form.price) <= 0) {
-      showAppAlert({
-        type: "warning",
-        title: "Precio requerido",
-        message: "Captura un precio válido para el kit.",
-      });
-      return false;
-    }
-    const maxKits = Number(form.max_kits_per_sale);
-    if (!Number.isInteger(maxKits) || maxKits < 1) {
-      showAppAlert({
-        type: "warning",
-        title: "Límite inválido",
-        message:
-          "El límite de venta por transacción debe ser un número entero mayor o igual a 1.",
-      });
-      return false;
-    }
-    const dateRangeError = validateKitDateRange(form.starts_on, form.ends_on);
-    if (dateRangeError) {
-      showAppAlert({
-        type: "warning",
-        title: "Vigencia inválida",
-        message: dateRangeError,
-      });
-      return false;
-    }
-    if (selectedProducts.length === 0) {
-      showAppAlert({
-        type: "warning",
-        title: "Productos requeridos",
-        message: "Agrega al menos un producto al kit.",
-      });
-      return false;
-    }
-    if (
-      selectedProducts.some(
-        (p) => !Number.isFinite(Number(p.quantity)) || Number(p.quantity) <= 0
-      )
-    ) {
-      showAppAlert({
-        type: "warning",
-        title: "Cantidad inválida",
-        message: "Todos los productos del kit deben tener cantidad mayor a 0.",
-      });
-      return false;
-    }
-    return true;
+    const error = validateKitForm(form, selectedProducts);
+    if (!error) return true;
+    showAppAlert({ type: "warning", ...error });
+    return false;
   };
 
   const validateDuplicatedKit = async (
@@ -351,29 +157,7 @@ export const useProductsPromotions = () => {
     if (!kit?.id || !kit?.kit_product_id) return;
     try {
       const items = await fetchKitItems(kit.id);
-      setEditingKit(kit);
-      setForm({
-        barcode: kit.products?.barcode || "",
-        description: kit.products?.name || "",
-        price: String(Number(kit.products?.sale_price || 0)),
-        max_kits_per_sale: String(Number(kit.products?.max_kits_per_sale ?? 1)),
-        starts_on: kit.starts_on || "",
-        ends_on: kit.ends_on || "",
-      });
-      setSelectedProducts(
-        (items || [])
-          .filter((item) => item.products)
-          .map((item) => ({
-            id: item.products.id,
-            barcode: item.products.barcode || "",
-            name: item.products.name || "Producto",
-            sale_price: Number(item.products.sale_price || 0),
-            cost_price: Number(item.products.cost_price || 0),
-            quantity: Number(item.quantity || 1),
-          }))
-      );
-      setSelectedProductId(null);
-      setTimeout(() => barcodeInputRef.current?.focus(), 0);
+      loadKitIntoForm(kit, items);
     } catch (error) {
       console.error("Error cargando kit para editar:", error);
       showAppAlert({
@@ -384,108 +168,43 @@ export const useProductsPromotions = () => {
     }
   };
 
-  const executeToggleKitStatus = async (kit, nextStatus) => {
-    try {
-      await toggleKitStatus(kit.id, nextStatus);
-      await loadKits();
-      if (editingKit?.id === kit.id)
-        setEditingKit((prev) =>
-          prev ? { ...prev, is_active: nextStatus } : prev
-        );
-      showAppAlert({
-        type: "success",
-        title: nextStatus ? "Kit activado" : "Kit desactivado",
-        message: nextStatus ? "Kit activado." : "Kit desactivado.",
-      });
-    } catch (error) {
-      console.error("Error actualizando kit:", error);
-      showAppAlert({
-        type: "danger",
-        title: "Error al actualizar",
-        message: "No se pudo actualizar el estatus del kit.",
-      });
-    }
-  };
-
-  const handleToggleKitStatus = async (kit) => {
-    if (!kit?.id) return;
-    const nextStatus = !kit.is_active;
-    const outsideValidity =
-      nextStatus &&
-      [KIT_VALIDITY_STATUS.EXPIRED, KIT_VALIDITY_STATUS.SCHEDULED].includes(
-        getKitValidityStatus({ ...kit, is_active: true })
-      );
-    const activateMessage = outsideValidity
-      ? "Este kit está fuera de su vigencia, por lo que seguirá sin poder venderse aunque se active. Para venderlo, edita sus fechas de vigencia. ¿Deseas activarlo de todos modos?"
-      : "¿Deseas activar este kit?";
-    showAppConfirm({
-      type: "warning",
-      title: nextStatus ? "Activar kit" : "Desactivar kit",
-      message: nextStatus ? activateMessage : "¿Deseas desactivar este kit?",
-      confirmText: nextStatus ? "Sí, activar" : "Sí, desactivar",
-      cancelText: "No, regresar",
-      onConfirm: () => executeToggleKitStatus(kit, nextStatus),
-    });
-  };
-
-  const executeSoftDeleteKit = async (kit) => {
-    try {
-      await softDeleteKitTransaction(kit.id, kit.kit_product_id);
-      if (editingKit?.id === kit.id) resetForm();
-      showAppAlert({
-        type: "success",
-        title: "Kit eliminado",
-        message: "Kit eliminado del POS correctamente.",
-      });
-      await loadKits();
-    } catch (error) {
-      console.error("Error eliminando kit del POS:", error);
-      showAppAlert({
-        type: "danger",
-        title: "Error al eliminar",
-        message: "No se pudo eliminar el kit del POS.",
-      });
-    }
-  };
-
-  const handleSoftDeleteKit = async (kit) => {
-    if (!kit?.id || !kit?.kit_product_id) return;
-    showAppConfirm({
-      type: "danger",
-      title: "Eliminar kit",
-      message: `¿Deseas eliminar del POS el kit "${kit.products?.name || "KIT"}"?\n\nEl registro se conservará en la base de datos.`,
-      confirmText: "Sí, eliminar",
-      cancelText: "No, regresar",
-      onConfirm: () => executeSoftDeleteKit(kit),
-    });
-  };
-
   return {
     form,
-    updateField,
+    updateField: kitForm.updateField,
     selectedProducts,
     kits,
-    selectedProductId,
-    setSelectedProductId,
+    selectedProductId: kitForm.selectedProductId,
+    setSelectedProductId: kitForm.setSelectedProductId,
     saving,
     showSearchModal,
     setShowSearchModal,
     editingKit,
     appModal,
     closeAppModal,
-    barcodeInputRef,
-    selectedProductsTotal,
-    kitPrice,
-    kitDiscount,
-    kitDiscountPercent,
-    handleClearForm,
-    addProductToKit,
-    updateProductQuantity,
-    removeSelectedProduct,
+    barcodeInputRef: kitForm.barcodeInputRef,
+    selectedProductsTotal: kitForm.selectedProductsTotal,
+    kitPrice: kitForm.kitPrice,
+    kitDiscount: kitForm.kitDiscount,
+    kitDiscountPercent: kitForm.kitDiscountPercent,
+    kitMarginWarning: getKitMarginWarning(
+      kitForm.selectedProducts,
+      kitForm.kitPrice
+    ),
+    handleClearForm: kitForm.handleClearForm,
+    handleCancelEdit,
+    isFormComplete: kitForm.isFormComplete,
+    missingFields: kitForm.missingFields,
+    addProductToKit: kitForm.addProductToKit,
+    updateProductQuantity: kitForm.updateProductQuantity,
+    removeSelectedProduct: kitForm.removeSelectedProduct,
     handleSaveKit,
     handleEditKit,
     handleToggleKitStatus,
     handleSoftDeleteKit,
+    deletingKit,
+    confirmSoftDeleteKit,
+    cancelSoftDeleteKit,
+    handleRenewKitValidity,
     showAppAlert,
   };
 };
