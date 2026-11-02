@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import AppModal from "./AppModal";
 import {
@@ -81,5 +81,26 @@ describe("AppModal: capa en la pila de modales", () => {
     );
 
     expect(seen.current).toBe(true);
+  });
+});
+
+describe("AppModal confirmDisabled", () => {
+  it("deshabilita confirmar y no ejecuta onConfirm con Enter", () => {
+    const onConfirm = vi.fn();
+    render(
+      <AppModal
+        isOpen
+        title="Borrar"
+        confirmText="Eliminar"
+        confirmDisabled
+        onConfirm={onConfirm}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Eliminar" }).disabled).toBe(
+      true
+    );
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 });
