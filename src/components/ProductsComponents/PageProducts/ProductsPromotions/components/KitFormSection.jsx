@@ -166,12 +166,13 @@ const KitFormSection = ({
               {Math.max(kitDiscountPercent, 0).toFixed(2)}%
             </span>
           )}
+
+          {MARGIN_WARNING_MESSAGES[kitMarginWarning] && (
+            <p className={styles.marginWarning} role="status">
+              {MARGIN_WARNING_MESSAGES[kitMarginWarning]}
+            </p>
+          )}
         </div>
-        {MARGIN_WARNING_MESSAGES[kitMarginWarning] && (
-          <p className={styles.marginWarning} role="status">
-            {MARGIN_WARNING_MESSAGES[kitMarginWarning]}
-          </p>
-        )}
       </div>
 
       <div className={styles.searchProductRow}>

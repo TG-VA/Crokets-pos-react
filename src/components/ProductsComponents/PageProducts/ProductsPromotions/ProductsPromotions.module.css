@@ -358,6 +358,48 @@
   background-color: var(--errorColor);
 }
 
+/* Acciones secundarias: solo borde, para dejar el relleno a la accion principal. */
+.btnOutlineNeutral,
+.btnOutlineBlue,
+.btnOutlineSuccess,
+.btnOutlineDanger {
+  background-color: var(--white);
+  border: 1.5px solid currentColor;
+}
+
+.btnOutlineNeutral {
+  color: #5f6b76;
+}
+
+.btnOutlineBlue {
+  color: var(--croketsBlue);
+}
+
+.btnOutlineSuccess {
+  color: #15803d;
+}
+
+.btnOutlineDanger {
+  color: var(--errorColor);
+}
+
+.btnOutlineNeutral:hover:not(:disabled) {
+  background-color: #f1f3f5;
+}
+
+.btnOutlineBlue:hover:not(:disabled) {
+  background-color: #eaf6f8;
+}
+
+.btnOutlineSuccess:hover:not(:disabled) {
+  background-color: #f0fdf4;
+}
+
+.btnOutlineDanger:hover:not(:disabled) {
+  background-color: var(--errorColor);
+  color: var(--white);
+}
+
 .cardHeader {
   font-weight: 700;
   font-size: 1.1rem;
@@ -860,7 +902,19 @@
 }
 
 .marginWarning {
+  align-self: center;
   margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--warningColor);
+  padding: 0.2rem 0.75rem;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
+.btnOutlineNeutral .btnIcon {
+  filter: brightness(0) opacity(0.6);
 }
