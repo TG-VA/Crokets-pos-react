@@ -4,6 +4,7 @@ import { useAppModal } from "../../../../../hooks/useAppModal";
 import { useKitForm } from "./useKitForm";
 import { useKitListActions } from "./useKitListActions";
 import { getKitMarginWarning } from "../services/kitMarginCalculationService";
+import { getTodayInTimezone } from "../services/kitValidityCalculationService";
 import {
   checkKitDuplicates,
   createNewKitTransaction,
@@ -70,7 +71,10 @@ export const useProductsPromotions = () => {
   }, [editingKit, showSearchModal, appModal.isOpen]);
 
   const validateForm = () => {
-    const error = validateKitForm(form, selectedProducts);
+    const error = validateKitForm(form, selectedProducts, {
+      today: getTodayInTimezone(),
+      originalEndsOn: editingKit?.ends_on ?? null,
+    });
     if (!error) return true;
     showAppAlert({ type: "warning", ...error });
     return false;

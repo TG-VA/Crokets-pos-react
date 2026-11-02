@@ -119,3 +119,45 @@ describe("validateKitForm vigencia sin definir", () => {
     expect(validateKitForm(form, products)).toBeNull();
   });
 });
+
+describe("validateKitForm fecha de fin en el pasado", () => {
+  const today = "2026-11-01";
+
+  it("rechaza al crear un kit con fin anterior a hoy", () => {
+    const error = validateKitForm(
+      { ...validForm, starts_on: "2026-10-01", ends_on: "2026-10-31" },
+      products,
+      { today }
+    );
+    expect(error?.title).toBe("Vigencia vencida");
+  });
+
+  it("acepta fin igual a hoy", () => {
+    expect(
+      validateKitForm(
+        { ...validForm, starts_on: "2026-10-01", ends_on: today },
+        products,
+        { today }
+      )
+    ).toBeNull();
+  });
+
+  it("al editar acepta un fin pasado si no cambio", () => {
+    expect(
+      validateKitForm(
+        { ...validForm, starts_on: "2026-10-01", ends_on: "2026-10-02" },
+        products,
+        { today, originalEndsOn: "2026-10-02" }
+      )
+    ).toBeNull();
+  });
+
+  it("al editar rechaza cambiar el fin a una fecha pasada", () => {
+    const error = validateKitForm(
+      { ...validForm, starts_on: "2026-10-01", ends_on: "2026-10-05" },
+      products,
+      { today, originalEndsOn: "2026-10-02" }
+    );
+    expect(error?.title).toBe("Vigencia vencida");
+  });
+});

@@ -2,6 +2,7 @@ import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
+import { getTodayInTimezone } from "../services/kitValidityCalculationService";
 import styles from "../ProductsPromotions.module.css";
 
 /**
@@ -11,6 +12,10 @@ import styles from "../ProductsPromotions.module.css";
 const KitRenewValidityForm = ({ kit, onSubmit, onCancel }) => {
   const [startsOn, setStartsOn] = useState(kit.starts_on ?? "");
   const [endsOn, setEndsOn] = useState(kit.ends_on ?? "");
+  const today = parseDateOnly(getTodayInTimezone());
+  const startDate = parseDateOnly(startsOn);
+  // La fecha de fin no puede quedar en el pasado: el kit seguiria vencido.
+  const minEndDate = startDate && startDate > today ? startDate : today;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,7 +49,7 @@ const KitRenewValidityForm = ({ kit, onSubmit, onCancel }) => {
           selectsEnd
           startDate={parseDateOnly(startsOn)}
           endDate={parseDateOnly(endsOn)}
-          minDate={parseDateOnly(startsOn)}
+          minDate={minEndDate}
           dateFormat="dd/MM/yyyy"
           placeholderText="Sin límite"
           isClearable

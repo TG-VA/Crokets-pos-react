@@ -9,8 +9,14 @@ const isPositiveNumber = (value) =>
 /**
  * Valida el formulario del kit. Devuelve el primer error como
  * `{ title, message }` o `null` si es valido.
+ * `today` (YYYY-MM-DD) activa la regla de fecha de fin no vencida;
+ * `originalEndsOn` permite conservar al editar un fin pasado sin cambios.
  */
-export const validateKitForm = (form, selectedProducts) => {
+export const validateKitForm = (
+  form,
+  selectedProducts,
+  { today = null, originalEndsOn = null } = {}
+) => {
   if (!form.barcode.trim()) {
     return {
       title: "Código requerido",
@@ -46,6 +52,14 @@ export const validateKitForm = (form, selectedProducts) => {
   const dateRangeError = validateKitDateRange(form.starts_on, form.ends_on);
   if (dateRangeError) {
     return { title: "Vigencia inválida", message: dateRangeError };
+  }
+  const endsOnChanged = (form.ends_on || null) !== (originalEndsOn || null);
+  if (today && form.ends_on && form.ends_on < today && endsOnChanged) {
+    return {
+      title: "Vigencia vencida",
+      message:
+        "La fecha de fin ya pasó. Elige una fecha de fin igual o posterior a hoy.",
+    };
   }
   if (selectedProducts.length === 0) {
     return {

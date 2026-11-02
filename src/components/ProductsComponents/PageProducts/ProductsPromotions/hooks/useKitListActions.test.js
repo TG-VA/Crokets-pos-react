@@ -124,6 +124,27 @@ describe("useKitListActions.handleRenewKitValidity", () => {
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 
+  it("rechaza un rango cuyo fin ya paso y no pide confirmacion", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-01T18:00:00Z"));
+    const { result, showAppConfirm, showAppAlert } = setup();
+    await waitFor(() => expect(fetchKits).toHaveBeenCalled());
+
+    act(() => {
+      result.current.handleRenewKitValidity(kit, {
+        starts_on: "2026-10-01",
+        ends_on: "2026-10-02",
+      });
+    });
+
+    expect(showAppAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "danger", title: "Vigencia vencida" })
+    );
+    expect(showAppConfirm).not.toHaveBeenCalled();
+    expect(renewKitValidity).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it("si el servicio falla muestra error y registra console.error", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     renewKitValidity.mockRejectedValueOnce(new Error("boom"));

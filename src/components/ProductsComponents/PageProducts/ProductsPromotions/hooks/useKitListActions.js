@@ -164,6 +164,21 @@ export const useKitListActions = ({
       });
       return;
     }
+    const renewedStatus = getKitValidityStatus({
+      ...kit,
+      is_active: true,
+      starts_on,
+      ends_on,
+    });
+    if (renewedStatus === KIT_VALIDITY_STATUS.EXPIRED) {
+      showAppAlert({
+        type: "danger",
+        title: "Vigencia vencida",
+        message:
+          "La fecha de fin ya pasó, así que el kit seguiría vencido. Elige una fecha de fin igual o posterior a hoy.",
+      });
+      return;
+    }
     showAppConfirm({
       type: "warning",
       title: "Renovar vigencia",

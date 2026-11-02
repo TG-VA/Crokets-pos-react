@@ -8,6 +8,7 @@ import {
   sanitizeIntegerInput,
 } from "../services/kitInputSanitizers";
 import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
+import { getTodayInTimezone } from "../services/kitValidityCalculationService";
 
 const VALIDITY_FIELDS = [
   {
@@ -42,6 +43,11 @@ const KitFormSection = ({
   kitMarginWarning,
   onOpenSearch,
 }) => {
+  // La fecha de fin no se puede elegir en el pasado ni antes del inicio.
+  const today = parseDateOnly(getTodayInTimezone());
+  const startDate = parseDateOnly(form.starts_on);
+  const minEndDate = startDate && startDate > today ? startDate : today;
+
   return (
     <div className={styles.formColumn}>
       <div className={styles.formRow}>
@@ -115,9 +121,7 @@ const KitFormSection = ({
               onChange={(date) => updateField(field, formatDateOnly(date))}
               startDate={parseDateOnly(form.starts_on)}
               endDate={parseDateOnly(form.ends_on)}
-              minDate={
-                field === "ends_on" ? parseDateOnly(form.starts_on) : null
-              }
+              minDate={field === "ends_on" ? minEndDate : null}
               maxDate={
                 field === "starts_on" ? parseDateOnly(form.ends_on) : null
               }
