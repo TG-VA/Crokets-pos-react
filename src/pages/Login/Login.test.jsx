@@ -63,6 +63,30 @@ const renderLogin = async () => {
   return { ...view, username, password };
 };
 
+describe("Login: Enter en el campo usuario", () => {
+  it("pasa el foco a la contrasena sin mostrar error", async () => {
+    const { username, password } = await renderLogin();
+    fireEvent.change(username, { target: { value: "carlos" } });
+
+    const notPrevented = fireEvent.keyDown(username, { key: "Enter" });
+
+    expect(notPrevented).toBe(false);
+    expect(document.activeElement).toBe(password);
+    expect(screen.queryByText("Por favor, complete todos los campos.")).toBe(
+      null
+    );
+  });
+
+  it("no intercepta Enter si el usuario esta vacio", async () => {
+    const { username } = await renderLogin();
+
+    const notPrevented = fireEvent.keyDown(username, { key: "Enter" });
+
+    expect(notPrevented).toBe(true);
+    expect(document.activeElement).toBe(username);
+  });
+});
+
 describe("Login: foco tras enviar el formulario", () => {
   beforeEach(() => {
     window.electronAPI = {
