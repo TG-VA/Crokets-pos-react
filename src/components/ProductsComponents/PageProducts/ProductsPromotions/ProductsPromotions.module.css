@@ -906,41 +906,53 @@
   text-align: center;
 }
 
-/* Acciones por fila: relleno suave sin borde, en armonia con los badges de estado. */
+/* Acciones por fila: blancas con borde gris; se rellenan con su color en hover. */
+.btnSoftBlue,
+.btnSoftNeutral,
+.btnSoftSuccess,
+.btnSoftDanger {
+  background-color: var(--white);
+  border: 1px solid #dee2e6;
+}
+
 .btnSoftBlue {
-  background-color: #e0f2f7;
   color: var(--croketsBlue);
 }
 
 .btnSoftNeutral {
-  background-color: #f1f3f5;
   color: #5f6b76;
 }
 
 .btnSoftSuccess {
-  background-color: #dcfce7;
-  color: #166534;
+  color: #15803d;
 }
 
 .btnSoftDanger {
-  background-color: #fee2e2;
-  color: #b91c1c;
+  color: var(--errorColor);
 }
 
 .btnSoftBlue:hover:not(:disabled) {
-  background-color: #c6e7f0;
+  background-color: var(--croketsBlue);
+  border-color: var(--croketsBlue);
+  color: var(--white);
 }
 
 .btnSoftNeutral:hover:not(:disabled) {
-  background-color: #e2e6ea;
+  background-color: #5f6b76;
+  border-color: #5f6b76;
+  color: var(--white);
 }
 
 .btnSoftSuccess:hover:not(:disabled) {
-  background-color: #bbf7d0;
+  background-color: #15803d;
+  border-color: #15803d;
+  color: var(--white);
 }
 
 .btnSoftDanger:hover:not(:disabled) {
-  background-color: #fecaca;
+  background-color: var(--errorColor);
+  border-color: var(--errorColor);
+  color: var(--white);
 }
 
 /* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
@@ -952,4 +964,8 @@
 .btnSoftDanger .btnIcon {
   filter: brightness(0) invert(36%) sepia(77%) saturate(2034%)
     hue-rotate(338deg) brightness(93%) contrast(93%);
+}
+
+.btnSoftDanger:hover:not(:disabled) .btnIcon {
+  filter: brightness(0) invert(1);
 }
