@@ -1,11 +1,22 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
+const toDateOrNull = (value) => (value ? String(value).slice(0, 10) : null);
+
+const buildKitProductPayload = (kitData) => ({
+  barcode: kitData.barcode,
+  name: kitData.description,
+  sale_price: kitData.price,
+  max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
+  starts_on: toDateOrNull(kitData.starts_on),
+  ends_on: toDateOrNull(kitData.ends_on),
+});
+
 export const fetchKits = async () => {
   const { data, error } = await supabase
     .from("product_kits")
     .select(
       `
-      id, kit_product_id, is_active, created_at, updated_at,
+      id, kit_product_id, is_active, starts_on, ends_on, created_at, updated_at,
       products:product_kits_kit_product_id_fkey (id, barcode, name, sale_price, status, is_global, max_kits_per_sale)
     `
     )
@@ -48,12 +59,7 @@ export const checkKitDuplicates = async (
 
 export const createNewKitTransaction = async (kitData, selectedProducts) => {
   const { error } = await supabase.rpc("create_kit_transaction", {
-    p_kit_product: {
-      barcode: kitData.barcode,
-      name: kitData.description,
-      sale_price: kitData.price,
-      max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
-    },
+    p_kit_product: buildKitProductPayload(kitData),
     p_kit_items: selectedProducts.map((product) => ({
       component_product_id: product.id,
       quantity: Number(product.quantity),
@@ -72,12 +78,7 @@ export const updateKitTransaction = async (
   const { error } = await supabase.rpc("update_kit_transaction", {
     p_kit_id: editingKit.id,
     p_kit_product_id: editingKit.kit_product_id,
-    p_kit_product: {
-      barcode: kitData.barcode,
-      name: kitData.description,
-      sale_price: kitData.price,
-      max_kits_per_sale: Number(kitData.max_kits_per_sale || 1),
-    },
+    p_kit_product: buildKitProductPayload(kitData),
     p_kit_items: selectedProducts.map((product) => ({
       component_product_id: product.id,
       quantity: Number(product.quantity),
@@ -92,7 +93,7 @@ export const fetchKitItems = async (kitId) => {
   const { data, error } = await supabase
     .from("product_kit_items")
     .select(
-      `id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit)`
+      `id, kit_id, component_product_id, quantity, products:component_product_id (id, barcode, name, sale_price, cost_price, is_kit, is_global)`
     )
     .eq("kit_id", kitId)
     .order("created_at", { ascending: true });
@@ -106,6 +107,19 @@ export const toggleKitStatus = async (kitId, nextStatus) => {
   const { error } = await supabase
     .from("product_kits")
     .update({ is_active: nextStatus, updated_at: now })
+    .eq("id", kitId);
+  if (error) throw error;
+  return true;
+};
+
+/**
+ * Renueva la vigencia de un kit. Solo actualiza las fechas (NULL = sin limite).
+ */
+export const renewKitValidity = async (kitId, { starts_on, ends_on }) => {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("product_kits")
+    .update({ starts_on, ends_on, updated_at: now })
     .eq("id", kitId);
   if (error) throw error;
   return true;

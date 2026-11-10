@@ -7,6 +7,7 @@ const KitProductSearchModal = ({
   onSelectProduct,
   showAppAlert,
   appModalIsOpen,
+  addedProductIds,
 }) => {
   const {
     searchTerm,
@@ -18,12 +19,14 @@ const KitProductSearchModal = ({
     resultsListRef,
     searchProducts,
     handleSelect,
+    isAdded,
   } = useKitProductSearch({
     isOpen,
     onClose,
     onSelectProduct,
     showAppAlert,
     appModalIsOpen,
+    addedProductIds,
   });
 
   if (!isOpen) return null;
@@ -61,38 +64,50 @@ const KitProductSearchModal = ({
                   : "Ingresa nombre o código del producto."}
               </div>
             ) : (
-              results.map((product, index) => (
-                <div
-                  key={product.id}
-                  data-product-index={index}
-                  className={[
-                    styles.searchResultItem,
-                    index === selectedIndex ? styles.searchResultSelected : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setSelectedIndex(index)}
-                  onDoubleClick={() => handleSelect(product)}
-                >
-                  <div className={styles.searchResultTitle}>
-                    <strong>{product.name}</strong>
-                    <span
-                      className={[
-                        styles.scopeBadge,
-                        product.is_global === false
-                          ? styles.scopeBadgeLocal
-                          : styles.scopeBadgeGlobal,
-                      ].join(" ")}
-                    >
-                      {product.is_global === false ? "Local" : "Global"}
-                    </span>
+              results.map((product, index) => {
+                const added = isAdded(product);
+                return (
+                  <div
+                    key={product.id}
+                    data-product-index={index}
+                    className={[
+                      styles.searchResultItem,
+                      index === selectedIndex && !added
+                        ? styles.searchResultSelected
+                        : "",
+                      added ? styles.searchResultDisabled : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    aria-disabled={added}
+                    onClick={() => {
+                      if (!added) setSelectedIndex(index);
+                    }}
+                    onDoubleClick={() => handleSelect(product)}
+                  >
+                    <div className={styles.searchResultTitle}>
+                      <strong>{product.name}</strong>
+                      <span
+                        className={[
+                          styles.scopeBadge,
+                          product.is_global === false
+                            ? styles.scopeBadgeLocal
+                            : styles.scopeBadgeGlobal,
+                        ].join(" ")}
+                      >
+                        {product.is_global === false ? "Local" : "Global"}
+                      </span>
+                      {added && (
+                        <span className={styles.addedBadge}>Ya agregado</span>
+                      )}
+                    </div>
+                    <div className={styles.searchResultMeta}>
+                      Código: {product.barcode || "Sin código"} · Precio: $
+                      {Number(product.sale_price || 0).toFixed(2)}
+                    </div>
                   </div>
-                  <div className={styles.searchResultMeta}>
-                    Código: {product.barcode || "Sin código"} · Precio: $
-                    {Number(product.sale_price || 0).toFixed(2)}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -108,7 +123,7 @@ const KitProductSearchModal = ({
               if (selectedIndex >= 0 && results[selectedIndex])
                 handleSelect(results[selectedIndex]);
             }}
-            disabled={selectedIndex < 0}
+            disabled={selectedIndex < 0 || isAdded(results[selectedIndex])}
           >
             Seleccionar
           </button>

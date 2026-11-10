@@ -71,6 +71,7 @@ const AppModal = ({
   cancelText = "Cancelar",
   showCancel = false,
   loading = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   onClose,
@@ -96,6 +97,7 @@ const AppModal = ({
    */
   const actionStateRef = useRef({
     loading,
+    confirmDisabled,
     showCancel,
     onConfirm,
     onCancel,
@@ -105,6 +107,7 @@ const AppModal = ({
   useEffect(() => {
     actionStateRef.current = {
       loading,
+      confirmDisabled,
       showCancel,
       onConfirm,
       onCancel,
@@ -117,11 +120,12 @@ const AppModal = ({
   const executeConfirm = useCallback(() => {
     const {
       loading: currentLoading,
+      confirmDisabled: currentConfirmDisabled,
       onConfirm: currentOnConfirm,
       onClose: currentOnClose,
     } = actionStateRef.current;
 
-    if (currentLoading) return;
+    if (currentLoading || currentConfirmDisabled) return;
 
     if (typeof currentOnConfirm === "function") {
       currentOnConfirm();
@@ -333,7 +337,7 @@ const AppModal = ({
             type="button"
             className={styles.confirmButton}
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             autoFocus
           >
             {loading ? "Procesando..." : confirmText}

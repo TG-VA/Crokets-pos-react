@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
 import { useDidChange } from "../../../../../hooks/useDidChange";
 import { fetchMissingBranchesForProduct } from "../services/kitBranchCoverageService";
+import { sortProductsByNameAndWeight } from "../../../../SalesComponents/services/searchModalService";
 import { buildMissingBranchesMessage } from "../services/kitBranchCoverageCalculationService";
 
 export const useKitProductSearch = ({
@@ -10,6 +11,7 @@ export const useKitProductSearch = ({
   onSelectProduct,
   showAppAlert,
   appModalIsOpen,
+  addedProductIds = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
@@ -53,6 +55,12 @@ export const useKitProductSearch = ({
     }
   }, [selectedIndex, isOpen]);
 
+  const isAdded = (product) =>
+    Boolean(product) && addedProductIds.includes(product.id);
+
+  const firstAvailableIndex = (list) =>
+    list.findIndex((product) => !addedProductIds.includes(product.id));
+
   const warnMissingBranches = async (product) => {
     try {
       const missing = await fetchMissingBranchesForProduct(product.id);
@@ -69,7 +77,7 @@ export const useKitProductSearch = ({
   };
 
   const handleSelect = (product) => {
-    if (!product) return;
+    if (!product || isAdded(product)) return;
     onSelectProduct(product);
     onClose();
     if (product.is_global === false) warnMissingBranches(product);
@@ -90,22 +98,31 @@ export const useKitProductSearch = ({
       if (e.key === "ArrowDown") {
         if (results.length === 0) return;
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < results.length - 1 ? prev + 1 : prev
-        );
+        setSelectedIndex((prev) => {
+          for (let i = prev + 1; i < results.length; i += 1) {
+            if (!isAdded(results[i])) return i;
+          }
+          return prev;
+        });
         return;
       }
 
       if (e.key === "ArrowUp") {
         if (results.length === 0) return;
         e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        setSelectedIndex((prev) => {
+          for (let i = prev - 1; i >= 0; i -= 1) {
+            if (!isAdded(results[i])) return i;
+          }
+          return prev;
+        });
         return;
       }
 
       if (e.key === "Enter") {
         if (selectedIndex < 0 || !results[selectedIndex]) return;
         e.preventDefault();
+        if (isAdded(results[selectedIndex])) return;
         handleSelect(results[selectedIndex]);
       }
     };
@@ -114,7 +131,14 @@ export const useKitProductSearch = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [isOpen, results, selectedIndex, appModalIsOpen, onClose]);
+  }, [
+    isOpen,
+    results,
+    selectedIndex,
+    appModalIsOpen,
+    onClose,
+    addedProductIds,
+  ]);
 
   const normalizeText = (text) =>
     String(text || "")
@@ -139,15 +163,17 @@ export const useKitProductSearch = ({
       const data = await fetchActiveNonKitProducts();
       const normalized = normalizeText(cleanValue);
 
-      const filtered = data.filter((product) => {
-        const searchable = normalizeText(
-          `${product.name || ""} ${product.barcode || ""}`
-        );
-        return searchable.includes(normalized);
-      });
+      const filtered = sortProductsByNameAndWeight(
+        data.filter((product) => {
+          const searchable = normalizeText(
+            `${product.name || ""} ${product.barcode || ""}`
+          );
+          return searchable.includes(normalized);
+        })
+      );
 
       setResults(filtered);
-      setSelectedIndex(filtered.length > 0 ? 0 : -1);
+      setSelectedIndex(firstAvailableIndex(filtered));
     } catch (error) {
       console.error("Error buscando productos:", error);
       setResults([]);
@@ -172,5 +198,6 @@ export const useKitProductSearch = ({
     resultsListRef,
     searchProducts,
     handleSelect,
+    isAdded,
   };
 };
