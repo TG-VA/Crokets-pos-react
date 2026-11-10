@@ -1,3 +1,4 @@
+import removeIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../ProductsPromotions.module.css";
@@ -12,6 +13,7 @@ const KitSelectedProductsSection = ({
   selectedProductId,
   setSelectedProductId,
   updateProductQuantity,
+  removeSelectedProduct,
 }) => {
   const pagination = usePagination({
     totalItems: selectedProducts.length,
@@ -23,7 +25,26 @@ const KitSelectedProductsSection = ({
 
   return (
     <div className={styles.listColumn}>
-      <div className={styles.columnHeader}>Productos del kit</div>
+      <div
+        className={[styles.columnHeader, styles.columnHeaderWithAction].join(
+          " "
+        )}
+      >
+        <span>Productos del kit</span>
+        <button
+          type="button"
+          className={[
+            styles.btn,
+            styles.btnCompact,
+            styles.btnOutlineDanger,
+          ].join(" ")}
+          onClick={removeSelectedProduct}
+          disabled={!selectedProductId}
+        >
+          <img src={removeIcon} alt="" className={styles.btnIcon} />
+          Remover seleccionado
+        </button>
+      </div>
 
       <div className={styles.listArea}>
         {selectedProducts.length === 0 ? (

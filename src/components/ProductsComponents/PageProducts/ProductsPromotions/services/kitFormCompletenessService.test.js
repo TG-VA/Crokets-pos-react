@@ -79,16 +79,16 @@ describe("getMissingKitFields", () => {
         { ...validForm, barcode: "", description: " ", price: "0" },
         products
       )
-    ).toEqual(["codigo", "descripcion", "precio"]);
+    ).toEqual(["Código", "Descripción", "Precio"]);
   });
 
   it("indica productos cuando no hay ninguno", () => {
-    expect(getMissingKitFields(validForm, [])).toEqual(["productos"]);
+    expect(getMissingKitFields(validForm, [])).toEqual(["Productos"]);
   });
 
   it("indica cantidades cuando alguna es invalida", () => {
     expect(getMissingKitFields(validForm, [{ id: 1, quantity: 0 }])).toEqual([
-      "cantidades",
+      "Cantidades",
     ]);
   });
 });
@@ -97,8 +97,8 @@ describe("getMissingKitFields vigencia", () => {
   it("marca las fechas vacias sin Sin limite", () => {
     const form = { ...validForm, starts_on: "", ends_on: "" };
     expect(getMissingKitFields(form, products)).toEqual([
-      "vigente desde",
-      "vigente hasta",
+      "Vigente desde",
+      "Vigente hasta",
     ]);
   });
 

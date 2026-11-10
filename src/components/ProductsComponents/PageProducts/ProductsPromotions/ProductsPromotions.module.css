@@ -181,6 +181,15 @@
   text-align: center;
 }
 
+.columnHeaderWithAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-block: 6px;
+  text-align: left;
+}
+
 .listArea {
   display: flex;
   flex: 1;
@@ -295,11 +304,9 @@
   white-space: nowrap;
   background-color: #fee2e2;
   color: #991b1b;
-  text-transform: uppercase;
 }
 
-.leftButtons,
-.rightButtons {
+.leftButtons {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -327,10 +334,24 @@
   transform: translateY(-1px);
 }
 
+/* Un solo estilo deshabilitado para que no parezca un color de marca. */
 .btn:disabled {
-  opacity: 0.55;
+  background-color: #e5e7eb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
   transform: none;
+}
+
+.btn:disabled .btnIcon {
+  filter: brightness(0) opacity(0.3);
+}
+
+.btnCompact {
+  min-height: 32px;
+  min-width: 0;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .btnSave {
@@ -353,8 +374,7 @@
   background-color: var(--croketsBlueDark);
 }
 
-.btnDelete,
-.btnRemove {
+.btnDelete {
   background-color: var(--errorColor);
 }
 
@@ -702,9 +722,12 @@
   }
 
   .leftButtons,
-  .rightButtons,
   .btn {
     width: 100%;
+  }
+
+  .btnCompact {
+    width: auto;
   }
 
   .kitRow {
@@ -915,6 +938,11 @@
 }
 
 /* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
-.btnOutlineNeutral .btnIcon {
+.btnOutlineNeutral .btnIcon,
+.btnOutlineDanger .btnIcon {
   filter: brightness(0) opacity(0.6);
+}
+
+.btnOutlineDanger:hover:not(:disabled) .btnIcon {
+  filter: brightness(0) invert(1);
 }

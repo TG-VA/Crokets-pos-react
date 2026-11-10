@@ -10,8 +10,6 @@ const baseProps = {
   editingKit: null,
   handleClearForm: vi.fn(),
   handleCancelEdit: vi.fn(),
-  removeSelectedProduct: vi.fn(),
-  selectedProductId: null,
 };
 
 describe("KitActionsSection", () => {

@@ -79,6 +79,7 @@ const ProductsPromotions = () => {
               selectedProductId={selectedProductId}
               setSelectedProductId={setSelectedProductId}
               updateProductQuantity={updateProductQuantity}
+              removeSelectedProduct={removeSelectedProduct}
             />
           </div>
 
@@ -90,8 +91,6 @@ const ProductsPromotions = () => {
             editingKit={editingKit}
             handleClearForm={handleClearForm}
             handleCancelEdit={handleCancelEdit}
-            removeSelectedProduct={removeSelectedProduct}
-            selectedProductId={selectedProductId}
           />
         </div>
 

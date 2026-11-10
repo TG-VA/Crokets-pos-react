@@ -11,8 +11,6 @@ const KitActionsSection = ({
   editingKit,
   handleClearForm,
   handleCancelEdit,
-  removeSelectedProduct,
-  selectedProductId,
 }) => {
   return (
     <div className={styles.actionsSection}>
@@ -52,18 +50,6 @@ const KitActionsSection = ({
             Cancelar
           </button>
         )}
-      </div>
-
-      <div className={styles.rightButtons}>
-        <button
-          type="button"
-          className={[styles.btn, styles.btnRemove].join(" ")}
-          onClick={removeSelectedProduct}
-          disabled={!selectedProductId}
-        >
-          <img src={removeIcon} alt="" className={styles.btnIcon} />
-          Remover seleccionado
-        </button>
       </div>
 
       {!isFormComplete && missingFields.length > 0 && (
