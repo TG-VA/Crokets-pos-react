@@ -1,0 +1,124 @@
+.instructions {
+  margin-top: 4px;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid var(--croketsOrange);
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.title {
+  margin: 0 0 10px 0;
+  color: var(--darkGray);
+  font-size: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--croketsBlue);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.columnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupLabel {
+  font-weight: 600;
+  color: var(--darkGray);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.chipRequired {
+  background-color: #e3f4f8;
+  border-color: var(--croketsBlue);
+  color: var(--croketsBlueDark);
+  font-weight: 600;
+}
+
+.chipOptional {
+  background-color: #ffffff;
+  border-color: var(--mediumGray);
+  color: #555;
+}
+
+.rules {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.4;
+}
+
+.rules li + li {
+  margin-top: 4px;
+}
+
+.valuesTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.valuesTable th,
+.valuesTable td {
+  padding: 5px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--mediumGray);
+  vertical-align: top;
+}
+
+.valuesTable thead th {
+  color: var(--darkGray);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.valuesTable tbody th {
+  color: var(--darkGray);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.footNote {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
