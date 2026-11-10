@@ -100,3 +100,14 @@ export const validateKitDateRange = (startsOn, endsOn) => {
   }
   return null;
 };
+
+/**
+ * Fecha minima (YYYY-MM-DD) elegible como fin de vigencia: hoy, o el inicio
+ * si es posterior. Devuelve null si `today` no es una fecha valida.
+ */
+export const getMinKitEndDate = (startsOn, today) => {
+  const todayDate = normalizeDateOnly(today);
+  if (!todayDate) return null;
+  const start = normalizeDateOnly(startsOn);
+  return start && start > todayDate ? start : todayDate;
+};

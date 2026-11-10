@@ -8,7 +8,10 @@ import {
   sanitizeIntegerInput,
 } from "../services/kitInputSanitizers";
 import { formatDateOnly, parseDateOnly } from "../services/kitDateFormatters";
-import { getTodayInTimezone } from "../services/kitValidityCalculationService";
+import {
+  getMinKitEndDate,
+  getTodayInTimezone,
+} from "../services/kitValidityCalculationService";
 
 const VALIDITY_FIELDS = [
   {
@@ -44,9 +47,9 @@ const KitFormSection = ({
   onOpenSearch,
 }) => {
   // La fecha de fin no se puede elegir en el pasado ni antes del inicio.
-  const today = parseDateOnly(getTodayInTimezone());
-  const startDate = parseDateOnly(form.starts_on);
-  const minEndDate = startDate && startDate > today ? startDate : today;
+  const minEndDate = parseDateOnly(
+    getMinKitEndDate(form.starts_on, getTodayInTimezone())
+  );
 
   return (
     <div className={styles.formColumn}>
@@ -147,8 +150,8 @@ const KitFormSection = ({
             </label>
             {index === VALIDITY_FIELDS.length - 1 && (
               <span className={styles.limitHelperText}>
-                * Opcional. Sin fecha no hay límite. Ambas fechas son inclusivas
-                y se evalúan con la zona horaria de la sucursal.
+                * Captura la fecha o marca Sin fecha límite. Ambas fechas son
+                inclusivas y se evalúan con la zona horaria de la sucursal.
               </span>
             )}
           </div>

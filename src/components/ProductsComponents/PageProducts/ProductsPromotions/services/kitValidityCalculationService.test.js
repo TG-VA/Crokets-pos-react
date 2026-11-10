@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   KIT_VALIDITY_STATUS,
   getKitValidityStatus,
+  getMinKitEndDate,
   getTodayInTimezone,
   isKitAvailable,
   isKitExpiringSoon,
@@ -128,5 +129,21 @@ describe("isKitExpiringSoon", () => {
     expect(
       isKitExpiringSoon(kit("2026-11-12", { starts_on: "2026-11-11" }), TODAY)
     ).toBe(false);
+  });
+});
+
+describe("getMinKitEndDate", () => {
+  it("usa hoy cuando el inicio es pasado o nulo", () => {
+    expect(getMinKitEndDate("2026-11-01", "2026-11-10")).toBe("2026-11-10");
+    expect(getMinKitEndDate(null, "2026-11-10")).toBe("2026-11-10");
+    expect(getMinKitEndDate("", "2026-11-10")).toBe("2026-11-10");
+  });
+
+  it("usa el inicio cuando es futuro", () => {
+    expect(getMinKitEndDate("2026-12-01", "2026-11-10")).toBe("2026-12-01");
+  });
+
+  it("devuelve null si hoy no es valido", () => {
+    expect(getMinKitEndDate("2026-12-01", null)).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useKitForm } from "./useKitForm";
+import { validateKitForm } from "../services/kitFormValidationService";
 
 const setup = () => {
   const showAppAlert = vi.fn();
@@ -51,5 +52,24 @@ describe("useKitForm", () => {
     expect(showAppConfirm).toHaveBeenCalledTimes(1);
     act(() => showAppConfirm.mock.calls[0][0].onConfirm());
     expect(result.current.form.barcode).toBe("");
+  });
+
+  it("al editar un kit sin fechas marca Sin fecha limite y valida", () => {
+    const { result } = setup();
+    const kit = {
+      starts_on: null,
+      ends_on: null,
+      products: { barcode: "K1", name: "KIT", sale_price: 80 },
+    };
+    act(() =>
+      result.current.loadKitIntoForm(kit, [{ products: product, quantity: 1 }])
+    );
+    expect(result.current.form.no_starts_on).toBe(true);
+    expect(result.current.form.no_ends_on).toBe(true);
+    expect(
+      validateKitForm(result.current.form, result.current.selectedProducts, {
+        today: "2026-11-10",
+      })
+    ).toBeNull();
   });
 });
