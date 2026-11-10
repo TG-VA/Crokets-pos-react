@@ -140,7 +140,7 @@ export const generateTemplateXLSX = () => {
     [
       "Es global",
       "Sí",
-      "sí = crear en todas las sucursales activas; no = solo sucursal actual. También acepta true / false o 1 / 0.",
+      "sí = disponible en todas las sucursales; no = solo sucursal actual. El inventario inicial se crea en la sucursal actual. También acepta true / false o 1 / 0.",
     ],
     [
       "Departamento",

@@ -11,7 +11,7 @@ import { supabase } from "../../../../../lib/supabaseClient";
 import { validateSatClaves } from "../../../../../services/satClavesService";
 import {
   fetchValidationData,
-  fetchBranchesAndDepartments,
+  fetchDepartments,
   createMissingDepartments,
   processImportTransaction,
 } from "./productsImportService";
@@ -63,7 +63,6 @@ const validRow = (overrides = {}) => ({
 describe("productsImportService", () => {
   let productsQ;
   let departmentsQ;
-  let branchesQ;
   let inventoryQ;
 
   beforeEach(() => {
@@ -72,13 +71,11 @@ describe("productsImportService", () => {
     validateSatClaves.mockReset();
     productsQ = thenableQuery();
     departmentsQ = thenableQuery();
-    branchesQ = thenableQuery();
     inventoryQ = thenableQuery();
 
     supabase.from.mockImplementation((table) => {
       if (table === "products") return productsQ;
       if (table === "departments") return departmentsQ;
-      if (table === "branches") return branchesQ;
       if (table === "branch_inventory") return inventoryQ;
       throw new Error(`Tabla inesperada: ${table}`);
     });
@@ -133,40 +130,26 @@ describe("productsImportService", () => {
     });
   });
 
-  describe("fetchBranchesAndDepartments", () => {
-    it("trae sucursales y departamentos", async () => {
-      branchesQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "b1" }], error: null }).then(ok);
+  describe("fetchDepartments", () => {
+    it("trae departamentos con su estado", async () => {
       departmentsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "d1", name: "X" }], error: null }).then(
-          ok
-        );
+        Promise.resolve({
+          data: [{ id: "d1", name: "X", status: false }],
+          error: null,
+        }).then(ok);
 
-      const result = await fetchBranchesAndDepartments();
+      const result = await fetchDepartments();
 
-      expect(result).toEqual({
-        branches: [{ id: "b1" }],
-        departments: [{ id: "d1", name: "X" }],
-      });
-    });
-
-    it("solo trae sucursales activas y el estado de los departamentos", async () => {
-      branchesQ.then = (ok) =>
-        Promise.resolve({ data: [], error: null }).then(ok);
-      departmentsQ.then = (ok) =>
-        Promise.resolve({ data: [], error: null }).then(ok);
-
-      await fetchBranchesAndDepartments();
-
-      expect(branchesQ.eq).toHaveBeenCalledWith("is_active", true);
+      expect(result).toEqual([{ id: "d1", name: "X", status: false }]);
       expect(departmentsQ.select).toHaveBeenCalledWith("id, name, status");
+      expect(supabase.from).not.toHaveBeenCalledWith("branches");
     });
 
-    it("propaga errores de la consulta de sucursales", async () => {
-      branchesQ.then = (ok) =>
+    it("propaga errores de la consulta de departamentos", async () => {
+      departmentsQ.then = (ok) =>
         Promise.resolve({ data: null, error: { message: "boom" } }).then(ok);
 
-      await expect(fetchBranchesAndDepartments()).rejects.toThrow("boom");
+      await expect(fetchDepartments()).rejects.toThrow("boom");
     });
   });
 
@@ -203,7 +186,7 @@ describe("productsImportService", () => {
 
   describe("processImportTransaction", () => {
     it("no hace queries si no hay filas válidas", async () => {
-      const result = await processImportTransaction([], "b1", [], {});
+      const result = await processImportTransaction([], "b1", {});
 
       expect(result).toEqual({
         createdProductsCount: 0,
@@ -223,7 +206,6 @@ describe("productsImportService", () => {
       const result = await processImportTransaction(
         [validRow()],
         "b1",
-        [{ id: "b1" }],
         departmentMap
       );
 
@@ -237,7 +219,7 @@ describe("productsImportService", () => {
       const [rpcName, params] = supabase.rpc.mock.calls[0];
       expect(rpcName).toBe("import_products_transaction");
       expect(params.p_branch_id).toBe("b1");
-      expect(params.p_all_branches).toEqual([{ id: "b1" }]);
+      expect(params.p_all_branches).toEqual([]);
       expect(params.p_rows).toHaveLength(1);
       expect(params.p_rows[0].product).toEqual(
         expect.objectContaining({
@@ -256,23 +238,21 @@ describe("productsImportService", () => {
       );
     });
 
-    it("envía todas las sucursales como p_all_branches cuando el producto es global", async () => {
+    it("no envía sucursales aunque el producto sea global", async () => {
       supabase.rpc.mockResolvedValue({
-        data: { created_products_count: 1, created_inventories_count: 2 },
+        data: { created_products_count: 1, created_inventories_count: 1 },
         error: null,
       });
 
-      const result = await processImportTransaction(
+      await processImportTransaction(
         [validRow({ product: { ...validRow().product, is_global: true } })],
         "b1",
-        [{ id: "b1" }, { id: "b2" }],
         {}
       );
 
-      expect(result.createdInventoriesCount).toBe(2);
       const [, params] = supabase.rpc.mock.calls[0];
       expect(params.p_rows[0].product.is_global).toBe(true);
-      expect(params.p_all_branches).toEqual([{ id: "b1" }, { id: "b2" }]);
+      expect(params.p_all_branches).toEqual([]);
     });
 
     it("establece department_id null cuando el departamento no está en el mapa", async () => {
@@ -281,7 +261,7 @@ describe("productsImportService", () => {
         error: null,
       });
 
-      await processImportTransaction([validRow()], "b1", [], {});
+      await processImportTransaction([validRow()], "b1", {});
 
       const [, params] = supabase.rpc.mock.calls[0];
       expect(params.p_rows[0].product.department_id).toBeNull();
@@ -294,7 +274,7 @@ describe("productsImportService", () => {
       });
 
       await expect(
-        processImportTransaction([validRow()], "b1", [], {})
+        processImportTransaction([validRow()], "b1", {})
       ).rejects.toThrow("inv fail");
       expect(supabase.from).not.toHaveBeenCalled();
     });
@@ -303,7 +283,7 @@ describe("productsImportService", () => {
       supabase.rpc.mockRejectedValue(new Error("network boom"));
 
       await expect(
-        processImportTransaction([validRow()], "b1", [], {})
+        processImportTransaction([validRow()], "b1", {})
       ).rejects.toThrow("network boom");
     });
   });

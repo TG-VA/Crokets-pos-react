@@ -15,10 +15,12 @@ import {
 } from "../utils/importUtils";
 import {
   fetchValidationData,
-  fetchBranchesAndDepartments,
+  fetchDepartments,
   createMissingDepartments,
   processImportTransaction,
 } from "../services/productsImportService";
+
+const ADMIN_ONLY_MESSAGE = "Solo un administrador puede importar productos.";
 
 export const useProductsImport = () => {
   const { branch } = useBranch();
@@ -332,7 +334,7 @@ export const useProductsImport = () => {
       setImportResult(null);
       setGlobalErrors([]);
 
-      const { branches, departments } = await fetchBranchesAndDepartments();
+      const departments = await fetchDepartments();
       const departmentMap = {};
       departments.forEach((dep) => {
         departmentMap[normalizeText(dep.name)] = dep.id;
@@ -360,12 +362,7 @@ export const useProductsImport = () => {
       }
 
       const { createdProductsCount, createdInventoriesCount } =
-        await processImportTransaction(
-          validRows,
-          branch.id,
-          branches,
-          departmentMap
-        );
+        await processImportTransaction(validRows, branch.id, departmentMap);
 
       await refreshDepartments();
       await refreshProducts();
@@ -379,7 +376,9 @@ export const useProductsImport = () => {
       console.error("Error importando productos:", error);
       setImportResult({
         success: false,
-        message: error.message || "No se pudo completar la importación.",
+        message: String(error.message || "").includes(ADMIN_ONLY_MESSAGE)
+          ? ADMIN_ONLY_MESSAGE
+          : error.message || "No se pudo completar la importación.",
       });
     } finally {
       setImporting(false);
