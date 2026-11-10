@@ -379,45 +379,14 @@
 }
 
 /* Acciones secundarias: solo borde, para dejar el relleno a la accion principal. */
-.btnOutlineNeutral,
-.btnOutlineBlue,
-.btnOutlineSuccess,
-.btnOutlineDanger {
+.btnOutlineNeutral {
   background-color: var(--white);
   border: 1.5px solid currentColor;
-}
-
-.btnOutlineNeutral {
   color: #5f6b76;
-}
-
-.btnOutlineBlue {
-  color: var(--croketsBlue);
-}
-
-.btnOutlineSuccess {
-  color: #15803d;
-}
-
-.btnOutlineDanger {
-  color: var(--errorColor);
 }
 
 .btnOutlineNeutral:hover:not(:disabled) {
   background-color: #f1f3f5;
-}
-
-.btnOutlineBlue:hover:not(:disabled) {
-  background-color: #eaf6f8;
-}
-
-.btnOutlineSuccess:hover:not(:disabled) {
-  background-color: #f0fdf4;
-}
-
-.btnOutlineDanger:hover:not(:disabled) {
-  background-color: var(--errorColor);
-  color: var(--white);
 }
 
 .cardHeader {
@@ -937,17 +906,50 @@
   text-align: center;
 }
 
+/* Acciones por fila: relleno suave sin borde, en armonia con los badges de estado. */
+.btnSoftBlue {
+  background-color: #e0f2f7;
+  color: var(--croketsBlue);
+}
+
+.btnSoftNeutral {
+  background-color: #f1f3f5;
+  color: #5f6b76;
+}
+
+.btnSoftSuccess {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.btnSoftDanger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.btnSoftBlue:hover:not(:disabled) {
+  background-color: #c6e7f0;
+}
+
+.btnSoftNeutral:hover:not(:disabled) {
+  background-color: #e2e6ea;
+}
+
+.btnSoftSuccess:hover:not(:disabled) {
+  background-color: #bbf7d0;
+}
+
+.btnSoftDanger:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
 /* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
 .btnOutlineNeutral .btnIcon {
   filter: brightness(0) opacity(0.6);
 }
 
 /* Aproxima var(--errorColor) (#e74c3c) partiendo del icono en negro. */
-.btnOutlineDanger .btnIcon {
+.btnSoftDanger .btnIcon {
   filter: brightness(0) invert(36%) sepia(77%) saturate(2034%)
     hue-rotate(338deg) brightness(93%) contrast(93%);
-}
-
-.btnOutlineDanger:hover:not(:disabled) .btnIcon {
-  filter: brightness(0) invert(1);
 }

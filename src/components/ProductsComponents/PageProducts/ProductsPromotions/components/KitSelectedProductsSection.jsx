@@ -36,7 +36,7 @@ const KitSelectedProductsSection = ({
           className={[
             styles.btn,
             styles.btnCompact,
-            styles.btnOutlineDanger,
+            styles.btnSoftDanger,
           ].join(" ")}
           onClick={removeSelectedProduct}
           disabled={!selectedProductId}
