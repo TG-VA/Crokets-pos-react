@@ -221,35 +221,6 @@
   background-color: rgba(16, 146, 177, 0.1);
 }
 
-.instructions {
-  margin-top: 4px;
-  padding: 12px 16px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid var(--croketsOrange);
-}
-
-.instructions h3 {
-  margin: 0 0 8px 0;
-  color: var(--darkGray);
-  font-size: 1rem;
-}
-
-.instructions ul {
-  margin: 0;
-  padding-left: 20px;
-  color: #555;
-  columns: 2;
-  column-gap: 32px;
-  font-size: 0.9rem;
-}
-
-.instructions li {
-  margin-bottom: 4px;
-  line-height: 1.4;
-  break-inside: avoid;
-}
-
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -364,10 +335,6 @@
 }
 
 @media (max-width: 720px) {
-  .instructions ul {
-    columns: 1;
-  }
-
   .actions {
     flex-direction: column;
   }
