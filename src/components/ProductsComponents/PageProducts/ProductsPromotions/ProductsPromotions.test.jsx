@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ProductsPromotions from "./ProductsPromotions";
 
-const mockState = vi.hoisted(() => ({ appModal: {} }));
+const mockState = vi.hoisted(() => ({
+  appModal: {},
+  removeSelectedProduct: () => {},
+  selectedSectionProps: null,
+}));
 
 vi.mock("./hooks/useProductsPromotions", () => ({
   useProductsPromotions: () => ({
@@ -17,6 +21,7 @@ vi.mock("./hooks/useProductsPromotions", () => ({
     kitDiscount: 0,
     kitDiscountPercent: 0,
     showAppAlert: vi.fn(),
+    removeSelectedProduct: mockState.removeSelectedProduct,
   }),
 }));
 vi.mock("./hooks/useKitsList", () => ({
@@ -28,7 +33,10 @@ vi.mock("./hooks/useKitsList", () => ({
 }));
 vi.mock("./components/KitFormSection", () => ({ default: () => null }));
 vi.mock("./components/KitSelectedProductsSection", () => ({
-  default: () => null,
+  default: (props) => {
+    mockState.selectedSectionProps = props;
+    return null;
+  },
 }));
 vi.mock("./components/KitActionsSection", () => ({ default: () => null }));
 vi.mock("./components/KitRegisteredListSection", () => ({
@@ -75,5 +83,17 @@ describe("ProductsPromotions aviso con sucursales", () => {
     render(<ProductsPromotions />);
 
     expect(screen.getByText("contenido propio")).toBeTruthy();
+  });
+});
+
+describe("ProductsPromotions seccion de productos del kit", () => {
+  it("pasa removeSelectedProduct a la seccion de productos", () => {
+    mockState.appModal = { ...baseModal, isOpen: false };
+
+    render(<ProductsPromotions />);
+
+    expect(mockState.selectedSectionProps.removeSelectedProduct).toBe(
+      mockState.removeSelectedProduct
+    );
   });
 });
