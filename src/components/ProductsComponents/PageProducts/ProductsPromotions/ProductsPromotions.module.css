@@ -938,9 +938,14 @@
 }
 
 /* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
-.btnOutlineNeutral .btnIcon,
-.btnOutlineDanger .btnIcon {
+.btnOutlineNeutral .btnIcon {
   filter: brightness(0) opacity(0.6);
+}
+
+/* Aproxima var(--errorColor) (#e74c3c) partiendo del icono en negro. */
+.btnOutlineDanger .btnIcon {
+  filter: brightness(0) invert(36%) sepia(77%) saturate(2034%)
+    hue-rotate(338deg) brightness(93%) contrast(93%);
 }
 
 .btnOutlineDanger:hover:not(:disabled) .btnIcon {
