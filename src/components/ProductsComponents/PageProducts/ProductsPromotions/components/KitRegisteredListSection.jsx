@@ -181,9 +181,7 @@ const KitRegisteredListSection = ({
                     {canManageKits && (
                       <button
                         type="button"
-                        className={[styles.btn, styles.btnSoftBlue].join(
-                          " "
-                        )}
+                        className={[styles.btn, styles.btnSoftBlue].join(" ")}
                         onClick={() => handleEditKit(kit)}
                       >
                         Editar
@@ -206,9 +204,7 @@ const KitRegisteredListSection = ({
                     {canManageKits && (
                       <button
                         type="button"
-                        className={[styles.btn, styles.btnSoftDanger].join(
-                          " "
-                        )}
+                        className={[styles.btn, styles.btnSoftDanger].join(" ")}
                         onClick={() => handleSoftDeleteKit(kit)}
                       >
                         Eliminar

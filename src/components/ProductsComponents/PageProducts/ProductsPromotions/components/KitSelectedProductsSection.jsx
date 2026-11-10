@@ -33,11 +33,9 @@ const KitSelectedProductsSection = ({
         <span>Productos del kit</span>
         <button
           type="button"
-          className={[
-            styles.btn,
-            styles.btnCompact,
-            styles.btnSoftDanger,
-          ].join(" ")}
+          className={[styles.btn, styles.btnCompact, styles.btnSoftDanger].join(
+            " "
+          )}
           onClick={removeSelectedProduct}
           disabled={!selectedProductId}
         >
