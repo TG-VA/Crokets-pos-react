@@ -23,7 +23,18 @@ vi.mock("./hooks/useProductsImport", () => ({
 }));
 
 import ProductsImports from "./ProductsImports";
-import { MAX_FILE_NOTE } from "./utils/importInstructionsConfig";
+import {
+  DEPARTMENT_RULES,
+  MAX_FILE_NOTE,
+  OPTIONAL_COLUMNS,
+  REQUIRED_COLUMNS,
+} from "./utils/importInstructionsConfig";
+
+const chipTexts = (label) =>
+  Array.from(
+    screen.getByText(label).parentElement.querySelectorAll("li"),
+    (li) => li.textContent
+  );
 
 describe("ProductsImports", () => {
   it("cablea las instrucciones con los descriptores reales", () => {
@@ -32,5 +43,10 @@ describe("ProductsImports", () => {
     expect(screen.getByText("Instrucciones importantes")).toBeTruthy();
     expect(screen.getByText(MAX_FILE_NOTE)).toBeTruthy();
     expect(container.querySelectorAll("tbody tr")).toHaveLength(5);
+    expect(chipTexts("Obligatorias")).toEqual(REQUIRED_COLUMNS);
+    expect(chipTexts("Opcionales")).toEqual(OPTIONAL_COLUMNS);
+    DEPARTMENT_RULES.forEach((rule) =>
+      expect(screen.getByText(rule)).toBeTruthy()
+    );
   });
 });
