@@ -181,6 +181,12 @@ const ProductsImports = () => {
                 <span>Deptos. nuevos</span>
                 <strong>{summary.departmentsToCreate || 0}</strong>
               </div>
+              <div className={styles.summaryCard}>
+                <span>Se crearán inactivos</span>
+                <strong className={styles.warningText}>
+                  {summary.inactive || 0}
+                </strong>
+              </div>
             </div>
           )}
 
@@ -253,6 +259,10 @@ const ProductsImports = () => {
                           {item.errors.length > 0 ? (
                             <span className={styles.errorList}>
                               {item.errors.join(" ")}
+                            </span>
+                          ) : item.warnings.length > 0 ? (
+                            <span className={styles.warningList}>
+                              {item.warnings.join(" ")}
                             </span>
                           ) : (
                             <span className={styles.successText}>OK</span>

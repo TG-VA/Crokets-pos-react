@@ -119,8 +119,10 @@ export const useProductsImport = () => {
       );
       const satSet = new Set(existingSatCodes.map((row) => String(row.clave)));
       const departmentMapLocal = {};
+      const inactiveDepartmentIds = new Set();
       departments.forEach((dep) => {
         departmentMapLocal[normalizeText(dep.name)] = dep.id;
+        if (dep.status === false) inactiveDepartmentIds.add(dep.id);
       });
       const missingDepartmentSet = new Set(
         departmentNames
@@ -130,6 +132,7 @@ export const useProductsImport = () => {
 
       const parsedRows = rawRows.map((row, index) => {
         const rowErrors = [];
+        const rowWarnings = [];
         const barcode = String(getValue(row, "Código") || "").trim();
         const name = String(getValue(row, "Descripción") || "").trim();
         const costPrice = parseNumber(getValue(row, "Costo"));
@@ -159,11 +162,11 @@ export const useProductsImport = () => {
         if (!UNITS.includes(unit))
           rowErrors.push(`Unidad inválida. Permitidas: ${UNITS.join(", ")}.`);
         if (tracksInventory === null)
-          rowErrors.push("Usa inventario debe ser Sí/No o true/false.");
+          rowErrors.push("Usa inventario debe ser Sí/No, true/false o 1/0.");
         if (tax === null || !IVA_VALUES.includes(tax))
           rowErrors.push("IVA debe ser 0, 8 o 16.");
         if (isGlobal === null)
-          rowErrors.push("Es global debe ser Sí/No o true/false.");
+          rowErrors.push("Es global debe ser Sí/No, true/false o 1/0.");
         if (duplicatedInFile.has(barcode))
           rowErrors.push("Código duplicado dentro del archivo.");
         if (existingBarcodeSet.has(barcode))
@@ -179,6 +182,12 @@ export const useProductsImport = () => {
             !departmentId &&
             missingDepartmentSet.has(normalizeText(departmentName));
         }
+
+        const isActive = !inactiveDepartmentIds.has(departmentId);
+        if (!isActive)
+          rowWarnings.push(
+            "Departamento inactivo: el producto se creará inactivo."
+          );
 
         if (claveSat && !satSet.has(claveSat))
           rowErrors.push(`Clave SAT no encontrada: ${claveSat}.`);
@@ -209,6 +218,7 @@ export const useProductsImport = () => {
           rowNumber: index + 2,
           raw: row,
           errors: rowErrors,
+          warnings: rowWarnings,
           department_name: departmentName || null,
           department_needs_create: departmentNeedsCreate,
           product: {
@@ -223,7 +233,7 @@ export const useProductsImport = () => {
             is_global: isGlobal === true,
             department_id: departmentId,
             clave_sat: claveSat || null,
-            status: true,
+            status: isActive,
             is_kit: false,
             commission_enabled: false,
             commission_percent: 0,
@@ -234,7 +244,7 @@ export const useProductsImport = () => {
             stock: normalizedStockInitial,
             min_stock: normalizedMinStock,
             max_stock: normalizedMaxStock,
-            is_active: true,
+            is_active: isActive,
             has_been_stocked: normalizedTracksInventory
               ? normalizedStockInitial > 0
               : false,
@@ -248,6 +258,9 @@ export const useProductsImport = () => {
         total: parsedRows.length,
         valid: parsedRows.filter((item) => item.errors.length === 0).length,
         errors: parsedRows.filter((item) => item.errors.length > 0).length,
+        inactive: parsedRows.filter(
+          (item) => item.errors.length === 0 && !item.product.status
+        ).length,
         departmentsToCreate: [
           ...new Set(
             parsedRows
