@@ -2,6 +2,12 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import ProductsImports from "./ProductsImports";
 import { useProductsImport } from "./hooks/useProductsImport";
+import {
+  DEPARTMENT_RULES,
+  MAX_FILE_NOTE,
+  OPTIONAL_COLUMNS,
+  REQUIRED_COLUMNS,
+} from "./utils/importInstructionsConfig";
 
 vi.mock("./hooks/useProductsImport", () => ({
   useProductsImport: vi.fn(),
@@ -28,9 +34,13 @@ const buildRow = (overrides = {}) => ({
   ...overrides,
 });
 
-const mockHook = ({ rows, summary }) => {
+const mockHook = ({
+  file = { name: "productos.xlsx", size: 2048 },
+  rows,
+  summary,
+}) => {
   useProductsImport.mockReturnValue({
-    file: { name: "productos.xlsx", size: 2048 },
+    file,
     fileInputRef: { current: null },
     validatedRows: rows,
     summary,
@@ -49,11 +59,32 @@ const mockHook = ({ rows, summary }) => {
   });
 };
 
+const chipTexts = (label) =>
+  Array.from(
+    screen.getByText(label).parentElement.querySelectorAll("li"),
+    (li) => li.textContent
+  );
+
 const AVISO = "Departamento inactivo: el producto se creará inactivo.";
 
 describe("ProductsImports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("cablea las instrucciones con los descriptores reales", () => {
+    mockHook({ file: null, rows: [], summary: null });
+
+    const { container } = render(<ProductsImports />);
+
+    expect(screen.getByText("Instrucciones importantes")).toBeTruthy();
+    expect(screen.getByText(MAX_FILE_NOTE)).toBeTruthy();
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(5);
+    expect(chipTexts("Obligatorias")).toEqual(REQUIRED_COLUMNS);
+    expect(chipTexts("Opcionales")).toEqual(OPTIONAL_COLUMNS);
+    DEPARTMENT_RULES.forEach((rule) =>
+      expect(screen.getByText(rule)).toBeTruthy()
+    );
   });
 
   it("muestra el aviso de la fila en lugar de OK", () => {

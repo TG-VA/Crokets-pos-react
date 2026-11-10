@@ -23,6 +23,8 @@ export const TEMPLATE_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 export const SALE_TYPES = ["unidad", "granel"];
 export const UNITS = ["pieza", "kg", "g", "l", "ml", "servicio"];
 export const IVA_VALUES = [0, 8, 16];
+export const MAX_FILE_SIZE_MB = 5;
+export const MAX_FILE_SIZE_MESSAGE = `El archivo no debe exceder los ${MAX_FILE_SIZE_MB}MB.`;
 
 export const normalizeText = (value) =>
   String(value ?? "")

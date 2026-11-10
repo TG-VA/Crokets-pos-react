@@ -10,6 +10,8 @@ import {
   SALE_TYPES,
   UNITS,
   IVA_VALUES,
+  MAX_FILE_SIZE_MB,
+  MAX_FILE_SIZE_MESSAGE,
   readExcelFile,
   generateTemplateXLSX,
 } from "../utils/importUtils";
@@ -291,8 +293,8 @@ export const useProductsImport = () => {
       return;
     }
 
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setGlobalErrors(["El archivo no debe exceder los 5MB."]);
+    if (selectedFile.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setGlobalErrors([MAX_FILE_SIZE_MESSAGE]);
       setFile(null);
       return;
     }
