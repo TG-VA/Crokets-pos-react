@@ -1,22 +1,19 @@
-export const REQUIRED_COLUMNS = [
-  "Código",
-  "Descripción",
-  "Costo",
-  "Precio",
-  "Tipo venta",
-  "Unidad",
-  "Usa inventario",
-  "IVA",
-  "Es global",
-];
+import {
+  REQUIRED_COLUMNS,
+  OPTIONAL_COLUMNS,
+  SALE_TYPES,
+  UNITS,
+  IVA_VALUES,
+} from "./importUtils";
 
-export const OPTIONAL_COLUMNS = [
-  "Departamento",
-  "Stock inicial",
-  "Stock mínimo",
-  "Stock máximo",
-  "Clave SAT",
-];
+export { REQUIRED_COLUMNS, OPTIONAL_COLUMNS };
+
+const BOOLEAN_VALUES = "sí/no, true/false o 1/0";
+
+const joinWithOr = (values) =>
+  values.length > 1
+    ? `${values.slice(0, -1).join(", ")} o ${values[values.length - 1]}`
+    : values.join("");
 
 export const DEPARTMENT_RULES = [
   "Si no capturas Departamento, el producto se guardará sin departamento.",
@@ -24,11 +21,11 @@ export const DEPARTMENT_RULES = [
 ];
 
 export const ALLOWED_VALUES = [
-  { field: "Tipo venta", values: "unidad, granel" },
-  { field: "Unidad", values: "pieza, kg, g, l, ml, servicio" },
-  { field: "Usa inventario", values: "sí/no, true/false o 1/0" },
-  { field: "Es global", values: "sí/no, true/false o 1/0" },
-  { field: "IVA", values: "0, 8 o 16" },
+  { field: "Tipo venta", values: SALE_TYPES.join(", ") },
+  { field: "Unidad", values: UNITS.join(", ") },
+  { field: "Usa inventario", values: BOOLEAN_VALUES },
+  { field: "Es global", values: BOOLEAN_VALUES },
+  { field: "IVA", values: joinWithOr(IVA_VALUES) },
 ];
 
 export const MAX_FILE_NOTE = "El archivo no debe exceder los 5MB.";
