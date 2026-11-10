@@ -302,8 +302,8 @@
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .leftButtons {
@@ -443,7 +443,7 @@
 
 .kitRow {
   display: grid;
-  grid-template-columns: 1fr 150px 280px;
+  grid-template-columns: 1fr 150px 328px;
   gap: 16px;
   align-items: center;
   padding: 10px;
@@ -523,15 +523,15 @@
 
 .kitActions {
   display: grid;
-  grid-template-columns: repeat(3, 92px);
+  grid-template-columns: repeat(3, 104px);
   gap: 8px;
   justify-content: end;
   align-items: center;
 }
 
 .kitActions .btn {
-  width: 92px;
-  min-width: 92px;
+  width: 104px;
+  min-width: 104px;
   height: 42px;
   padding: 0;
   display: flex;
@@ -732,7 +732,7 @@
 
   .kitRow {
     display: grid;
-    grid-template-columns: 1fr 120px 320px;
+    grid-template-columns: 1fr 120px 328px;
     gap: 10px;
     align-items: center;
     padding: 10px;
