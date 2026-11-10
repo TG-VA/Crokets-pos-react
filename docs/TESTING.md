@@ -224,6 +224,12 @@ está donde el servidor sí lee la fila: la suite de persistencia.
   `toBeInTheDocument`, `toHaveTextContent` ni `toHaveClass`: usarlos lanza
   `Invalid Chai property`. Para contenido usa `expect(el.textContent).toContain(...)` y para clases
   `expect(el.className).toContain(...)`.
+- **Reloj congelado en pruebas de fechas:** todo test cuyo resultado dependa de "hoy" (por ejemplo,
+  calendarios `react-datepicker` con `minDate`, que descartan fechas anteriores) debe congelar el
+  reloj con `vi.useFakeTimers({ toFake: ["Date"] })` y `vi.setSystemTime(...)` en `beforeEach`, y
+  restaurarlo con `vi.useRealTimers()` en `afterEach`. Sin esto la prueba se rompe sola cuando la
+  fecha real rebasa la capturada. Ejemplos: `KitFormSection.test.jsx` y
+  `KitRenewValidityForm.test.jsx`.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 
 ## Huecos de cobertura
