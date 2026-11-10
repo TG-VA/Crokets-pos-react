@@ -31,7 +31,7 @@ export const fetchBranchesAndDepartments = async () => {
 
   const { data: departments, error: depError } = await supabase
     .from("departments")
-    .select("id, name, status");
+    .select("id, name");
   if (depError) throw depError;
 
   return { branches, departments };

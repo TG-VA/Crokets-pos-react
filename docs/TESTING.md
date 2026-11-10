@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (1 nov 2026)
+## Cobertura actual (10 nov 2026)
 
-284 archivos de test (**3061 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+291 archivos de test (**3094 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -23,6 +23,9 @@ y el proceso principal de Electron:
 | Lista de productos (paginacion server-side y teclado)     | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
 | Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
 | Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
+| Importación (validación y departamento inactivo)          | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
+| Importación de productos (aviso y tarjeta de inactivos)   | `.../ProductsImport/ProductsImports.test.jsx`                                      |
+| Importación: inventario sigue el status (contrato SQL)    | `.../migrations/importProductsInventoryFollowsStatusContract.test.js`              |
 | Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
 | Kits (filtro por estado y texto, sin acentos)             | `.../ProductsPromotions/services/kitsFilterService.test.js`                        |
 | Kits (lista, paginacion y filtros)                        | `.../ProductsPromotions/hooks/useKitsList.test.js`                                 |

@@ -150,7 +150,7 @@ describe("productsImportService", () => {
       });
     });
 
-    it("solo trae sucursales activas y el estado de los departamentos", async () => {
+    it("solo trae sucursales activas y el id/nombre de los departamentos", async () => {
       branchesQ.then = (ok) =>
         Promise.resolve({ data: [], error: null }).then(ok);
       departmentsQ.then = (ok) =>
@@ -159,7 +159,7 @@ describe("productsImportService", () => {
       await fetchBranchesAndDepartments();
 
       expect(branchesQ.eq).toHaveBeenCalledWith("is_active", true);
-      expect(departmentsQ.select).toHaveBeenCalledWith("id, name, status");
+      expect(departmentsQ.select).toHaveBeenCalledWith("id, name");
     });
 
     it("propaga errores de la consulta de sucursales", async () => {
