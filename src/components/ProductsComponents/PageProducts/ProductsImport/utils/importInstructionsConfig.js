@@ -4,16 +4,24 @@ import {
   SALE_TYPES,
   UNITS,
   IVA_VALUES,
+  MAX_FILE_SIZE_MESSAGE,
 } from "./importUtils";
 
 export { REQUIRED_COLUMNS, OPTIONAL_COLUMNS };
 
-const BOOLEAN_VALUES = "sí/no, true/false o 1/0";
+// Subconjunto intencional de lo que acepta parseBoolean (tambien acepta yes/y/n).
+export const BOOLEAN_PAIRS = [
+  ["sí", "no"],
+  ["true", "false"],
+  ["1", "0"],
+];
 
 const joinWithOr = (values) =>
   values.length > 1
     ? `${values.slice(0, -1).join(", ")} o ${values[values.length - 1]}`
     : values.join("");
+
+const BOOLEAN_VALUES = joinWithOr(BOOLEAN_PAIRS.map((pair) => pair.join("/")));
 
 export const DEPARTMENT_RULES = [
   "Si no capturas Departamento, el producto se guardará sin departamento.",
@@ -28,4 +36,4 @@ export const ALLOWED_VALUES = [
   { field: "IVA", values: joinWithOr(IVA_VALUES) },
 ];
 
-export const MAX_FILE_NOTE = "El archivo no debe exceder los 5MB.";
+export const MAX_FILE_NOTE = MAX_FILE_SIZE_MESSAGE;
