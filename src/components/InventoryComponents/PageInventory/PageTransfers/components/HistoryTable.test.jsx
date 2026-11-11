@@ -361,6 +361,33 @@ describe("HistoryTable filtros por rango de fechas", () => {
     expect(screen.queryByText("TR-001")).toBeTruthy();
   });
 
+  it("vuelve a la pagina 1 al editar Desde a mano", () => {
+    const many = Array.from({ length: 25 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    const fromInput = screen.getByLabelText("Desde");
+    fireEvent.change(fromInput, { target: { value: "21/10/2026" } });
+    fireEvent.blur(fromInput);
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+  });
+
   it("deshabilita Limpiar filtros sin rango activo", () => {
     render(<HistoryTable {...defaultProps} />);
     expect(
