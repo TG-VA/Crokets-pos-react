@@ -245,6 +245,34 @@ describe("HistoryTable filtros por rango de fechas", () => {
     ).toBe("false");
   });
 
+  it("vuelve a la pagina 1 al limpiar filtros con varias paginas", () => {
+    const many = Array.from({ length: 50 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `${i % 2 === 0 ? "PAR" : "NON"}-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "PAR" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(screen.getByText("Página 1 de 5")).toBeTruthy();
+  });
+
   it("muestra un mensaje propio cuando no hay traspasos en el rango", () => {
     render(
       <HistoryTable
