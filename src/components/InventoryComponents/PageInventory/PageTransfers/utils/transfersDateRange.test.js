@@ -65,6 +65,16 @@ describe("filterTransfersByDateRange", () => {
     expect(result.map((order) => order.id)).toEqual(["2", "3", "4"]);
   });
 
+  it("incluye un traspaso de la manana cuando dateFrom trae hora", () => {
+    const result = filterTransfersByDateRange(
+      history,
+      new Date(2026, 9, 21, 15, 0, 0),
+      new Date(2026, 9, 21)
+    );
+
+    expect(result.map((order) => order.id)).toEqual(["2", "3", "4"]);
+  });
+
   it("excluye traspasos sin fecha valida cuando hay rango", () => {
     const result = filterTransfersByDateRange(
       [...history, buildOrder("6", null)],
