@@ -1,37 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
+import useTransferHistoryFilters from "../hooks/useTransferHistoryFilters";
 import HistoryFilters from "./HistoryFilters";
 import {
-  clampRangeToToday,
-  filterTransfersByDateRange,
   formatTransferDateTime,
-  getPresetRange,
   getTransferStatusMetaForBranch,
 } from "../utils/transfersUtils";
-
-const INITIAL_DATE_RANGE = {
-  dateFrom: null,
-  dateTo: null,
-};
-
-const getEmptyHistoryMessage = ({ hasFolio, hasDateRange }) => {
-  if (hasFolio && hasDateRange) {
-    return "No hay traspasos con esos filtros.";
-  }
-
-  if (hasFolio) {
-    return "No hay traspasos con ese folio.";
-  }
-
-  if (hasDateRange) {
-    return "No hay traspasos en el rango de fechas seleccionado.";
-  }
-
-  return "Todavía no hay traspasos registrados para esta sucursal.";
-};
 
 const HistoryTable = ({
   branch,
@@ -42,23 +19,19 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
-  const [folioSearch, setFolioSearch] = useState("");
-  const [dateRange, setDateRange] = useState(INITIAL_DATE_RANGE);
-  const [rangePreset, setRangePreset] = useState("custom");
-  const searchKey = folioSearch.trim().toLowerCase();
-  const filteredHistory = useMemo(() => {
-    const byFolio = searchKey
-      ? transferHistory.filter((order) =>
-          `${order.folio ?? ""}`.toLowerCase().includes(searchKey)
-        )
-      : transferHistory;
+  const {
+    filteredHistory,
+    dateRange,
+    rangePreset,
+    folioSearch,
+    hasActiveFilters,
+    emptyMessage,
+    handleDateChange,
+    handleRangePreset,
+    handleClearFilters,
+    handleFolioSearchChange,
+  } = useTransferHistoryFilters({ transferHistory });
 
-    return filterTransfersByDateRange(
-      byFolio,
-      dateRange.dateFrom,
-      dateRange.dateTo
-    );
-  }, [transferHistory, searchKey, dateRange]);
   const {
     currentPage,
     totalPages,
@@ -68,31 +41,9 @@ const HistoryTable = ({
     resetPagination,
   } = usePagination({ totalItems: filteredHistory.length });
 
-  const handleDateChange = (key, date) => {
-    setDateRange((previous) => ({ ...previous, [key]: date }));
-    setRangePreset("custom");
+  useEffect(() => {
     resetPagination();
-  };
-
-  const handleRangePreset = (preset) => {
-    setDateRange(clampRangeToToday(getPresetRange(preset)));
-    setRangePreset(preset);
-    resetPagination();
-  };
-
-  const handleClearFilters = () => {
-    setFolioSearch("");
-    setDateRange(INITIAL_DATE_RANGE);
-    setRangePreset("custom");
-    resetPagination();
-  };
-
-  const hasDateRange = Boolean(dateRange.dateFrom || dateRange.dateTo);
-  const hasActiveFilters = Boolean(searchKey || hasDateRange);
-  const emptyMessage = getEmptyHistoryMessage({
-    hasFolio: Boolean(searchKey),
-    hasDateRange,
-  });
+  }, [dateRange, folioSearch, resetPagination]);
 
   return (
     <section className={styles.panel}>
@@ -122,10 +73,7 @@ const HistoryTable = ({
             placeholder="Buscar por folio"
             aria-label="Buscar traspaso por folio"
             value={folioSearch}
-            onChange={(event) => {
-              setFolioSearch(event.target.value);
-              resetPagination();
-            }}
+            onChange={(event) => handleFolioSearchChange(event.target.value)}
           />
         </div>
       </div>
