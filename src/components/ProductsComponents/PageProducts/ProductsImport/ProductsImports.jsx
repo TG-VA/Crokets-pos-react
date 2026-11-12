@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./ProductsImports.module.css";
 import { formatCurrency } from "./utils/importUtils";
 import { useProductsImport } from "./hooks/useProductsImport";
-import { useIsAdmin } from "../../../../hooks/useIsAdmin";
+import { useAdminStatus } from "../../../../hooks/useIsAdmin";
 import ImportInstructions from "./components/ImportInstructions/ImportInstructions";
 import {
   REQUIRED_COLUMNS,
@@ -32,7 +32,7 @@ const ProductsImports = () => {
     handleImport,
     generateTemplateXLSX,
   } = useProductsImport();
-  const isAdmin = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files?.[0];
@@ -46,6 +46,18 @@ const ProductsImports = () => {
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) await loadFile(droppedFile);
   };
+
+  if (adminLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.innerContainer}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Importar Productos</h1>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
