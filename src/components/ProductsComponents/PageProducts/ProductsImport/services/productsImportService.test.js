@@ -151,6 +151,13 @@ describe("productsImportService", () => {
 
       await expect(fetchDepartments()).rejects.toThrow("boom");
     });
+
+    it("devuelve un arreglo vacio si la consulta no trae datos", async () => {
+      departmentsQ.then = (ok) =>
+        Promise.resolve({ data: null, error: null }).then(ok);
+
+      expect(await fetchDepartments()).toEqual([]);
+    });
   });
 
   describe("createMissingDepartments", () => {

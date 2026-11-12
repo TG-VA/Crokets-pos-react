@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from "react";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import {
   normalizeText,
   normalizeHeader,
@@ -12,6 +14,7 @@ import {
   IVA_VALUES,
   MAX_FILE_SIZE_MB,
   MAX_FILE_SIZE_MESSAGE,
+  ADMIN_ONLY_MESSAGE,
   readExcelFile,
   generateTemplateXLSX,
 } from "../utils/importUtils";
@@ -22,10 +25,9 @@ import {
   processImportTransaction,
 } from "../services/productsImportService";
 
-const ADMIN_ONLY_MESSAGE = "Solo un administrador puede importar productos.";
-
 export const useProductsImport = () => {
   const { branch } = useBranch();
+  const { user } = useAuth();
   const { refreshProducts, refreshDepartments } = useProducts();
 
   const [file, setFile] = useState(null);
@@ -335,6 +337,13 @@ export const useProductsImport = () => {
       setImporting(true);
       setImportResult(null);
       setGlobalErrors([]);
+
+      // Antes de crear departamentos: la RPC rechaza a quien no es admin y
+      // los departamentos quedarian creados sin productos.
+      if (!(await checkUserIsAdmin(user?.id))) {
+        setImportResult({ success: false, message: ADMIN_ONLY_MESSAGE });
+        return;
+      }
 
       const departments = await fetchDepartments();
       const departmentMap = {};

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
+import { ADMIN_ONLY_MESSAGE } from "../../src/components/ProductsComponents/PageProducts/ProductsImport/utils/importUtils";
 
 const MIGRATION = join(
   process.cwd(),
@@ -25,9 +26,7 @@ describe("contrato SQL: importacion solo admin y en la sucursal actual", () => {
 
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(firstInsert);
-    expect(sql).toContain(
-      "raise exception 'Solo un administrador puede importar productos.';"
-    );
+    expect(sql).toContain(`raise exception '${ADMIN_ONLY_MESSAGE}';`);
   });
 
   it("crea inventario solo en p_branch_id y no recorre p_all_branches", () => {
