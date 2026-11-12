@@ -76,6 +76,7 @@ y el proceso principal de Electron:
 | Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
+| Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
