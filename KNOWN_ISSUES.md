@@ -276,6 +276,13 @@ rollback y el `console.error("ALERTA CRÍTICA...")`. El contrato SQL cliente↔B
 `supabase db push`** (verificado en `supabase migration list` y por introspección: ACL de las 4
 funciones sin `anon`/`public`).
 
+**Actualización (12 nov 2026, PR #191):** la migración
+`20261110130000_import_products_admin_only_current_branch.sql` deja obsoleta la fila inicial con
+stock 0 en cada sucursal de `p_all_branches`: el inventario (incluido el de productos globales) se
+crea solo en `p_branch_id`, igual que Producto nuevo (`createProduct`). `p_all_branches` se conserva
+en la firma por compatibilidad y se ignora. Las demás sucursales ven el producto por
+`products.is_global`.
+
 ### 13. Roles de Supabase sin diferenciación real de permisos
 
 **Estado:** decidido (17 sep 2026) — no se habilita RLS ni se diferencia admin vs cajero; riesgo aceptado y documentado en `PERMISSIONS.md`.
@@ -312,6 +319,12 @@ vigente es `authenticated` de confianza. Se documenta como **riesgo aceptado** e
 Como mitigación acotada, la migración `20260917200000_harden_transactional_rpcs.sql` revoca `EXECUTE`
 a `anon`/`PUBLIC` en las RPCs transaccionales y fija el actor desde `auth.uid()`. Cierra #13 como
 decisión (no como cambio de permisos); ver #38 y #10.
+
+**Actualización (12 nov 2026, PR #191):** excepción acotada a la decisión anterior.
+`import_products_transaction` exige `public.is_admin()` antes de insertar (migración
+`20261110130000_import_products_admin_only_current_branch.sql`), por lo que es la primera RPC con
+diferencia real de permisos entre admin y cajero. El resto de las mutaciones sigue con el modelo
+`authenticated` de confianza. Ver `PERMISSIONS.md`, "Importar productos: solo administradores".
 
 ### 18. RPC de comisiones pagaba comisión por ventas canceladas (filtro `'canceled'`)
 
