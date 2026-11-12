@@ -352,6 +352,12 @@ backfill histórico: las partidas anteriores conservan `cost_price = 0` (costo d
 | id             | uuid    | PK                                          |
 | kit_product_id | uuid    | NN, → products.id (el producto "kit" en sí) |
 | is_active      | boolean | NN, default true                            |
+| starts_on      | date    | NULL = sin límite inicial; inclusiva        |
+| ends_on        | date    | NULL = sin límite final; inclusiva          |
+
+CHECK: `ends_on >= starts_on` cuando ambas existen (migración `20261101120000`). Al vender, el servidor
+evalúa las fechas con la zona de la sucursal (`branches.timezone`, por defecto `America/Cancun`); la
+interfaz calcula el estado mostrado con `America/Cancun`. Un kit solo se vende si está activo y dentro de su vigencia.
 
 ### product_kit_items
 

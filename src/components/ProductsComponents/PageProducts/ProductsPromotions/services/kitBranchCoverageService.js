@@ -1,5 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
-import { computeMissingBranches } from "./kitBranchCoverageCalculationService";
+import {
+  computeMissingBranches,
+  groupBranchNamesByProduct,
+} from "./kitBranchCoverageCalculationService";
 
 export const fetchMissingBranchesForProduct = async (productId) => {
   const [branchesResult, inventoryResult] = await Promise.all([
@@ -18,4 +21,16 @@ export const fetchMissingBranchesForProduct = async (productId) => {
   if (inventoryResult.error) throw inventoryResult.error;
 
   return computeMissingBranches(branchesResult.data, inventoryResult.data);
+};
+
+export const fetchBranchNamesByProduct = async (productIds) => {
+  if (!productIds || productIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("branch_inventory")
+    .select("product_id, is_active, branches:branch_id (name, is_active)")
+    .in("product_id", productIds);
+
+  if (error) throw error;
+  return groupBranchNamesByProduct(data);
 };

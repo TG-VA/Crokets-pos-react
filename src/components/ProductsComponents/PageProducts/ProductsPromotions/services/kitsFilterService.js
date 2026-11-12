@@ -1,7 +1,14 @@
+import {
+  KIT_VALIDITY_STATUS,
+  getKitValidityStatus,
+} from "./kitValidityCalculationService";
+
 export const KIT_STATUS_FILTERS = {
   ALL: "all",
-  ACTIVE: "active",
-  INACTIVE: "inactive",
+  ACTIVE: KIT_VALIDITY_STATUS.ACTIVE,
+  SCHEDULED: KIT_VALIDITY_STATUS.SCHEDULED,
+  EXPIRED: KIT_VALIDITY_STATUS.EXPIRED,
+  INACTIVE: KIT_VALIDITY_STATUS.INACTIVE,
 };
 
 const normalize = (value) =>
@@ -11,13 +18,20 @@ const normalize = (value) =>
     .toLowerCase()
     .trim();
 
-export const filterKits = (kits, { searchTerm = "", status = "all" } = {}) => {
+export const filterKits = (
+  kits,
+  { searchTerm = "", status = KIT_STATUS_FILTERS.ALL, now, timezone } = {}
+) => {
   if (!Array.isArray(kits)) return [];
   const term = normalize(searchTerm);
 
   return kits.filter((kit) => {
-    if (status === KIT_STATUS_FILTERS.ACTIVE && !kit?.is_active) return false;
-    if (status === KIT_STATUS_FILTERS.INACTIVE && kit?.is_active) return false;
+    if (
+      status !== KIT_STATUS_FILTERS.ALL &&
+      getKitValidityStatus(kit, { now, timezone }) !== status
+    ) {
+      return false;
+    }
     if (!term) return true;
 
     return (

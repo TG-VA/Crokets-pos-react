@@ -1,6 +1,14 @@
 import styles from "./ProductsImports.module.css";
 import { formatCurrency } from "./utils/importUtils";
 import { useProductsImport } from "./hooks/useProductsImport";
+import ImportInstructions from "./components/ImportInstructions/ImportInstructions";
+import {
+  REQUIRED_COLUMNS,
+  OPTIONAL_COLUMNS,
+  DEPARTMENT_RULES,
+  ALLOWED_VALUES,
+  MAX_FILE_NOTE,
+} from "./utils/importInstructionsConfig";
 import fileImportIcon from "../../../../assets/icons/file-import-solid-full.svg";
 
 const ProductsImports = () => {
@@ -265,47 +273,13 @@ const ProductsImports = () => {
             </div>
           )}
 
-          <div className={styles.instructions}>
-            <h3>Instrucciones importantes:</h3>
-            <ul>
-              <li>
-                Las columnas obligatorias son:{" "}
-                <strong>
-                  Código, Descripción, Costo, Precio, Tipo venta, Unidad, Usa
-                  inventario, IVA, Es global.
-                </strong>
-              </li>
-              <li>
-                Departamento, Stock inicial, Stock mínimo, Stock máximo y Clave
-                SAT son opcionales.
-              </li>
-              <li>
-                Si no capturas Departamento, el producto se guardará sin
-                departamento.
-              </li>
-              <li>
-                Si capturas un Departamento que no existe, se creará
-                automáticamente en MAYÚSCULAS.
-              </li>
-              <li>
-                <strong>Tipo de venta permitidos:</strong> unidad, granel.
-              </li>
-              <li>
-                <strong>Unidades permitidas:</strong> pieza, kg, g, l, ml,
-                servicio.
-              </li>
-              <li>
-                <strong>Usa inventario:</strong> sí/no, true/false o 1/0.
-              </li>
-              <li>
-                <strong>Es global:</strong> sí/no, true/false o 1/0.
-              </li>
-              <li>
-                <strong>IVA permitido:</strong> 0, 8 o 16.
-              </li>
-              <li>El archivo no debe exceder los 5MB.</li>
-            </ul>
-          </div>
+          <ImportInstructions
+            requiredColumns={REQUIRED_COLUMNS}
+            optionalColumns={OPTIONAL_COLUMNS}
+            departmentRules={DEPARTMENT_RULES}
+            allowedValues={ALLOWED_VALUES}
+            footNote={MAX_FILE_NOTE}
+          />
         </div>
       </div>
     </div>
