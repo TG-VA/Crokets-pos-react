@@ -123,6 +123,12 @@ En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se m
 `KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.
 Aplicarlo en base de datos requeriría una migración.
 
+**Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
+`import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
+rechaza con `Solo un administrador puede importar productos.` antes de insertar. Es control en base
+de datos, no solo de interfaz. El hook `useProductsImport` comprueba el rol con `checkUserIsAdmin`
+antes de crear departamentos faltantes, para que un usuario no admin no deje catálogo creado.
+
 ### Endurecimiento de RPCs transaccionales (`20260917200000`, 17 sep 2026)
 
 Las RPCs que mueven dinero o inventario (`create_sale_transaction` ×3, `cancel_sale_transaction`,
