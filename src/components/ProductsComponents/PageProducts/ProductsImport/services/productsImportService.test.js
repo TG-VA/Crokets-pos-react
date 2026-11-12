@@ -131,17 +131,17 @@ describe("productsImportService", () => {
   });
 
   describe("fetchDepartments", () => {
-    it("trae departamentos con su estado", async () => {
+    it("trae solo id y nombre de los departamentos", async () => {
       departmentsQ.then = (ok) =>
         Promise.resolve({
-          data: [{ id: "d1", name: "X", status: false }],
+          data: [{ id: "d1", name: "X" }],
           error: null,
         }).then(ok);
 
       const result = await fetchDepartments();
 
-      expect(result).toEqual([{ id: "d1", name: "X", status: false }]);
-      expect(departmentsQ.select).toHaveBeenCalledWith("id, name, status");
+      expect(result).toEqual([{ id: "d1", name: "X" }]);
+      expect(departmentsQ.select).toHaveBeenCalledWith("id, name");
       expect(supabase.from).not.toHaveBeenCalledWith("branches");
     });
 

@@ -25,7 +25,7 @@ export const fetchValidationData = async (barcodes, satCodes) => {
 export const fetchDepartments = async () => {
   const { data: departments, error: depError } = await supabase
     .from("departments")
-    .select("id, name, status");
+    .select("id, name");
   if (depError) throw depError;
 
   return departments || [];
