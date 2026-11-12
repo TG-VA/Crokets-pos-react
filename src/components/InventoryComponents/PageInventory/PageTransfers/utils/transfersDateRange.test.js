@@ -86,6 +86,16 @@ describe("filterTransfersByCreatedDate", () => {
     expect(result).toHaveLength(3);
   });
 
+  it("excluye un traspaso sin fecha cuando solo hay limite superior", () => {
+    const result = filterTransfersByCreatedDate(
+      [buildOrder("6", null)],
+      null,
+      new Date(2026, 9, 21)
+    );
+
+    expect(result).toEqual([]);
+  });
+
   it("acepta rango abierto con un solo extremo", () => {
     const fromOnly = filterTransfersByCreatedDate(
       history,
