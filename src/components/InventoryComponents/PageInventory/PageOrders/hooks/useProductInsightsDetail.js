@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { fetchProductBranchInsights } from "../services/productInsightsDetailService";
-import { getPresetRange } from "../utils/ordersDateRange";
+import { getPresetRange } from "../../../../../utils/dateRangePresets";
 import {
   getInsightTotals,
   normalizeInsightRows,

@@ -13,12 +13,8 @@ export const endOfDay = (value) => {
 };
 
 /**
-<<<<<<< HEAD:src/components/InventoryComponents/PageInventory/PageOrders/utils/ordersDateRange.js
- * Rango local para los presets de pedidos: semana (lunes a domingo), quincena
- * (1 al 15 o 16 al fin de mes) y mes.
-=======
- * Rango local (lunes a domingo) para los presets de historial.
->>>>>>> 9ddb363 (refactor(fechas): comparte presets de rango entre pedidos y traspasos):src/utils/dateRangePresets.js
+ * Rango local para los presets compartidos de Pedidos y Traspasos: semana
+ * (lunes a domingo), quincena (1 al 15 o 16 al fin de mes) y mes.
  * Las fechas se calculan con la hora local del equipo para que el filtro
  * coincida con la fecha que el usuario ve en la tabla.
  */

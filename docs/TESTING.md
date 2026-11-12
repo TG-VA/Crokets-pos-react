@@ -119,7 +119,7 @@ y el proceso principal de Electron:
 | Pedidos: servicio de datos y conteo de pendientes         | `.../PageOrders/services/ordersService.test.js`                                    |
 | Pedidos: contexto de pendientes (polling y realtime)      | `src/contexts/PendingOrdersContext.test.jsx`                                       |
 | Pedidos: mascara de cantidades enteras                    | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
-| Pedidos: rango de fechas de los filtros                   | `.../PageOrders/utils/ordersDateRange.test.js`                                     |
+| Pedidos y traspasos: presets de rango de fechas           | `src/utils/dateRangePresets.test.js`                                               |
 | Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
 | Pedidos: reglas de producto global                        | `src/services/inventory/inventoryProductCalculationService.test.js`                |
@@ -373,7 +373,7 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   relectura vacía del pedido se convierte en error explícito en vez de continuar con un snapshot nulo.
   `ordersQuantityInput.test.js` (6 casos) fija la máscara entera: `2.5 -> 2` porque el campo controlado
   muestra siempre el valor guardado, y una captura negativa se descarta completa (`-3 -> ""`) en vez de
-  convertirse en `3`. `ordersDateRange.test.js` (6 casos) fija los presets de fecha sin mutar la
+  convertirse en `3`. `dateRangePresets.test.js` (8 casos) fija los presets de fecha sin mutar la
   referencia, y `ordersFormatters.test.js` la etiqueta de diferencia por estado.
   `storeOrdersIntegrityContract.test.js` (9 casos) fija contra el SQL real el índice de historial, los
   constraints `NOT VALID`, las guardas `_user_can_access_branch` solo cuando `auth.uid()` no es nulo,
