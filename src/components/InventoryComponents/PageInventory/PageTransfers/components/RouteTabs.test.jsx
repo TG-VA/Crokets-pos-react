@@ -66,6 +66,7 @@ describe("RouteTabs", () => {
     expect(icons[2].getAttribute("src")).toBe(HistoryIcon);
     icons.forEach((icon) => {
       expect(icon.getAttribute("aria-hidden")).toBe("true");
+      expect(icon.getAttribute("alt")).toBe("");
     });
   });
 
