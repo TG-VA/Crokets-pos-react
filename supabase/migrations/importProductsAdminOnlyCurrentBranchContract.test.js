@@ -35,8 +35,9 @@ describe("contrato SQL: importacion solo admin y en la sucursal actual", () => {
     );
 
     expect(inventoryInserts).toHaveLength(1);
-    expect(inventoryInserts[0]).toContain("p_branch_id, v_product_id");
-    expect(inventoryInserts[0]).toContain("v_status");
+    expect(inventoryInserts[0]).toContain(
+      "p_branch_id, v_product_id, v_stock, v_min_stock, v_max_stock, v_status, v_cost_price, v_sale_price, v_has_been_stocked"
+    );
     expect(sql).not.toContain("jsonb_array_elements(coalesce(p_all_branches");
   });
 
