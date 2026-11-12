@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchActiveNonKitProducts } from "../services/productKitsService";
 import { useDidChange } from "../../../../../hooks/useDidChange";
 import { fetchMissingBranchesForProduct } from "../services/kitBranchCoverageService";
@@ -53,27 +53,33 @@ export const useKitProductSearch = ({
     }
   }, [selectedIndex, isOpen]);
 
-  const warnMissingBranches = async (product) => {
-    try {
-      const missing = await fetchMissingBranchesForProduct(product.id);
-      if (missing.length === 0) return;
-      showAppAlert({
-        type: "warning",
-        title: "Producto local",
-        message: buildMissingBranchesMessage(product.name),
-        branches: missing,
-      });
-    } catch (error) {
-      console.error("Error al validar cobertura por sucursal:", error);
-    }
-  };
+  const warnMissingBranches = useCallback(
+    async (product) => {
+      try {
+        const missing = await fetchMissingBranchesForProduct(product.id);
+        if (missing.length === 0) return;
+        showAppAlert({
+          type: "warning",
+          title: "Producto local",
+          message: buildMissingBranchesMessage(product.name),
+          branches: missing,
+        });
+      } catch (error) {
+        console.error("Error al validar cobertura por sucursal:", error);
+      }
+    },
+    [showAppAlert]
+  );
 
-  const handleSelect = (product) => {
-    if (!product) return;
-    onSelectProduct(product);
-    onClose();
-    if (product.is_global === false) warnMissingBranches(product);
-  };
+  const handleSelect = useCallback(
+    (product) => {
+      if (!product) return;
+      onSelectProduct(product);
+      onClose();
+      if (product.is_global === false) warnMissingBranches(product);
+    },
+    [onSelectProduct, onClose, warnMissingBranches]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -114,7 +120,7 @@ export const useKitProductSearch = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [isOpen, results, selectedIndex, appModalIsOpen, onClose]);
+  }, [isOpen, results, selectedIndex, appModalIsOpen, onClose, handleSelect]);
 
   const normalizeText = (text) =>
     String(text || "")
