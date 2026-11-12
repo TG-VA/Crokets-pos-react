@@ -14,6 +14,7 @@
   --white: #ffffff;
   --errorColor: #e74c3c;
   --successColor: #27ae60;
+  --warningColor: #d68910;
 }
 
 .innerContainer {
@@ -223,7 +224,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -310,6 +311,19 @@
   color: var(--darkGray);
   font-weight: 800;
   z-index: 1;
+}
+
+.warningText {
+  color: var(--warningColor);
+  font-weight: 800;
+}
+
+.warningList {
+  color: var(--warningColor);
+  font-weight: 700;
+  display: block;
+  max-width: 320px;
+  white-space: normal;
 }
 
 .rowValid {

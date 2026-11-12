@@ -14,7 +14,7 @@ export const fetchValidationData = async (barcodes, satCodes) => {
 
   const { data: departments, error: depError } = await supabase
     .from("departments")
-    .select("id, name");
+    .select("id, name, status");
   if (depError) throw depError;
 
   const existingSatCodes = await validateSatClaves(satCodes);
@@ -25,7 +25,8 @@ export const fetchValidationData = async (barcodes, satCodes) => {
 export const fetchBranchesAndDepartments = async () => {
   const { data: branches, error: brError } = await supabase
     .from("branches")
-    .select("id");
+    .select("id")
+    .eq("is_active", true);
   if (brError) throw brError;
 
   const { data: departments, error: depError } = await supabase

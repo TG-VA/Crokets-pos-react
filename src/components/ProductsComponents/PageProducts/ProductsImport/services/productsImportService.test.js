@@ -106,6 +106,7 @@ describe("productsImportService", () => {
         existingSatCodes: ["SAT1"],
       });
       expect(productsQ.in).toHaveBeenCalledWith("barcode", ["BC1"]);
+      expect(departmentsQ.select).toHaveBeenCalledWith("id, name, status");
       expect(validateSatClaves).toHaveBeenCalledWith(["SAT1"]);
     });
 
@@ -147,6 +148,18 @@ describe("productsImportService", () => {
         branches: [{ id: "b1" }],
         departments: [{ id: "d1", name: "X" }],
       });
+    });
+
+    it("solo trae sucursales activas y el id/nombre de los departamentos", async () => {
+      branchesQ.then = (ok) =>
+        Promise.resolve({ data: [], error: null }).then(ok);
+      departmentsQ.then = (ok) =>
+        Promise.resolve({ data: [], error: null }).then(ok);
+
+      await fetchBranchesAndDepartments();
+
+      expect(branchesQ.eq).toHaveBeenCalledWith("is_active", true);
+      expect(departmentsQ.select).toHaveBeenCalledWith("id, name");
     });
 
     it("propaga errores de la consulta de sucursales", async () => {

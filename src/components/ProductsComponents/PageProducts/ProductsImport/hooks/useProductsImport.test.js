@@ -1,8 +1,8 @@
-import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 
 vi.mock("../../../../../contexts/BranchContext", () => ({
-  useBranch: () => ({ branch: { id: 1 } }),
+  useBranch: () => ({ branch: { id: "b1" } }),
 }));
 vi.mock("../../../../../contexts/ProductsContext", () => ({
   useProducts: () => ({
@@ -10,23 +10,100 @@ vi.mock("../../../../../contexts/ProductsContext", () => ({
     refreshDepartments: vi.fn(),
   }),
 }));
+vi.mock("../utils/importUtils", async (importOriginal) => ({
+  ...(await importOriginal()),
+  readExcelFile: vi.fn(),
+}));
 vi.mock("../services/productsImportService", () => ({
   fetchValidationData: vi.fn(),
   fetchBranchesAndDepartments: vi.fn(),
   createMissingDepartments: vi.fn(),
   processImportTransaction: vi.fn(),
 }));
-vi.mock("../utils/importUtils", async (importOriginal) => ({
-  ...(await importOriginal()),
-  readExcelFile: vi.fn(),
-}));
 
-import { useProductsImport } from "./useProductsImport";
 import {
   MAX_FILE_SIZE_MB,
   MAX_FILE_SIZE_MESSAGE,
   readExcelFile,
 } from "../utils/importUtils";
+import { fetchValidationData } from "../services/productsImportService";
+import { useProductsImport } from "./useProductsImport";
+
+const buildRow = (overrides = {}) => ({
+  Código: "BC1",
+  Descripción: "CROQUETAS",
+  Costo: "10",
+  Precio: "20",
+  "Tipo venta": "unidad",
+  Unidad: "pieza",
+  "Usa inventario": "sí",
+  IVA: "16",
+  "Es global": "no",
+  Departamento: "NUPEC",
+  "Stock inicial": "5",
+  ...overrides,
+});
+
+const loadRows = async (rows, departments) => {
+  readExcelFile.mockResolvedValue(rows);
+  fetchValidationData.mockResolvedValue({
+    existingProducts: [],
+    departments,
+    existingSatCodes: [],
+  });
+
+  const { result } = renderHook(() => useProductsImport());
+  await act(() => result.current.loadFile(new File(["x"], "productos.xlsx")));
+  return result.current;
+};
+
+describe("useProductsImport: estado del departamento", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("crea inactivo el producto de un departamento inactivo, con aviso y sin error", async () => {
+    const state = await loadRows(
+      [buildRow()],
+      [{ id: "d1", name: "NUPEC", status: false }]
+    );
+    const [row] = state.validatedRows;
+
+    expect(row.errors).toEqual([]);
+    expect(row.warnings).toEqual([
+      "Departamento inactivo: el producto se creará inactivo.",
+    ]);
+    expect(row.product.status).toBe(false);
+    expect(row.inventory.is_active).toBe(false);
+    expect(state.summary.inactive).toBe(1);
+  });
+
+  it("mantiene activo el producto de un departamento activo, nuevo o vacío", async () => {
+    const state = await loadRows(
+      [
+        buildRow(),
+        buildRow({ Código: "BC2", Departamento: "NUEVO" }),
+        buildRow({ Código: "BC3", Departamento: "" }),
+      ],
+      [{ id: "d1", name: "NUPEC", status: true }]
+    );
+
+    state.validatedRows.forEach((row) => {
+      expect(row.warnings).toEqual([]);
+      expect(row.product.status).toBe(true);
+      expect(row.inventory.is_active).toBe(true);
+    });
+    expect(state.summary.inactive).toBe(0);
+  });
+
+  it("no cuenta como inactiva una fila de departamento inactivo que tiene errores", async () => {
+    const state = await loadRows(
+      [buildRow(), buildRow({ Código: "BC2", Precio: "-1" })],
+      [{ id: "d1", name: "NUPEC", status: false }]
+    );
+
+    expect(state.validatedRows[1].errors.length).toBeGreaterThan(0);
+    expect(state.summary.inactive).toBe(1);
+  });
+});
 
 const fileOfSize = (bytes) => ({ name: "productos.xlsx", size: bytes });
 const LIMIT_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
