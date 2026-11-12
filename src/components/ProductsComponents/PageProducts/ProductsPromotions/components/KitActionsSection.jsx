@@ -6,19 +6,20 @@ import styles from "../ProductsPromotions.module.css";
 const KitActionsSection = ({
   handleSaveKit,
   saving,
+  isFormComplete,
+  missingFields,
   editingKit,
   handleClearForm,
-  removeSelectedProduct,
-  selectedProductId,
+  handleCancelEdit,
 }) => {
   return (
     <div className={styles.actionsSection}>
       <div className={styles.leftButtons}>
         <button
           type="button"
-          className={[styles.btn, styles.btnSave].join(" ")}
+          className={[styles.btn, styles.btnSave, styles.btnSaveWide].join(" ")}
           onClick={handleSaveKit}
-          disabled={saving}
+          disabled={saving || !isFormComplete}
         >
           <img src={saveIcon} alt="" className={styles.btnIcon} />
           {saving
@@ -30,26 +31,39 @@ const KitActionsSection = ({
 
         <button
           type="button"
-          className={[styles.btn, styles.btnDelete].join(" ")}
+          className={[styles.btn, styles.btnOutlineNeutral].join(" ")}
           onClick={handleClearForm}
           disabled={saving}
         >
           <img src={clearIcon} alt="" className={styles.btnIcon} />
           Limpiar
         </button>
+
+        {editingKit && (
+          <button
+            type="button"
+            className={[styles.btn, styles.btnOutlineNeutral].join(" ")}
+            onClick={handleCancelEdit}
+            disabled={saving}
+          >
+            <img src={removeIcon} alt="" className={styles.btnIcon} />
+            Cancelar
+          </button>
+        )}
       </div>
 
-      <div className={styles.rightButtons}>
-        <button
-          type="button"
-          className={[styles.btn, styles.btnRemove].join(" ")}
-          onClick={removeSelectedProduct}
-          disabled={!selectedProductId}
-        >
-          <img src={removeIcon} alt="" className={styles.btnIcon} />
-          Remover seleccionado
-        </button>
-      </div>
+      {!isFormComplete && missingFields.length > 0 && (
+        <div className={styles.missingFieldsHint} role="status">
+          <span>Falta:</span>
+          <ul className={styles.missingFieldsList}>
+            {missingFields.map((field) => (
+              <li key={field} className={styles.missingFieldBadge}>
+                {field}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

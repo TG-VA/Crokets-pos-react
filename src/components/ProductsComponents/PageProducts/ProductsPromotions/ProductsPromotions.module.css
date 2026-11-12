@@ -28,7 +28,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Las tarjetas conservan su altura; el contenedor hace scroll si no caben. */
+.innerContainer > .card {
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .header {
@@ -174,13 +181,34 @@
   text-align: center;
 }
 
+.columnHeaderWithAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-block: 6px;
+  text-align: left;
+}
+
 .listArea {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 220px;
-  max-height: 320px;
   padding: 10px;
   background-color: var(--white);
-  overflow-y: auto;
+}
+
+.productNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.productBranches {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: #92400e;
 }
 
 .emptyState {
@@ -192,6 +220,7 @@
 
 .selectedList {
   display: flex;
+  flex: 1;
   flex-direction: column;
 }
 
@@ -241,13 +270,43 @@
 
 .actionsSection {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
 }
 
-.leftButtons,
-.rightButtons {
+.missingFieldsHint {
+  flex: 0 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.missingFieldsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.missingFieldBadge {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.leftButtons {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -275,14 +334,36 @@
   transform: translateY(-1px);
 }
 
+/* Un solo estilo deshabilitado para que no parezca un color de marca. */
 .btn:disabled {
-  opacity: 0.55;
+  background-color: #e5e7eb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
   transform: none;
 }
 
+.btn:disabled .btnIcon {
+  filter: brightness(0) opacity(0.3);
+}
+
+.btnCompact {
+  min-height: 32px;
+  min-width: 0;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
 .btnSave {
   background-color: var(--croketsOrange);
+}
+
+.btnSaveWide {
+  min-width: 170px;
+}
+
+.btnCancel {
+  background-color: #8a949e;
 }
 
 .btnSearch {
@@ -293,9 +374,19 @@
   background-color: var(--croketsBlueDark);
 }
 
-.btnDelete,
-.btnRemove {
+.btnDelete {
   background-color: var(--errorColor);
+}
+
+/* Acciones secundarias: solo borde, para dejar el relleno a la accion principal. */
+.btnOutlineNeutral {
+  background-color: var(--white);
+  border: 1.5px solid currentColor;
+  color: #5f6b76;
+}
+
+.btnOutlineNeutral:hover:not(:disabled) {
+  background-color: #f1f3f5;
 }
 
 .cardHeader {
@@ -321,8 +412,8 @@
 
 .kitRow {
   display: grid;
-  grid-template-columns: 1fr 120px 280px;
-  gap: 10px;
+  grid-template-columns: 1fr 150px 328px;
+  gap: 16px;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #eeeeee;
@@ -346,22 +437,80 @@
   color: #991b1b;
 }
 
+.kitStatusScheduled {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.kitStatusExpired {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.unlimitedCheck {
+  display: inline-block;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.unlimitedInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.unlimitedBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--croketsBlue);
+  border-radius: 999px;
+  color: var(--croketsBlue);
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.unlimitedInput:checked + .unlimitedBadge {
+  background-color: var(--croketsBlue);
+  color: var(--white);
+}
+
+.unlimitedInput:focus-visible + .unlimitedBadge {
+  box-shadow: var(--shadow-focus);
+}
+
+.datePickerWrapper {
+  display: block;
+}
+
+.datePickerWrapper :global(.react-datepicker__input-container) {
+  display: block;
+}
+
 .kitActions {
   display: grid;
-  grid-template-columns: repeat(3, 92px);
+  grid-template-columns: repeat(3, 104px);
   gap: 8px;
   justify-content: end;
   align-items: center;
 }
 
 .kitActions .btn {
-  width: 92px;
-  min-width: 92px;
+  width: 104px;
+  min-width: 104px;
   height: 42px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.kitActions .kitActionWide {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 /* Modal de búsqueda */
@@ -459,6 +608,28 @@
   background: #e6f7ff;
 }
 
+.searchResultItem.searchResultDisabled {
+  background: var(--lightGray);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.searchResultItem.searchResultDisabled strong,
+.searchResultDisabled .searchResultMeta {
+  color: #888888;
+}
+
+.addedBadge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: var(--mediumGray);
+  color: var(--darkGray);
+}
+
 .searchResultItem strong {
   color: var(--darkGray);
 }
@@ -520,14 +691,17 @@
   }
 
   .leftButtons,
-  .rightButtons,
   .btn {
     width: 100%;
   }
 
+  .btnCompact {
+    width: auto;
+  }
+
   .kitRow {
     display: grid;
-    grid-template-columns: 1fr 120px 320px;
+    grid-template-columns: 1fr 120px 328px;
     gap: 10px;
     align-items: center;
     padding: 10px;
@@ -664,4 +838,134 @@
   white-space: nowrap;
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.expiringStrip {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid #fcd34d;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expiringStrip:hover {
+  background-color: #fde68a;
+}
+
+.expiringStripActive {
+  background-color: #fde68a;
+}
+
+.expiringBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.renewForm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.renewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.renewField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.marginWarning {
+  align-self: center;
+  margin: 6px 0 0;
+  padding: 0.2rem 0.75rem;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Acciones por fila: blancas con borde gris; se rellenan con su color en hover. */
+.btnSoftBlue,
+.btnSoftNeutral,
+.btnSoftSuccess,
+.btnSoftDanger {
+  background-color: var(--white);
+  border: 1px solid #dee2e6;
+}
+
+.btnSoftBlue {
+  color: var(--croketsBlue);
+}
+
+.btnSoftNeutral {
+  color: #5f6b76;
+}
+
+.btnSoftSuccess {
+  color: #15803d;
+}
+
+.btnSoftDanger {
+  color: var(--errorColor);
+}
+
+.btnSoftBlue:hover:not(:disabled) {
+  background-color: var(--croketsBlue);
+  border-color: var(--croketsBlue);
+  color: var(--white);
+}
+
+.btnSoftNeutral:hover:not(:disabled) {
+  background-color: #5f6b76;
+  border-color: #5f6b76;
+  color: var(--white);
+}
+
+.btnSoftSuccess:hover:not(:disabled) {
+  background-color: #15803d;
+  border-color: #15803d;
+  color: var(--white);
+}
+
+.btnSoftDanger:hover:not(:disabled) {
+  background-color: var(--errorColor);
+  border-color: var(--errorColor);
+  color: var(--white);
+}
+
+/* Los iconos SVG son blancos; en botones con borde se oscurecen para verse. */
+.btnOutlineNeutral .btnIcon {
+  filter: brightness(0) opacity(0.6);
+}
+
+/* Aproxima var(--errorColor) (#e74c3c) partiendo del icono en negro. */
+.btnSoftDanger .btnIcon {
+  filter: brightness(0) invert(36%) sepia(77%) saturate(2034%)
+    hue-rotate(338deg) brightness(93%) contrast(93%);
+}
+
+.btnSoftDanger:hover:not(:disabled) .btnIcon {
+  filter: brightness(0) invert(1);
 }

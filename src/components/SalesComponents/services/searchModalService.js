@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { isKitAvailable } from "../../ProductsComponents/PageProducts/ProductsPromotions/services/kitValidityCalculationService";
 
 export const normalizeText = (text) =>
   String(text || "")
@@ -129,11 +130,21 @@ export const fetchProductSearch = async (searchTerm, branchId) => {
 export const fetchKitData = async (kitProductId, branchId) => {
   const { data: kitRow, error: kitError } = await supabase
     .from("product_kits")
-    .select("id, is_active")
+    .select("id, is_active, starts_on, ends_on")
     .eq("kit_product_id", kitProductId)
     .maybeSingle();
   if (kitError) throw kitError;
   if (!kitRow?.id || kitRow.is_active === false) return { kitRow };
+
+  const { data: branchRow, error: branchError } = await supabase
+    .from("branches")
+    .select("timezone")
+    .eq("id", branchId)
+    .maybeSingle();
+  if (branchError) throw branchError;
+  if (!isKitAvailable(kitRow, { timezone: branchRow?.timezone })) {
+    return { kitRow: { ...kitRow, is_active: false } };
+  }
 
   const { data: kitItems, error: itemsError } = await supabase
     .from("product_kit_items")

@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (29 oct 2026)
+## Cobertura actual (10 nov 2026)
 
-237 archivos de test (**2801 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+292 archivos de test (**3094 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -23,12 +23,30 @@ y el proceso principal de Electron:
 | Lista de productos (paginacion server-side y teclado)     | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
 | Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
 | Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
+| Importación: descriptores de instrucciones                | `.../ProductsImport/utils/importInstructionsConfig.test.js`                        |
+| Importación: límite de tamaño de archivo (hook)           | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
+| Importación: instrucciones (chips, reglas y valores)      | `.../ImportInstructions/ImportInstructions.test.jsx`                               |
+| Importación: página con instrucciones cableadas           | `.../ProductsImport/ProductsImports.test.jsx`                                      |
 | Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
 | Kits (filtro por estado y texto, sin acentos)             | `.../ProductsPromotions/services/kitsFilterService.test.js`                        |
 | Kits (lista, paginacion y filtros)                        | `.../ProductsPromotions/hooks/useKitsList.test.js`                                 |
 | Kits (busqueda de producto y alerta de cobertura)         | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
 | Kits (cobertura por sucursal)                             | `.../ProductsPromotions/services/kitBranchCoverageCalculationService.test.js`      |
 | Kits (sanitizado de entradas)                             | `.../ProductsPromotions/services/kitInputSanitizers.test.js`                       |
+| Kits (vigencia por fechas y por vencer)                   | `.../ProductsPromotions/services/kitValidityCalculationService.test.js`            |
+| Kits (orden de la lista)                                  | `.../ProductsPromotions/services/kitsSortService.test.js`                          |
+| Kits (advertencia de margen)                              | `.../ProductsPromotions/services/kitMarginCalculationService.test.js`              |
+| Kits (palabra de confirmacion de borrado)                 | `.../ProductsPromotions/services/kitDeleteConfirmationCalculationService.test.js`  |
+| Kits (validacion del formulario)                          | `.../ProductsPromotions/services/kitFormValidationService.test.js`                 |
+| Kits (completitud del formulario)                         | `.../ProductsPromotions/services/kitFormCompletenessService.test.js`               |
+| Kits (cambios sin guardar)                                | `.../ProductsPromotions/services/kitFormChangesService.test.js`                    |
+| Kits (estado del formulario)                              | `.../ProductsPromotions/hooks/useKitForm.test.js`                                  |
+| Kits (renovar vigencia y borrado confirmado)              | `.../ProductsPromotions/hooks/useKitListActions.test.js`                           |
+| Kits (lista: por vencer, renovar y gateo por rol)         | `.../ProductsPromotions/components/KitRegisteredListSection.test.jsx`              |
+| Kits (modal de borrado con ELIMINAR)                      | `.../ProductsPromotions/components/KitDeleteConfirmModal.test.jsx`                 |
+| Kits (acciones del formulario)                            | `.../ProductsPromotions/components/KitActionsSection.test.jsx`                     |
+| Kits (pagina y aviso con sucursales)                      | `.../ProductsPromotions/ProductsPromotions.test.jsx`                               |
+| Rol administrador en interfaz (no es seguridad)           | `src/hooks/useIsAdmin.test.js`                                                     |
 | Reporte de caja                                           | `.../PageCashReport/services/cashReportService.test.js`                            |
 | Reporte de caja (hook y filtro de sucursal)               | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
 | Reporte de comisiones                                     | `.../PageCommissionsReport/services/commissionsReportService.test.js`              |
@@ -210,6 +228,12 @@ está donde el servidor sí lee la fila: la suite de persistencia.
   `toBeInTheDocument`, `toHaveTextContent` ni `toHaveClass`: usarlos lanza
   `Invalid Chai property`. Para contenido usa `expect(el.textContent).toContain(...)` y para clases
   `expect(el.className).toContain(...)`.
+- **Reloj congelado en pruebas de fechas:** todo test cuyo resultado dependa de "hoy" (por ejemplo,
+  calendarios `react-datepicker` con `minDate`, que descartan fechas anteriores) debe congelar el
+  reloj con `vi.useFakeTimers({ toFake: ["Date"] })` y `vi.setSystemTime(...)` en `beforeEach`, y
+  restaurarlo con `vi.useRealTimers()` en `afterEach`. Sin esto la prueba se rompe sola cuando la
+  fecha real rebasa la capturada. Ejemplos: `KitFormSection.test.jsx` y
+  `KitRenewValidityForm.test.jsx`.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 
 ## Huecos de cobertura

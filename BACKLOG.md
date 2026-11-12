@@ -62,6 +62,9 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Implementar la impresión real de tickets (canal IPC `print-ticket`) y restituir el contrato `{ success, message, error }` en los tres llamadores — resuelto (29 sep 2026, rama `feature/ticket-printer-ipc-setup`): servicio de impresión con perfiles 58/80 mm en el proceso principal, `printTicket` sobre IPC y suite en 84 archivos / 1278 tests; queda parametrizar la impresora física por sucursal cuando exista el hardware; ver `KNOWN_ISSUES.md` #59
 - [x] Corregir los pasos incrementales de ESLint y Prettier en CI, que no ejecutan nada porque `rg` no está en el runner — resuelto (29 sep 2026, rama `fix/ci-eslint-and-modal-icons`): `rg` sustituido por `grep -E` en ambos pasos y `react/jsx-uses-vars` activado en el flat config (564 → 187 warnings de `no-unused-vars`); queda la deuda de formato, que es de 355 archivos y no de tres — ver `KNOWN_ISSUES.md` #60 y #61
 
+- [ ] Duplicar kit desde la lista (rebanada 5a de `docs/plans/KITS_UX_PLAN.md`): pendiente de confirmar la regla de negocio
+- [ ] Aplicar en base de datos el gateo de editar y eliminar kits para administradores (hoy solo interfaz, `useIsAdmin`); requiere migración
+
 ## Prioridad Baja (Limpieza y Convenciones)
 
 - [x] Eliminar declaraciones residuales de `console.log` en código de producción — cero `console.log`/`console.warn` en `src/` (25 sep 2026, rama `fix/code-quality-and-runtime-bugs`) — ver `KNOWN_ISSUES.md` #57
