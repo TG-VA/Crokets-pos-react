@@ -55,6 +55,17 @@ export const useKitProductSearch = ({
     }
   }, [selectedIndex, isOpen]);
 
+  const isAdded = useCallback(
+    (product) => Boolean(product) && addedProductIds.includes(product.id),
+    [addedProductIds]
+  );
+
+  const firstAvailableIndex = useCallback(
+    (list) =>
+      list.findIndex((product) => !addedProductIds.includes(product.id)),
+    [addedProductIds]
+  );
+
   const warnMissingBranches = useCallback(
     async (product) => {
       try {
@@ -75,12 +86,12 @@ export const useKitProductSearch = ({
 
   const handleSelect = useCallback(
     (product) => {
-      if (!product) return;
+      if (!product || isAdded(product)) return;
       onSelectProduct(product);
       onClose();
       if (product.is_global === false) warnMissingBranches(product);
     },
-    [onSelectProduct, onClose, warnMissingBranches]
+    [isAdded, onSelectProduct, onClose, warnMissingBranches]
   );
 
   useEffect(() => {
@@ -131,7 +142,15 @@ export const useKitProductSearch = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [isOpen, results, selectedIndex, appModalIsOpen, onClose, handleSelect]);
+  }, [
+    isOpen,
+    results,
+    selectedIndex,
+    appModalIsOpen,
+    onClose,
+    handleSelect,
+    isAdded,
+  ]);
 
   const normalizeText = (text) =>
     String(text || "")
