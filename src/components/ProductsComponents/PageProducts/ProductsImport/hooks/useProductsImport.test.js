@@ -93,6 +93,16 @@ describe("useProductsImport: estado del departamento", () => {
     });
     expect(state.summary.inactive).toBe(0);
   });
+
+  it("no cuenta como inactiva una fila de departamento inactivo que tiene errores", async () => {
+    const state = await loadRows(
+      [buildRow(), buildRow({ Código: "BC2", Precio: "-1" })],
+      [{ id: "d1", name: "NUPEC", status: false }]
+    );
+
+    expect(state.validatedRows[1].errors.length).toBeGreaterThan(0);
+    expect(state.summary.inactive).toBe(1);
+  });
 });
 
 const fileOfSize = (bytes) => ({ name: "productos.xlsx", size: bytes });
