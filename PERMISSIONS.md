@@ -107,11 +107,12 @@ control real por tabla queda así:
 
 **Hallazgo (KNOWN_ISSUES #13):** `admin` y `cajero` tienen exactamente los mismos permisos
 (`can_manage_inventory`, `can_view_branch`). No existe hoy ninguna diferencia de autorización a
-nivel de base de datos entre ambos roles, salvo `user_branches` + `is_admin()`.
+nivel de base de datos entre ambos roles, salvo `user_branches` + `is_admin()` y la RPC
+`import_products_transaction` (ver "Importar productos: solo administradores" abajo).
 
 **Decisión (17 sep 2026, KNOWN_ISSUES #10/#13):** se adopta el modelo "hardening sin habilitar RLS".
 No se habilita RLS ni se exige `is_admin()` en las mutaciones administrativas (catálogo, bajas de
-clientes, retiros de caja) porque activar RLS sobre ~37 tablas sin políticas rompería el acceso y el
+clientes, retiros de caja; la excepción posterior es `import_products_transaction`) porque activar RLS sobre ~37 tablas sin políticas rompería el acceso y el
 modelo vigente es `authenticated` de confianza. Se documenta como **riesgo aceptado**: el gateo de
 acciones administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
 autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.

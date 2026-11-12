@@ -339,7 +339,9 @@ export const useProductsImport = () => {
       setGlobalErrors([]);
 
       // Antes de crear departamentos: la RPC rechaza a quien no es admin y
-      // los departamentos quedarian creados sin productos.
+      // los departamentos quedarian creados sin productos. checkUserIsAdmin
+      // devuelve false tambien si falla la consulta del rol, asi que un error
+      // de verificacion se muestra como falta de permisos.
       if (!(await checkUserIsAdmin(user?.id))) {
         setImportResult({ success: false, message: ADMIN_ONLY_MESSAGE });
         return;
