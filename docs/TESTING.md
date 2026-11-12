@@ -138,6 +138,11 @@ y el proceso principal de Electron:
 | Pedidos: contexto de pendientes (polling y realtime)      | `src/contexts/PendingOrdersContext.test.jsx`                                       |
 | Pedidos: mascara de cantidades enteras                    | `.../PageOrders/utils/ordersQuantityInput.test.js`                                 |
 | Pedidos y traspasos: presets de rango de fechas           | `src/utils/dateRangePresets.test.js`                                               |
+| Traspasos: tabla de historial (filtros y paginacion)      | `.../PageTransfers/components/HistoryTable.test.jsx`                               |
+| Traspasos: filtros de fecha (limites del DatePicker)      | `.../PageTransfers/components/HistoryFilters.test.jsx`                             |
+| Traspasos: pestanas de ruta                               | `.../PageTransfers/components/RouteTabs.test.jsx`                                  |
+| Traspasos: filtros de historial (hook)                    | `.../PageTransfers/hooks/useTransferHistoryFilters.test.js`                        |
+| Traspasos: filtrado por fecha de creacion                 | `.../PageTransfers/utils/transfersDateRange.test.js`                               |
 | Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
 | Pedidos: reglas de producto global                        | `src/services/inventory/inventoryProductCalculationService.test.js`                |
