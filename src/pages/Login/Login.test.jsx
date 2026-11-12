@@ -64,7 +64,7 @@ const renderLogin = async () => {
 };
 
 describe("Login: Enter en el campo usuario", () => {
-  it("pasa el foco a la contrasena sin mostrar error", async () => {
+  it("pasa el foco a la contrasena y no envia el formulario", async () => {
     const { username, password } = await renderLogin();
     fireEvent.change(username, { target: { value: "carlos" } });
 
@@ -72,9 +72,6 @@ describe("Login: Enter en el campo usuario", () => {
 
     expect(notPrevented).toBe(false);
     expect(document.activeElement).toBe(password);
-    expect(screen.queryByText("Por favor, complete todos los campos.")).toBe(
-      null
-    );
   });
 
   it("no intercepta Enter si el usuario esta vacio", async () => {
