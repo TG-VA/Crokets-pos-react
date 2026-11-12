@@ -44,6 +44,17 @@ describe("HistoryFilters", () => {
     expect(getDay("October 22").getAttribute("aria-disabled")).toBe("true");
   });
 
+  it("deshabilita en Creado hasta las fechas anteriores a dateFrom", () => {
+    render(
+      <HistoryFilters {...defaultProps} dateFrom={new Date(2026, 9, 20)} />
+    );
+
+    fireEvent.click(screen.getByLabelText("Creado hasta"));
+
+    expect(getDay("October 19").getAttribute("aria-disabled")).toBe("true");
+    expect(getDay("October 20").getAttribute("aria-disabled")).toBe("false");
+  });
+
   it("deshabilita en Creado desde las fechas posteriores a dateTo", () => {
     render(
       <HistoryFilters
