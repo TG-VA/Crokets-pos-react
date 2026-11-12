@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import ProductsImports from "./ProductsImports";
 import { useProductsImport } from "./hooks/useProductsImport";
+import { useIsAdmin } from "../../../../hooks/useIsAdmin";
 import {
   DEPARTMENT_RULES,
   MAX_FILE_NOTE,
@@ -11,6 +12,10 @@ import {
 
 vi.mock("./hooks/useProductsImport", () => ({
   useProductsImport: vi.fn(),
+}));
+
+vi.mock("../../../../hooks/useIsAdmin", () => ({
+  useIsAdmin: vi.fn(),
 }));
 
 const buildRow = (overrides = {}) => ({
@@ -70,6 +75,20 @@ const AVISO = "Departamento inactivo: el producto se creará inactivo.";
 describe("ProductsImports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useIsAdmin.mockReturnValue(true);
+  });
+
+  it("oculta la importacion a quien no es administrador", () => {
+    useIsAdmin.mockReturnValue(false);
+    mockHook({ file: null, rows: [], summary: null });
+
+    render(<ProductsImports />);
+
+    expect(
+      screen.getByText("Solo un administrador puede importar productos.")
+    ).toBeTruthy();
+    expect(screen.queryByText("Importar Base de Datos")).toBeNull();
+    expect(screen.queryByText("Descargar Plantilla")).toBeNull();
   });
 
   it("cablea las instrucciones con los descriptores reales", () => {
