@@ -21,7 +21,11 @@ vi.mock("../services/productsImportService", () => ({
   processImportTransaction: vi.fn(),
 }));
 
-import { readExcelFile } from "../utils/importUtils";
+import {
+  MAX_FILE_SIZE_MB,
+  MAX_FILE_SIZE_MESSAGE,
+  readExcelFile,
+} from "../utils/importUtils";
 import { fetchValidationData } from "../services/productsImportService";
 import { useProductsImport } from "./useProductsImport";
 
@@ -88,6 +92,47 @@ describe("useProductsImport: estado del departamento", () => {
       expect(row.inventory.is_active).toBe(true);
     });
     expect(state.summary.inactive).toBe(0);
+  });
+
+  it("no cuenta como inactiva una fila de departamento inactivo que tiene errores", async () => {
+    const state = await loadRows(
+      [buildRow(), buildRow({ Código: "BC2", Precio: "-1" })],
+      [{ id: "d1", name: "NUPEC", status: false }]
+    );
+
+    expect(state.validatedRows[1].errors.length).toBeGreaterThan(0);
+    expect(state.summary.inactive).toBe(1);
+  });
+});
+
+const fileOfSize = (bytes) => ({ name: "productos.xlsx", size: bytes });
+const LIMIT_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+describe("useProductsImport: limite de tamano", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readExcelFile.mockResolvedValue([]);
+  });
+
+  it("rechaza un archivo un byte mayor al limite con el mensaje compartido", async () => {
+    const { result } = renderHook(() => useProductsImport());
+
+    await act(() => result.current.loadFile(fileOfSize(LIMIT_BYTES + 1)));
+
+    expect(result.current.globalErrors).toEqual([MAX_FILE_SIZE_MESSAGE]);
+    expect(result.current.file).toBeNull();
+    expect(readExcelFile).not.toHaveBeenCalled();
+  });
+
+  it("acepta un archivo exactamente en el limite", async () => {
+    const { result } = renderHook(() => useProductsImport());
+    const file = fileOfSize(LIMIT_BYTES);
+
+    await act(() => result.current.loadFile(file));
+
+    expect(result.current.globalErrors).not.toContain(MAX_FILE_SIZE_MESSAGE);
+    expect(result.current.file).toBe(file);
+    expect(readExcelFile).toHaveBeenCalledWith(file);
   });
 });
 
