@@ -197,8 +197,8 @@ describe("HistoryTable filtros por rango de fechas", () => {
 
     expect(screen.queryByText("TR-21")).toBeTruthy();
     expect(screen.queryByText("TR-20")).toBeNull();
-    expect(screen.getByLabelText("Desde").value).toBe("21/10/2026");
-    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado desde").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
   });
 
   it("filtra de lunes a domingo con el preset Esta semana", () => {
@@ -219,8 +219,8 @@ describe("HistoryTable filtros por rango de fechas", () => {
     expect(screen.queryByText("TR-20")).toBeTruthy();
     expect(screen.queryByText("TR-19")).toBeTruthy();
     expect(screen.queryByText("TR-18")).toBeNull();
-    expect(screen.getByLabelText("Desde").value).toBe("19/10/2026");
-    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado desde").value).toBe("19/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
   });
 
   it("limpia el rango y restablece todos los traspasos", () => {
@@ -239,7 +239,7 @@ describe("HistoryTable filtros por rango de fechas", () => {
 
     expect(screen.queryByText("TR-20")).toBeTruthy();
     expect(screen.queryByText("TR-19")).toBeTruthy();
-    expect(screen.getByLabelText("Desde").value).toBe("");
+    expect(screen.getByLabelText("Creado desde").value).toBe("");
     expect(
       screen.getByRole("button", { name: "Hoy" }).getAttribute("aria-pressed")
     ).toBe("false");
@@ -287,7 +287,33 @@ describe("HistoryTable filtros por rango de fechas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
 
     expect(
-      screen.getByText("No hay traspasos en el rango de fechas seleccionado.")
+      screen.getByText(
+        "No hay traspasos creados en el rango de fechas seleccionado."
+      )
+    ).toBeTruthy();
+  });
+
+  it("no muestra un traspaso recibido dentro del rango si se creo antes", () => {
+    const createdOutside = {
+      ...buildOrderAt(new Date(2026, 9, 1, 8, 0, 0), "t5", "TR-RECIBIDO"),
+      receivedAt: new Date(2026, 9, 21, 9, 0, 0).toISOString(),
+    };
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[createdOutside]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-RECIBIDO")).toBeNull();
+    expect(
+      screen.getByText(
+        "No hay traspasos creados en el rango de fechas seleccionado."
+      )
     ).toBeTruthy();
   });
 
@@ -306,7 +332,11 @@ describe("HistoryTable filtros por rango de fechas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
 
     expect(screen.queryByText("TR-20")).toBeNull();
-    expect(screen.getByText("No hay traspasos con esos filtros.")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "No hay traspasos con ese folio creados en el rango seleccionado."
+      )
+    ).toBeTruthy();
   });
 
   it("combina folio y rango para mostrar solo la interseccion", () => {
@@ -338,11 +368,11 @@ describe("HistoryTable filtros por rango de fechas", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
-    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
 
     fireEvent.click(screen.getByRole("button", { name: "Este mes" }));
-    expect(screen.getByLabelText("Desde").value).toBe("01/10/2026");
-    expect(screen.getByLabelText("Hasta").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado desde").value).toBe("01/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
   });
 
   it("desmarca el preset al editar una fecha a mano", () => {
@@ -358,7 +388,7 @@ describe("HistoryTable filtros por rango de fechas", () => {
     fireEvent.click(todayButton);
     expect(todayButton.getAttribute("aria-pressed")).toBe("true");
 
-    const fromInput = screen.getByLabelText("Desde");
+    const fromInput = screen.getByLabelText("Creado desde");
     fireEvent.change(fromInput, { target: { value: "20/10/2026" } });
     fireEvent.blur(fromInput);
 
@@ -409,7 +439,7 @@ describe("HistoryTable filtros por rango de fechas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(screen.getByText("Página 3 de 3")).toBeTruthy();
 
-    const fromInput = screen.getByLabelText("Desde");
+    const fromInput = screen.getByLabelText("Creado desde");
     fireEvent.change(fromInput, { target: { value: "21/10/2026" } });
     fireEvent.blur(fromInput);
 

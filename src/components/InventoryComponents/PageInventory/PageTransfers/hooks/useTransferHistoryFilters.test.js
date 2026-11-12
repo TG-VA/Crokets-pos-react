@@ -63,7 +63,7 @@ describe("useTransferHistoryFilters", () => {
 
     expect(result.current.filteredHistory).toHaveLength(0);
     expect(result.current.emptyMessage).toBe(
-      "No hay traspasos con esos filtros."
+      "No hay traspasos con ese folio creados en el rango seleccionado."
     );
   });
 });

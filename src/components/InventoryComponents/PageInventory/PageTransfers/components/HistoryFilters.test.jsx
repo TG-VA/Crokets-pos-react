@@ -26,16 +26,16 @@ describe("HistoryFilters", () => {
     vi.useRealTimers();
   });
 
-  it("deshabilita las fechas posteriores a hoy en Hasta", () => {
+  it("deshabilita las fechas posteriores a hoy en Creado hasta", () => {
     render(<HistoryFilters {...defaultProps} />);
 
-    fireEvent.click(screen.getByLabelText("Hasta"));
+    fireEvent.click(screen.getByLabelText("Creado hasta"));
 
     expect(getDay("October 21").getAttribute("aria-disabled")).toBe("false");
     expect(getDay("October 22").getAttribute("aria-disabled")).toBe("true");
   });
 
-  it("deshabilita en Desde las fechas posteriores a dateTo", () => {
+  it("deshabilita en Creado desde las fechas posteriores a dateTo", () => {
     render(
       <HistoryFilters
         {...defaultProps}
@@ -44,7 +44,7 @@ describe("HistoryFilters", () => {
       />
     );
 
-    fireEvent.click(screen.getByLabelText("Desde"));
+    fireEvent.click(screen.getByLabelText("Creado desde"));
 
     expect(getDay("October 20").getAttribute("aria-disabled")).toBe("false");
     expect(getDay("October 21").getAttribute("aria-disabled")).toBe("true");

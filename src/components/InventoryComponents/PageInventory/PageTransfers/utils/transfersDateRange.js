@@ -1,4 +1,4 @@
-// Filtrado del historial de traspasos por rango de fechas.
+// Filtrado del historial de traspasos por fecha de creacion.
 // Los presets y los limites del dia viven en el modulo compartido
 // src/utils/dateRangePresets.js para reutilizarlos con Pedidos.
 
@@ -8,7 +8,7 @@ import { parseTransferDate } from "./transfersFormatters";
 export { getPresetRange } from "../../../../../utils/dateRangePresets";
 
 /**
- * Evita que los presets de semana o mes dejen "Hasta" en una fecha futura,
+ * Evita que los presets de semana o mes dejen "Creado hasta" en una fecha futura,
  * que el DatePicker no puede seleccionar por su maxDate.
  */
 export const clampRangeToToday = (
@@ -33,7 +33,7 @@ const isWithinRange = (date, dateFrom, dateTo) => {
   return true;
 };
 
-export const filterTransfersByDateRange = (
+export const filterTransfersByCreatedDate = (
   orders = [],
   dateFrom = null,
   dateTo = null

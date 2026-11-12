@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { getPresetRange } from "../../../../../utils/dateRangePresets";
 import {
   clampRangeToToday,
-  filterTransfersByDateRange,
+  filterTransfersByCreatedDate,
 } from "./transfersDateRange";
 
 describe("clampRangeToToday", () => {
@@ -36,11 +36,12 @@ describe("clampRangeToToday", () => {
   });
 });
 
-describe("filterTransfersByDateRange", () => {
-  const buildOrder = (id, createdAt) => ({
+describe("filterTransfersByCreatedDate", () => {
+  const buildOrder = (id, createdAt, receivedAt = null) => ({
     id,
     folio: `TR-${id}`,
     createdAt,
+    receivedAt,
   });
 
   const history = [
@@ -52,11 +53,11 @@ describe("filterTransfersByDateRange", () => {
   ];
 
   it("devuelve el historial sin cambios cuando no hay rango", () => {
-    expect(filterTransfersByDateRange(history, null, null)).toBe(history);
+    expect(filterTransfersByCreatedDate(history, null, null)).toBe(history);
   });
 
   it("incluye los extremos del dia en el rango", () => {
-    const result = filterTransfersByDateRange(
+    const result = filterTransfersByCreatedDate(
       history,
       new Date(2026, 9, 21),
       new Date(2026, 9, 21)
@@ -66,7 +67,7 @@ describe("filterTransfersByDateRange", () => {
   });
 
   it("incluye un traspaso de la manana cuando dateFrom trae hora", () => {
-    const result = filterTransfersByDateRange(
+    const result = filterTransfersByCreatedDate(
       history,
       new Date(2026, 9, 21, 15, 0, 0),
       new Date(2026, 9, 21)
@@ -76,7 +77,7 @@ describe("filterTransfersByDateRange", () => {
   });
 
   it("excluye traspasos sin fecha valida cuando hay rango", () => {
-    const result = filterTransfersByDateRange(
+    const result = filterTransfersByCreatedDate(
       [...history, buildOrder("6", null)],
       new Date(2026, 9, 21),
       new Date(2026, 9, 21)
@@ -86,18 +87,65 @@ describe("filterTransfersByDateRange", () => {
   });
 
   it("acepta rango abierto con un solo extremo", () => {
-    const fromOnly = filterTransfersByDateRange(
+    const fromOnly = filterTransfersByCreatedDate(
       history,
       new Date(2026, 9, 21),
       null
     );
     expect(fromOnly.map((order) => order.id)).toEqual(["2", "3", "4", "5"]);
 
-    const toOnly = filterTransfersByDateRange(
+    const toOnly = filterTransfersByCreatedDate(
       history,
       null,
       new Date(2026, 9, 21)
     );
     expect(toOnly.map((order) => order.id)).toEqual(["1", "2", "3", "4"]);
+  });
+
+  it("excluye un traspaso creado antes del rango aunque se haya recibido dentro", () => {
+    const receivedInside = buildOrder(
+      "7",
+      new Date(2026, 9, 30, 23, 0, 0).toISOString(),
+      new Date(2026, 10, 2, 10, 0, 0).toISOString()
+    );
+
+    const result = filterTransfersByCreatedDate(
+      [receivedInside],
+      new Date(2026, 10, 1),
+      new Date(2026, 10, 30)
+    );
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("incluye un traspaso creado dentro del rango aunque se haya recibido despues", () => {
+    const receivedOutside = buildOrder(
+      "8",
+      new Date(2026, 10, 1, 9, 0, 0).toISOString(),
+      new Date(2026, 11, 5, 10, 0, 0).toISOString()
+    );
+
+    const result = filterTransfersByCreatedDate(
+      [receivedOutside],
+      new Date(2026, 10, 1),
+      new Date(2026, 10, 30)
+    );
+
+    expect(result.map((order) => order.id)).toEqual(["8"]);
+  });
+
+  it("incluye un traspaso pendiente creado dentro del rango", () => {
+    const pendingInside = buildOrder(
+      "9",
+      new Date(2026, 10, 2, 8, 0, 0).toISOString()
+    );
+
+    const result = filterTransfersByCreatedDate(
+      [pendingInside],
+      new Date(2026, 10, 1),
+      new Date(2026, 10, 30)
+    );
+
+    expect(result.map((order) => order.id)).toEqual(["9"]);
   });
 });

@@ -26,10 +26,10 @@ const HistoryFilters = ({
     <div
       className={styles.historyFilters}
       role="group"
-      aria-label="Filtros por rango de fechas del historial de traspasos"
+      aria-label="Filtrar traspasos por fecha de creación"
     >
       <label className={styles.dateField}>
-        <span>Desde</span>
+        <span>Creado desde</span>
         <DatePicker
           selected={dateFrom}
           onChange={(date) => onDateChange("dateFrom", date)}
@@ -44,12 +44,12 @@ const HistoryFilters = ({
           wrapperClassName={styles.datePickerWrapper}
           showPopperArrow={false}
           placeholderText="dd/mm/aaaa"
-          aria-label="Desde"
+          aria-label="Creado desde"
         />
       </label>
 
       <label className={styles.dateField}>
-        <span>Hasta</span>
+        <span>Creado hasta</span>
         <DatePicker
           selected={dateTo}
           onChange={(date) => onDateChange("dateTo", date)}
@@ -65,7 +65,7 @@ const HistoryFilters = ({
           wrapperClassName={styles.datePickerWrapper}
           showPopperArrow={false}
           placeholderText="dd/mm/aaaa"
-          aria-label="Hasta"
+          aria-label="Creado hasta"
         />
       </label>
 

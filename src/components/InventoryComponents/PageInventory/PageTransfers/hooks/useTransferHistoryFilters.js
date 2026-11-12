@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import {
   clampRangeToToday,
-  filterTransfersByDateRange,
+  filterTransfersByCreatedDate,
   getPresetRange,
 } from "../utils/transfersUtils";
 
@@ -13,7 +13,7 @@ const INITIAL_DATE_RANGE = {
 
 const getEmptyHistoryMessage = ({ hasFolio, hasDateRange }) => {
   if (hasFolio && hasDateRange) {
-    return "No hay traspasos con esos filtros.";
+    return "No hay traspasos con ese folio creados en el rango seleccionado.";
   }
 
   if (hasFolio) {
@@ -21,7 +21,7 @@ const getEmptyHistoryMessage = ({ hasFolio, hasDateRange }) => {
   }
 
   if (hasDateRange) {
-    return "No hay traspasos en el rango de fechas seleccionado.";
+    return "No hay traspasos creados en el rango de fechas seleccionado.";
   }
 
   return "Todavía no hay traspasos registrados para esta sucursal.";
@@ -41,7 +41,7 @@ const useTransferHistoryFilters = ({ transferHistory = [] }) => {
         )
       : transferHistory;
 
-    return filterTransfersByDateRange(
+    return filterTransfersByCreatedDate(
       byFolio,
       dateRange.dateFrom,
       dateRange.dateTo
