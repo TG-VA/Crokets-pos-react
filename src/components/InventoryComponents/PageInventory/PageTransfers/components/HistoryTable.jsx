@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
@@ -19,6 +17,8 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
+  const filters = useTransferHistoryFilters({ transferHistory });
+
   const {
     filteredHistory,
     dateRange,
@@ -26,11 +26,7 @@ const HistoryTable = ({
     folioSearch,
     hasActiveFilters,
     emptyMessage,
-    handleDateChange,
-    handleRangePreset,
-    handleClearFilters,
-    handleFolioSearchChange,
-  } = useTransferHistoryFilters({ transferHistory });
+  } = filters;
 
   const {
     currentPage,
@@ -41,9 +37,27 @@ const HistoryTable = ({
     resetPagination,
   } = usePagination({ totalItems: filteredHistory.length });
 
-  useEffect(() => {
+  // El reset de pagina ocurre en el mismo evento que el cambio de filtro para
+  // evitar el re-render en cascada que provocaba el efecto equivalente.
+  const handleDateChange = (key, date) => {
+    filters.handleDateChange(key, date);
     resetPagination();
-  }, [dateRange, folioSearch, resetPagination]);
+  };
+
+  const handleRangePreset = (preset) => {
+    filters.handleRangePreset(preset);
+    resetPagination();
+  };
+
+  const handleClearFilters = () => {
+    filters.handleClearFilters();
+    resetPagination();
+  };
+
+  const handleFolioSearchChange = (value) => {
+    filters.handleFolioSearchChange(value);
+    resetPagination();
+  };
 
   return (
     <section className={styles.panel}>
