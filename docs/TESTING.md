@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (10 nov 2026)
 
-294 archivos de test (**3112 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+295 archivos de test (**3116 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -23,6 +23,7 @@ y el proceso principal de Electron:
 | Lista de productos (paginacion server-side y teclado)     | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
 | Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
 | Contrato SQL de importacion solo admin                    | `supabase/migrations/importProductsAdminOnlyCurrentBranchContract.test.js`         |
+| Contrato SQL de importacion sin service_role              | `supabase/migrations/importProductsRevokeServiceRoleContract.test.js`              |
 | Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
 | Importación (validación y departamento inactivo)          | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
 | Importación de productos (aviso y tarjeta de inactivos)   | `.../ProductsImport/ProductsImports.test.jsx`                                      |
