@@ -17,8 +17,6 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
-  const filters = useTransferHistoryFilters({ transferHistory });
-
   const {
     filteredHistory,
     dateRange,
@@ -26,7 +24,11 @@ const HistoryTable = ({
     folioSearch,
     hasActiveFilters,
     emptyMessage,
-  } = filters;
+    handleDateChange,
+    handleRangePreset,
+    handleClearFilters,
+    handleFolioSearchChange,
+  } = useTransferHistoryFilters({ transferHistory });
 
   const {
     currentPage,
@@ -37,27 +39,15 @@ const HistoryTable = ({
     resetPagination,
   } = usePagination({ totalItems: filteredHistory.length });
 
-  // El reset de pagina ocurre en el mismo evento que el cambio de filtro para
-  // evitar el re-render en cascada que provocaba el efecto equivalente.
-  const handleDateChange = (key, date) => {
-    filters.handleDateChange(key, date);
-    resetPagination();
+  // Reinicia la pagina en el mismo evento que cambia el filtro.
+  const withPageReset = (handler) => {
+    return (...args) => {
+      handler(...args);
+      resetPagination();
+    };
   };
 
-  const handleRangePreset = (preset) => {
-    filters.handleRangePreset(preset);
-    resetPagination();
-  };
-
-  const handleClearFilters = () => {
-    filters.handleClearFilters();
-    resetPagination();
-  };
-
-  const handleFolioSearchChange = (value) => {
-    filters.handleFolioSearchChange(value);
-    resetPagination();
-  };
+  const handleFolioInputChange = withPageReset(handleFolioSearchChange);
 
   return (
     <section className={styles.panel}>
@@ -76,9 +66,9 @@ const HistoryTable = ({
             dateTo={dateRange.dateTo}
             rangePreset={rangePreset}
             hasActiveFilters={hasActiveFilters}
-            onDateChange={handleDateChange}
-            onRangePreset={handleRangePreset}
-            onClearFilters={handleClearFilters}
+            onDateChange={withPageReset(handleDateChange)}
+            onRangePreset={withPageReset(handleRangePreset)}
+            onClearFilters={withPageReset(handleClearFilters)}
           />
 
           <input
@@ -87,7 +77,7 @@ const HistoryTable = ({
             placeholder="Buscar por folio"
             aria-label="Buscar traspaso por folio"
             value={folioSearch}
-            onChange={(event) => handleFolioSearchChange(event.target.value)}
+            onChange={(event) => handleFolioInputChange(event.target.value)}
           />
         </div>
       </div>
