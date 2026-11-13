@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (10 nov 2026)
+## Cobertura actual (13 nov 2026)
 
-292 archivos de test (**3094 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+292 archivos de test (**3100 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
