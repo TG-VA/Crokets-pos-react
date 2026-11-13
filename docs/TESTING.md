@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (13 nov 2026)
 
-295 archivos de test (**3123 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+295 archivos de test (**3124 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -50,7 +50,7 @@ y el proceso principal de Electron:
 | Kits (lista: por vencer, renovar y gateo por rol)         | `.../ProductsPromotions/components/KitRegisteredListSection.test.jsx`              |
 | Kits (modal de borrado con ELIMINAR)                      | `.../ProductsPromotions/components/KitDeleteConfirmModal.test.jsx`                 |
 | Kits (acciones del formulario)                            | `.../ProductsPromotions/components/KitActionsSection.test.jsx`                     |
-| Kits (pagina y aviso con sucursales)                      | `.../ProductsPromotions/ProductsPromotions.test.jsx`                               |
+| Kits (pagina, aviso y props estables del buscador)        | `.../ProductsPromotions/ProductsPromotions.test.jsx`                               |
 | Rol administrador en interfaz (no es seguridad)           | `src/hooks/useIsAdmin.test.js`                                                     |
 | Reporte de caja                                           | `.../PageCashReport/services/cashReportService.test.js`                            |
 | Reporte de caja (hook y filtro de sucursal)               | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
