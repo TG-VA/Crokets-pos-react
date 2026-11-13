@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (13 nov 2026)
 
-296 archivos de test (**3144 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+297 archivos de test (**3147 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -29,6 +29,7 @@ y el proceso principal de Electron:
 | Importación (validación y departamento inactivo)          | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
 | Importación de productos (aviso y tarjeta de inactivos)   | `.../ProductsImport/ProductsImports.test.jsx`                                      |
 | Importación: inventario sigue el status (contrato SQL)    | `.../migrations/importProductsInventoryFollowsStatusContract.test.js`              |
+| is_admin con search_path fijo (contrato SQL)              | `.../migrations/isAdminFixedSearchPathContract.test.js`                            |
 | Importación: descriptores de instrucciones                | `.../ProductsImport/utils/importInstructionsConfig.test.js`                        |
 | Importación: límite de tamaño de archivo (hook)           | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
 | Importación: instrucciones (chips, reglas y valores)      | `.../ImportInstructions/ImportInstructions.test.jsx`                               |
