@@ -133,7 +133,6 @@ describe("contrato SQL de import_products_transaction", () => {
         },
       ],
       "branch-1",
-      [{ id: "branch-1" }, { id: "branch-2" }],
       {}
     );
 

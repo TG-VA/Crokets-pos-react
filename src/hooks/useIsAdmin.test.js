@@ -12,7 +12,7 @@ vi.mock("../lib/permissionsService", () => ({
 }));
 
 import { checkUserIsAdmin } from "../lib/permissionsService";
-import { useIsAdmin } from "./useIsAdmin";
+import { useAdminStatus, useIsAdmin } from "./useIsAdmin";
 
 // Gateo de interfaz: no es un control de seguridad.
 describe("useIsAdmin", () => {
@@ -56,5 +56,29 @@ describe("useIsAdmin", () => {
 
     expect(result.current).toBe(false);
     expect(checkUserIsAdmin).toHaveBeenLastCalledWith("user-2");
+  });
+
+  it("useAdminStatus marca loading hasta que responde el rol", async () => {
+    let resolveRole;
+    checkUserIsAdmin.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRole = resolve;
+      })
+    );
+    const { result } = renderHook(() => useAdminStatus());
+
+    expect(result.current).toEqual({ isAdmin: false, loading: true });
+
+    resolveRole(false);
+    await waitFor(() =>
+      expect(result.current).toEqual({ isAdmin: false, loading: false })
+    );
+  });
+
+  it("useAdminStatus sin usuario no queda en loading", () => {
+    authState.user = null;
+    const { result } = renderHook(() => useAdminStatus());
+
+    expect(result.current).toEqual({ isAdmin: false, loading: false });
   });
 });
