@@ -63,6 +63,41 @@ const renderLogin = async () => {
   return { ...view, username, password };
 };
 
+describe("Login: Enter en el campo usuario", () => {
+  it("pasa el foco a la contrasena y no envia el formulario", async () => {
+    const { username, password } = await renderLogin();
+    fireEvent.change(username, { target: { value: "carlos" } });
+
+    const notPrevented = fireEvent.keyDown(username, { key: "Enter" });
+
+    expect(notPrevented).toBe(false);
+    expect(document.activeElement).toBe(password);
+  });
+
+  it("no intercepta Enter si el usuario esta vacio", async () => {
+    const { username } = await renderLogin();
+
+    const notPrevented = fireEvent.keyDown(username, { key: "Enter" });
+
+    expect(notPrevented).toBe(true);
+    expect(document.activeElement).toBe(username);
+  });
+
+  it("ignora Enter mientras hay una composicion IME", async () => {
+    const { username, password } = await renderLogin();
+    fireEvent.change(username, { target: { value: "carlos" } });
+
+    const notPrevented = fireEvent.keyDown(username, {
+      key: "Enter",
+      isComposing: true,
+    });
+
+    expect(notPrevented).toBe(true);
+    expect(document.activeElement).toBe(username);
+    expect(document.activeElement).not.toBe(password);
+  });
+});
+
 describe("Login: foco tras enviar el formulario", () => {
   beforeEach(() => {
     window.electronAPI = {

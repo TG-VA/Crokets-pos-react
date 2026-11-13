@@ -58,3 +58,17 @@ describe("useAppModal branches", () => {
     expect(result.current.appModal.branches).toEqual([]);
   });
 });
+
+describe("useAppModal referencias estables", () => {
+  it("conserva las mismas funciones entre renders", () => {
+    const { result } = renderHook(() => useAppModal());
+    const first = result.current;
+
+    act(() => result.current.showAppAlert({ message: "x" }));
+
+    expect(result.current.closeAppModal).toBe(first.closeAppModal);
+    expect(result.current.showAppAlert).toBe(first.showAppAlert);
+    expect(result.current.showAppConfirm).toBe(first.showAppConfirm);
+    expect(result.current.setAppModalLoading).toBe(first.setAppModalLoading);
+  });
+});

@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (10 nov 2026)
+## Cobertura actual (13 nov 2026)
 
-295 archivos de test (**3116 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+295 archivos de test (**3124 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -35,7 +35,7 @@ y el proceso principal de Electron:
 | Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
 | Kits (filtro por estado y texto, sin acentos)             | `.../ProductsPromotions/services/kitsFilterService.test.js`                        |
 | Kits (lista, paginacion y filtros)                        | `.../ProductsPromotions/hooks/useKitsList.test.js`                                 |
-| Kits (busqueda de producto y alerta de cobertura)         | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
+| Kits (busqueda, ya agregados y alerta de cobertura)       | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
 | Kits (cobertura por sucursal)                             | `.../ProductsPromotions/services/kitBranchCoverageCalculationService.test.js`      |
 | Kits (sanitizado de entradas)                             | `.../ProductsPromotions/services/kitInputSanitizers.test.js`                       |
 | Kits (vigencia por fechas y por vencer)                   | `.../ProductsPromotions/services/kitValidityCalculationService.test.js`            |
@@ -50,7 +50,7 @@ y el proceso principal de Electron:
 | Kits (lista: por vencer, renovar y gateo por rol)         | `.../ProductsPromotions/components/KitRegisteredListSection.test.jsx`              |
 | Kits (modal de borrado con ELIMINAR)                      | `.../ProductsPromotions/components/KitDeleteConfirmModal.test.jsx`                 |
 | Kits (acciones del formulario)                            | `.../ProductsPromotions/components/KitActionsSection.test.jsx`                     |
-| Kits (pagina y aviso con sucursales)                      | `.../ProductsPromotions/ProductsPromotions.test.jsx`                               |
+| Kits (pagina, aviso y props estables del buscador)        | `.../ProductsPromotions/ProductsPromotions.test.jsx`                               |
 | Rol administrador en interfaz (no es seguridad)           | `src/hooks/useIsAdmin.test.js`                                                     |
 | Reporte de caja                                           | `.../PageCashReport/services/cashReportService.test.js`                            |
 | Reporte de caja (hook y filtro de sucursal)               | `.../PageCashReport/hooks/useCashReport.test.js`                                   |
@@ -99,6 +99,7 @@ y el proceso principal de Electron:
 | Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
+| Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |

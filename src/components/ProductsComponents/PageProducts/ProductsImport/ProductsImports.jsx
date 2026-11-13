@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./ProductsImports.module.css";
 import { formatCurrency } from "./utils/importUtils";
 import { useProductsImport } from "./hooks/useProductsImport";

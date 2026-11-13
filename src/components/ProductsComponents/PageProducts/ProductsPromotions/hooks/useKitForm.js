@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { getMissingKitFields } from "../services/kitFormCompletenessService";
 import { hasUnsavedKitChanges } from "../services/kitFormChangesService";
 
@@ -125,24 +125,27 @@ export const useKitForm = ({ showAppAlert, showAppConfirm }) => {
     });
   };
 
-  const addProductToKit = (product) => {
-    if (!product?.id) return;
-    if (product.is_kit)
-      return showAppAlert({
-        type: "warning",
-        title: "Kit no permitido",
-        message: "No puedes agregar un kit dentro de otro kit.",
-      });
-    if (selectedProducts.some((p) => p.id === product.id))
-      return showAppAlert({
-        type: "warning",
-        title: "Producto repetido",
-        message: "Este producto ya está agregado al kit.",
-      });
+  const addProductToKit = useCallback(
+    (product) => {
+      if (!product?.id) return;
+      if (product.is_kit)
+        return showAppAlert({
+          type: "warning",
+          title: "Kit no permitido",
+          message: "No puedes agregar un kit dentro de otro kit.",
+        });
+      if (selectedProducts.some((p) => p.id === product.id))
+        return showAppAlert({
+          type: "warning",
+          title: "Producto repetido",
+          message: "Este producto ya está agregado al kit.",
+        });
 
-    setSelectedProducts((prev) => [...prev, toSelectedProduct(product, 1)]);
-    setSelectedProductId(product.id);
-  };
+      setSelectedProducts((prev) => [...prev, toSelectedProduct(product, 1)]);
+      setSelectedProductId(product.id);
+    },
+    [selectedProducts, showAppAlert]
+  );
 
   const updateProductQuantity = (productId, value) => {
     const quantity = Number(value);

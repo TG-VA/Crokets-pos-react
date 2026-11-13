@@ -70,6 +70,15 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
+  // Enter en Usuario avanza a Contrasena; el envio ocurre desde Contrasena.
+  const handleUsernameKeyDown = (e) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    if (!username.trim()) return;
+
+    e.preventDefault();
+    passwordRef.current?.focus();
+  };
+
   const handleExitApp = async () => {
     try {
       await window.electronAPI.invoke("close-app");
@@ -399,6 +408,7 @@ const Login = () => {
               className={styles.input}
               placeholder="Ingrese el usuario"
               value={username}
+              onKeyDown={handleUsernameKeyDown}
               onChange={(e) => {
                 setUsername(e.target.value.trimStart());
                 setError("");

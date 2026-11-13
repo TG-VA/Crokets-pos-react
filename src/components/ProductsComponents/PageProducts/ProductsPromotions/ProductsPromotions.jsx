@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import styles from "./ProductsPromotions.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import { useProductsPromotions } from "./hooks/useProductsPromotions";
@@ -50,6 +51,14 @@ const ProductsPromotions = () => {
   } = useProductsPromotions();
   const isAdmin = useIsAdmin();
   const kitsList = useKitsList(kits);
+  const closeSearchModal = useCallback(
+    () => setShowSearchModal(false),
+    [setShowSearchModal]
+  );
+  const addedProductIds = useMemo(
+    () => selectedProducts.map((p) => p.id),
+    [selectedProducts]
+  );
 
   return (
     <div className={styles.container}>
@@ -121,11 +130,11 @@ const ProductsPromotions = () => {
 
       <KitProductSearchModal
         isOpen={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
+        onClose={closeSearchModal}
         onSelectProduct={addProductToKit}
         showAppAlert={showAppAlert}
         appModalIsOpen={appModal.isOpen}
-        addedProductIds={selectedProducts.map((p) => p.id)}
+        addedProductIds={addedProductIds}
       />
 
       <KitDeleteConfirmModal
