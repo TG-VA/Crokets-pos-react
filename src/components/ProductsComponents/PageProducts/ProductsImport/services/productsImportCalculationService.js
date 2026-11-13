@@ -48,10 +48,10 @@ export const collectLookupKeys = (rawRows, headerMap) => {
 export const buildValidatedRows = (
   rawRows,
   headerMap,
-  { existingProducts, departments, existingSatCodes }
+  { existingProducts, departments, existingSatCodes },
+  barcodes = collectLookupKeys(rawRows, headerMap).barcodes
 ) => {
   const getValue = createGetValue(headerMap);
-  const { barcodes } = collectLookupKeys(rawRows, headerMap);
   const duplicatedInFile = new Set(
     barcodes.filter((barcode, index) => barcodes.indexOf(barcode) !== index)
   );

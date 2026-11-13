@@ -91,6 +91,20 @@ describe("productsImportCalculationService", () => {
       expect(rows[0].errors).toContain("Código ya existe en productos.");
     });
 
+    it("usa los códigos ya recolectados para detectar duplicados", () => {
+      const rows = [baseRow, { ...baseRow, Código: "750002" }];
+      const [first, second] = buildValidatedRows(
+        rows,
+        buildHeaderMap(rows),
+        emptyData,
+        ["750001", "750001"]
+      );
+      expect(first.errors).toContain("Código duplicado dentro del archivo.");
+      expect(second.errors).not.toContain(
+        "Código duplicado dentro del archivo."
+      );
+    });
+
     it("departamento inactivo crea producto e inventario inactivos con aviso", () => {
       const [row] = validate([baseRow], {
         ...emptyData,

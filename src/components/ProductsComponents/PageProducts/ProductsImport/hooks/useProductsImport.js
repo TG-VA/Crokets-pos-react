@@ -85,7 +85,12 @@ export const useProductsImport = () => {
 
     try {
       const validationData = await fetchValidationData(barcodes, satCodes);
-      const parsedRows = buildValidatedRows(rawRows, headerMap, validationData);
+      const parsedRows = buildValidatedRows(
+        rawRows,
+        headerMap,
+        validationData,
+        barcodes
+      );
 
       setGlobalErrors([]);
       setValidatedRows(parsedRows);
