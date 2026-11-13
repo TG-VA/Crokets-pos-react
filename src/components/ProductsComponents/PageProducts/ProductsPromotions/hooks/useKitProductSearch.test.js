@@ -3,21 +3,23 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useKitProductSearch } from "./useKitProductSearch";
 
 const mockFetchMissing = vi.hoisted(() => vi.fn());
+const mockFetchProducts = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/kitBranchCoverageService", () => ({
   fetchMissingBranchesForProduct: mockFetchMissing,
 }));
 vi.mock("../services/productKitsService", () => ({
-  fetchActiveNonKitProducts: vi.fn().mockResolvedValue([]),
+  fetchActiveNonKitProducts: mockFetchProducts,
 }));
 
-const setup = () => {
+const setup = (extraProps = {}) => {
   const props = {
     isOpen: true,
     onClose: vi.fn(),
     onSelectProduct: vi.fn(),
     showAppAlert: vi.fn(),
     appModalIsOpen: false,
+    ...extraProps,
   };
   const hook = renderHook(() => useKitProductSearch(props));
   return { props, hook };
@@ -95,5 +97,51 @@ describe("useKitProductSearch aviso de producto local", () => {
     );
     await waitFor(() => expect(mockFetchMissing).toHaveBeenCalledWith(4));
     expect(props.showAppAlert).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKitProductSearch productos ya agregados", () => {
+  const products = [
+    { id: 10, name: "ALIMENTO A", is_global: true },
+    { id: 12, name: "ALIMENTO B", is_global: true },
+    { id: 14, name: "ALIMENTO C", is_global: true },
+  ];
+
+  beforeEach(() => {
+    mockFetchMissing.mockReset();
+    mockFetchProducts.mockReset();
+    mockFetchProducts.mockResolvedValue(products);
+  });
+
+  const search = async (hook) => {
+    await act(() => hook.result.current.searchProducts("alimento"));
+  };
+
+  const pressKey = (key) =>
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key }));
+    });
+
+  it("handleSelect ignora un producto que ya esta en el kit", () => {
+    const { props, hook } = setup({ addedProductIds: [12] });
+    act(() => hook.result.current.handleSelect(products[1]));
+    expect(props.onSelectProduct).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
+
+  it("la seleccion inicial salta el primer resultado ya agregado", async () => {
+    const { hook } = setup({ addedProductIds: [10] });
+    await search(hook);
+    expect(hook.result.current.selectedIndex).toBe(1);
+  });
+
+  it("ArrowDown se salta los productos ya agregados", async () => {
+    const { props, hook } = setup({ addedProductIds: [12] });
+    await search(hook);
+    expect(hook.result.current.selectedIndex).toBe(0);
+    pressKey("ArrowDown");
+    expect(hook.result.current.selectedIndex).toBe(2);
+    pressKey("Enter");
+    expect(props.onSelectProduct).toHaveBeenCalledWith(products[2]);
   });
 });

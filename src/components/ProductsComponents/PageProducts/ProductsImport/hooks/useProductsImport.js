@@ -1,16 +1,19 @@
 import { useState, useMemo, useRef } from "react";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import {
   normalizeText,
   MAX_FILE_SIZE_MB,
   MAX_FILE_SIZE_MESSAGE,
+  ADMIN_ONLY_MESSAGE,
   readExcelFile,
   generateTemplateXLSX,
 } from "../utils/importUtils";
 import {
   fetchValidationData,
-  fetchBranchesAndDepartments,
+  fetchDepartments,
   createMissingDepartments,
   processImportTransaction,
 } from "../services/productsImportService";
@@ -24,6 +27,7 @@ import {
 
 export const useProductsImport = () => {
   const { branch } = useBranch();
+  const { user } = useAuth();
   const { refreshProducts, refreshDepartments } = useProducts();
 
   const [file, setFile] = useState(null);
@@ -145,7 +149,16 @@ export const useProductsImport = () => {
       setImportResult(null);
       setGlobalErrors([]);
 
-      const { branches, departments } = await fetchBranchesAndDepartments();
+      // Antes de crear departamentos: la RPC rechaza a quien no es admin y
+      // los departamentos quedarian creados sin productos. checkUserIsAdmin
+      // devuelve false tambien si falla la consulta del rol, asi que un error
+      // de verificacion se muestra como falta de permisos.
+      if (!(await checkUserIsAdmin(user?.id))) {
+        setImportResult({ success: false, message: ADMIN_ONLY_MESSAGE });
+        return;
+      }
+
+      const departments = await fetchDepartments();
       const departmentMap = {};
       departments.forEach((dep) => {
         departmentMap[normalizeText(dep.name)] = dep.id;
@@ -173,12 +186,7 @@ export const useProductsImport = () => {
       }
 
       const { createdProductsCount, createdInventoriesCount } =
-        await processImportTransaction(
-          validRows,
-          branch.id,
-          branches,
-          departmentMap
-        );
+        await processImportTransaction(validRows, branch.id, departmentMap);
 
       await refreshDepartments();
       await refreshProducts();
@@ -192,7 +200,9 @@ export const useProductsImport = () => {
       console.error("Error importando productos:", error);
       setImportResult({
         success: false,
-        message: error.message || "No se pudo completar la importación.",
+        message: String(error.message || "").includes(ADMIN_ONLY_MESSAGE)
+          ? ADMIN_ONLY_MESSAGE
+          : error.message || "No se pudo completar la importación.",
       });
     } finally {
       setImporting(false);

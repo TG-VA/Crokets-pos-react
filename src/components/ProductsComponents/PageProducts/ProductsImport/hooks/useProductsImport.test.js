@@ -10,13 +10,19 @@ vi.mock("../../../../../contexts/ProductsContext", () => ({
     refreshDepartments: vi.fn(),
   }),
 }));
+vi.mock("../../../../../contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "u1" } }),
+}));
+vi.mock("../../../../../lib/permissionsService", () => ({
+  checkUserIsAdmin: vi.fn(),
+}));
 vi.mock("../utils/importUtils", async (importOriginal) => ({
   ...(await importOriginal()),
   readExcelFile: vi.fn(),
 }));
 vi.mock("../services/productsImportService", () => ({
   fetchValidationData: vi.fn(),
-  fetchBranchesAndDepartments: vi.fn(),
+  fetchDepartments: vi.fn(),
   createMissingDepartments: vi.fn(),
   processImportTransaction: vi.fn(),
 }));
@@ -26,7 +32,12 @@ import {
   MAX_FILE_SIZE_MESSAGE,
   readExcelFile,
 } from "../utils/importUtils";
-import { fetchValidationData } from "../services/productsImportService";
+import {
+  fetchValidationData,
+  createMissingDepartments,
+  processImportTransaction,
+} from "../services/productsImportService";
+import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import { useProductsImport } from "./useProductsImport";
 
 const buildRow = (overrides = {}) => ({
@@ -133,5 +144,64 @@ describe("useProductsImport: limite de tamano", () => {
     expect(result.current.globalErrors).not.toContain(MAX_FILE_SIZE_MESSAGE);
     expect(result.current.file).toBe(file);
     expect(readExcelFile).toHaveBeenCalledWith(file);
+  });
+});
+
+describe("useProductsImport: importacion sin permisos de admin", () => {
+  it("muestra un mensaje claro cuando la RPC rechaza al usuario", async () => {
+    const service = await import("../services/productsImportService");
+    service.fetchDepartments.mockResolvedValue([
+      { id: "d1", name: "NUPEC", status: true },
+    ]);
+    service.processImportTransaction.mockRejectedValue(
+      new Error(
+        "import_products_transaction: Solo un administrador puede importar productos. (SQLSTATE=P0001)"
+      )
+    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    checkUserIsAdmin.mockResolvedValue(true);
+
+    readExcelFile.mockResolvedValue([buildRow()]);
+    fetchValidationData.mockResolvedValue({
+      existingProducts: [],
+      departments: [{ id: "d1", name: "NUPEC", status: true }],
+      existingSatCodes: [],
+    });
+
+    const { result } = renderHook(() => useProductsImport());
+    await act(() => result.current.loadFile(new File(["x"], "productos.xlsx")));
+    await act(() => result.current.handleImport());
+
+    expect(result.current.importResult).toEqual({
+      success: false,
+      message: "Solo un administrador puede importar productos.",
+    });
+  });
+
+  it("no crea departamentos ni llama a la RPC si el usuario no es admin", async () => {
+    const service = await import("../services/productsImportService");
+    service.fetchDepartments.mockResolvedValue([]);
+    createMissingDepartments.mockClear();
+    processImportTransaction.mockClear();
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    readExcelFile.mockResolvedValue([buildRow({ Departamento: "ACCESORIOS" })]);
+    fetchValidationData.mockResolvedValue({
+      existingProducts: [],
+      departments: [],
+      existingSatCodes: [],
+    });
+
+    const { result } = renderHook(() => useProductsImport());
+    await act(() => result.current.loadFile(new File(["x"], "productos.xlsx")));
+    await act(() => result.current.handleImport());
+
+    expect(checkUserIsAdmin).toHaveBeenCalledWith("u1");
+    expect(createMissingDepartments).not.toHaveBeenCalled();
+    expect(processImportTransaction).not.toHaveBeenCalled();
+    expect(result.current.importResult).toEqual({
+      success: false,
+      message: "Solo un administrador puede importar productos.",
+    });
   });
 });
