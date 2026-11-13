@@ -11,7 +11,7 @@ const sql = read("20261113120000_is_admin_fixed_search_path.sql")
 
 describe("is_admin con search_path fijo", () => {
   it("fija search_path y califica las tablas", () => {
-    expect(sql).toContain("set search_path = public");
+    expect(sql).toMatch(/\bset search_path = public as \$\$/);
     expect(sql).toContain("from public.users u");
     expect(sql).toContain("join public.roles r on r.id = u.role_id");
   });
@@ -23,7 +23,7 @@ describe("is_admin con search_path fijo", () => {
   });
 
   it("sigue STABLE, sin SECURITY DEFINER ni cambios de grants", () => {
-    expect(sql).toContain("stable");
+    expect(sql).toContain("language sql stable");
     expect(sql).not.toContain("security definer");
     expect(sql).not.toMatch(/\b(grant|revoke)\b/);
   });
