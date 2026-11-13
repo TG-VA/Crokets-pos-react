@@ -114,6 +114,17 @@ describe("useProductsImport: estado del departamento", () => {
     expect(state.validatedRows[1].errors.length).toBeGreaterThan(0);
     expect(state.summary.inactive).toBe(1);
   });
+
+  it("marca como duplicadas dos filas con el mismo código", async () => {
+    const state = await loadRows(
+      [buildRow(), buildRow()],
+      [{ id: "d1", name: "NUPEC", status: true }]
+    );
+
+    state.validatedRows.forEach((row) => {
+      expect(row.errors).toContain("Código duplicado dentro del archivo.");
+    });
+  });
 });
 
 const fileOfSize = (bytes) => ({ name: "productos.xlsx", size: bytes });

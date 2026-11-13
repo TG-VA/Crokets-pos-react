@@ -125,6 +125,11 @@ describe("productsImportCalculationService", () => {
       expect(row.inventory.has_been_stocked).toBe(false);
     });
 
+    it("con inventario y stock inicial 0 no marca el producto como surtido", () => {
+      const [row] = validate([{ ...baseRow, "Stock inicial": "0" }]);
+      expect(row.inventory.has_been_stocked).toBe(false);
+    });
+
     it("rechaza stock mínimo mayor al máximo y clave SAT desconocida", () => {
       const [row] = validate([
         { ...baseRow, "Stock mínimo": "20", "Clave SAT": "999" },
@@ -152,6 +157,11 @@ describe("productsImportCalculationService", () => {
         "stock mínimo negativo",
         { "Stock mínimo": "-1" },
         "Stock mínimo no puede ser negativo.",
+      ],
+      [
+        "stock máximo negativo",
+        { "Stock máximo": "-1" },
+        "Stock máximo no puede ser negativo.",
       ],
     ])("rechaza %s", (_label, overrides, message) => {
       const [row] = validate([{ ...baseRow, ...overrides }]);
