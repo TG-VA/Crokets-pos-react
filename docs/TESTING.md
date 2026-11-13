@@ -30,7 +30,7 @@ y el proceso principal de Electron:
 | Kits / promociones                                        | `.../ProductsPromotions/services/productKitsService.test.js`                       |
 | Kits (filtro por estado y texto, sin acentos)             | `.../ProductsPromotions/services/kitsFilterService.test.js`                        |
 | Kits (lista, paginacion y filtros)                        | `.../ProductsPromotions/hooks/useKitsList.test.js`                                 |
-| Kits (busqueda de producto y alerta de cobertura)         | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
+| Kits (busqueda, ya agregados y alerta de cobertura)       | `.../ProductsPromotions/hooks/useKitProductSearch.test.js`                         |
 | Kits (cobertura por sucursal)                             | `.../ProductsPromotions/services/kitBranchCoverageCalculationService.test.js`      |
 | Kits (sanitizado de entradas)                             | `.../ProductsPromotions/services/kitInputSanitizers.test.js`                       |
 | Kits (vigencia por fechas y por vencer)                   | `.../ProductsPromotions/services/kitValidityCalculationService.test.js`            |
