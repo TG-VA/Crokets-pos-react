@@ -44,7 +44,7 @@ describe("ImportInstructions", () => {
     DEPARTMENT_RULES.forEach((rule) => {
       expect(screen.getByText(rule)).toBeTruthy();
     });
-    expect(DEPARTMENT_RULES).toHaveLength(2);
+    expect(DEPARTMENT_RULES).toHaveLength(3);
     expect(container.querySelectorAll("tbody tr")).toHaveLength(5);
     expect(screen.getByText(MAX_FILE_NOTE)).toBeTruthy();
   });

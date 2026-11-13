@@ -14,7 +14,7 @@ export const fetchValidationData = async (barcodes, satCodes) => {
 
   const { data: departments, error: depError } = await supabase
     .from("departments")
-    .select("id, name");
+    .select("id, name, status");
   if (depError) throw depError;
 
   const existingSatCodes = await validateSatClaves(satCodes);
@@ -22,18 +22,13 @@ export const fetchValidationData = async (barcodes, satCodes) => {
   return { existingProducts, departments, existingSatCodes };
 };
 
-export const fetchBranchesAndDepartments = async () => {
-  const { data: branches, error: brError } = await supabase
-    .from("branches")
-    .select("id");
-  if (brError) throw brError;
-
+export const fetchDepartments = async () => {
   const { data: departments, error: depError } = await supabase
     .from("departments")
     .select("id, name");
   if (depError) throw depError;
 
-  return { branches, departments };
+  return departments || [];
 };
 
 export const createMissingDepartments = async (departmentNames) => {
@@ -50,7 +45,6 @@ export const createMissingDepartments = async (departmentNames) => {
 export const processImportTransaction = async (
   validRows,
   branchId,
-  allBranches,
   departmentMap
 ) => {
   if (validRows.length === 0)
@@ -69,7 +63,7 @@ export const processImportTransaction = async (
   const { data, error } = await supabase.rpc("import_products_transaction", {
     p_rows,
     p_branch_id: branchId,
-    p_all_branches: allBranches || [],
+    p_all_branches: [],
   });
 
   if (error) throw error;

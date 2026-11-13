@@ -26,6 +26,10 @@ export const IVA_VALUES = [0, 8, 16];
 export const MAX_FILE_SIZE_MB = 5;
 export const MAX_FILE_SIZE_MESSAGE = `El archivo no debe exceder los ${MAX_FILE_SIZE_MB}MB.`;
 
+// Debe coincidir con el raise exception de import_products_transaction.
+export const ADMIN_ONLY_MESSAGE =
+  "Solo un administrador puede importar productos.";
+
 export const normalizeText = (value) =>
   String(value ?? "")
     .trim()
@@ -137,17 +141,17 @@ export const generateTemplateXLSX = () => {
     ["Precio", "Sí", "Número mayor o igual a 0."],
     ["Tipo venta", "Sí", "unidad / granel"],
     ["Unidad", "Sí", "pieza / kg / g / l / ml / servicio"],
-    ["Usa inventario", "Sí", "sí / no"],
+    ["Usa inventario", "Sí", "sí / no, true / false o 1 / 0"],
     ["IVA", "Sí", "0 / 8 / 16"],
     [
       "Es global",
       "Sí",
-      "sí = crear en todas las sucursales; no = solo sucursal actual",
+      "sí = disponible en todas las sucursales; no = solo sucursal actual. El inventario inicial se crea en la sucursal actual. También acepta true / false o 1 / 0.",
     ],
     [
       "Departamento",
       "No",
-      "Puede ser marca o familia comercial. Si no existe, se crea en MAYÚSCULAS.",
+      "Puede ser marca o familia comercial. Si no existe, se crea en MAYÚSCULAS. Si está inactivo, el producto se crea inactivo.",
     ],
     ["Stock inicial", "No", "Solo aplica si Usa inventario = sí."],
     ["Stock mínimo", "No", "Solo aplica si Usa inventario = sí."],

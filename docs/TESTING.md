@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (13 nov 2026)
 
-292 archivos de test (**3101 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+295 archivos de test (**3123 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -22,7 +22,12 @@ y el proceso principal de Electron:
 | CRUD de productos                                         | `src/services/products/productCrudService.test.js`                                 |
 | Lista de productos (paginacion server-side y teclado)     | `.../PageProducts/ProductsList/hooks/useProductsList.test.js`                      |
 | Importación de productos                                  | `.../ProductsImport/services/productsImportService.test.js`                        |
+| Contrato SQL de importacion solo admin                    | `supabase/migrations/importProductsAdminOnlyCurrentBranchContract.test.js`         |
+| Contrato SQL de importacion sin service_role              | `supabase/migrations/importProductsRevokeServiceRoleContract.test.js`              |
 | Utilidades de importación                                 | `.../ProductsImport/utils/importUtils.test.js`                                     |
+| Importación (validación y departamento inactivo)          | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
+| Importación de productos (aviso y tarjeta de inactivos)   | `.../ProductsImport/ProductsImports.test.jsx`                                      |
+| Importación: inventario sigue el status (contrato SQL)    | `.../migrations/importProductsInventoryFollowsStatusContract.test.js`              |
 | Importación: descriptores de instrucciones                | `.../ProductsImport/utils/importInstructionsConfig.test.js`                        |
 | Importación: límite de tamaño de archivo (hook)           | `.../ProductsImport/hooks/useProductsImport.test.js`                               |
 | Importación: instrucciones (chips, reglas y valores)      | `.../ImportInstructions/ImportInstructions.test.jsx`                               |

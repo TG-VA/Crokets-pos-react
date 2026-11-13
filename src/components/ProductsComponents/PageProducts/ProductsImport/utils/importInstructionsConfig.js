@@ -26,6 +26,7 @@ const BOOLEAN_VALUES = joinWithOr(BOOLEAN_PAIRS.map((pair) => pair.join("/")));
 export const DEPARTMENT_RULES = [
   "Si no capturas Departamento, el producto se guardará sin departamento.",
   "Si capturas un Departamento que no existe, se creará automáticamente en MAYÚSCULAS.",
+  "Si capturas un Departamento inactivo, el producto se creará inactivo.",
 ];
 
 export const ALLOWED_VALUES = [
