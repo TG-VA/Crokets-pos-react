@@ -107,13 +107,15 @@ control real por tabla queda así:
 
 **Hallazgo (KNOWN_ISSUES #13):** `admin` y `cajero` tienen exactamente los mismos permisos
 (`can_manage_inventory`, `can_view_branch`). No existe hoy ninguna diferencia de autorización a
-nivel de base de datos entre ambos roles, salvo `user_branches` + `is_admin()`.
+nivel de base de datos entre ambos roles, salvo `user_branches` + `is_admin()` y la RPC
+`import_products_transaction` (ver "Importar productos: solo administradores" abajo).
 
 **Decisión (17 sep 2026, KNOWN_ISSUES #10/#13):** se adopta el modelo "hardening sin habilitar RLS".
 No se habilita RLS ni se exige `is_admin()` en las mutaciones administrativas (catálogo, bajas de
-clientes, retiros de caja) porque activar RLS sobre ~37 tablas sin políticas rompería el acceso y el
-modelo vigente es `authenticated` de confianza. Se documenta como **riesgo aceptado**: el gateo de
-acciones administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
+clientes, retiros de caja; la excepción posterior es `import_products_transaction`) porque
+activar RLS sobre ~37 tablas sin políticas rompería el acceso y el modelo vigente es
+`authenticated` de confianza. Se documenta como **riesgo aceptado**: el gateo de acciones
+administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
 autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.
 
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
@@ -122,6 +124,15 @@ En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se m
 **gateo de interfaz, no un control de seguridad**: entra en el riesgo aceptado de
 `KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.
 Aplicarlo en base de datos requeriría una migración.
+
+**Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
+`import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
+rechaza con `Solo un administrador puede importar productos.` antes de insertar. Es control en base
+de datos, no solo de interfaz. El hook `useProductsImport` comprueba el rol con `checkUserIsAdmin`
+antes de crear departamentos faltantes, para que un usuario no admin no deje catálogo creado.
+Además, la pantalla `ProductsImports` usa `useIsAdmin` y a quien no es administrador solo le muestra
+ese mensaje, sin carga de archivo ni plantilla. Este ocultamiento es de interfaz; el control real es
+la RPC.
 
 ### Endurecimiento de RPCs transaccionales (`20260917200000`, 17 sep 2026)
 
