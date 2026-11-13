@@ -120,6 +120,36 @@ describe("productsImportCalculationService", () => {
       );
       expect(row.errors).toContain("Clave SAT no encontrada: 999.");
     });
+
+    it.each([
+      ["costo negativo", { Costo: "-1" }, "Costo inválido."],
+      ["IVA fuera de catálogo", { IVA: "5" }, "IVA debe ser 0, 8 o 16."],
+      [
+        "Es global no booleano",
+        { "Es global": "tal vez" },
+        "Es global debe ser Sí/No, true/false o 1/0.",
+      ],
+      [
+        "stock inicial negativo",
+        { "Stock inicial": "-1" },
+        "Stock inicial no puede ser negativo.",
+      ],
+      [
+        "stock mínimo negativo",
+        { "Stock mínimo": "-1" },
+        "Stock mínimo no puede ser negativo.",
+      ],
+    ])("rechaza %s", (_label, overrides, message) => {
+      const [row] = validate([{ ...baseRow, ...overrides }]);
+      expect(row.errors).toContain(message);
+    });
+
+    it("stock máximo 0 significa sin máximo y no limita el mínimo", () => {
+      const [row] = validate([
+        { ...baseRow, "Stock mínimo": "5", "Stock máximo": "0" },
+      ]);
+      expect(row.errors).toEqual([]);
+    });
   });
 
   describe("buildImportSummary", () => {
@@ -129,7 +159,7 @@ describe("productsImportCalculationService", () => {
           baseRow,
           { ...baseRow, Código: "2", Departamento: "Otro" },
           { ...baseRow, Código: "3", Departamento: "Inactivo" },
-          { ...baseRow, Código: "", Departamento: "Inactivo" },
+          { ...baseRow, Código: "", Departamento: "Solo con error" },
         ],
         {
           ...emptyData,
