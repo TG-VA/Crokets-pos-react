@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./PageReport.module.css";
 
 import InventoryReportTable from "./components/InventoryReportTable";
+import PaginationBar from "../../../PaginationBar/PaginationBar";
 
 import useInventoryReport from "./hooks/useInventoryReport";
 import useInventoryBranchDetails from "./hooks/useInventoryBranchDetails";
+import { usePagination } from "../../../../hooks/usePagination";
 
 import {
   QUANTITY_FILTER_PREFIX,
@@ -18,6 +20,9 @@ import {
 } from "./utils/inventoryReportUtils";
 
 import { exportInventoryReport } from "./utils/exportInventoryReport";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
 
 const PageReport = () => {
   const {
@@ -216,6 +221,24 @@ const PageReport = () => {
     });
   }, [rows, facetFilters]);
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredRows.length,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    resetKeys: [selectedBranchId, facetFilters],
+  });
+
+  const pageRows = pageItems(filteredRows);
+
   const stockSummary = useMemo(() => {
     return getStockSummary(rows);
   }, [rows]);
@@ -346,7 +369,7 @@ const PageReport = () => {
         {!!error && <div className={styles.error}>{error}</div>}
 
         <InventoryReportTable
-          rows={filteredRows}
+          rows={pageRows}
           loading={loading}
           expandedProductId={expandedProductId}
           otherStocksByProduct={otherStocksByProduct}
@@ -369,6 +392,21 @@ const PageReport = () => {
           onRemoveQuantity={removeExistenceQuantityFilter}
           onCloseFacet={() => setOpenFacet(null)}
         />
+
+        {filteredRows.length > 0 && (
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredRows.length}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="productos"
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </div>
     </div>
   );

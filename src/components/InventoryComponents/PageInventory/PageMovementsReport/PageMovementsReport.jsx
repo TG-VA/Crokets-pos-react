@@ -2,15 +2,20 @@ import { useMemo, useState } from "react";
 
 import MovementsReportControls from "./components/MovementsReportControls";
 import MovementsReportTable from "./components/MovementsReportTable";
+import PaginationBar from "../../../PaginationBar/PaginationBar";
 
 import useMovementsFilters from "./hooks/useMovementsFilters";
 import useMovementsRealtime from "./hooks/useMovementsRealtime";
 import useMovementsReport from "./hooks/useMovementsReport";
 import useResizableColumns from "./hooks/useResizableColumns";
+import { usePagination } from "../../../../hooks/usePagination";
 
 import { exportMovementsReport } from "./services/movementsExportService";
 
 import styles from "./PageMovementsReports.module.css";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
 
 const PageMovementsReport = () => {
   const [exporting, setExporting] = useState(false);
@@ -80,6 +85,24 @@ const PageMovementsReport = () => {
 
   const { columns, columnWidths, isResizing, startResize } =
     useResizableColumns();
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredRows.length,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    resetKeys: [selectedBranchId, startDateKey, endDateKey, facetFilters],
+  });
+
+  const pageRows = pageItems(filteredRows);
 
   const activeFilterCount = useMemo(() => {
     return Object.values(facetFilters).filter((selection) => selection !== null)
@@ -202,7 +225,7 @@ const PageMovementsReport = () => {
         ) : null}
 
         <MovementsReportTable
-          rows={filteredRows}
+          rows={pageRows}
           loading={loading}
           columns={columns}
           columnWidths={columnWidths}
@@ -223,6 +246,21 @@ const PageMovementsReport = () => {
           getFacetActiveCount={getFacetActiveCount}
           isFacetActive={isFacetActive}
         />
+
+        {filteredRows.length > 0 && (
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredRows.length}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemsNoun="movimientos"
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </div>
     </div>
   );

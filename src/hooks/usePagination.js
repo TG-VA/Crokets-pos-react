@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50];
+const NO_RESET_KEYS = [];
+
+const sameKeys = (previous, next) =>
+  previous.length === next.length &&
+  previous.every((value, index) => Object.is(value, next[index]));
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -21,12 +26,14 @@ const readSavedValue = (storageKey, options, fallback) => {
  * @param {number} [config.defaultPageSize=10] - Tamaño de página inicial.
  * @param {number[]} [config.pageSizeOptions=[10,25,50]] - Opciones del selector de tamaño.
  * @param {string} [config.storageKey] - Clave de localStorage para persistir el tamaño elegido.
+ * @param {Array} [config.resetKeys] - Valores (filtros, búsqueda, orden) que al cambiar devuelven a la página 1.
  */
 export const usePagination = ({
   totalItems,
   defaultPageSize = 10,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   storageKey,
+  resetKeys = NO_RESET_KEYS,
 }) => {
   const normalizedCount = Math.max(0, Number(totalItems) || 0);
 
@@ -34,19 +41,27 @@ export const usePagination = ({
     readSavedValue(storageKey, pageSizeOptions, defaultPageSize)
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const [previousResetKeys, setPreviousResetKeys] = useState(resetKeys);
+
+  // Pagina efectiva calculada sobre una variable local: setCurrentPage solo
+  // encola el cambio, asi que el reset y el recorte deben componerse aqui para
+  // que un recorte con la pagina anterior no pise el reset a 1.
+  let safePage = currentPage;
+
+  // Cambio de filtros detectado durante el render (mismo patron que useDidChange):
+  // la pagina vuelve a 1 sin un efecto ni un fotograma con la pagina anterior.
+  if (!sameKeys(previousResetKeys, resetKeys)) {
+    setPreviousResetKeys(resetKeys);
+    safePage = 1;
+  }
 
   const totalPages = Math.max(1, Math.ceil(normalizedCount / pageSize));
 
   // Ajuste de estado durante el render en lugar de un efecto: cuando el total de
   // ítems se reduce, la página inválida se corrige en la misma pasada de render,
   // sin provocar el re-render en cascada que generaba el efecto equivalente.
-  if (currentPage > totalPages) {
-    setCurrentPage(totalPages);
-  }
-
-  // Página efectiva: garantiza que los índices devueltos nunca queden fuera de
-  // rango durante la pasada de render en la que se aplica el ajuste anterior.
-  const safePage = Math.min(currentPage, totalPages);
+  if (safePage > totalPages) safePage = totalPages;
+  if (safePage !== currentPage) setCurrentPage(safePage);
 
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, normalizedCount);
