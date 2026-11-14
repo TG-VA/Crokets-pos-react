@@ -149,4 +149,24 @@ describe("usePagination", () => {
 
     expect(result.current.currentPage).toBe(3);
   });
+
+  it("vuelve a la página 1 si cambian las resetKeys y el total baja en el mismo render", () => {
+    const { result, rerender } = renderHook(
+      ({ filter, total }) =>
+        usePagination({
+          totalItems: total,
+          defaultPageSize: 25,
+          resetKeys: [filter],
+        }),
+      { initialProps: { filter: "a", total: 60 } }
+    );
+
+    act(() => result.current.handlePageChange(3));
+    expect(result.current.currentPage).toBe(3);
+
+    rerender({ filter: "b", total: 30 });
+
+    expect(result.current.currentPage).toBe(1);
+    expect(result.current.startIndex).toBe(0);
+  });
 });

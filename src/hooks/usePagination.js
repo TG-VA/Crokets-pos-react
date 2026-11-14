@@ -43,11 +43,16 @@ export const usePagination = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [previousResetKeys, setPreviousResetKeys] = useState(resetKeys);
 
+  // Pagina efectiva calculada sobre una variable local: setCurrentPage solo
+  // encola el cambio, asi que el reset y el recorte deben componerse aqui para
+  // que un recorte con la pagina anterior no pise el reset a 1.
+  let safePage = currentPage;
+
   // Cambio de filtros detectado durante el render (mismo patron que useDidChange):
   // la pagina vuelve a 1 sin un efecto ni un fotograma con la pagina anterior.
   if (!sameKeys(previousResetKeys, resetKeys)) {
     setPreviousResetKeys(resetKeys);
-    setCurrentPage(1);
+    safePage = 1;
   }
 
   const totalPages = Math.max(1, Math.ceil(normalizedCount / pageSize));
@@ -55,13 +60,8 @@ export const usePagination = ({
   // Ajuste de estado durante el render en lugar de un efecto: cuando el total de
   // ítems se reduce, la página inválida se corrige en la misma pasada de render,
   // sin provocar el re-render en cascada que generaba el efecto equivalente.
-  if (currentPage > totalPages) {
-    setCurrentPage(totalPages);
-  }
-
-  // Página efectiva: garantiza que los índices devueltos nunca queden fuera de
-  // rango durante la pasada de render en la que se aplica el ajuste anterior.
-  const safePage = Math.min(currentPage, totalPages);
+  if (safePage > totalPages) safePage = totalPages;
+  if (safePage !== currentPage) setCurrentPage(safePage);
 
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, normalizedCount);
