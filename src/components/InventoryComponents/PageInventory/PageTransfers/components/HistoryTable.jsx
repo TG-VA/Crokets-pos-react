@@ -1,4 +1,8 @@
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
+import useTransferHistoryFilters from "../hooks/useTransferHistoryFilters";
+import HistoryFilters from "./HistoryFilters";
 import {
   formatTransferDateTime,
   getTransferStatusMetaForBranch,
@@ -13,15 +17,68 @@ const HistoryTable = ({
   onRowClick,
   onCancelClick,
 }) => {
+  const {
+    filteredHistory,
+    dateRange,
+    rangePreset,
+    folioSearch,
+    hasActiveFilters,
+    emptyMessage,
+    handleDateChange,
+    handleRangePreset,
+    handleClearFilters,
+    handleFolioSearchChange,
+  } = useTransferHistoryFilters({ transferHistory });
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    pageItems,
+    handlePageChange,
+    resetPagination,
+  } = usePagination({ totalItems: filteredHistory.length });
+
+  // Reinicia la pagina en el mismo evento que cambia el filtro.
+  const withPageReset = (handler) => {
+    return (...args) => {
+      handler(...args);
+      resetPagination();
+    };
+  };
+
+  const handleFolioInputChange = withPageReset(handleFolioSearchChange);
+
   return (
     <section className={styles.panel}>
       <div className={styles.panelHeader}>
-        <div>
+        <div className={styles.panelHeading}>
           <h2 className={styles.panelTitle}>Historial de traspasos</h2>
           <p className={styles.panelText}>
             Consulta envíos, recepciones completas y órdenes con diferencias
             relacionadas con esta sucursal.
           </p>
+        </div>
+
+        <div className={styles.panelHeaderActions}>
+          <HistoryFilters
+            dateFrom={dateRange.dateFrom}
+            dateTo={dateRange.dateTo}
+            rangePreset={rangePreset}
+            hasActiveFilters={hasActiveFilters}
+            onDateChange={withPageReset(handleDateChange)}
+            onRangePreset={withPageReset(handleRangePreset)}
+            onClearFilters={withPageReset(handleClearFilters)}
+          />
+
+          <input
+            type="search"
+            className={`${styles.input} ${styles.historySearch}`}
+            placeholder="Buscar por folio"
+            aria-label="Buscar traspaso por folio"
+            value={folioSearch}
+            onChange={(event) => handleFolioInputChange(event.target.value)}
+          />
         </div>
       </div>
 
@@ -41,7 +98,7 @@ const HistoryTable = ({
             </tr>
           </thead>
           <tbody>
-            {transferHistory.map((order) => {
+            {pageItems(filteredHistory).map((order) => {
               const statusMeta = getTransferStatusMetaForBranch(
                 order,
                 branch?.id
@@ -111,16 +168,27 @@ const HistoryTable = ({
               );
             })}
 
-            {transferHistory.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <tr>
                 <td colSpan="9" className={styles.emptyRow}>
-                  Todavía no hay traspasos registrados para esta sucursal.
+                  {emptyMessage}
                 </td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 ? (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredHistory.length}
+          pageSize={pageSize}
+          itemsNoun="traspasos"
+          onPageChange={handlePageChange}
+        />
+      ) : null}
     </section>
   );
 };

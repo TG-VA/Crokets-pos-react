@@ -1,58 +1,65 @@
 import styles from "../PageTransfers.module.css";
+import ExportIcon from "../../../../../assets/icons/file-export-solid-full.svg";
+import ImportIcon from "../../../../../assets/icons/file-import-solid-full.svg";
+import HistoryIcon from "../../../../../assets/icons/table-list-solid-full.svg";
 
 const TRANSFER_TABS = [
   {
     id: "send",
     label: "Enviar",
-    hint: "Descuenta existencias de la sucursal origen.",
+    description: "Descuenta existencias de la sucursal origen.",
+    icon: ExportIcon,
   },
   {
     id: "receive",
     label: "Recibir",
-    hint: "Captura la llegada, diferencias y devoluciones.",
+    description: "Captura la llegada, diferencias y devoluciones.",
+    icon: ImportIcon,
   },
   {
     id: "history",
     label: "Historial",
-    hint: "Consulta los traspasos emitidos y recibidos.",
+    description: "Consulta los traspasos emitidos y recibidos.",
+    icon: HistoryIcon,
   },
 ];
 
 const RouteTabs = ({ activeTab, pendingReceiptsCount, onTabChange }) => {
-  const activeTabMeta = TRANSFER_TABS.find((tab) => tab.id === activeTab);
-
   return (
     <nav className={styles.tabBar} aria-label="Subnavegación de traspasos">
-      <div className={styles.segmentedControl}>
-        {TRANSFER_TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
+      {TRANSFER_TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const className = [
+          styles.tabButton,
+          isActive ? styles.tabButtonActive : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
 
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`${styles.tabButton}${
-                isActive ? ` ${styles.tabButtonActive}` : ""
-              }`}
-              aria-current={isActive ? "true" : undefined}
-              onClick={() => onTabChange(tab.id)}
-            >
-              <span className={styles.tabLabelRow}>
-                <span>{tab.label}</span>
-                {tab.id === "receive" && pendingReceiptsCount > 0 ? (
-                  <span className={styles.tabBadge}>
-                    {pendingReceiptsCount}
-                  </span>
-                ) : null}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {activeTabMeta ? (
-        <p className={styles.tabHint}>{activeTabMeta.hint}</p>
-      ) : null}
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            className={className}
+            aria-current={isActive ? "true" : undefined}
+            onClick={() => onTabChange(tab.id)}
+          >
+            <span className={styles.tabTop}>
+              <img
+                src={tab.icon}
+                alt=""
+                aria-hidden="true"
+                className={styles.tabIcon}
+              />
+              <span className={styles.tabLabel}>{tab.label}</span>
+              {tab.id === "receive" && pendingReceiptsCount > 0 ? (
+                <span className={styles.tabBadge}>{pendingReceiptsCount}</span>
+              ) : null}
+            </span>
+            <span className={styles.tabDescription}>{tab.description}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 };

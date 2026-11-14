@@ -87,10 +87,412 @@ describe("HistoryTable", () => {
     expect(onCancelClick).toHaveBeenCalledWith(orders[0]);
   });
 
+  it("pagina el historial de 10 en 10", () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+    }));
+    render(<HistoryTable {...defaultProps} transferHistory={many} />);
+    expect(screen.queryByText("TR-010")).toBeTruthy();
+    expect(screen.queryByText("TR-011")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("TR-011")).toBeTruthy();
+    expect(screen.queryByText("TR-001")).toBeNull();
+  });
+
+  it("filtra el historial por folio", () => {
+    const two = [
+      orders[0],
+      { ...orders[0], id: "t2", folio: "TR-020126-000002" },
+    ];
+    render(<HistoryTable {...defaultProps} transferHistory={two} />);
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "020126" },
+    });
+    expect(screen.queryByText("TR-020126-000002")).toBeTruthy();
+    expect(screen.queryByText("TR-010126-000001")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "zzz" },
+    });
+    expect(screen.getByText("No hay traspasos con ese folio.")).toBeTruthy();
+  });
+
+  it("al filtrar por folio vuelve a la pagina 1", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `${i % 2 === 0 ? "PAR" : "IMPAR"}-${String(i + 1).padStart(3, "0")}`,
+    }));
+    render(<HistoryTable {...defaultProps} transferHistory={many} />);
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("PAR-001")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "PAR" },
+    });
+    expect(screen.queryByText("PAR-001")).toBeTruthy();
+  });
+
+  it("acota la pagina cuando el historial se reduce", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+    }));
+    const { rerender } = render(
+      <HistoryTable {...defaultProps} transferHistory={many} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    rerender(<HistoryTable {...defaultProps} transferHistory={[orders[0]]} />);
+    expect(screen.queryByText("TR-010126-000001")).toBeTruthy();
+  });
+
   it("boton Cancelar esta deshabilitado durante submitting", () => {
     render(<HistoryTable {...defaultProps} submitting={true} />);
     expect(
       screen.getByRole("button", { name: "Cancelar" }).hasAttribute("disabled")
+    ).toBe(true);
+  });
+});
+
+describe("HistoryTable filtros por rango de fechas", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 21, 12, 0, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const buildOrderAt = (date, id, folio) => ({
+    ...orders[0],
+    id,
+    folio,
+    createdAt: date.toISOString(),
+    receivedAt: null,
+  });
+
+  const history = [
+    buildOrderAt(new Date(2026, 9, 20, 8, 0, 0), "t1", "TR-20"),
+    buildOrderAt(new Date(2026, 9, 21, 8, 0, 0), "t2", "TR-21"),
+    buildOrderAt(new Date(2026, 9, 19, 8, 0, 0), "t3", "TR-19"),
+  ];
+
+  it("filtra los traspasos de hoy con el preset Hoy", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeNull();
+    expect(screen.getByLabelText("Creado desde").value).toBe("21/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
+  });
+
+  it("filtra de lunes a domingo con el preset Esta semana", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[
+          ...history,
+          buildOrderAt(new Date(2026, 9, 18, 8, 0, 0), "t4", "TR-18"),
+        ]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(screen.queryByText("TR-18")).toBeNull();
+    expect(screen.getByLabelText("Creado desde").value).toBe("19/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
+  });
+
+  it("limpia el rango y restablece todos los traspasos", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+    expect(screen.queryByText("TR-20")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(screen.getByLabelText("Creado desde").value).toBe("");
+    expect(
+      screen.getByRole("button", { name: "Hoy" }).getAttribute("aria-pressed")
+    ).toBe("false");
+  });
+
+  it("vuelve a la pagina 1 al limpiar filtros con varias paginas", () => {
+    const many = Array.from({ length: 50 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `${i % 2 === 0 ? "PAR" : "NON"}-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "PAR" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(screen.getByText("Página 1 de 5")).toBeTruthy();
+  });
+
+  it("muestra un mensaje propio cuando no hay traspasos en el rango", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[
+          buildOrderAt(new Date(2026, 9, 1, 8, 0, 0), "t1", "TR-01"),
+        ]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(
+      screen.getByText(
+        "No hay traspasos creados en el rango de fechas seleccionado."
+      )
+    ).toBeTruthy();
+  });
+
+  it("no muestra un traspaso recibido dentro del rango si se creo antes", () => {
+    const createdOutside = {
+      ...buildOrderAt(new Date(2026, 9, 1, 8, 0, 0), "t5", "TR-RECIBIDO"),
+      receivedAt: new Date(2026, 9, 21, 9, 0, 0).toISOString(),
+    };
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={[createdOutside]}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-RECIBIDO")).toBeNull();
+    expect(
+      screen.getByText(
+        "No hay traspasos creados en el rango de fechas seleccionado."
+      )
+    ).toBeTruthy();
+  });
+
+  it("usa un mensaje combinado cuando folio y fechas no arrojan resultados", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "TR-20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+
+    expect(screen.queryByText("TR-20")).toBeNull();
+    expect(
+      screen.getByText(
+        "No hay traspasos con ese folio creados en el rango seleccionado."
+      )
+    ).toBeTruthy();
+  });
+
+  it("combina folio y rango para mostrar solo la interseccion", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "TR-20" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-21")).toBeNull();
+    expect(screen.queryByText("TR-19")).toBeNull();
+  });
+
+  it("recorta Hasta a hoy en los presets de semana y mes", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Esta semana" }));
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
+
+    fireEvent.click(screen.getByRole("button", { name: "Este mes" }));
+    expect(screen.getByLabelText("Creado desde").value).toBe("01/10/2026");
+    expect(screen.getByLabelText("Creado hasta").value).toBe("21/10/2026");
+  });
+
+  it("desmarca el preset al editar una fecha a mano", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    const todayButton = screen.getByRole("button", { name: "Hoy" });
+    fireEvent.click(todayButton);
+    expect(todayButton.getAttribute("aria-pressed")).toBe("true");
+
+    const fromInput = screen.getByLabelText("Creado desde");
+    fireEvent.change(fromInput, { target: { value: "20/10/2026" } });
+    fireEvent.blur(fromInput);
+
+    expect(fromInput.value).toBe("20/10/2026");
+    expect(todayButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("vuelve a la pagina 1 al cambiar el rango", () => {
+    const many = Array.from({ length: 24 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.queryByText("TR-001")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hoy" }));
+    expect(screen.queryByText("TR-001")).toBeTruthy();
+  });
+
+  it("vuelve a la pagina 1 al editar Desde a mano", () => {
+    const many = Array.from({ length: 25 }, (_, i) => ({
+      ...orders[0],
+      id: `t${i}`,
+      folio: `TR-${String(i + 1).padStart(3, "0")}`,
+      createdAt: new Date(2026, 9, 21, 8, i).toISOString(),
+    }));
+
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={many}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    const fromInput = screen.getByLabelText("Creado desde");
+    fireEvent.change(fromInput, { target: { value: "21/10/2026" } });
+    fireEvent.blur(fromInput);
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+  });
+
+  it("deshabilita Limpiar filtros sin rango activo", () => {
+    render(<HistoryTable {...defaultProps} />);
+    expect(
+      screen
+        .getByRole("button", { name: "Limpiar filtros" })
+        .hasAttribute("disabled")
+    ).toBe(true);
+  });
+
+  it("limpia tambien el folio escrito y se habilita por si solo", () => {
+    render(
+      <HistoryTable
+        {...defaultProps}
+        transferHistory={history}
+        cancellableTransferIds={new Set()}
+      />
+    );
+
+    const clearButton = screen.getByRole("button", { name: "Limpiar filtros" });
+    expect(clearButton.hasAttribute("disabled")).toBe(true);
+
+    const folioInput = screen.getByLabelText("Buscar traspaso por folio");
+    fireEvent.change(folioInput, { target: { value: "TR-20" } });
+
+    expect(screen.queryByText("TR-21")).toBeNull();
+    expect(clearButton.hasAttribute("disabled")).toBe(false);
+
+    fireEvent.click(clearButton);
+
+    expect(folioInput.value).toBe("");
+    expect(screen.queryByText("TR-21")).toBeTruthy();
+    expect(screen.queryByText("TR-20")).toBeTruthy();
+    expect(screen.queryByText("TR-19")).toBeTruthy();
+    expect(clearButton.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("no se habilita con folio compuesto solo de espacios", () => {
+    render(<HistoryTable {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText("Buscar traspaso por folio"), {
+      target: { value: "   " },
+    });
+
+    expect(
+      screen
+        .getByRole("button", { name: "Limpiar filtros" })
+        .hasAttribute("disabled")
     ).toBe(true);
   });
 });

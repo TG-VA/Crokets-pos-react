@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 
-import { getPresetRange } from "./ordersDateRange";
+import { getPresetRange } from "./dateRangePresets";
 
-describe("ordersDateRange", () => {
+describe("dateRangePresets", () => {
   it("no muta la fecha de referencia recibida", () => {
     const referenceDate = new Date(2026, 9, 24, 15, 30, 0, 0);
 

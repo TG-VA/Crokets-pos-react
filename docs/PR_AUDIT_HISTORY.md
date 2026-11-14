@@ -2932,3 +2932,30 @@ preexistente en `useKitProductSearch.js:134`). Mutaciones: 9 ejecutadas, 7 detec
 
 `npm test`: 284 archivos / 3061 casos en verde. Pendiente de verificación humana en Electron
 (`npm run dev`) con sesión de administrador y de no administrador.
+
+## Informe de Auditoría — PR #187 `fix/transfers-receive-status` (13 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 0 sugerencias). Head `b5210eb`,
+base `0f7cf9b`. Tercera ronda tras `06b079c`; commits nuevos `1756879` a `b5210eb` (7).
+Ejecución: 295 archivos / 3132 tests verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0
+errores. Mutaciones: 9 ejecutadas sobre el delta, 9 detectadas.
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo previo                                   | Resolución                                                       |
+| --- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | Mutaciones sobrevivientes M7, M9, M11 (y M22)     | Tests nuevos; las cuatro mutaciones se detectan                  |
+| 2   | `docs/TESTING.md` sin las suites de Traspasos     | 16 filas nuevas con rutas verificadas                            |
+| 3   | Reset de paginación por `useEffect`               | Helper `withPageReset` en los cuatro handlers; R1-R5 se detectan |
+| 4   | Descripción sin hook, tests nuevos ni conteo real | Corregido parcialmente                                           |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                               | Severidad  |
+| --- | ---------------------------------------------------------------------- | ---------- |
+| 1   | Descripción omite el cambio en Pedidos, hashes de commits y `ICONS.md` | Importante |
+
+### Estado al cierre
+
+La descripción del PR se corrigió después de la auditoría, así que el hallazgo abierto 1 queda resuelto.
+Pendiente de verificación humana en Electron (`npm run dev`) con historial real de traspasos y de pedidos.
