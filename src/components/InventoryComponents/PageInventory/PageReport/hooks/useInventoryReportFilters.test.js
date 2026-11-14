@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 import useInventoryReportFilters from "./useInventoryReportFilters";
@@ -157,5 +157,45 @@ describe("useInventoryReportFilters", () => {
     } finally {
       node.remove();
     }
+  });
+
+  it("al cambiar de facet sin cerrar, retira el listener del facet previo", () => {
+    const { result } = renderHook(() => useInventoryReportFilters());
+    const node = document.createElement("div");
+    node.setAttribute("data-inv-filter-popover", "nombre");
+    const child = document.createElement("input");
+    node.appendChild(child);
+    document.body.appendChild(node);
+    try {
+      act(() => result.current.toggleFacet("depto"));
+      act(() => result.current.toggleFacet("nombre"));
+      act(() => {
+        child.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      });
+      expect(result.current.openFacet).toBe("nombre");
+    } finally {
+      node.remove();
+    }
+  });
+
+  it("retira los listeners de mousedown y keydown al desmontar", () => {
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    try {
+      const { result, unmount } = renderHook(() => useInventoryReportFilters());
+      act(() => result.current.toggleFacet("depto"));
+      unmount();
+      const removed = removeSpy.mock.calls.map(([type]) => type);
+      expect(removed).toContain("mousedown");
+      expect(removed).toContain("keydown");
+    } finally {
+      removeSpy.mockRestore();
+    }
+  });
+
+  it("closeFacet: cierra el facet abierto", () => {
+    const { result } = renderHook(() => useInventoryReportFilters());
+    act(() => result.current.toggleFacet("depto"));
+    act(() => result.current.closeFacet());
+    expect(result.current.openFacet).toBeNull();
   });
 });
