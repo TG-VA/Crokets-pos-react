@@ -32,6 +32,19 @@ const defaultProps = {
   onConfirmReceipt: vi.fn(),
 };
 
+const buildOrderWithItems = (count) => ({
+  ...orders[0],
+  id: "r12",
+  folio: "TR-010126-000012",
+  totals: { requestedUnits: count * 10 },
+  items: Array.from({ length: count }, (_, index) => ({
+    productId: `p${index + 1}`,
+    name: `Producto ${index + 1}`,
+    barcode: `75000000000${index + 10}`,
+    requestedQty: 10,
+  })),
+});
+
 describe("ReceiveWorkspace", () => {
   it("coloca la lista de pendientes antes del detalle (master-detail)", () => {
     render(<ReceiveWorkspace {...defaultProps} />);
@@ -98,5 +111,60 @@ describe("ReceiveWorkspace", () => {
     expect(
       screen.getByRole("button", { name: "Confirmar recepción" })
     ).toBeTruthy();
+  });
+
+  it("pagina los productos de 5 en 5 y conserva lo capturado", () => {
+    const order = buildOrderWithItems(12);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p6: "7" }}
+      />
+    );
+
+    expect(screen.getAllByLabelText(/^Cantidad recibida de/)).toHaveLength(5);
+    expect(screen.getByText("Producto 1")).toBeTruthy();
+    expect(screen.queryByText("Producto 6")).toBeNull();
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(screen.getAllByLabelText(/^Cantidad recibida de/)).toHaveLength(5);
+    expect(screen.getByText("Producto 6")).toBeTruthy();
+    expect(screen.queryByText("Producto 1")).toBeNull();
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+    expect(screen.getByLabelText("Cantidad recibida de Producto 6").value).toBe(
+      "7"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(screen.getAllByLabelText(/^Cantidad recibida de/)).toHaveLength(2);
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+  });
+
+  it("reinicia la pagina al cambiar de orden", () => {
+    const firstOrder = buildOrderWithItems(12);
+    const secondOrder = {
+      ...buildOrderWithItems(12),
+      id: "r13",
+      folio: "TR-010126-000013",
+    };
+
+    const { rerender } = render(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={firstOrder} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    rerender(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={secondOrder} />
+    );
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+    expect(screen.getByText("Producto 1")).toBeTruthy();
   });
 });

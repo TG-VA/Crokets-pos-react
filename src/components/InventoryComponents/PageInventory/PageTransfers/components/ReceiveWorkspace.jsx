@@ -1,7 +1,13 @@
+import { useState } from "react";
+
+import PaginationBar from "../../../../PaginationBar/PaginationBar";
+import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
 import { formatTransferDateTime } from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
+
+const RECEIPT_PAGE_SIZE = 5;
 
 const ReceiveWorkspace = ({
   submitting,
@@ -13,6 +19,33 @@ const ReceiveWorkspace = ({
   onReceiptQuantityChange,
   onConfirmReceipt,
 }) => {
+  const receiptItems = selectedReceiptOrder?.items ?? [];
+
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    pageItems,
+    handlePageChange,
+    resetPagination,
+  } = usePagination({
+    totalItems: receiptItems.length,
+    defaultPageSize: RECEIPT_PAGE_SIZE,
+    pageSizeOptions: [RECEIPT_PAGE_SIZE],
+  });
+
+  // Cada orden arranca en la primera pagina de productos.
+  const [paginatedOrderId, setPaginatedOrderId] = useState(
+    selectedReceiptOrder?.id ?? ""
+  );
+
+  const currentOrderId = selectedReceiptOrder?.id ?? "";
+
+  if (currentOrderId !== paginatedOrderId) {
+    setPaginatedOrderId(currentOrderId);
+    resetPagination();
+  }
+
   return (
     <section className={styles.workspace}>
       <div className={styles.panel}>
@@ -110,7 +143,7 @@ const ReceiveWorkspace = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedReceiptOrder.items.map((item) => {
+                  {pageItems(receiptItems).map((item) => {
                     const requestedQty = Number(item.requestedQty ?? 0);
                     const receivedQty = Number(
                       receiptQuantities[item.productId] ?? requestedQty
@@ -138,6 +171,7 @@ const ReceiveWorkspace = ({
                             min="0"
                             max={requestedQty}
                             className={styles.quantityInput}
+                            aria-label={`Cantidad recibida de ${item.name}`}
                             value={
                               receiptQuantities[item.productId] ??
                               String(requestedQty)
@@ -157,6 +191,17 @@ const ReceiveWorkspace = ({
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 ? (
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={receiptItems.length}
+                pageSize={pageSize}
+                itemsNoun="productos"
+                onPageChange={handlePageChange}
+              />
+            ) : null}
 
             <div className={styles.actionRow}>
               <div className={styles.actionText}>
