@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (13 nov 2026)
 
-302 archivos de test (**3197 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+302 archivos de test (**3203 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -98,8 +98,8 @@ y el proceso principal de Electron:
 | Impresión de tickets (proceso principal)                  | `electron/ticketPrintService.test.js`                                              |
 | Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
 | Paginación global (incluye reset por `resetKeys`)         | `src/hooks/usePagination.test.js`                                                  |
-| Reporte de inventario: paginacion de la tabla             | `.../PageInventory/PageReport/PageReport.test.jsx`                                 |
-| Reporte de movimientos: paginacion y reset al filtrar     | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
+| Reporte de inventario: paginacion y reset al filtrar      | `.../PageInventory/PageReport/PageReport.test.jsx`                                 |
+| Reporte de movimientos: reset por filtro, sucursal, fecha | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
 | Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
