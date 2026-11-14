@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 
-import InventorySearchResults from "./components/InventorySearchResults";
 import MakeGlobalConfirmModal from "./components/MakeGlobalConfirmModal";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
 import usePromoteLocalProduct from "./hooks/usePromoteLocalProduct";
 import ProductSearchDialog from "../../../ModalControls/ProductSearchDialog";
+import ProductSearchResults from "../../../ModalControls/ProductSearchResults";
 
 const InventorySearchModal = ({
   isOpen,
@@ -93,7 +93,7 @@ const InventorySearchModal = ({
         }}
         onClose={handleClose}
       >
-        <InventorySearchResults
+        <ProductSearchResults
           products={searchResults}
           selectedIndex={selectedIndex}
           searchTerm={searchTerm}

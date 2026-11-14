@@ -13,7 +13,6 @@ const ProductSearchDialog = ({
   onSearchChange,
   placeholder,
   resultsCount,
-  resultsContainerRef,
   selectLabel = "Seleccionar",
   selectDisabled,
   onSelect,
@@ -68,9 +67,7 @@ const ProductSearchDialog = ({
               )}
             </div>
 
-            <div className={styles.resultsContainer} ref={resultsContainerRef}>
-              {children}
-            </div>
+            <div className={styles.resultsContainer}>{children}</div>
           </div>
         </div>
 

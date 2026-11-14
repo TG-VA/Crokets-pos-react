@@ -97,4 +97,50 @@ describe("ProductsSearchModal", () => {
     expect(screen.getByText("Bano y corte")).toBeTruthy();
     expect(screen.queryByText("Kit de bienvenida")).toBeNull();
   });
+
+  it("lista como los buscadores de inventario, sin precio ni stock", () => {
+    window.Element.prototype.scrollIntoView = vi.fn();
+    render(
+      <ProductsSearchModal
+        isOpen
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+        products={[
+          {
+            codigo: "A-1",
+            descripcion: "Croqueta adulto",
+            departamento: "Alimento",
+            precio: 120,
+            existencia: 8,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "croqueta" },
+    });
+
+    expect(
+      screen.getByText("Croqueta adulto").closest("[data-search-result]")
+    ).toBeTruthy();
+    expect(screen.queryByText(/\$/)).toBeNull();
+    expect(screen.queryByText(/Stock/)).toBeNull();
+  });
+
+  it("no lista nada mientras la busqueda esta vacia", () => {
+    render(
+      <ProductsSearchModal
+        isOpen
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+        products={[{ codigo: "A-1", descripcion: "Croqueta adulto" }]}
+      />
+    );
+
+    expect(screen.queryByText("Croqueta adulto")).toBeNull();
+    expect(
+      screen.getByText("Ingresa nombre, código o departamento del producto")
+    ).toBeTruthy();
+  });
 });
