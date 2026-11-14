@@ -175,10 +175,6 @@ const InventorySearchModal = ({
               ESC - Cerrar
             </button>
           </div>
-
-          <div className={styles.actionHints}>
-            <span>F10 - Buscar productos</span>
-          </div>
         </div>
       </div>
 

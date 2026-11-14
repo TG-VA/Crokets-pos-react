@@ -280,14 +280,6 @@
   background: #5a6268;
 }
 
-.actionHints {
-  text-align: center;
-  color: #7f8c8d;
-  font-size: 0.8rem;
-  font-style: italic;
-  margin-top: 8px;
-}
-
 .resultsList::-webkit-scrollbar {
   width: 8px;
 }
