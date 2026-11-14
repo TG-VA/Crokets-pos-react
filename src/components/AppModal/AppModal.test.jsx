@@ -123,6 +123,10 @@ describe("AppModal: posicion del icono", () => {
     expect(header).not.toBeNull();
     expect(header.contains(icon)).toBe(true);
     expect(body.contains(icon)).toBe(false);
+    expect(body.querySelector(`.${styles.iconWrapper}`)).toBeNull();
+    expect(container.querySelectorAll(`.${styles.iconWrapper}`)).toHaveLength(
+      1
+    );
     expect(header.nextElementSibling).toBe(body);
     expect(icon.getAttribute("aria-hidden")).toBe("true");
   });
