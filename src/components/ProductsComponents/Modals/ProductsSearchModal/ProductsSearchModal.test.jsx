@@ -23,6 +23,13 @@ describe("ProductsSearchModal", () => {
     expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
+  it("declara el buscador como dialogo con su titulo", () => {
+    renderModal();
+    expect(
+      screen.getByRole("dialog", { name: "Búsqueda de Productos" })
+    ).toBeTruthy();
+  });
+
   it("no muestra la pista F10", () => {
     renderModal();
     expect(screen.queryByText(/F10/)).toBeNull();

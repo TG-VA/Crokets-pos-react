@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import styles from "./ProductsSearchModal.module.css";
 import { useProductSearchModal } from "../hooks/useProductSearchModal";
 
@@ -12,14 +12,21 @@ const ProductsSearchModal = ({ isOpen, onClose, products, onSelect }) => {
     handleClose,
     handleSelectProduct,
   } = useProductSearchModal({ isOpen, onClose, products, onSelect });
+  const titleId = useId();
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
-      <div className={styles.searchModal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.searchModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.modalHeader}>
-          <h2>Búsqueda de Productos</h2>
+          <h2 id={titleId}>Búsqueda de Productos</h2>
         </div>
 
         <div className={styles.searchModalBody}>

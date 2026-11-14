@@ -138,6 +138,14 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByLabelText("Solo bajo mínimo")).toBeNull();
   });
 
+  it("declara el buscador como dialogo con su titulo", () => {
+    renderModal();
+
+    expect(
+      screen.getByRole("dialog", { name: "Búsqueda de Productos" })
+    ).toBeTruthy();
+  });
+
   describe("volver global un producto local", () => {
     beforeEach(() => {
       promoteProductToGlobal.mockReset();
