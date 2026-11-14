@@ -116,4 +116,13 @@ describe("MakeGlobalConfirmModal", () => {
 
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("usa un icono svg en el boton cerrar", () => {
+    setup();
+
+    const closeButton = screen.getByRole("button", { name: "Cerrar" });
+
+    expect(closeButton.textContent).toBe("");
+    expect(closeButton.querySelector("img")).toBeTruthy();
+  });
 });

@@ -45,10 +45,16 @@
 .closeButton {
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 30px;
-  line-height: 1;
+  padding: 4px;
   cursor: pointer;
+}
+
+.closeIcon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
 .closeButton:disabled {

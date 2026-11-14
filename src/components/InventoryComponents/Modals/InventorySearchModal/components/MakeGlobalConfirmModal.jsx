@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 
 import { useEscapeKey } from "../../../../../hooks/useEscapeKey";
 import styles from "./MakeGlobalConfirmModal.module.css";
+import XmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 
 const CONFIRM_WORD = "CONFIRMAR";
 
@@ -59,7 +60,12 @@ const MakeGlobalConfirmContent = ({
             disabled={saving}
             aria-label="Cerrar"
           >
-            ×
+            <img
+              src={XmarkIcon}
+              alt=""
+              className={styles.closeIcon}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
