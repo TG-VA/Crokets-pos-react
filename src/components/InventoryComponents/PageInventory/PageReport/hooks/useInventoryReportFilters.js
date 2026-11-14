@@ -111,11 +111,7 @@ const useInventoryReportFilters = () => {
   };
 
   const clearAllFilters = () => {
-    setFacetFilters({
-      nombre: [],
-      depto: [],
-      existencia: [],
-    });
+    setFacetFilters(INITIAL_FACET_FILTERS);
 
     setFacetSearch({});
     setExistenceQuantity("");

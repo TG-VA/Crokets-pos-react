@@ -106,14 +106,15 @@ describe("useInventoryReportFilters", () => {
     const { result } = renderHook(() => useInventoryReportFilters());
     act(() => result.current.toggleFacetValue("depto", "Perros"));
     act(() => result.current.handleSearchFacet("depto", "pe"));
+    act(() =>
+      result.current.handleExistenceQuantityChange({ target: { value: "5" } })
+    );
+    act(() => result.current.applyExistenceQuantityFilter());
     act(() => result.current.toggleFacet("nombre"));
     act(() => result.current.clearAllFilters());
-    expect(result.current.facetFilters).toEqual({
-      nombre: [],
-      depto: [],
-      existencia: [],
-    });
+    expect(result.current.facetFilters).toEqual(INITIAL_FACET_FILTERS);
     expect(result.current.facetSearch).toEqual({});
+    expect(result.current.existenceQuantity).toBe("");
     expect(result.current.openFacet).toBeNull();
   });
 
@@ -135,5 +136,26 @@ describe("useInventoryReportFilters", () => {
       );
     });
     expect(result.current.openFacet).toBeNull();
+  });
+
+  it.each([
+    ["popover", "data-inv-filter-popover"],
+    ["boton", "data-inv-filter-button"],
+  ])("mantiene abierto el facet con clic dentro del %s", (_label, attr) => {
+    const { result } = renderHook(() => useInventoryReportFilters());
+    const node = document.createElement("div");
+    node.setAttribute(attr, "depto");
+    const child = document.createElement("input");
+    node.appendChild(child);
+    document.body.appendChild(node);
+    try {
+      act(() => result.current.toggleFacet("depto"));
+      act(() => {
+        child.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      });
+      expect(result.current.openFacet).toBe("depto");
+    } finally {
+      node.remove();
+    }
   });
 });

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import styles from "./PageReport.module.css";
 
 import InventoryReportTable from "./components/InventoryReportTable";
