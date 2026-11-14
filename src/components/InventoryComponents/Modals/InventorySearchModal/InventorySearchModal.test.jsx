@@ -146,6 +146,21 @@ describe("InventorySearchModal reglas de pedidos", () => {
     ).toBeTruthy();
   });
 
+  it("muestra el boton Cerrar sin prefijo de atajo", () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar" })).toBeTruthy();
+    expect(screen.queryByText("ESC - Cerrar")).toBeNull();
+  });
+
+  it("no muestra el boton X de la cabecera", () => {
+    renderModal();
+
+    expect(
+      screen.queryByRole("button", { name: "Cerrar búsqueda de productos" })
+    ).toBeNull();
+  });
+
   describe("volver global un producto local", () => {
     beforeEach(() => {
       promoteProductToGlobal.mockReset();
