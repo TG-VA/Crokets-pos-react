@@ -186,5 +186,20 @@ describe("InventorySearchModal reglas de pedidos", () => {
       expect(screen.queryByText("Volver global este producto")).toBeNull();
       expect(onClose).not.toHaveBeenCalled();
     });
+
+    it("clic en el fondo de la confirmacion no cierra el buscador", () => {
+      const onClose = vi.fn();
+      renderModal({ onClose });
+
+      fireEvent.doubleClick(screen.getByText("Juguete local"));
+      const confirmDialog = screen.getByRole("dialog", {
+        name: "Volver global este producto",
+      });
+      fireEvent.click(confirmDialog.parentElement);
+
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByText("Búsqueda de Productos")).toBeTruthy();
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
+    });
   });
 });

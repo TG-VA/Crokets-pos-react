@@ -31,8 +31,15 @@ const MakeGlobalConfirmContent = ({
 
   const canConfirm = typed === CONFIRM_WORD && !saving;
 
+  // Se renderiza dentro del overlay del buscador: el clic en el fondo no debe
+  // propagarse, o cerraria todo el buscador.
+  const handleOverlayClick = (event) => {
+    event.stopPropagation();
+    if (!saving) onClose();
+  };
+
   return (
-    <div className={styles.overlay}>
+    <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
         className={styles.modal}
         role="dialog"
