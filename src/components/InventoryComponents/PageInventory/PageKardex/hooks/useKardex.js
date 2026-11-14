@@ -7,7 +7,11 @@ import useKardexMovements from "./useKardexMovements";
 import useKardexProducts from "./useKardexProducts";
 
 const useKardex = () => {
-  const { kardexProducts: contextKardexProducts } = useProducts();
+  const {
+    kardexProducts: contextKardexProducts,
+    loadingProducts,
+    productsError,
+  } = useProducts();
 
   const { branch } = useBranch();
 
@@ -37,6 +41,8 @@ const useKardex = () => {
   });
 
   return {
+    loadingProducts,
+    productsError,
     ...productSelection,
     ...dateRange,
     ...movementData,

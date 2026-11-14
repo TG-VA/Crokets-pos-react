@@ -10,8 +10,13 @@ import useReceiveForm from "./useReceiveForm";
 const useTransfersPage = ({ isActive = true } = {}) => {
   const { branch } = useBranch();
   const { user } = useAuth();
-  const { getProductByCodigo, products, loadingProducts, refreshProducts } =
-    useProducts();
+  const {
+    getProductByCodigo,
+    products,
+    loadingProducts,
+    productsError,
+    refreshProducts,
+  } = useProducts();
 
   const { error, success, setError, setSuccess, clearFeedback } =
     useTransferFeedback();
@@ -114,6 +119,7 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     draftTotals,
     error,
     loadingProducts,
+    productsError,
     products,
     productSearch,
     searchModalOpen,
