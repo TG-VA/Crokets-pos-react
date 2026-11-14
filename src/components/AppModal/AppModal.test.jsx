@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import AppModal from "./AppModal";
+import styles from "./AppModal.module.css";
 import {
   ModalStackProvider,
   useModalStack,
@@ -102,5 +103,39 @@ describe("AppModal confirmDisabled", () => {
     );
     fireEvent.keyDown(document, { key: "Enter" });
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+});
+
+describe("AppModal: posicion del icono", () => {
+  const getParts = (container) => ({
+    icon: container.querySelector(`.${styles.iconWrapper}`),
+    body: container.querySelector(`.${styles.body}`),
+    header: container.querySelector(`.${styles.header}`),
+  });
+
+  it("en size large deja el icono en un header fijo fuera del scroll", () => {
+    const { container } = render(
+      <AppModal isOpen size="large" title="Detalle" />
+    );
+    const { icon, body, header } = getParts(container);
+
+    expect(icon).not.toBeNull();
+    expect(header).not.toBeNull();
+    expect(header.contains(icon)).toBe(true);
+    expect(body.contains(icon)).toBe(false);
+    expect(body.querySelector(`.${styles.iconWrapper}`)).toBeNull();
+    expect(container.querySelectorAll(`.${styles.iconWrapper}`)).toHaveLength(
+      1
+    );
+    expect(header.nextElementSibling).toBe(body);
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("en size por defecto mantiene el icono dentro del cuerpo", () => {
+    const { container } = render(<AppModal isOpen title="Aviso" />);
+    const { icon, body, header } = getParts(container);
+
+    expect(header).toBeNull();
+    expect(body.contains(icon)).toBe(true);
   });
 });

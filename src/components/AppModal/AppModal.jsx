@@ -277,6 +277,18 @@ const AppModal = ({
     event.stopPropagation();
   };
 
+  // En size large el cuerpo hace scroll: el icono vive en un header fijo para
+  // que el desplazamiento no lo recorte contra el borde superior del modal.
+  const isLarge = size === "large";
+
+  const iconNode = (
+    <div className={styles.iconWrapper} aria-hidden="true">
+      <span className={styles.icon}>
+        <span className={styles.iconGlyph} />
+      </span>
+    </div>
+  );
+
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
@@ -291,12 +303,10 @@ const AppModal = ({
         tabIndex={-1}
         onClick={handleModalClick}
       >
+        {isLarge ? <div className={styles.header}>{iconNode}</div> : null}
+
         <div className={styles.body}>
-          <div className={styles.iconWrapper} aria-hidden="true">
-            <span className={styles.icon}>
-              <span className={styles.iconGlyph} />
-            </span>
-          </div>
+          {isLarge ? null : iconNode}
 
           <div className={styles.content}>
             {title && (

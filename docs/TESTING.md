@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (13 nov 2026)
 
-297 archivos de test (**3147 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+300 archivos de test (**3187 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -188,7 +188,7 @@ y el proceso principal de Electron:
 | Pedidos: aviso con cierre automatico                      | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
 | Pedidos: estilos (clases definidas, badges en negrita)    | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas            | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
-| Modal base (footer y capa en la pila de modales)          | `src/components/AppModal/AppModal.test.jsx`                                        |
+| Modal base (footer, capa en la pila e icono en large)     | `src/components/AppModal/AppModal.test.jsx`                                        |
 | Pila de modales (capas y bloqueo de atajos)               | `src/contexts/ModalStackContext.test.jsx`                                          |
 | Modal base: boton de cancelar de pie (etiqueta)           | `src/components/ModalControls/ModalFooterCancelButton.test.jsx`                    |
 | Notas de venta: sin X, con Cancelar y Guardar             | `.../SalesComponents/Modals/NotesModal/NotesModal.test.jsx`                        |
