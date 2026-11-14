@@ -51,7 +51,7 @@ const useReceiveForm = ({
 
     const nextReceiptQuantities = selectedReceiptOrder.items.reduce(
       (accumulator, item) => {
-        accumulator[item.productId] = Number(item.requestedQty ?? 0) || 0;
+        accumulator[item.productId] = "0";
         return accumulator;
       },
       {}

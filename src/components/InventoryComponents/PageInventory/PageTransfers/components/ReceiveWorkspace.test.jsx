@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import ReceiveWorkspace from "./ReceiveWorkspace";
 
@@ -111,6 +111,41 @@ describe("ReceiveWorkspace", () => {
     expect(
       screen.getByRole("button", { name: "Confirmar recepción" })
     ).toBeTruthy();
+  });
+
+  it("inicia las cantidades en 0 y muestra el total solicitado en Regresa", () => {
+    render(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={orders[0]} />
+    );
+
+    const input = screen.getByLabelText("Cantidad recibida de Alimento 15kg");
+    expect(input.getAttribute("type")).toBe("text");
+    expect(input.getAttribute("inputmode")).toBe("numeric");
+    expect(input.value).toBe("0");
+
+    const row = screen.getByText("Alimento 15kg").closest("tr");
+    expect(within(row).getAllByRole("cell")[3].textContent).toBe("8");
+  });
+
+  it("rechaza letras y recorta la cantidad al total solicitado", () => {
+    const onReceiptQuantityChange = vi.fn();
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "0" }}
+        onReceiptQuantityChange={onReceiptQuantityChange}
+      />
+    );
+
+    const input = screen.getByLabelText("Cantidad recibida de Alimento 15kg");
+
+    fireEvent.change(input, { target: { value: "abc" } });
+    expect(onReceiptQuantityChange).toHaveBeenLastCalledWith("p1", "0");
+
+    fireEvent.change(input, { target: { value: "12" } });
+    expect(onReceiptQuantityChange).toHaveBeenLastCalledWith("p1", "8");
   });
 
   it("pagina los productos de 5 en 5 y conserva lo capturado", () => {

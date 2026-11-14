@@ -3,7 +3,10 @@ import { useState } from "react";
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
-import { formatTransferDateTime } from "../utils/transfersUtils";
+import {
+  formatTransferDateTime,
+  normalizeReceivedQuantity,
+} from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
 
@@ -146,7 +149,7 @@ const ReceiveWorkspace = ({
                   {pageItems(receiptItems).map((item) => {
                     const requestedQty = Number(item.requestedQty ?? 0);
                     const receivedQty = Number(
-                      receiptQuantities[item.productId] ?? requestedQty
+                      receiptQuantities[item.productId] ?? 0
                     );
                     const normalizedReceivedQty = Number.isFinite(receivedQty)
                       ? receivedQty
@@ -167,19 +170,18 @@ const ReceiveWorkspace = ({
                         <td>{requestedQty}</td>
                         <td>
                           <input
-                            type="number"
-                            min="0"
-                            max={requestedQty}
+                            type="text"
+                            inputMode="numeric"
                             className={styles.quantityInput}
                             aria-label={`Cantidad recibida de ${item.name}`}
-                            value={
-                              receiptQuantities[item.productId] ??
-                              String(requestedQty)
-                            }
+                            value={receiptQuantities[item.productId] ?? "0"}
                             onChange={(event) =>
                               onReceiptQuantityChange(
                                 item.productId,
-                                event.target.value
+                                normalizeReceivedQuantity(
+                                  event.target.value,
+                                  requestedQty
+                                )
                               )
                             }
                           />

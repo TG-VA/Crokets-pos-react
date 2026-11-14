@@ -42,6 +42,18 @@ export const parseTransferNotesPayload = (value) => {
   }
 };
 
+/**
+ * Sanea la cantidad recibida capturada: descarta todo lo que no sea digito y
+ * recorta al maximo solicitado para que el faltante nunca sea negativo.
+ */
+export const normalizeReceivedQuantity = (value, maxQty = 0) => {
+  const digitsOnly = String(value ?? "").replace(/\D/g, "");
+  const parsedValue = Number(digitsOnly || 0);
+  const upperBound = normalizeInteger(maxQty);
+
+  return String(Math.min(parsedValue, upperBound));
+};
+
 const getItemOutcome = (metadata = {}, productId = "") => {
   const itemOutcomes = metadata?.itemOutcomes;
 

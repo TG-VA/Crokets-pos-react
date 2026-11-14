@@ -54,17 +54,17 @@ describe("useReceiveForm", () => {
     expect(result.current.selectedReceiptOrder).toBeNull();
   });
 
-  it("inicializa receiptQuantities con las cantidades solicitadas", () => {
+  it("inicializa receiptQuantities en 0 para cada producto", () => {
     const { result } = renderHook(() => useReceiveForm(createProps()));
-    expect(result.current.receiptQuantities).toEqual({ p1: 10, p2: 5 });
+    expect(result.current.receiptQuantities).toEqual({ p1: "0", p2: "0" });
   });
 
   it("handleReceiptQuantityChange actualiza la cantidad", () => {
     const { result } = renderHook(() => useReceiveForm(createProps()));
     act(() => {
-      result.current.handleReceiptQuantityChange("p1", 7);
+      result.current.handleReceiptQuantityChange("p1", "7");
     });
-    expect(result.current.receiptQuantities.p1).toBe(7);
+    expect(result.current.receiptQuantities.p1).toBe("7");
   });
 
   it("handleSelectReceiptOrder cambia la orden seleccionada", () => {
@@ -103,7 +103,7 @@ describe("useReceiveForm", () => {
     });
     expect(receiveTransferOrder).toHaveBeenCalledWith({
       transferOrderId: "t1",
-      receivedQuantities: { p1: 10, p2: 5 },
+      receivedQuantities: { p1: "0", p2: "0" },
       currentBranch: { id: "b2", name: "Destino" },
       user: { id: "u2", username: "recepcionista" },
     });
