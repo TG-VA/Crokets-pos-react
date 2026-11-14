@@ -129,6 +129,26 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByText("Kit de bienvenida")).toBeNull();
   });
 
+  it("no lista productos que no usan inventario", () => {
+    renderModal({
+      products: [
+        ...products,
+        {
+          id: "servicio-1",
+          codigo: "S-1",
+          descripcion: "Bano y corte",
+          departamento: "Servicios",
+          precio: 150,
+          is_global: true,
+          tracks_inventory: false,
+        },
+      ],
+    });
+
+    expect(screen.getByText("Alimento global")).toBeTruthy();
+    expect(screen.queryByText("Bano y corte")).toBeNull();
+  });
+
   it("no muestra stock, minimo ni filtro de bajo minimo", () => {
     renderModal();
 

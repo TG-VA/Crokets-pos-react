@@ -5,6 +5,7 @@ import {
   getProductMinStock,
   getProductStock,
   isGlobalProduct,
+  isInventoryTrackedProduct,
   isKitProduct,
   isProductBelowMinimum,
   sortProductsByNameAndStock,
@@ -36,6 +37,19 @@ describe("isKitProduct", () => {
     expect(isKitProduct(product({ is_kit: false }))).toBe(false);
     expect(isKitProduct(product())).toBe(false);
     expect(isKitProduct(null)).toBe(false);
+  });
+});
+
+describe("isInventoryTrackedProduct", () => {
+  it("excluye solo el producto marcado sin inventario", () => {
+    expect(isInventoryTrackedProduct(product({ tracks_inventory: true }))).toBe(
+      true
+    );
+    expect(
+      isInventoryTrackedProduct(product({ tracks_inventory: false }))
+    ).toBe(false);
+    expect(isInventoryTrackedProduct(product())).toBe(true);
+    expect(isInventoryTrackedProduct(null)).toBe(false);
   });
 });
 

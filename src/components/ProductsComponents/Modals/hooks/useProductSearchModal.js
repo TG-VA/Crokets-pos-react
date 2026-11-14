@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import styles from "../ProductsSearchModal/ProductsSearchModal.module.css";
 import { useDidChange } from "../../../../hooks/useDidChange";
+import { isKitProduct } from "../../../../services/inventory/inventoryProductCalculationService";
 
 export const useProductSearchModal = ({
   isOpen,
@@ -23,7 +24,10 @@ export const useProductSearchModal = ({
 
     if (!term) return [];
 
+    // Los kits se administran en Promociones; los productos sin inventario si
+    // se listan porque solo aqui se pueden modificar o eliminar.
     return (products || [])
+      .filter((p) => !isKitProduct(p))
       .filter((p) => {
         const code = (p?.codigo ?? "").toString().toLowerCase();
         const desc = (p?.descripcion ?? "").toString().toLowerCase();

@@ -30,6 +30,14 @@ export const isGlobalProduct = (product) => product?.is_global === true;
 export const isKitProduct = (product) => product?.is_kit === true;
 
 /**
+ * Un producto marcado sin inventario (servicios, kits) no tiene existencias
+ * que agregar, ajustar, traspasar ni pedir. Sin la marca se asume que si
+ * maneja inventario.
+ */
+export const isInventoryTrackedProduct = (product) =>
+  Boolean(product) && product.tracks_inventory !== false;
+
+/**
  * Misma regla que el reporte de inventario: hay bajo minimo cuando existe un
  * minimo configurado y la existencia es igual o menor a el. Los productos sin
  * inventario inicial no cuentan como bajo minimo porque aun no tienen una

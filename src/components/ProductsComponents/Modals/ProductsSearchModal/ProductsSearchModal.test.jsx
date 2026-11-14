@@ -48,4 +48,44 @@ describe("ProductsSearchModal", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("no lista los kits, que se administran en Promociones", () => {
+    // jsdom no implementa scrollIntoView, que el hook usa al seleccionar.
+    window.Element.prototype.scrollIntoView = vi.fn();
+
+    render(
+      <ProductsSearchModal
+        isOpen
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+        products={[
+          {
+            codigo: "A-1",
+            descripcion: "Croqueta adulto",
+            departamento: "Kits",
+          },
+          {
+            codigo: "K-1",
+            descripcion: "Kit de bienvenida",
+            departamento: "Kits",
+            is_kit: true,
+          },
+          {
+            codigo: "S-1",
+            descripcion: "Bano y corte",
+            departamento: "Kits",
+            tracks_inventory: false,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "kits" },
+    });
+
+    expect(screen.getByText("Croqueta adulto")).toBeTruthy();
+    expect(screen.getByText("Bano y corte")).toBeTruthy();
+    expect(screen.queryByText("Kit de bienvenida")).toBeNull();
+  });
 });
