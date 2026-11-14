@@ -762,6 +762,14 @@
   line-height: 1.45;
 }
 
+.confirmHint {
+  display: block;
+  margin-top: 4px;
+  color: var(--croketsBlueDark);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .orderList {
   display: flex;
   flex-direction: column;

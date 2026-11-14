@@ -202,4 +202,39 @@ describe("ReceiveWorkspace", () => {
     expect(screen.getByText("Página 1 de 3")).toBeTruthy();
     expect(screen.getByText("Producto 1")).toBeTruthy();
   });
+
+  it("confirma la recepcion solo con doble click", () => {
+    const onConfirmReceipt = vi.fn();
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        onConfirmReceipt={onConfirmReceipt}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: "Confirmar recepción" });
+
+    fireEvent.click(button);
+    expect(onConfirmReceipt).not.toHaveBeenCalled();
+
+    fireEvent.doubleClick(button);
+    expect(onConfirmReceipt).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Doble click para confirmar")).toBeTruthy();
+  });
+
+  it("deshabilita la confirmacion mientras se procesa", () => {
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        submitting
+        selectedReceiptOrder={orders[0]}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Procesando..." }).disabled).toBe(
+      true
+    );
+  });
 });

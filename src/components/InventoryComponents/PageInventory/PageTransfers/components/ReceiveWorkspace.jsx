@@ -209,12 +209,15 @@ const ReceiveWorkspace = ({
               <div className={styles.actionText}>
                 La recepción genera entradas automáticas en destino y reingresa
                 el faltante a origen.
+                <span className={styles.confirmHint}>
+                  Doble click para confirmar
+                </span>
               </div>
 
               <button
                 type="button"
                 className={styles.primaryButton}
-                onClick={onConfirmReceipt}
+                onDoubleClick={onConfirmReceipt}
                 disabled={submitting}
               >
                 {submitting ? "Procesando..." : "Confirmar recepción"}
