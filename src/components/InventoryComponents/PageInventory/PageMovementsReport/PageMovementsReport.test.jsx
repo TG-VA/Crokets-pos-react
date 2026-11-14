@@ -7,8 +7,9 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
   y la barra se oculta cuando no hay resultados.
 */
 
-const { useMovementsFilters } = vi.hoisted(() => ({
+const { useMovementsFilters, useMovementsReport } = vi.hoisted(() => ({
   useMovementsFilters: vi.fn(),
+  useMovementsReport: vi.fn(),
 }));
 
 vi.mock("./hooks/useMovementsFilters", () => ({
@@ -18,25 +19,7 @@ vi.mock("./hooks/useMovementsFilters", () => ({
 vi.mock("./hooks/useMovementsRealtime", () => ({ default: vi.fn() }));
 
 vi.mock("./hooks/useMovementsReport", () => ({
-  default: () => ({
-    branchOptions: [{ id: "b1", name: "Torres" }],
-    selectedBranchId: "b1",
-    selectedBranchLabel: "Torres",
-    startDateKey: "2026-11-13",
-    endDateKey: "2026-11-13",
-    startDateValue: new Date(2026, 10, 13),
-    endDateValue: new Date(2026, 10, 13),
-    rangePreset: "today",
-    currentRange: null,
-    rows: [],
-    loading: false,
-    error: "",
-    setSelectedBranchId: vi.fn(),
-    handleStartDateChange: vi.fn(),
-    handleEndDateChange: vi.fn(),
-    selectRangePreset: vi.fn(),
-    refreshMovementsSilently: vi.fn(),
-  }),
+  default: useMovementsReport,
 }));
 
 vi.mock("./components/MovementsReportControls", () => ({
@@ -56,6 +39,34 @@ const buildRows = (count) =>
       id: `m-${number}`,
       display_product_name: `MOVIMIENTO ${number}`,
     };
+  });
+
+const mockReport = ({
+  selectedBranchId = "b1",
+  startDateKey = "2026-11-13",
+  endDateKey = "2026-11-13",
+} = {}) =>
+  useMovementsReport.mockReturnValue({
+    branchOptions: [
+      { id: "b1", name: "Torres" },
+      { id: "b2", name: "Centro" },
+    ],
+    selectedBranchId,
+    selectedBranchLabel: "Torres",
+    startDateKey,
+    endDateKey,
+    startDateValue: new Date(2026, 10, 13),
+    endDateValue: new Date(2026, 10, 13),
+    rangePreset: "today",
+    currentRange: null,
+    rows: [],
+    loading: false,
+    error: "",
+    setSelectedBranchId: vi.fn(),
+    handleStartDateChange: vi.fn(),
+    handleEndDateChange: vi.fn(),
+    selectRangePreset: vi.fn(),
+    refreshMovementsSilently: vi.fn(),
   });
 
 const INITIAL_FILTERS = { product: null };
@@ -89,6 +100,7 @@ const getBodyRows = () => {
 describe("PageMovementsReport paginacion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockReport();
   });
 
   it("muestra solo la primera pagina de 25 filas", () => {
@@ -121,6 +133,25 @@ describe("PageMovementsReport paginacion", () => {
     rerender(<PageMovementsReport />);
 
     expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+  });
+
+  it.each([
+    ["la sucursal", { selectedBranchId: "b2" }],
+    ["la fecha inicial", { startDateKey: "2026-11-01" }],
+    ["la fecha final", { endDateKey: "2026-11-14" }],
+  ])("vuelve a la pagina 1 al cambiar %s", (_, reportChange) => {
+    mockFilters(buildRows(60));
+    const { rerender } = render(<PageMovementsReport />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    mockReport(reportChange);
+    mockFilters(buildRows(30));
+    rerender(<PageMovementsReport />);
+
+    expect(screen.getByText("Página 1 de 2")).toBeTruthy();
   });
 
   it("oculta la barra de paginacion sin filas", () => {
