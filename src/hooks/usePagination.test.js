@@ -122,4 +122,31 @@ describe("usePagination", () => {
 
     expect(localStorage.getItem("crokets.test.pageSize")).toBe("50");
   });
+
+  it("vuelve a la página 1 cuando cambia alguna de las resetKeys", () => {
+    const { result, rerender } = renderHook(
+      ({ filter }) => usePagination({ totalItems: 100, resetKeys: [filter] }),
+      { initialProps: { filter: "a" } }
+    );
+
+    act(() => result.current.handlePageChange(4));
+    rerender({ filter: "a" });
+    expect(result.current.currentPage).toBe(4);
+
+    rerender({ filter: "b" });
+    expect(result.current.currentPage).toBe(1);
+  });
+
+  it("conserva la página si cambia el total pero no las resetKeys", () => {
+    const filters = { nombre: [] };
+    const { result, rerender } = renderHook(
+      ({ total }) => usePagination({ totalItems: total, resetKeys: [filters] }),
+      { initialProps: { total: 100 } }
+    );
+
+    act(() => result.current.handlePageChange(3));
+    rerender({ total: 90 });
+
+    expect(result.current.currentPage).toBe(3);
+  });
 });
