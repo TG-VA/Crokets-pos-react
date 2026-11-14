@@ -45,10 +45,13 @@ const buildRows = (count) =>
     };
   });
 
-const mockReport = (rows) =>
+const mockReport = (rows, selectedBranchId = "b1") =>
   useInventoryReport.mockReturnValue({
-    branchOptions: [{ id: "b1", name: "Torres" }],
-    selectedBranchId: "b1",
+    branchOptions: [
+      { id: "b1", name: "Torres" },
+      { id: "b2", name: "Centro" },
+    ],
+    selectedBranchId,
     rows,
     loading: false,
     error: "",
@@ -89,6 +92,42 @@ describe("PageReport paginacion", () => {
     render(<PageReport />);
 
     expect(screen.getByText("Mostrando 1 a 25 de 30 productos")).toBeTruthy();
+  });
+
+  it("vuelve a la pagina 1 al aplicar un filtro que reduce el total", () => {
+    const rows = buildRows(60).map((row, index) => ({
+      ...row,
+      existencia: index < 30 ? 5 : 10,
+    }));
+    mockReport(rows);
+    render(<PageReport />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filtrar existencia" }));
+    fireEvent.change(screen.getByPlaceholderText("Ej. 7"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect(screen.getByText("Página 1 de 2")).toBeTruthy();
+    expect(screen.getByText("PRODUCTO 01")).toBeTruthy();
+  });
+
+  it("vuelve a la pagina 1 al cambiar de sucursal", () => {
+    mockReport(buildRows(60), "b1");
+    const { rerender } = render(<PageReport />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    expect(screen.getByText("Página 3 de 3")).toBeTruthy();
+
+    mockReport(buildRows(30), "b2");
+    rerender(<PageReport />);
+
+    expect(screen.getByText("Página 1 de 2")).toBeTruthy();
   });
 
   it("oculta la barra de paginacion sin filas", () => {
