@@ -774,7 +774,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 460px;
+  /* 590px estima lo que ocupan encabezado, pestanas y paddings arriba y abajo. */
+  max-height: max(460px, calc(100vh - 590px));
   overflow-x: hidden;
   overflow-y: auto;
   padding-right: 4px;
