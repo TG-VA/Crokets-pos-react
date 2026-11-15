@@ -2654,7 +2654,7 @@ usuario, o dejarlo como esta si la app no muestra ese campo.
 
 **Estado:** Resuelto (14 nov 2026) — commit `4c93be2` (PR #201). Ajustes rechaza
 kits y productos sin inventario al escanear; Pedidos ya rechazaba kits y ahora también rechaza
-productos sin inventario. La selección desde el F10 de Ajustes queda pendiente en el #84.
+productos sin inventario. La selección desde el F10 de Ajustes se cubrió después en el #84 (resuelto).
 
 **Severidad:** Media.
 
@@ -2670,8 +2670,8 @@ pasen `isInventoryTrackedProduct`, con un aviso al usuario y tests en los dos ho
 
 ### 84. La guarda de Ajustes no cubre la selección desde el buscador F10
 
-**Estado:** Abierto (15 nov 2026). Diferido del PR #201 (hallazgo 12 de la auditoría), que resolvió
-el #83.
+**Estado:** Resuelto (15 nov 2026) — PR #203: `ensureAdjustableProduct` cubre `handleLookup` y
+`loadProduct`. Diferido del PR #201 (hallazgo 12 de la auditoría), que resolvió el #83.
 
 **Severidad:** Baja (defensa en profundidad).
 

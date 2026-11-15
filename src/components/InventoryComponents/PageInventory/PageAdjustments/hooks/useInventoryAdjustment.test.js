@@ -72,4 +72,30 @@ describe("useInventoryAdjustment", () => {
 
     expect(result.current.selectedProduct).toBe(product);
   });
+
+  it.each([
+    ["un kit", { is_kit: true }],
+    ["un producto sin inventario", { tracks_inventory: false }],
+  ])("rechaza %s cargado desde el buscador", (_label, overrides) => {
+    const { result } = renderHook(() => useInventoryAdjustment());
+
+    act(() => {
+      result.current.loadProduct({ id: "p1", codigo: "COD-1", ...overrides });
+    });
+
+    expect(result.current.selectedProduct).toBeNull();
+    expect(result.current.appModal.title).toBe("Producto sin inventario");
+  });
+
+  it("carga desde el buscador un producto con inventario", () => {
+    const product = { id: "p1", codigo: "COD-1", tracks_inventory: true };
+    const { result } = renderHook(() => useInventoryAdjustment());
+
+    act(() => {
+      result.current.loadProduct(product);
+    });
+
+    expect(result.current.selectedProduct).toBe(product);
+    expect(result.current.barcode).toBe("COD-1");
+  });
 });
