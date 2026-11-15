@@ -164,6 +164,22 @@ const useInventoryAdjustment = () => {
     setQuantityToAdjust(`${hasNegativeSign ? "-" : ""}${digitsOnly}`);
   };
 
+  // Mismo criterio que el buscador F10: kits y productos sin inventario no se ajustan.
+  const ensureAdjustableProduct = (product) => {
+    if (!isKitProduct(product) && isInventoryTrackedProduct(product)) {
+      return true;
+    }
+
+    showAppAlert({
+      type: "warning",
+      title: "Producto sin inventario",
+      message:
+        "Este producto es un kit o no maneja inventario, por lo que no se puede ajustar.",
+    });
+
+    return false;
+  };
+
   const handleLookup = () => {
     const cleanCode = String(barcode ?? "").trim();
 
@@ -190,20 +206,7 @@ const useInventoryAdjustment = () => {
       return;
     }
 
-    // Mismo criterio que el buscador F10: kits y productos sin inventario no se ajustan.
-    if (
-      isKitProduct(foundProduct) ||
-      !isInventoryTrackedProduct(foundProduct)
-    ) {
-      showAppAlert({
-        type: "warning",
-        title: "Producto sin inventario",
-        message:
-          "Este producto es un kit o no maneja inventario, por lo que no se puede ajustar.",
-      });
-
-      return;
-    }
+    if (!ensureAdjustableProduct(foundProduct)) return;
 
     setSelectedProduct(foundProduct);
     setBarcode(foundProduct.codigo ?? "");
@@ -211,6 +214,7 @@ const useInventoryAdjustment = () => {
 
   const loadProduct = (product) => {
     if (!product) return;
+    if (!ensureAdjustableProduct(product)) return;
 
     setSelectedProduct(product);
     setBarcode(product.codigo ?? "");
