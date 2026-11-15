@@ -1,16 +1,8 @@
-import { useState } from "react";
-
-import PaginationBar from "../../../../PaginationBar/PaginationBar";
-import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
-import {
-  formatTransferDateTime,
-  normalizeReceivedQuantity,
-} from "../utils/transfersUtils";
+import { formatTransferDateTime } from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
-
-const RECEIPT_PAGE_SIZE = 5;
+import ReceiptItemsTable from "./ReceiptItemsTable";
 
 const ReceiveWorkspace = ({
   submitting,
@@ -22,33 +14,6 @@ const ReceiveWorkspace = ({
   onReceiptQuantityChange,
   onConfirmReceipt,
 }) => {
-  const receiptItems = selectedReceiptOrder?.items ?? [];
-
-  const {
-    currentPage,
-    totalPages,
-    pageSize,
-    pageItems,
-    handlePageChange,
-    resetPagination,
-  } = usePagination({
-    totalItems: receiptItems.length,
-    defaultPageSize: RECEIPT_PAGE_SIZE,
-    pageSizeOptions: [RECEIPT_PAGE_SIZE],
-  });
-
-  // Cada orden arranca en la primera pagina de productos.
-  const [paginatedOrderId, setPaginatedOrderId] = useState(
-    selectedReceiptOrder?.id ?? ""
-  );
-
-  const currentOrderId = selectedReceiptOrder?.id ?? "";
-
-  if (currentOrderId !== paginatedOrderId) {
-    setPaginatedOrderId(currentOrderId);
-    resetPagination();
-  }
-
   return (
     <section className={styles.workspace}>
       <div className={styles.panel}>
@@ -135,75 +100,12 @@ const ReceiveWorkspace = ({
               </div>
             </div>
 
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Solicitado</th>
-                    <th>Recibido</th>
-                    <th>Regresa</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageItems(receiptItems).map((item) => {
-                    const requestedQty = Number(item.requestedQty ?? 0);
-                    const receivedQty = Number(
-                      receiptQuantities[item.productId] ?? 0
-                    );
-                    const normalizedReceivedQty = Number.isFinite(receivedQty)
-                      ? receivedQty
-                      : 0;
-                    const returnedQty = Math.max(
-                      0,
-                      requestedQty - normalizedReceivedQty
-                    );
-
-                    return (
-                      <tr key={item.productId}>
-                        <td>
-                          <div className={styles.productCell}>
-                            <strong>{item.name}</strong>
-                            <span>{item.barcode}</span>
-                          </div>
-                        </td>
-                        <td>{requestedQty}</td>
-                        <td>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            className={styles.quantityInput}
-                            aria-label={`Cantidad recibida de ${item.name}`}
-                            value={receiptQuantities[item.productId] ?? "0"}
-                            onChange={(event) =>
-                              onReceiptQuantityChange(
-                                item.productId,
-                                normalizeReceivedQuantity(
-                                  event.target.value,
-                                  requestedQty
-                                )
-                              )
-                            }
-                          />
-                        </td>
-                        <td>{returnedQty}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {totalPages > 1 ? (
-              <PaginationBar
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={receiptItems.length}
-                pageSize={pageSize}
-                itemsNoun="productos"
-                onPageChange={handlePageChange}
-              />
-            ) : null}
+            <ReceiptItemsTable
+              key={selectedReceiptOrder.id}
+              items={selectedReceiptOrder.items ?? []}
+              receiptQuantities={receiptQuantities}
+              onReceiptQuantityChange={onReceiptQuantityChange}
+            />
 
             <div className={styles.actionRow}>
               <div className={styles.actionText}>
