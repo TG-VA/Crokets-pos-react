@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 
 // Re-exportar servicios modulares
 export {
@@ -35,10 +36,9 @@ export const buildIsoDateRange = (startDate, endDate) => {
  */
 export const fetchBranchesList = async () => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, timezone")
-      .order("name", { ascending: true });
+    const { data, error } = await fetchOperationalBranches({
+      columns: "id, name, timezone",
+    });
 
     if (error) throw error;
     return data || [];

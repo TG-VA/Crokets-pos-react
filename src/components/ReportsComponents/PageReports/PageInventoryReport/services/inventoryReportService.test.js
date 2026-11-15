@@ -13,6 +13,7 @@ import {
 const thenableQuery = (resolve = { data: null, error: null }) => {
   const q = {
     select: vi.fn(),
+    eq: vi.fn(),
     order: vi.fn(),
   };
 
@@ -67,6 +68,7 @@ describe("inventoryReportService", () => {
       const result = await fetchBranchesList();
 
       expect(supabase.from).toHaveBeenCalledWith("branches");
+      expect(q.eq).toHaveBeenCalledWith("branch_type", "operational");
       expect(result).toEqual([
         { id: "b1", name: "Norte", timezone: "America/Mexico_City" },
       ]);

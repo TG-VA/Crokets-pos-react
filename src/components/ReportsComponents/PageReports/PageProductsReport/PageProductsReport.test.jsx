@@ -22,21 +22,14 @@ const { useProductsReport } = vi.hoisted(() => ({
 
 vi.mock("./hooks/useProductsReport", () => ({ useProductsReport }));
 
-vi.mock("../../../../lib/supabaseClient", () => ({
-  supabase: {
-    from: vi.fn(() => {
-      const branches = [{ id: "b1", name: "Torres" }];
-      const query = {
-        select: vi.fn(),
-        order: vi.fn(),
-        then: (resolve) =>
-          Promise.resolve({ data: branches, error: null }).then(resolve),
-      };
-      query.select.mockReturnValue(query);
-      query.order.mockReturnValue(query);
-      return query;
-    }),
-  },
+const { fetchOperationalBranches } = vi.hoisted(() => ({
+  fetchOperationalBranches: vi.fn(() =>
+    Promise.resolve({ data: [{ id: "b1", name: "Torres" }], error: null })
+  ),
+}));
+
+vi.mock("../../../../services/branchScopeService", () => ({
+  fetchOperationalBranches,
 }));
 
 vi.mock("../../../../utils/exportUtils", () => ({

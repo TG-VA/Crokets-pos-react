@@ -5,6 +5,10 @@
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import {
+  fetchAllBranches,
+  fetchOperationalBranches,
+} from "../../../../../services/branchScopeService";
+import {
   calculatePointsByCustomer,
   aggregateSalesByCustomer,
   calculateCustomersKpis,
@@ -20,10 +24,9 @@ import {
  */
 export const fetchBranchesList = async () => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, timezone, code")
-      .order("name", { ascending: true });
+    const { data, error } = await fetchOperationalBranches({
+      columns: "id, name, timezone, code",
+    });
 
     if (error) throw error;
     return data || [];
@@ -105,9 +108,9 @@ export const fetchCustomersReportData = async ({
     if (branchId !== "ALL")
       redemptionsQuery = redemptionsQuery.eq("branch_id", branchId);
 
-    const branchesQuery = supabase
-      .from("branches")
-      .select("id, name, timezone, code");
+    const branchesQuery = fetchAllBranches({
+      columns: "id, name, timezone, code",
+    });
 
     // Ejecutar consultas principales en paralelo
     const [customersRes, salesRes, pointsRes, redemptionsRes, branchesRes] =

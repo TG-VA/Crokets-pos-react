@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import { mapWithConcurrency } from "../../../../../utils/asyncUtils";
 import {
   aggregateProductsProfitability,
@@ -62,10 +63,9 @@ const fetchSaleDetailsChunk = async (chunk) => {
  */
 export const fetchBranchesList = async () => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, timezone, code")
-      .order("name", { ascending: true });
+    const { data, error } = await fetchOperationalBranches({
+      columns: "id, name, timezone, code",
+    });
 
     if (error) throw error;
     return data || [];
