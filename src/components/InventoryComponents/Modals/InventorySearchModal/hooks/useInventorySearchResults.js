@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   filterInventorySearchProducts,
   isGlobalProduct,
+  isInventoryTrackedProduct,
   isKitProduct,
 } from "../../../../../services/inventory/inventoryProductCalculationService";
 
@@ -43,11 +44,15 @@ const useInventorySearchResults = ({
   );
 
   const searchResults = useMemo(
-    // Un kit no tiene inventario propio, por lo que ningun flujo del buscador
-    // (pedidos, ajustes, traspasos, kardex, altas) debe ofrecerlo.
+    // Un kit o un producto sin inventario no tiene existencias propias, por lo
+    // que ningun flujo del buscador (pedidos, ajustes, traspasos, kardex,
+    // altas) debe ofrecerlo.
     () =>
       filterInventorySearchProducts(
-        products.filter((product) => !isKitProduct(product)),
+        products.filter(
+          (product) =>
+            !isKitProduct(product) && isInventoryTrackedProduct(product)
+        ),
         { searchTerm }
       ).slice(0, 100),
     [products, searchTerm]

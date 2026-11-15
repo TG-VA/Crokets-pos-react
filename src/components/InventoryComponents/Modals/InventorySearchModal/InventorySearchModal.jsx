@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 
 import InventorySearchResults from "./components/InventorySearchResults";
 import MakeGlobalConfirmModal from "./components/MakeGlobalConfirmModal";
@@ -6,7 +6,6 @@ import useInventorySearchModal from "./hooks/useInventorySearchModal";
 import usePromoteLocalProduct from "./hooks/usePromoteLocalProduct";
 
 import styles from "./InventorySearchModal.module.css";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
 
 const InventorySearchModal = ({
   isOpen,
@@ -20,6 +19,7 @@ const InventorySearchModal = ({
   onProductPromoted,
 }) => {
   const [promotingProduct, setPromotingProduct] = useState(null);
+  const titleId = useId();
 
   const handlePromoted = useCallback(() => {
     setPromotingProduct(null);
@@ -71,24 +71,13 @@ const InventorySearchModal = ({
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div
         className={styles.searchModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
-          <h2>Búsqueda de Productos</h2>
-
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={handleClose}
-            aria-label="Cerrar búsqueda de productos"
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
+          <h2 id={titleId}>Búsqueda de Productos</h2>
         </div>
 
         <div className={styles.searchModalBody}>
@@ -172,12 +161,8 @@ const InventorySearchModal = ({
               className={`${styles.actionButton} ${styles.cancelButton}`}
               onClick={handleClose}
             >
-              ESC - Cerrar
+              Cerrar
             </button>
-          </div>
-
-          <div className={styles.actionHints}>
-            <span>F10 - Buscar productos</span>
           </div>
         </div>
       </div>

@@ -129,6 +129,26 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByText("Kit de bienvenida")).toBeNull();
   });
 
+  it("no lista productos que no usan inventario", () => {
+    renderModal({
+      products: [
+        ...products,
+        {
+          id: "servicio-1",
+          codigo: "S-1",
+          descripcion: "Bano y corte",
+          departamento: "Servicios",
+          precio: 150,
+          is_global: true,
+          tracks_inventory: false,
+        },
+      ],
+    });
+
+    expect(screen.getByText("Alimento global")).toBeTruthy();
+    expect(screen.queryByText("Bano y corte")).toBeNull();
+  });
+
   it("no muestra stock, minimo ni filtro de bajo minimo", () => {
     renderModal();
 
@@ -136,6 +156,29 @@ describe("InventorySearchModal reglas de pedidos", () => {
     expect(screen.queryByText(/Mínimo:/)).toBeNull();
     expect(screen.queryByText("Bajo mínimo")).toBeNull();
     expect(screen.queryByLabelText("Solo bajo mínimo")).toBeNull();
+  });
+
+  it("declara el buscador como dialogo con su titulo", () => {
+    renderModal();
+
+    expect(
+      screen.getByRole("dialog", { name: "Búsqueda de Productos" })
+    ).toBeTruthy();
+  });
+
+  it("muestra el boton Cerrar sin prefijo de atajo", () => {
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cerrar" })).toBeTruthy();
+    expect(screen.queryByText("ESC - Cerrar")).toBeNull();
+  });
+
+  it("no muestra el boton X de la cabecera", () => {
+    renderModal();
+
+    expect(
+      screen.queryByRole("button", { name: "Cerrar búsqueda de productos" })
+    ).toBeNull();
   });
 
   describe("volver global un producto local", () => {
@@ -185,6 +228,21 @@ describe("InventorySearchModal reglas de pedidos", () => {
 
       expect(screen.queryByText("Volver global este producto")).toBeNull();
       expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("clic en el fondo de la confirmacion no cierra el buscador", () => {
+      const onClose = vi.fn();
+      renderModal({ onClose });
+
+      fireEvent.doubleClick(screen.getByText("Juguete local"));
+      const confirmDialog = screen.getByRole("dialog", {
+        name: "Volver global este producto",
+      });
+      fireEvent.click(confirmDialog.parentElement);
+
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByText("Búsqueda de Productos")).toBeTruthy();
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
     });
   });
 });

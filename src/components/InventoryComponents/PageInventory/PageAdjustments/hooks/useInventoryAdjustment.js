@@ -20,7 +20,13 @@ const INITIAL_APP_MODAL = {
 };
 
 const useInventoryAdjustment = () => {
-  const { products, getProductByCodigo, refreshProducts } = useProducts();
+  const {
+    products,
+    loadingProducts,
+    productsError,
+    getProductByCodigo,
+    refreshProducts,
+  } = useProducts();
   const { branch } = useBranch();
   const { user } = useAuth();
 
@@ -318,6 +324,8 @@ const useInventoryAdjustment = () => {
 
   return {
     products,
+    loadingProducts,
+    productsError,
     searchModalOpen,
     barcode,
     selectedProduct,

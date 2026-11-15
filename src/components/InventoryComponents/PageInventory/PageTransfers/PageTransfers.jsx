@@ -27,6 +27,7 @@ const PageTransfers = () => {
     draftTotals,
     error,
     loadingProducts,
+    productsError,
     products,
     loadingBranches,
     pendingReceiptOrders,
@@ -179,6 +180,7 @@ const PageTransfers = () => {
           products={searchableProducts}
           onSelect={loadProductForTransfer}
           loading={loadingProducts}
+          error={productsError}
         />
 
         {activeTab === "receive" ? (

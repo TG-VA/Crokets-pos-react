@@ -18,6 +18,7 @@ vi.mock("../../../../../contexts/ProductsContext", () => ({
     getProductByCodigo: vi.fn(),
     products: mockProducts,
     loadingProducts: false,
+    productsError: "Error al cargar",
     refreshProducts: vi.fn().mockResolvedValue(),
   }),
 }));
@@ -119,5 +120,10 @@ describe("useTransfersPage", () => {
     expect(result.current.products[0].id).toBe("p1");
     expect(Array.isArray(result.current.destinationOptions)).toBe(true);
     expect(result.current.loadingProducts).toBe(false);
+  });
+
+  it("expone el error de productos para el buscador", () => {
+    const { result } = renderHook(() => useTransfersPage());
+    expect(result.current.productsError).toBe("Error al cargar");
   });
 });

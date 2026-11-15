@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (13 nov 2026)
+## Cobertura actual (14 nov 2026)
 
-302 archivos de test (**3203 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+308 archivos de test (**3241 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -124,6 +124,7 @@ y el proceso principal de Electron:
 | Kardex: panel con paginacion                              | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
 | Kardex: exportador Excel                                  | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
 | Kardex: exportacion sobre el dataset completo             | `.../PageKardex/Pagekardex.test.jsx`                                               |
+| Kardex: carga y error de productos (hook)                 | `.../PageKardex/hooks/useKardex.test.js`                                           |
 | Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
 | Facturación: validación fiscal                            | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
@@ -161,6 +162,7 @@ y el proceso principal de Electron:
 | Traspasos: formulario de envio (borrador y stock)         | `.../PageTransfers/hooks/useSendForm.test.js`                                      |
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
+| Traspasos: carga y error en el buscador de la pagina      | `.../PageTransfers/PageTransfers.test.jsx`                                         |
 | Traspasos: servicio de datos (sucursales y ordenes)       | `.../PageTransfers/services/transferService.test.js`                               |
 | Traspasos: calculos de sucursal y orden                   | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
 | Traspasos: utilidades (meta, fechas y presets)            | `.../PageTransfers/utils/transfersUtils.test.js`                                   |
@@ -173,6 +175,10 @@ y el proceso principal de Electron:
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
 | Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
+| Ajustes: carga y error de productos (hook)                | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
+| Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Productos: buscador (dialogo, cierre y sin kits)          | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
+| Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |
 | Pedidos: hook para volver global un producto local        | `.../Modals/InventorySearchModal/hooks/usePromoteLocalProduct.test.js`             |
 | Pedidos: servicio para volver global un producto          | `src/services/inventory/promoteProductToGlobalService.test.js`                     |
 | Pedidos: contrato SQL de producto con is_global nulo      | `supabase/migrations/promoteProductNullIsGlobalContract.test.js`                   |

@@ -1,5 +1,6 @@
 // Calculos puros: agregaciones, conteos, filtros, ordenamiento.
 
+import { isInventoryTrackedProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { parseTransferDate, normalizeText } from "./transfersFormatters";
 
 export const normalizeInteger = (value, fallback = 0) => {
@@ -72,7 +73,7 @@ export const filterTransferProducts = ({ products = [], searchTerm = "" }) => {
   const normalizedTerm = normalizeText(searchTerm).toUpperCase();
 
   const sendableProducts = (Array.isArray(products) ? products : [])
-    .filter((product) => product?.tracks_inventory)
+    .filter(isInventoryTrackedProduct)
     .filter((product) => Number(product?.existencia ?? 0) > 0)
     .sort((a, b) =>
       String(a?.descripcion || "").localeCompare(

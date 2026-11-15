@@ -122,3 +122,41 @@ describe("PageKardex exportacion", () => {
     );
   });
 });
+
+describe("PageKardex buscador de productos", () => {
+  it("muestra la carga del inventario en el buscador", () => {
+    Object.assign(kardexState, {
+      searchModalOpen: true,
+      loadingProducts: true,
+    });
+
+    try {
+      render(<PageKardex />);
+
+      expect(screen.getByText("Cargando inventario...")).toBeTruthy();
+    } finally {
+      Object.assign(kardexState, {
+        searchModalOpen: false,
+        loadingProducts: false,
+      });
+    }
+  });
+
+  it("muestra el error de productos en el buscador", () => {
+    Object.assign(kardexState, {
+      searchModalOpen: true,
+      productsError: "Error al cargar",
+    });
+
+    try {
+      render(<PageKardex />);
+
+      expect(screen.getByText("Error al cargar")).toBeTruthy();
+    } finally {
+      Object.assign(kardexState, {
+        searchModalOpen: false,
+        productsError: null,
+      });
+    }
+  });
+});
