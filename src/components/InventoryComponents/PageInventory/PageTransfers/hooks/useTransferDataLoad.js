@@ -17,6 +17,7 @@ const DEFAULT_TAB = "send";
 
 const useTransferDataLoad = ({
   branch,
+  originBranchId = branch?.id,
   user,
   isActive = true,
   refreshProducts,
@@ -83,8 +84,8 @@ const useTransferDataLoad = ({
   });
 
   const destinationOptions = useMemo(() => {
-    return branchOptions.filter((option) => option.id !== branch?.id);
-  }, [branch?.id, branchOptions]);
+    return branchOptions.filter((option) => option.id !== originBranchId);
+  }, [originBranchId, branchOptions]);
 
   const pendingReceiptOrders = useMemo(() => {
     return getPendingReceiptOrders({
