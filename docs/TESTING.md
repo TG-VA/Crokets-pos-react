@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (15 nov 2026)
 
-309 archivos de test (**3253 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+309 archivos de test (**3257 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -175,7 +175,7 @@ y el proceso principal de Electron:
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
 | Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
-| Ajustes: carga y error de productos (hook)                | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
+| Ajustes: carga, error y rechazo por codigo (hook)         | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
 | Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
 | Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
 | Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
@@ -445,7 +445,9 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   equivalente al reinicio durante el render, por lo que quitarla no rompe ninguna prueba. El borrador
   vive solo en memoria: sobrevive a la navegación pero no a recargar la aplicación.
   `useProductInsightsDetail.test.js` fija que se ignora la respuesta tardía de una consulta anterior.
-  `useCreateOrderForm.test.jsx` fija que se rechazan productos locales (`false`) y sin marcar (`null`).
+  `useCreateOrderForm.test.jsx` fija que se rechazan productos locales (`false`), sin marcar (`null`)
+  y sin inventario (`tracks_inventory: false`). `useInventoryAdjustment.test.js` fija que escanear un
+  kit o un producto sin inventario muestra el aviso y no lo selecciona.
   `localProductsCatalogService.test.js` fija el `console.error` al alcanzar el límite de 5000 filas.
   `promoteProductNullIsGlobalContract.test.js` (2 casos) lee la migración `20261031130000` y fija
   `coalesce(v_product.is_global, false)` y los grants; falla si se cambia a `true` (verificado por

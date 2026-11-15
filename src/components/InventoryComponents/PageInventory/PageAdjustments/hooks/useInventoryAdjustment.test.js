@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 
 const productsState = {
   products: [],
@@ -33,5 +33,43 @@ describe("useInventoryAdjustment", () => {
 
     expect(result.current.loadingProducts).toBe(true);
     expect(result.current.productsError).toBe("Error al cargar");
+  });
+
+  it.each([
+    ["un kit", { is_kit: true }],
+    ["un producto sin inventario", { tracks_inventory: false }],
+  ])("rechaza %s capturado por codigo de barras", (_label, overrides) => {
+    productsState.getProductByCodigo.mockReturnValue({
+      id: "p1",
+      codigo: "COD-1",
+      ...overrides,
+    });
+    const { result } = renderHook(() => useInventoryAdjustment());
+
+    act(() => {
+      result.current.handleBarcodeChange({ target: { value: "COD-1" } });
+    });
+    act(() => {
+      result.current.handleLookup();
+    });
+
+    expect(result.current.selectedProduct).toBeNull();
+    expect(result.current.appModal.isOpen).toBe(true);
+    expect(result.current.appModal.title).toBe("Producto sin inventario");
+  });
+
+  it("selecciona un producto con inventario capturado por codigo de barras", () => {
+    const product = { id: "p1", codigo: "COD-1", tracks_inventory: true };
+    productsState.getProductByCodigo.mockReturnValue(product);
+    const { result } = renderHook(() => useInventoryAdjustment());
+
+    act(() => {
+      result.current.handleBarcodeChange({ target: { value: "COD-1" } });
+    });
+    act(() => {
+      result.current.handleLookup();
+    });
+
+    expect(result.current.selectedProduct).toBe(product);
   });
 });
