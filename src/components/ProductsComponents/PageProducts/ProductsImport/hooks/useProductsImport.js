@@ -24,6 +24,11 @@ import {
   buildValidatedRows,
   buildImportSummary,
 } from "../services/productsImportCalculationService";
+import { isAdminBranch } from "../../../../../services/branchScopeCalculationService";
+
+// La importacion crea inventario en la sucursal actual y una sucursal admin no tiene stock.
+const ADMIN_BRANCH_IMPORT_ERROR =
+  "La importación crea inventario: hazla desde una sucursal operativa.";
 
 export const useProductsImport = () => {
   const { branch } = useBranch();
@@ -66,6 +71,7 @@ export const useProductsImport = () => {
   const validateRows = async (rawRows) => {
     const errors = [];
     if (!branch?.id) errors.push("No se detectó la sucursal actual.");
+    if (isAdminBranch(branch)) errors.push(ADMIN_BRANCH_IMPORT_ERROR);
 
     const headerMap = buildHeaderMap(rawRows);
     const missingColumns = getMissingColumns(headerMap);
@@ -144,6 +150,8 @@ export const useProductsImport = () => {
   const handleImport = async () => {
     if (!branch?.id)
       return setGlobalErrors(["No se detectó la sucursal actual."]);
+    if (isAdminBranch(branch))
+      return setGlobalErrors([ADMIN_BRANCH_IMPORT_ERROR]);
 
     const validRows = validatedRows.filter((row) => row.errors.length === 0);
     if (!validRows.length)

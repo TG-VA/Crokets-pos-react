@@ -15,6 +15,7 @@ const ProductsNew = () => {
     activeDepartments,
     ganancia,
     usesInventory,
+    isAdminTerminal,
     isFormValid,
     setSubmitArmed,
     updateField,
@@ -394,6 +395,14 @@ const ProductsNew = () => {
                   </select>
                 </div>
 
+                {isAdminTerminal && (
+                  <div className={styles.helperBox}>
+                    Sucursal administrativa: el producto se crea global y sin
+                    existencia. El stock se da de alta en cada sucursal
+                    operativa.
+                  </div>
+                )}
+
                 {!usesInventory && (
                   <div className={styles.helperBox}>
                     Este producto o servicio no maneja stock. La existencia, el
@@ -415,6 +424,7 @@ const ProductsNew = () => {
                     value={form.existencia}
                     onChange={(e) => updateField("existencia", e.target.value)}
                     onBlur={() => markTouched("existencia")}
+                    readOnly={isAdminTerminal}
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
                     disabled={!usesInventory}

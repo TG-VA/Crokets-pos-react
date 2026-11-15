@@ -1,6 +1,13 @@
 import { supabase } from "../../lib/supabaseClient";
 
-export const createProduct = async (branchId, departments, payload) => {
+// `ownsInventory` es false en una terminal admin: la sucursal admin no tiene stock, asi que no se
+// crea ni se edita su fila de branch_inventory y el alta nace global (no hay catalogo local).
+export const createProduct = async (
+  branchId,
+  departments,
+  payload,
+  { ownsInventory = true } = {}
+) => {
   if (!branchId) {
     return {
       success: false,
@@ -48,7 +55,7 @@ export const createProduct = async (branchId, departments, payload) => {
         commission_value: Number(payload.commission_value || 0),
         clave_sat: payload.cfdi ? payload.cfdi.trim() : null,
         status: payload.status === "activo",
-        is_global: !!payload.isGlobal,
+        is_global: !ownsInventory || !!payload.isGlobal,
         tracks_inventory: !!payload.use_inventory,
         created_at: payload.created_at
           ? new Date(payload.created_at).toISOString()
@@ -77,7 +84,7 @@ export const createProduct = async (branchId, departments, payload) => {
       throw productError;
     }
 
-    if (payload.use_inventory) {
+    if (payload.use_inventory && ownsInventory) {
       const { error: inventoryError } = await supabase
         .from("branch_inventory")
         .insert({
@@ -130,7 +137,8 @@ export const updateProductByCodigo = async (
   branchId,
   departments,
   codigoOriginal,
-  payload
+  payload,
+  { ownsInventory = true } = {}
 ) => {
   if (!branchId) {
     return {
@@ -236,6 +244,15 @@ export const updateProductByCodigo = async (
       .eq("id", currentProduct.id);
 
     if (productUpdateError) throw productUpdateError;
+
+    if (!ownsInventory) {
+      return {
+        success: true,
+        data: { id: currentProduct.id },
+        error: null,
+        partial: false,
+      };
+    }
 
     const { data: inventoryRow, error: inventoryFetchError } = await supabase
       .from("branch_inventory")

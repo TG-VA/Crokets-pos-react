@@ -14,6 +14,7 @@ import {
   fetchBranchCatalog,
 } from "../services/products/productCatalogService";
 import { findProductByCodigo } from "../services/products/productLookupCalculationService";
+import { isOperationalBranch } from "../services/branchScopeCalculationService";
 import {
   createProduct,
   updateProductByCodigo as updateProductByCodigoService,
@@ -202,7 +203,9 @@ export const ProductsProvider = ({ children }) => {
 
   const addProduct = useCallback(
     async (payload) => {
-      const result = await createProduct(branch?.id, departments, payload);
+      const result = await createProduct(branch?.id, departments, payload, {
+        ownsInventory: isOperationalBranch(branch),
+      });
 
       if (result.success) {
         markLocalMutation();
@@ -211,7 +214,7 @@ export const ProductsProvider = ({ children }) => {
 
       return result;
     },
-    [branch?.id, departments, loadProducts, markLocalMutation]
+    [branch, departments, loadProducts, markLocalMutation]
   );
 
   const updateProductByCodigo = useCallback(
@@ -220,7 +223,8 @@ export const ProductsProvider = ({ children }) => {
         branch?.id,
         departments,
         codigoOriginal,
-        payload
+        payload,
+        { ownsInventory: isOperationalBranch(branch) }
       );
 
       if (result.success) {
@@ -230,7 +234,7 @@ export const ProductsProvider = ({ children }) => {
 
       return result;
     },
-    [branch?.id, departments, loadProducts, markLocalMutation]
+    [branch, departments, loadProducts, markLocalMutation]
   );
 
   const deleteProductByCodigo = useCallback(

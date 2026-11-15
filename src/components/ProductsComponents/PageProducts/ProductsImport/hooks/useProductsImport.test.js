@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
+const branchState = vi.hoisted(() => ({ current: { id: "b1" } }));
+
 vi.mock("../../../../../contexts/BranchContext", () => ({
-  useBranch: () => ({ branch: { id: "b1" } }),
+  useBranch: () => ({ branch: branchState.current }),
 }));
 vi.mock("../../../../../contexts/ProductsContext", () => ({
   useProducts: () => ({
@@ -214,5 +216,35 @@ describe("useProductsImport: importacion sin permisos de admin", () => {
       success: false,
       message: "Solo un administrador puede importar productos.",
     });
+  });
+});
+
+describe("useProductsImport: terminal admin", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    branchState.current = { id: "adm", branch_type: "admin" };
+  });
+
+  afterEach(() => {
+    branchState.current = { id: "b1" };
+  });
+
+  it("no importa desde una sucursal admin porque crearia inventario", async () => {
+    checkUserIsAdmin.mockResolvedValue(true);
+    readExcelFile.mockResolvedValue([buildRow()]);
+    fetchValidationData.mockResolvedValue({
+      existingProducts: [],
+      departments: [],
+      existingSatCodes: [],
+    });
+
+    const { result } = renderHook(() => useProductsImport());
+    await act(() => result.current.loadFile(new File(["x"], "productos.xlsx")));
+    await act(() => result.current.handleImport());
+
+    expect(result.current.globalErrors).toContain(
+      "La importación crea inventario: hazla desde una sucursal operativa."
+    );
+    expect(processImportTransaction).not.toHaveBeenCalled();
   });
 });
