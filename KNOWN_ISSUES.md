@@ -2652,7 +2652,9 @@ usuario, o dejarlo como esta si la app no muestra ese campo.
 
 ### 83. Escanear un kit lo acepta en Ajustes y Pedidos
 
-**Estado:** Abierto (14 nov 2026).
+**Estado:** resuelto (14 nov 2026) — rama `fix/inventory-barcode-tracked-products`. Ajustes rechaza
+kits y productos sin inventario al escanear; Pedidos ya rechazaba kits y ahora también rechaza
+productos sin inventario.
 
 **Severidad:** Media.
 

@@ -3,6 +3,10 @@ import { useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useAuth } from "../../../../../contexts/AuthContext";
+import {
+  isInventoryTrackedProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 
 import { applyInventoryAdjustment } from "../services/inventoryAdjustmentService";
 
@@ -181,6 +185,21 @@ const useInventoryAdjustment = () => {
         title: "Producto no encontrado",
         message:
           "No se encontró ningún producto con ese código de barras. Verifica el código o presiona F10 para buscarlo.",
+      });
+
+      return;
+    }
+
+    // Mismo criterio que el buscador F10: kits y productos sin inventario no se ajustan.
+    if (
+      isKitProduct(foundProduct) ||
+      !isInventoryTrackedProduct(foundProduct)
+    ) {
+      showAppAlert({
+        type: "warning",
+        title: "Producto sin inventario",
+        message:
+          "Este producto es un kit o no maneja inventario, por lo que no se puede ajustar.",
       });
 
       return;

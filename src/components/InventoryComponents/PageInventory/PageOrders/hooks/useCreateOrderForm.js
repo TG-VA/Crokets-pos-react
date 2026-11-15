@@ -4,6 +4,7 @@ import { useAuth } from "../../../../../contexts/AuthContext";
 import { useOrderDraft } from "../../../../../contexts/OrderDraftContext";
 import {
   isGlobalProduct,
+  isInventoryTrackedProduct,
   isKitProduct,
 } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createStoreOrder } from "../services/ordersService";
@@ -94,6 +95,11 @@ export const useCreateOrderForm = ({
         setError(
           "Los kits no se pueden pedir: su inventario depende de sus componentes."
         );
+        return false;
+      }
+
+      if (!isInventoryTrackedProduct(product)) {
+        setError("El producto no maneja inventario y no se puede pedir.");
         return false;
       }
 

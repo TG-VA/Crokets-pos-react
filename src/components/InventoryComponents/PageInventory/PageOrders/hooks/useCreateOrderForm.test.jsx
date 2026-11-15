@@ -93,6 +93,24 @@ describe("useCreateOrderForm productos permitidos", () => {
     expect(added).toBe(false);
     expect(result.current.items).toHaveLength(0);
   });
+
+  it("rechaza un producto sin inventario capturado por codigo de barras", () => {
+    const service = buildProduct({
+      id: "s1",
+      codigo: "SRV-1",
+      tracks_inventory: false,
+    });
+    const { result } = renderForm([service]);
+
+    let added;
+    act(() => {
+      added = result.current.handleCodeSubmit("srv-1");
+    });
+
+    expect(added).toBe(false);
+    expect(result.current.items).toHaveLength(0);
+    expect(result.current.error).toContain("no maneja inventario");
+  });
 });
 
 describe("useCreateOrderForm persistencia del borrador", () => {
