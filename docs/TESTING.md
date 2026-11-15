@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (15 nov 2026)
 
-309 archivos de test (**3260 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+324 archivos de test (**3361 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -105,6 +105,21 @@ y el proceso principal de Electron:
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
 | Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
+| Alcance de sucursales (consultas)                         | `src/services/branchScopeService.test.js`                                          |
+| Alcance de sucursales (origen de stock)                   | `src/services/branchScopeCalculationService.test.js`                               |
+| Contrato SQL de branches.branch_type                      | `supabase/migrations/branchesBranchTypeContract.test.js`                           |
+| Contrato SQL de create_branch con tipo                    | `supabase/migrations/createBranchBranchTypeContract.test.js`                       |
+| Contrato SQL: sucursal admin sin stock                    | `supabase/migrations/rejectAdminBranchStockContract.test.js`                       |
+| Acceso por tipo de sucursal                               | `src/lib/permissionsService.test.js`                                               |
+| Guard de rutas por tipo de sucursal                       | `src/components/AuthGuard/AuthGuard.test.jsx`                                      |
+| Busqueda de producto por codigo                           | `src/services/products/productLookupCalculationService.test.js`                    |
+| Traspasos: catalogo de la sucursal origen                 | `.../PageTransfers/hooks/useTransferOriginCatalog.test.js`                         |
+| Traspasos: selector de origen                             | `.../PageTransfers/components/SendWorkspace.test.jsx`                              |
+| Kits: cobertura solo en operativas                        | `.../ProductsPromotions/services/kitBranchCoverageService.test.js`                 |
+| Ventas: stock en otras sucursales                         | `.../SalesComponents/services/searchModalService.test.js`                          |
+| Sucursales: validacion del formulario                     | `.../SettingsBranches/utils/branchFormValidation.test.js`                          |
+| Sucursales: campos por tipo                               | `.../SettingsBranches/utils/branchTypeFormConfig.test.js`                          |
+| Sucursales: modal con tipo                                | `.../SettingsBranches/components/BranchFormModal.test.jsx`                         |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
 | Caja: configuración operativa (hook y vista)              | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
@@ -453,6 +468,19 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   `promoteProductNullIsGlobalContract.test.js` (2 casos) lee la migración `20261031130000` y fija
   `coalesce(v_product.is_global, false)` y los grants; falla si se cambia a `true` (verificado por
   mutación). Esa migración está pendiente de aplicar en remoto.
+
+- **Sucursales administrativas** (15 nov 2026, rama `feat/admin-branch-type`): los contratos SQL
+  fijan la columna `branch_type` con su `CHECK`, la firma de 10 argumentos de `create_branch` y los
+  cuatro triggers que rechazan una sucursal admin en ventas, movimientos, traspasos y pedidos (no se
+  ejecutan en Postgres). `branchScopeService.test.js` fija que el filtro por tipo vive en un solo
+  servicio y que una fila sin `branch_type` cuenta como operativa. Los tests de servicios de
+  traspasos, pedidos, inventario, kits, reportes, facturas y buscador de ventas fijan que piden
+  `branch_type = operational` y que el fallback nunca ofrece la sucursal admin.
+  `useCreateOrderForm.test.jsx`, `useSendForm.test.js` y `useTransferOriginCatalog.test.js` fijan que
+  una terminal admin elige el origen sin preselección, que el borrador se descarta al cambiar de
+  origen y que el catálogo anterior no se muestra mientras carga el nuevo.
+  `permissionsService.test.js`, `AuthGuard.test.jsx` y `Navbar.test.jsx` fijan que una terminal
+  admin no entra a Ventas, Corte ni Facturación y no ve sus botones.
 
 No hay todavía:
 
