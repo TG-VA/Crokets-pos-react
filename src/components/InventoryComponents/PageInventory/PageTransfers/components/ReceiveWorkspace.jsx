@@ -22,6 +22,16 @@ const ReceiveWorkspace = ({
     receiptQuantities
   );
 
+  // detail 1 = click suelto de mouse (se ignora); detail >= 2 = doble click;
+  // detail 0 = click sintetico de teclado (Enter o Espacio).
+  const handleConfirmClick = (event) => {
+    if (event.detail === 1) {
+      return;
+    }
+
+    onConfirmReceipt();
+  };
+
   return (
     <section className={styles.workspace}>
       <div className={styles.panel}>
@@ -121,7 +131,7 @@ const ReceiveWorkspace = ({
                 el faltante a origen.
                 <span className={styles.confirmHint}>
                   {canConfirm
-                    ? "Doble click para confirmar"
+                    ? "Doble click o Enter para confirmar"
                     : "Captura al menos una cantidad recibida"}
                 </span>
               </div>
@@ -129,7 +139,7 @@ const ReceiveWorkspace = ({
               <button
                 type="button"
                 className={styles.primaryButton}
-                onDoubleClick={onConfirmReceipt}
+                onClick={handleConfirmClick}
                 disabled={submitting || !canConfirm}
               >
                 {submitting ? "Procesando..." : "Confirmar recepción"}
