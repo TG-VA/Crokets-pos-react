@@ -8,6 +8,7 @@ import {
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
 import ReceiptItemsTable from "./ReceiptItemsTable";
+import ReceiptConfirmBar from "./ReceiptConfirmBar";
 
 const ReceiveWorkspace = ({
   submitting,
@@ -25,16 +26,6 @@ const ReceiveWorkspace = ({
     selectedReceiptOrder?.items,
     receiptQuantities
   );
-
-  // detail 1 = click suelto de mouse (se ignora); detail >= 2 = doble click;
-  // detail 0 = click sintetico de teclado (Enter o Espacio).
-  const handleConfirmClick = (event) => {
-    if (event.detail === 1) {
-      return;
-    }
-
-    onConfirmReceipt();
-  };
 
   return (
     <section className={styles.workspace}>
@@ -130,27 +121,13 @@ const ReceiveWorkspace = ({
               onLastItemEnter={() => confirmButtonRef.current?.focus()}
             />
 
-            <div className={styles.actionRow}>
-              <div className={styles.actionText}>
-                La recepción genera entradas automáticas en destino y reingresa
-                el faltante a origen.
-                <span className={styles.confirmHint}>
-                  {canConfirm
-                    ? "Doble click o Enter para confirmar"
-                    : "Captura al menos una cantidad recibida"}
-                </span>
-              </div>
-
-              <button
-                ref={confirmButtonRef}
-                type="button"
-                className={styles.primaryButton}
-                onClick={handleConfirmClick}
-                disabled={submitting || !canConfirm}
-              >
-                {submitting ? "Procesando..." : "Confirmar recepción"}
-              </button>
-            </div>
+            <ReceiptConfirmBar
+              key={selectedReceiptOrder.id}
+              canConfirm={canConfirm}
+              submitting={submitting}
+              buttonRef={confirmButtonRef}
+              onConfirm={onConfirmReceipt}
+            />
           </>
         ) : (
           <div className={styles.emptyState}>

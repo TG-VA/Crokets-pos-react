@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   render,
   screen,
   fireEvent,
   within,
   waitFor,
+  act,
 } from "@testing-library/react";
 
 import ReceiveWorkspace from "./ReceiveWorkspace";
@@ -52,6 +53,10 @@ const buildOrderWithItems = (count) => ({
 });
 
 describe("ReceiveWorkspace", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("coloca la lista de pendientes antes del detalle (master-detail)", () => {
     render(<ReceiveWorkspace {...defaultProps} />);
     const listHeading = screen.getByRole("heading", {
@@ -311,7 +316,7 @@ describe("ReceiveWorkspace", () => {
     ).toBe(false);
   });
 
-  it("confirma con doble click o Enter y ignora un click suelto", () => {
+  it("arma la confirmacion al primer click y confirma al segundo", () => {
     const onConfirmReceipt = vi.fn();
 
     render(
@@ -325,16 +330,117 @@ describe("ReceiveWorkspace", () => {
 
     const button = screen.getByRole("button", { name: "Confirmar recepción" });
 
-    fireEvent.click(button, { detail: 1 });
+    fireEvent.click(button);
+    expect(onConfirmReceipt).not.toHaveBeenCalled();
+    expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
+    expect(button.className).toContain("primaryButtonArmed");
+
+    fireEvent.click(button);
+    expect(onConfirmReceipt).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(button.className).not.toContain("primaryButtonArmed");
+  });
+
+  it("arma con un Enter y confirma con el segundo", () => {
+    const onConfirmReceipt = vi.fn();
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "4" }}
+        onConfirmReceipt={onConfirmReceipt}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: "Confirmar recepción" });
+
+    // detail 0 = click sintetico de teclado (Enter o Espacio).
+    fireEvent.click(button, { detail: 0 });
     expect(onConfirmReceipt).not.toHaveBeenCalled();
 
-    fireEvent.click(button, { detail: 2 });
-    expect(onConfirmReceipt).toHaveBeenCalledTimes(1);
-
     fireEvent.click(button, { detail: 0 });
-    expect(onConfirmReceipt).toHaveBeenCalledTimes(2);
+    expect(onConfirmReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  it("desarma la confirmacion al perder el foco", () => {
+    const onConfirmReceipt = vi.fn();
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "4" }}
+        onConfirmReceipt={onConfirmReceipt}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: "Confirmar recepción" });
+
+    fireEvent.click(button);
+    expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
+
+    fireEvent.blur(button);
+    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+
+    fireEvent.click(button);
+    expect(onConfirmReceipt).not.toHaveBeenCalled();
+  });
+
+  it("desarma la confirmacion despues de 5 segundos", () => {
+    vi.useFakeTimers();
+    const onConfirmReceipt = vi.fn();
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "4" }}
+        onConfirmReceipt={onConfirmReceipt}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: "Confirmar recepción" });
+
+    fireEvent.click(button);
+    expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
 
     expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(onConfirmReceipt).not.toHaveBeenCalled();
+  });
+
+  it("desarma la confirmacion al cambiar de orden", () => {
+    const firstOrder = buildOrderWithItems(3);
+    const secondOrder = { ...firstOrder, id: "r14", folio: "TR-010126-000014" };
+
+    const { rerender } = render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={firstOrder}
+        receiptQuantities={{ p1: "4" }}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: "Confirmar recepción" });
+    fireEvent.click(button);
+    expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
+
+    rerender(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={secondOrder}
+        receiptQuantities={{ p1: "4" }}
+      />
+    );
+
+    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Confirmar recepción" }).className
+    ).not.toContain("primaryButtonArmed");
   });
 
   it("deshabilita la confirmacion mientras se procesa", () => {

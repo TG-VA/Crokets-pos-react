@@ -749,6 +749,12 @@
   transform: none;
 }
 
+.primaryButtonArmed {
+  background: var(--successText);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(29, 135, 81, 0.24);
+}
+
 .actionRow {
   display: flex;
   justify-content: space-between;
