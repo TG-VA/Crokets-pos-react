@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
 import {
   ADMIN_BRANCH_HOME_PATH,
+  branchRequiresCashRegister,
   canBranchAccessPath,
 } from "../../lib/permissionsService";
 
@@ -15,6 +16,7 @@ const AuthGuard = ({
   const { isAuthenticated, isLocked, cashRegistered } = useAuth();
   const { branch } = useBranch();
   const { pathname } = useLocation();
+  const usesCashRegister = branchRequiresCashRegister(branch);
 
   // 1. Validar Autenticación
   if (!isAuthenticated || isLocked) {
@@ -22,11 +24,16 @@ const AuthGuard = ({
   }
 
   // 2. Validar que tenga una caja abierta (si la ruta lo exige)
-  if (requireCashRegister && !cashRegistered) {
+  if (requireCashRegister && usesCashRegister && !cashRegistered) {
     return <Navigate to="/cash-register" replace />;
   }
 
-  // 3. Validar que NO tenga caja abierta (exclusivo para la ruta /cash-register)
+  // 3. Validar que NO tenga caja abierta (exclusivo para la ruta /cash-register).
+  //    Una terminal admin no cobra: nunca abre caja y va directo a su inicio.
+  if (requireNoCashRegister && !usesCashRegister) {
+    return <Navigate to={ADMIN_BRANCH_HOME_PATH} replace />;
+  }
+
   if (requireNoCashRegister && cashRegistered) {
     return <Navigate to="/dashboard" replace />;
   }

@@ -4,6 +4,7 @@ vi.mock("./supabaseClient", () => ({ supabase: { from: vi.fn() } }));
 
 import {
   ADMIN_BRANCH_HOME_PATH,
+  branchRequiresCashRegister,
   canBranchAccessPath,
 } from "./permissionsService";
 
@@ -44,5 +45,14 @@ describe("canBranchAccessPath", () => {
 
   it("la pagina de inicio de la terminal admin es accesible", () => {
     expect(canBranchAccessPath(adminBranch, ADMIN_BRANCH_HOME_PATH)).toBe(true);
+  });
+});
+
+describe("branchRequiresCashRegister", () => {
+  it("solo la terminal admin no usa caja", () => {
+    expect(branchRequiresCashRegister(adminBranch)).toBe(false);
+    expect(branchRequiresCashRegister(operationalBranch)).toBe(true);
+    expect(branchRequiresCashRegister({ id: "b1" })).toBe(true);
+    expect(branchRequiresCashRegister(null)).toBe(true);
   });
 });

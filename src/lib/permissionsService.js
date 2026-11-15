@@ -56,3 +56,6 @@ export const canBranchAccessPath = (branch, pathname = "") =>
   !ADMIN_BRANCH_BLOCKED_PATHS.some((basePath) =>
     matchesPath(pathname, basePath)
   );
+
+// Una terminal admin no cobra: no abre caja ni pasa por /cash-register.
+export const branchRequiresCashRegister = (branch) => !isAdminBranch(branch);
