@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (15 nov 2026)
 
-324 archivos de test (**3361 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+326 archivos de test (**3377 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -120,6 +120,8 @@ y el proceso principal de Electron:
 | Sucursales: validacion del formulario                     | `.../SettingsBranches/utils/branchFormValidation.test.js`                          |
 | Sucursales: campos por tipo                               | `.../SettingsBranches/utils/branchTypeFormConfig.test.js`                          |
 | Sucursales: modal con tipo                                | `.../SettingsBranches/components/BranchFormModal.test.jsx`                         |
+| Contrato SQL: RPCs de sucursales sin anon                 | `supabase/migrations/branchesRpcsRevokeAnonContract.test.js`                       |
+| Contrato SQL: inventario sin sucursal admin               | `supabase/migrations/rejectAdminBranchInventoryContract.test.js`                   |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
 | Caja: configuración operativa (hook y vista)              | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
@@ -480,7 +482,10 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   una terminal admin elige el origen sin preselección, que el borrador se descarta al cambiar de
   origen y que el catálogo anterior no se muestra mientras carga el nuevo.
   `permissionsService.test.js`, `AuthGuard.test.jsx` y `Navbar.test.jsx` fijan que una terminal
-  admin no entra a Ventas, Corte ni Facturación y no ve sus botones.
+  admin no entra a Ventas, Corte ni Facturación, no ve sus botones y no abre caja.
+  `productCrudService.test.js` y `useProductsImport.test.js` fijan que desde una terminal admin el
+  alta nace global sin inventario, la edición no toca `branch_inventory` y la importación se
+  bloquea. `BranchContext.test.jsx` fija que la sucursal en caché recibe su `branch_type`.
 
 No hay todavía:
 

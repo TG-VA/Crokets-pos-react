@@ -176,7 +176,13 @@ no vende, no cobra ni tiene stock; sí ve reportes, crea pedidos y traspasos y d
 - **Servidor:** `20261115140000_reject_admin_branch_stock.sql` agrega triggers que rechazan una
   sucursal admin en `sales`, `inventory_movements`, `inventory_transfers` y `store_orders`, de modo
   que las RPCs transaccionales fallan con "La sucursal ... es administrativa" aunque la UI se salte.
-  Pendientes conocidos: `KNOWN_ISSUES.md` #85 a #89.
+  `20261115160000` agrega el mismo trigger en `branch_inventory`: el alta y la edición de
+  productos desde una terminal admin no escriben inventario y la importación se bloquea.
+- **Caja:** `branchRequiresCashRegister` hace que una terminal admin no abra caja; `AuthGuard` la
+  lleva de `/cash-register` a `/reports`.
+- **Caché:** `BranchProvider` refresca `branch_type` al montar, así una terminal con sesión previa
+  se entera de que es admin sin volver a iniciar sesión.
+- Pendientes conocidos: `KNOWN_ISSUES.md` #87, #89 y #90.
 
 ## 2. Sistema local — SQLite embebido (`src/backend/bd.js`)
 
