@@ -13,6 +13,7 @@ import {
   fetchDepartments,
   fetchBranchCatalog,
 } from "../services/products/productCatalogService";
+import { findProductByCodigo } from "../services/products/productLookupCalculationService";
 import {
   createProduct,
   updateProductByCodigo as updateProductByCodigoService,
@@ -164,16 +165,7 @@ export const ProductsProvider = ({ children }) => {
   }, [loadDepartments]);
 
   const getProductByCodigo = useCallback(
-    (codigo) => {
-      const key = (codigo ?? "").toString().trim();
-
-      if (!key) return null;
-
-      return (
-        products.find((p) => (p?.codigo ?? "").toString().trim() === key) ||
-        null
-      );
-    },
+    (codigo) => findProductByCodigo(products, codigo),
     [products]
   );
 
