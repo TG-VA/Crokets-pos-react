@@ -6,9 +6,25 @@ import {
   getProductPrices,
   buildTransferItems,
   validateTransferItems,
+  normalizeReceivedQuantity,
 } from "./transfersCalculationService";
 
 describe("transfersCalculationService", () => {
+  describe("normalizeReceivedQuantity", () => {
+    it("conserva solo los digitos capturados", () => {
+      expect(normalizeReceivedQuantity("1a2b", 20)).toBe("12");
+    });
+
+    it("recorta la captura al maximo solicitado", () => {
+      expect(normalizeReceivedQuantity("99", 8)).toBe("8");
+    });
+
+    it("devuelve 0 cuando no hay digitos", () => {
+      expect(normalizeReceivedQuantity("abc", 8)).toBe("0");
+      expect(normalizeReceivedQuantity(null, 8)).toBe("0");
+    });
+  });
+
   describe("getBranchFallback", () => {
     it("devuelve arreglo vacio si no hay sucursal activa", () => {
       expect(getBranchFallback(null)).toEqual([]);
