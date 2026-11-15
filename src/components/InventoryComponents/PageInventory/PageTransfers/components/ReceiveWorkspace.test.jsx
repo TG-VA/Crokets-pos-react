@@ -286,6 +286,52 @@ describe("ReceiveWorkspace", () => {
     expect(document.activeElement).toBe(lastInput);
   });
 
+  it("desmonta la tabla y la barra anteriores al cambiar de folio", () => {
+    const firstOrder = {
+      ...orders[0],
+      id: "rA",
+      folio: "TR-010126-000101",
+      items: [
+        {
+          productId: "pa",
+          name: "Producto folio A",
+          barcode: "7500000000101",
+          requestedQty: 8,
+        },
+      ],
+    };
+    const secondOrder = {
+      ...orders[0],
+      id: "rB",
+      folio: "TR-010126-000102",
+      items: [
+        {
+          productId: "pb",
+          name: "Producto folio B",
+          barcode: "7500000000102",
+          requestedQty: 8,
+        },
+      ],
+    };
+
+    const { rerender } = render(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={firstOrder} />
+    );
+
+    expect(screen.getByText("Producto folio A")).toBeTruthy();
+
+    rerender(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={secondOrder} />
+    );
+
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    expect(
+      screen.getAllByRole("button", { name: "Confirmar recepción" })
+    ).toHaveLength(1);
+    expect(screen.getByText("Producto folio B")).toBeTruthy();
+    expect(screen.queryByText("Producto folio A")).toBeNull();
+  });
+
   it("bloquea la confirmacion mientras todas las cantidades esten en 0", () => {
     render(
       <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={orders[0]} />
