@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { Fragment, useRef } from "react";
 
 import styles from "../PageTransfers.module.css";
 import {
@@ -113,21 +113,21 @@ const ReceiveWorkspace = ({
               </div>
             </div>
 
-            <ReceiptItemsTable
-              key={selectedReceiptOrder.id}
-              items={selectedReceiptOrder.items ?? []}
-              receiptQuantities={receiptQuantities}
-              onReceiptQuantityChange={onReceiptQuantityChange}
-              onLastItemEnter={() => confirmButtonRef.current?.focus()}
-            />
+            <Fragment key={selectedReceiptOrder.id}>
+              <ReceiptItemsTable
+                items={selectedReceiptOrder.items ?? []}
+                receiptQuantities={receiptQuantities}
+                onReceiptQuantityChange={onReceiptQuantityChange}
+                onLastItemEnter={() => confirmButtonRef.current?.focus()}
+              />
 
-            <ReceiptConfirmBar
-              key={selectedReceiptOrder.id}
-              canConfirm={canConfirm}
-              submitting={submitting}
-              buttonRef={confirmButtonRef}
-              onConfirm={onConfirmReceipt}
-            />
+              <ReceiptConfirmBar
+                canConfirm={canConfirm}
+                submitting={submitting}
+                buttonRef={confirmButtonRef}
+                onConfirm={onConfirmReceipt}
+              />
+            </Fragment>
           </>
         ) : (
           <div className={styles.emptyState}>
