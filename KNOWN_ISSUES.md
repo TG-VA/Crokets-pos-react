@@ -2685,7 +2685,9 @@ productos. En Pedidos la guarda está en `addProduct` y cubre ambas entradas.
 
 ### 85. El alta de productos desde una terminal admin crea inventario en la sucursal admin
 
-**Estado:** Abierto (15 nov 2026) — detectado en `feat/admin-branch-type`.
+**Estado:** Resuelto (15 nov 2026) — PR #205. Desde una terminal admin el alta crea el producto
+global y sin inventario, la edición no toca `branch_inventory` y la importación se bloquea con un
+aviso. `20261115160000` agrega el trigger que rechaza sucursales admin en `branch_inventory`.
 
 **Severidad:** Alta.
 
@@ -2700,7 +2702,9 @@ la sucursal operativa destino) y ocultar la existencia inicial en el formulario.
 
 ### 86. Una terminal admin debe abrir caja para navegar
 
-**Estado:** Abierto (15 nov 2026).
+**Estado:** Resuelto (15 nov 2026) — PR #205. `branchRequiresCashRegister` en
+`permissionsService.js`: `AuthGuard` no exige caja a una terminal admin y la manda de
+`/cash-register` a `/reports`.
 
 **Severidad:** Media.
 
@@ -2726,7 +2730,8 @@ stock, sesiones de caja abiertas ni traspasos o pedidos pendientes antes de pasa
 
 ### 88. La sucursal en caché no trae `branch_type` hasta el siguiente login
 
-**Estado:** Abierto (15 nov 2026).
+**Estado:** Resuelto (15 nov 2026) — PR #205. `BranchProvider` refresca `branch_type` con
+`fetchBranchType` al montar o cambiar de sucursal y actualiza la caché.
 
 **Severidad:** Baja.
 
@@ -2751,6 +2756,22 @@ sucursal origen elegida (`_user_can_access_branch` en las RPCs).
 
 **Solución recomendada:** decidir si una terminal admin puede cancelar traspasos de cualquier origen y
 reflejarlo en la RPC y en `cancellableTransferIds`.
+
+### 90. `set_branch_active` acepta un `p_admin_id` ajeno de un usuario autenticado
+
+**Estado:** Abierto (15 nov 2026) — detectado al aplicar las migraciones del PR #205.
+
+**Severidad:** Alta.
+
+La definición remota de `set_branch_active` valida al admin con `u.id = p_admin_id`, sin el
+`coalesce(auth.uid(), p_admin_id)` que `20261020120000` documenta como aplicado. Lo mismo pasaba en
+`create_branch` hasta `20261115130000`, que lo restauró. `20261115150000` revocó `anon` en ambas, así
+que ya no se puede llamar sin sesión, pero un usuario autenticado que no es admin puede desactivar
+o reactivar sucursales pasando el UUID de un admin.
+
+**Solución recomendada:** reaplicar el cuerpo de `set_branch_active` del repo (con
+`v_admin_id := coalesce(auth.uid(), p_admin_id)`) y revisar si otras RPCs del 20 oct quedaron sin
+ese endurecimiento en remoto.
 
 ---
 
