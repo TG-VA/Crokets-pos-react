@@ -246,6 +246,41 @@ describe("ReceiveWorkspace", () => {
     );
   });
 
+  it("enfoca el boton de confirmar con Enter en el ultimo producto", () => {
+    const order = buildOrderWithItems(3);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p1: "4" }}
+      />
+    );
+
+    const lastInput = screen.getByLabelText("Cantidad recibida de Producto 3");
+    const confirmButton = screen.getByRole("button", {
+      name: "Confirmar recepción",
+    });
+
+    lastInput.focus();
+    fireEvent.keyDown(lastInput, { key: "Enter" });
+
+    expect(document.activeElement).toBe(confirmButton);
+  });
+
+  it("mantiene el foco en el ultimo producto si el boton esta bloqueado", () => {
+    const order = buildOrderWithItems(3);
+
+    render(<ReceiveWorkspace {...defaultProps} selectedReceiptOrder={order} />);
+
+    const lastInput = screen.getByLabelText("Cantidad recibida de Producto 3");
+
+    lastInput.focus();
+    fireEvent.keyDown(lastInput, { key: "Enter" });
+
+    expect(document.activeElement).toBe(lastInput);
+  });
+
   it("bloquea la confirmacion mientras todas las cantidades esten en 0", () => {
     render(
       <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={orders[0]} />

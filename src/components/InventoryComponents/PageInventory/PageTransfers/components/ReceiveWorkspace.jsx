@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import styles from "../PageTransfers.module.css";
 import {
   formatTransferDateTime,
@@ -17,6 +19,8 @@ const ReceiveWorkspace = ({
   onReceiptQuantityChange,
   onConfirmReceipt,
 }) => {
+  const confirmButtonRef = useRef(null);
+
   const canConfirm = hasReceivedUnits(
     selectedReceiptOrder?.items,
     receiptQuantities
@@ -123,6 +127,7 @@ const ReceiveWorkspace = ({
               items={selectedReceiptOrder.items ?? []}
               receiptQuantities={receiptQuantities}
               onReceiptQuantityChange={onReceiptQuantityChange}
+              onLastItemEnter={() => confirmButtonRef.current?.focus()}
             />
 
             <div className={styles.actionRow}>
@@ -137,6 +142,7 @@ const ReceiveWorkspace = ({
               </div>
 
               <button
+                ref={confirmButtonRef}
                 type="button"
                 className={styles.primaryButton}
                 onClick={handleConfirmClick}
