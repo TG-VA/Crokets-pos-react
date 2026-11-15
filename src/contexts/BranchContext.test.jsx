@@ -5,8 +5,13 @@ vi.mock("../services/cashOperationSettingsService", () => ({
   loadCashOperationSettings: vi.fn(),
 }));
 
+vi.mock("../services/branchScopeService", () => ({
+  fetchBranchType: vi.fn(),
+}));
+
 import { BranchProvider, useBranch } from "./BranchContext";
 import { loadCashOperationSettings } from "../services/cashOperationSettingsService";
+import { fetchBranchType } from "../services/branchScopeService";
 
 const Consumer = () => {
   const { branch, setBranch } = useBranch();
@@ -35,6 +40,7 @@ describe("BranchContext", () => {
       source: "remote",
       error: null,
     });
+    fetchBranchType.mockResolvedValue({ data: "operational", error: null });
   });
 
   it("expone el valor nulo cuando no hay sucursal en cache", () => {
@@ -192,5 +198,50 @@ describe("BranchContext", () => {
       "useBranch debe usarse dentro de <BranchProvider />"
     );
     spy.mockRestore();
+  });
+});
+
+describe("BranchContext: tipo de sucursal en cache", () => {
+  const TypeConsumer = () => {
+    const { branch } = useBranch();
+    return <span data-testid="branch-type">{branch?.branch_type || "-"}</span>;
+  };
+
+  const renderWithCache = (cached) => {
+    localStorage.setItem("currentBranch", JSON.stringify(cached));
+    render(
+      <BranchProvider>
+        <TypeConsumer />
+      </BranchProvider>
+    );
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    loadCashOperationSettings.mockResolvedValue({ success: true });
+  });
+
+  it("completa branch_type de una sucursal en cache que no lo traia", async () => {
+    fetchBranchType.mockResolvedValue({ data: "admin", error: null });
+    renderWithCache({ id: "adm", name: "ADM-BREN" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("branch-type").textContent).toBe("admin")
+    );
+    expect(fetchBranchType).toHaveBeenCalledWith("adm");
+    expect(JSON.parse(localStorage.getItem("currentBranch")).branch_type).toBe(
+      "admin"
+    );
+  });
+
+  it("conserva la sucursal en cache si la consulta falla", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchBranchType.mockResolvedValue({ data: null, error: new Error("red") });
+    renderWithCache({ id: "b1", name: "Torres", branch_type: "operational" });
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(screen.getByTestId("branch-type").textContent).toBe("operational");
+    errorSpy.mockRestore();
   });
 });

@@ -35,3 +35,20 @@ export const fetchOperationalBranches = (options = {}) =>
 /** Todas las sucursales, incluidas las admin (ajustes, login, perfil de terminal). */
 export const fetchAllBranches = (options = {}) =>
   runBranchesQuery({ ...options, operationalOnly: false });
+
+/**
+ * Tipo vigente de una sucursal. Sirve para refrescar la sucursal en cache del dispositivo, que
+ * puede venir de antes de branch_type o de un cambio de tipo. Nunca lanza: `{ data, error }`.
+ */
+export const fetchBranchType = async (branchId) => {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("branch_type")
+      .eq("id", branchId)
+      .maybeSingle();
+    return { data: data?.branch_type ?? null, error: error || null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};

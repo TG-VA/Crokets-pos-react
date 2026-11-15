@@ -11,6 +11,7 @@ import {
   isAdminBranch,
   fetchOperationalBranches,
   fetchAllBranches,
+  fetchBranchType,
 } from "./branchScopeService";
 
 const thenableQuery = ({ data, error }) => {
@@ -115,5 +116,42 @@ describe("fetchAllBranches", () => {
     expect(query.eq).toHaveBeenCalledTimes(1);
     expect(query.eq).toHaveBeenCalledWith("is_active", true);
     expect(result.data).toEqual([{ id: "adm" }]);
+  });
+});
+
+describe("fetchBranchType", () => {
+  beforeEach(() => supabase.from.mockReset());
+
+  const singleQuery = (result) => {
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn(() => result),
+    };
+    return query;
+  };
+
+  it("devuelve el tipo de la sucursal", async () => {
+    const query = singleQuery(
+      Promise.resolve({ data: { branch_type: "admin" }, error: null })
+    );
+    supabase.from.mockReturnValue(query);
+
+    const result = await fetchBranchType("adm");
+
+    expect(query.select).toHaveBeenCalledWith("branch_type");
+    expect(query.eq).toHaveBeenCalledWith("id", "adm");
+    expect(result).toEqual({ data: "admin", error: null });
+  });
+
+  it("no lanza si la consulta falla", async () => {
+    supabase.from.mockReturnValue(
+      singleQuery(Promise.reject(new Error("red")))
+    );
+
+    const result = await fetchBranchType("adm");
+
+    expect(result.data).toBeNull();
+    expect(result.error.message).toBe("red");
   });
 });
