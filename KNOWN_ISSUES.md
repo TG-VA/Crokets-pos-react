@@ -2650,6 +2650,22 @@ aparecer con mayusculas en el panel de Supabase Auth.
 **Solucion recomendada:** actualizar la metadata con `auth.admin.updateUserById` cuando se edite cada
 usuario, o dejarlo como esta si la app no muestra ese campo.
 
+### 83. Escanear un kit lo acepta en Ajustes y Pedidos
+
+**Estado:** Abierto (14 nov 2026).
+
+**Severidad:** Media.
+
+Desde el PR #198 los buscadores F10 de inventario ocultan kits y productos con
+`tracks_inventory = false`, pero la lectura por código de barras no aplica la misma regla. En
+Ajustes, `handleLookup` (`useInventoryAdjustment.js`) usa `getProductByCodigo`, que busca por
+`codigo` sin filtrar `is_kit` ni `tracks_inventory`; en Pedidos, `handleCodeSubmit`
+(`useCreateOrderForm.js`) hace la misma búsqueda sobre `products`. No hay validación en el servidor
+que rechace esos productos.
+
+**Solución recomendada:** rechazar en ambas búsquedas por código los productos que sean kit o que no
+pasen `isInventoryTrackedProduct`, con un aviso al usuario y tests en los dos hooks.
+
 ---
 
 ## Cómo usar este documento
