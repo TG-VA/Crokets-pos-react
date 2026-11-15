@@ -56,6 +56,12 @@ describe("ProductSearchDialog", () => {
     expect(screen.getByText("3 producto(s)")).toBeTruthy();
   });
 
+  it("oculta el conteo sin resultados", () => {
+    setup({ resultsCount: 0 });
+
+    expect(screen.queryByText(/producto\(s\)/)).toBeNull();
+  });
+
   it("usa la etiqueta y el estado del boton de seleccion recibidos", () => {
     const { onSelect } = setup({
       selectLabel: "Producto local",
