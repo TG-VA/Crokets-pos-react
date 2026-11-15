@@ -1,4 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchOperationalBranches,
+  isOperationalBranch,
+} from "../../../../../services/branchScopeService";
 
 import {
   INVENTORY_MOVEMENTS_TABLE,
@@ -31,7 +35,11 @@ const buildFallbackBranches = (currentBranch) => {
     },
   ];
 
-  if (currentBranch?.id && currentBranch.id !== POLI_BRANCH_ID) {
+  if (
+    currentBranch?.id &&
+    currentBranch.id !== POLI_BRANCH_ID &&
+    isOperationalBranch(currentBranch)
+  ) {
     fallbackBranches.push({
       id: currentBranch.id,
       name: currentBranch.name || "Sucursal actual",
@@ -44,12 +52,7 @@ const buildFallbackBranches = (currentBranch) => {
 
 export const loadMovementBranches = async ({ currentBranch = null } = {}) => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, code")
-      .order("name", {
-        ascending: true,
-      });
+    const { data, error } = await fetchOperationalBranches();
 
     if (error) {
       throw error;

@@ -16,6 +16,12 @@ describe("transfersCalculationService", () => {
       expect(getBranchFallback({ name: "Sin id" })).toEqual([]);
     });
 
+    it("devuelve arreglo vacio si la sucursal actual es admin", () => {
+      expect(getBranchFallback({ id: "adm", branch_type: "admin" })).toEqual(
+        []
+      );
+    });
+
     it("devuelve la sucursal actual con nombre default si no tiene", () => {
       const result = getBranchFallback({ id: "b1", code: "CDMX" });
       expect(result).toEqual([
