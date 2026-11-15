@@ -138,3 +138,75 @@ describe("useCreateOrderForm persistencia del borrador", () => {
     expect(form.items).toHaveLength(1);
   });
 });
+
+describe("useCreateOrderForm origen de stock", () => {
+  const branches = [
+    { id: "b1", name: "Centro" },
+    { id: "b2", name: "Norte" },
+    { id: "b3", name: "Sur" },
+  ];
+
+  const renderWithBranch = (currentBranch) =>
+    renderHook(
+      () => useCreateOrderForm({ currentBranch, branches, products: [] }),
+      { wrapper }
+    );
+
+  it("una terminal operativa envia desde su sucursal sin elegir origen", () => {
+    const { result } = renderWithBranch({ id: "b1" });
+
+    expect(result.current.canChooseOrigin).toBe(false);
+    expect(result.current.originBranchId).toBe("b1");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b2",
+      "b3",
+    ]);
+  });
+
+  it("una terminal admin no preselecciona origen y elige entre operativas", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    expect(result.current.canChooseOrigin).toBe(true);
+    expect(result.current.originBranchId).toBe("");
+    expect(result.current.originOptions).toEqual(branches);
+
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.originBranchId).toBe("b2");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b1",
+      "b3",
+    ]);
+  });
+
+  it("una terminal admin sin origen no puede guardar", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => {
+      result.current.setOrderName("REPOSICION");
+      result.current.setDestinationBranchId("b1");
+      result.current.addProduct(buildProduct());
+    });
+    act(() => result.current.updateQuantity("p1", "2"));
+
+    expect(result.current.isValid).toBe(false);
+
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.isValid).toBe(true);
+  });
+
+  it("invalida el pedido si el origen elegido coincide con el destino", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => {
+      result.current.setOrderName("REPOSICION");
+      result.current.setDestinationBranchId("b1");
+      result.current.addProduct(buildProduct());
+    });
+    act(() => result.current.updateQuantity("p1", "2"));
+    act(() => result.current.setOriginBranchId("b1"));
+
+    expect(result.current.isValid).toBe(false);
+  });
+});

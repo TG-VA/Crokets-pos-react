@@ -19,3 +19,8 @@ export const isOperationalBranch = (branch) =>
 
 export const isAdminBranch = (branch) =>
   isBranchObject(branch) && resolveBranchType(branch) === BRANCH_TYPES.ADMIN;
+
+// Origen de stock de traspasos y pedidos: una terminal operativa envia desde su sucursal; una
+// terminal admin envia desde la sucursal operativa que elige el usuario, sin preseleccion.
+export const resolveStockOriginId = (currentBranch, chosenOriginId) =>
+  isAdminBranch(currentBranch) ? chosenOriginId || "" : currentBranch?.id || "";
