@@ -203,6 +203,36 @@ describe("ReceiveWorkspace", () => {
     expect(screen.getByText("Producto 1")).toBeTruthy();
   });
 
+  it("bloquea la confirmacion mientras todas las cantidades esten en 0", () => {
+    render(
+      <ReceiveWorkspace {...defaultProps} selectedReceiptOrder={orders[0]} />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Confirmar recepción" }).disabled
+    ).toBe(true);
+    expect(
+      screen.getByText("Captura al menos una cantidad recibida")
+    ).toBeTruthy();
+  });
+
+  it("habilita la confirmacion con una cantidad capturada en otra pagina", () => {
+    const order = buildOrderWithItems(12);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p10: "4" }}
+      />
+    );
+
+    expect(screen.queryByText("Producto 10")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Confirmar recepción" }).disabled
+    ).toBe(false);
+  });
+
   it("confirma la recepcion solo con doble click", () => {
     const onConfirmReceipt = vi.fn();
 
@@ -210,6 +240,7 @@ describe("ReceiveWorkspace", () => {
       <ReceiveWorkspace
         {...defaultProps}
         selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "4" }}
         onConfirmReceipt={onConfirmReceipt}
       />
     );

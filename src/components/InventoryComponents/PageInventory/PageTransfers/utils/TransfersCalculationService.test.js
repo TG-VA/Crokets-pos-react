@@ -7,6 +7,7 @@ import {
   buildTransferItems,
   validateTransferItems,
   normalizeReceivedQuantity,
+  hasReceivedUnits,
 } from "./transfersCalculationService";
 
 describe("transfersCalculationService", () => {
@@ -22,6 +23,28 @@ describe("transfersCalculationService", () => {
     it("devuelve 0 cuando no hay digitos", () => {
       expect(normalizeReceivedQuantity("abc", 8)).toBe("0");
       expect(normalizeReceivedQuantity(null, 8)).toBe("0");
+    });
+  });
+
+  describe("hasReceivedUnits", () => {
+    it("devuelve false sin items o sin capturas", () => {
+      expect(hasReceivedUnits([], {})).toBe(false);
+      expect(hasReceivedUnits(undefined, undefined)).toBe(false);
+    });
+
+    it("devuelve false cuando todas las capturas estan en 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(hasReceivedUnits(items, { p1: "0", p2: "0" })).toBe(false);
+    });
+
+    it("ignora capturas con texto sin digitos", () => {
+      const items = [{ productId: "p1" }];
+      expect(hasReceivedUnits(items, { p1: "abc" })).toBe(false);
+    });
+
+    it("devuelve true cuando al menos una captura es mayor a 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(hasReceivedUnits(items, { p1: "0", p2: "3" })).toBe(true);
     });
   });
 

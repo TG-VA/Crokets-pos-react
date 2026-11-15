@@ -24,6 +24,15 @@ export const normalizeReceivedQuantity = (value, maxQty = 0) => {
   return String(Math.min(parsedValue, upperBound));
 };
 
+/**
+ * Indica si al menos un producto de la orden tiene cantidad recibida capturada.
+ */
+export const hasReceivedUnits = (items = [], receiptQuantities = {}) => {
+  return (Array.isArray(items) ? items : []).some(
+    (item) => normalizeInteger(receiptQuantities?.[item?.productId]) > 0
+  );
+};
+
 export const buildTransferTotals = (items = []) => {
   return (Array.isArray(items) ? items : []).reduce(
     (summary, item) => {

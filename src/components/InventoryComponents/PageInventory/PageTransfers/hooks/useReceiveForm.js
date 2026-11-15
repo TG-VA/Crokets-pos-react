@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { receiveTransferOrder } from "../services/transfersService";
+import { hasReceivedUnits } from "../utils/transfersUtils";
 
 const useReceiveForm = ({
   branch,
@@ -83,6 +84,11 @@ const useReceiveForm = ({
   const handleConfirmReceipt = useCallback(async () => {
     if (!selectedReceiptOrder) {
       setError("Selecciona una orden pendiente para recibir.");
+      return;
+    }
+
+    if (!hasReceivedUnits(selectedReceiptOrder.items, receiptQuantities)) {
+      setError("Captura al menos una cantidad recibida.");
       return;
     }
 

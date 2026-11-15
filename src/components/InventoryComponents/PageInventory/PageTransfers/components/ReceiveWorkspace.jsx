@@ -1,5 +1,8 @@
 import styles from "../PageTransfers.module.css";
-import { formatTransferDateTime } from "../utils/transfersUtils";
+import {
+  formatTransferDateTime,
+  hasReceivedUnits,
+} from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
 import ReceiptItemsTable from "./ReceiptItemsTable";
@@ -14,6 +17,11 @@ const ReceiveWorkspace = ({
   onReceiptQuantityChange,
   onConfirmReceipt,
 }) => {
+  const canConfirm = hasReceivedUnits(
+    selectedReceiptOrder?.items,
+    receiptQuantities
+  );
+
   return (
     <section className={styles.workspace}>
       <div className={styles.panel}>
@@ -112,7 +120,9 @@ const ReceiveWorkspace = ({
                 La recepción genera entradas automáticas en destino y reingresa
                 el faltante a origen.
                 <span className={styles.confirmHint}>
-                  Doble click para confirmar
+                  {canConfirm
+                    ? "Doble click para confirmar"
+                    : "Captura al menos una cantidad recibida"}
                 </span>
               </div>
 
@@ -120,7 +130,7 @@ const ReceiveWorkspace = ({
                 type="button"
                 className={styles.primaryButton}
                 onDoubleClick={onConfirmReceipt}
-                disabled={submitting}
+                disabled={submitting || !canConfirm}
               >
                 {submitting ? "Procesando..." : "Confirmar recepción"}
               </button>
