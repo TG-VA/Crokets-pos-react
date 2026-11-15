@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { isAdminBranch } from "../services/branchScopeCalculationService";
 
 export const checkUserIsAdmin = async (userId) => {
   if (!userId) {
@@ -35,3 +36,23 @@ export const checkUserIsAdmin = async (userId) => {
     return false;
   }
 };
+
+// Una terminal ligada a una sucursal admin no vende, no corta caja ni factura. Es la unica regla
+// de acceso por tipo de sucursal; el rol del usuario sigue resolviendose arriba.
+export const ADMIN_BRANCH_BLOCKED_PATHS = Object.freeze([
+  "/dashboard",
+  "/sales",
+  "/cashcut",
+  "/invoices",
+]);
+
+export const ADMIN_BRANCH_HOME_PATH = "/reports";
+
+const matchesPath = (pathname, basePath) =>
+  pathname === basePath || pathname.startsWith(`${basePath}/`);
+
+export const canBranchAccessPath = (branch, pathname = "") =>
+  !isAdminBranch(branch) ||
+  !ADMIN_BRANCH_BLOCKED_PATHS.some((basePath) =>
+    matchesPath(pathname, basePath)
+  );

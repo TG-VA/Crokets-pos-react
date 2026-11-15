@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBranch } from "../../contexts/BranchContext";
@@ -7,6 +7,7 @@ import AppModal from "../AppModal/AppModal";
 import AdminAuthorizationModal from "../AdminAuthorizationModal/AdminAuthorizationModal";
 import useProtectedNavigation from "../../hooks/useProtectedNavigation";
 import { PROTECTED_SETTINGS_ENTRY } from "../../config/adminProtectedSections";
+import { canBranchAccessPath } from "../../lib/permissionsService";
 
 import Logo from "../../assets/images/LOGOCROKETS.png";
 import SalesIcon from "../../assets/icons/basket-shopping-solid-full.svg";
@@ -105,7 +106,12 @@ const Navbar = () => {
     pendingNavigation,
   } = useProtectedNavigation();
 
-  useKeyboardShortcuts(NAV_ITEMS);
+  const navItems = useMemo(
+    () => NAV_ITEMS.filter((item) => canBranchAccessPath(branch, item.path)),
+    [branch]
+  );
+
+  useKeyboardShortcuts(navItems);
 
   const [appModal, setAppModal] = useState({
     isOpen: false,
@@ -190,7 +196,7 @@ const Navbar = () => {
         </div>
 
         <div className={styles.navbarMenu}>
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               type="button"
