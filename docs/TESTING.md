@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (14 nov 2026)
+## Cobertura actual (15 nov 2026)
 
-308 archivos de test (**3248 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+309 archivos de test (**3260 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -177,7 +177,8 @@ y el proceso principal de Electron:
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
 | Ajustes: carga, error y rechazo por codigo y F10 (hook)   | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
 | Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
-| Productos: buscador (dialogo, cierre y sin kits)          | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
+| Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
+| Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
 | Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |
 | Pedidos: hook para volver global un producto local        | `.../Modals/InventorySearchModal/hooks/usePromoteLocalProduct.test.js`             |
 | Pedidos: servicio para volver global un producto          | `src/services/inventory/promoteProductToGlobalService.test.js`                     |

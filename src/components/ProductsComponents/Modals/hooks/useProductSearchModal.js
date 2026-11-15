@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import styles from "../ProductsSearchModal/ProductsSearchModal.module.css";
 import { useDidChange } from "../../../../hooks/useDidChange";
 import { isKitProduct } from "../../../../services/inventory/inventoryProductCalculationService";
 
@@ -65,7 +64,7 @@ export const useProductSearchModal = ({
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
       const container = resultsListRef.current;
-      const items = container.querySelectorAll(`.${styles.resultItem}`);
+      const items = container.querySelectorAll("[data-search-result]");
 
       if (items[selectedIndex]) {
         items[selectedIndex].scrollIntoView({

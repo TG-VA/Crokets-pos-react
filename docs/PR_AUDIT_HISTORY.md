@@ -2959,3 +2959,33 @@ errores. Mutaciones: 9 ejecutadas sobre el delta, 9 detectadas.
 
 La descripción del PR se corrigió después de la auditoría, así que el hallazgo abierto 1 queda resuelto.
 Pendiente de verificación humana en Electron (`npm run dev`) con historial real de traspasos y de pedidos.
+
+## Informe de Auditoría — PR #198 `fix(inventario): hallazgos de revision en modales de busqueda de productos`, tercera ronda (14 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 1 sugerencia). Head `7f78b7e`,
+base `765b0ca`. Commit nuevo auditado: `7f78b7e`. Ejecución: 308 archivos / 3241 tests verdes; build
+OK; `check:agents` OK; Prettier OK; ESLint 0 errores (10 warnings preexistentes o de archivos
+ignorados). Mutaciones: 2 ejecutadas, 2 detectadas.
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo                                                                     | Estado                               |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------ |
+| 7   | Regla de `tracks_inventory` duplicada en `transfersCalculationService.js:75` | Resuelto (`7f78b7e`)                 |
+| 8   | Descripción con conteos de tests desactualizados                             | Parcial (warnings: 8 frente a 10)    |
+| 4   | Captura por código acepta kits y productos sin inventario                    | Cerrado por decisión del responsable |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                                     | Severidad  |
+| --- | -------------------------------------------------------------------------------------------- | ---------- |
+| 9   | El cierre de I4 afirma un rechazo que `getProductByCodigo` y `useCreateOrderForm` no aplican | Importante |
+| 10  | La descripción reporta 8 warnings de ESLint; son 10                                          | Sugerencia |
+
+### Estado al cierre
+
+Falta la evidencia del rechazo de kits por código (o su registro en `KNOWN_ISSUES.md`) y la
+verificación humana en Electron (`npm run dev`) del plan de pruebas manuales.
+
+**Seguimiento (14 nov 2026):** el hallazgo 10 se corrigió editando la descripción. El hallazgo 9 se
+registró en `KNOWN_ISSUES.md` #83 (`06ab3f2`) y se corrige en el PR #201.
