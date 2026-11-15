@@ -154,7 +154,7 @@ y el proceso principal de Electron:
 | Traspasos: filtros de historial (hook)                    | `.../PageTransfers/hooks/useTransferHistoryFilters.test.js`                        |
 | Traspasos: filtrado por fecha de creacion                 | `.../PageTransfers/utils/transfersDateRange.test.js`                               |
 | Traspasos: hero (sucursal y KPIs operativos)              | `.../PageTransfers/components/HeroSection.test.jsx`                                |
-| Traspasos: espacio de recepcion (paginacion y confirmar)  | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
+| Traspasos: espacio de recepcion (paginacion y armado)     | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
 | Traspasos: modal de detalle (titulo, origen y destino)    | `.../PageTransfers/components/modals/TransferDetailModal.test.jsx`                 |
 | Traspasos: busqueda de productos con existencia           | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
 | Traspasos: recepcion (cantidades y bloqueo en cero)       | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
