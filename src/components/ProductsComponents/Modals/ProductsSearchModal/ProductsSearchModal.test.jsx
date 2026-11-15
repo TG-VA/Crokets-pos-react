@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, onTestFinished, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ProductsSearchModal from "./ProductsSearchModal";
 
@@ -51,7 +51,16 @@ describe("ProductsSearchModal", () => {
 
   it("no lista los kits, que se administran en Promociones", () => {
     // jsdom no implementa scrollIntoView, que el hook usa al seleccionar.
+    // Se restaura al terminar para no filtrar el stub a otros tests.
+    const originalScrollIntoView = window.Element.prototype.scrollIntoView;
     window.Element.prototype.scrollIntoView = vi.fn();
+    onTestFinished(() => {
+      if (originalScrollIntoView) {
+        window.Element.prototype.scrollIntoView = originalScrollIntoView;
+      } else {
+        delete window.Element.prototype.scrollIntoView;
+      }
+    });
 
     render(
       <ProductsSearchModal
