@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from "@testing-library/react";
 
 import ReceiveWorkspace from "./ReceiveWorkspace";
 
@@ -201,6 +207,43 @@ describe("ReceiveWorkspace", () => {
 
     expect(screen.getByText("Página 1 de 3")).toBeTruthy();
     expect(screen.getByText("Producto 1")).toBeTruthy();
+  });
+
+  it("mueve el foco al siguiente producto con Enter en la misma pagina", () => {
+    const order = buildOrderWithItems(3);
+
+    render(<ReceiveWorkspace {...defaultProps} selectedReceiptOrder={order} />);
+
+    const firstInput = screen.getByLabelText("Cantidad recibida de Producto 1");
+    const secondInput = screen.getByLabelText(
+      "Cantidad recibida de Producto 2"
+    );
+
+    firstInput.focus();
+    fireEvent.keyDown(firstInput, { key: "Enter" });
+
+    expect(document.activeElement).toBe(secondInput);
+  });
+
+  it("cambia de pagina y enfoca el siguiente producto con Enter", async () => {
+    const order = buildOrderWithItems(12);
+
+    render(<ReceiveWorkspace {...defaultProps} selectedReceiptOrder={order} />);
+
+    const lastInputOnFirstPage = screen.getByLabelText(
+      "Cantidad recibida de Producto 5"
+    );
+
+    lastInputOnFirstPage.focus();
+    fireEvent.keyDown(lastInputOnFirstPage, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+    });
+
+    expect(document.activeElement).toBe(
+      screen.getByLabelText("Cantidad recibida de Producto 6")
+    );
   });
 
   it("bloquea la confirmacion mientras todas las cantidades esten en 0", () => {

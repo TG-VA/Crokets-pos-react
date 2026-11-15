@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 import { usePagination } from "../../../../../hooks/usePagination";
 import styles from "../PageTransfers.module.css";
@@ -9,13 +11,72 @@ const ReceiptItemsTable = ({
   items = [],
   receiptQuantities,
   onReceiptQuantityChange,
+  onLastItemEnter,
 }) => {
+  const inputRefs = useRef(new Map());
+  const pendingFocusId = useRef(null);
+
   const { currentPage, totalPages, pageSize, pageItems, handlePageChange } =
     usePagination({
       totalItems: items.length,
       defaultPageSize: RECEIPT_PAGE_SIZE,
       pageSizeOptions: [RECEIPT_PAGE_SIZE],
     });
+
+  // Enfoca el input pendiente cuando el cambio de pagina ya se reflejo en el DOM.
+  useEffect(() => {
+    const pendingId = pendingFocusId.current;
+
+    if (!pendingId) {
+      return;
+    }
+
+    const pendingInput = inputRefs.current.get(pendingId);
+
+    if (!pendingInput) {
+      return;
+    }
+
+    pendingFocusId.current = null;
+    pendingInput.focus();
+  }, [currentPage]);
+
+  const registerInput = (productId, node) => {
+    if (node) {
+      inputRefs.current.set(productId, node);
+      return;
+    }
+
+    inputRefs.current.delete(productId);
+  };
+
+  const handleInputKeyDown = (event, item) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const currentIndex = items.findIndex(
+      (candidate) => candidate.productId === item.productId
+    );
+    const nextItem = items[currentIndex + 1];
+
+    if (!nextItem) {
+      onLastItemEnter?.();
+      return;
+    }
+
+    const nextPage = Math.floor((currentIndex + 1) / pageSize) + 1;
+
+    if (nextPage !== currentPage) {
+      pendingFocusId.current = nextItem.productId;
+      handlePageChange(nextPage);
+      return;
+    }
+
+    inputRefs.current.get(nextItem.productId)?.focus();
+  };
 
   return (
     <>
@@ -53,11 +114,14 @@ const ReceiptItemsTable = ({
                   <td>{requestedQty}</td>
                   <td>
                     <input
+                      ref={(node) => registerInput(item.productId, node)}
                       type="text"
                       inputMode="numeric"
                       className={styles.quantityInput}
                       aria-label={`Cantidad recibida de ${item.name}`}
                       value={receivedValue}
+                      onFocus={(event) => event.target.select()}
+                      onKeyDown={(event) => handleInputKeyDown(event, item)}
                       onChange={(event) =>
                         onReceiptQuantityChange(
                           item.productId,
