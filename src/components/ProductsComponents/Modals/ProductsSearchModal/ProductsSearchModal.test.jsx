@@ -143,4 +143,77 @@ describe("ProductsSearchModal", () => {
       screen.getByText("Ingresa nombre, código o departamento del producto")
     ).toBeTruthy();
   });
+
+  describe("con resultados", () => {
+    const products = [
+      { codigo: "A-1", descripcion: "Croqueta adulto" },
+      { codigo: "A-2", descripcion: "Croqueta cachorro" },
+    ];
+
+    // jsdom no implementa scrollIntoView, que el hook usa al seleccionar.
+    // Se restaura al terminar para no filtrar el stub a otros tests.
+    const mockScrollIntoView = () => {
+      const original = window.Element.prototype.scrollIntoView;
+      const mock = vi.fn();
+      window.Element.prototype.scrollIntoView = mock;
+      onTestFinished(() => {
+        if (original) {
+          window.Element.prototype.scrollIntoView = original;
+        } else {
+          delete window.Element.prototype.scrollIntoView;
+        }
+      });
+      return mock;
+    };
+
+    const renderWithProducts = () => {
+      const onSelect = vi.fn();
+      const onClose = vi.fn();
+      render(
+        <ProductsSearchModal
+          isOpen
+          onClose={onClose}
+          onSelect={onSelect}
+          products={products}
+        />
+      );
+      return { onSelect, onClose };
+    };
+
+    const search = (value) =>
+      fireEvent.change(screen.getByRole("textbox"), { target: { value } });
+
+    it("selecciona el producto al hacer clic y cierra", () => {
+      mockScrollIntoView();
+      const { onSelect, onClose } = renderWithProducts();
+      search("croqueta");
+
+      fireEvent.click(screen.getByText("Croqueta cachorro"));
+
+      expect(onSelect).toHaveBeenCalledWith(products[1]);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("desplaza la lista hasta el resultado elegido con las flechas", () => {
+      const scrollIntoView = mockScrollIntoView();
+      renderWithProducts();
+      search("croqueta");
+      scrollIntoView.mockClear();
+
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0].textContent).toContain(
+        "Croqueta cachorro"
+      );
+    });
+
+    it("deshabilita Seleccionar mientras no hay seleccion", () => {
+      renderWithProducts();
+
+      expect(screen.getByRole("button", { name: "Seleccionar" }).disabled).toBe(
+        true
+      );
+    });
+  });
 });
