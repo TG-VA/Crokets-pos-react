@@ -2654,7 +2654,7 @@ usuario, o dejarlo como esta si la app no muestra ese campo.
 
 **Estado:** Resuelto (14 nov 2026) — commit `4c93be2` (PR #201). Ajustes rechaza
 kits y productos sin inventario al escanear; Pedidos ya rechazaba kits y ahora también rechaza
-productos sin inventario.
+productos sin inventario. La selección desde el F10 de Ajustes se cubrió después en el #84 (resuelto).
 
 **Severidad:** Media.
 
@@ -2667,6 +2667,21 @@ que rechace esos productos.
 
 **Solución recomendada:** rechazar en ambas búsquedas por código los productos que sean kit o que no
 pasen `isInventoryTrackedProduct`, con un aviso al usuario y tests en los dos hooks.
+
+### 84. La guarda de Ajustes no cubre la selección desde el buscador F10
+
+**Estado:** Resuelto (15 nov 2026) — PR #203: `ensureAdjustableProduct` cubre `handleLookup` y
+`loadProduct`. Diferido del PR #201 (hallazgo 12 de la auditoría), que resolvió el #83.
+
+**Severidad:** Baja (defensa en profundidad).
+
+En Ajustes, la guarda que rechaza kits y productos sin inventario vive solo en `handleLookup`
+(`useInventoryAdjustment.js`), la entrada por código de barras. `loadProduct`, que recibe el producto
+elegido en el buscador F10, no repite la comprobación y depende de que el modal ya filtre esos
+productos. En Pedidos la guarda está en `addProduct` y cubre ambas entradas.
+
+**Solución recomendada:** mover la comprobación a un punto común de Ajustes que usen `handleLookup` y
+`loadProduct`, con un test para la entrada F10.
 
 ---
 
