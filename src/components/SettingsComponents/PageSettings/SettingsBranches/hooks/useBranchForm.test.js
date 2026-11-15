@@ -21,6 +21,7 @@ describe("useBranchForm", () => {
 
     expect(result.current.isEdit).toBe(true);
     expect(result.current.values).toEqual({
+      branchType: "operational",
       code: "CEN",
       name: "Centro",
       city: "Cancún",
@@ -145,6 +146,7 @@ describe("useBranchForm", () => {
     });
 
     expect(result.current.getSanitizedValues()).toEqual({
+      branchType: "operational",
       code: "SUR",
       name: "Sur",
       city: "Cancún",
@@ -216,5 +218,37 @@ describe("useBranchForm", () => {
 
     expect(result.current.isSubmitted).toBe(false);
     expect(result.current.getFieldError("code")).toBeUndefined();
+  });
+
+  it("una sucursal admin oculta y vacia telefono, correo y direccion", () => {
+    const { result } = renderHook(() =>
+      useBranchForm({ ...validBranch, phone: "123", branchType: "admin" })
+    );
+
+    expect(result.current.values.branchType).toBe("admin");
+    expect(result.current.errors.phone).toBeUndefined();
+    expect(result.current.isValid).toBe(true);
+    expect(result.current.getSanitizedValues()).toMatchObject({
+      branchType: "admin",
+      phone: "",
+      email: "",
+      address: "",
+    });
+  });
+
+  it("cambiar el tipo a admin descarta los errores de contacto", () => {
+    const { result } = renderHook(() => useBranchForm(null));
+
+    act(() => {
+      result.current.handleChange("phone")({ target: { value: "123" } });
+    });
+    expect(result.current.errors.phone).toBeDefined();
+
+    act(() => {
+      result.current.handleChange("branchType")({
+        target: { value: "admin" },
+      });
+    });
+    expect(result.current.errors.phone).toBeUndefined();
   });
 });

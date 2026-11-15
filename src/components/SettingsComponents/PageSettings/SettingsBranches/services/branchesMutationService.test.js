@@ -74,12 +74,32 @@ describe("branchesMutationService", () => {
         p_city: "Cancún",
         p_state: "QR",
         p_timezone: "America/Cancun",
+        p_branch_type: "operational",
       });
       expect(result).toEqual({
         success: true,
         data: { id: "b1", code: "CEN", name: "Centro", is_active: true },
         error: null,
       });
+    });
+
+    it("envia el tipo admin a create_branch", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, branch: { id: "adm" } },
+        error: null,
+      });
+
+      await createBranch({
+        code: "ADM",
+        name: "Oficina",
+        adminId: "u1",
+        branchType: "admin",
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "create_branch",
+        expect.objectContaining({ p_branch_type: "admin" })
+      );
     });
 
     it("devuelve el mensaje del backend cuando success es false", async () => {
@@ -161,6 +181,24 @@ describe("branchesMutationService", () => {
         name: "Centro Norte",
         state: "QR",
       });
+    });
+
+    it("persiste el tipo de sucursal como branch_type", async () => {
+      const mutationQuery = updateQuery({
+        data: { id: "b1", branch_type: "admin" },
+        error: null,
+      });
+      supabase.from.mockReturnValueOnce(mutationQuery);
+
+      const result = await updateBranchContact("b1", { branchType: "admin" });
+
+      expect(mutationQuery.update).toHaveBeenCalledWith({
+        branch_type: "admin",
+      });
+      expect(mutationQuery.select).toHaveBeenCalledWith(
+        expect.stringContaining("branch_type")
+      );
+      expect(result.success).toBe(true);
     });
 
     it("rechaza si ya existe otra sucursal con el mismo nombre", async () => {

@@ -6,6 +6,12 @@ import {
   BRANCH_TIMEZONE_OPTIONS,
   DEFAULT_TIMEZONE,
 } from "../utils/branchesFormatters";
+import {
+  BRANCH_TYPE_OPTIONS,
+  isBranchFieldVisible,
+} from "../utils/branchTypeFormConfig";
+import BranchContactField from "./BranchContactField";
+import { BRANCH_CONTACT_FIELDS } from "./branchContactFields";
 
 const FieldError = ({ message }) =>
   message ? (
@@ -41,6 +47,10 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
   }, [isOpen, saving, onClose]);
 
   if (!isOpen) return null;
+
+  const branchTypeHint = BRANCH_TYPE_OPTIONS.find(
+    (option) => option.value === values.branchType
+  )?.hint;
 
   const handleOverlayMouseDown = (event) => {
     if (event.target === event.currentTarget && !saving) {
@@ -87,6 +97,30 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.modalBody}>
             <div className={styles.formGrid}>
+              <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                <label htmlFor="branch-form-type" className={styles.formLabel}>
+                  Tipo de sucursal{" "}
+                  <span className={styles.requiredMark} aria-hidden="true">
+                    *
+                  </span>
+                </label>
+                <select
+                  id="branch-form-type"
+                  className={styles.select}
+                  value={values.branchType}
+                  onChange={handleChange("branchType")}
+                  {...errorProps("branchType")}
+                >
+                  {BRANCH_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.fieldHint}>{branchTypeHint}</p>
+                <FieldError message={getFieldError("branchType")} />
+              </div>
+
               <div className={styles.formField}>
                 <label htmlFor="branch-form-code" className={styles.formLabel}>
                   <span>
@@ -186,60 +220,19 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                 <FieldError message={getFieldError("state")} />
               </div>
 
-              <div className={styles.formField}>
-                <label htmlFor="branch-form-phone" className={styles.formLabel}>
-                  Teléfono
-                </label>
-                <input
-                  id="branch-form-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  className={styles.input}
-                  value={values.phone}
-                  onChange={handleChange("phone")}
-                  placeholder="Ej. 9999999999"
-                  maxLength={10}
-                  autoComplete="off"
-                  {...errorProps("phone")}
+              {BRANCH_CONTACT_FIELDS.filter((field) =>
+                isBranchFieldVisible(values.branchType, field.name)
+              ).map((field) => (
+                <BranchContactField
+                  key={field.name}
+                  field={field}
+                  value={values[field.name]}
+                  error={getFieldError(field.name)}
+                  invalid={shouldShowError(field.name)}
+                  onChange={handleChange(field.name)}
+                  onBlur={handleBlur(field.name)}
                 />
-                <FieldError message={getFieldError("phone")} />
-              </div>
-
-              <div className={styles.formField}>
-                <label htmlFor="branch-form-email" className={styles.formLabel}>
-                  Correo
-                </label>
-                <input
-                  id="branch-form-email"
-                  type="email"
-                  className={styles.input}
-                  value={values.email}
-                  onChange={handleChange("email")}
-                  placeholder="contacto@sucursal.com"
-                  maxLength={100}
-                  autoComplete="off"
-                  {...errorProps("email")}
-                />
-                <FieldError message={getFieldError("email")} />
-              </div>
-
-              <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                <label
-                  htmlFor="branch-form-address"
-                  className={styles.formLabel}
-                >
-                  Dirección comercial
-                </label>
-                <textarea
-                  id="branch-form-address"
-                  className={styles.textarea}
-                  value={values.address}
-                  onChange={handleChange("address")}
-                  placeholder="Dirección completa de la sucursal"
-                  rows={3}
-                  maxLength={255}
-                />
-              </div>
+              ))}
 
               <div className={styles.formField}>
                 <label

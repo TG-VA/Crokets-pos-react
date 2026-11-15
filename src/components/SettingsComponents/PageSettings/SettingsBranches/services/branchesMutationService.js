@@ -1,7 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { BRANCH_TYPES } from "../../../../../services/branchScopeService";
 
 const BRANCHES_RETURNING =
-  "id, code, name, phone, email, address, city, state, timezone, is_active";
+  "id, code, name, phone, email, address, city, state, timezone, is_active, branch_type";
 
 const buildRpcError = (data, fallback) => ({
   success: false,
@@ -37,6 +38,7 @@ export const createBranch = async (payload) => {
       p_city: payload.city || null,
       p_state: payload.state || null,
       p_timezone: payload.timezone || "America/Cancun",
+      p_branch_type: payload.branchType || BRANCH_TYPES.OPERATIONAL,
     });
 
     if (error) throw error;
@@ -75,6 +77,9 @@ export const updateBranchContact = async (branchId, updates) => {
   if (updates.phone !== undefined) allowedUpdates.phone = updates.phone;
   if (updates.email !== undefined) allowedUpdates.email = updates.email;
   if (updates.address !== undefined) allowedUpdates.address = updates.address;
+  if (updates.branchType !== undefined) {
+    allowedUpdates.branch_type = updates.branchType;
+  }
 
   if (Object.keys(allowedUpdates).length === 0) {
     return {
