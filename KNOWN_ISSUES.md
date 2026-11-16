@@ -2781,7 +2781,7 @@ ese endurecimiento en remoto.
 
 ### 92. Editar una sucursal sin permiso muestra éxito aunque no se guarde nada
 
-**Estado:** Resuelto (15 nov 2026) — PR #PRNUM. `updateBranchContact` de `branchesMutationService` y de
+**Estado:** Resuelto (15 nov 2026) — PR #208. `updateBranchContact` de `branchesMutationService` y de
 `branchProfileService` devuelven error cuando el `update` no devuelve fila. Detectado en la review
 del PR #206 (#91).
 
