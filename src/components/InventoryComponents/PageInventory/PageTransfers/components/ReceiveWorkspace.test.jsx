@@ -402,7 +402,9 @@ describe("ReceiveWorkspace", () => {
 
     fireEvent.click(button);
     expect(onConfirmReceipt).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(
+      screen.getByText("Doble click o presiona dos veces para confirmar")
+    ).toBeTruthy();
     expect(button.className).not.toContain("primaryButtonArmed");
   });
 
@@ -446,7 +448,9 @@ describe("ReceiveWorkspace", () => {
     expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
 
     fireEvent.blur(button);
-    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(
+      screen.getByText("Doble click o presiona dos veces para confirmar")
+    ).toBeTruthy();
 
     fireEvent.click(button);
     expect(onConfirmReceipt).not.toHaveBeenCalled();
@@ -474,7 +478,9 @@ describe("ReceiveWorkspace", () => {
       vi.advanceTimersByTime(5000);
     });
 
-    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(
+      screen.getByText("Doble click o presiona dos veces para confirmar")
+    ).toBeTruthy();
     expect(onConfirmReceipt).not.toHaveBeenCalled();
   });
 
@@ -502,7 +508,9 @@ describe("ReceiveWorkspace", () => {
       />
     );
 
-    expect(screen.getByText("Doble click o Enter para confirmar")).toBeTruthy();
+    expect(
+      screen.getByText("Doble click o presiona dos veces para confirmar")
+    ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Confirmar recepción" }).className
     ).not.toContain("primaryButtonArmed");

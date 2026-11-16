@@ -51,7 +51,7 @@ const ReceiptConfirmBar = ({
       return "Presiona de nuevo para confirmar";
     }
 
-    return "Doble click o Enter para confirmar";
+    return "Doble click o presiona dos veces para confirmar";
   };
 
   return (
