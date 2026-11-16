@@ -2717,9 +2717,10 @@ lleve directo a `/reports`.
 
 ### 87. Cambiar a admin una sucursal con stock no está bloqueado
 
-**Estado:** Mitigado (15 nov 2026) — PR #205. La UI y `updateBranchContact` ya no permiten cambiar
-el tipo de una sucursal existente: solo se elige al crearla. Sigue pendiente la validación en
-servidor (otro PR), porque un `update` directo sobre `branches.branch_type` todavía no se rechaza.
+**Estado:** Resuelto en repo (15 nov 2026) — PR #205 y PR #206. La UI y `updateBranchContact` no
+permiten cambiar el tipo de una sucursal existente, y la migración `20261115180000` (ver #91) agrega
+el trigger `branches_branch_type_immutable`, que rechaza en servidor cualquier cambio de
+`branch_type` en un `update`. El tipo solo se elige al crear la sucursal.
 
 **Severidad:** Baja (antes Media).
 
@@ -2776,6 +2777,24 @@ o reactivar sucursales pasando el UUID de un admin.
 **Solución recomendada:** reaplicar el cuerpo de `set_branch_active` del repo (con
 `v_admin_id := coalesce(auth.uid(), p_admin_id)`) y revisar si otras RPCs del 20 oct quedaron sin
 ese endurecimiento en remoto.
+
+### 91. `branches` sin RLS y con escritura para `anon`
+
+**Estado:** Resuelto (15 nov 2026) — PR #206, migración `20261115180000` aplicada en remoto.
+Verificado: RLS activo, sin `INSERT`/`DELETE`/`TRUNCATE` para `anon` ni `authenticated`, `UPDATE`
+solo para admins y trigger `branches_branch_type_immutable` activo. Login probado en la app.
+
+**Severidad:** Alta.
+
+En remoto `public.branches` tiene RLS desactivado y `anon` y `authenticated` tienen `INSERT`,
+`UPDATE` y `DELETE`. Con la clave anon del instalador cualquiera puede crear, editar, desactivar o
+borrar sucursales sin iniciar sesión, y cambiar `branch_type` (ver #87). El guard de admin de la UI
+no protege la tabla.
+
+**Solución recomendada:** activar RLS, revocar la escritura a `anon` e `INSERT`/`DELETE` a
+`authenticated`, limitar `UPDATE` a `public.is_admin()` y rechazar cambios de `branch_type` con un
+trigger. La lectura de `anon` se conserva porque `Login.jsx` lee `branches` antes de
+`signInWithPassword`; mover esa lectura a después del login permitiría quitarla.
 
 ---
 
