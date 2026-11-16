@@ -182,7 +182,7 @@ no vende, no cobra ni tiene stock; sí ve reportes, crea pedidos y traspasos y d
   lleva de `/cash-register` a `/reports`.
 - **Caché:** `BranchProvider` refresca `branch_type` al montar, así una terminal con sesión previa
   se entera de que es admin sin volver a iniciar sesión.
-- Pendientes conocidos: `KNOWN_ISSUES.md` #87, #89 y #90.
+- Pendientes conocidos: `KNOWN_ISSUES.md` #87 y #89.
 
 ## 2. Sistema local — SQLite embebido (`src/backend/bd.js`)
 

@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (15 nov 2026)
 
-326 archivos de test (**3377 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+329 archivos de test (**3384 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -122,6 +122,9 @@ y el proceso principal de Electron:
 | Sucursales: modal con tipo                                | `.../SettingsBranches/components/BranchFormModal.test.jsx`                         |
 | Contrato SQL: RPCs de sucursales sin anon                 | `supabase/migrations/branchesRpcsRevokeAnonContract.test.js`                       |
 | Contrato SQL: inventario sin sucursal admin               | `supabase/migrations/rejectAdminBranchInventoryContract.test.js`                   |
+| Contrato SQL: guard de admin en set_branch_active         | `supabase/migrations/setBranchActiveAdminGuardContract.test.js`                    |
+| Productos: alta en terminal admin (render)                | `.../ProductsNew/ProductsNew.test.jsx`                                             |
+| Productos: inventario en edicion (render)                 | `.../ProductsModify/components/ProductModifyInventorySection.test.jsx`             |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
 | Caja: configuración operativa (hook y vista)              | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
