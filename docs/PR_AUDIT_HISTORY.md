@@ -2989,3 +2989,20 @@ verificación humana en Electron (`npm run dev`) del plan de pruebas manuales.
 
 **Seguimiento (14 nov 2026):** el hallazgo 10 se corrigió editando la descripción. El hallazgo 9 se
 registró en `KNOWN_ISSUES.md` #83 (`06ab3f2`) y se corrige en el PR #201.
+
+## Informe de Auditoría — PR #208 `fix(sucursales): fallar al editar una sucursal si el update no afecta filas` (16 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `0bd5f09`,
+base `3447a13`. Ejecución: 330 archivos / 3394 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 4 ejecutadas, 4 detectadas. S1 y S2 de la auditoría anterior resueltas.
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                                                    | Severidad  |
+| --- | ----------------------------------------------------------------------------------------------------------- | ---------- |
+| S3  | `branchProfileService` importa `BRANCH_NOT_UPDATED_ERROR` desde `SettingsBranches` en vez de la raíz global | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): edición de sucursal por un usuario no
+admin con la RLS de `branches` activa.
