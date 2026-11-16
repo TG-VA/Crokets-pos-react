@@ -2798,6 +2798,21 @@ trigger. La lectura de `anon` se conserva porque `Login.jsx` lee `branches` ante
 
 ---
 
+### 92. Editar una sucursal sin permiso muestra éxito aunque no se guarde nada
+
+**Estado:** Resuelto (15 nov 2026) — PR #208. `updateBranchContact` de `branchesMutationService` y de
+`branchProfileService` devuelven error cuando el `update` no devuelve fila. Detectado en la review
+del PR #206 (#91).
+
+**Severidad:** Baja.
+
+Con RLS en `branches`, el `UPDATE` de un usuario que no es admin no falla: afecta 0 filas y
+`maybeSingle()` devuelve `data: null` sin error. Los dos servicios respondían `success: true` y la
+UI mostraba los datos como guardados. La pantalla de sucursales ya está limitada a admin, así que el
+caso es poco probable; la base de datos nunca aceptó el cambio.
+
+---
+
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una

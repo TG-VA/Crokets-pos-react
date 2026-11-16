@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../../../../utils/branchMessages";
 
 export const fetchBranchProfile = async (branchId) => {
   if (!branchId) {
@@ -75,9 +76,19 @@ export const updateBranchContact = async (branchId, updates) => {
 
     if (error) throw error;
 
+    // Con RLS, un UPDATE sin permiso no falla: afecta 0 filas y data llega null.
+    if (!data) {
+      return {
+        success: false,
+        data: null,
+        error: BRANCH_NOT_UPDATED_ERROR,
+        partial: false,
+      };
+    }
+
     return {
       success: true,
-      data: data || null,
+      data,
       error: null,
       partial: false,
     };

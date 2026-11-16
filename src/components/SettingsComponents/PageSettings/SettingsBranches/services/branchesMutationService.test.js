@@ -214,6 +214,16 @@ describe("branchesMutationService", () => {
       expect(result.error).toContain("Ya existe una sucursal con ese nombre");
     });
 
+    it("falla si el update no afecta filas (RLS)", async () => {
+      supabase.from.mockReturnValue(updateQuery({ data: null, error: null }));
+
+      const result = await updateBranchContact("b1", { city: "Merida" });
+
+      expect(result.success).toBe(false);
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("No se actualizó la sucursal");
+    });
+
     it("propaga el error de Supabase", async () => {
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       supabase.from.mockReturnValue(

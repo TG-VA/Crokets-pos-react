@@ -1,5 +1,6 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { BRANCH_TYPES } from "../../../../../services/branchScopeService";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../../../../utils/branchMessages";
 
 const BRANCHES_RETURNING =
   "id, code, name, phone, email, address, city, state, timezone, is_active, branch_type";
@@ -117,7 +118,12 @@ export const updateBranchContact = async (branchId, updates) => {
 
     if (error) throw error;
 
-    return { success: true, data: data || null, error: null };
+    // Con RLS, un UPDATE sin permiso no falla: afecta 0 filas y data llega null.
+    if (!data) {
+      return { success: false, data: null, error: BRANCH_NOT_UPDATED_ERROR };
+    }
+
+    return { success: true, data, error: null };
   } catch (error) {
     console.error("Error actualizando datos de la sucursal:", error);
 
