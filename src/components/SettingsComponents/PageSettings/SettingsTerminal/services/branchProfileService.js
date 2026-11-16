@@ -1,5 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
+const BRANCH_NOT_UPDATED_ERROR =
+  "No se actualizó la sucursal: no tienes permiso para editarla o ya no existe.";
+
 export const fetchBranchProfile = async (branchId) => {
   if (!branchId) {
     return {
@@ -75,9 +78,19 @@ export const updateBranchContact = async (branchId, updates) => {
 
     if (error) throw error;
 
+    // Con RLS, un UPDATE sin permiso no falla: afecta 0 filas y data llega null.
+    if (!data) {
+      return {
+        success: false,
+        data: null,
+        error: BRANCH_NOT_UPDATED_ERROR,
+        partial: false,
+      };
+    }
+
     return {
       success: true,
-      data: data || null,
+      data,
       error: null,
       partial: false,
     };
