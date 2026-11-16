@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 vi.mock("../services/cashOperationSettingsService", () => ({
   loadCashOperationSettings: vi.fn(),
@@ -232,6 +238,58 @@ describe("BranchContext: tipo de sucursal en cache", () => {
     expect(fetchBranchType).toHaveBeenCalledWith("adm");
     expect(JSON.parse(localStorage.getItem("currentBranch")).branch_type).toBe(
       "admin"
+    );
+  });
+
+  it("ignora la respuesta tardia de la sucursal anterior", async () => {
+    let resolveFirst;
+    fetchBranchType.mockImplementation((id) =>
+      id === "a"
+        ? new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
+        : Promise.resolve({ data: "operational", error: null })
+    );
+    localStorage.setItem(
+      "currentBranch",
+      JSON.stringify({ id: "a", name: "ADM-BREN" })
+    );
+
+    const SwitchConsumer = () => {
+      const { branch, setBranch } = useBranch();
+      return (
+        <div>
+          <span data-testid="branch-id">{branch?.id}</span>
+          <span data-testid="branch-type">{branch?.branch_type || "-"}</span>
+          <button
+            type="button"
+            onClick={() =>
+              setBranch({ id: "b", name: "Centro", branch_type: "operational" })
+            }
+          >
+            cambiar
+          </button>
+        </div>
+      );
+    };
+
+    render(
+      <BranchProvider>
+        <SwitchConsumer />
+      </BranchProvider>
+    );
+
+    fireEvent.click(screen.getByText("cambiar"));
+    await waitFor(() => expect(fetchBranchType).toHaveBeenCalledWith("b"));
+
+    await act(async () => {
+      resolveFirst({ data: "admin", error: null });
+    });
+
+    expect(screen.getByTestId("branch-id").textContent).toBe("b");
+    expect(screen.getByTestId("branch-type").textContent).toBe("operational");
+    expect(JSON.parse(localStorage.getItem("currentBranch")).branch_type).toBe(
+      "operational"
     );
   });
 
