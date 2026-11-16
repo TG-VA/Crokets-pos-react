@@ -234,14 +234,16 @@ Tres migraciones, en este orden:
 4. `20261115150000_branches_rpcs_revoke_anon.sql`: revoca `anon` en `create_branch` y
    `set_branch_active`, que lo tenían por los privilegios por defecto.
 5. `20261115160000_reject_admin_branch_inventory.sql`: el mismo trigger en `branch_inventory`.
+6. `20261115170000_set_branch_active_admin_guard.sql`: restaura en `set_branch_active` el guard
+   `coalesce(auth.uid(), p_admin_id)`; el cuerpo remoto solo difería en esa línea.
 
-Orden de despliegue: migraciones antes del instalador. Las cinco se aplicaron el 15 nov 2026 con el
+Orden de despliegue: migraciones antes del instalador. Las seis se aplicaron el 15 nov 2026 con el
 MCP de Supabase (`apply_migration`), porque `supabase db push` está bloqueado por versiones remotas
 que no existen en el repo; en remoto quedan con la versión del momento de aplicarlas.
 
 **Drift detectado:** la `create_branch` remota no tenía `coalesce(auth.uid(), p_admin_id)` aunque
-`20261020120000` lo documenta; `20261115130000` lo restauró. `set_branch_active` sigue sin él
-(`KNOWN_ISSUES.md` #90).
+`20261020120000` lo documenta; `20261115130000` lo restauró. `set_branch_active` tampoco lo tenía;
+lo restauró `20261115170000` (`KNOWN_ISSUES.md` #90).
 
 ## Registro de despliegues
 

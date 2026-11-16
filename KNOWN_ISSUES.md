@@ -2759,7 +2759,9 @@ reflejarlo en la RPC y en `cancellableTransferIds`.
 
 ### 90. `set_branch_active` acepta un `p_admin_id` ajeno de un usuario autenticado
 
-**Estado:** Abierto (15 nov 2026) — detectado al aplicar las migraciones del PR #205.
+**Estado:** Resuelto (15 nov 2026) — PR #205, migración `20261115170000`. Verificado en remoto:
+`create_branch` y `set_branch_active` contienen `coalesce(auth.uid(), p_admin_id)` y `anon` no tiene
+`EXECUTE`. Detectado al aplicar las migraciones del mismo PR.
 
 **Severidad:** Alta.
 
