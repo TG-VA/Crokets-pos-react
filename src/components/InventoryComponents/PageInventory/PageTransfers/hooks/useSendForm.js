@@ -4,7 +4,7 @@ import { createTransferOrder } from "../services/transfersService";
 import useProductLookup from "./useProductLookup";
 
 const useSendForm = ({
-  branch,
+  originBranch,
   user,
   products,
   activeTab,
@@ -24,6 +24,13 @@ const useSendForm = ({
   const [draftItems, setDraftItems] = useState([]);
   const [transferNotes, setTransferNotes] = useState("");
   const resetLookupRef = useRef(() => {});
+  const [draftOriginId, setDraftOriginId] = useState(originBranch?.id);
+
+  // El stock del borrador pertenece a la sucursal origen: al cambiarla se descarta.
+  if (draftOriginId !== originBranch?.id) {
+    setDraftOriginId(originBranch?.id);
+    setDraftItems([]);
+  }
 
   const draftTotals = useMemo(() => {
     return draftItems.reduce(
@@ -252,8 +259,8 @@ const useSendForm = ({
   const handleSubmitTransfer = useCallback(async () => {
     clearFeedback();
 
-    if (!branch?.id) {
-      setError("No hay una sucursal activa para generar el traspaso.");
+    if (!originBranch?.id) {
+      setError("Selecciona la sucursal origen del traspaso.");
       return;
     }
 
@@ -310,7 +317,7 @@ const useSendForm = ({
       );
 
       const createdTransfer = await createTransferOrder({
-        originBranch: branch,
+        originBranch,
         destinationBranch,
         items: draftItems,
         notes: transferNotes,
@@ -335,7 +342,7 @@ const useSendForm = ({
       setSubmitting(false);
     }
   }, [
-    branch,
+    originBranch,
     branchOptions,
     clearFeedback,
     destinationBranchId,

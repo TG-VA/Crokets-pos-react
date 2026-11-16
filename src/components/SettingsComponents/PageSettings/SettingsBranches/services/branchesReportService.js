@@ -1,7 +1,7 @@
-import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllBranches } from "../../../../../services/branchScopeService";
 
 const BRANCH_SELECT =
-  "id, code, name, phone, email, address, city, state, timezone, is_active, pos_devices(count)";
+  "id, code, name, phone, email, address, city, state, timezone, is_active, branch_type, pos_devices(count)";
 
 const mapBranchRow = (row) => ({
   id: row.id,
@@ -14,6 +14,7 @@ const mapBranchRow = (row) => ({
   state: row.state,
   timezone: row.timezone,
   isActive: row.is_active,
+  branchType: row.branch_type,
   posDevicesCount: Array.isArray(row.pos_devices)
     ? (row.pos_devices[0]?.count ?? 0)
     : 0,
@@ -21,10 +22,7 @@ const mapBranchRow = (row) => ({
 
 export const fetchBranchesCatalog = async () => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select(BRANCH_SELECT)
-      .order("name", { ascending: true });
+    const { data, error } = await fetchAllBranches({ columns: BRANCH_SELECT });
 
     if (error) throw error;
 

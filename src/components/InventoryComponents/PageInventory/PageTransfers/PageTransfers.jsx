@@ -20,6 +20,10 @@ const PageTransfers = () => {
   const {
     activeTab,
     branch,
+    branchOptions,
+    canChooseOrigin,
+    originBranchId,
+    setOriginBranchId,
     cancellableTransferIds,
     destinationBranchId,
     destinationOptions,
@@ -155,6 +159,10 @@ const PageTransfers = () => {
 
         {activeTab === "send" ? (
           <SendWorkspace
+            canChooseOrigin={canChooseOrigin}
+            originBranchId={originBranchId}
+            originOptions={branchOptions}
+            onOriginChange={setOriginBranchId}
             destinationBranchId={destinationBranchId}
             destinationOptions={destinationOptions}
             loadingBranches={loadingBranches}

@@ -46,7 +46,7 @@ const branchOptions = [
 ];
 
 const createProps = (overrides = {}) => ({
-  branch: { id: "b1", name: "Origen" },
+  originBranch: { id: "b1", name: "Origen" },
   user: { id: "u1", username: "admin" },
   products,
   activeTab: "send",
@@ -203,5 +203,64 @@ describe("useSendForm", () => {
       await result.current.handleSubmitTransfer();
     });
     expect(setError).toHaveBeenCalledWith("Stock insuficiente");
+  });
+});
+
+describe("useSendForm origen de stock", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedOnProductSelected = null;
+  });
+
+  it("pide la sucursal origen si no hay una elegida", async () => {
+    const setError = vi.fn();
+    const { result } = renderHook(() =>
+      useSendForm(createProps({ originBranch: null, setError }))
+    );
+
+    await act(async () => {
+      await result.current.handleSubmitTransfer();
+    });
+
+    expect(setError).toHaveBeenCalledWith(
+      "Selecciona la sucursal origen del traspaso."
+    );
+    expect(createTransferOrder).not.toHaveBeenCalled();
+  });
+
+  it("descarta el borrador al cambiar la sucursal origen", () => {
+    const { result, rerender } = renderHook((props) => useSendForm(props), {
+      initialProps: createProps(),
+    });
+    act(() => {
+      capturedOnProductSelected(products[0], 3);
+    });
+    expect(result.current.draftItems).toHaveLength(1);
+
+    rerender(createProps({ originBranch: { id: "b2", name: "Destino" } }));
+
+    expect(result.current.draftItems).toHaveLength(0);
+  });
+
+  it("envia el traspaso desde la sucursal origen recibida", async () => {
+    createTransferOrder.mockResolvedValue({
+      folio: "TR-1",
+      destinationBranchName: "Destino",
+    });
+    const originBranch = { id: "b1", name: "Origen" };
+    const { result } = renderHook(() =>
+      useSendForm(createProps({ originBranch }))
+    );
+    act(() => {
+      capturedOnProductSelected(products[0], 2);
+    });
+
+    await act(async () => {
+      await result.current.handleSubmitTransfer();
+    });
+
+    expect(createTransferOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ originBranch })
+    );
   });
 });

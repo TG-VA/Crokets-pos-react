@@ -7,6 +7,10 @@ import {
   isInventoryTrackedProduct,
   isKitProduct,
 } from "../../../../../services/inventory/inventoryProductCalculationService";
+import {
+  isAdminBranch,
+  resolveStockOriginId,
+} from "../../../../../services/branchScopeCalculationService";
 import { createStoreOrder } from "../services/ordersService";
 import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
 
@@ -32,6 +36,22 @@ export const useCreateOrderForm = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [chosenOriginId, setChosenOriginId] = useState("");
+
+  const canChooseOrigin = isAdminBranch(currentBranch);
+  const originBranchId = resolveStockOriginId(currentBranch, chosenOriginId);
+
+  // Un destino igual al nuevo origen quedaria fuera de sus opciones y bloquearia
+  // el guardado sin explicacion, asi que se limpia para que el usuario lo elija.
+  const setOriginBranchId = useCallback(
+    (nextOriginId) => {
+      setChosenOriginId(nextOriginId);
+      if (nextOriginId && nextOriginId === destinationBranchId) {
+        setDestinationBranchId("");
+      }
+    },
+    [destinationBranchId, setDestinationBranchId]
+  );
 
   const setOrderName = useCallback(
     (value) => {
@@ -42,9 +62,8 @@ export const useCreateOrderForm = ({
   );
 
   const destinationOptions = useMemo(
-    () =>
-      branches.filter((branchOption) => branchOption.id !== currentBranch?.id),
-    [branches, currentBranch?.id]
+    () => branches.filter((branchOption) => branchOption.id !== originBranchId),
+    [branches, originBranchId]
   );
 
   const departmentSummary = useMemo(() => {
@@ -76,14 +95,17 @@ export const useCreateOrderForm = ({
   );
 
   const isValid = useMemo(() => {
-    if (!orderName.trim() || !destinationBranchId) return false;
+    if (!orderName.trim() || !destinationBranchId || !originBranchId) {
+      return false;
+    }
+    if (destinationBranchId === originBranchId) return false;
     if (items.length === 0) return false;
 
     return items.every((item) => {
       const quantity = Number(item.expectedQty);
       return Number.isFinite(quantity) && quantity > 0;
     });
-  }, [destinationBranchId, items, orderName]);
+  }, [destinationBranchId, items, orderName, originBranchId]);
 
   const addProduct = useCallback(
     (product) => {
@@ -193,8 +215,6 @@ export const useCreateOrderForm = ({
     setSearchOpen(false);
   }, [clearDraft]);
 
-  const originBranchId = currentBranch?.id;
-
   const saveOrder = useCallback(async () => {
     if (isSaving) return null;
 
@@ -240,6 +260,10 @@ export const useCreateOrderForm = ({
     destinationBranchId,
     setDestinationBranchId,
     destinationOptions,
+    canChooseOrigin,
+    originBranchId,
+    setOriginBranchId,
+    originOptions: branches,
     notes,
     setNotes,
     items,

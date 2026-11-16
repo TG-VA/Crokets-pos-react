@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import { buildInvoicesDateRange } from "./invoicesHistoryCalculationService";
 
 const INVOICES_COLUMNS = `
@@ -48,11 +49,7 @@ const INVOICES_COLUMNS = `
  * Sucursales activas, para el selector de filtro.
  */
 export const fetchActiveBranches = async () => {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name, code, status")
-    .eq("status", true)
-    .order("name", { ascending: true });
+  const { data, error } = await fetchOperationalBranches({ activeOnly: true });
 
   if (error) throw error;
 

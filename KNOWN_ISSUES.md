@@ -2683,6 +2683,100 @@ productos. En Pedidos la guarda está en `addProduct` y cubre ambas entradas.
 **Solución recomendada:** mover la comprobación a un punto común de Ajustes que usen `handleLookup` y
 `loadProduct`, con un test para la entrada F10.
 
+### 85. El alta de productos desde una terminal admin crea inventario en la sucursal admin
+
+**Estado:** Resuelto (15 nov 2026) — PR #205. Desde una terminal admin el alta crea el producto
+global y sin inventario, la edición no toca `branch_inventory` y la importación se bloquea con un
+aviso. `20261115160000` agrega el trigger que rechaza sucursales admin en `branch_inventory`.
+
+**Severidad:** Alta.
+
+`createProduct` (`src/services/products/productCrudService.js`) inserta la fila de
+`branch_inventory` en la sucursal de la terminal cuando el producto maneja inventario, con la
+existencia inicial capturada. En una terminal admin esa fila queda en la sucursal admin, que no
+debe tener stock. Los triggers de `20261115140000` no cubren `branch_inventory` para no romper el
+alta. Las vistas ya excluyen la sucursal admin, así que el stock no se vende ni se traspasa.
+
+**Solución recomendada:** en una terminal admin, crear el producto sin fila de inventario (o pedir
+la sucursal operativa destino) y ocultar la existencia inicial en el formulario.
+
+### 86. Una terminal admin debe abrir caja para navegar
+
+**Estado:** Resuelto (15 nov 2026) — PR #205. `branchRequiresCashRegister` en
+`permissionsService.js`: `AuthGuard` no exige caja a una terminal admin y la manda de
+`/cash-register` a `/reports`.
+
+**Severidad:** Media.
+
+`AuthGuard` exige caja abierta en Inventario, Productos, Clientes y Reportes. Una terminal admin no
+cobra, pero tras el login pasa por `/cash-register` igual que una operativa. Los triggers de
+`20261115140000` no bloquean `cash_register_sessions` para no dejarla sin acceso.
+
+**Solución recomendada:** que `AuthGuard` no exija caja cuando la sucursal es admin y que el login la
+lleve directo a `/reports`.
+
+### 87. Cambiar a admin una sucursal con stock no está bloqueado
+
+**Estado:** Mitigado (15 nov 2026) — PR #205. La UI y `updateBranchContact` ya no permiten cambiar
+el tipo de una sucursal existente: solo se elige al crearla. Sigue pendiente la validación en
+servidor (otro PR), porque un `update` directo sobre `branches.branch_type` todavía no se rechaza.
+
+**Severidad:** Baja (antes Media).
+
+Ajustes > Sucursales permitía editar el tipo. Si una sucursal operativa con inventario, ventas o
+traspasos en tránsito pasa a admin, desaparece de selectores y reportes y el servidor rechaza sus
+nuevas ventas, pero su historial y su stock quedan sin dueño visible.
+
+**Solución recomendada:** validar en servidor (trigger en `branches` o RPC) que la sucursal no tenga
+stock, sesiones de caja abiertas ni traspasos o pedidos pendientes antes de pasarla a admin.
+
+### 88. La sucursal en caché no trae `branch_type` hasta el siguiente login
+
+**Estado:** Resuelto (15 nov 2026) — PR #205. `BranchProvider` refresca `branch_type` con
+`fetchBranchType` al montar o cambiar de sucursal y actualiza la caché.
+
+**Severidad:** Baja.
+
+`BranchContext` guarda la sucursal en `localStorage`. Una terminal que ya estaba logueada antes de
+este cambio no tiene `branch_type` y se trata como operativa hasta que vuelva a iniciar sesión. Lo
+mismo pasa justo después de vincular un dispositivo nuevo (`register_pos_device` no devuelve el
+tipo). En el peor caso la terminal admin ve Ventas, pero el servidor rechaza la venta.
+
+**Solución recomendada:** refrescar la sucursal del contexto al montar la aplicación, o incluir
+`branch_type` en `get_branch_by_device` y `register_pos_device`.
+
+### 89. Una terminal admin no puede cancelar los traspasos que envía
+
+**Estado:** Abierto (15 nov 2026).
+
+**Severidad:** Baja.
+
+`cancelTransferOrder` exige que el origen del traspaso sea la sucursal de la terminal. Un traspaso
+creado desde una terminal admin sale de otra sucursal operativa, así que solo esa sucursal puede
+cancelarlo. Además, crear el traspaso o el pedido depende de que el usuario tenga acceso a la
+sucursal origen elegida (`_user_can_access_branch` en las RPCs).
+
+**Solución recomendada:** decidir si una terminal admin puede cancelar traspasos de cualquier origen y
+reflejarlo en la RPC y en `cancellableTransferIds`.
+
+### 90. `set_branch_active` acepta un `p_admin_id` ajeno de un usuario autenticado
+
+**Estado:** Resuelto (15 nov 2026) — PR #205, migración `20261115170000`. Verificado en remoto:
+`create_branch` y `set_branch_active` contienen `coalesce(auth.uid(), p_admin_id)` y `anon` no tiene
+`EXECUTE`. Detectado al aplicar las migraciones del mismo PR.
+
+**Severidad:** Alta.
+
+La definición remota de `set_branch_active` valida al admin con `u.id = p_admin_id`, sin el
+`coalesce(auth.uid(), p_admin_id)` que `20261020120000` documenta como aplicado. Lo mismo pasaba en
+`create_branch` hasta `20261115130000`, que lo restauró. `20261115150000` revocó `anon` en ambas, así
+que ya no se puede llamar sin sesión, pero un usuario autenticado que no es admin puede desactivar
+o reactivar sucursales pasando el UUID de un admin.
+
+**Solución recomendada:** reaplicar el cuerpo de `set_branch_active` del repo (con
+`v_admin_id := coalesce(auth.uid(), p_admin_id)`) y revisar si otras RPCs del 20 oct quedaron sin
+ese endurecimiento en remoto.
+
 ---
 
 ## Cómo usar este documento

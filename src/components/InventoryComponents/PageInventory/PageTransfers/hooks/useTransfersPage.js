@@ -1,28 +1,42 @@
+import { useState } from "react";
+
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import {
+  isAdminBranch,
+  resolveStockOriginId,
+} from "../../../../../services/branchScopeCalculationService";
 
 import useTransferFeedback from "./useTransferFeedback";
 import useTransferDataLoad from "./useTransferDataLoad";
 import useSendForm from "./useSendForm";
 import useReceiveForm from "./useReceiveForm";
+import useTransferOriginCatalog from "./useTransferOriginCatalog";
 
 const useTransfersPage = ({ isActive = true } = {}) => {
   const { branch } = useBranch();
   const { user } = useAuth();
-  const {
-    getProductByCodigo,
-    products,
-    loadingProducts,
-    productsError,
-    refreshProducts,
-  } = useProducts();
+  const contextCatalog = useProducts();
+  const { refreshProducts } = contextCatalog;
+
+  const canChooseOrigin = isAdminBranch(branch);
+  const [chosenOriginId, setOriginBranchId] = useState("");
+  const originBranchId = resolveStockOriginId(branch, chosenOriginId);
+
+  const originCatalog = useTransferOriginCatalog({
+    branch,
+    originBranchId,
+    contextCatalog,
+  });
+  const { products, loadingProducts, productsError } = originCatalog;
 
   const { error, success, setError, setSuccess, clearFeedback } =
     useTransferFeedback();
 
   const dataLoad = useTransferDataLoad({
     branch,
+    originBranchId,
     user,
     isActive,
     refreshProducts,
@@ -49,13 +63,17 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     reloadOrders,
   } = dataLoad;
 
+  const originBranch = canChooseOrigin
+    ? branchOptions.find((option) => option.id === originBranchId) || null
+    : branch;
+
   const sendForm = useSendForm({
-    branch,
+    originBranch,
     user,
     products,
     activeTab,
-    getProductByCodigo,
-    refreshProducts,
+    getProductByCodigo: originCatalog.getProductByCodigo,
+    refreshProducts: originCatalog.refreshProducts,
     reloadOrders,
     setActiveTab,
     submitting,
@@ -112,6 +130,10 @@ const useTransfersPage = ({ isActive = true } = {}) => {
   return {
     activeTab,
     branch,
+    branchOptions,
+    canChooseOrigin,
+    originBranchId,
+    setOriginBranchId,
     cancellableTransferIds,
     destinationBranchId,
     destinationOptions,

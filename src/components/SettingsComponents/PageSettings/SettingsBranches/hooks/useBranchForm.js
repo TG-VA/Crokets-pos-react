@@ -3,8 +3,8 @@ import {
   buildBranchFormValues,
   sanitizeBranchCodeInput,
   sanitizeBranchFormValues,
-  validateBranchFormValues,
 } from "../utils/branchesFormatters";
+import { validateBranchFormValues } from "../utils/branchFormValidation";
 
 export const useBranchForm = (initialBranch = null) => {
   const [values, setValues] = useState(() =>

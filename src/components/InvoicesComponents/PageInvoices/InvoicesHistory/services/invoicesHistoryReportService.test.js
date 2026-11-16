@@ -45,13 +45,14 @@ describe("invoicesHistoryReportService", () => {
   });
 
   describe("fetchActiveBranches", () => {
-    it("trae solo las sucursales activas, ordenadas por nombre", async () => {
+    it("trae solo las sucursales operativas activas, ordenadas por nombre", async () => {
       nextResults = [{ data: [{ id: 1, name: "Uno" }], error: null }];
 
       const branches = await fetchActiveBranches();
 
       expect(fromCalls).toEqual(["branches"]);
-      expect(lastChain().eq).toHaveBeenCalledWith("status", true);
+      expect(lastChain().eq).toHaveBeenCalledWith("branch_type", "operational");
+      expect(lastChain().eq).toHaveBeenCalledWith("is_active", true);
       expect(lastChain().order).toHaveBeenCalledWith("name", {
         ascending: true,
       });

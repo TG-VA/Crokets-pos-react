@@ -5,14 +5,14 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
 export const getBranchesList = async () => {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name")
-    .order("name", { ascending: true });
+  const { data, error } = await fetchOperationalBranches({
+    columns: "id, name",
+  });
 
   if (error) {
     console.error("Error al obtener catálogo de sucursales:", error);

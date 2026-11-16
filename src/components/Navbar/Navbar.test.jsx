@@ -10,13 +10,17 @@ vi.mock("../../contexts/AuthContext", () => ({
   }),
 }));
 
+const OPERATIONAL_BRANCH = { id: "branch-1", code: "01", name: "Centro" };
+const branchState = vi.hoisted(() => ({ current: null }));
+
 vi.mock("../../contexts/BranchContext", () => ({
-  useBranch: () => ({
-    branch: { id: "branch-1", code: "01", name: "Centro" },
-  }),
+  useBranch: () => ({ branch: branchState.current }),
 }));
 
-vi.mock("../../lib/permissionsService", () => ({
+vi.mock("../../lib/supabaseClient", () => ({ supabase: {} }));
+
+vi.mock("../../lib/permissionsService", async (importOriginal) => ({
+  ...(await importOriginal()),
   checkUserIsAdmin: vi.fn(),
 }));
 
@@ -47,6 +51,7 @@ const settingsButton = () =>
 describe("Navbar: estado activo de Configuracion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    branchState.current = OPERATIONAL_BRANCH;
     checkUserIsAdmin.mockResolvedValue(true);
   });
 
@@ -98,5 +103,32 @@ describe("Navbar: autorizacion de Configuracion", () => {
       await screen.findByRole("heading", { name: "Acceso restringido" })
     ).toBeTruthy();
     expect(screen.getByTestId("location").textContent).toBe("/dashboard");
+  });
+});
+
+describe("Navbar: modulos por tipo de sucursal", () => {
+  const navLabels = () =>
+    screen.getAllByRole("button").map((button) => button.textContent.trim());
+
+  it("una terminal operativa ve Ventas, Facturas y Corte", () => {
+    branchState.current = OPERATIONAL_BRANCH;
+    renderAt("/reports");
+
+    expect(navLabels()).toEqual(
+      expect.arrayContaining(["Ventas", "Facturas", "Corte"])
+    );
+  });
+
+  it("una terminal admin no ve Ventas, Facturas ni Corte", () => {
+    branchState.current = { ...OPERATIONAL_BRANCH, branch_type: "admin" };
+    renderAt("/reports");
+
+    const labels = navLabels();
+    ["Ventas", "Facturas", "Corte"].forEach((label) =>
+      expect(labels).not.toContain(label)
+    );
+    expect(labels).toEqual(
+      expect.arrayContaining(["Inventario", "Reportes", "Productos"])
+    );
   });
 });

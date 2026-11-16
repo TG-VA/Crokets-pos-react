@@ -1,12 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 vi.mock("../services/cashOperationSettingsService", () => ({
   loadCashOperationSettings: vi.fn(),
 }));
 
+vi.mock("../services/branchScopeService", () => ({
+  fetchBranchType: vi.fn(),
+}));
+
 import { BranchProvider, useBranch } from "./BranchContext";
 import { loadCashOperationSettings } from "../services/cashOperationSettingsService";
+import { fetchBranchType } from "../services/branchScopeService";
 
 const Consumer = () => {
   const { branch, setBranch } = useBranch();
@@ -35,6 +46,7 @@ describe("BranchContext", () => {
       source: "remote",
       error: null,
     });
+    fetchBranchType.mockResolvedValue({ data: "operational", error: null });
   });
 
   it("expone el valor nulo cuando no hay sucursal en cache", () => {
@@ -192,5 +204,102 @@ describe("BranchContext", () => {
       "useBranch debe usarse dentro de <BranchProvider />"
     );
     spy.mockRestore();
+  });
+});
+
+describe("BranchContext: tipo de sucursal en cache", () => {
+  const TypeConsumer = () => {
+    const { branch } = useBranch();
+    return <span data-testid="branch-type">{branch?.branch_type || "-"}</span>;
+  };
+
+  const renderWithCache = (cached) => {
+    localStorage.setItem("currentBranch", JSON.stringify(cached));
+    render(
+      <BranchProvider>
+        <TypeConsumer />
+      </BranchProvider>
+    );
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    loadCashOperationSettings.mockResolvedValue({ success: true });
+  });
+
+  it("completa branch_type de una sucursal en cache que no lo traia", async () => {
+    fetchBranchType.mockResolvedValue({ data: "admin", error: null });
+    renderWithCache({ id: "adm", name: "ADM-BREN" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("branch-type").textContent).toBe("admin")
+    );
+    expect(fetchBranchType).toHaveBeenCalledWith("adm");
+    expect(JSON.parse(localStorage.getItem("currentBranch")).branch_type).toBe(
+      "admin"
+    );
+  });
+
+  it("ignora la respuesta tardia de la sucursal anterior", async () => {
+    let resolveFirst;
+    fetchBranchType.mockImplementation((id) =>
+      id === "a"
+        ? new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
+        : Promise.resolve({ data: "operational", error: null })
+    );
+    localStorage.setItem(
+      "currentBranch",
+      JSON.stringify({ id: "a", name: "ADM-BREN" })
+    );
+
+    const SwitchConsumer = () => {
+      const { branch, setBranch } = useBranch();
+      return (
+        <div>
+          <span data-testid="branch-id">{branch?.id}</span>
+          <span data-testid="branch-type">{branch?.branch_type || "-"}</span>
+          <button
+            type="button"
+            onClick={() =>
+              setBranch({ id: "b", name: "Centro", branch_type: "operational" })
+            }
+          >
+            cambiar
+          </button>
+        </div>
+      );
+    };
+
+    render(
+      <BranchProvider>
+        <SwitchConsumer />
+      </BranchProvider>
+    );
+
+    fireEvent.click(screen.getByText("cambiar"));
+    await waitFor(() => expect(fetchBranchType).toHaveBeenCalledWith("b"));
+
+    await act(async () => {
+      resolveFirst({ data: "admin", error: null });
+    });
+
+    expect(screen.getByTestId("branch-id").textContent).toBe("b");
+    expect(screen.getByTestId("branch-type").textContent).toBe("operational");
+    expect(JSON.parse(localStorage.getItem("currentBranch")).branch_type).toBe(
+      "operational"
+    );
+  });
+
+  it("conserva la sucursal en cache si la consulta falla", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchBranchType.mockResolvedValue({ data: null, error: new Error("red") });
+    renderWithCache({ id: "b1", name: "Torres", branch_type: "operational" });
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(screen.getByTestId("branch-type").textContent).toBe("operational");
+    errorSpy.mockRestore();
   });
 });

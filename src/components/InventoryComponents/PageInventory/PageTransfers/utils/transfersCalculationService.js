@@ -1,5 +1,6 @@
 // Calculos puros: agregaciones, conteos, filtros, ordenamiento.
 
+import { isOperationalBranch } from "../../../../../services/branchScopeCalculationService";
 import { isInventoryTrackedProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { parseTransferDate, normalizeText } from "./transfersFormatters";
 
@@ -152,8 +153,9 @@ export const getTransferMetrics = ({ orders = [], currentBranchId = "" }) => {
 // Helpers de construccion y validacion de items de traspaso (logica pura).
 // ============================================================================
 
+// Una sucursal admin no tiene stock: nunca se ofrece como origen ni destino.
 export const getBranchFallback = (currentBranch) => {
-  if (!currentBranch?.id) {
+  if (!currentBranch?.id || !isOperationalBranch(currentBranch)) {
     return [];
   }
 

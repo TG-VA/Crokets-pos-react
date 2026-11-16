@@ -119,6 +119,24 @@ const CreateOrderWorkspace = ({
             />
           </label>
 
+          {form.canChooseOrigin && (
+            <label className={styles.field}>
+              <span>Sucursal origen</span>
+              <select
+                value={form.originBranchId}
+                onChange={(event) => form.setOriginBranchId(event.target.value)}
+                disabled={form.isSaving}
+              >
+                <option value="">Selecciona una sucursal</option>
+                {form.originOptions.map((branchOption) => (
+                  <option key={branchOption.id} value={branchOption.id}>
+                    {branchOption.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <label className={styles.field}>
             <span>Sucursal destino</span>
             <select
