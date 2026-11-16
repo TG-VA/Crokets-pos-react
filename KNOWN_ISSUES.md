@@ -2717,11 +2717,10 @@ lleve directo a `/reports`.
 
 ### 87. Cambiar a admin una sucursal con stock no está bloqueado
 
-**Estado:** Mitigado (15 nov 2026) — PR #205. La UI y `updateBranchContact` ya no permiten cambiar
-el tipo de una sucursal existente: solo se elige al crearla. Sigue pendiente la validación en
-servidor (otro PR), porque un `update` directo sobre `branches.branch_type` todavía no se rechaza.
-La migración `20261115180000` (ver #91) agrega el trigger `branches_branch_type_immutable`, que
-rechaza cualquier cambio de `branch_type` en un `update`.
+**Estado:** Resuelto en repo (15 nov 2026) — PR #205 y PR #206. La UI y `updateBranchContact` no
+permiten cambiar el tipo de una sucursal existente, y la migración `20261115180000` (ver #91) agrega
+el trigger `branches_branch_type_immutable`, que rechaza en servidor cualquier cambio de
+`branch_type` en un `update`. El tipo solo se elige al crear la sucursal.
 
 **Severidad:** Baja (antes Media).
 
