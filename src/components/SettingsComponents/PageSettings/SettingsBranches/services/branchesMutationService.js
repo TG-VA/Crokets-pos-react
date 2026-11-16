@@ -1,11 +1,9 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { BRANCH_TYPES } from "../../../../../services/branchScopeService";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../../../../utils/branchMessages";
 
 const BRANCHES_RETURNING =
   "id, code, name, phone, email, address, city, state, timezone, is_active, branch_type";
-
-export const BRANCH_NOT_UPDATED_ERROR =
-  "No se actualizó la sucursal: no tienes permiso para editarla o ya no existe.";
 
 const buildRpcError = (data, fallback) => ({
   success: false,

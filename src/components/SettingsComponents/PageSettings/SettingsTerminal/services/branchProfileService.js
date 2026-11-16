@@ -1,5 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
-import { BRANCH_NOT_UPDATED_ERROR } from "../../SettingsBranches/services/branchesMutationService";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../../../../utils/branchMessages";
 
 export const fetchBranchProfile = async (branchId) => {
   if (!branchId) {
