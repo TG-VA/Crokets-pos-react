@@ -159,6 +159,25 @@ describe("ReceiveWorkspace", () => {
     expect(onReceiptQuantityChange).toHaveBeenLastCalledWith("p1", "8");
   });
 
+  it("selecciona el contenido de la cantidad recibida al enfocarla", () => {
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={orders[0]}
+        receiptQuantities={{ p1: "3" }}
+      />
+    );
+
+    const input = screen.getByLabelText("Cantidad recibida de Alimento 15kg");
+
+    expect(input.value).toBe("3");
+
+    fireEvent.focus(input);
+
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
+  });
+
   it("pagina los productos de 5 en 5 y conserva lo capturado", () => {
     const order = buildOrderWithItems(12);
 
