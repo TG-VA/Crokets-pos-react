@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (15 nov 2026)
+## Cobertura actual (16 nov 2026)
 
-329 archivos de test (**3384 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+330 archivos de test (**3394 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -120,6 +120,8 @@ y el proceso principal de Electron:
 | Sucursales: validacion del formulario                     | `.../SettingsBranches/utils/branchFormValidation.test.js`                          |
 | Sucursales: campos por tipo                               | `.../SettingsBranches/utils/branchTypeFormConfig.test.js`                          |
 | Sucursales: modal con tipo                                | `.../SettingsBranches/components/BranchFormModal.test.jsx`                         |
+| Sucursales: edicion sin filas afectadas (RLS)             | `.../SettingsBranches/services/branchesMutationService.test.js`                    |
+| Terminal: perfil de sucursal sin filas afectadas (RLS)    | `.../SettingsTerminal/services/branchProfileService.test.js`                       |
 | Contrato SQL: RPCs de sucursales sin anon                 | `supabase/migrations/branchesRpcsRevokeAnonContract.test.js`                       |
 | Contrato SQL: inventario sin sucursal admin               | `supabase/migrations/rejectAdminBranchInventoryContract.test.js`                   |
 | Contrato SQL: guard de admin en set_branch_active         | `supabase/migrations/setBranchActiveAdminGuardContract.test.js`                    |
