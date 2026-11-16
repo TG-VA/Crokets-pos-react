@@ -2717,11 +2717,13 @@ lleve directo a `/reports`.
 
 ### 87. Cambiar a admin una sucursal con stock no está bloqueado
 
-**Estado:** Abierto (15 nov 2026).
+**Estado:** Mitigado (15 nov 2026) — PR #205. La UI y `updateBranchContact` ya no permiten cambiar
+el tipo de una sucursal existente: solo se elige al crearla. Sigue pendiente la validación en
+servidor (otro PR), porque un `update` directo sobre `branches.branch_type` todavía no se rechaza.
 
-**Severidad:** Media.
+**Severidad:** Baja (antes Media).
 
-Ajustes > Sucursales permite editar el tipo. Si una sucursal operativa con inventario, ventas o
+Ajustes > Sucursales permitía editar el tipo. Si una sucursal operativa con inventario, ventas o
 traspasos en tránsito pasa a admin, desaparece de selectores y reportes y el servidor rechaza sus
 nuevas ventas, pero su historial y su stock quedan sin dueño visible.
 

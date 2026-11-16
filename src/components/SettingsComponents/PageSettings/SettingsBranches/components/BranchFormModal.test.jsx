@@ -41,8 +41,21 @@ describe("BranchFormModal tipo de sucursal", () => {
     expect(screen.getByLabelText(/Tipo de sucursal/).value).toBe("operational");
   });
 
-  it("al elegir administrativa oculta los campos de contacto", () => {
+  it("al crear permite elegir el tipo", () => {
+    renderModal(null);
+
+    expect(screen.getByLabelText(/Tipo de sucursal/).disabled).toBe(false);
+  });
+
+  it("al editar el tipo queda fijo", () => {
     renderModal(baseBranch);
+
+    expect(screen.getByLabelText(/Tipo de sucursal/).disabled).toBe(true);
+    expect(screen.getByText(/El tipo no es editable/)).toBeTruthy();
+  });
+
+  it("al elegir administrativa oculta los campos de contacto", () => {
+    renderModal(null);
 
     fireEvent.change(screen.getByLabelText(/Tipo de sucursal/), {
       target: { value: "admin" },

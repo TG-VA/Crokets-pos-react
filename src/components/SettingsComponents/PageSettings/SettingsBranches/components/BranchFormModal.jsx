@@ -109,6 +109,7 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   className={styles.select}
                   value={values.branchType}
                   onChange={handleChange("branchType")}
+                  disabled={isEdit}
                   {...errorProps("branchType")}
                 >
                   {BRANCH_TYPE_OPTIONS.map((option) => (
@@ -118,6 +119,11 @@ const BranchFormModal = ({ isOpen, branch, saving, onSubmit, onClose }) => {
                   ))}
                 </select>
                 <p className={styles.fieldHint}>{branchTypeHint}</p>
+                {isEdit ? (
+                  <p className={styles.fieldHint}>
+                    El tipo no es editable: solo se elige al crear la sucursal.
+                  </p>
+                ) : null}
                 <FieldError message={getFieldError("branchType")} />
               </div>
 

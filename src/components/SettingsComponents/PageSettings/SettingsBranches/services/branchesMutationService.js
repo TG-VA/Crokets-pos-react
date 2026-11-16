@@ -77,9 +77,8 @@ export const updateBranchContact = async (branchId, updates) => {
   if (updates.phone !== undefined) allowedUpdates.phone = updates.phone;
   if (updates.email !== undefined) allowedUpdates.email = updates.email;
   if (updates.address !== undefined) allowedUpdates.address = updates.address;
-  if (updates.branchType !== undefined) {
-    allowedUpdates.branch_type = updates.branchType;
-  }
+  // branch_type no se edita: pasar una sucursal con historial a admin dejaria traspasos
+  // en transito atorados (KNOWN_ISSUES.md #87). El tipo solo se elige al crear.
 
   if (Object.keys(allowedUpdates).length === 0) {
     return {

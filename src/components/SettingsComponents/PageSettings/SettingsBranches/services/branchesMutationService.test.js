@@ -183,22 +183,24 @@ describe("branchesMutationService", () => {
       });
     });
 
-    it("persiste el tipo de sucursal como branch_type", async () => {
+    it("no permite cambiar el tipo de una sucursal existente", async () => {
+      const result = await updateBranchContact("b1", { branchType: "admin" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("No hay campos");
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it("ignora branchType junto a campos editables", async () => {
       const mutationQuery = updateQuery({
-        data: { id: "b1", branch_type: "admin" },
+        data: { id: "b1", city: "Merida" },
         error: null,
       });
       supabase.from.mockReturnValueOnce(mutationQuery);
 
-      const result = await updateBranchContact("b1", { branchType: "admin" });
+      await updateBranchContact("b1", { city: "Merida", branchType: "admin" });
 
-      expect(mutationQuery.update).toHaveBeenCalledWith({
-        branch_type: "admin",
-      });
-      expect(mutationQuery.select).toHaveBeenCalledWith(
-        expect.stringContaining("branch_type")
-      );
-      expect(result.success).toBe(true);
+      expect(mutationQuery.update).toHaveBeenCalledWith({ city: "Merida" });
     });
 
     it("rechaza si ya existe otra sucursal con el mismo nombre", async () => {
