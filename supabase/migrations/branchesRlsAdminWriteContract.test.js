@@ -44,6 +44,11 @@ describe("RLS de branches con escritura solo para admin", () => {
     expect(sql).toContain(
       "before update of branch_type on public.branches for each row execute function public.reject_branch_type_change();"
     );
+    expect(sql).toContain("using errcode = 'check_violation';");
+    expect(sql).toContain("end if; return new; end;");
+    expect(sql).toContain(
+      "revoke all on function public.reject_branch_type_change() from public, anon, authenticated;"
+    );
   });
 
   it("documenta el rollback", () => {
