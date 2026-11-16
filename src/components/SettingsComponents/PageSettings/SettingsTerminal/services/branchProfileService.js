@@ -1,7 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
-
-const BRANCH_NOT_UPDATED_ERROR =
-  "No se actualizó la sucursal: no tienes permiso para editarla o ya no existe.";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../SettingsBranches/services/branchesMutationService";
 
 export const fetchBranchProfile = async (branchId) => {
   if (!branchId) {
