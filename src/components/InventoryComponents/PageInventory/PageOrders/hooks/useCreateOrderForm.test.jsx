@@ -209,4 +209,26 @@ describe("useCreateOrderForm origen de stock", () => {
 
     expect(result.current.isValid).toBe(false);
   });
+
+  it("limpia el destino si el origen elegido coincide con el", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => result.current.setDestinationBranchId("b1"));
+    act(() => result.current.setOriginBranchId("b1"));
+
+    expect(result.current.destinationBranchId).toBe("");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b2",
+      "b3",
+    ]);
+  });
+
+  it("conserva el destino si el origen elegido es distinto", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => result.current.setDestinationBranchId("b1"));
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.destinationBranchId).toBe("b1");
+  });
 });

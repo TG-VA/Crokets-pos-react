@@ -36,10 +36,22 @@ export const useCreateOrderForm = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [chosenOriginId, setOriginBranchId] = useState("");
+  const [chosenOriginId, setChosenOriginId] = useState("");
 
   const canChooseOrigin = isAdminBranch(currentBranch);
   const originBranchId = resolveStockOriginId(currentBranch, chosenOriginId);
+
+  // Un destino igual al nuevo origen quedaria fuera de sus opciones y bloquearia
+  // el guardado sin explicacion, asi que se limpia para que el usuario lo elija.
+  const setOriginBranchId = useCallback(
+    (nextOriginId) => {
+      setChosenOriginId(nextOriginId);
+      if (nextOriginId && nextOriginId === destinationBranchId) {
+        setDestinationBranchId("");
+      }
+    },
+    [destinationBranchId, setDestinationBranchId]
+  );
 
   const setOrderName = useCallback(
     (value) => {
