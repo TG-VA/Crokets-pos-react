@@ -381,6 +381,57 @@ describe("ReceiveWorkspace", () => {
     ).toBe(false);
   });
 
+  it("avisa cuantos productos en 0 regresan completos a origen", () => {
+    const order = buildOrderWithItems(12);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p1: "3" }}
+      />
+    );
+
+    expect(
+      screen.getByText("11 productos en 0 regresarán completos a origen")
+    ).toBeTruthy();
+  });
+
+  it("no muestra el aviso cuando todos los productos tienen captura", () => {
+    const order = buildOrderWithItems(3);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p1: "1", p2: "2", p3: "3" }}
+      />
+    );
+
+    expect(screen.queryByText(/regresarán completos a origen/)).toBeNull();
+  });
+
+  it("mantiene el aviso visible despues de armar la confirmacion", () => {
+    const order = buildOrderWithItems(12);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p1: "3" }}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar recepción" })
+    );
+
+    expect(screen.getByText("Presiona de nuevo para confirmar")).toBeTruthy();
+    expect(
+      screen.getByText("11 productos en 0 regresarán completos a origen")
+    ).toBeTruthy();
+  });
+
   it("arma la confirmacion al primer click y confirma al segundo", () => {
     const onConfirmReceipt = vi.fn();
 

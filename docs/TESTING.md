@@ -154,7 +154,7 @@ y el proceso principal de Electron:
 | Traspasos: filtros de historial (hook)                    | `.../PageTransfers/hooks/useTransferHistoryFilters.test.js`                        |
 | Traspasos: filtrado por fecha de creacion                 | `.../PageTransfers/utils/transfersDateRange.test.js`                               |
 | Traspasos: hero (sucursal y KPIs operativos)              | `.../PageTransfers/components/HeroSection.test.jsx`                                |
-| Traspasos: espacio de recepcion (paginacion y armado)     | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
+| Traspasos: espacio de recepcion (armado y aviso 0s)       | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
 | Traspasos: modal de detalle (titulo, origen y destino)    | `.../PageTransfers/components/modals/TransferDetailModal.test.jsx`                 |
 | Traspasos: busqueda de productos con existencia           | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
 | Traspasos: recepcion (cantidades y bloqueo en cero)       | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
@@ -162,7 +162,7 @@ y el proceso principal de Electron:
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
 | Traspasos: servicio de datos (sucursales y ordenes)       | `.../PageTransfers/services/transferService.test.js`                               |
-| Traspasos: calculos de sucursal, orden y recepcion        | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
+| Traspasos: calculos de orden, recepcion y aviso 0s        | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
 | Traspasos: utilidades (meta, fechas y presets)            | `.../PageTransfers/utils/transfersUtils.test.js`                                   |
 | Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |

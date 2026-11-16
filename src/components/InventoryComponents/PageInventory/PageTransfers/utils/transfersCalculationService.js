@@ -33,6 +33,16 @@ export const hasReceivedUnits = (items = [], receiptQuantities = {}) => {
   );
 };
 
+/**
+ * Cuenta los productos de la orden que se quedaron en 0 y por lo tanto
+ * regresan completos a la sucursal de origen.
+ */
+export const countUnreceivedItems = (items = [], receiptQuantities = {}) => {
+  return (Array.isArray(items) ? items : []).filter(
+    (item) => normalizeInteger(receiptQuantities?.[item?.productId]) <= 0
+  ).length;
+};
+
 export const buildTransferTotals = (items = []) => {
   return (Array.isArray(items) ? items : []).reduce(
     (summary, item) => {

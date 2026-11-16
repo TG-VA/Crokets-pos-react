@@ -7,6 +7,7 @@ const DISARM_DELAY_MS = 5000;
 const ReceiptConfirmBar = ({
   canConfirm,
   submitting,
+  unreceivedCount = 0,
   buttonRef,
   onConfirm,
 }) => {
@@ -54,12 +55,29 @@ const ReceiptConfirmBar = ({
     return "Doble click o presiona dos veces para confirmar";
   };
 
+  const unreceivedNotice = () => {
+    if (!canConfirm || unreceivedCount <= 0) {
+      return null;
+    }
+
+    if (unreceivedCount === 1) {
+      return "1 producto en 0 regresará completo a origen";
+    }
+
+    return `${unreceivedCount} productos en 0 regresarán completos a origen`;
+  };
+
+  const notice = unreceivedNotice();
+
   return (
     <div className={styles.actionRow}>
       <div className={styles.actionText}>
         La recepción genera entradas automáticas en destino y reingresa el
         faltante a origen.
         <span className={styles.confirmHint}>{renderHint()}</span>
+        {notice ? (
+          <span className={styles.unreceivedNotice}>{notice}</span>
+        ) : null}
       </div>
 
       <button

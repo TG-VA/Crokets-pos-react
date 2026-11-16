@@ -2,6 +2,7 @@ import { Fragment, useRef } from "react";
 
 import styles from "../PageTransfers.module.css";
 import {
+  countUnreceivedItems,
   formatTransferDateTime,
   hasReceivedUnits,
 } from "../utils/transfersUtils";
@@ -23,6 +24,11 @@ const ReceiveWorkspace = ({
   const confirmButtonRef = useRef(null);
 
   const canConfirm = hasReceivedUnits(
+    selectedReceiptOrder?.items,
+    receiptQuantities
+  );
+
+  const unreceivedCount = countUnreceivedItems(
     selectedReceiptOrder?.items,
     receiptQuantities
   );
@@ -124,6 +130,7 @@ const ReceiveWorkspace = ({
               <ReceiptConfirmBar
                 canConfirm={canConfirm}
                 submitting={submitting}
+                unreceivedCount={unreceivedCount}
                 buttonRef={confirmButtonRef}
                 onConfirm={onConfirmReceipt}
               />

@@ -8,6 +8,7 @@ import {
   validateTransferItems,
   normalizeReceivedQuantity,
   hasReceivedUnits,
+  countUnreceivedItems,
 } from "./transfersCalculationService";
 
 describe("transfersCalculationService", () => {
@@ -45,6 +46,37 @@ describe("transfersCalculationService", () => {
     it("devuelve true cuando al menos una captura es mayor a 0", () => {
       const items = [{ productId: "p1" }, { productId: "p2" }];
       expect(hasReceivedUnits(items, { p1: "0", p2: "3" })).toBe(true);
+    });
+  });
+
+  describe("countUnreceivedItems", () => {
+    it("devuelve 0 sin items o con lista vacia", () => {
+      expect(countUnreceivedItems(undefined, undefined)).toBe(0);
+      expect(countUnreceivedItems([], {})).toBe(0);
+    });
+
+    it("cuenta todos los productos cuando todas las capturas estan en 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "0", p2: "0" })).toBe(2);
+    });
+
+    it("cuenta solo los productos sin captura en una mezcla", () => {
+      const items = [
+        { productId: "p1" },
+        { productId: "p2" },
+        { productId: "p3" },
+      ];
+      expect(countUnreceivedItems(items, { p1: "3", p2: "0" })).toBe(2);
+    });
+
+    it("devuelve 0 cuando todos los productos tienen captura", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "3", p2: "5" })).toBe(0);
+    });
+
+    it("ignora capturas con texto sin digitos y claves faltantes", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "abc" })).toBe(2);
     });
   });
 
