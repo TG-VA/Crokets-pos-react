@@ -2781,8 +2781,9 @@ ese endurecimiento en remoto.
 
 ### 91. `branches` sin RLS y con escritura para `anon`
 
-**Estado:** Abierto (15 nov 2026). Corrección preparada en la migración `20261115180000` (pendiente
-de aplicar en remoto).
+**Estado:** Resuelto (15 nov 2026) — PR #206, migración `20261115180000` aplicada en remoto.
+Verificado: RLS activo, sin `INSERT`/`DELETE`/`TRUNCATE` para `anon` ni `authenticated`, `UPDATE`
+solo para admins y trigger `branches_branch_type_immutable` activo. Login probado en la app.
 
 **Severidad:** Alta.
 
