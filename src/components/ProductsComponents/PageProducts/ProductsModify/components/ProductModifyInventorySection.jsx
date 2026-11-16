@@ -3,6 +3,7 @@ import styles from "../ProductsModify.module.css";
 const ProductModifyInventorySection = ({
   form,
   usesInventory,
+  isAdminTerminal = false,
   updateField,
   markTouched,
   selectedProduct,
@@ -37,6 +38,13 @@ const ProductModifyInventorySection = ({
           <option value="no">No</option>
         </select>
       </div>
+
+      {isAdminTerminal && (
+        <div className={styles.helperBox}>
+          Sucursal administrativa: no tiene inventario. El mínimo y el máximo se
+          configuran en cada sucursal operativa.
+        </div>
+      )}
 
       {!usesInventory && (
         <div className={styles.helperBox}>
@@ -74,7 +82,7 @@ const ProductModifyInventorySection = ({
           onBlur={() => markTouched("minimo")}
           onWheel={preventNumberScrollChange}
           onKeyDown={preventNumberArrows}
-          disabled={!usesInventory}
+          disabled={!usesInventory || isAdminTerminal}
         />
 
         {renderError("minimo")}
@@ -94,7 +102,7 @@ const ProductModifyInventorySection = ({
           onBlur={() => markTouched("maximo")}
           onWheel={preventNumberScrollChange}
           onKeyDown={preventNumberArrows}
-          disabled={!usesInventory}
+          disabled={!usesInventory || isAdminTerminal}
         />
 
         {renderError("maximo")}

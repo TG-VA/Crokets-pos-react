@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import { useBranch } from "../../../../../contexts/BranchContext";
+import { isAdminBranch } from "../../../../../services/branchScopeCalculationService";
 import { fetchSatClaves } from "../../../../../services/satClavesService";
 import { useProductModifyForm } from "./useProductModifyForm";
 import { useProductModifyDOM } from "./useProductModifyDOM";
@@ -22,6 +24,8 @@ export const useProductsModify = () => {
     getProductDiscountByProductId,
     upsertProductDiscount,
   } = useProducts();
+  const { branch } = useBranch();
+  const isAdminTerminal = isAdminBranch(branch);
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
@@ -236,6 +240,7 @@ export const useProductsModify = () => {
 
   return {
     products,
+    isAdminTerminal,
     searchModalOpen,
     setSearchModalOpen,
     barcode,

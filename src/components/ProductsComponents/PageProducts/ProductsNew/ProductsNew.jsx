@@ -218,10 +218,13 @@ const ProductsNew = () => {
 
                   <select
                     className={styles.input}
-                    value={form.isGlobal ? "activo" : "inactivo"}
+                    value={
+                      isAdminTerminal || form.isGlobal ? "activo" : "inactivo"
+                    }
                     onChange={(e) =>
                       updateField("isGlobal", e.target.value === "activo")
                     }
+                    disabled={isAdminTerminal}
                   >
                     <option value="activo">Activo</option>
                     <option value="inactivo">Inactivo</option>
@@ -398,8 +401,8 @@ const ProductsNew = () => {
                 {isAdminTerminal && (
                   <div className={styles.helperBox}>
                     Sucursal administrativa: el producto se crea global y sin
-                    existencia. El stock se da de alta en cada sucursal
-                    operativa.
+                    existencia, mínimo ni máximo. El stock se da de alta en cada
+                    sucursal operativa.
                   </div>
                 )}
 
@@ -424,10 +427,9 @@ const ProductsNew = () => {
                     value={form.existencia}
                     onChange={(e) => updateField("existencia", e.target.value)}
                     onBlur={() => markTouched("existencia")}
-                    readOnly={isAdminTerminal}
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
-                    disabled={!usesInventory}
+                    disabled={!usesInventory || isAdminTerminal}
                   />
 
                   {renderError("existencia")}
@@ -449,7 +451,7 @@ const ProductsNew = () => {
                     onBlur={() => markTouched("minimo")}
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
-                    disabled={!usesInventory}
+                    disabled={!usesInventory || isAdminTerminal}
                   />
 
                   {renderError("minimo")}
@@ -471,7 +473,7 @@ const ProductsNew = () => {
                     onBlur={() => markTouched("maximo")}
                     onWheel={preventNumberScrollChange}
                     onKeyDown={preventNumberArrows}
-                    disabled={!usesInventory}
+                    disabled={!usesInventory || isAdminTerminal}
                   />
 
                   {renderError("maximo")}
