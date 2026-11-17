@@ -69,6 +69,65 @@ export const getReceivedQuantitiesPayload = (items = [], quantities = {}) => {
   return payload;
 };
 
+export const parseReceiptCost = (value) => {
+  const numeric = asFiniteNumber(value);
+
+  if (numeric === null || numeric < 0) return null;
+
+  return Math.round(numeric * 100) / 100;
+};
+
+/**
+ * Costo inicial de cada partida al abrir la recepcion: el costo del producto
+ * congelado al crear el pedido. El usuario lo corrige si la mercancia llego a
+ * otro costo; ese valor es el que pondera el CPP de la sucursal destino.
+ */
+export const getInitialReceiptCosts = (items = []) => {
+  const costs = {};
+
+  items.forEach((item) => {
+    const cost = parseReceiptCost(item?.costPrice);
+
+    costs[item.productId] = cost === null ? "" : cost.toFixed(2);
+  });
+
+  return costs;
+};
+
+const isCostRequired = (item, quantities) =>
+  (parseReceiptQuantity(quantities?.[item.productId]) ?? 0) > 0;
+
+/** Partidas con cantidad recibida mayor a 0 y sin costo valido. */
+export const getMissingReceiptCostItems = (
+  items = [],
+  quantities = {},
+  costs = {}
+) =>
+  items.filter(
+    (item) =>
+      isCostRequired(item, quantities) &&
+      parseReceiptCost(costs?.[item.productId]) === null
+  );
+
+/** Costos de las partidas que suman stock; una partida en 0 no pondera. */
+export const getReceivedCostsPayload = (
+  items = [],
+  quantities = {},
+  costs = {}
+) => {
+  const payload = {};
+
+  items.forEach((item) => {
+    const cost = parseReceiptCost(costs?.[item.productId]);
+
+    if (isCostRequired(item, quantities) && cost !== null) {
+      payload[item.productId] = cost;
+    }
+  });
+
+  return payload;
+};
+
 const formatSignedFraction = (value) => {
   const absolute = Math.abs(value);
   const fraction = Number(absolute.toFixed(4)).toString();

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeIntegerQuantity } from "./ordersQuantityInput";
+import {
+  sanitizeCostInput,
+  sanitizeIntegerQuantity,
+} from "./ordersQuantityInput";
 
 describe("sanitizeIntegerQuantity", () => {
   it("keeps digits only", () => {
@@ -37,5 +40,28 @@ describe("sanitizeIntegerQuantity", () => {
     expect(sanitizeIntegerQuantity(null)).toBe("");
     expect(sanitizeIntegerQuantity(undefined)).toBe("");
     expect(sanitizeIntegerQuantity("abc")).toBe("");
+  });
+});
+
+describe("sanitizeCostInput", () => {
+  it("acepta enteros y hasta dos decimales", () => {
+    expect(sanitizeCostInput("120")).toBe("120");
+    expect(sanitizeCostInput("45.5")).toBe("45.5");
+    expect(sanitizeCostInput(" 9.99 ")).toBe("9.99");
+  });
+
+  it("toma la coma como punto decimal", () => {
+    expect(sanitizeCostInput("98,5")).toBe("98.5");
+  });
+
+  it("devuelve cadena vacia al borrar el campo", () => {
+    expect(sanitizeCostInput("")).toBe("");
+    expect(sanitizeCostInput(null)).toBe("");
+  });
+
+  it("rechaza signo, letras y un tercer decimal", () => {
+    expect(sanitizeCostInput("-5")).toBeNull();
+    expect(sanitizeCostInput("12a")).toBeNull();
+    expect(sanitizeCostInput("1.234")).toBeNull();
   });
 });

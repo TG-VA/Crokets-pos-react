@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  getInitialReceiptCosts,
+  getMissingReceiptCostItems,
+  getReceivedCostsPayload,
+  parseReceiptCost,
   buildDiscrepancyNotes,
   calculateDifference,
   filterOrderHistory,
@@ -477,5 +481,48 @@ describe("filterOrderHistory por estado del producto", () => {
     expect(
       filterOrderHistory([receivedOrder, cleanOrder], { itemStatus: "all" })
     ).toHaveLength(2);
+  });
+});
+
+describe("costo de recepcion", () => {
+  const items = [
+    { productId: "p1", costPrice: 120 },
+    { productId: "p2", costPrice: "45.555" },
+    { productId: "p3", costPrice: null },
+  ];
+
+  it("parseReceiptCost descarta vacios y negativos y redondea a 2 decimales", () => {
+    expect(parseReceiptCost("")).toBeNull();
+    expect(parseReceiptCost("-1")).toBeNull();
+    expect(parseReceiptCost("0")).toBe(0);
+    expect(parseReceiptCost("10.126")).toBe(10.13);
+  });
+
+  it("precarga el costo del pedido con 2 decimales", () => {
+    expect(getInitialReceiptCosts(items)).toEqual({
+      p1: "120.00",
+      p2: "45.56",
+      p3: "",
+    });
+  });
+
+  it("solo exige costo a partidas con cantidad recibida mayor a 0", () => {
+    const missing = getMissingReceiptCostItems(
+      items,
+      { p1: "3", p2: "0", p3: "1" },
+      { p1: "120", p2: "", p3: "" }
+    );
+
+    expect(missing.map((item) => item.productId)).toEqual(["p3"]);
+  });
+
+  it("arma el payload solo con partidas recibidas y costo valido", () => {
+    expect(
+      getReceivedCostsPayload(
+        items,
+        { p1: "3", p2: "0", p3: "1" },
+        { p1: "99.5", p2: "10", p3: "0" }
+      )
+    ).toEqual({ p1: 99.5, p3: 0 });
   });
 });
