@@ -34,7 +34,9 @@ const useTransfersPage = ({ isActive = true } = {}) => {
 
   const handleProductPromoted = useCallback(async () => {
     await refreshProducts();
-    await refreshOriginProducts?.();
+    if (refreshOriginProducts !== refreshProducts) {
+      await refreshOriginProducts?.();
+    }
   }, [refreshOriginProducts, refreshProducts]);
 
   const { error, success, setError, setSuccess, clearFeedback } =

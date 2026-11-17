@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+
+const { refreshContextProducts, refreshOriginProducts, originCatalogRef } =
+  vi.hoisted(() => ({
+    refreshContextProducts: vi.fn().mockResolvedValue(),
+    refreshOriginProducts: vi.fn().mockResolvedValue(),
+    originCatalogRef: { current: null },
+  }));
 
 vi.mock("../../../../../contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "u1", username: "admin" } }),
@@ -19,8 +26,12 @@ vi.mock("../../../../../contexts/ProductsContext", () => ({
     products: mockProducts,
     loadingProducts: false,
     productsError: "Error al cargar",
-    refreshProducts: vi.fn().mockResolvedValue(),
+    refreshProducts: refreshContextProducts,
   }),
+}));
+
+vi.mock("./useTransferOriginCatalog", () => ({
+  default: () => originCatalogRef.current,
 }));
 
 vi.mock("./useTransferFeedback", () => ({
@@ -90,6 +101,13 @@ import useTransfersPage from "./useTransfersPage";
 describe("useTransfersPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    originCatalogRef.current = {
+      products: mockProducts,
+      getProductByCodigo: vi.fn(),
+      refreshProducts: refreshContextProducts,
+      loadingProducts: false,
+      productsError: "Error al cargar",
+    };
   });
 
   it("expone el estado de la pagina", () => {
@@ -131,5 +149,44 @@ describe("useTransfersPage", () => {
   it("expone el error de productos para el buscador", () => {
     const { result } = renderHook(() => useTransfersPage());
     expect(result.current.productsError).toBe("Error al cargar");
+  });
+
+  it("al promover en terminal operativa recarga el catalogo una sola vez", async () => {
+    const { result } = renderHook(() => useTransfersPage());
+
+    await act(async () => {
+      await result.current.handleProductPromoted();
+    });
+
+    expect(refreshContextProducts).toHaveBeenCalledTimes(1);
+  });
+
+  it("al promover en terminal admin recarga contexto y origen", async () => {
+    originCatalogRef.current = {
+      ...originCatalogRef.current,
+      refreshProducts: refreshOriginProducts,
+    };
+    const { result } = renderHook(() => useTransfersPage());
+
+    await act(async () => {
+      await result.current.handleProductPromoted();
+    });
+
+    expect(refreshContextProducts).toHaveBeenCalledTimes(1);
+    expect(refreshOriginProducts).toHaveBeenCalledTimes(1);
+  });
+
+  it("al promover sin refresh del origen solo recarga el contexto", async () => {
+    originCatalogRef.current = {
+      ...originCatalogRef.current,
+      refreshProducts: undefined,
+    };
+    const { result } = renderHook(() => useTransfersPage());
+
+    await act(async () => {
+      await result.current.handleProductPromoted();
+    });
+
+    expect(refreshContextProducts).toHaveBeenCalledTimes(1);
   });
 });
