@@ -1,97 +1,41 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
-import {
-  calculateWeightedAverageCost,
-  roundCost,
-} from "../../../../../services/inventory/inventoryCostCalculationService";
-import {
-  resolveCurrentCost,
-  resolveIncomingCostPrice,
-} from "../../../../../services/inventory/inventoryCostResolutionService";
-
-import {
-  getSystemLocalTimestamp,
-  logInventoryMovement,
-} from "../../../../../utils/inventoryMovements";
-
 const getProductId = (product) => {
   return product?.product_id || product?.id || null;
 };
 
-const getSalePrice = (product) => {
-  return Number(product?.precio || 0);
-};
-
-const findInventoryRow = async ({ branchId, productId }) => {
-  const { data, error } = await supabase
-    .from("branch_inventory")
-    .select("id, stock, has_been_stocked, cost_price")
-    .eq("branch_id", branchId)
-    .eq("product_id", productId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
+// `null` es la senal de entrada manual: la RPC valoriza la mercancia al CPP
+// vigente y lo deja intacto. Un valor no numerico se trata igual, como hacia
+// `resolveIncomingCostPrice` antes de mover el calculo al servidor.
+const toIncomingCostParam = (incomingCostPrice) => {
+  if (incomingCostPrice === null || incomingCostPrice === undefined) {
+    return null;
   }
 
-  return data;
+  const parsed = Number(incomingCostPrice);
+
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
-const updateInventoryRow = async ({
-  inventoryRowId,
-  nextStock,
-  costPrice,
-  updatedAt,
-}) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .update({
-      stock: nextStock,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      updated_at: updatedAt,
-    })
-    .eq("id", inventoryRowId);
+const toNumber = (value) => {
+  const parsed = Number(value);
 
-  if (error) {
-    throw error;
-  }
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const insertInventoryRow = async ({
-  branchId,
-  productId,
-  quantity,
-  costPrice,
-  salePrice,
-  createdAt,
-}) => {
-  const { error } = await supabase.from("branch_inventory").insert({
-    branch_id: branchId,
-    product_id: productId,
-    stock: quantity,
-    min_stock: 0,
-    max_stock: 0,
-    is_active: true,
-    has_been_stocked: true,
-    cost_price: costPrice,
-    sale_price: salePrice,
-    created_at: createdAt,
-    updated_at: createdAt,
-  });
-
-  if (error) {
-    throw error;
-  }
-};
-
+/**
+ * Registra una entrada de inventario en la sucursal activa.
+ *
+ * El stock, el CPP y el movimiento del kardex se escriben en una sola
+ * transaccion dentro de `add_inventory_entry`: dos terminales que agregan el
+ * mismo producto a la vez no pierden sumas y un fallo no deja stock sin
+ * movimiento.
+ */
 export const addInventoryToProduct = async ({
   branchId,
   product,
   quantity,
   incomingCostPrice = null,
-  userId = null,
 }) => {
   if (!branchId) {
     throw new Error("No hay una sucursal activa para registrar el inventario.");
@@ -109,73 +53,23 @@ export const addInventoryToProduct = async ({
     throw new Error("La cantidad debe ser mayor a 0.");
   }
 
-  const inventoryRow = await findInventoryRow({
-    branchId,
-    productId,
+  const { data, error } = await supabase.rpc("add_inventory_entry", {
+    p_branch_id: branchId,
+    p_product_id: productId,
+    p_quantity: normalizedQuantity,
+    p_incoming_cost: toIncomingCostParam(incomingCostPrice),
   });
 
-  const now = new Date();
-  const databaseTimestamp = now.toISOString();
-  const movementCreatedAt = getSystemLocalTimestamp(now);
-
-  const salePrice = getSalePrice(product);
-  const currentCost = resolveCurrentCost(product, inventoryRow);
-  const resolvedIncomingCostPrice = resolveIncomingCostPrice(
-    incomingCostPrice,
-    currentCost
-  );
-
-  const previousStock = Number(inventoryRow?.stock || 0);
-  const newStock = previousStock + normalizedQuantity;
-
-  const entryReason = inventoryRow?.has_been_stocked
-    ? "Entrada común"
-    : "Alta inicial";
-
-  const newCostPrice = calculateWeightedAverageCost({
-    currentStock: previousStock,
-    currentCost,
-    incomingQty: normalizedQuantity,
-    incomingCost: resolvedIncomingCostPrice,
-  });
-
-  if (inventoryRow?.id) {
-    await updateInventoryRow({
-      inventoryRowId: inventoryRow.id,
-      nextStock: newStock,
-      costPrice: newCostPrice,
-      updatedAt: databaseTimestamp,
-    });
-  } else {
-    await insertInventoryRow({
-      branchId,
-      productId,
-      quantity: normalizedQuantity,
-      costPrice: newCostPrice,
-      salePrice,
-      createdAt: databaseTimestamp,
-    });
+  if (error) {
+    throw error;
   }
-
-  await logInventoryMovement({
-    branchId,
-    productId,
-    movementType: "entry",
-    quantity: normalizedQuantity,
-    previousStock,
-    newStock,
-    unitCost: resolvedIncomingCostPrice,
-    totalCost: roundCost(resolvedIncomingCostPrice * normalizedQuantity),
-    reason: entryReason,
-    userId,
-    createdAt: movementCreatedAt,
-  });
 
   return {
     productId,
-    previousStock,
-    newStock,
+    previousStock: toNumber(data?.previousStock),
+    newStock: toNumber(data?.newStock),
     quantity: normalizedQuantity,
-    costPrice: newCostPrice,
+    previousCostPrice: toNumber(data?.previousCostPrice),
+    costPrice: toNumber(data?.costPrice),
   };
 };
