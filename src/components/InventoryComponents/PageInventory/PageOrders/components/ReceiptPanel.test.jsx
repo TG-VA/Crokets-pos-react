@@ -127,4 +127,33 @@ describe("ReceiptPanel", () => {
 
     expect(onReceiptNoteChange).toHaveBeenCalledWith("Faltó una bolsa");
   });
+
+  it("muestra el campo de costo junto al conteo fisico y notifica cambios", () => {
+    const onCostChange = vi.fn();
+    const order = buildOrder(1);
+
+    renderPanel({ order, costs: { p0: "120.00" }, onCostChange });
+
+    expect(screen.getByRole("columnheader", { name: "Costo" })).toBeTruthy();
+
+    const input = screen.getByLabelText("Costo unitario de Producto 0");
+
+    expect(input.value).toBe("120.00");
+
+    fireEvent.change(input, { target: { value: "99.5" } });
+
+    expect(onCostChange).toHaveBeenCalledWith("p0", "99.5");
+  });
+
+  it("avisa cuando el conteo esta completo pero falta un costo", () => {
+    renderPanel({
+      order: buildOrder(2),
+      isComplete: true,
+      missingItems: [],
+      missingCostCount: 1,
+    });
+
+    expect(screen.getByText(/Falta el costo de 1 producto/)).toBeTruthy();
+    expect(screen.queryByText("Conteo completo")).toBeNull();
+  });
 });
