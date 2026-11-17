@@ -218,6 +218,23 @@ la nota cuando la recepción tiene diferencias, por lo que:
 Orden de despliegue: aplicar primero la migración (ya aplicada en remoto) y publicar la versión del
 instalador de inmediato; no dejar sucursales en versiones anteriores al publicar.
 
+## Alta transaccional de inventario (`20261117230000`)
+
+`20261117230000_add_inventory_entry_rpc.sql` crea `add_inventory_entry(uuid, uuid, numeric, numeric)`.
+Antes, Inventario > Agregar leía `branch_inventory`, hacía update o insert y registraba el movimiento
+como tres llamadas sueltas desde el cliente. Dos terminales podían perder una suma de stock y un
+fallo del log dejaba stock sin movimiento en el kardex.
+
+- Bloquea la fila (advisory lock + `for update`) y escribe stock, CPP y movimiento en una transacción.
+- `p_incoming_cost` nulo es entrada manual: valoriza al CPP vigente y no lo mueve.
+- Rechaza cantidades no enteras, no positivas o no finitas y costos negativos, no finitos o mayores
+  a 1,000,000. Valida `_user_can_access_branch`.
+- Conserva los motivos `Entrada común` y `Alta inicial`.
+
+**Orden de despliegue:** aplicar la migración antes de publicar el frontend; el cliente nuevo solo
+llama a la RPC. Rollback: `drop function public.add_inventory_entry(uuid, uuid, numeric, numeric);` y
+volver al frontend anterior.
+
 ## Costos finitos en la recepción de pedidos
 
 `20261117180000_store_orders_receipt_cost_finite.sql` reaplica `receive_store_order` (misma firma y
