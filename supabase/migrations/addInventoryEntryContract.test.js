@@ -77,7 +77,15 @@ describe("contrato SQL del alta transaccional de inventario", () => {
   });
 
   it("conserva los motivos Entrada común y Alta inicial", () => {
-    expect(normalizedSql).toContain("then 'Entrada común' else 'Alta inicial'");
+    expect(normalizedSql).toContain(
+      "v_reason := case when v_has_row and coalesce(v_row.has_been_stocked, false) then 'Entrada común' else 'Alta inicial' end;"
+    );
+  });
+
+  it("reactiva y marca como surtida la fila existente", () => {
+    expect(normalizedSql).toMatch(
+      /set stock = v_new_stock, cost_price = v_new_cost, is_active = true, has_been_stocked = true,/
+    );
   });
 
   it("registra el movimiento en la misma funcion", () => {
