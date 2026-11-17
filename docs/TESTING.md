@@ -69,6 +69,8 @@ y el proceso principal de Electron:
 | Inventario: alta vía RPC transaccional                    | `.../PageAdd/services/inventoryAddService.test.js`                                 |
 | Inventario: contrato SQL del alta transaccional y CPP     | `supabase/migrations/addInventoryEntryContract.test.js`                            |
 | Inventario: Agregar protegido por administrador           | `.../NavbarInventory/NavbarInventory.test.jsx`                                     |
+| Inventario: índice y URL directa de Agregar protegida     | `src/pages/Inventory/Inventory.test.jsx`                                           |
+| Inventario: mensaje de CPP al agregar (redondeado)        | `.../PageAdd/utils/inventoryAddFormatters.test.js`                                 |
 | Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |

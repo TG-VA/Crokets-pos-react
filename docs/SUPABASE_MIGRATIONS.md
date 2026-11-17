@@ -232,7 +232,8 @@ fallo del log dejaba stock sin movimiento en el kardex.
 - Conserva los motivos `Entrada común` y `Alta inicial`.
 - Fecha el movimiento con la hora local de la sucursal (`branches.timezone`, fallback
   `America/Cancun`), porque `created_at` es `timestamp without time zone` y el cliente guardaba hora
-  local. `receive_store_order` usa `now()` (UTC) y queda desfasada; no se corrige aquí.
+  local. `receive_store_order` usa `now()` (UTC) y queda desfasada; no se corrige aquí: lo corrige el
+  PR #212 (`fix/pedidos-hora-local-movimientos`).
 
 **Orden de despliegue:** aplicar la migración antes de publicar el frontend; el cliente nuevo solo
 llama a la RPC. Aplicada el 17 nov 2026 (remoto `20261117225349 add_inventory_entry_rpc`). Rollback: `drop function public.add_inventory_entry(uuid, uuid, numeric, numeric);` y
