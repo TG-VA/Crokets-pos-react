@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  buildMissingReceiptCostError,
   getInitialReceiptCosts,
   getMissingReceiptCostItems,
   getReceivedCostsPayload,
@@ -489,6 +490,7 @@ describe("costo de recepcion", () => {
     { productId: "p1", costPrice: 120 },
     { productId: "p2", costPrice: "45.555" },
     { productId: "p3", costPrice: null },
+    { productId: "p4", costPrice: 0 },
   ];
 
   it("parseReceiptCost descarta vacios y negativos y redondea a 2 decimales", () => {
@@ -503,6 +505,7 @@ describe("costo de recepcion", () => {
       p1: "120.00",
       p2: "45.56",
       p3: "",
+      p4: "",
     });
   });
 
@@ -524,5 +527,13 @@ describe("costo de recepcion", () => {
         { p1: "99.5", p2: "10", p3: "0" }
       )
     ).toEqual({ p1: 99.5, p3: 0 });
+  });
+});
+
+describe("buildMissingReceiptCostError", () => {
+  it("indica cuantas partidas no tienen costo", () => {
+    expect(buildMissingReceiptCostError(2)).toBe(
+      "Captura el costo de los productos recibidos (2 pendiente(s))."
+    );
   });
 });

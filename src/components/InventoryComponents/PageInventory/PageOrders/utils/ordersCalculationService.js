@@ -81,6 +81,8 @@ export const parseReceiptCost = (value) => {
  * Costo inicial de cada partida al abrir la recepcion: el costo del producto
  * congelado al crear el pedido. El usuario lo corrige si la mercancia llego a
  * otro costo; ese valor es el que pondera el CPP de la sucursal destino.
+ * Un costo de 0 se precarga vacio: el snapshot guarda 0 cuando el producto no
+ * tenia costo, y precargarlo dejaria pasar la validacion de costo obligatorio.
  */
 export const getInitialReceiptCosts = (items = []) => {
   const costs = {};
@@ -88,11 +90,14 @@ export const getInitialReceiptCosts = (items = []) => {
   items.forEach((item) => {
     const cost = parseReceiptCost(item?.costPrice);
 
-    costs[item.productId] = cost === null ? "" : cost.toFixed(2);
+    costs[item.productId] = cost > 0 ? cost.toFixed(2) : "";
   });
 
   return costs;
 };
+
+export const buildMissingReceiptCostError = (count) =>
+  `Captura el costo de los productos recibidos (${count} pendiente(s)).`;
 
 const isCostRequired = (item, quantities) =>
   (parseReceiptQuantity(quantities?.[item.productId]) ?? 0) > 0;

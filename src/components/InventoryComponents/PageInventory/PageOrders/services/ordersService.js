@@ -6,6 +6,7 @@ import {
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
   getNonIntegerReceiptItems,
+  buildMissingReceiptCostError,
   getMissingReceiptCostItems,
   getReceivedCostsPayload,
 } from "../utils/ordersCalculationService";
@@ -224,9 +225,7 @@ export const receiveStoreOrder = async ({
   );
 
   if (missingCostItems.length > 0) {
-    throw new Error(
-      `Captura el costo de los productos recibidos (${missingCostItems.length} pendiente(s)).`
-    );
+    throw new Error(buildMissingReceiptCostError(missingCostItems.length));
   }
 
   const receiptNoteError = validateReceiptNote({

@@ -172,6 +172,23 @@ describe("useReceiveOrderForm costo de recepcion", () => {
     expect(result.current.costs).toEqual({ p1: "120.00", p2: "45.50" });
   });
 
+  it("exige capturar el costo cuando el pedido trae costo 0", () => {
+    const zeroCostOrder = {
+      ...orders[0],
+      items: [{ ...orders[0].items[0], costPrice: 0 }],
+    };
+    const { result } = setup({ orders: [zeroCostOrder] });
+
+    act(() => {
+      result.current.selectOrder(zeroCostOrder);
+    });
+    capture(result, { p1: "5" });
+
+    expect(result.current.costs).toEqual({ p1: "" });
+    expect(result.current.missingCostItems).toHaveLength(1);
+    expect(result.current.canSubmit).toBe(false);
+  });
+
   it("ignora capturas de costo invalidas y conserva el valor previo", () => {
     const { result } = setup();
 

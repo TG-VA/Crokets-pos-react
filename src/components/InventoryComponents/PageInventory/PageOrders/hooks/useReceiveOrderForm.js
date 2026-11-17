@@ -5,6 +5,7 @@ import { receiveStoreOrder } from "../services/ordersService";
 import {
   calculateDifference,
   getInitialReceiptCosts,
+  buildMissingReceiptCostError,
   getMissingReceiptCostItems,
   getMissingReceiptItems,
   getPendingOrders,
@@ -146,9 +147,7 @@ export const useReceiveOrderForm = ({
     }
 
     if (missingCostItems.length > 0) {
-      setError(
-        `Captura el costo de los productos recibidos (${missingCostItems.length} pendiente(s)).`
-      );
+      setError(buildMissingReceiptCostError(missingCostItems.length));
       return null;
     }
 
