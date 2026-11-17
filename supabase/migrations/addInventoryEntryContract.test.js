@@ -85,6 +85,15 @@ describe("contrato SQL del alta transaccional de inventario", () => {
     expect(normalizedSql).toMatch(/'entry',/);
   });
 
+  it("fecha el movimiento con la hora local de la sucursal", () => {
+    expect(normalizedSql).toContain(
+      "select now() at time zone coalesce(b.timezone, 'America/Cancun')"
+    );
+    expect(normalizedSql).toMatch(
+      /round\(v_cost \* p_quantity, 2\), v_local_now \);/
+    );
+  });
+
   it("revoca anon y concede authenticated", () => {
     expect(normalizedSql).toContain(
       `revoke all on function ${SIGNATURE} from public, anon;`

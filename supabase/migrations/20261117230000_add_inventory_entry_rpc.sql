@@ -14,6 +14,9 @@
 -- - Sin stock previo positivo el CPP es el costo del lote entrante.
 -- - Motivo: 'Entrada común' si la fila ya habia recibido stock, si no
 --   'Alta inicial'.
+-- - `inventory_movements.created_at` es `timestamp without time zone` y el
+--   cliente guardaba hora local: se escribe la hora de la zona de la sucursal
+--   (`branches.timezone`, fallback 'America/Cancun', como create_sale_transaction).
 -- Rollback: drop function public.add_inventory_entry(uuid, uuid, numeric, numeric);
 
 create or replace function public.add_inventory_entry(
@@ -38,6 +41,7 @@ declare
   v_new_stock numeric;
   v_sale numeric;
   v_reason text;
+  v_local_now timestamp;
 begin
   if v_actor is null and auth.role() <> 'service_role' then
     raise exception 'Se requiere un usuario autenticado para agregar inventario.';
@@ -92,6 +96,13 @@ begin
   if not found then
     raise exception 'El producto % no existe.', p_product_id;
   end if;
+
+  select now() at time zone coalesce(b.timezone, 'America/Cancun')
+  into v_local_now
+  from public.branches b
+  where b.id = p_branch_id;
+
+  v_local_now := coalesce(v_local_now, now() at time zone 'America/Cancun');
 
   perform pg_advisory_xact_lock(hashtext('branch_inventory:' || p_product_id::text));
 
@@ -193,7 +204,7 @@ begin
     v_actor,
     v_cost,
     round(v_cost * p_quantity, 2),
-    now()
+    v_local_now
   );
 
   return jsonb_build_object(
