@@ -125,6 +125,15 @@ En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se m
 `KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.
 Aplicarlo en base de datos requeriría una migración.
 
+**Inventario > Agregar: autorización de administrador (17 nov 2026, PR #211).**
+La sección Agregar de Inventario (`/inventory/agregar`) se envuelve en `ProtectedRoute` con la acción
+`inventory_add_access` (`PROTECTED_INVENTORY_SECTIONS` en `src/config/adminProtectedSections.js`) y
+la pestaña de `NavbarInventory` abre `AdminAuthorizationModal` a quien no es administrador. Un cajero
+entra si un administrador autoriza. Es **gateo de interfaz, no un control de seguridad**: la RPC
+`add_inventory_entry` no consulta `is_admin()`; solo exige sesión (`auth.uid()`) y acceso a la
+sucursal (`_user_can_access_branch`). Entra en el riesgo aceptado de `KNOWN_ISSUES.md` #10/#13/#38.
+Exigir el rol en base de datos requeriría una migración.
+
 **Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
 `import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
 rechaza con `Solo un administrador puede importar productos.` antes de insertar. Es control en base
@@ -141,7 +150,8 @@ Las RPCs que mueven dinero o inventario (`create_sale_transaction` ×3, `cancel_
 `receive_transfer_order`, `cancel_sale`, `complete_sale`) ya no conceden `EXECUTE` a `anon` ni a
 `PUBLIC` (solo `authenticated`/`service_role`) y fijan el actor con `p_user_id := coalesce(auth.uid(),
 p_user_id)`, de modo que un usuario autenticado no puede suplantar a otro pasando un `p_user_id`
-ajeno. `auth.uid()` es el mismo valor que `public.users.id` (así lo resuelve `is_admin()`). Cierra el
+ajeno. `add_inventory_entry` (`20261117230000`, PR #211) sigue el mismo criterio: revoca `anon` y
+`PUBLIC` y no recibe `p_user_id`; toma el actor directamente de `auth.uid()`. `auth.uid()` es el mismo valor que `public.users.id` (así lo resuelve `is_admin()`). Cierra el
 acceso anónimo y la suplantación, no la ausencia de RLS. Ver `docs/SUPABASE_MIGRATIONS.md`.
 
 ### Excepción de autorización pre-auth (`get_branch_by_device`)

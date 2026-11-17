@@ -3,6 +3,13 @@ import styles from "./NavbarInventory.module.css";
 
 import { usePendingTransfers } from "../../../contexts/PendingTransfersContext";
 import { usePendingOrders } from "../../../contexts/PendingOrdersContext";
+import { useBranch } from "../../../contexts/BranchContext";
+import useProtectedNavigation from "../../../hooks/useProtectedNavigation";
+import AdminAuthorizationModal from "../../AdminAuthorizationModal/AdminAuthorizationModal";
+import {
+  PROTECTED_INVENTORY_SECTIONS,
+  withProtectedMetadata,
+} from "../../../config/adminProtectedSections";
 
 import AddIcon from "../../../assets/icons/plus-solid-full.svg";
 import SettingsIcon from "../../../assets/icons/gear-solid-full.svg";
@@ -12,11 +19,19 @@ import KardexIcon from "../../../assets/icons/boxes-stacked-solid-full.svg";
 import TransfersIcon from "../../../assets/icons/file-import-solid-full.svg";
 import OrdersIcon from "../../../assets/icons/receipt-solid-full.svg";
 
-const NavbarInventory = () => {
+const NavbarInventory = ({ onProtectedAccessAuthorized }) => {
   const { pendingReceiptsCount } = usePendingTransfers();
   const { pendingOrdersCount } = usePendingOrders();
+  const { branch } = useBranch();
+  const {
+    handleNavigation,
+    adminAuthOpen,
+    onCloseAdminAuth,
+    onAuthorizedAdminAuth,
+    pendingNavigation,
+  } = useProtectedNavigation(onProtectedAccessAuthorized);
 
-  const options = [
+  const navbarOptions = [
     {
       id: "agregar",
       label: "Agregar",
@@ -61,6 +76,11 @@ const NavbarInventory = () => {
     },
   ];
 
+  const options = withProtectedMetadata(
+    navbarOptions,
+    PROTECTED_INVENTORY_SECTIONS
+  );
+
   return (
     <div className={styles.navbarInventory}>
       <div className={styles.buttonsContainer}>
@@ -76,6 +96,7 @@ const NavbarInventory = () => {
               key={option.id}
               to={option.path}
               end={option.end}
+              onClick={(event) => handleNavigation(option, event)}
               className={({ isActive }) =>
                 `${styles.navButton} ${isActive ? styles.active : ""}`
               }
@@ -111,6 +132,21 @@ const NavbarInventory = () => {
           );
         })}
       </div>
+
+      <AdminAuthorizationModal
+        isOpen={adminAuthOpen}
+        onClose={onCloseAdminAuth}
+        onAuthorized={onAuthorizedAdminAuth}
+        action={pendingNavigation?.action}
+        title="Acceso restringido"
+        message={
+          pendingNavigation
+            ? `Para entrar a la sección "${pendingNavigation.routeLabel}", se requiere autorización de un administrador.`
+            : undefined
+        }
+        targetId={pendingNavigation?.routePath}
+        branchId={branch?.id}
+      />
     </div>
   );
 };

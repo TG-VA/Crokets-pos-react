@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 vi.mock("../../../contexts/PendingTransfersContext", () => ({
@@ -10,6 +10,24 @@ vi.mock("../../../contexts/PendingOrdersContext", () => ({
   usePendingOrders: vi.fn(),
 }));
 
+vi.mock("../../../contexts/BranchContext", () => ({
+  useBranch: () => ({ branch: { id: "branch-1" } }),
+}));
+
+vi.mock("../../../contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "user-1" } }),
+}));
+
+vi.mock("../../../lib/permissionsService", () => ({
+  checkUserIsAdmin: vi.fn(),
+}));
+
+vi.mock("../../AdminAuthorizationModal/AdminAuthorizationModal", () => ({
+  default: ({ isOpen, action }) =>
+    isOpen ? <div data-testid="admin-auth-modal">{action}</div> : null,
+}));
+
+import { checkUserIsAdmin } from "../../../lib/permissionsService";
 import { usePendingTransfers } from "../../../contexts/PendingTransfersContext";
 import { usePendingOrders } from "../../../contexts/PendingOrdersContext";
 import NavbarInventory from "./NavbarInventory";
@@ -58,5 +76,40 @@ describe("NavbarInventory - badge de traspasos", () => {
 
     const traspasosButton = screen.getByText("Traspasos").closest("a");
     expect(traspasosButton.contains(badges[0])).toBe(true);
+  });
+});
+
+describe("NavbarInventory - seccion Agregar protegida", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    usePendingTransfers.mockReturnValue({ pendingReceiptsCount: 0 });
+    usePendingOrders.mockReturnValue({ pendingOrdersCount: 0 });
+  });
+
+  it("pide autorizacion de administrador a un usuario no admin", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderNavbar();
+    fireEvent.click(screen.getByText("Agregar"));
+
+    const modal = await screen.findByTestId("admin-auth-modal");
+    expect(modal.textContent).toBe("inventory_add_access");
+  });
+
+  it("no pide autorizacion a un administrador", async () => {
+    checkUserIsAdmin.mockResolvedValue(true);
+
+    renderNavbar();
+    fireEvent.click(screen.getByText("Agregar"));
+
+    await waitFor(() => expect(checkUserIsAdmin).toHaveBeenCalled());
+    expect(screen.queryByTestId("admin-auth-modal")).toBeNull();
+  });
+
+  it("deja publicas las demas secciones", () => {
+    renderNavbar();
+    fireEvent.click(screen.getByText("Kardex"));
+
+    expect(checkUserIsAdmin).not.toHaveBeenCalled();
   });
 });
