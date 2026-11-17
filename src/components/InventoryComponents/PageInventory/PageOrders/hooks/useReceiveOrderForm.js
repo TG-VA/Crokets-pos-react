@@ -4,6 +4,9 @@ import { useAuth } from "../../../../../contexts/AuthContext";
 import { receiveStoreOrder } from "../services/ordersService";
 import {
   calculateDifference,
+  getInitialReceiptCosts,
+  buildMissingReceiptCostError,
+  getMissingReceiptCostItems,
   getMissingReceiptItems,
   getPendingOrders,
   isReceiptComplete,
@@ -12,7 +15,10 @@ import {
   hasReceiptDifferences,
   validateReceiptNote,
 } from "../utils/receiptNoteCalculationService";
-import { sanitizeIntegerQuantity } from "../utils/ordersQuantityInput";
+import {
+  sanitizeCostInput,
+  sanitizeIntegerQuantity,
+} from "../utils/ordersQuantityInput";
 
 export const useReceiveOrderForm = ({
   orders = [],
@@ -23,6 +29,7 @@ export const useReceiveOrderForm = ({
 
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [quantities, setQuantities] = useState({});
+  const [costs, setCosts] = useState({});
   const [receiptNote, setReceiptNoteState] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +50,14 @@ export const useReceiveOrderForm = ({
         ? getMissingReceiptItems(selectedOrder.items, quantities)
         : [],
     [quantities, selectedOrder]
+  );
+
+  const missingCostItems = useMemo(
+    () =>
+      selectedOrder
+        ? getMissingReceiptCostItems(selectedOrder.items, quantities, costs)
+        : [],
+    [costs, quantities, selectedOrder]
   );
 
   const isComplete = useMemo(
@@ -76,6 +91,7 @@ export const useReceiveOrderForm = ({
   const selectOrder = useCallback((order) => {
     setSelectedOrderId(order?.id || "");
     setQuantities({});
+    setCosts(getInitialReceiptCosts(order?.items));
     setReceiptNoteState("");
     setError("");
   }, []);
@@ -84,6 +100,18 @@ export const useReceiveOrderForm = ({
     const sanitized = sanitizeIntegerQuantity(value);
 
     setQuantities((previous) => ({
+      ...previous,
+      [productId]: sanitized,
+    }));
+    setError("");
+  }, []);
+
+  const setCost = useCallback((productId, value) => {
+    const sanitized = sanitizeCostInput(value);
+
+    if (sanitized === null) return;
+
+    setCosts((previous) => ({
       ...previous,
       [productId]: sanitized,
     }));
@@ -103,6 +131,7 @@ export const useReceiveOrderForm = ({
   const resetSelection = useCallback(() => {
     setSelectedOrderId("");
     setQuantities({});
+    setCosts({});
     setReceiptNoteState("");
     setError("");
   }, []);
@@ -114,6 +143,11 @@ export const useReceiveOrderForm = ({
       setError(
         `Captura el conteo físico de todos los productos (${missingItems.length} pendiente(s)).`
       );
+      return null;
+    }
+
+    if (missingCostItems.length > 0) {
+      setError(buildMissingReceiptCostError(missingCostItems.length));
       return null;
     }
 
@@ -130,6 +164,7 @@ export const useReceiveOrderForm = ({
         order: selectedOrder,
         currentBranchId,
         quantities,
+        costs,
         receiptNote,
         user,
       });
@@ -145,9 +180,11 @@ export const useReceiveOrderForm = ({
       setIsSubmitting(false);
     }
   }, [
+    costs,
     currentBranchId,
     isComplete,
     isSubmitting,
+    missingCostItems.length,
     missingItems.length,
     noteError,
     onReceived,
@@ -163,17 +200,24 @@ export const useReceiveOrderForm = ({
     selectedOrder,
     selectedOrderId,
     quantities,
+    costs,
     receiptNote,
     isNoteRequired,
     noteError,
     isComplete,
     missingItems,
+    missingCostItems,
     error,
     isSubmitting,
     canSubmit:
-      Boolean(selectedOrder) && isComplete && !isSubmitting && !noteError,
+      Boolean(selectedOrder) &&
+      isComplete &&
+      missingCostItems.length === 0 &&
+      !isSubmitting &&
+      !noteError,
     selectOrder,
     setQuantity,
+    setCost,
     setReceiptNote,
     getDifferencePreview,
     resetSelection,

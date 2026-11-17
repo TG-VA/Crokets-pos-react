@@ -218,6 +218,36 @@ la nota cuando la recepción tiene diferencias, por lo que:
 Orden de despliegue: aplicar primero la migración (ya aplicada en remoto) y publicar la versión del
 instalador de inmediato; no dejar sucursales en versiones anteriores al publicar.
 
+## Costos finitos en la recepción de pedidos
+
+`20261117180000_store_orders_receipt_cost_finite.sql` reaplica `receive_store_order` (misma firma y
+permisos que `20261117120000`) y agrega dos validaciones. En PostgreSQL `'NaN'::numeric` es válido y
+`NaN < 0` es falso, así que una llamada directa a la RPC podía guardar NaN en el CPP.
+
+- La cantidad recibida y el costo deben ser finitos (`NaN`, `Infinity` y `-Infinity` se rechazan).
+- El costo por unidad no puede ser mayor a 1,000,000, el mismo tope que `RECEIPT_COST_MAX` en
+  `ordersCalculationService.js`.
+
+No cambia el contrato con el frontend, así que no impone orden de despliegue. Aplicada el 17 nov 2026
+con `apply_migration` (remoto `20261117215602 store_orders_receipt_cost_finite`).
+
+## Compatibilidad: costo de recepción de pedidos
+
+`20261117120000_store_orders_receipt_cost.sql` elimina `receive_store_order` de 5 argumentos y la
+reemplaza por una de 6 con `p_received_cost_map jsonb default null`. Por cada partida recibida valida
+el costo capturado, lo guarda en `store_order_items.received_unit_cost` (columna nueva) y en el
+movimiento de entrada, y recalcula el Costo Promedio Ponderado en `branch_inventory.cost_price` de la
+sucursal destino. Antes de esta migración la recepción sumaba stock sin tocar el costo promedio.
+
+- Un instalador anterior (sin el campo "Costo") sigue resolviendo la RPC: sin mapa, el servidor usa
+  el costo congelado del pedido (`store_order_items.cost_price`) y aun así pondera el CPP.
+- Un frontend con el campo contra una base sin la migración falla por el argumento
+  `p_received_cost_map` desconocido.
+
+Orden de despliegue: migración antes del instalador. Aplicada el 17 nov 2026 con `apply_migration`
+(remoto `20261117213604 store_orders_receipt_cost`); en remoto el cuerpo de la función va sin los
+comentarios SQL del archivo, la lógica es idéntica.
+
 ## Compatibilidad: sucursales administrativas (`branch_type`)
 
 Tres migraciones, en este orden:
@@ -251,6 +281,8 @@ lo restauró `20261115170000` (`KNOWN_ISSUES.md` #90).
 
 | Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 17 nov 2026 | `20261117180000_store_orders_receipt_cost_finite.sql`                                                    | **Aplicada** en remoto como `20261117215602 store_orders_receipt_cost_finite`. Verificado: una sola sobrecarga con los rechazos de no finitos y el tope; `anon = false`, `authenticated = true`, `service_role = true`. Rechaza cantidades y costos no finitos y costos mayores a 1,000,000 en `receive_store_order`. Rollback: reaplicar la función de `20261117120000`.                                                                                                                                                                                                                                                                                                                                                                   |
+| 17 nov 2026 | `20261117120000_store_orders_receipt_cost.sql`                                                           | **Aplicada** en remoto como `20261117213604 store_orders_receipt_cost`. Verificado: una sola sobrecarga `receive_store_order(uuid, uuid, uuid, jsonb, text, jsonb)` con el recálculo del CPP; `anon = false`, `authenticated = true`, `service_role = true`; columna `store_order_items.received_unit_cost numeric(18,4)` nullable. Advisors: sin hallazgos nuevos (persiste `SECURITY DEFINER` ejecutable por `authenticated`, intencional).                                                                                                                                                                                                                                                                                               |
 | 15 nov 2026 | `20261115180000_branches_rls_admin_write.sql`                                                            | **Aplicada** en remoto como `20261116003730 branches_rls_admin_write`. Verificado: RLS activo en `branches`, políticas `branches_select_anon`, `branches_select_authenticated_all` y `branches_update_admin`, trigger `branches_branch_type_immutable`, sin `UPDATE` para `anon` ni `DELETE` para `authenticated` (`KNOWN_ISSUES.md` #87 y #91).                                                                                                                                                                                                                                                                                                                                                                                            |
 | 15 nov 2026 | `20261115170000_set_branch_active_admin_guard.sql`                                                       | **Aplicada** con `apply_migration`. Verificado: el cuerpo remoto contiene `coalesce(auth.uid(), p_admin_id)`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 15 nov 2026 | `20261115160000_reject_admin_branch_inventory.sql`                                                       | **Aplicada** con `apply_migration`. Trigger en `branch_inventory` (verificado en `pg_trigger`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |

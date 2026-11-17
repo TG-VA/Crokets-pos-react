@@ -21,8 +21,18 @@ const orders = [
     status: "pending",
     toBranchId: "b1",
     items: [
-      { productId: "p1", productName: "Croqueta", expectedQty: 5 },
-      { productId: "p2", productName: "Shampoo", expectedQty: 2 },
+      {
+        productId: "p1",
+        productName: "Croqueta",
+        expectedQty: 5,
+        costPrice: 120,
+      },
+      {
+        productId: "p2",
+        productName: "Shampoo",
+        expectedQty: 2,
+        costPrice: 45.5,
+      },
     ],
   },
 ];
@@ -146,5 +156,119 @@ describe("useReceiveOrderForm nota y envio", () => {
     expect(result.current.error).toBe("Fallo de red");
     expect(result.current.selectedOrder).not.toBeNull();
     expect(result.current.isSubmitting).toBe(false);
+  });
+});
+
+describe("useReceiveOrderForm costo de recepcion", () => {
+  beforeEach(() => {
+    mocks.receiveStoreOrder.mockReset();
+  });
+
+  it("precarga el costo congelado del pedido al seleccionarlo", () => {
+    const { result } = setup();
+
+    selectFirst(result);
+
+    expect(result.current.costs).toEqual({ p1: "120.00", p2: "45.50" });
+  });
+
+  it("exige capturar el costo cuando el pedido trae costo 0", () => {
+    const zeroCostOrder = {
+      ...orders[0],
+      items: [{ ...orders[0].items[0], costPrice: 0 }],
+    };
+    const { result } = setup({ orders: [zeroCostOrder] });
+
+    act(() => {
+      result.current.selectOrder(zeroCostOrder);
+    });
+    capture(result, { p1: "5" });
+
+    expect(result.current.costs).toEqual({ p1: "" });
+    expect(result.current.missingCostItems).toHaveLength(1);
+    expect(result.current.canSubmit).toBe(false);
+  });
+
+  it("ignora capturas de costo invalidas y conserva el valor previo", () => {
+    const { result } = setup();
+
+    selectFirst(result);
+    act(() => {
+      result.current.setCost("p1", "-5");
+    });
+    act(() => {
+      result.current.setCost("p1", "1.234");
+    });
+
+    expect(result.current.costs.p1).toBe("120.00");
+
+    act(() => {
+      result.current.setCost("p1", "98,5");
+    });
+
+    expect(result.current.costs.p1).toBe("98.5");
+  });
+
+  it("ignora un costo mayor al tope en vez de reportarlo como faltante", () => {
+    const { result } = setup();
+
+    selectFirst(result);
+    act(() => {
+      result.current.setCost("p1", "2000000");
+    });
+
+    expect(result.current.costs.p1).toBe("120.00");
+    expect(result.current.missingCostItems).toHaveLength(0);
+  });
+
+  it("bloquea el envio si falta el costo de una partida recibida", async () => {
+    const { result } = setup();
+
+    selectFirst(result);
+    capture(result, { p1: "5", p2: "2" });
+    act(() => {
+      result.current.setCost("p2", "");
+    });
+
+    expect(result.current.missingCostItems).toHaveLength(1);
+    expect(result.current.canSubmit).toBe(false);
+
+    await act(async () => {
+      await result.current.submitReceipt();
+    });
+
+    expect(mocks.receiveStoreOrder).not.toHaveBeenCalled();
+    expect(result.current.error).toMatch(/costo/);
+  });
+
+  it("no exige costo a una partida recibida en 0", () => {
+    const { result } = setup();
+
+    selectFirst(result);
+    capture(result, { p1: "5", p2: "0" });
+    act(() => {
+      result.current.setCost("p2", "");
+    });
+
+    expect(result.current.missingCostItems).toHaveLength(0);
+  });
+
+  it("envia los costos capturados al servicio", async () => {
+    mocks.receiveStoreOrder.mockResolvedValue({ id: "o1" });
+    const { result } = setup();
+
+    selectFirst(result);
+    capture(result, { p1: "5", p2: "2" });
+    act(() => {
+      result.current.setCost("p1", "110");
+    });
+
+    await act(async () => {
+      await result.current.submitReceipt();
+    });
+
+    expect(mocks.receiveStoreOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ costs: { p1: "110", p2: "45.50" } })
+    );
   });
 });

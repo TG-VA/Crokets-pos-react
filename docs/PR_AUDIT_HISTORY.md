@@ -3006,3 +3006,24 @@ ESLint 0 errores. Mutaciones: 4 ejecutadas, 4 detectadas. S1 y S2 de la auditor�
 
 Pendiente de verificación humana en Electron (`npm run dev`): edición de sucursal por un usuario no
 admin con la RLS de `branches` activa.
+
+---
+
+## Informe de Auditoría — PR #209 `feat(pedidos): capturar el costo al recibir un pedido y recalcular el CPP` (17 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `a8fae24`,
+base `781d407`. Ejecución: 333 archivos / 3431 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 16 ejecutadas en dos rondas, 16 detectadas. I1 (NaN en la RPC), I2
+(precarga 0.00) y S1 (mensaje duplicado) de la auditoría anterior resueltos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                      | Severidad  | Estado                                                                     |
+| --- | ----------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- |
+| S2  | Un costo mayor a `RECEIPT_COST_MAX` se reporta como "Falta el costo" en la UI | Sugerencia | Corregido en `219d36e6`: `sanitizeCostInput` rechaza la captura sobre tope |
+
+### Estado al cierre
+
+Descripción del PR y `docs/TESTING.md` actualizados con la migración `20261117180000` (`92461115`).
+Pendiente de verificación humana en Electron (`npm run dev`) y en base remota del CPP tras la
+recepción.
