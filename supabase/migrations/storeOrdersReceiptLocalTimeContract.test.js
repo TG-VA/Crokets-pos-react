@@ -26,6 +26,12 @@ describe("contrato SQL de la hora local en la recepcion de pedidos", () => {
     );
   });
 
+  it("cae en America/Cancun si no encuentra la sucursal", () => {
+    expect(normalizedSql).toContain(
+      "v_local_now := coalesce(v_local_now, now() at time zone 'America/Cancun');"
+    );
+  });
+
   it("fecha el movimiento de entrada con la hora local", () => {
     expect(normalizedSql).toMatch(
       /round\(v_cost \* v_received, 2\), v_local_now \);/
