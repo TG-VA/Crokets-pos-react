@@ -66,7 +66,11 @@ y el proceso principal de Electron:
 | Reporte de rentabilidad                                   | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
 | Reporte de inventario (datos)                             | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                          | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
-| Inventario: alta con CPP                                  | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: alta vía RPC transaccional                    | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: contrato SQL del alta transaccional y CPP     | `supabase/migrations/addInventoryEntryContract.test.js`                            |
+| Inventario: Agregar protegido por administrador           | `.../NavbarInventory/NavbarInventory.test.jsx`                                     |
+| Inventario: índice y URL directa de Agregar protegida     | `src/pages/Inventory/Inventory.test.jsx`                                           |
+| Inventario: mensaje de CPP al agregar (redondeado)        | `.../PageAdd/utils/inventoryAddFormatters.test.js`                                 |
 | Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
@@ -254,19 +258,14 @@ y el proceso principal de Electron:
 ### Cobertura transitiva del resolver de costo
 
 `src/services/inventory/inventoryCostResolutionService.js` no tiene un archivo de test propio. Se
-prueba **a través de sus dos consumidores**, que es donde importa el comportamiento:
+prueba a través de `.../PageAdd/services/inventoryAddProjectionService.test.js` (18 casos), el camino
+de la interfaz.
 
-- `.../PageAdd/services/inventoryAddService.test.js` (20 casos) lo ejerce por el camino de persistencia.
-- `.../PageAdd/services/inventoryAddProjectionService.test.js` (18 casos) lo ejerce por el camino de la interfaz.
-
-Es intencional: el módulo no tiene comportamiento propio más allá de `resolveCurrentCost`,
-`resolveIncomingCostPrice` y `toNonNegativeNumber`, y probarlo por separado duplicaría los mismos
-escenarios con nombres distintos. Una mutación que hace que el resolver compartido ignore el
-`cost_price` de `branch_inventory` y herede el de catálogo rompe **5 casos, todos en
-`inventoryAddService.test.js` y ninguno en la suite de proyección**: `getCurrentUnitCost` siempre
-resuelve con `inventoryRow = null` (el producto ya trae el costo resuelto para la sucursal), de modo
-que esa rama es inalcanzable desde la interfaz y no puede detectarse por ese camino. La detección
-está donde el servidor sí lee la fila: la suite de persistencia.
+Desde `20261117230000` el alta ya no usa el resolver para persistir: `add_inventory_entry` resuelve
+el CPP vigente en SQL (`branch_inventory.cost_price` con fallback al catálogo).
+`addInventoryEntryContract.test.js` fija esa regla, el bloqueo de la fila y la fórmula contra el SQL
+real. La paridad entre la proyección (JS) y la RPC (SQL) no tiene un test que ejecute ambas: una
+regla nueva de costo debe cambiarse en los dos lados.
 
 ## Patrones y convenciones
 
@@ -354,11 +353,10 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   entrada negativa, fraccionadas, redondeo a 2 decimales) y la proteccion R2: stock negativo tratado
   como 0, costo entrante negativo neutralizado a 0 y resultado nunca negativo. Tambien fija la
   coercion de `NaN`, `Infinity`, `null`, `undefined`, strings numericos y la invocacion sin
-  argumentos. `inventoryAddService.test.js` (20 casos) fija que el alta persista el CPP exacto en
-  `branch_inventory.cost_price`, que respete un `cost_price` ya calculado en 0 frente al fallback del
-  catalogo (el `??` en vez de `||`), que inserte con el costo entrante cuando no hay fila previa, que
-  mande `unitCost`/`totalCost` a `logInventoryMovement` redondeados a 2 decimales y que propague
-  errores de lectura y escritura sin registrar el movimiento. `inventoryMovements.test.js` (8 casos)
+  argumentos. `inventoryAddService.test.js` fija que el alta llame una sola vez a `add_inventory_entry`
+  sin escribir tablas desde el cliente, que mande `null` como costo en entrada manual o costo no
+  numérico (y `0` cuando el costo es cero) y que propague el error de la RPC. El cálculo del CPP en
+  la persistencia lo fija `addInventoryEntryContract.test.js` contra el SQL. `inventoryMovements.test.js` (8 casos)
   fija el mapeo de `unit_cost`/`total_cost` con `Math.max(0, ...)` (R2), que los movimientos que no
   informan costo (ajustes, ventas, devoluciones) sigan guardando NULL, que un `null` explicito se
   guarde como NULL y no como 0, y que el fallback por columna ausente omita ambas columnas en lugar

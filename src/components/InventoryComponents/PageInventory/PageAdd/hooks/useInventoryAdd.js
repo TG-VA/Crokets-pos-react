@@ -2,9 +2,9 @@ import { useMemo, useRef, useState } from "react";
 
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
-import { useAuth } from "../../../../../contexts/AuthContext";
 
 import { addInventoryToProduct } from "../services/inventoryAddService";
+import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
 
 const INITIAL_APP_MODAL = {
@@ -29,7 +29,6 @@ const useInventoryAdd = () => {
     refreshProducts,
   } = useProducts();
   const { branch } = useBranch();
-  const { user } = useAuth();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
@@ -254,12 +253,11 @@ const useInventoryAdd = () => {
     try {
       setSaving(true);
 
-      await addInventoryToProduct({
+      const result = await addInventoryToProduct({
         branchId: branch.id,
         product: selectedProduct,
         quantity: parsedQuantityToAdd,
         incomingCostPrice: costEntry.resolveIncomingCostPriceForSubmit(),
-        userId: user?.id || null,
       });
 
       await refreshProducts();
@@ -277,7 +275,7 @@ const useInventoryAdd = () => {
       showAppAlert({
         type: "success",
         title: "Inventario actualizado",
-        message: `${descriptionUpper}\nInventario agregado: +${savedQuantity} PZ`,
+        message: `${descriptionUpper}\nInventario agregado: +${savedQuantity} PZ\n${buildCostSummary(result)}`,
         confirmText: "Aceptar",
       });
     } catch (error) {
