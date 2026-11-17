@@ -69,10 +69,15 @@ export const getReceivedQuantitiesPayload = (items = [], quantities = {}) => {
   return payload;
 };
 
+/** Tope por unidad; la RPC `receive_store_order` rechaza costos mayores. */
+export const RECEIPT_COST_MAX = 1000000;
+
 export const parseReceiptCost = (value) => {
   const numeric = asFiniteNumber(value);
 
-  if (numeric === null || numeric < 0) return null;
+  if (numeric === null || numeric < 0 || numeric > RECEIPT_COST_MAX) {
+    return null;
+  }
 
   return Math.round(numeric * 100) / 100;
 };

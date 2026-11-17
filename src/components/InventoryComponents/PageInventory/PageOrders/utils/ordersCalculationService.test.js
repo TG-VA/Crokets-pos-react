@@ -6,6 +6,7 @@ import {
   getMissingReceiptCostItems,
   getReceivedCostsPayload,
   parseReceiptCost,
+  RECEIPT_COST_MAX,
   buildDiscrepancyNotes,
   calculateDifference,
   filterOrderHistory,
@@ -498,6 +499,10 @@ describe("costo de recepcion", () => {
     expect(parseReceiptCost("-1")).toBeNull();
     expect(parseReceiptCost("0")).toBe(0);
     expect(parseReceiptCost("10.126")).toBe(10.13);
+    expect(parseReceiptCost(String(RECEIPT_COST_MAX))).toBe(RECEIPT_COST_MAX);
+    expect(parseReceiptCost(String(RECEIPT_COST_MAX + 0.01))).toBeNull();
+    expect(parseReceiptCost("NaN")).toBeNull();
+    expect(parseReceiptCost("Infinity")).toBeNull();
   });
 
   it("precarga el costo del pedido con 2 decimales", () => {
