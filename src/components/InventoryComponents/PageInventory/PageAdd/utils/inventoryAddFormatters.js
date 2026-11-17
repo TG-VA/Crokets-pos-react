@@ -67,3 +67,26 @@ export const formatCurrencyDelta = (amount) => {
 
   return `${value > 0 ? "+" : "-"}${formatted}`;
 };
+
+/**
+ * Resumen del CPP para el mensaje de exito del alta.
+ *
+ * El CPP final lo calcula el servidor: el mensaje lo muestra para que un
+ * reprecio quede visible al confirmar, no solo en la proyeccion previa. Se
+ * comparan los importes ya formateados porque la RPC devuelve el CPP previo sin
+ * redondear (puede traer mas de dos decimales del catalogo) y el nuevo
+ * redondeado; comparar los numeros crudos reportaria un cambio invisible.
+ *
+ * @param {{ previousCostPrice: unknown, costPrice: unknown }} costs
+ * @returns {string}
+ */
+export const buildCostSummary = ({ previousCostPrice, costPrice } = {}) => {
+  const previous = formatCurrency(previousCostPrice);
+  const current = formatCurrency(costPrice);
+
+  if (previous === current) {
+    return `CPP sin cambio: ${current}`;
+  }
+
+  return `CPP: de ${previous} a ${current}`;
+};

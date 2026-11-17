@@ -4,7 +4,7 @@ import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 
 import { addInventoryToProduct } from "../services/inventoryAddService";
-import { formatCurrency } from "../utils/inventoryAddFormatters";
+import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
 
 const INITIAL_APP_MODAL = {
@@ -18,16 +18,6 @@ const INITIAL_APP_MODAL = {
   loading: false,
   onConfirm: null,
   onCancel: null,
-};
-
-// El CPP final lo calcula el servidor: el mensaje lo muestra para que un
-// reprecio quede visible al confirmar, no solo en la proyeccion previa.
-const buildCostSummary = ({ previousCostPrice, costPrice }) => {
-  if (previousCostPrice === costPrice) {
-    return `CPP sin cambio: ${formatCurrency(costPrice)}`;
-  }
-
-  return `CPP: de ${formatCurrency(previousCostPrice)} a ${formatCurrency(costPrice)}`;
 };
 
 const useInventoryAdd = () => {
