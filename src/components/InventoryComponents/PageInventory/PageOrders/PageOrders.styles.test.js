@@ -115,4 +115,8 @@ describe("estilos del modulo de pedidos", () => {
     expect(block).toContain("border: 1px solid #cfd8de");
     expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(4.5);
   });
+
+  it("no estira el boton Cambiar pedido a la altura del encabezado", () => {
+    expect(getBlock("receiptHeader")).toMatch(/align-items:\s*flex-start/);
+  });
 });
