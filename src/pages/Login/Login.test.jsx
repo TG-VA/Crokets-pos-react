@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import Login from "./Login";
 
+const selectCalls = vi.hoisted(() => []);
+
 const tableResults = {
   users: { data: { id: "u1", username: "carlos" }, error: null },
   branches: { data: { id: "b1", name: "Coba" }, error: null },
@@ -12,9 +14,13 @@ const tableResults = {
 vi.mock("../../lib/supabaseClient", () => {
   const buildChain = (table) => {
     const chain = {};
-    ["select", "ilike", "eq", "is"].forEach((method) => {
+    ["ilike", "eq", "is"].forEach((method) => {
       chain[method] = () => chain;
     });
+    chain.select = (columns) => {
+      selectCalls.push({ table, columns });
+      return chain;
+    };
     chain.maybeSingle = () => Promise.resolve(tableResults[table]);
     chain.single = () => Promise.resolve(tableResults[table]);
     return chain;
@@ -137,5 +143,28 @@ describe("Login: foco tras enviar el formulario", () => {
       name: "Recuperar sesión",
     });
     await waitFor(() => expect(document.activeElement).toBe(recoverButton));
+  });
+});
+
+describe("Login: sucursal del dispositivo", () => {
+  beforeEach(() => {
+    selectCalls.length = 0;
+    window.electronAPI = {
+      invoke: vi.fn().mockResolvedValue({ deviceCode: "D1" }),
+    };
+  });
+
+  it("carga branch_type para distinguir terminales admin", async () => {
+    const { container, username, password } = await renderLogin();
+    fireEvent.change(username, { target: { value: "carlos" } });
+    fireEvent.change(password, { target: { value: "secreto" } });
+
+    fireEvent.submit(container.querySelector("form"));
+
+    await waitFor(() =>
+      expect(selectCalls.some((call) => call.table === "branches")).toBe(true)
+    );
+    const branchSelect = selectCalls.find((call) => call.table === "branches");
+    expect(branchSelect.columns).toMatch(/\bbranch_type\b/);
   });
 });

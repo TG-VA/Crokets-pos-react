@@ -131,6 +131,21 @@ describe("productCrudService", () => {
       );
     });
 
+    it("en una terminal admin crea el producto global y sin inventario", async () => {
+      productsQ.single.mockResolvedValue({ data: { id: "p1" }, error: null });
+
+      const result = await createProduct(
+        "adm",
+        [],
+        { ...validPayload, isGlobal: false },
+        { ownsInventory: false }
+      );
+
+      expect(result.success).toBe(true);
+      expect(productsQ.insert.mock.calls[0][0].is_global).toBe(true);
+      expect(supabase.from).not.toHaveBeenCalledWith("branch_inventory");
+    });
+
     it("resuelve el department_id a partir del nombre del departamento", async () => {
       productsQ.single.mockResolvedValue({ data: { id: "p1" }, error: null });
       const departments = [{ id: "d7", name: "Alimentos" }];
@@ -256,6 +271,25 @@ describe("productCrudService", () => {
           has_been_stocked: true,
         })
       );
+    });
+
+    it("en una terminal admin actualiza el producto sin tocar inventario", async () => {
+      productsQ.maybeSingle.mockResolvedValue({
+        data: { id: "p1", barcode: "ABC" },
+        error: null,
+      });
+
+      const result = await updateProductByCodigo(
+        "adm",
+        [],
+        "ABC",
+        { codigo: "ABC", descripcion: "NUEVO", use_inventory: true },
+        { ownsInventory: false }
+      );
+
+      expect(result.success).toBe(true);
+      expect(productsQ.update).toHaveBeenCalled();
+      expect(supabase.from).not.toHaveBeenCalledWith("branch_inventory");
     });
 
     it("detecta código de barras duplicado en otro producto", async () => {

@@ -21,6 +21,8 @@ const PageKardex = () => {
 
   const {
     products,
+    loadingProducts,
+    productsError,
 
     selectedProducts,
     selectedProductIds,
@@ -213,6 +215,8 @@ const PageKardex = () => {
         products={products}
         selectedProductIds={selectedProductIds}
         onSelect={handleSelectProduct}
+        loading={loadingProducts}
+        error={productsError}
       />
 
       <AppModal

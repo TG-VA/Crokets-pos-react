@@ -1,12 +1,13 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import { formatDynamicDate } from "../../../../../utils/formatters";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
 export const getBranchesList = async () => {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name, timezone");
+  const { data, error } = await fetchOperationalBranches({
+    columns: "id, name, timezone",
+  });
   if (error) throw new Error("No se pudo cargar el catálogo de sucursales.");
 
   return [

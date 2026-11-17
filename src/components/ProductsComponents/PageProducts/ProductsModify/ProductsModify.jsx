@@ -13,6 +13,7 @@ import styles from "./ProductsModify.module.css";
 const ProductsModify = () => {
   const {
     products,
+    isAdminTerminal,
     searchModalOpen,
     setSearchModalOpen,
     barcode,
@@ -116,6 +117,7 @@ const ProductsModify = () => {
                   <ProductModifyInventorySection
                     form={form}
                     usesInventory={usesInventory}
+                    isAdminTerminal={isAdminTerminal}
                     updateField={updateField}
                     markTouched={markTouched}
                     selectedProduct={selectedProduct}

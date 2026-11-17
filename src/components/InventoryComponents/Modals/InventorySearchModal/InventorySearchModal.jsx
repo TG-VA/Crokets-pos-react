@@ -1,12 +1,10 @@
 import { useCallback, useState } from "react";
 
-import InventorySearchResults from "./components/InventorySearchResults";
 import MakeGlobalConfirmModal from "./components/MakeGlobalConfirmModal";
 import useInventorySearchModal from "./hooks/useInventorySearchModal";
 import usePromoteLocalProduct from "./hooks/usePromoteLocalProduct";
-
-import styles from "./InventorySearchModal.module.css";
-import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import ProductSearchDialog from "../../../ModalControls/ProductSearchDialog";
+import ProductSearchResults from "../../../ModalControls/ProductSearchResults";
 
 const InventorySearchModal = ({
   isOpen,
@@ -68,119 +66,46 @@ const InventorySearchModal = ({
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={handleClose}>
-      <div
-        className={styles.searchModal}
-        onClick={(event) => event.stopPropagation()}
+    <>
+      <ProductSearchDialog
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        placeholder="Escribe para filtrar (opcional)..."
+        resultsCount={searchResults.length}
+        selectLabel={
+          selectedProductIsOpen
+            ? "Ya seleccionado"
+            : selectedProductIsDisabled
+              ? "Producto local"
+              : "Seleccionar"
+        }
+        selectDisabled={
+          !selectedProduct || selectedProductIsOpen || selectedProductIsDisabled
+        }
+        onSelect={() => {
+          if (
+            selectedProduct &&
+            !selectedProductIsOpen &&
+            !selectedProductIsDisabled
+          ) {
+            handleSelectProduct(selectedProduct);
+          }
+        }}
+        onClose={handleClose}
       >
-        <div className={styles.modalHeader}>
-          <h2>Búsqueda de Productos</h2>
-
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={handleClose}
-            aria-label="Cerrar búsqueda de productos"
-          >
-            <img
-              src={XmarkIcon}
-              alt=""
-              className={styles.closeIcon}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-
-        <div className={styles.searchModalBody}>
-          <div className={styles.searchSection}>
-            <label htmlFor="searchInput">Nombre / Código / Departamento:</label>
-
-            <div className={styles.inputContainer}>
-              <input
-                id="searchInput"
-                type="text"
-                className={styles.searchInput}
-                value={searchTerm}
-                onChange={(event) => handleSearchChange(event.target.value)}
-                placeholder="Escribe para filtrar (opcional)..."
-                autoFocus
-              />
-            </div>
-
-            <div className={styles.searchHelp}>
-              <span>↑↓ Navegar • Enter - Seleccionar • ESC - Cerrar</span>
-            </div>
-          </div>
-
-          <div className={styles.resultsSection}>
-            <div className={styles.resultsHeader}>
-              <span>Resultados:</span>
-
-              {searchResults.length > 0 && (
-                <span className={styles.resultsCount}>
-                  {searchResults.length} producto(s)
-                </span>
-              )}
-            </div>
-
-            <div className={styles.resultsContainer}>
-              <InventorySearchResults
-                products={searchResults}
-                selectedIndex={selectedIndex}
-                searchTerm={searchTerm}
-                loading={loading}
-                error={error}
-                resultsListRef={resultsListRef}
-                isAlreadySelected={isAlreadySelected}
-                isProductDisabled={isProductDisabled}
-                onProductClick={handleProductClick}
-                onLocalProductDoubleClick={setPromotingProduct}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.modalActions}>
-          <div className={styles.actionButtons}>
-            <button
-              type="button"
-              className={`${styles.actionButton} ${styles.selectButton}`}
-              onClick={() => {
-                if (
-                  selectedProduct &&
-                  !selectedProductIsOpen &&
-                  !selectedProductIsDisabled
-                ) {
-                  handleSelectProduct(selectedProduct);
-                }
-              }}
-              disabled={
-                !selectedProduct ||
-                selectedProductIsOpen ||
-                selectedProductIsDisabled
-              }
-            >
-              {selectedProductIsOpen
-                ? "Ya seleccionado"
-                : selectedProductIsDisabled
-                  ? "Producto local"
-                  : "Seleccionar"}
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.actionButton} ${styles.cancelButton}`}
-              onClick={handleClose}
-            >
-              ESC - Cerrar
-            </button>
-          </div>
-
-          <div className={styles.actionHints}>
-            <span>F10 - Buscar productos</span>
-          </div>
-        </div>
-      </div>
+        <ProductSearchResults
+          products={searchResults}
+          selectedIndex={selectedIndex}
+          searchTerm={searchTerm}
+          loading={loading}
+          error={error}
+          resultsListRef={resultsListRef}
+          isAlreadySelected={isAlreadySelected}
+          isProductDisabled={isProductDisabled}
+          onProductClick={handleProductClick}
+          onLocalProductDoubleClick={setPromotingProduct}
+        />
+      </ProductSearchDialog>
 
       <MakeGlobalConfirmModal
         product={promotingProduct}
@@ -191,7 +116,7 @@ const InventorySearchModal = ({
           promote(promotingProduct.product_id ?? promotingProduct.id)
         }
       />
-    </div>
+    </>
   );
 };
 

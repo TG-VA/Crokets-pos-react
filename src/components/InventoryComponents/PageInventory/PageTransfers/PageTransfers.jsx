@@ -20,6 +20,10 @@ const PageTransfers = () => {
   const {
     activeTab,
     branch,
+    branchOptions,
+    canChooseOrigin,
+    originBranchId,
+    setOriginBranchId,
     cancellableTransferIds,
     destinationBranchId,
     destinationOptions,
@@ -27,6 +31,7 @@ const PageTransfers = () => {
     draftTotals,
     error,
     loadingProducts,
+    productsError,
     products,
     loadingBranches,
     pendingReceiptOrders,
@@ -154,6 +159,10 @@ const PageTransfers = () => {
 
         {activeTab === "send" ? (
           <SendWorkspace
+            canChooseOrigin={canChooseOrigin}
+            originBranchId={originBranchId}
+            originOptions={branchOptions}
+            onOriginChange={setOriginBranchId}
             destinationBranchId={destinationBranchId}
             destinationOptions={destinationOptions}
             loadingBranches={loadingBranches}
@@ -179,6 +188,7 @@ const PageTransfers = () => {
           products={searchableProducts}
           onSelect={loadProductForTransfer}
           loading={loadingProducts}
+          error={productsError}
         />
 
         {activeTab === "receive" ? (

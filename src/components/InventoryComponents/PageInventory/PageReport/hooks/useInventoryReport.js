@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { useBranch } from "../../../../../contexts/BranchContext";
+import { isOperationalBranch } from "../../../../../services/branchScopeCalculationService";
 
 import {
   fetchBranchOptions,
@@ -22,7 +23,9 @@ const useInventoryReport = () => {
   // mientras no exista, se usa la sucursal del contexto. Antes esto se resolvia
   // con un efecto que hacia setSelectedBranchId(branch.id) y provocaba un
   // re-render en cascada; ahora no hay estado que sincronizar.
-  const selectedBranchId = branchOverride || branch?.id || "";
+  // Una terminal admin no tiene stock propio: el usuario elige la sucursal.
+  const defaultBranchId = isOperationalBranch(branch) ? branch.id : "";
+  const selectedBranchId = branchOverride || defaultBranchId;
 
   const [rows, setRows] = useState([]);
   const [error, setError] = useState("");

@@ -17,6 +17,7 @@ import { fetchStoreOrderById } from "./ordersDetailService";
 import {
   countPendingStoreOrders,
   createStoreOrder,
+  fetchOrderBranchOptions,
   receiveStoreOrder,
 } from "./ordersService";
 
@@ -50,6 +51,43 @@ const pendingOrder = {
 describe("ordersService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("fetchOrderBranchOptions", () => {
+    const branchesQuery = (result) => {
+      const query = {
+        select: vi.fn(() => query),
+        eq: vi.fn(() => query),
+        order: vi.fn().mockResolvedValue(result),
+      };
+      return query;
+    };
+
+    it("pide solo sucursales operativas y activas", async () => {
+      const query = branchesQuery({ data: [{ id: "b1" }], error: null });
+      supabase.from.mockReturnValue(query);
+
+      const result = await fetchOrderBranchOptions({ id: "b1" });
+
+      expect(result).toEqual([{ id: "b1" }]);
+      expect(query.eq).toHaveBeenCalledWith("branch_type", "operational");
+      expect(query.eq).toHaveBeenCalledWith("is_active", true);
+    });
+
+    it("no ofrece la sucursal admin como fallback si la consulta falla", async () => {
+      supabase.from.mockReturnValue(
+        branchesQuery({ data: null, error: new Error("RLS") })
+      );
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const result = await fetchOrderBranchOptions({
+        id: "adm",
+        branch_type: "admin",
+      });
+
+      expect(result).toEqual([]);
+      errorSpy.mockRestore();
+    });
   });
 
   describe("createStoreOrder", () => {

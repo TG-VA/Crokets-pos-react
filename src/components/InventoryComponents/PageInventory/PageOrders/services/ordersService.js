@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 
 import {
   isReceiptComplete,
@@ -16,11 +17,9 @@ import { fetchStoreOrderById, STORE_ORDER_SELECT } from "./ordersDetailService";
 
 export const fetchOrderBranchOptions = async (currentBranch) => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, code")
-      .eq("is_active", true)
-      .order("name", { ascending: true });
+    const { data, error } = await fetchOperationalBranches({
+      activeOnly: true,
+    });
 
     if (error) {
       throw error;

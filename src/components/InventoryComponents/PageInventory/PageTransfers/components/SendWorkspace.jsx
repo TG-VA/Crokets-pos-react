@@ -1,6 +1,10 @@
 import styles from "../PageTransfers.module.css";
 
 const SendWorkspace = ({
+  canChooseOrigin,
+  originBranchId,
+  originOptions,
+  onOriginChange,
   destinationBranchId,
   destinationOptions,
   loadingBranches,
@@ -26,12 +30,32 @@ const SendWorkspace = ({
             <h2 className={styles.panelTitle}>Preparar envío</h2>
             <p className={styles.panelText}>
               Selecciona la sucursal destino y agrega productos con existencia
-              disponible en la sucursal actual.
+              disponible en la sucursal origen.
             </p>
           </div>
         </div>
 
         <div className={styles.formRow}>
+          {canChooseOrigin && (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Sucursal origen</span>
+              <select
+                value={originBranchId}
+                onChange={(event) => onOriginChange(event.target.value)}
+                className={styles.select}
+                disabled={loadingBranches || submitting}
+              >
+                <option value="">Seleccionar</option>
+                {originOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                    {option.code ? ` (${option.code})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Sucursal destino</span>
             <select

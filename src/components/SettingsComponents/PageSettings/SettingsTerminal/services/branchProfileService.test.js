@@ -91,6 +91,21 @@ describe("branchProfileService", () => {
       expect(mockQuery.update).toHaveBeenCalledWith(updates);
     });
 
+    it("fails when the update affects no rows (RLS)", async () => {
+      const mockQuery = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+      supabase.from.mockReturnValue(mockQuery);
+
+      const result = await updateBranchContact("b1", { phone: "123" });
+      expect(result.success).toBe(false);
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("No se actualizó la sucursal");
+    });
+
     it("handles error", async () => {
       const mockQuery = {
         update: vi.fn().mockReturnThis(),

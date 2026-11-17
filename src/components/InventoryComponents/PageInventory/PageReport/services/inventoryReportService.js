@@ -1,4 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchOperationalBranches,
+  isOperationalBranch,
+} from "../../../../../services/branchScopeService";
 
 import { sortInventoryRows } from "../utils/inventoryReportUtils";
 
@@ -75,7 +79,10 @@ const buildBranchFallback = (currentBranch) => {
     },
   ];
 
-  if (currentBranch.id !== POLI_BRANCH_ID) {
+  if (
+    currentBranch.id !== POLI_BRANCH_ID &&
+    isOperationalBranch(currentBranch)
+  ) {
     branches.push({
       id: currentBranch.id,
       name: currentBranch?.name || "Sucursal actual",
@@ -197,12 +204,7 @@ const fetchNoStockProducts = async () => {
 
 export const fetchBranchOptions = async (currentBranch) => {
   try {
-    const { data, error } = await supabase
-      .from("branches")
-      .select("id, name, code")
-      .order("name", {
-        ascending: true,
-      });
+    const { data, error } = await fetchOperationalBranches();
 
     if (error) {
       throw error;

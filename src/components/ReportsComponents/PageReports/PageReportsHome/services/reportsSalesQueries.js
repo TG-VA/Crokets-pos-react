@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import { fetchInChunks } from "./reportsDashboardUtils";
 
 export const getSalesRows = async ({ branchId, start, end }) => {
@@ -32,10 +33,9 @@ export const getSalesRows = async ({ branchId, start, end }) => {
 };
 
 export const getBranchesCatalog = async () => {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name")
-    .order("name", { ascending: true });
+  const { data, error } = await fetchOperationalBranches({
+    columns: "id, name",
+  });
 
   if (error) throw error;
 

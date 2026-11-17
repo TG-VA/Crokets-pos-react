@@ -9,7 +9,7 @@ import TopProductsTable from "./components/TopProductsTable";
 import DeadStockTable from "./components/DeadStockTable";
 
 import { useProductsReport } from "./hooks/useProductsReport";
-import { supabase } from "../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../services/branchScopeService";
 import { formatSyncTime } from "../../../../utils/formatters";
 
 const PageProductsReport = () => {
@@ -24,10 +24,9 @@ const PageProductsReport = () => {
     const fetchBranches = async () => {
       try {
         setLoadingBranches(true);
-        const { data, error } = await supabase
-          .from("branches")
-          .select("id, name")
-          .order("name", { ascending: true });
+        const { data, error } = await fetchOperationalBranches({
+          columns: "id, name",
+        });
 
         if (error) throw error;
 

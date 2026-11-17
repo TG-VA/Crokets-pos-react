@@ -89,4 +89,40 @@ describe("MakeGlobalConfirmModal", () => {
       screen.getByRole("button", { name: /volver global/i }).disabled
     ).toBe(true);
   });
+
+  it("clic en el fondo cierra la confirmacion sin propagar el evento", () => {
+    const onOverlayClick = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <div onClick={onOverlayClick}>
+        <MakeGlobalConfirmModal
+          product={product}
+          onClose={onClose}
+          onConfirm={() => {}}
+        />
+      </div>
+    );
+
+    fireEvent.click(screen.getByRole("dialog").parentElement);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOverlayClick).not.toHaveBeenCalled();
+  });
+
+  it("clic en el fondo no cierra la confirmacion mientras guarda", () => {
+    const { onClose } = setup({ saving: true });
+
+    fireEvent.click(screen.getByRole("dialog").parentElement);
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("usa un icono svg en el boton cerrar", () => {
+    setup();
+
+    const closeButton = screen.getByRole("button", { name: "Cerrar" });
+
+    expect(closeButton.textContent).toBe("");
+    expect(closeButton.querySelector("img")).toBeTruthy();
+  });
 });

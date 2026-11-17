@@ -1,4 +1,4 @@
-import React, { useEffect, memo } from "react";
+import React, { useEffect, useId, memo } from "react";
 import styles from "./SearchModal.module.css";
 import { useBranch } from "../../../../contexts/BranchContext";
 import AppModal from "../../../AppModal/AppModal";
@@ -8,6 +8,7 @@ import SearchIcon from "../../../../assets/icons/searchIcon.svg";
 const SearchModal = memo(
   ({ isOpen, onClose, onAddToSale, productosEnVenta = [] }) => {
     const { branch } = useBranch();
+    const titleId = useId();
 
     const {
       searchTerm,
@@ -96,11 +97,14 @@ const SearchModal = memo(
       <div className={styles.modalOverlay} onMouseDown={handleClose}>
         <div
           className={styles.searchModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           onMouseDown={handleModalClick}
           onClick={handleModalClick}
         >
           <div className={styles.modalHeader}>
-            <h2>
+            <h2 id={titleId}>
               <span className={styles.titleContent}>
                 <img src={SearchIcon} alt="" className={styles.titleIcon} />{" "}
                 Búsqueda de productos

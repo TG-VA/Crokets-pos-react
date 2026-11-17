@@ -1,7 +1,9 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { BRANCH_TYPES } from "../../../../../services/branchScopeService";
+import { BRANCH_NOT_UPDATED_ERROR } from "../../../../../utils/branchMessages";
 
 const BRANCHES_RETURNING =
-  "id, code, name, phone, email, address, city, state, timezone, is_active";
+  "id, code, name, phone, email, address, city, state, timezone, is_active, branch_type";
 
 const buildRpcError = (data, fallback) => ({
   success: false,
@@ -37,6 +39,7 @@ export const createBranch = async (payload) => {
       p_city: payload.city || null,
       p_state: payload.state || null,
       p_timezone: payload.timezone || "America/Cancun",
+      p_branch_type: payload.branchType || BRANCH_TYPES.OPERATIONAL,
     });
 
     if (error) throw error;
@@ -75,6 +78,8 @@ export const updateBranchContact = async (branchId, updates) => {
   if (updates.phone !== undefined) allowedUpdates.phone = updates.phone;
   if (updates.email !== undefined) allowedUpdates.email = updates.email;
   if (updates.address !== undefined) allowedUpdates.address = updates.address;
+  // branch_type no se edita: pasar una sucursal con historial a admin dejaria traspasos
+  // en transito atorados (KNOWN_ISSUES.md #87). El tipo solo se elige al crear.
 
   if (Object.keys(allowedUpdates).length === 0) {
     return {
@@ -113,7 +118,12 @@ export const updateBranchContact = async (branchId, updates) => {
 
     if (error) throw error;
 
-    return { success: true, data: data || null, error: null };
+    // Con RLS, un UPDATE sin permiso no falla: afecta 0 filas y data llega null.
+    if (!data) {
+      return { success: false, data: null, error: BRANCH_NOT_UPDATED_ERROR };
+    }
+
+    return { success: true, data, error: null };
   } catch (error) {
     console.error("Error actualizando datos de la sucursal:", error);
 

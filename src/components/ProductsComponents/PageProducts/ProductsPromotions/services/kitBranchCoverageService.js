@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import {
   computeMissingBranches,
   groupBranchNamesByProduct,
@@ -6,11 +7,7 @@ import {
 
 export const fetchMissingBranchesForProduct = async (productId) => {
   const [branchesResult, inventoryResult] = await Promise.all([
-    supabase
-      .from("branches")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name", { ascending: true }),
+    fetchOperationalBranches({ columns: "id, name", activeOnly: true }),
     supabase
       .from("branch_inventory")
       .select("branch_id, is_active")

@@ -1,4 +1,4 @@
-import styles from "../InventorySearchModal.module.css";
+import styles from "./ProductSearchResults.module.css";
 
 const getLocalOwners = (product) =>
   Array.isArray(product?.localBranchNames) ? product.localBranchNames : [];
@@ -13,12 +13,19 @@ const getLocalHint = (owners) =>
     ? "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esas sucursales."
     : "Doble clic para volverlo global (administrador) o cambiarlo manualmente en el punto de venta de esa sucursal.";
 
-const InventorySearchResults = ({
+/**
+ * Lista de resultados compartida por los buscadores de productos. Las marcas
+ * de ya seleccionado y producto local solo aparecen si el modal pasa sus
+ * reglas.
+ */
+const ProductSearchResults = ({
   products = [],
   selectedIndex = -1,
   searchTerm = "",
   loading = false,
   error = null,
+  emptyMessage = "No hay productos para mostrar",
+  showPrice = true,
   resultsListRef,
   isAlreadySelected,
   isProductDisabled,
@@ -36,9 +43,7 @@ const InventorySearchResults = ({
   if (!Array.isArray(products) || products.length === 0) {
     return (
       <div className={styles.emptyMessage}>
-        {searchTerm.trim()
-          ? "No se encontraron productos"
-          : "No hay productos para mostrar"}
+        {searchTerm.trim() ? "No se encontraron productos" : emptyMessage}
       </div>
     );
   }
@@ -106,7 +111,7 @@ const InventorySearchResults = ({
                   Código: {product?.codigo ?? product?.barcode ?? "—"}
                 </span>
 
-                {price !== undefined && price !== null ? (
+                {showPrice && price !== undefined && price !== null ? (
                   <span className={styles.productPrice}>
                     ${Number(price).toFixed(2)}
                   </span>
@@ -133,4 +138,4 @@ const InventorySearchResults = ({
   );
 };
 
-export default InventorySearchResults;
+export default ProductSearchResults;

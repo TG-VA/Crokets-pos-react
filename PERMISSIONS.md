@@ -154,6 +154,36 @@ Riesgo aceptado y monitoreado; ver `KNOWN_ISSUES.md` #30 y `docs/SUPABASE_MIGRAT
 
 ---
 
+### Sucursales administrativas (`branches.branch_type`, 15 nov 2026)
+
+`branches.branch_type` vale `operational` (default) o `admin`. Una sucursal admin (hoy `ADM-BREN`)
+no vende, no cobra ni tiene stock; sí ve reportes, crea pedidos y traspasos y da de alta productos.
+
+- **Fuente única del filtro:** `src/services/branchScopeService.js` (`fetchOperationalBranches`,
+  `fetchAllBranches`) y sus reglas puras en `branchScopeCalculationService.js`
+  (`BRANCH_TYPES`, `isOperationalBranch`, `isAdminBranch`, `resolveStockOriginId`). Ningún otro
+  módulo filtra por `branch_type`.
+- **Dónde no aparece:** selectores de origen y destino de traspasos y pedidos, reporte de
+  inventario, movimientos, cobertura de kits, buscador de ventas (stock en otras sucursales) y
+  filtros de sucursal de los reportes. Sí aparece en Ajustes > Sucursales, login y perfil de
+  terminal.
+- **Terminal admin:** elige origen y destino entre operativas (sin origen preseleccionado). Los
+  reportes ya arrancan en "todas las sucursales", que solo contiene operativas.
+- **Acceso por tipo de sucursal:** `canBranchAccessPath` en `src/lib/permissionsService.js` bloquea
+  Ventas (`/dashboard`, `/sales`), Corte (`/cashcut`) y Facturación (`/invoices`). `AuthGuard`
+  redirige a `/reports` y la `Navbar` oculta esos botones y sus atajos. Es independiente del rol
+  del usuario, que se sigue resolviendo con `AuthContext` y `checkUserIsAdmin`.
+- **Servidor:** `20261115140000_reject_admin_branch_stock.sql` agrega triggers que rechazan una
+  sucursal admin en `sales`, `inventory_movements`, `inventory_transfers` y `store_orders`, de modo
+  que las RPCs transaccionales fallan con "La sucursal ... es administrativa" aunque la UI se salte.
+  `20261115160000` agrega el mismo trigger en `branch_inventory`: el alta y la edición de
+  productos desde una terminal admin no escriben inventario y la importación se bloquea.
+- **Caja:** `branchRequiresCashRegister` hace que una terminal admin no abra caja; `AuthGuard` la
+  lleva de `/cash-register` a `/reports`.
+- **Caché:** `BranchProvider` refresca `branch_type` al montar, así una terminal con sesión previa
+  se entera de que es admin sin volver a iniciar sesión.
+- Pendientes conocidos: `KNOWN_ISSUES.md` #87 y #89.
+
 ## 2. Sistema local — SQLite embebido (`src/backend/bd.js`)
 
 Este es el sistema que usa el backend Express local para el login, **independiente de Supabase

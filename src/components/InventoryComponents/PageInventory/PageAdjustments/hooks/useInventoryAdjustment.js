@@ -3,6 +3,10 @@ import { useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useAuth } from "../../../../../contexts/AuthContext";
+import {
+  isInventoryTrackedProduct,
+  isKitProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 
 import { applyInventoryAdjustment } from "../services/inventoryAdjustmentService";
 
@@ -20,7 +24,13 @@ const INITIAL_APP_MODAL = {
 };
 
 const useInventoryAdjustment = () => {
-  const { products, getProductByCodigo, refreshProducts } = useProducts();
+  const {
+    products,
+    loadingProducts,
+    productsError,
+    getProductByCodigo,
+    refreshProducts,
+  } = useProducts();
   const { branch } = useBranch();
   const { user } = useAuth();
 
@@ -154,6 +164,22 @@ const useInventoryAdjustment = () => {
     setQuantityToAdjust(`${hasNegativeSign ? "-" : ""}${digitsOnly}`);
   };
 
+  // Mismo criterio que el buscador F10: kits y productos sin inventario no se ajustan.
+  const ensureAdjustableProduct = (product) => {
+    if (!isKitProduct(product) && isInventoryTrackedProduct(product)) {
+      return true;
+    }
+
+    showAppAlert({
+      type: "warning",
+      title: "Producto sin inventario",
+      message:
+        "Este producto es un kit o no maneja inventario, por lo que no se puede ajustar.",
+    });
+
+    return false;
+  };
+
   const handleLookup = () => {
     const cleanCode = String(barcode ?? "").trim();
 
@@ -180,12 +206,15 @@ const useInventoryAdjustment = () => {
       return;
     }
 
+    if (!ensureAdjustableProduct(foundProduct)) return;
+
     setSelectedProduct(foundProduct);
     setBarcode(foundProduct.codigo ?? "");
   };
 
   const loadProduct = (product) => {
     if (!product) return;
+    if (!ensureAdjustableProduct(product)) return;
 
     setSelectedProduct(product);
     setBarcode(product.codigo ?? "");
@@ -318,6 +347,8 @@ const useInventoryAdjustment = () => {
 
   return {
     products,
+    loadingProducts,
+    productsError,
     searchModalOpen,
     barcode,
     selectedProduct,

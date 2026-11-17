@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../services/branchScopeService";
 import { isKitAvailable } from "../../ProductsComponents/PageProducts/ProductsPromotions/services/kitValidityCalculationService";
 
 export const normalizeText = (text) =>
@@ -190,14 +191,18 @@ export const fetchProductStocksAcrossBranches = async (productId) => {
 
   if (!branchIds.length) return { validRows: [], branchMap: {} };
 
-  const { data: branches, error: branchError } = await supabase
-    .from("branches")
-    .select("id, code, name")
-    .in("id", branchIds);
+  const { data: branches, error: branchError } = await fetchOperationalBranches(
+    { columns: "id, code, name" }
+  );
   if (branchError) throw branchError;
 
+  // Solo se ofrece stock de sucursales operativas: una admin nunca vende ni surte.
+  const branchMap = branches
+    .filter((b) => branchIds.includes(b.id))
+    .reduce((acc, b) => ({ ...acc, [b.id]: b }), {});
+
   return {
-    validRows,
-    branchMap: (branches || []).reduce((acc, b) => ({ ...acc, [b.id]: b }), {}),
+    validRows: validRows.filter((r) => Boolean(branchMap[r.branch_id])),
+    branchMap,
   };
 };

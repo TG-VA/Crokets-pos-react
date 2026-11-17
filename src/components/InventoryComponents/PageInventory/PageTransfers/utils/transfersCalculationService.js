@@ -1,5 +1,7 @@
 // Calculos puros: agregaciones, conteos, filtros, ordenamiento.
 
+import { isOperationalBranch } from "../../../../../services/branchScopeCalculationService";
+import { isInventoryTrackedProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { parseTransferDate, normalizeText } from "./transfersFormatters";
 
 export const normalizeInteger = (value, fallback = 0) => {
@@ -103,7 +105,7 @@ export const filterTransferProducts = ({ products = [], searchTerm = "" }) => {
   const normalizedTerm = normalizeText(searchTerm).toUpperCase();
 
   const sendableProducts = (Array.isArray(products) ? products : [])
-    .filter((product) => product?.tracks_inventory)
+    .filter(isInventoryTrackedProduct)
     .filter((product) => Number(product?.existencia ?? 0) > 0)
     .sort((a, b) =>
       String(a?.descripcion || "").localeCompare(
@@ -182,8 +184,9 @@ export const getTransferMetrics = ({ orders = [], currentBranchId = "" }) => {
 // Helpers de construccion y validacion de items de traspaso (logica pura).
 // ============================================================================
 
+// Una sucursal admin no tiene stock: nunca se ofrece como origen ni destino.
 export const getBranchFallback = (currentBranch) => {
-  if (!currentBranch?.id) {
+  if (!currentBranch?.id || !isOperationalBranch(currentBranch)) {
     return [];
   }
 

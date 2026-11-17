@@ -12,6 +12,8 @@ import styles from "./PageAdjustments.module.css";
 const PageAdjustments = () => {
   const {
     products,
+    loadingProducts,
+    productsError,
     searchModalOpen,
     barcode,
     selectedProduct,
@@ -128,6 +130,8 @@ const PageAdjustments = () => {
           isOpen={searchModalOpen}
           onClose={closeSearchModal}
           products={products}
+          loading={loadingProducts}
+          error={productsError}
           onSelect={loadProduct}
         />
 

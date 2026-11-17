@@ -53,6 +53,28 @@ describe("transfersService", () => {
       expect(supabase.from).toHaveBeenCalledWith("branches");
     });
 
+    it("pide solo sucursales operativas y activas", async () => {
+      await fetchTransferBranchOptions({ id: "b1" });
+      expect(mockFrom.eq).toHaveBeenCalledWith("branch_type", "operational");
+      expect(mockFrom.eq).toHaveBeenCalledWith("is_active", true);
+    });
+
+    it("no ofrece la sucursal admin como fallback si la consulta falla", async () => {
+      mockFrom.order.mockResolvedValueOnce({
+        data: null,
+        error: new Error("RLS"),
+      });
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const result = await fetchTransferBranchOptions({
+        id: "adm",
+        name: "ADM",
+        branch_type: "admin",
+      });
+      expect(result).toEqual([]);
+      errorSpy.mockRestore();
+    });
+
     it("devuelve arreglo vacio si data no es arreglo", async () => {
       mockFrom.order.mockResolvedValueOnce({ data: null, error: null });
       const result = await fetchTransferBranchOptions({ id: "b1" });

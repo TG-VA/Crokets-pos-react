@@ -93,6 +93,22 @@ describe("useTransferDataLoad", () => {
     expect(result.current.destinationOptions[0].id).toBe("b2");
   });
 
+  it("destinationOptions excluye el origen elegido por una terminal admin", async () => {
+    setupMocks();
+    const { result } = renderHook(() =>
+      useTransferDataLoad(
+        createProps({
+          branch: { id: "adm", branch_type: "admin" },
+          originBranchId: "b2",
+        })
+      )
+    );
+    await waitFor(() => {
+      expect(result.current.destinationOptions).toHaveLength(1);
+    });
+    expect(result.current.destinationOptions[0].id).toBe("b1");
+  });
+
   it("pendingReceiptsCount cuenta solo pending_receipt de destino", async () => {
     setupMocks();
     const { result } = renderHook(() => useTransferDataLoad(createProps()));

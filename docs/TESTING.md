@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (13 nov 2026)
+## Cobertura actual (16 nov 2026)
 
-302 archivos de test (**3203 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+330 archivos de test (**3394 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -70,6 +70,7 @@ y el proceso principal de Electron:
 | Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
+| Contrato SQL de RLS y escritura admin en branches         | `supabase/migrations/branchesRlsAdminWriteContract.test.js`                        |
 | Contrato SQL de username insensible a mayusculas          | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
 | Contrato SQL del CHECK de username en minusculas          | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
 | Contrato de authorize-admin-action (username)             | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
@@ -105,6 +106,28 @@ y el proceso principal de Electron:
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
 | Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
+| Alcance de sucursales (consultas)                         | `src/services/branchScopeService.test.js`                                          |
+| Alcance de sucursales (origen de stock)                   | `src/services/branchScopeCalculationService.test.js`                               |
+| Contrato SQL de branches.branch_type                      | `supabase/migrations/branchesBranchTypeContract.test.js`                           |
+| Contrato SQL de create_branch con tipo                    | `supabase/migrations/createBranchBranchTypeContract.test.js`                       |
+| Contrato SQL: sucursal admin sin stock                    | `supabase/migrations/rejectAdminBranchStockContract.test.js`                       |
+| Acceso por tipo de sucursal                               | `src/lib/permissionsService.test.js`                                               |
+| Guard de rutas por tipo de sucursal                       | `src/components/AuthGuard/AuthGuard.test.jsx`                                      |
+| Busqueda de producto por codigo                           | `src/services/products/productLookupCalculationService.test.js`                    |
+| Traspasos: catalogo de la sucursal origen                 | `.../PageTransfers/hooks/useTransferOriginCatalog.test.js`                         |
+| Traspasos: selector de origen                             | `.../PageTransfers/components/SendWorkspace.test.jsx`                              |
+| Kits: cobertura solo en operativas                        | `.../ProductsPromotions/services/kitBranchCoverageService.test.js`                 |
+| Ventas: stock en otras sucursales                         | `.../SalesComponents/services/searchModalService.test.js`                          |
+| Sucursales: validacion del formulario                     | `.../SettingsBranches/utils/branchFormValidation.test.js`                          |
+| Sucursales: campos por tipo                               | `.../SettingsBranches/utils/branchTypeFormConfig.test.js`                          |
+| Sucursales: modal con tipo                                | `.../SettingsBranches/components/BranchFormModal.test.jsx`                         |
+| Sucursales: edicion sin filas afectadas (RLS)             | `.../SettingsBranches/services/branchesMutationService.test.js`                    |
+| Terminal: perfil de sucursal sin filas afectadas (RLS)    | `.../SettingsTerminal/services/branchProfileService.test.js`                       |
+| Contrato SQL: RPCs de sucursales sin anon                 | `supabase/migrations/branchesRpcsRevokeAnonContract.test.js`                       |
+| Contrato SQL: inventario sin sucursal admin               | `supabase/migrations/rejectAdminBranchInventoryContract.test.js`                   |
+| Contrato SQL: guard de admin en set_branch_active         | `supabase/migrations/setBranchActiveAdminGuardContract.test.js`                    |
+| Productos: alta en terminal admin (render)                | `.../ProductsNew/ProductsNew.test.jsx`                                             |
+| Productos: inventario en edicion (render)                 | `.../ProductsModify/components/ProductModifyInventorySection.test.jsx`             |
 | Caja: sesión y apertura (RPC)                             | `src/services/cashRegisterService.test.js`                                         |
 | Caja: configuración operativa (remoto y offline)          | `src/services/cashOperationSettingsService.test.js`                                |
 | Caja: configuración operativa (hook y vista)              | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
@@ -124,6 +147,7 @@ y el proceso principal de Electron:
 | Kardex: panel con paginacion                              | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
 | Kardex: exportador Excel                                  | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
 | Kardex: exportacion sobre el dataset completo             | `.../PageKardex/Pagekardex.test.jsx`                                               |
+| Kardex: carga y error de productos (hook)                 | `.../PageKardex/hooks/useKardex.test.js`                                           |
 | Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
 | Facturación: validación fiscal                            | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
@@ -161,6 +185,7 @@ y el proceso principal de Electron:
 | Traspasos: formulario de envio (borrador y stock)         | `.../PageTransfers/hooks/useSendForm.test.js`                                      |
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
+| Traspasos: carga y error en el buscador de la pagina      | `.../PageTransfers/PageTransfers.test.jsx`                                         |
 | Traspasos: servicio de datos (sucursales y ordenes)       | `.../PageTransfers/services/transferService.test.js`                               |
 | Traspasos: calculos de orden, recepcion y aviso 0s        | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
 | Traspasos: utilidades (meta, fechas y presets)            | `.../PageTransfers/utils/transfersUtils.test.js`                                   |
@@ -173,6 +198,11 @@ y el proceso principal de Electron:
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
 | Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
+| Ajustes: carga, error y rechazo por codigo y F10 (hook)   | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
+| Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
+| Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
+| Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |
 | Pedidos: hook para volver global un producto local        | `.../Modals/InventorySearchModal/hooks/usePromoteLocalProduct.test.js`             |
 | Pedidos: servicio para volver global un producto          | `src/services/inventory/promoteProductToGlobalService.test.js`                     |
 | Pedidos: contrato SQL de producto con is_global nulo      | `supabase/migrations/promoteProductNullIsGlobalContract.test.js`                   |
@@ -438,11 +468,34 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   equivalente al reinicio durante el render, por lo que quitarla no rompe ninguna prueba. El borrador
   vive solo en memoria: sobrevive a la navegación pero no a recargar la aplicación.
   `useProductInsightsDetail.test.js` fija que se ignora la respuesta tardía de una consulta anterior.
-  `useCreateOrderForm.test.jsx` fija que se rechazan productos locales (`false`) y sin marcar (`null`).
+  `useCreateOrderForm.test.jsx` fija que se rechazan productos locales (`false`), sin marcar (`null`)
+  y sin inventario (`tracks_inventory: false`). `useInventoryAdjustment.test.js` fija que escanear un
+  kit o un producto sin inventario, o cargarlo desde el buscador F10, muestra el aviso y no lo
+  selecciona.
   `localProductsCatalogService.test.js` fija el `console.error` al alcanzar el límite de 5000 filas.
   `promoteProductNullIsGlobalContract.test.js` (2 casos) lee la migración `20261031130000` y fija
   `coalesce(v_product.is_global, false)` y los grants; falla si se cambia a `true` (verificado por
   mutación). Esa migración está pendiente de aplicar en remoto.
+
+- **Sucursales administrativas** (15 nov 2026, rama `feat/admin-branch-type`): los contratos SQL
+  fijan la columna `branch_type` con su `CHECK`, la firma de 10 argumentos de `create_branch` y los
+  cuatro triggers que rechazan una sucursal admin en ventas, movimientos, traspasos y pedidos (no se
+  ejecutan en Postgres). `branchScopeService.test.js` fija que el filtro por tipo vive en un solo
+  servicio y que una fila sin `branch_type` cuenta como operativa. Los tests de servicios de
+  traspasos, pedidos, inventario, kits, reportes, facturas y buscador de ventas fijan que piden
+  `branch_type = operational` y que el fallback nunca ofrece la sucursal admin.
+  `useCreateOrderForm.test.jsx`, `useSendForm.test.js` y `useTransferOriginCatalog.test.js` fijan que
+  una terminal admin elige el origen sin preselección, que el borrador se descarta al cambiar de
+  origen y que el catálogo anterior no se muestra mientras carga el nuevo. En Pedidos, elegir un
+  origen igual al destino limpia el destino. `useInventoryReport.test.js` fija que una terminal admin
+  no preselecciona sucursal ni consulta inventario hasta elegir una, y que una operativa preselecciona
+  la suya.
+  `permissionsService.test.js`, `AuthGuard.test.jsx` y `Navbar.test.jsx` fijan que una terminal
+  admin no entra a Ventas, Corte ni Facturación, no ve sus botones y no abre caja.
+  `productCrudService.test.js` y `useProductsImport.test.js` fijan que desde una terminal admin el
+  alta nace global sin inventario, la edición no toca `branch_inventory` y la importación se
+  bloquea. `BranchContext.test.jsx` fija que la sucursal en caché recibe su `branch_type` y que la
+  respuesta tardía de la sucursal anterior no pisa el tipo de la nueva.
 
 No hay todavía:
 

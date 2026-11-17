@@ -93,6 +93,24 @@ describe("useCreateOrderForm productos permitidos", () => {
     expect(added).toBe(false);
     expect(result.current.items).toHaveLength(0);
   });
+
+  it("rechaza un producto sin inventario capturado por codigo de barras", () => {
+    const service = buildProduct({
+      id: "s1",
+      codigo: "SRV-1",
+      tracks_inventory: false,
+    });
+    const { result } = renderForm([service]);
+
+    let added;
+    act(() => {
+      added = result.current.handleCodeSubmit("srv-1");
+    });
+
+    expect(added).toBe(false);
+    expect(result.current.items).toHaveLength(0);
+    expect(result.current.error).toContain("no maneja inventario");
+  });
 });
 
 describe("useCreateOrderForm persistencia del borrador", () => {
@@ -118,5 +136,99 @@ describe("useCreateOrderForm persistencia del borrador", () => {
 
     expect(form.orderName).toBe("PEDIDO A");
     expect(form.items).toHaveLength(1);
+  });
+});
+
+describe("useCreateOrderForm origen de stock", () => {
+  const branches = [
+    { id: "b1", name: "Centro" },
+    { id: "b2", name: "Norte" },
+    { id: "b3", name: "Sur" },
+  ];
+
+  const renderWithBranch = (currentBranch) =>
+    renderHook(
+      () => useCreateOrderForm({ currentBranch, branches, products: [] }),
+      { wrapper }
+    );
+
+  it("una terminal operativa envia desde su sucursal sin elegir origen", () => {
+    const { result } = renderWithBranch({ id: "b1" });
+
+    expect(result.current.canChooseOrigin).toBe(false);
+    expect(result.current.originBranchId).toBe("b1");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b2",
+      "b3",
+    ]);
+  });
+
+  it("una terminal admin no preselecciona origen y elige entre operativas", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    expect(result.current.canChooseOrigin).toBe(true);
+    expect(result.current.originBranchId).toBe("");
+    expect(result.current.originOptions).toEqual(branches);
+
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.originBranchId).toBe("b2");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b1",
+      "b3",
+    ]);
+  });
+
+  it("una terminal admin sin origen no puede guardar", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => {
+      result.current.setOrderName("REPOSICION");
+      result.current.setDestinationBranchId("b1");
+      result.current.addProduct(buildProduct());
+    });
+    act(() => result.current.updateQuantity("p1", "2"));
+
+    expect(result.current.isValid).toBe(false);
+
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.isValid).toBe(true);
+  });
+
+  it("invalida el pedido si el origen elegido coincide con el destino", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => {
+      result.current.setOrderName("REPOSICION");
+      result.current.setDestinationBranchId("b1");
+      result.current.addProduct(buildProduct());
+    });
+    act(() => result.current.updateQuantity("p1", "2"));
+    act(() => result.current.setOriginBranchId("b1"));
+
+    expect(result.current.isValid).toBe(false);
+  });
+
+  it("limpia el destino si el origen elegido coincide con el", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => result.current.setDestinationBranchId("b1"));
+    act(() => result.current.setOriginBranchId("b1"));
+
+    expect(result.current.destinationBranchId).toBe("");
+    expect(result.current.destinationOptions.map((b) => b.id)).toEqual([
+      "b2",
+      "b3",
+    ]);
+  });
+
+  it("conserva el destino si el origen elegido es distinto", () => {
+    const { result } = renderWithBranch({ id: "adm", branch_type: "admin" });
+
+    act(() => result.current.setDestinationBranchId("b1"));
+    act(() => result.current.setOriginBranchId("b2"));
+
+    expect(result.current.destinationBranchId).toBe("b1");
   });
 });

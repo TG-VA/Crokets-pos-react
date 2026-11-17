@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
+import { useBranch } from "../../../../../contexts/BranchContext";
+import { isAdminBranch } from "../../../../../services/branchScopeCalculationService";
 import { fetchSatClaves } from "../../../../../services/satClavesService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import { useProductFormValidation } from "./useProductFormValidation";
@@ -7,6 +9,8 @@ import { useProductDOMFocus } from "./useProductDOMFocus";
 
 export const useProductsNew = () => {
   const { departments, addProduct, getProductByCodigo } = useProducts();
+  const { branch } = useBranch();
+  const isAdminTerminal = isAdminBranch(branch);
   const [saving, setSaving] = useState(false);
   const [satClaves, setSatClaves] = useState([]);
   const [loadingSatClaves, setLoadingSatClaves] = useState(false);
@@ -170,6 +174,7 @@ export const useProductsNew = () => {
     activeDepartments,
     ganancia,
     usesInventory,
+    isAdminTerminal,
     isFormValid,
     submitArmed,
     setSubmitArmed,

@@ -79,3 +79,37 @@ describe("CreateOrderWorkspace con sucursal destino", () => {
     expect(form.setSearchOpen).toHaveBeenCalledWith(true);
   });
 });
+
+describe("CreateOrderWorkspace sucursal origen", () => {
+  it("no muestra el selector de origen en una terminal operativa", () => {
+    render(<CreateOrderWorkspace form={buildForm()} products={[]} />);
+
+    expect(screen.queryByText("Sucursal origen")).toBeNull();
+  });
+
+  it("muestra las operativas como origen en una terminal admin", () => {
+    const setOriginBranchId = vi.fn();
+    render(
+      <CreateOrderWorkspace
+        form={buildForm({
+          canChooseOrigin: true,
+          originBranchId: "",
+          setOriginBranchId,
+          originOptions: [
+            { id: "b1", name: "Centro" },
+            { id: "b2", name: "Norte" },
+          ],
+        })}
+        products={[]}
+      />
+    );
+
+    const select = screen
+      .getByText("Sucursal origen")
+      .closest("label")
+      .querySelector("select");
+    expect(select.value).toBe("");
+    fireEvent.change(select, { target: { value: "b1" } });
+    expect(setOriginBranchId).toHaveBeenCalledWith("b1");
+  });
+});
