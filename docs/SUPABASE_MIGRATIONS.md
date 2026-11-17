@@ -218,6 +218,21 @@ la nota cuando la recepción tiene diferencias, por lo que:
 Orden de despliegue: aplicar primero la migración (ya aplicada en remoto) y publicar la versión del
 instalador de inmediato; no dejar sucursales en versiones anteriores al publicar.
 
+## Compatibilidad: costo de recepción de pedidos
+
+`20261117120000_store_orders_receipt_cost.sql` elimina `receive_store_order` de 5 argumentos y la
+reemplaza por una de 6 con `p_received_cost_map jsonb default null`. Por cada partida recibida valida
+el costo capturado, lo guarda en `store_order_items.received_unit_cost` (columna nueva) y en el
+movimiento de entrada, y recalcula el Costo Promedio Ponderado en `branch_inventory.cost_price` de la
+sucursal destino. Antes de esta migración la recepción sumaba stock sin tocar el costo promedio.
+
+- Un instalador anterior (sin el campo "Costo") sigue resolviendo la RPC: sin mapa, el servidor usa
+  el costo congelado del pedido (`store_order_items.cost_price`) y aun así pondera el CPP.
+- Un frontend con el campo contra una base sin la migración falla por el argumento
+  `p_received_cost_map` desconocido.
+
+Orden de despliegue: migración antes del instalador.
+
 ## Compatibilidad: sucursales administrativas (`branch_type`)
 
 Tres migraciones, en este orden:

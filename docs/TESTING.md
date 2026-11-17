@@ -247,6 +247,7 @@ y el proceso principal de Electron:
 | Pedidos: contrato SQL de permisos (revoke anon)           | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
 | Pedidos: contrato SQL de integridad                       | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 | Pedidos: contrato SQL de nota de recepcion                | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
+| Pedidos: contrato SQL de costo de recepcion y CPP         | `supabase/migrations/storeOrdersReceiptCostContract.test.js`                       |
 
 ### Cobertura transitiva del resolver de costo
 
