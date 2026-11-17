@@ -209,6 +209,18 @@ describe("useReceiveOrderForm costo de recepcion", () => {
     expect(result.current.costs.p1).toBe("98.5");
   });
 
+  it("ignora un costo mayor al tope en vez de reportarlo como faltante", () => {
+    const { result } = setup();
+
+    selectFirst(result);
+    act(() => {
+      result.current.setCost("p1", "2000000");
+    });
+
+    expect(result.current.costs.p1).toBe("120.00");
+    expect(result.current.missingCostItems).toHaveLength(0);
+  });
+
   it("bloquea el envio si falta el costo de una partida recibida", async () => {
     const { result } = setup();
 

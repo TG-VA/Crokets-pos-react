@@ -64,4 +64,10 @@ describe("sanitizeCostInput", () => {
     expect(sanitizeCostInput("12a")).toBeNull();
     expect(sanitizeCostInput("1.234")).toBeNull();
   });
+
+  it("acepta el tope y rechaza costos mayores a RECEIPT_COST_MAX", () => {
+    expect(sanitizeCostInput("1000000")).toBe("1000000");
+    expect(sanitizeCostInput("1000000.01")).toBeNull();
+    expect(sanitizeCostInput("2000000")).toBeNull();
+  });
 });

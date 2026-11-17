@@ -1,3 +1,5 @@
+import { RECEIPT_COST_MAX } from "./ordersCalculationService";
+
 /**
  * Sanitiza una cantidad capturada en los formularios de pedidos.
  * El inventario solo admite unidades enteras, por lo que la mascara conserva
@@ -29,7 +31,9 @@ const COST_INPUT_PATTERN = /^\d*\.?\d{0,2}$/;
  * Admite digitos con hasta dos decimales (la coma se toma como punto), igual
  * que el alta de inventario: el costo entra al CPP redondeado a 2 decimales.
  * Una captura invalida (signo, letras, un tercer decimal) devuelve `null` para
- * que el formulario conserve el valor anterior en lugar de borrarlo.
+ * que el formulario conserve el valor anterior en lugar de borrarlo. Lo mismo
+ * aplica a un costo mayor a `RECEIPT_COST_MAX`: si se aceptara, el campo
+ * mostraria el valor pero la recepcion lo contaria como costo faltante.
  */
 export const sanitizeCostInput = (value) => {
   const text = String(value ?? "")
@@ -38,5 +42,7 @@ export const sanitizeCostInput = (value) => {
 
   if (!text) return "";
 
-  return COST_INPUT_PATTERN.test(text) ? text : null;
+  if (!COST_INPUT_PATTERN.test(text)) return null;
+
+  return Number(text) > RECEIPT_COST_MAX ? null : text;
 };
