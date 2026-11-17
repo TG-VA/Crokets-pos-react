@@ -6,6 +6,8 @@ import {
   getReceivedQuantitiesPayload,
   getMissingReceiptItems,
   getNonIntegerReceiptItems,
+  getMissingReceiptCostItems,
+  getReceivedCostsPayload,
 } from "../utils/ordersCalculationService";
 import {
   normalizeReceiptNote,
@@ -174,6 +176,7 @@ export const receiveStoreOrder = async ({
   order,
   currentBranchId,
   quantities,
+  costs = {},
   receiptNote = "",
   user = null,
 }) => {
@@ -214,6 +217,18 @@ export const receiveStoreOrder = async ({
     );
   }
 
+  const missingCostItems = getMissingReceiptCostItems(
+    order.items,
+    quantities,
+    costs
+  );
+
+  if (missingCostItems.length > 0) {
+    throw new Error(
+      `Captura el costo de los productos recibidos (${missingCostItems.length} pendiente(s)).`
+    );
+  }
+
   const receiptNoteError = validateReceiptNote({
     items: order.items,
     quantities,
@@ -230,6 +245,11 @@ export const receiveStoreOrder = async ({
     p_user_id: user.id,
     p_received_qty_map: getReceivedQuantitiesPayload(order.items, quantities),
     p_receipt_notes: normalizeReceiptNote(receiptNote) || null,
+    p_received_cost_map: getReceivedCostsPayload(
+      order.items,
+      quantities,
+      costs
+    ),
   });
 
   if (error) {
