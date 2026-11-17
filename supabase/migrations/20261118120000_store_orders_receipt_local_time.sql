@@ -77,7 +77,8 @@ begin
   end if;
 
   -- `inventory_movements.created_at` no tiene zona y el kardex lo lee como hora
-  -- local: se fecha con la zona de la sucursal, como create_sale_transaction.
+  -- local: se fecha con la zona de la sucursal destino, el mismo criterio de
+  -- hora local que usan las entradas y ventas capturadas desde el cliente.
   select now() at time zone coalesce(b.timezone, 'America/Cancun')
   into v_local_now
   from public.branches b
