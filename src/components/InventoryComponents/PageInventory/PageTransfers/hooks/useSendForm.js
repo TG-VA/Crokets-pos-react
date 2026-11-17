@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createTransferOrder } from "../services/transfersService";
 import useProductLookup from "./useProductLookup";
 
@@ -110,6 +111,13 @@ const useSendForm = ({
 
       if (!productId) {
         setError("No se detectó el producto a traspasar.");
+        return;
+      }
+
+      if (!isGlobalProduct(product)) {
+        setError(
+          "Producto local: vuelvelo global desde la busqueda (F10) para poder traspasarlo."
+        );
         return;
       }
 

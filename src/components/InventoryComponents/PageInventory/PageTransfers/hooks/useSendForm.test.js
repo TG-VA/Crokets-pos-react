@@ -37,6 +37,7 @@ const products = [
     precio: 20,
     existencia: 10,
     tracks_inventory: true,
+    is_global: true,
   },
 ];
 
@@ -83,6 +84,23 @@ describe("useSendForm", () => {
     expect(result.current.draftItems).toHaveLength(1);
     expect(result.current.draftItems[0].quantity).toBe(3);
     expect(result.current.draftTotals).toEqual({ lines: 1, units: 3 });
+  });
+
+  it("no agrega un producto local aunque venga del escaner o la busqueda", () => {
+    const setError = vi.fn();
+    const { result } = renderHook(() => useSendForm(createProps({ setError })));
+
+    act(() => {
+      capturedOnProductSelected(
+        { ...products[0], id: "local", is_global: false },
+        1
+      );
+    });
+
+    expect(result.current.draftItems).toHaveLength(0);
+    expect(setError).toHaveBeenCalledWith(
+      "Producto local: vuelvelo global desde la busqueda (F10) para poder traspasarlo."
+    );
   });
 
   it("error si la cantidad supera el stock", () => {
