@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (16 nov 2026)
+## Cobertura actual (17 nov 2026)
 
-330 archivos de test (**3394 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+331 archivos de test (**3401 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -218,7 +218,7 @@ y el proceso principal de Electron:
 | Pedidos: badge del nombre del pedido                      | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |
 | Pedidos: modal de detalle (cabecera, titulo y ruta)       | `.../PageOrders/components/OrderDetailModal.test.jsx`                              |
 | Pedidos: aviso con cierre automatico                      | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
-| Pedidos: estilos (clases definidas, badges en negrita)    | `.../PageOrders/PageOrders.styles.test.js`                                         |
+| Pedidos: estilos (clases, negritas, encabezado recepcion) | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas            | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
 | Modal base (footer, capa en la pila e icono en large)     | `src/components/AppModal/AppModal.test.jsx`                                        |
 | Pila de modales (capas y bloqueo de atajos)               | `src/contexts/ModalStackContext.test.jsx`                                          |
