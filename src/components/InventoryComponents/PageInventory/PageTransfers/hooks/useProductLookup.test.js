@@ -38,12 +38,12 @@ describe("useProductLookup", () => {
     vi.clearAllMocks();
   });
 
-  it("filtra productos con tracks_inventory=true y existencia>0", () => {
+  it("filtra productos con tracks_inventory=true aunque no tengan existencia", () => {
     const { result } = renderHook(() => useProductLookup(createProps()));
     expect(result.current.searchableProducts).toHaveLength(2);
   });
 
-  it("excluye productos sin tracks_inventory o sin existencia", () => {
+  it("excluye productos sin tracks_inventory pero conserva los agotados", () => {
     const localProducts = [
       ...products,
       {
@@ -64,7 +64,10 @@ describe("useProductLookup", () => {
     const { result } = renderHook(() =>
       useProductLookup(createProps({ products: localProducts }))
     );
-    expect(result.current.searchableProducts).toHaveLength(2);
+    expect(result.current.searchableProducts).toHaveLength(3);
+    expect(
+      result.current.searchableProducts.map((product) => product.id)
+    ).toEqual(["p4", "p1", "p2"]);
   });
 
   it("handleLookupProduct: error si la busqueda esta vacia", () => {

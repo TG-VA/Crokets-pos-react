@@ -10,6 +10,9 @@ const { transfersState } = vi.hoisted(() => ({
     productsError: null,
     searchModalOpen: true,
     searchableProducts: [],
+    draftItems: [],
+    originBranchName: "Centro",
+    handleProductPromoted: vi.fn(),
     closeSearchModal: vi.fn(),
     loadProductForTransfer: vi.fn(),
   },
@@ -41,6 +44,9 @@ describe("PageTransfers buscador de productos", () => {
     Object.assign(transfersState, {
       loadingProducts: false,
       productsError: null,
+      searchableProducts: [],
+      draftItems: [],
+      originBranchName: "Centro",
     });
   });
 
@@ -58,5 +64,49 @@ describe("PageTransfers buscador de productos", () => {
     render(<PageTransfers />);
 
     expect(screen.getByText("Error al cargar")).toBeTruthy();
+  });
+
+  it("muestra stock, agotados y locales de la sucursal origen", () => {
+    transfersState.searchableProducts = [
+      {
+        id: "g1",
+        codigo: "G-1",
+        descripcion: "Alimento global",
+        existencia: 5,
+        is_global: true,
+        tracks_inventory: true,
+      },
+      {
+        id: "g0",
+        codigo: "G-0",
+        descripcion: "Alimento agotado",
+        existencia: 0,
+        is_global: true,
+        tracks_inventory: true,
+      },
+      {
+        id: "l1",
+        codigo: "L-1",
+        descripcion: "Juguete local",
+        existencia: 3,
+        is_global: false,
+        tracks_inventory: true,
+      },
+    ];
+
+    render(<PageTransfers />);
+
+    expect(screen.getByText("Stock: 0")).toBeTruthy();
+    expect(screen.getByText("Producto local de Centro")).toBeTruthy();
+
+    const outOfStockItem = screen
+      .getByText("Alimento agotado")
+      .closest("[data-search-result]");
+    const localItem = screen
+      .getByText("Juguete local")
+      .closest("[data-search-result]");
+
+    expect(outOfStockItem.getAttribute("aria-disabled")).toBe("true");
+    expect(localItem.getAttribute("aria-disabled")).toBe("true");
   });
 });

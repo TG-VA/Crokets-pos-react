@@ -1,7 +1,18 @@
 import styles from "./ProductSearchResults.module.css";
 
-const getLocalOwners = (product) =>
-  Array.isArray(product?.localBranchNames) ? product.localBranchNames : [];
+import { getProductStock } from "../../services/inventory/inventoryProductCalculationService";
+
+const getLocalOwners = (product, localBranchName) => {
+  const owners = Array.isArray(product?.localBranchNames)
+    ? product.localBranchNames
+    : [];
+
+  if (owners.length > 0) {
+    return owners;
+  }
+
+  return localBranchName ? [localBranchName] : [];
+};
 
 const getLocalBadgeLabel = (owners) =>
   owners.length > 0
@@ -29,6 +40,9 @@ const ProductSearchResults = ({
   resultsListRef,
   isAlreadySelected,
   isProductDisabled,
+  getDisabledReason,
+  showStock = false,
+  localBranchName = "",
   onProductClick,
   onLocalProductDoubleClick,
 }) => {
@@ -53,14 +67,19 @@ const ProductSearchResults = ({
       {products.map((product, index) => {
         const alreadySelected = isAlreadySelected?.(product) === true;
         const disabled = isProductDisabled?.(product) === true;
-        const localOwners = getLocalOwners(product);
+        const disabledReason =
+          getDisabledReason?.(product) ?? (disabled ? "local" : null);
+        const localOwners = getLocalOwners(product, localBranchName);
         const price = product?.precio ?? product?.sale_price;
+        const stock = getProductStock(product);
+        const outOfStock = showStock && stock <= 0;
 
         const itemClassName = [
           styles.resultItem,
           index === selectedIndex ? styles.selectedResult : "",
           alreadySelected ? styles.alreadySelectedResult : "",
           disabled ? styles.disabledResult : "",
+          outOfStock ? styles.outOfStockResult : "",
         ]
           .filter(Boolean)
           .join(" ");
@@ -76,7 +95,7 @@ const ProductSearchResults = ({
               }
             }}
             onDoubleClick={() => {
-              if (disabled) {
+              if (disabledReason === "local") {
                 onLocalProductDoubleClick?.(product);
               }
             }}
@@ -98,10 +117,14 @@ const ProductSearchResults = ({
                     </span>
                   ) : null}
 
-                  {disabled ? (
+                  {disabledReason === "local" ? (
                     <span className={styles.localProductBadge}>
                       {getLocalBadgeLabel(localOwners)}
                     </span>
+                  ) : null}
+
+                  {outOfStock ? (
+                    <span className={styles.outOfStockBadge}>SIN STOCK</span>
                   ) : null}
                 </div>
               </div>
@@ -110,6 +133,19 @@ const ProductSearchResults = ({
                 <span className={styles.productCode}>
                   Código: {product?.codigo ?? product?.barcode ?? "—"}
                 </span>
+
+                {showStock ? (
+                  <span
+                    className={[
+                      styles.productStock,
+                      outOfStock ? styles.stockValueOut : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    Stock: {stock}
+                  </span>
+                ) : null}
 
                 {showPrice && price !== undefined && price !== null ? (
                   <span className={styles.productPrice}>
@@ -125,7 +161,7 @@ const ProductSearchResults = ({
                 </span>
               </div>
 
-              {disabled && localOwners.length > 0 ? (
+              {disabledReason === "local" && localOwners.length > 0 ? (
                 <div className={styles.localProductHint}>
                   {getLocalHint(localOwners)}
                 </div>

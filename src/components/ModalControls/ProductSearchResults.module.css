@@ -70,6 +70,15 @@
   font-size: 0.9rem;
 }
 
+.productStock {
+  color: #7f8c8d;
+}
+
+.stockValueOut {
+  color: #c0392b;
+  font-weight: 700;
+}
+
 .resultsList::-webkit-scrollbar {
   width: 8px;
 }
@@ -153,4 +162,27 @@
 .disabledResult:hover {
   border-color: #bdc3c7;
   box-shadow: none;
+}
+
+.outOfStockResult {
+  background: #fdf0ee;
+  border-color: #e0a8a0;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.outOfStockResult:hover {
+  border-color: #e0a8a0;
+  box-shadow: none;
+}
+
+.outOfStockBadge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #c0392b;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
 }

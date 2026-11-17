@@ -75,7 +75,6 @@ export const filterTransferProducts = ({ products = [], searchTerm = "" }) => {
 
   const sendableProducts = (Array.isArray(products) ? products : [])
     .filter(isInventoryTrackedProduct)
-    .filter((product) => Number(product?.existencia ?? 0) > 0)
     .sort((a, b) =>
       String(a?.descripcion || "").localeCompare(
         String(b?.descripcion || ""),

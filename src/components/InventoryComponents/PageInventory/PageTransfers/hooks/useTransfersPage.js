@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
@@ -30,6 +30,12 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     contextCatalog,
   });
   const { products, loadingProducts, productsError } = originCatalog;
+  const refreshOriginProducts = originCatalog.refreshProducts;
+
+  const handleProductPromoted = useCallback(async () => {
+    await refreshProducts();
+    await refreshOriginProducts?.();
+  }, [refreshOriginProducts, refreshProducts]);
 
   const { error, success, setError, setSuccess, clearFeedback } =
     useTransferFeedback();
@@ -133,6 +139,7 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     branchOptions,
     canChooseOrigin,
     originBranchId,
+    originBranchName: originBranch?.name || "",
     setOriginBranchId,
     cancellableTransferIds,
     destinationBranchId,
@@ -161,6 +168,7 @@ const useTransfersPage = ({ isActive = true } = {}) => {
     handleDraftQuantityChange,
     handleLookupProduct,
     handleLookupProductSearchChange,
+    handleProductPromoted,
     handleReceiptQuantityChange,
     handleRemoveDraftItem,
     handleSelectReceiptOrder,

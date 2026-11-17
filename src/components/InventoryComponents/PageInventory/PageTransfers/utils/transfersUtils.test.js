@@ -377,7 +377,7 @@ describe("transfersUtils", () => {
   });
 
   describe("filterTransferProducts", () => {
-    it("solo considera productos tracks_inventory=true Y existencia>0 (filtros por defecto)", () => {
+    it("considera productos tracks_inventory=true sin importar la existencia", () => {
       const products = [
         {
           id: "1",
@@ -402,8 +402,8 @@ describe("transfersUtils", () => {
         },
       ];
       const matches = filterTransferProducts({ products, searchTerm: "" });
-      expect(matches).toHaveLength(1);
-      expect(matches[0].id).toBe("1");
+      expect(matches).toHaveLength(2);
+      expect(matches.map((product) => product.id)).toEqual(["1", "2"]);
     });
 
     it("filtra por código/descripcion (case-insensitive)", () => {

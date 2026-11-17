@@ -106,6 +106,12 @@ describe("useTransfersPage", () => {
     expect(typeof result.current.handleConfirmReceipt).toBe("function");
     expect(typeof result.current.handleTabChange).toBe("function");
     expect(typeof result.current.handleCancelTransfer).toBe("function");
+    expect(typeof result.current.handleProductPromoted).toBe("function");
+  });
+
+  it("expone el nombre de la sucursal origen", () => {
+    const { result } = renderHook(() => useTransfersPage());
+    expect(result.current.originBranchName).toBe("Origen");
   });
 
   it("retorna estados de feedback", () => {

@@ -9,6 +9,7 @@ const useInventorySearchModal = ({
   products = [],
   selectedProductIds = [],
   restrictLocalProducts = false,
+  showStock = false,
   keyboardEnabled = true,
   onClose,
   onSelect,
@@ -23,8 +24,10 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
+    selectedProductDisabledReason,
     isAlreadySelected,
     isProductDisabled,
+    getDisabledReason,
     handleSearchChange: updateSearchTerm,
     clearSearch,
   } = useInventorySearchResults({
@@ -32,6 +35,7 @@ const useInventorySearchModal = ({
     selectedProductIds,
     selectedIndex,
     restrictLocalProducts,
+    showStock,
   });
 
   const resetSearch = useCallback(() => {
@@ -122,12 +126,14 @@ const useInventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
+    selectedProductDisabledReason,
     resultsListRef,
 
     setSelectedIndex,
 
     isAlreadySelected,
     isProductDisabled,
+    getDisabledReason,
     handleSearchChange,
     handleProductClick,
     handleSelectProduct,
