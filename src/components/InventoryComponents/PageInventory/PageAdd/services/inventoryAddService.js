@@ -25,7 +25,8 @@ const toNumber = (value) => {
 
 // `add_inventory_entry` usa 42501 tanto para la falta de autorizacion como para
 // la falta de acceso a la sucursal; solo la primera se resuelve autorizando.
-const ADMIN_GRANT_REQUIRED_MESSAGE =
+// El texto es contrato con la migracion: lo fija `addInventoryEntryAdminGrantContract.test.js`.
+export const ADMIN_GRANT_REQUIRED_MESSAGE =
   "requiere la autorizacion de un administrador";
 
 /**

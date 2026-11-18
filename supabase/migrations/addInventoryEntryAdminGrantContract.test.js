@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { ADMIN_GRANT_REQUIRED_MESSAGE } from "../../src/components/InventoryComponents/PageInventory/PageAdd/services/inventoryAddService";
+
+vi.mock("../../src/lib/supabaseClient", () => ({ supabase: {} }));
 
 const MIGRATION = join(
   process.cwd(),
@@ -48,6 +51,12 @@ describe("contrato SQL de add_inventory_entry con admin o autorizacion", () => {
     );
     expect(normalizedSql).toContain(
       `grant execute on function ${SIGNATURE} to authenticated, service_role;`
+    );
+  });
+
+  it("rechaza con 42501 y el texto que reconoce el cliente para reautorizar", () => {
+    expect(normalizedSql).toContain(
+      `raise exception 'Agregar inventario ${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
     );
   });
 });
