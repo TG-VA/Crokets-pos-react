@@ -3,24 +3,30 @@
 -- grants de insert/update/delete para anon y authenticated: cualquiera con la clave
 -- publica podia cambiar el role_id de un usuario y volverse administrador, saltando
 -- is_admin() y todo control que dependa de el.
--- 1. Revoca insert/update/delete/truncate a anon y authenticated en las cinco tablas.
---    Se conserva select: login, reportes y permisos leen estas tablas.
+-- 1. Revoca todos los privilegios a anon y authenticated en las cinco tablas (incluye
+--    trigger y references, heredados del grant all del baseline) y vuelve a otorgar
+--    solo select: login, reportes y permisos leen estas tablas.
 -- 2. Las dos escrituras de Configuracion > Usuarios pasan a RPCs que exigen is_admin().
 --    Un administrador no puede quitarse su propio rol ni desactivarse, para no dejar la
 --    sucursal sin administrador por error.
 -- Las edge functions (admin-create-user, admin-reset-user-password,
 -- authorize-admin-action) usan service role y no se ven afectadas.
 -- Rollback:
---   grant insert, update, delete, truncate on table public.users, public.roles,
+--   grant insert, update, delete, truncate, references, trigger on table public.users, public.roles,
 --     public.role_permissions, public.permissions, public.user_roles to anon, authenticated;
 --   drop function public.admin_update_user(uuid, text, text, uuid);
 --   drop function public.admin_set_user_status(uuid, boolean);
 
-revoke insert, update, delete, truncate on table public.users from anon, authenticated;
-revoke insert, update, delete, truncate on table public.roles from anon, authenticated;
-revoke insert, update, delete, truncate on table public.role_permissions from anon, authenticated;
-revoke insert, update, delete, truncate on table public.permissions from anon, authenticated;
-revoke insert, update, delete, truncate on table public.user_roles from anon, authenticated;
+revoke all on table public.users from anon, authenticated;
+grant select on table public.users to anon, authenticated;
+revoke all on table public.roles from anon, authenticated;
+grant select on table public.roles to anon, authenticated;
+revoke all on table public.role_permissions from anon, authenticated;
+grant select on table public.role_permissions to anon, authenticated;
+revoke all on table public.permissions from anon, authenticated;
+grant select on table public.permissions to anon, authenticated;
+revoke all on table public.user_roles from anon, authenticated;
+grant select on table public.user_roles to anon, authenticated;
 
 create or replace function public.admin_update_user(
   p_user_id uuid,

@@ -2837,8 +2837,8 @@ caso es poco probable; la base de datos nunca aceptó el cambio.
 `is_admin()` (importar productos, `branches`, `user_branches`, la guarda de `add_inventory_entry`).
 El riesgo aceptado de #13 cubría la falta de RLS, pero no esta escalada.
 
-**Solución:** `20261118140000_users_roles_write_admin_only.sql` revoca la escritura en las cinco
-tablas a `anon` y `authenticated` (la lectura se conserva) y crea `admin_update_user` y
+**Solución:** `20261118140000_users_roles_write_admin_only.sql` revoca todos los privilegios en las
+cinco tablas a `anon` y `authenticated` y vuelve a otorgar solo `select`; crea `admin_update_user` y
 `admin_set_user_status`, que exigen `is_admin()`. Configuración > Usuarios usa esas RPCs; un cajero
 con autorización del modal puede ver la pantalla, pero no guardar cambios. Las edge functions de
 usuarios usan service role y no cambian.

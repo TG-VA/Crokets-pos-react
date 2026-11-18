@@ -258,8 +258,9 @@ rollback está en el encabezado de la migración.
 
 `20261118140000_users_roles_write_admin_only.sql` cierra la escalada de KNOWN_ISSUES #95.
 
-- Revoca `insert`, `update`, `delete` y `truncate` a `anon` y `authenticated` en `users`, `roles`,
-  `permissions`, `role_permissions` y `user_roles`. Conserva `select`.
+- Revoca todos los privilegios a `anon` y `authenticated` en `users`, `roles`, `permissions`,
+  `role_permissions` y `user_roles` (incluye `trigger` y `references` del `grant all` del baseline) y
+  vuelve a otorgar solo `select`.
 - Crea `admin_update_user(uuid, text, text, uuid)` y `admin_set_user_status(uuid, boolean)`,
   `SECURITY DEFINER`, que exigen `is_admin()` (`42501`) e impiden quitarse el rol de administrador o
   desactivarse uno mismo. Solo `authenticated` las ejecuta.

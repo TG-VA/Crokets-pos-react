@@ -28,17 +28,24 @@ const TABLES = [
 
 describe("escritura de usuarios y roles solo para administradores", () => {
   it.each(TABLES)(
-    "revoca la escritura de %s a anon y authenticated",
+    "deja %s en solo lectura para anon y authenticated",
     (table) => {
-      expect(sql).toContain(
-        `revoke insert, update, delete, truncate on table public.${table} from anon, authenticated;`
-      );
+      const revoke = `revoke all on table public.${table} from anon, authenticated;`;
+      const grant = `grant select on table public.${table} to anon, authenticated;`;
+
+      expect(sql).toContain(revoke);
+      expect(sql).toContain(grant);
+      expect(sql.indexOf(revoke)).toBeLessThan(sql.indexOf(grant));
     }
   );
 
-  it("conserva la lectura y no vuelve a otorgar escritura sobre las tablas", () => {
-    expect(sql).not.toMatch(/revoke [^;]*select[^;]* on table/);
-    expect(sql).not.toMatch(/grant [^;]* on table/);
+  it("no otorga sobre las tablas nada distinto de select", () => {
+    const tableGrants = sql.match(/grant [^;]* on table [^;]*;/g) ?? [];
+
+    expect(tableGrants).toHaveLength(TABLES.length);
+    tableGrants.forEach((statement) => {
+      expect(statement).toMatch(/^grant select on table /);
+    });
   });
 
   it.each(["admin_update_user", "admin_set_user_status"])(
