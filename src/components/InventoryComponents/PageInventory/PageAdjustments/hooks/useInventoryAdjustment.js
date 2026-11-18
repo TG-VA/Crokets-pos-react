@@ -2,13 +2,15 @@ import { useMemo, useRef, useState } from "react";
 
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
-import { useAuth } from "../../../../../contexts/AuthContext";
 import {
   isInventoryTrackedProduct,
   isKitProduct,
 } from "../../../../../services/inventory/inventoryProductCalculationService";
 
-import { applyInventoryAdjustment } from "../services/inventoryAdjustmentService";
+import {
+  applyInventoryAdjustment,
+  isAdminGrantRequiredError,
+} from "../services/inventoryAdjustmentService";
 
 const INITIAL_APP_MODAL = {
   isOpen: false,
@@ -32,7 +34,6 @@ const useInventoryAdjustment = () => {
     refreshProducts,
   } = useProducts();
   const { branch } = useBranch();
-  const { user } = useAuth();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
@@ -43,6 +44,7 @@ const useInventoryAdjustment = () => {
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [appModal, setAppModal] = useState(INITIAL_APP_MODAL);
+  const [reauthorizationOpen, setReauthorizationOpen] = useState(false);
 
   const barcodeInputRef = useRef(null);
   const quantityInputRef = useRef(null);
@@ -290,7 +292,6 @@ const useInventoryAdjustment = () => {
         quantity: parsedQuantity,
         reason,
         notes: adjustmentNotes,
-        userId: user?.id || null,
       });
 
       await refreshProducts();
@@ -313,6 +314,13 @@ const useInventoryAdjustment = () => {
         confirmText: "Aceptar",
       });
     } catch (error) {
+      // La autorizacion vencio o no existe: se vuelve a pedir sin salir de la
+      // pantalla y sin perder la captura.
+      if (isAdminGrantRequiredError(error)) {
+        setReauthorizationOpen(true);
+        return;
+      }
+
       console.error("Error aplicando ajuste:", error);
 
       if (error?.code === "NEGATIVE_STOCK") {
@@ -345,6 +353,15 @@ const useInventoryAdjustment = () => {
     }
   };
 
+  const closeReauthorization = () => {
+    setReauthorizationOpen(false);
+  };
+
+  const handleReauthorized = () => {
+    setReauthorizationOpen(false);
+    handleSubmitAdjustment();
+  };
+
   return {
     products,
     loadingProducts,
@@ -358,9 +375,10 @@ const useInventoryAdjustment = () => {
     submitArmed,
     saving,
     appModal,
+    reauthorizationOpen,
+    branchId: branch?.id || null,
 
     currentStock,
-    parsedQuantity,
     newStock,
     salePrice,
 
@@ -385,6 +403,8 @@ const useInventoryAdjustment = () => {
     handleLookup,
     loadProduct,
     handleSubmitAdjustment,
+    closeReauthorization,
+    handleReauthorized,
   };
 };
 
