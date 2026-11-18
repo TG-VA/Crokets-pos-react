@@ -2891,3 +2891,31 @@ usuarios usan service role y no cambian.
 
 **Despliegue:** al aplicar la migración, los instaladores anteriores ya no pueden editar usuarios
 hasta actualizarse. Crear usuarios y cambiar contraseñas siguen funcionando (edge functions).
+
+### 96. Inventario > Ajustes sobrescribía el CPP, no era atómico y no pedía autorización
+
+**Estado:** En curso (18 nov 2026). Migración `20261118150000` en PR, sin aplicar en remoto.
+
+**Severidad:** Alta.
+
+`inventoryAdjustmentService` leía `branch_inventory`, hacía update o insert y registraba el
+movimiento en llamadas sueltas desde el cliente:
+
+- El update escribía `cost_price` con `products.cost_price`. Desde #211 esa columna es el Costo
+  Promedio Ponderado de la sucursal: un ajuste de -1 sobre un CPP de $12.40 con catálogo en $10 lo
+  dejaba en $10 y falseaba valorización y rentabilidad.
+- Una venta entre la lectura y el update se perdía, y la validación de stock negativo usaba un dato
+  viejo. Si fallaba el log, el stock cambiaba sin movimiento en el kardex.
+- La página no estaba protegida: un cajero podía restar stock sin autorización, aunque Agregar sí
+  la pide.
+- Un ajuste positivo sobre un producto sin fila en la sucursal la creaba sin costo, haciendo de
+  Agregar sin pasar por él.
+
+**Solución:** `apply_inventory_adjustment` (`20261118150000`) hace todo en una transacción con
+bloqueo de fila, no toca el CPP, rechaza productos sin fila y exige admin o grant de
+`inventory_adjust_access`. Ajustes entra a `PROTECTED_INVENTORY_SECTIONS` y pide reautorizar al
+vencer el grant. Lo fijan `applyInventoryAdjustmentContract.test.js`,
+`inventoryAdjustmentService.test.js` y `useInventoryAdjustment.test.js`.
+
+**Pendiente fuera de este cambio:** la tabla `inventory_adjustments` sigue sin uso (motivo y notas
+viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre.
