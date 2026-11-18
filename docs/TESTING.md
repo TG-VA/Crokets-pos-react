@@ -210,6 +210,10 @@ y el proceso principal de Electron:
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
 | Ajustes: carga, F10, grant vencido y reintento (hook)     | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
 | Ajustes: buscador y accion del modal de reautorizacion    | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Ajustes: busqueda y seleccion del producto (hook)         | `.../PageAdjustments/hooks/useAdjustmentProductSelection.test.js`                  |
+| Ajustes: normalizacion y parseo de la diferencia          | `.../PageAdjustments/utils/adjustmentQuantity.test.js`                             |
+| Inventario: modal de avisos compartido (Agregar/Ajustes)  | `.../PageInventory/shared/hooks/useInventoryAlertModal.test.js`                    |
+| Inventario: reautorizacion por grant vencido compartida   | `.../PageInventory/shared/hooks/useGrantReauthorization.test.js`                   |
 | Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
 | Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
 | Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |
