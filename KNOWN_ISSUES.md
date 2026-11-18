@@ -2872,7 +2872,7 @@ antes del insert (requiere `grant delete` a `service_role`), o un job periódico
 
 ### 95. `users` y las tablas de roles aceptan escritura de `anon` y `authenticated`
 
-**Estado:** En curso (17 nov 2026). Migración `20261118140000` en PR, sin aplicar en remoto.
+**Estado:** Resuelto y aplicado al remoto — 18 nov 2026, migración `20261118140000_users_roles_write_admin_only.sql` (#214, instalador v1.0.15). Verificado con `has_table_privilege`: `anon` y `authenticated` solo tienen `SELECT` en las cinco tablas.
 
 **Severidad:** Crítica.
 
