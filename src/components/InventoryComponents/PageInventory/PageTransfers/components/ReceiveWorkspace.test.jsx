@@ -362,6 +362,7 @@ describe("ReceiveWorkspace", () => {
     expect(
       screen.getByText("Captura al menos una cantidad recibida")
     ).toBeTruthy();
+    expect(screen.queryByText(/productos? en 0/)).toBeNull();
   });
 
   it("habilita la confirmacion con una cantidad capturada en otra pagina", () => {
@@ -394,6 +395,22 @@ describe("ReceiveWorkspace", () => {
 
     expect(
       screen.getByText("11 productos en 0 regresarán completos a origen")
+    ).toBeTruthy();
+  });
+
+  it("usa el singular cuando solo queda un producto en 0", () => {
+    const order = buildOrderWithItems(2);
+
+    render(
+      <ReceiveWorkspace
+        {...defaultProps}
+        selectedReceiptOrder={order}
+        receiptQuantities={{ p1: "3" }}
+      />
+    );
+
+    expect(
+      screen.getByText("1 producto en 0 regresará completo a origen")
     ).toBeTruthy();
   });
 
