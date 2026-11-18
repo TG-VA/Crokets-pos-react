@@ -182,7 +182,9 @@ Deno.serve(async (req) => {
 
     await supabaseAuthClient.auth.signOut({ scope: "local" });
 
-    const grantHours = DB_ENFORCED_GRANT_HOURS[action];
+    const grantHours = Object.hasOwn(DB_ENFORCED_GRANT_HOURS, action)
+      ? DB_ENFORCED_GRANT_HOURS[action]
+      : null;
 
     if (grantHours) {
       const token = (req.headers.get("Authorization") || "").replace(
@@ -216,13 +218,10 @@ Deno.serve(async (req) => {
       if (grantError) {
         console.error("Error registrando la autorización:", grantError);
 
-        return jsonResponse(
-          {
-            ok: false,
-            message: "No se pudo registrar la autorización.",
-          },
-          500
-        );
+        return jsonResponse({
+          ok: false,
+          message: "No se pudo registrar la autorización.",
+        });
       }
     }
 

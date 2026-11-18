@@ -25,6 +25,30 @@ describe("authorize-admin-action registra las autorizaciones que valida la BD", 
   });
 
   it("no autoriza si no puede registrar el permiso", () => {
-    expect(source).toContain('message: "No se pudo registrar la autorización."');
+    expect(source).toMatch(
+      /if \(grantError\) \{[\s\S]*?return jsonResponse\(\{\s+ok: false,\s+message: "No se pudo registrar la autorización\.",\s+\}\);/
+    );
+  });
+
+  it("no autoriza sin la sesion del llamador o sin la sucursal", () => {
+    expect(source).toMatch(
+      /if \(!callerId \|\| !branchId\) \{\s+return jsonResponse\(\{\s+ok: false,/
+    );
+  });
+
+  it("calcula la vigencia en horas", () => {
+    expect(source).toContain("Date.now() + grantHours * 60 * 60 * 1000");
+  });
+
+  it("solo toma vigencias propias del mapa, no del prototipo", () => {
+    expect(source).toMatch(
+      /Object\.hasOwn\(DB_ENFORCED_GRANT_HOURS, action\)\s+\? DB_ENFORCED_GRANT_HOURS\[action\]\s+: null/
+    );
+  });
+
+  it("responde el fallo del registro con 200 y ok: false para que la UI muestre el motivo", () => {
+    expect(source).not.toMatch(
+      /message: "No se pudo registrar la autorización\.",\s+\},\s+500/
+    );
   });
 });
