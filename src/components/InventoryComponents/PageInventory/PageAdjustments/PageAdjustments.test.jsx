@@ -29,6 +29,13 @@ vi.mock("./hooks/useInventoryAdjustmentKeyboard", () => ({
   default: () => ({ handleContentKeyDown: vi.fn() }),
 }));
 
+vi.mock("../../../AdminAuthorizationModal/AdminAuthorizationModal", () => ({
+  default: ({ isOpen, action, branchId }) =>
+    isOpen ? (
+      <div data-testid="admin-auth-modal">{`${action}|${branchId}`}</div>
+    ) : null,
+}));
+
 vi.mock("./components/InventoryAdjustmentForm", () => ({
   default: () => null,
 }));
@@ -38,6 +45,8 @@ describe("PageAdjustments buscador de productos", () => {
     Object.assign(adjustmentState, {
       loadingProducts: false,
       productsError: null,
+      reauthorizationOpen: false,
+      branchId: undefined,
     });
   });
 
@@ -55,5 +64,27 @@ describe("PageAdjustments buscador de productos", () => {
     render(<PageAdjustments />);
 
     expect(screen.getByText("Error al cargar")).toBeTruthy();
+  });
+});
+
+describe("PageAdjustments reautorizacion", () => {
+  afterEach(() => {
+    Object.assign(adjustmentState, {
+      reauthorizationOpen: false,
+      branchId: undefined,
+    });
+  });
+
+  it("pide el grant de ajustes para la sucursal activa", () => {
+    Object.assign(adjustmentState, {
+      reauthorizationOpen: true,
+      branchId: "branch-1",
+    });
+
+    render(<PageAdjustments />);
+
+    expect(screen.getByTestId("admin-auth-modal").textContent).toBe(
+      "inventory_adjust_access|branch-1"
+    );
   });
 });
