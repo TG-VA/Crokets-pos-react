@@ -9,19 +9,8 @@ import {
 } from "../services/inventoryAddService";
 import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
-
-const INITIAL_APP_MODAL = {
-  isOpen: false,
-  type: "info",
-  title: "",
-  message: "",
-  confirmText: "Entendido",
-  cancelText: "Cancelar",
-  showCancel: false,
-  loading: false,
-  onConfirm: null,
-  onCancel: null,
-};
+import useInventoryAlertModal from "../../shared/hooks/useInventoryAlertModal";
+import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
 
 const useInventoryAdd = () => {
   const {
@@ -33,14 +22,20 @@ const useInventoryAdd = () => {
   } = useProducts();
   const { branch } = useBranch();
 
+  const { appModal, closeAppModal, showAppAlert } = useInventoryAlertModal();
+  const {
+    reauthorizationOpen,
+    requestReauthorization,
+    closeReauthorization,
+    confirmReauthorization,
+  } = useGrantReauthorization();
+
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantityToAdd, setQuantityToAdd] = useState("");
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [appModal, setAppModal] = useState(INITIAL_APP_MODAL);
-  const [reauthorizationOpen, setReauthorizationOpen] = useState(false);
 
   const quantityInputRef = useRef(null);
   const barcodeInputRef = useRef(null);
@@ -93,36 +88,6 @@ const useInventoryAdd = () => {
     setBarcode("");
     setQuantityToAdd("");
     setSearchModalOpen(false);
-  };
-
-  const closeAppModal = () => {
-    setAppModal((previous) => ({
-      ...previous,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
   };
 
   const openSearchModal = () => {
@@ -286,7 +251,7 @@ const useInventoryAdd = () => {
       // La autorizacion vencio o no existe: se vuelve a pedir sin salir de la
       // pantalla y sin perder la captura.
       if (isAdminGrantRequiredError(error)) {
-        setReauthorizationOpen(true);
+        requestReauthorization();
         return;
       }
 
@@ -302,13 +267,8 @@ const useInventoryAdd = () => {
     }
   };
 
-  const closeReauthorization = () => {
-    setReauthorizationOpen(false);
-  };
-
   const handleReauthorized = () => {
-    setReauthorizationOpen(false);
-    handleSubmit();
+    confirmReauthorization(handleSubmit);
   };
 
   return {
