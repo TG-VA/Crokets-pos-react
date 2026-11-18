@@ -11,8 +11,10 @@ const corsHeaders = {
 
 // Acciones que la base de datos vuelve a comprobar: la autorizacion se registra en
 // `admin_action_grants` a nombre de quien llama y la RPC correspondiente la consulta.
-const DB_ENFORCED_GRANT_HOURS: Record<string, number> = {
-  inventory_add_access: 12,
+// La vigencia es corta para que el permiso no sobreviva mucho a la salida del modulo,
+// que es cuando la interfaz lo olvida.
+const DB_ENFORCED_GRANT_MINUTES: Record<string, number> = {
+  inventory_add_access: 30,
 };
 
 const jsonResponse = (body: unknown, status = 200) => {
@@ -182,11 +184,11 @@ Deno.serve(async (req) => {
 
     await supabaseAuthClient.auth.signOut({ scope: "local" });
 
-    const grantHours = Object.hasOwn(DB_ENFORCED_GRANT_HOURS, action)
-      ? DB_ENFORCED_GRANT_HOURS[action]
+    const grantMinutes = Object.hasOwn(DB_ENFORCED_GRANT_MINUTES, action)
+      ? DB_ENFORCED_GRANT_MINUTES[action]
       : null;
 
-    if (grantHours) {
+    if (grantMinutes) {
       const token = (req.headers.get("Authorization") || "").replace(
         /^Bearer\s+/i,
         ""
@@ -211,7 +213,7 @@ Deno.serve(async (req) => {
           granted_to: callerId,
           granted_by: adminUser.id,
           expires_at: new Date(
-            Date.now() + grantHours * 60 * 60 * 1000
+            Date.now() + grantMinutes * 60 * 1000
           ).toISOString(),
         });
 

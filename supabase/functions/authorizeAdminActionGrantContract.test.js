@@ -8,8 +8,8 @@ const source = readFileSync(
 );
 
 describe("authorize-admin-action registra las autorizaciones que valida la BD", () => {
-  it("registra inventory_add_access por 12 horas", () => {
-    expect(source).toMatch(/inventory_add_access: 12,/);
+  it("registra inventory_add_access por 30 minutos", () => {
+    expect(source).toMatch(/inventory_add_access: 30,/);
   });
 
   it("toma a quien recibe la autorizacion del token de la sesion", () => {
@@ -36,13 +36,13 @@ describe("authorize-admin-action registra las autorizaciones que valida la BD", 
     );
   });
 
-  it("calcula la vigencia en horas", () => {
-    expect(source).toContain("Date.now() + grantHours * 60 * 60 * 1000");
+  it("calcula la vigencia en minutos", () => {
+    expect(source).toContain("Date.now() + grantMinutes * 60 * 1000");
   });
 
   it("solo toma vigencias propias del mapa, no del prototipo", () => {
     expect(source).toMatch(
-      /Object\.hasOwn\(DB_ENFORCED_GRANT_HOURS, action\)\s+\? DB_ENFORCED_GRANT_HOURS\[action\]\s+: null/
+      /Object\.hasOwn\(DB_ENFORCED_GRANT_MINUTES, action\)\s+\? DB_ENFORCED_GRANT_MINUTES\[action\]\s+: null/
     );
   });
 
