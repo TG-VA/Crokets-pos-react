@@ -2918,4 +2918,7 @@ vencer el grant. Lo fijan `applyInventoryAdjustmentContract.test.js`,
 `inventoryAdjustmentService.test.js` y `useInventoryAdjustment.test.js`.
 
 **Pendiente fuera de este cambio:** la tabla `inventory_adjustments` sigue sin uso (motivo y notas
-viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre.
+viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre. La exigencia de
+admin o grant solo vale para la RPC: la RLS `branch_inventory_update` sigue permitiendo UPDATE con
+`can_manage_inventory`, que el cajero tiene, así que un cajero puede cambiar `stock` sin grant
+escribiendo directo en la tabla (por ejemplo con un instalador anterior). Se cierra junto con #13.
