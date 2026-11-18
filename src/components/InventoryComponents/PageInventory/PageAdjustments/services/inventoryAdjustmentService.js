@@ -1,99 +1,63 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
-import {
-  getSystemLocalTimestamp,
-  logInventoryMovement,
-} from "../../../../../utils/inventoryMovements";
-
 const getProductId = (product) => {
   return product?.product_id || product?.id || null;
 };
 
-const getProductPrices = (product) => {
-  return {
-    costPrice: Number(product?.costo || 0),
-    salePrice: Number(product?.precio || 0),
-  };
+const toNumber = (value) => {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const buildMovementReason = ({ reason, notes }) => {
-  const cleanReason = String(reason ?? "").trim();
-  const cleanNotes = String(notes ?? "").trim();
+// La RPC distingue con `hint` los rechazos de negocio que la pantalla explica
+// con su propio titulo. El texto es contrato con la migracion: lo fija
+// `applyInventoryAdjustmentContract.test.js`.
+export const ADJUSTMENT_ERROR_HINTS = [
+  "NEGATIVE_STOCK",
+  "INVENTORY_NOT_REGISTERED",
+];
 
-  return cleanNotes ? `${cleanReason} - ${cleanNotes}` : cleanReason;
+// Texto con el que la RPC rechaza a quien no es admin ni tiene autorizacion
+// vigente; distingue ese 42501 de la falta de acceso a la sucursal.
+export const ADMIN_GRANT_REQUIRED_MESSAGE =
+  "requiere la autorizacion de un administrador";
+
+/**
+ * Indica si la RPC rechazo el ajuste porque la autorizacion del administrador
+ * no existe o ya vencio.
+ */
+export const isAdminGrantRequiredError = (error) => {
+  return (
+    error?.code === "42501" &&
+    String(error?.message ?? "").includes(ADMIN_GRANT_REQUIRED_MESSAGE)
+  );
 };
 
-const findInventoryRow = async ({ branchId, productId }) => {
-  const { data, error } = await supabase
-    .from("branch_inventory")
-    .select("id, stock, has_been_stocked, is_active")
-    .eq("branch_id", branchId)
-    .eq("product_id", productId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
+const toAdjustmentError = (error) => {
+  if (!ADJUSTMENT_ERROR_HINTS.includes(error?.hint)) {
+    return error;
   }
 
-  return data;
+  const adjustmentError = new Error(error.message);
+  adjustmentError.code = error.hint;
+
+  return adjustmentError;
 };
 
-const updateInventoryRow = async ({
-  inventoryRowId,
-  nextStock,
-  costPrice,
-  updatedAt,
-}) => {
-  const { error } = await supabase
-    .from("branch_inventory")
-    .update({
-      stock: nextStock,
-      is_active: true,
-      has_been_stocked: true,
-      cost_price: costPrice,
-      updated_at: updatedAt,
-    })
-    .eq("id", inventoryRowId);
-
-  if (error) {
-    throw error;
-  }
-};
-
-const insertInventoryRow = async ({
-  branchId,
-  productId,
-  initialStock,
-  costPrice,
-  salePrice,
-  createdAt,
-}) => {
-  const { error } = await supabase.from("branch_inventory").insert({
-    branch_id: branchId,
-    product_id: productId,
-    stock: initialStock,
-    min_stock: 0,
-    max_stock: 0,
-    is_active: true,
-    has_been_stocked: true,
-    cost_price: costPrice,
-    sale_price: salePrice,
-    created_at: createdAt,
-    updated_at: createdAt,
-  });
-
-  if (error) {
-    throw error;
-  }
-};
-
+/**
+ * Aplica un ajuste de inventario (positivo o negativo) en la sucursal activa.
+ *
+ * El stock y el movimiento del kardex se escriben en una sola transaccion
+ * dentro de `apply_inventory_adjustment`, que bloquea la fila, valida el stock
+ * resultante con el dato vigente y no altera el costo promedio de la sucursal.
+ */
 export const applyInventoryAdjustment = async ({
   branchId,
   product,
   quantity,
   reason,
   notes = "",
-  userId = null,
 }) => {
   if (!branchId) {
     throw new Error("No hay una sucursal activa para aplicar el ajuste.");
@@ -117,76 +81,22 @@ export const applyInventoryAdjustment = async ({
     throw new Error("Captura el motivo del ajuste.");
   }
 
-  const inventoryRow = await findInventoryRow({
-    branchId,
-    productId,
+  const { data, error } = await supabase.rpc("apply_inventory_adjustment", {
+    p_branch_id: branchId,
+    p_product_id: productId,
+    p_quantity: normalizedQuantity,
+    p_reason: cleanReason,
+    p_notes: String(notes ?? "").trim() || null,
   });
 
-  const previousStock = Number(inventoryRow?.stock || 0);
-
-  const newStock = previousStock + normalizedQuantity;
-
-  if (newStock < 0) {
-    const error = new Error(
-      `No puedes dejar el stock en negativo.\n\nStock actual: ${previousStock}\nAjuste: ${normalizedQuantity}\nResultado: ${newStock}`
-    );
-
-    error.code = "NEGATIVE_STOCK";
-    throw error;
+  if (error) {
+    throw toAdjustmentError(error);
   }
-
-  if (!inventoryRow?.id && normalizedQuantity < 0) {
-    const error = new Error(
-      "Este producto aún no existe en el inventario de la sucursal. Primero agrégalo con una entrada positiva."
-    );
-
-    error.code = "INVENTORY_NOT_REGISTERED";
-    throw error;
-  }
-
-  const now = new Date();
-  const databaseTimestamp = now.toISOString();
-  const movementCreatedAt = getSystemLocalTimestamp(now);
-
-  const { costPrice, salePrice } = getProductPrices(product);
-
-  if (inventoryRow?.id) {
-    await updateInventoryRow({
-      inventoryRowId: inventoryRow.id,
-      nextStock: newStock,
-      costPrice,
-      updatedAt: databaseTimestamp,
-    });
-  } else {
-    await insertInventoryRow({
-      branchId,
-      productId,
-      initialStock: normalizedQuantity,
-      costPrice,
-      salePrice,
-      createdAt: databaseTimestamp,
-    });
-  }
-
-  await logInventoryMovement({
-    branchId,
-    productId,
-    movementType: "adjustment",
-    quantity: normalizedQuantity,
-    previousStock,
-    newStock,
-    reason: buildMovementReason({
-      reason: cleanReason,
-      notes,
-    }),
-    userId,
-    createdAt: movementCreatedAt,
-  });
 
   return {
     productId,
-    previousStock,
-    newStock,
+    previousStock: toNumber(data?.previousStock),
+    newStock: toNumber(data?.newStock),
     quantity: normalizedQuantity,
   };
 };
