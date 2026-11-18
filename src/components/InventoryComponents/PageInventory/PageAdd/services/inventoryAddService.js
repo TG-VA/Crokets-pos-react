@@ -23,6 +23,23 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+// `add_inventory_entry` usa 42501 tanto para la falta de autorizacion como para
+// la falta de acceso a la sucursal; solo la primera se resuelve autorizando.
+// El texto es contrato con la migracion: lo fija `addInventoryEntryAdminGrantContract.test.js`.
+export const ADMIN_GRANT_REQUIRED_MESSAGE =
+  "requiere la autorizacion de un administrador";
+
+/**
+ * Indica si la RPC rechazo el alta porque la autorizacion del administrador no
+ * existe o ya vencio.
+ */
+export const isAdminGrantRequiredError = (error) => {
+  return (
+    error?.code === "42501" &&
+    String(error?.message ?? "").includes(ADMIN_GRANT_REQUIRED_MESSAGE)
+  );
+};
+
 /**
  * Registra una entrada de inventario en la sucursal activa.
  *

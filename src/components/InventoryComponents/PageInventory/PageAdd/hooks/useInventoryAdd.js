@@ -3,7 +3,10 @@ import { useMemo, useRef, useState } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
 
-import { addInventoryToProduct } from "../services/inventoryAddService";
+import {
+  addInventoryToProduct,
+  isAdminGrantRequiredError,
+} from "../services/inventoryAddService";
 import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
 
@@ -37,6 +40,7 @@ const useInventoryAdd = () => {
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [appModal, setAppModal] = useState(INITIAL_APP_MODAL);
+  const [reauthorizationOpen, setReauthorizationOpen] = useState(false);
 
   const quantityInputRef = useRef(null);
   const barcodeInputRef = useRef(null);
@@ -279,6 +283,13 @@ const useInventoryAdd = () => {
         confirmText: "Aceptar",
       });
     } catch (error) {
+      // La autorizacion vencio o no existe: se vuelve a pedir sin salir de la
+      // pantalla y sin perder la captura.
+      if (isAdminGrantRequiredError(error)) {
+        setReauthorizationOpen(true);
+        return;
+      }
+
       console.error("Error agregando inventario:", error);
 
       showAppAlert({
@@ -289,6 +300,15 @@ const useInventoryAdd = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const closeReauthorization = () => {
+    setReauthorizationOpen(false);
+  };
+
+  const handleReauthorized = () => {
+    setReauthorizationOpen(false);
+    handleSubmit();
   };
 
   return {
@@ -302,6 +322,8 @@ const useInventoryAdd = () => {
     submitArmed,
     saving,
     appModal,
+    reauthorizationOpen,
+    branchId: branch?.id || null,
 
     currentInventory,
     newInventory,
@@ -325,6 +347,8 @@ const useInventoryAdd = () => {
     handleLookup,
     loadProduct,
     handleSubmit,
+    closeReauthorization,
+    handleReauthorized,
   };
 };
 

@@ -9,6 +9,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Acciones que la base de datos vuelve a comprobar: la autorizacion se registra en
+// `admin_action_grants` a nombre de quien llama y la RPC correspondiente la consulta.
+// La vigencia es corta para que el permiso no sobreviva mucho a la salida del modulo,
+// que es cuando la interfaz lo olvida.
+const DB_ENFORCED_GRANT_MINUTES: Record<string, number> = {
+  inventory_add_access: 30,
+};
+
 const jsonResponse = (body: unknown, status = 200) => {
   return new Response(JSON.stringify(body), {
     status,
@@ -175,6 +183,49 @@ Deno.serve(async (req) => {
     }
 
     await supabaseAuthClient.auth.signOut({ scope: "local" });
+
+    const grantMinutes = Object.hasOwn(DB_ENFORCED_GRANT_MINUTES, action)
+      ? DB_ENFORCED_GRANT_MINUTES[action]
+      : null;
+
+    if (grantMinutes) {
+      const token = (req.headers.get("Authorization") || "").replace(
+        /^Bearer\s+/i,
+        ""
+      );
+      const { data: callerData } = token
+        ? await supabaseAdmin.auth.getUser(token)
+        : { data: null };
+      const callerId = callerData?.user?.id;
+
+      if (!callerId || !branchId) {
+        return jsonResponse({
+          ok: false,
+          message: "No se pudo identificar la sesión o la sucursal a autorizar.",
+        });
+      }
+
+      const { error: grantError } = await supabaseAdmin
+        .from("admin_action_grants")
+        .insert({
+          action,
+          branch_id: branchId,
+          granted_to: callerId,
+          granted_by: adminUser.id,
+          expires_at: new Date(
+            Date.now() + grantMinutes * 60 * 1000
+          ).toISOString(),
+        });
+
+      if (grantError) {
+        console.error("Error registrando la autorización:", grantError);
+
+        return jsonResponse({
+          ok: false,
+          message: "No se pudo registrar la autorización.",
+        });
+      }
+    }
 
     return jsonResponse({
       ok: true,

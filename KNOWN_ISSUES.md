@@ -1343,6 +1343,10 @@ mutaciones administrativas sobre PostgREST (`cash_movements`, `customers`, `prod
 validación/auditoría de `reason`/`action`/`targetId`; se resolverían con RLS + `has_permission()` o con
 un token de autorización de un solo uso desde la edge function (ver `docs/EDGE_FUNCTIONS.md`).
 
+**Actualización (17 nov 2026, PR #213):** `inventory_add_access` ya se valida en el servidor.
+`add_inventory_entry` exige `is_admin()` o una autorización vigente en `admin_action_grants`, que
+registra `authorize-admin-action`. Las demás acciones siguen como riesgo aceptado. Ver #93 y #94.
+
 ### 39. Endurecimiento de Electron incompleto (SEC-4)
 
 **Estado:** Resuelto — 14 sep 2026.
@@ -2810,6 +2814,48 @@ Con RLS en `branches`, el `UPDATE` de un usuario que no es admin no falla: afect
 `maybeSingle()` devuelve `data: null` sin error. Los dos servicios respondían `success: true` y la
 UI mostraba los datos como guardados. La pantalla de sucursales ya está limitada a admin, así que el
 caso es poco probable; la base de datos nunca aceptó el cambio.
+
+---
+
+### 93. Inventario > Agregar no vuelve a pedir autorización cuando vence el grant o cambia la sucursal
+
+**Estado:** Resuelto (17 nov 2026) en el PR #213. Detectado en la review del mismo PR.
+
+**Severidad:** Media.
+
+`Inventory.jsx` guarda la ruta autorizada en `authorizedRoutes` (`Set` en estado) sin vencimiento y
+sin sucursal. La RPC `add_inventory_entry` exige una fila de `admin_action_grants` vigente (12 horas)
+para la misma sucursal. Si el cajero deja Inventario abierto más de 12 horas, o cambia la sucursal
+con la página montada, `ProtectedRoute` no vuelve a abrir el modal y el alta falla con `42501`. Para
+volver a autorizar hay que salir de Inventario y entrar de nuevo.
+
+**Resolución:** se mantiene el patrón del resto del POS (la autorización vale mientras se sigue en el
+módulo) y se ajusta la base de datos y el manejo del rechazo:
+
+- `authorize-admin-action` (v7) registra el grant por 30 minutos en lugar de 12 horas, para que no
+  sobreviva mucho a la salida del módulo.
+- `useInventoryAdd` reconoce el rechazo por autorización (`isAdminGrantRequiredError`: `42501` con el
+  mensaje de autorización, no el de acceso a la sucursal), abre `AdminAuthorizationModal` en la misma
+  pantalla y reintenta el alta al autorizar, sin perder la captura. Cubre también el cambio de
+  sucursal y el grant borrado en la base de datos.
+
+La base de datos no puede saber cuándo se sale del módulo, así que el grant puede seguir vigente hasta
+30 minutos después.
+
+---
+
+### 94. `admin_action_grants` no purga las autorizaciones vencidas
+
+**Estado:** Abierto (17 nov 2026). Detectado en la review del PR #213.
+
+**Severidad:** Baja.
+
+Cada autorización de `inventory_add_access` inserta una fila y nada borra las vencidas. El índice
+`(granted_to, action, branch_id, expires_at)` mantiene barata la consulta de la RPC, así que no
+afecta al rendimiento a corto plazo.
+
+**Recomendación:** borrar en la edge function las filas vencidas del mismo usuario, acción y sucursal
+antes del insert (requiere `grant delete` a `service_role`), o un job periódico.
 
 ---
 
