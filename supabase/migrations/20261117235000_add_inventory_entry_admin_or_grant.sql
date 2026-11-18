@@ -4,7 +4,8 @@
 -- La autorizacion de `AdminAuthorizationModal` no cambia la sesion: el cajero sigue llamando
 -- con su propio `auth.uid()`. Por eso `authorize-admin-action` ahora registra la autorizacion
 -- de `inventory_add_access` en `admin_action_grants` (a nombre de quien llama, para la
--- sucursal, con vigencia de 12 horas) y la RPC acepta `is_admin()` o un registro vigente.
+-- sucursal, con la vigencia que define `authorize-admin-action`: 30 minutos) y la RPC acepta
+-- `is_admin()` o un registro vigente.
 -- `admin_action_grants` tiene RLS sin politicas y sin grants a anon/authenticated: solo la
 -- escribe la edge function (service role) y solo la lee esta funcion SECURITY DEFINER.
 -- La llamada con service role (`v_actor` nulo) conserva el comportamiento previo.
