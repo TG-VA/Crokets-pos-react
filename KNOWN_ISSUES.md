@@ -2819,7 +2819,7 @@ caso es poco probable; la base de datos nunca aceptó el cambio.
 
 ### 93. Inventario > Agregar no vuelve a pedir autorización cuando vence el grant o cambia la sucursal
 
-**Estado:** Abierto (17 nov 2026). Detectado en la review del PR #213.
+**Estado:** Resuelto (17 nov 2026) en el PR #213. Detectado en la review del mismo PR.
 
 **Severidad:** Media.
 
@@ -2829,8 +2829,18 @@ para la misma sucursal. Si el cajero deja Inventario abierto más de 12 horas, o
 con la página montada, `ProtectedRoute` no vuelve a abrir el modal y el alta falla con `42501`. Para
 volver a autorizar hay que salir de Inventario y entrar de nuevo.
 
-**Recomendación:** al recibir `42501` de `add_inventory_entry`, quitar `/inventory/agregar` de
-`authorizedRoutes` y reabrir el modal; reiniciar `authorizedRoutes` al cambiar `branch.id`.
+**Resolución:** se mantiene el patrón del resto del POS (la autorización vale mientras se sigue en el
+módulo) y se ajusta la base de datos y el manejo del rechazo:
+
+- `authorize-admin-action` (v7) registra el grant por 30 minutos en lugar de 12 horas, para que no
+  sobreviva mucho a la salida del módulo.
+- `useInventoryAdd` reconoce el rechazo por autorización (`isAdminGrantRequiredError`: `42501` con el
+  mensaje de autorización, no el de acceso a la sucursal), abre `AdminAuthorizationModal` en la misma
+  pantalla y reintenta el alta al autorizar, sin perder la captura. Cubre también el cambio de
+  sucursal y el grant borrado en la base de datos.
+
+La base de datos no puede saber cuándo se sale del módulo, así que el grant puede seguir vigente hasta
+30 minutos después.
 
 ---
 

@@ -134,8 +134,9 @@ entra si un administrador autoriza.
 Desde la migración `20261117235000` también es control en base de datos: `add_inventory_entry`
 exige `is_admin()` o una autorización vigente en `admin_action_grants`. Como la autorización del
 modal no cambia la sesión, `authorize-admin-action` registra para `inventory_add_access` una fila a
-nombre del usuario que llama, para la sucursal, con 12 horas de vigencia. Pasado ese plazo la RPC
-rechaza el alta y hay que volver a autorizar.
+nombre del usuario que llama, para la sucursal, con 30 minutos de vigencia. Pasado ese plazo la RPC
+rechaza el alta y Agregar vuelve a abrir el modal en la misma pantalla; al autorizar, reintenta el
+alta sin perder la captura.
 
 **Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
 `import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:

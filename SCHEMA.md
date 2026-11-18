@@ -643,7 +643,7 @@ service role y la lee `add_inventory_entry` (`SECURITY DEFINER`). Las filas venc
 | granted_to | uuid        | NN, → users.id; usuario cuyo token se autorizó |
 | granted_by | uuid        | NN, → users.id; administrador que autorizó     |
 | created_at | timestamptz | NN, default now()                              |
-| expires_at | timestamptz | NN; `created_at` + 12 horas                    |
+| expires_at | timestamptz | NN; `created_at` + 30 minutos                  |
 
 Índice `admin_action_grants_lookup_idx` sobre `(granted_to, action, branch_id, expires_at)`.
 
