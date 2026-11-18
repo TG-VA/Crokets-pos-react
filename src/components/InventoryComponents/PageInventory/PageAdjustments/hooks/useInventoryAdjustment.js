@@ -2,27 +2,22 @@ import { useMemo, useRef, useState } from "react";
 
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
-import {
-  isInventoryTrackedProduct,
-  isKitProduct,
-} from "../../../../../services/inventory/inventoryProductCalculationService";
 
 import {
   applyInventoryAdjustment,
   isAdminGrantRequiredError,
 } from "../services/inventoryAdjustmentService";
+import {
+  normalizeAdjustmentQuantityInput,
+  parseAdjustmentQuantity,
+} from "../utils/adjustmentQuantity";
+import useInventoryAlertModal from "../../shared/hooks/useInventoryAlertModal";
+import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
+import useAdjustmentProductSelection from "./useAdjustmentProductSelection";
 
-const INITIAL_APP_MODAL = {
-  isOpen: false,
-  type: "info",
-  title: "",
-  message: "",
-  confirmText: "Entendido",
-  cancelText: "Cancelar",
-  showCancel: false,
-  loading: false,
-  onConfirm: null,
-  onCancel: null,
+const ERROR_ALERT_TITLES = {
+  NEGATIVE_STOCK: "Stock insuficiente",
+  INVENTORY_NOT_REGISTERED: "Inventario no registrado",
 };
 
 const useInventoryAdjustment = () => {
@@ -35,16 +30,24 @@ const useInventoryAdjustment = () => {
   } = useProducts();
   const { branch } = useBranch();
 
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [barcode, setBarcode] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const { appModal, closeAppModal, showAppAlert } = useInventoryAlertModal();
+  const {
+    reauthorizationOpen,
+    requestReauthorization,
+    closeReauthorization,
+    confirmReauthorization,
+  } = useGrantReauthorization();
+  const productSelection = useAdjustmentProductSelection({
+    getProductByCodigo,
+    showAppAlert,
+  });
+  const { selectedProduct } = productSelection;
+
   const [quantityToAdjust, setQuantityToAdjust] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
   const [adjustmentNotes, setAdjustmentNotes] = useState("");
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [appModal, setAppModal] = useState(INITIAL_APP_MODAL);
-  const [reauthorizationOpen, setReauthorizationOpen] = useState(false);
 
   const barcodeInputRef = useRef(null);
   const quantityInputRef = useRef(null);
@@ -54,17 +57,10 @@ const useInventoryAdjustment = () => {
     return Number(selectedProduct?.existencia ?? 0) || 0;
   }, [selectedProduct?.existencia]);
 
-  const parsedQuantity = useMemo(() => {
-    const rawValue = String(quantityToAdjust ?? "").trim();
-
-    if (!rawValue || rawValue === "-") {
-      return 0;
-    }
-
-    const quantity = Number.parseInt(rawValue, 10);
-
-    return Number.isFinite(quantity) ? quantity : 0;
-  }, [quantityToAdjust]);
+  const parsedQuantity = useMemo(
+    () => parseAdjustmentQuantity(quantityToAdjust),
+    [quantityToAdjust]
+  );
 
   const newStock = useMemo(() => {
     return currentStock + parsedQuantity;
@@ -75,36 +71,6 @@ const useInventoryAdjustment = () => {
 
     return Number.isFinite(price) ? price : 0;
   }, [selectedProduct?.precio]);
-
-  const closeAppModal = () => {
-    setAppModal((previous) => ({
-      ...previous,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
-  };
 
   const focusBarcodeInput = () => {
     window.requestAnimationFrame(() => {
@@ -118,24 +84,10 @@ const useInventoryAdjustment = () => {
 
   const clearCurrentOperation = () => {
     setSubmitArmed(false);
-    setSelectedProduct(null);
-    setBarcode("");
+    productSelection.clearSelection();
     setQuantityToAdjust("");
     setAdjustmentReason("");
     setAdjustmentNotes("");
-    setSearchModalOpen(false);
-  };
-
-  const openSearchModal = () => {
-    setSearchModalOpen(true);
-  };
-
-  const closeSearchModal = () => {
-    setSearchModalOpen(false);
-  };
-
-  const handleBarcodeChange = (event) => {
-    setBarcode(event.target.value);
   };
 
   const handleReasonChange = (event) => {
@@ -147,80 +99,7 @@ const useInventoryAdjustment = () => {
   };
 
   const handleQuantityChange = (event) => {
-    const rawValue = String(event.target.value ?? "");
-
-    if (!rawValue) {
-      setQuantityToAdjust("");
-      return;
-    }
-
-    const normalizedValue = rawValue.replace(/[^\d-]/g, "");
-    const hasNegativeSign = normalizedValue.startsWith("-");
-    const digitsOnly = normalizedValue.replace(/-/g, "");
-
-    if (!digitsOnly) {
-      setQuantityToAdjust(hasNegativeSign ? "-" : "");
-      return;
-    }
-
-    setQuantityToAdjust(`${hasNegativeSign ? "-" : ""}${digitsOnly}`);
-  };
-
-  // Mismo criterio que el buscador F10: kits y productos sin inventario no se ajustan.
-  const ensureAdjustableProduct = (product) => {
-    if (!isKitProduct(product) && isInventoryTrackedProduct(product)) {
-      return true;
-    }
-
-    showAppAlert({
-      type: "warning",
-      title: "Producto sin inventario",
-      message:
-        "Este producto es un kit o no maneja inventario, por lo que no se puede ajustar.",
-    });
-
-    return false;
-  };
-
-  const handleLookup = () => {
-    const cleanCode = String(barcode ?? "").trim();
-
-    if (!cleanCode) {
-      showAppAlert({
-        type: "warning",
-        title: "Código requerido",
-        message: "Escanea o escribe el código de barras.",
-      });
-
-      return;
-    }
-
-    const foundProduct = getProductByCodigo(cleanCode);
-
-    if (!foundProduct) {
-      showAppAlert({
-        type: "warning",
-        title: "Producto no encontrado",
-        message:
-          "No se encontró ningún producto con ese código de barras. Verifica el código o presiona F10 para buscarlo.",
-      });
-
-      return;
-    }
-
-    if (!ensureAdjustableProduct(foundProduct)) return;
-
-    setSelectedProduct(foundProduct);
-    setBarcode(foundProduct.codigo ?? "");
-  };
-
-  const loadProduct = (product) => {
-    if (!product) return;
-    if (!ensureAdjustableProduct(product)) return;
-
-    setSelectedProduct(product);
-    setBarcode(product.codigo ?? "");
-    setSearchModalOpen(false);
+    setQuantityToAdjust(normalizeAdjustmentQuantityInput(event.target.value));
   };
 
   const cancelCurrentOperation = () => {
@@ -317,26 +196,18 @@ const useInventoryAdjustment = () => {
       // La autorizacion vencio o no existe: se vuelve a pedir sin salir de la
       // pantalla y sin perder la captura.
       if (isAdminGrantRequiredError(error)) {
-        setReauthorizationOpen(true);
+        requestReauthorization();
         return;
       }
 
       console.error("Error aplicando ajuste:", error);
 
-      if (error?.code === "NEGATIVE_STOCK") {
+      const knownTitle = ERROR_ALERT_TITLES[error?.code];
+
+      if (knownTitle) {
         showAppAlert({
           type: "warning",
-          title: "Stock insuficiente",
-          message: error.message,
-        });
-
-        return;
-      }
-
-      if (error?.code === "INVENTORY_NOT_REGISTERED") {
-        showAppAlert({
-          type: "warning",
-          title: "Inventario no registrado",
+          title: knownTitle,
           message: error.message,
         });
 
@@ -353,21 +224,16 @@ const useInventoryAdjustment = () => {
     }
   };
 
-  const closeReauthorization = () => {
-    setReauthorizationOpen(false);
-  };
-
   const handleReauthorized = () => {
-    setReauthorizationOpen(false);
-    handleSubmitAdjustment();
+    confirmReauthorization(handleSubmitAdjustment);
   };
 
   return {
     products,
     loadingProducts,
     productsError,
-    searchModalOpen,
-    barcode,
+    searchModalOpen: productSelection.searchModalOpen,
+    barcode: productSelection.barcode,
     selectedProduct,
     quantityToAdjust,
     adjustmentReason,
@@ -391,17 +257,17 @@ const useInventoryAdjustment = () => {
     setAdjustmentReason,
     setAdjustmentNotes,
 
-    openSearchModal,
-    closeSearchModal,
+    openSearchModal: productSelection.openSearchModal,
+    closeSearchModal: productSelection.closeSearchModal,
     closeAppModal,
     cancelCurrentOperation,
 
-    handleBarcodeChange,
+    handleBarcodeChange: productSelection.handleBarcodeChange,
     handleQuantityChange,
     handleReasonChange,
     handleNotesChange,
-    handleLookup,
-    loadProduct,
+    handleLookup: productSelection.handleLookup,
+    loadProduct: productSelection.loadProduct,
     handleSubmitAdjustment,
     closeReauthorization,
     handleReauthorized,
