@@ -38,8 +38,23 @@ Response (éxito, HTTP 200):
 }
 ```
 
-Response (fallo): `{ "ok": false, "message": "<motivo>" }` (HTTP 200 o 500 según el caso; 405 si el
+Response (fallo): `{ "ok": false, "message": "<motivo>" }` (HTTP 200 en los rechazos de negocio,
+incluido el fallo al registrar una autorización; 500 solo ante una excepción no controlada; 405 si el
 método no es `POST`).
+
+### Autorizaciones que valida la base de datos
+
+Para las acciones de `DB_ENFORCED_GRANT_HOURS` (hoy `inventory_add_access`, 12 horas), después de
+validar al administrador la función:
+
+1. Toma al usuario del token de la llamada (`Authorization: Bearer`, que `supabase.functions.invoke`
+   envía con la sesión activa) con `supabaseAdmin.auth.getUser(token)`.
+2. Exige ese usuario y `branchId`; si falta alguno responde `ok: false`.
+3. Inserta en `admin_action_grants` (`granted_to` = llamador, `granted_by` = admin, `expires_at`).
+   Si el insert falla responde `ok: false` con "No se pudo registrar la autorización.".
+
+La RPC `add_inventory_entry` acepta `is_admin()` o una fila vigente para el mismo usuario, acción y
+sucursal (ver `PERMISSIONS.md`). El resto de acciones no registra nada.
 
 ### Flujo de validación
 

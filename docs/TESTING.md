@@ -78,6 +78,8 @@ y el proceso principal de Electron:
 | Contrato SQL de username insensible a mayusculas          | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
 | Contrato SQL del CHECK de username en minusculas          | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
 | Contrato de authorize-admin-action (username)             | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
+| Contrato de authorize-admin-action (grant de inventario)  | `supabase/functions/authorizeAdminActionGrantContract.test.js`                     |
+| Contrato SQL del alta de inventario solo admin o grant    | `supabase/migrations/addInventoryEntryAdminGrantContract.test.js`                  |
 | Contrato de admin-create-user (username)                  | `supabase/functions/adminCreateUserUsernameContract.test.js`                       |
 | Normalizacion de username (helper compartido)             | `supabase/functions/normalizeUsername.test.js`                                     |
 | Inventario: cálculo del CPP móvil                         | `src/services/inventory/inventoryCostCalculationService.test.js`                   |

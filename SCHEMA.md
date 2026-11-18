@@ -628,6 +628,25 @@ interfaz calcula el estado mostrado con `America/Cancun`. Un kit solo se vende s
 | access_level | varchar | NN, default 'view' |
 | is_active    | boolean | NN, default true   |
 
+### admin_action_grants
+
+Autorizaciones de un administrador que la base de datos valida (hoy solo `inventory_add_access`).
+RLS sin políticas y sin grants a `anon`/`authenticated`: la escribe `authorize-admin-action` con
+service role y la lee `add_inventory_entry` (`SECURITY DEFINER`). Las filas vencidas no se purgan
+(ver `KNOWN_ISSUES.md` #94).
+
+| Columna    | Tipo        | Notas                                          |
+| ---------- | ----------- | ---------------------------------------------- |
+| id         | uuid        | PK, default gen_random_uuid()                  |
+| action     | text        | NN (valor actual: `inventory_add_access`)      |
+| branch_id  | uuid        | NN, → branches.id (on delete cascade)          |
+| granted_to | uuid        | NN, → users.id; usuario cuyo token se autorizó |
+| granted_by | uuid        | NN, → users.id; administrador que autorizó     |
+| created_at | timestamptz | NN, default now()                              |
+| expires_at | timestamptz | NN; `created_at` + 12 horas                    |
+
+Índice `admin_action_grants_lookup_idx` sobre `(granted_to, action, branch_id, expires_at)`.
+
 ### user_sessions
 
 | Columna       | Tipo      | Notas                         |
