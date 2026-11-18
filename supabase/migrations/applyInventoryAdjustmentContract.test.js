@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { describe, it, expect, vi } from "vitest";
 import {
   ADJUSTMENT_ERROR_HINTS,
-  ADMIN_GRANT_REQUIRED_MESSAGE,
+  ADMIN_GRANT_REQUIRED_HINT,
+  LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE,
 } from "../../src/components/InventoryComponents/PageInventory/PageAdjustments/services/inventoryAdjustmentService";
 
 vi.mock("../../src/lib/supabaseClient", () => ({ supabase: {} }));
@@ -44,7 +45,7 @@ describe("contrato SQL del ajuste transaccional de inventario", () => {
       "and not public.is_admin() and not exists ( select 1 from public.admin_action_grants g where g.granted_to = v_actor and g.action = 'inventory_adjust_access' and g.branch_id = p_branch_id and g.expires_at > now() ) then"
     );
     expect(normalizedSql).toContain(
-      `raise exception 'Ajustar inventario ${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
+      `raise exception 'Ajustar inventario ${LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
     );
   });
 
@@ -89,5 +90,31 @@ describe("contrato SQL del ajuste transaccional de inventario", () => {
   it("registra el movimiento de tipo adjustment en la misma funcion", () => {
     expect(body).toMatch(/insert into public\.inventory_movements/);
     expect(body).toContain("'adjustment',");
+  });
+});
+
+const HINT_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20261118160000_apply_inventory_adjustment_grant_hint.sql"
+);
+
+const hintSql = readFileSync(HINT_MIGRATION, "utf8").replace(/\s+/g, " ");
+const stripHeader = (sql) =>
+  sql.slice(sql.indexOf("create or replace function"));
+
+describe("contrato SQL del hint de autorizacion vencida (20261118160000)", () => {
+  it("rechaza la falta de autorizacion con el hint que compara el cliente", () => {
+    expect(hintSql).toContain(
+      `raise exception 'Ajustar inventario ${LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}';`
+    );
+  });
+
+  it("no cambia nada mas de la funcion respecto a 20261118150000", () => {
+    const expected = stripHeader(normalizedSql).replace(
+      "using errcode = '42501'; end if; if p_quantity is null",
+      `using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}'; end if; if p_quantity is null`
+    );
+
+    expect(stripHeader(hintSql)).toBe(expected);
   });
 });
