@@ -123,7 +123,32 @@ describe("inventoryAdjustmentService", () => {
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
-  it("reconoce solo el 42501 de autorizacion como reautorizable", () => {
+  it("reconoce el 42501 de autorizacion por su hint", () => {
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        hint: "ADMIN_GRANT_REQUIRED",
+        message: "Texto reescrito por cualquier motivo.",
+      })
+    ).toBe(true);
+    expect(
+      isAdminGrantRequiredError({
+        code: "P0001",
+        hint: "ADMIN_GRANT_REQUIRED",
+        message: "",
+      })
+    ).toBe(false);
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        hint: "OTRO_HINT",
+        message:
+          "Ajustar inventario requiere la autorizacion de un administrador.",
+      })
+    ).toBe(false);
+  });
+
+  it("acepta el mensaje sin hint de la version ya desplegada", () => {
     expect(
       isAdminGrantRequiredError({
         code: "42501",
