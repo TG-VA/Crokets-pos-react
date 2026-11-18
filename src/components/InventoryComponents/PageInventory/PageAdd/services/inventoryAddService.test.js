@@ -5,7 +5,10 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 }));
 
 import { supabase } from "../../../../../lib/supabaseClient";
-import { addInventoryToProduct } from "./inventoryAddService";
+import {
+  addInventoryToProduct,
+  isAdminGrantRequiredError,
+} from "./inventoryAddService";
 
 const BRANCH_ID = "branch-1";
 const PRODUCT_ID = "product-1";
@@ -192,6 +195,37 @@ describe("inventoryAddService", () => {
           quantity: 1,
         })
       ).rejects.toBe(rpcError);
+    });
+  });
+
+  describe("isAdminGrantRequiredError", () => {
+    it("reconoce el rechazo por autorizacion faltante o vencida", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "42501",
+          message:
+            "Agregar inventario requiere la autorizacion de un administrador.",
+        })
+      ).toBe(true);
+    });
+
+    it("no confunde la falta de acceso a la sucursal con una autorizacion vencida", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "42501",
+          message: "No tienes acceso a esta sucursal.",
+        })
+      ).toBe(false);
+    });
+
+    it("ignora otros errores y valores vacios", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "P0001",
+          message: "requiere la autorizacion de un administrador",
+        })
+      ).toBe(false);
+      expect(isAdminGrantRequiredError(null)).toBe(false);
     });
   });
 });

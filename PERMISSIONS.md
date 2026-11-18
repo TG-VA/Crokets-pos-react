@@ -138,10 +138,14 @@ Aplicarlo en base de datos requeriría una migración.
 La sección Agregar de Inventario (`/inventory/agregar`) se envuelve en `ProtectedRoute` con la acción
 `inventory_add_access` (`PROTECTED_INVENTORY_SECTIONS` en `src/config/adminProtectedSections.js`) y
 la pestaña de `NavbarInventory` abre `AdminAuthorizationModal` a quien no es administrador. Un cajero
-entra si un administrador autoriza. Es **gateo de interfaz, no un control de seguridad**: la RPC
-`add_inventory_entry` no consulta `is_admin()`; solo exige sesión (`auth.uid()`) y acceso a la
-sucursal (`_user_can_access_branch`). Entra en el riesgo aceptado de `KNOWN_ISSUES.md` #10/#13/#38.
-Exigir el rol en base de datos requeriría una migración.
+entra si un administrador autoriza.
+
+Desde la migración `20261117235000` también es control en base de datos: `add_inventory_entry`
+exige `is_admin()` o una autorización vigente en `admin_action_grants`. Como la autorización del
+modal no cambia la sesión, `authorize-admin-action` registra para `inventory_add_access` una fila a
+nombre del usuario que llama, para la sucursal, con 30 minutos de vigencia. Pasado ese plazo la RPC
+rechaza el alta y Agregar vuelve a abrir el modal en la misma pantalla; al autorizar, reintenta el
+alta sin perder la captura.
 
 **Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
 `import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
