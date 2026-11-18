@@ -2821,3 +2821,27 @@ caso es poco probable; la base de datos nunca aceptó el cambio.
   commit/PR que lo corrigió, para mantener historial de qué se ha ido arreglando.
 - Los ítems nuevos se numeran de forma consecutiva al final (no se renumeran los existentes), para
   que las referencias cruzadas desde `BACKLOG.md` y otros documentos no queden rotas.
+
+---
+
+### 95. `users` y las tablas de roles aceptan escritura de `anon` y `authenticated`
+
+**Estado:** En curso (17 nov 2026). Migración `20261118140000` en PR, sin aplicar en remoto.
+
+**Severidad:** Crítica.
+
+`users`, `roles`, `role_permissions`, `permissions` y `user_roles` tienen RLS desactivado y grants de
+`INSERT`, `UPDATE`, `DELETE` y `TRUNCATE` para `anon` y `authenticated`. Como `is_admin()` lee
+`users.role_id`, cualquiera con la clave anon del instalador puede cambiar el rol de un usuario a
+`admin`, desactivar administradores o renombrar usuarios. Eso salta todo control que dependa de
+`is_admin()` (importar productos, `branches`, `user_branches`, la guarda de `add_inventory_entry`).
+El riesgo aceptado de #13 cubría la falta de RLS, pero no esta escalada.
+
+**Solución:** `20261118140000_users_roles_write_admin_only.sql` revoca la escritura en las cinco
+tablas a `anon` y `authenticated` (la lectura se conserva) y crea `admin_update_user` y
+`admin_set_user_status`, que exigen `is_admin()`. Configuración > Usuarios usa esas RPCs; un cajero
+con autorización del modal puede ver la pantalla, pero no guardar cambios. Las edge functions de
+usuarios usan service role y no cambian.
+
+**Despliegue:** al aplicar la migración, los instaladores anteriores ya no pueden editar usuarios
+hasta actualizarse. Crear usuarios y cambiar contraseñas siguen funcionando (edge functions).
