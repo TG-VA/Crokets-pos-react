@@ -255,6 +255,7 @@ y el proceso principal de Electron:
 | Pedidos: contrato SQL de nota de recepcion                | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
 | Pedidos: contrato SQL de costo de recepcion y CPP         | `supabase/migrations/storeOrdersReceiptCostContract.test.js`                       |
 | Pedidos: contrato SQL de costos finitos y tope            | `supabase/migrations/storeOrdersReceiptCostFiniteContract.test.js`                 |
+| Pedidos: contrato SQL de hora local en la recepción       | `supabase/migrations/storeOrdersReceiptLocalTimeContract.test.js`                  |
 
 ### Cobertura transitiva del resolver de costo
 
