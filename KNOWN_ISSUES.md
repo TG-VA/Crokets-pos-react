@@ -2894,7 +2894,7 @@ hasta actualizarse. Crear usuarios y cambiar contraseñas siguen funcionando (ed
 
 ### 96. Inventario > Ajustes sobrescribía el CPP, no era atómico y no pedía autorización
 
-**Estado:** En curso (18 nov 2026). Migración `20261118150000` en PR, sin aplicar en remoto.
+**Estado:** En curso (18 nov 2026). Migración `20261118150000` y `authorize-admin-action` v8 aplicadas en remoto; PR #217 pendiente de merge.
 
 **Severidad:** Alta.
 
