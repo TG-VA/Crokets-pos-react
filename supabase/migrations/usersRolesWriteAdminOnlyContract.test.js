@@ -40,11 +40,14 @@ describe("escritura de usuarios y roles solo para administradores", () => {
   );
 
   it("no otorga sobre las tablas nada distinto de select", () => {
-    const tableGrants = sql.match(/grant [^;]* on table [^;]*;/g) ?? [];
+    // TABLE es opcional en GRANT: se toma todo grant que no sea sobre funciones.
+    const tableGrants = sql.match(/grant [^;]* on (?!function )[^;]*;/g) ?? [];
 
     expect(tableGrants).toHaveLength(TABLES.length);
     tableGrants.forEach((statement) => {
-      expect(statement).toMatch(/^grant select on table /);
+      expect(statement).toMatch(
+        /^grant select on table public\.\w+ to anon, authenticated;$/
+      );
     });
   });
 
