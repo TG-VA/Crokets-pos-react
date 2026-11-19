@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect, vi } from "vitest";
-import { ADMIN_GRANT_REQUIRED_MESSAGE } from "../../src/components/InventoryComponents/PageInventory/PageAdd/services/inventoryAddService";
+import {
+  ADMIN_GRANT_REQUIRED_HINT,
+  ADMIN_GRANT_REQUIRED_MESSAGE,
+} from "../../src/components/InventoryComponents/PageInventory/PageAdd/services/inventoryAddService";
 
 vi.mock("../../src/lib/supabaseClient", () => ({ supabase: {} }));
 
@@ -57,6 +60,44 @@ describe("contrato SQL de add_inventory_entry con admin o autorizacion", () => {
   it("rechaza con 42501 y el texto que reconoce el cliente para reautorizar", () => {
     expect(normalizedSql).toContain(
       `raise exception 'Agregar inventario ${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
+    );
+  });
+});
+
+const HINT_MIGRATION = join(
+  process.cwd(),
+  "supabase/migrations/20261118170000_add_inventory_entry_grant_hint.sql"
+);
+
+const hintSql = readFileSync(HINT_MIGRATION, "utf8").replace(/\s+/g, " ");
+const functionBody = (sql) =>
+  sql.slice(
+    sql.indexOf("create or replace function public.add_inventory_entry"),
+    sql.indexOf(`grant execute on function ${SIGNATURE}`)
+  );
+
+describe("contrato SQL del hint de autorizacion vencida (20261118170000)", () => {
+  it("rechaza la falta de autorizacion con el hint que compara el cliente", () => {
+    expect(hintSql).toContain(
+      `raise exception 'Agregar inventario ${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}';`
+    );
+  });
+
+  it("no cambia nada mas de la funcion respecto a 20261117235000", () => {
+    const expected = functionBody(normalizedSql).replace(
+      `${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`,
+      `${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}';`
+    );
+
+    expect(functionBody(hintSql)).toBe(expected);
+  });
+
+  it("conserva los grants y no da acceso a anon", () => {
+    expect(hintSql).toContain(
+      `revoke all on function ${SIGNATURE} from public, anon;`
+    );
+    expect(hintSql).toContain(
+      `grant execute on function ${SIGNATURE} to authenticated, service_role;`
     );
   });
 });
