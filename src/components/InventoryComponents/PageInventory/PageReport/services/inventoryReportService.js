@@ -40,50 +40,27 @@ const fetchAllPages = async (buildQuery) => {
   return rows;
 };
 
-const INVENTORY_SELECT_CANDIDATES = [
-  `
+const INVENTORY_SELECT = `
+  id,
+  branch_id,
+  product_id,
+  stock,
+  min_stock,
+  max_stock,
+  is_active,
+  products:product_id(
     id,
-    branch_id,
-    product_id,
-    stock,
-    min_stock,
-    max_stock,
-    is_active,
-    products:product_id(
-      id,
-      barcode,
-      name,
-      department_id,
-      is_global,
-      status,
-      tracks_inventory,
-      departments(
-        name
-      )
+    barcode,
+    name,
+    department_id,
+    is_global,
+    status,
+    tracks_inventory,
+    departments(
+      name
     )
-  `,
-  `
-    id,
-    branch_id,
-    product_id,
-    stock,
-    min_stock,
-    max_stock,
-    is_active,
-    products(
-      id,
-      barcode,
-      name,
-      department_id,
-      is_global,
-      status,
-      tracks_inventory,
-      departments(
-        name
-      )
-    )
-  `,
-];
+  )
+`;
 
 const PRODUCTS_SELECT = `
   id,
@@ -173,36 +150,16 @@ const mapNoBranchRecordProduct = (product) => ({
   noBranchRecord: true,
 });
 
-const fetchInventoryRowsByBranch = async (branchId) => {
-  let inventoryRows = [];
-  let lastError = null;
-
-  for (const selectClause of INVENTORY_SELECT_CANDIDATES) {
-    try {
-      inventoryRows = await fetchAllPages(() =>
-        supabase
-          .from("branch_inventory")
-          .select(selectClause)
-          .eq("branch_id", branchId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: true })
-      );
-    } catch (queryError) {
-      lastError = queryError;
-      continue;
-    }
-
-    lastError = null;
-    break;
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-
-  return inventoryRows;
-};
+const fetchInventoryRowsByBranch = (branchId) =>
+  fetchAllPages(() =>
+    supabase
+      .from("branch_inventory")
+      .select(INVENTORY_SELECT)
+      .eq("branch_id", branchId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+  );
 
 const fetchActiveProductsByTracking = (tracksInventory) =>
   fetchAllPages(() =>

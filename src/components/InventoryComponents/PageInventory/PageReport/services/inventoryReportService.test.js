@@ -275,3 +275,19 @@ describe("fetchInventoryReportRows: productos sin registro en la sucursal", () =
     expect(trackedCall.filters).toContainEqual(["status", true]);
   });
 });
+
+describe("fetchInventoryReportRows: errores de la consulta de inventario", () => {
+  beforeEach(() => {
+    supabase.from.mockReset();
+  });
+
+  it("propaga el error real sin reintentar con otro select", async () => {
+    const queryError = new Error("column products.foo does not exist");
+    const calls = mockTables({ branch_inventory: queryError, products: [] });
+
+    await expect(fetchInventoryReportRows("b1")).rejects.toBe(queryError);
+    expect(
+      calls.filter((call) => call.table === "branch_inventory")
+    ).toHaveLength(1);
+  });
+});
