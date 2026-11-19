@@ -41,10 +41,19 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 import {
   fetchAllPages,
   loadBaseMovements,
+  loadProducts,
   loadRewardRedemptions,
+  loadSaleDetailsBySales,
   loadSalesByBranch,
 } from "./movementQueriesService";
-import { MOVEMENTS_PAGE_SIZE } from "./movementServiceConstants";
+import {
+  IN_FILTER_BATCH_SIZE,
+  MOVEMENTS_PAGE_SIZE,
+  MOVEMENTS_PRODUCTS_SELECT_KEY,
+} from "./movementServiceConstants";
+
+const buildIds = (count) =>
+  Array.from({ length: count }, (_, index) => `id-${index}`);
 
 const fullPage = (prefix) => ({
   data: Array.from({ length: MOVEMENTS_PAGE_SIZE }, (_, index) => ({
@@ -131,5 +140,57 @@ describe("movementQueriesService", () => {
     const result = await fetchAllPages(() => from("x"));
 
     expect(result).toEqual({ data: null, error: pageError });
+  });
+
+  it("parte los ids del .in() en lotes", async () => {
+    const ids = buildIds(IN_FILTER_BATCH_SIZE * 2 + 50);
+
+    await loadProducts(ids);
+
+    const batchSizes = queries.map(
+      (query) => callsOf(query, "in")[0][2].length
+    );
+    expect(batchSizes).toEqual([
+      IN_FILTER_BATCH_SIZE,
+      IN_FILTER_BATCH_SIZE,
+      50,
+    ]);
+    expect(queries.flatMap((query) => callsOf(query, "in")[0][2])).toEqual(ids);
+  });
+
+  it("pagina un lote con mas de 1000 coincidencias", async () => {
+    pages.current = [fullPage("a"), { data: [{ id: "b-0" }], error: null }];
+
+    const rows = await loadSaleDetailsBySales(["s1"]);
+
+    expect(rows).toHaveLength(MOVEMENTS_PAGE_SIZE + 1);
+    expect(
+      queries.every((query) => callsOf(query, "in")[0][1] === "sale_id")
+    ).toBe(true);
+  });
+
+  it("cae al siguiente select ante columna faltante y lo guarda en cache", async () => {
+    pages.current = [
+      {
+        data: null,
+        error: { message: "column products.is_kit does not exist" },
+      },
+      { data: [{ id: "p1" }], error: null },
+    ];
+
+    const rows = await loadProducts(["p1"]);
+
+    expect(rows).toEqual([{ id: "p1" }]);
+    expect(window.localStorage.getItem(MOVEMENTS_PRODUCTS_SELECT_KEY)).toBe(
+      "id, name, barcode, tracks_inventory"
+    );
+  });
+
+  it("usa primero el select guardado en cache", async () => {
+    window.localStorage.setItem(MOVEMENTS_PRODUCTS_SELECT_KEY, "id, name");
+
+    await loadProducts(["p1"]);
+
+    expect(callsOf(queries[0], "select")[0][1]).toBe("id, name");
   });
 });

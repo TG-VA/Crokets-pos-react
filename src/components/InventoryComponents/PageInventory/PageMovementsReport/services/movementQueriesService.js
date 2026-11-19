@@ -5,6 +5,7 @@ import {
 } from "../../../../../services/branchScopeService";
 
 import {
+  IN_FILTER_BATCH_SIZE,
   INVENTORY_MOVEMENTS_TABLE,
   MOVEMENTS_PAGE_SIZE,
   MOVEMENTS_CANCELED_SALES_SELECT_KEY,
@@ -48,6 +49,29 @@ export const fetchAllPages = async (buildQuery) => {
       return { data: rows, error: null };
     }
   }
+};
+
+// Un .in() con miles de UUID rebasa el largo maximo de URL, y un lote con mas
+// de 1000 coincidencias choca con el tope de filas. Los ids se parten en lotes
+// y cada lote se pagina; el primer error corta la lectura completa.
+export const fetchByIdsInBatches = async (values, buildQuery) => {
+  const batches = [];
+
+  for (let start = 0; start < values.length; start += IN_FILTER_BATCH_SIZE) {
+    batches.push(values.slice(start, start + IN_FILTER_BATCH_SIZE));
+  }
+
+  const results = await Promise.all(
+    batches.map((batch) => fetchAllPages(() => buildQuery(batch)))
+  );
+
+  const failed = results.find((result) => result.error);
+
+  if (failed) {
+    return { data: null, error: failed.error };
+  }
+
+  return { data: results.flatMap((result) => result.data), error: null };
 };
 
 const applyDateWindow = (query, column, { startISO, endISO } = {}) => {
@@ -309,10 +333,13 @@ export const loadProducts = async (productIds) => {
   ].filter(Boolean);
 
   for (const selectFields of candidates) {
-    const response = await supabase
-      .from("products")
-      .select(selectFields)
-      .in("id", productIds);
+    const response = await fetchByIdsInBatches(productIds, (batch) =>
+      supabase
+        .from("products")
+        .select(selectFields)
+        .in("id", batch)
+        .order("id", { ascending: true })
+    );
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_PRODUCTS_SELECT_KEY, selectFields);
@@ -340,10 +367,13 @@ export const loadUsers = async (userIds) => {
   const candidates = [cachedSelect, "id, username", "id"].filter(Boolean);
 
   for (const selectFields of candidates) {
-    const response = await supabase
-      .from("users")
-      .select(selectFields)
-      .in("id", userIds);
+    const response = await fetchByIdsInBatches(userIds, (batch) =>
+      supabase
+        .from("users")
+        .select(selectFields)
+        .in("id", batch)
+        .order("id", { ascending: true })
+    );
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_USERS_SELECT_KEY, selectFields);
@@ -393,10 +423,13 @@ export const loadSales = async (saleIds) => {
   const candidates = getSalesSelectCandidates(cachedSelect);
 
   for (const selectFields of candidates) {
-    const response = await supabase
-      .from("sales")
-      .select(selectFields)
-      .in("id", saleIds);
+    const response = await fetchByIdsInBatches(saleIds, (batch) =>
+      supabase
+        .from("sales")
+        .select(selectFields)
+        .in("id", batch)
+        .order("id", { ascending: true })
+    );
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_SALES_SELECT_KEY, selectFields);
@@ -430,10 +463,13 @@ const loadRowsByColumn = async ({
   const selectCandidates = [cachedSelect, ...candidates].filter(Boolean);
 
   for (const selectFields of selectCandidates) {
-    const response = await supabase
-      .from(table)
-      .select(selectFields)
-      .in(column, values);
+    const response = await fetchByIdsInBatches(values, (batch) =>
+      supabase
+        .from(table)
+        .select(selectFields)
+        .in(column, batch)
+        .order("id", { ascending: true })
+    );
 
     if (!response.error) {
       setCachedValue(selectKey, selectFields);
@@ -556,10 +592,13 @@ export const loadRewards = async (rewardIds) => {
   ].filter(Boolean);
 
   for (const selectFields of candidates) {
-    const response = await supabase
-      .from("rewards")
-      .select(selectFields)
-      .in("id", rewardIds);
+    const response = await fetchByIdsInBatches(rewardIds, (batch) =>
+      supabase
+        .from("rewards")
+        .select(selectFields)
+        .in("id", batch)
+        .order("id", { ascending: true })
+    );
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_REWARDS_SELECT_KEY, selectFields);
