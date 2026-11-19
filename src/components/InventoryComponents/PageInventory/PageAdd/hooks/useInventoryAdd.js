@@ -10,7 +10,7 @@ import {
 import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
 import { useAppModal } from "../../../../../hooks/useAppModal";
-import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
+import useGrantReauthorization from "../../../../../hooks/useGrantReauthorization";
 
 const useInventoryAdd = () => {
   const {

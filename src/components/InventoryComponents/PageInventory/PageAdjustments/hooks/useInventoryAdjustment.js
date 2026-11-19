@@ -12,7 +12,7 @@ import {
   parseAdjustmentQuantity,
 } from "../services/adjustmentQuantityCalculationService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
-import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
+import useGrantReauthorization from "../../../../../hooks/useGrantReauthorization";
 import useAdjustmentProductSelection from "./useAdjustmentProductSelection";
 
 const ERROR_ALERT_TITLES = {
