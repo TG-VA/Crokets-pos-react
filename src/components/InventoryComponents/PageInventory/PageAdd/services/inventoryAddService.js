@@ -29,26 +29,12 @@ const toNumber = (value) => {
 // El hint es contrato con la migracion: lo fija `addInventoryEntryAdminGrantContract.test.js`.
 export { ADMIN_GRANT_REQUIRED_HINT };
 
-// Fallback temporal para la RPC sin hint (20261117235000). Retirar cuando
-// 20261118170000 este aplicada en remoto.
-export const ADMIN_GRANT_REQUIRED_MESSAGE =
-  "requiere la autorizacion de un administrador";
-
 /**
  * Indica si la RPC rechazo el alta porque la autorizacion del administrador no
  * existe o ya vencio.
  */
-export const isAdminGrantRequiredError = (error) => {
-  if (error?.code !== "42501") {
-    return false;
-  }
-
-  if (error.hint) {
-    return error.hint === ADMIN_GRANT_REQUIRED_HINT;
-  }
-
-  return String(error.message ?? "").includes(ADMIN_GRANT_REQUIRED_MESSAGE);
-};
+export const isAdminGrantRequiredError = (error) =>
+  error?.code === "42501" && error.hint === ADMIN_GRANT_REQUIRED_HINT;
 
 /**
  * Registra una entrada de inventario en la sucursal activa.
