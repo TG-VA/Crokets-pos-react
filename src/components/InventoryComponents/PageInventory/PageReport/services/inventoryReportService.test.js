@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
-  supabase: { from: vi.fn() },
+  supabase: { rpc: vi.fn() },
 }));
 
 vi.mock("../../../../../services/branchScopeService", () => ({
@@ -12,131 +12,183 @@ vi.mock("../../../../../services/branchScopeService", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import {
-  INVENTORY_REPORT_PAGE_SIZE,
-  MAX_INVENTORY_REPORT_ROWS,
   fetchBranchOptions,
   fetchInventoryReportRows,
   getBranchOptionsFallback,
 } from "./inventoryReportService";
 
-/*
-  Simula PostgREST: cada tabla responde a `range(from, to)` con el segmento
-  correspondiente de su arreglo, y nunca mas de 1000 filas por respuesta.
-*/
-const POSTGREST_MAX_ROWS = 1000;
+const mockReport = (data, error = null) =>
+  supabase.rpc.mockResolvedValue({ data, error });
 
-const mockTables = (tables) => {
-  const calls = [];
+const reportRow = (kind, id, overrides = {}) => ({
+  row_kind: kind,
+  inventory_row_id: kind === "inventory" ? `inv-${id}` : null,
+  product_id: id,
+  barcode: `C-${id}`,
+  name: `PRODUCTO ${id}`,
+  department_id: "d1",
+  department_name: "ALIMENTO",
+  tracks_inventory: kind !== "no_stock",
+  stock: kind === "inventory" ? 5 : null,
+  min_stock: kind === "inventory" ? 1 : null,
+  max_stock: kind === "inventory" ? 10 : null,
+  ...overrides,
+});
 
-  supabase.from.mockImplementation((table) => {
-    const call = { table, filters: [], ranges: [] };
-    calls.push(call);
-
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn((column, value) => {
-        call.filters.push([column, value]);
-        return query;
-      }),
-      order: vi.fn(() => query),
-      range: vi.fn((from, to) => {
-        call.ranges.push([from, to]);
-        const source = tables[table];
-
-        if (source instanceof Error) {
-          return Promise.resolve({ data: null, error: source });
-        }
-
-        const rows =
-          (typeof source === "function" ? source(call) : source) ?? [];
-        const end = Math.min(to + 1, from + POSTGREST_MAX_ROWS);
-        return Promise.resolve({ data: rows.slice(from, end), error: null });
-      }),
-    };
-
-    return query;
-  });
-
-  return calls;
-};
-
-const buildInventoryRows = (count) =>
-  Array.from({ length: count }, (_, index) => ({
-    id: `inv-${index}`,
-    product_id: `p-${index}`,
-    stock: 5,
-    min_stock: 1,
-    max_stock: 10,
-    is_active: true,
-    products: {
-      id: `p-${index}`,
-      barcode: `C${index}`,
-      name: `PRODUCTO ${index}`,
-      status: true,
-      tracks_inventory: true,
-      departments: { name: "ALIMENTO" },
-    },
-  }));
-
-describe("fetchInventoryReportRows: limite de filas de Supabase", () => {
+describe("fetchInventoryReportRows: RPC sin tope de filas", () => {
   beforeEach(() => {
-    supabase.from.mockReset();
+    supabase.rpc.mockReset();
   });
 
-  it("lee todas las paginas cuando el inventario supera las 1000 filas", async () => {
-    mockTables({
-      branch_inventory: buildInventoryRows(2500),
-      products: [],
-    });
-
-    const rows = await fetchInventoryReportRows("b1");
-
-    expect(rows).toHaveLength(2500);
-  });
-
-  it("pide paginas consecutivas del tamano fijado", async () => {
-    const calls = mockTables({
-      branch_inventory: buildInventoryRows(1500),
-      products: [],
-    });
+  it("llama una sola vez al RPC con la sucursal", async () => {
+    mockReport([]);
 
     await fetchInventoryReportRows("b1");
 
-    const inventoryRanges = calls
-      .filter((call) => call.table === "branch_inventory")
-      .flatMap((call) => call.ranges);
-    expect(INVENTORY_REPORT_PAGE_SIZE).toBe(1000);
-    expect(inventoryRanges).toEqual([
-      [0, 999],
-      [1000, 1999],
-    ]);
-  });
-
-  it("se detiene en el tope explicito de filas", async () => {
-    mockTables({
-      branch_inventory: buildInventoryRows(MAX_INVENTORY_REPORT_ROWS + 500),
-      products: [],
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(supabase.rpc).toHaveBeenCalledWith("get_branch_inventory_report", {
+      p_branch_id: "b1",
     });
-
-    const rows = await fetchInventoryReportRows("b1");
-
-    expect(MAX_INVENTORY_REPORT_ROWS).toBe(10000);
-    expect(rows).toHaveLength(10000);
   });
 
-  it("pagina tambien la consulta de productos sin control de inventario", async () => {
-    const products = Array.from({ length: 1200 }, (_, index) => ({
-      id: `s-${index}`,
-      barcode: `S${index}`,
-      name: `SERVICIO ${index}`,
-      status: true,
-      tracks_inventory: false,
-    }));
-    mockTables({ branch_inventory: [], products });
+  it("devuelve todas las filas aunque superen el antiguo tope de 10000", async () => {
+    mockReport(
+      Array.from({ length: 12000 }, (_, index) =>
+        reportRow("inventory", `p-${index}`)
+      )
+    );
 
     const rows = await fetchInventoryReportRows("b1");
 
-    expect(rows).toHaveLength(1200);
+    expect(rows).toHaveLength(12000);
+  });
+
+  it("no consulta sin sucursal", async () => {
+    await expect(fetchInventoryReportRows(null)).resolves.toEqual([]);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("propaga el error del RPC tal cual", async () => {
+    const rpcError = new Error("permission denied");
+    mockReport(null, rpcError);
+
+    await expect(fetchInventoryReportRows("b1")).rejects.toBe(rpcError);
+  });
+
+  it("ignora filas sin producto o con row_kind desconocido", async () => {
+    mockReport([
+      reportRow("inventory", null),
+      reportRow("otro", "p2"),
+      reportRow("inventory", "p3"),
+    ]);
+
+    const rows = await fetchInventoryReportRows("b1");
+
+    expect(rows.map((row) => row.productId)).toEqual(["p3"]);
+  });
+});
+
+describe("fetchInventoryReportRows: mapeo por tipo de fila", () => {
+  beforeEach(() => {
+    supabase.rpc.mockReset();
+  });
+
+  it("mapea la fila de inventario con existencia, minimo y maximo", async () => {
+    mockReport([reportRow("inventory", "p1")]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toEqual({
+      inventoryRowId: "inv-p1",
+      productId: "p1",
+      codigo: "C-p1",
+      nombre: "PRODUCTO p1",
+      depto: "ALIMENTO",
+      departmentId: "d1",
+      existencia: 5,
+      min: 1,
+      max: 10,
+      tracksInventory: true,
+      noStockProduct: false,
+      noBranchRecord: false,
+    });
+  });
+
+  it("una fila de inventario con valores nulos muestra 0", async () => {
+    mockReport([
+      reportRow("inventory", "p1", {
+        stock: null,
+        min_stock: null,
+        max_stock: null,
+        tracks_inventory: null,
+      }),
+    ]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      existencia: 0,
+      min: 0,
+      max: 0,
+      tracksInventory: true,
+    });
+  });
+
+  it("una fila de inventario sin control conserva tracksInventory en false", async () => {
+    mockReport([reportRow("inventory", "p1", { tracks_inventory: false })]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      tracksInventory: false,
+      noStockProduct: false,
+      noBranchRecord: false,
+    });
+  });
+
+  it("mapea con flag explicito y valores nulos al producto sin fila", async () => {
+    mockReport([reportRow("no_branch_record", "p1")]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      productId: "p1",
+      inventoryRowId: null,
+      existencia: null,
+      min: null,
+      max: null,
+      departmentId: "d1",
+      tracksInventory: true,
+      noStockProduct: false,
+      noBranchRecord: true,
+    });
+  });
+
+  it("los productos sin control de inventario no se marcan sin registro", async () => {
+    mockReport([reportRow("no_stock", "s1")]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      productId: "s1",
+      departmentId: "d1",
+      existencia: null,
+      tracksInventory: false,
+      noStockProduct: true,
+      noBranchRecord: false,
+    });
+  });
+
+  it("ordena registrados, luego sin registro, luego sin control", async () => {
+    mockReport([
+      reportRow("no_stock", "s1"),
+      reportRow("no_branch_record", "p2"),
+      reportRow("inventory", "p1"),
+    ]);
+
+    const rows = await fetchInventoryReportRows("b1");
+
+    expect(rows.map((row) => row.productId)).toEqual(["p1", "p2", "s1"]);
   });
 });
 
@@ -182,115 +234,5 @@ describe("fetchBranchOptions: solo sucursales operativas", () => {
       getBranchOptionsFallback({ id: "adm", branch_type: "admin" })
     ).toEqual([]);
     expect(getBranchOptionsFallback(null)).toEqual([]);
-  });
-});
-
-describe("fetchInventoryReportRows: productos sin registro en la sucursal", () => {
-  beforeEach(() => {
-    supabase.from.mockReset();
-  });
-
-  const product = (id, overrides = {}) => ({
-    id,
-    barcode: `C-${id}`,
-    name: `PRODUCTO ${id}`,
-    status: true,
-    tracks_inventory: true,
-    department_id: "d1",
-    departments: { name: "ALIMENTO" },
-    ...overrides,
-  });
-
-  const byTracking = (products) => (call) => {
-    const tracking = call.filters.find(
-      ([column]) => column === "tracks_inventory"
-    );
-    return products.filter(
-      (item) => !tracking || item.tracks_inventory === tracking[1]
-    );
-  };
-
-  it("mapea con flag explicito y valores nulos al producto sin fila", async () => {
-    mockTables({
-      branch_inventory: [],
-      products: byTracking([product("p1")]),
-    });
-
-    const [row] = await fetchInventoryReportRows("b1");
-
-    expect(row).toMatchObject({
-      productId: "p1",
-      inventoryRowId: null,
-      existencia: null,
-      min: null,
-      max: null,
-      departmentId: "d1",
-      tracksInventory: true,
-      noBranchRecord: true,
-    });
-  });
-
-  it("un producto con fila en la sucursal no se repite como sin registro", async () => {
-    const [inventoryRow] = buildInventoryRows(1);
-    mockTables({
-      branch_inventory: [inventoryRow],
-      products: byTracking([product(inventoryRow.product_id), product("p9")]),
-    });
-
-    const rows = await fetchInventoryReportRows("b1");
-    const ids = rows.map((row) => row.productId);
-
-    expect(ids).toEqual([inventoryRow.product_id, "p9"]);
-    expect(rows[0].noBranchRecord).toBe(false);
-    expect(rows[0].existencia).toBe(5);
-    expect(rows[1].noBranchRecord).toBe(true);
-  });
-
-  it("los productos sin control de inventario no se marcan sin registro", async () => {
-    mockTables({
-      branch_inventory: [],
-      products: byTracking([product("s1", { tracks_inventory: false })]),
-    });
-
-    const [row] = await fetchInventoryReportRows("b1");
-
-    expect(row).toMatchObject({
-      productId: "s1",
-      departmentId: "d1",
-      tracksInventory: false,
-      noStockProduct: true,
-      noBranchRecord: false,
-    });
-  });
-
-  it("consulta los controlados solo activos y con tracks_inventory = true", async () => {
-    const calls = mockTables({ branch_inventory: [], products: [] });
-
-    await fetchInventoryReportRows("b1");
-
-    const trackedCall = calls.find(
-      (call) =>
-        call.table === "products" &&
-        call.filters.some(
-          ([column, value]) => column === "tracks_inventory" && value === true
-        )
-    );
-    expect(trackedCall.filters).toContainEqual(["status", true]);
-  });
-});
-
-describe("fetchInventoryReportRows: errores de la consulta de inventario", () => {
-  beforeEach(() => {
-    supabase.from.mockReset();
-  });
-
-  it("propaga el error real sin reintentar con otro select", async () => {
-    const queryError = new Error("column products.foo does not exist");
-    const calls = mockTables({ branch_inventory: queryError, products: [] });
-
-    await expect(fetchInventoryReportRows("b1")).rejects.toBe(queryError);
-    expect(
-      calls.filter((call) => call.table === "branch_inventory")
-    ).toHaveLength(1);
   });
 });

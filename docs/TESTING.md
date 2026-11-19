@@ -110,13 +110,14 @@ y el proceso principal de Electron:
 | Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
 | Paginación global (incluye reset por `resetKeys`)         | `src/hooks/usePagination.test.js`                                                  |
 | Reporte de inventario: paginacion y reset al filtrar      | `.../PageInventory/PageReport/PageReport.test.jsx`                                 |
-| Reporte de inventario: consultas paginadas, D1 y D2       | `.../PageReport/services/inventoryReportService.test.js`                           |
+| Reporte de inventario: RPC sin tope, mapeo, D1 y D2       | `.../PageReport/services/inventoryReportService.test.js`                           |
 | Reporte de inventario: estado, conteos, filtro y orden    | `.../PageReport/services/inventoryReportCalculationService.test.js`                |
 | Reporte de inventario: servicio Realtime                  | `.../PageReport/services/inventoryReportRealtimeService.test.js`                   |
 | Realtime: relevancia, incluye filas sin registro          | `.../PageReport/utils/inventoryReportRealtimeFilters.test.js`                      |
 | Reporte de inventario: formateadores                      | `.../PageReport/utils/inventoryReportFormatters.test.js`                           |
 | Reporte de inventario: exportación (columna de estado)    | `.../PageReport/utils/exportInventoryReport.test.js`                               |
 | Reporte de inventario: carga, Realtime y error            | `.../PageReport/hooks/useInventoryReport.test.js`                                  |
+| Reporte de inventario: contrato del RPC                   | `supabase/migrations/getBranchInventoryReportContract.test.js`                     |
 | Reporte de movimientos: reset por filtro, sucursal, fecha | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
 | Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
