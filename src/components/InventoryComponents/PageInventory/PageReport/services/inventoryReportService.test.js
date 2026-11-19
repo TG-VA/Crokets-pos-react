@@ -134,6 +134,18 @@ describe("fetchInventoryReportRows: mapeo por tipo de fila", () => {
     });
   });
 
+  it("una fila de inventario sin control conserva tracksInventory en false", async () => {
+    mockReport([reportRow("inventory", "p1", { tracks_inventory: false })]);
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      tracksInventory: false,
+      noStockProduct: false,
+      noBranchRecord: false,
+    });
+  });
+
   it("mapea con flag explicito y valores nulos al producto sin fila", async () => {
     mockReport([reportRow("no_branch_record", "p1")]);
 
