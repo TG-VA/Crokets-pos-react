@@ -111,6 +111,7 @@ const mapInventoryRow = (item) => {
     codigo: String(product?.barcode ?? ""),
     nombre: String(product?.name ?? ""),
     depto: getDepartmentName(product),
+    departmentId: product?.department_id ?? null,
     existencia: Number(item?.stock ?? 0) || 0,
     min: Number(item?.min_stock ?? 0) || 0,
     max: Number(item?.max_stock ?? 0) || 0,

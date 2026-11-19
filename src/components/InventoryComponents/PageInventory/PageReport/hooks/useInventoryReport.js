@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-import { supabase } from "../../../../../lib/supabaseClient";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { isOperationalBranch } from "../../../../../services/branchScopeCalculationService";
 
@@ -9,6 +8,14 @@ import {
   fetchInventoryReportRows,
   getBranchOptionsFallback,
 } from "../services/inventoryReportService";
+import {
+  subscribeToBranchListChanges,
+  subscribeToInventoryReportChanges,
+} from "../services/inventoryReportRealtimeService";
+import {
+  isRelevantDepartmentChange,
+  isRelevantProductChange,
+} from "../utils/inventoryReportRealtimeFilters";
 import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 const REALTIME_REFRESH_DELAY_MS = 250;
@@ -53,6 +60,11 @@ const useInventoryReport = () => {
 
   const branchesRefreshTimeoutRef = useRef(null);
   const inventoryRefreshTimeoutRef = useRef(null);
+  const rowsRef = useRef(rows);
+
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,25 +123,9 @@ const useInventoryReport = () => {
       }, REALTIME_REFRESH_DELAY_MS);
     };
 
-    const channel = supabase
-      .channel("inventory-report-branches")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "branches",
-        },
-        scheduleBranchesRefresh
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error(
-            "No se pudo conectar Realtime para sucursales:",
-            status
-          );
-        }
-      });
+    const unsubscribe = subscribeToBranchListChanges({
+      onChange: scheduleBranchesRefresh,
+    });
 
     return () => {
       if (branchesRefreshTimeoutRef.current) {
@@ -138,7 +134,7 @@ const useInventoryReport = () => {
         branchesRefreshTimeoutRef.current = null;
       }
 
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, []);
 
@@ -157,41 +153,16 @@ const useInventoryReport = () => {
       }, REALTIME_REFRESH_DELAY_MS);
     };
 
-    const channel = supabase
-      .channel(`inventory-report-realtime-${selectedBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "branch_inventory",
-          filter: `branch_id=eq.${selectedBranchId}`,
-        },
-        scheduleInventoryRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "products",
-        },
-        scheduleInventoryRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "departments",
-        },
-        scheduleInventoryRefresh
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error("No se pudo conectar Realtime al reporte:", status);
-        }
-      });
+    // Los filtros comparan contra las filas en pantalla al momento del
+    // evento; se leen por ref para no resuscribir el canal en cada recarga.
+    const unsubscribe = subscribeToInventoryReportChanges({
+      branchId: selectedBranchId,
+      onChange: scheduleInventoryRefresh,
+      isRelevantProductChange: (payload) =>
+        isRelevantProductChange(payload, rowsRef.current),
+      isRelevantDepartmentChange: (payload) =>
+        isRelevantDepartmentChange(payload, rowsRef.current),
+    });
 
     return () => {
       if (inventoryRefreshTimeoutRef.current) {
@@ -200,7 +171,7 @@ const useInventoryReport = () => {
         inventoryRefreshTimeoutRef.current = null;
       }
 
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [selectedBranchId]);
 

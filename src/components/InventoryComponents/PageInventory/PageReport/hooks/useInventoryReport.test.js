@@ -33,12 +33,15 @@ import {
   fetchInventoryReportRows,
 } from "../services/inventoryReportService";
 
-const emitRealtimeChange = (table) => {
+const emitRealtimeChange = (
+  table,
+  payload = { eventType: "UPDATE", new: {}, old: {} }
+) => {
   const channel = supabase.channel();
   const binding = channel.on.mock.calls.find(
     ([, config]) => config?.table === table
   );
-  act(() => binding[2]({ eventType: "UPDATE", new: {}, old: {} }));
+  act(() => binding[2](payload));
 };
 
 describe("useInventoryReport sucursal inicial", () => {
@@ -99,6 +102,38 @@ describe("useInventoryReport ruta unica de carga", () => {
     await waitFor(() => expect(result.current.rows).toEqual([{ id: "r2" }]));
     expect(fetchInventoryReportRows).toHaveBeenCalledTimes(2);
     expect(fetchInventoryReportRows).toHaveBeenLastCalledWith("b1");
+  });
+
+  it("un cambio de precio de un producto mostrado no recarga el reporte", async () => {
+    const row = {
+      productId: "p1",
+      codigo: "7501",
+      nombre: "CROQUETA",
+      depto: "ALIMENTO",
+      departmentId: "d1",
+      tracksInventory: true,
+    };
+    fetchInventoryReportRows.mockResolvedValue([row]);
+
+    const { result } = renderHook(() => useInventoryReport());
+    await waitFor(() => expect(result.current.rows).toEqual([row]));
+
+    emitRealtimeChange("products", {
+      eventType: "UPDATE",
+      new: {
+        id: "p1",
+        barcode: "7501",
+        name: "CROQUETA",
+        department_id: "d1",
+        status: true,
+        tracks_inventory: true,
+        sale_price: 120,
+      },
+      old: { id: "p1" },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(fetchInventoryReportRows).toHaveBeenCalledTimes(1);
   });
 
   it("un cambio de sucursales recarga las opciones", async () => {
