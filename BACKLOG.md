@@ -49,7 +49,7 @@ ejecución. Al resolver un ítem, actualizar primero `KNOWN_ISSUES.md` (cambiar 
 - [x] Concurrencia acotada en el procesamiento de partidas de rentabilidad (chunks paralelos o RPC) — ver `KNOWN_ISSUES.md` #22
 - [x] Extraer `inventoryReportCalculationService.js` puro (agregaciones del reporte de inventario) — ver `KNOWN_ISSUES.md` #25
 - [x] Reporte de inventario: paginar consultas (sin truncar en 1000 filas), solo sucursales operativas (D1), productos sin registro en la sucursal (D2), Realtime acotado en un servicio y conservación de datos ante error — ver `KNOWN_ISSUES.md` #97
-- [ ] Migrar el Reporte de inventario a un RPC paginado si alguna sucursal supera las 10000 filas — ver `KNOWN_ISSUES.md` #97
+- [x] Reporte de inventario sin tope de 10000 filas: RPC `get_branch_inventory_report` en una sola llamada — ver `KNOWN_ISSUES.md` #97
 - [x] Revocar `EXECUTE` a `anon` en el RPC base `get_branch_products_paginated` (hardening de grants; reports ya corregidos) — ver `KNOWN_ISSUES.md` #26
 - [x] Consolidar el guard de autorización de administrador duplicado en un `ProtectedRoute` compartido (Pages Reports/Products/Invoices) y eliminar rutas/hook protegidos duplicados — ver `KNOWN_ISSUES.md` #28
 - [x] Interceptar la navegación protegida en los navbars de módulo (hook `useProtectedNavigation` + config `adminProtectedSections`) para no cambiar de URL antes de autorizar — ver `KNOWN_ISSUES.md` #27

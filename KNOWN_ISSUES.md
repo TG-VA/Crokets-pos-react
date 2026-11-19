@@ -3005,5 +3005,11 @@ fila, sin control y duplicado, error propagado sin reintento), `inventoryReportC
 acotada, respuesta descartada y conservación de datos ante error) y `PageReport.test.jsx` (etiqueta
 del selector).
 
-**Pendiente:** el tope de 10000 filas sigue siendo un límite del cliente. Si una sucursal lo
-supera, migrar el reporte a un RPC paginado como `get_branch_products_paginated` (#16).
+**Tope de 10000 filas (S1 de la auditoría del PR #226):** resuelto en la rama
+`fix/inventario-reporte-rpc-sin-tope`. El RPC `get_branch_inventory_report(p_branch_id)` (migración
+`20261119190000`) hace en SQL la unión de filas de inventario, productos sin registro (D2) y
+productos sin control, y devuelve un solo `jsonb` con `row_kind` por fila: `db-max-rows` de
+PostgREST no lo trunca y ya no hay tope ni paginación en el cliente. Se eligió un RPC único en lugar
+de uno paginado porque los filtros, conteos, orden y exportación a Excel trabajan sobre todas las
+filas de la sucursal. Es `security invoker` (aplica la RLS del llamador) y solo `authenticated`
+tiene `EXECUTE`. Contrato en `getBranchInventoryReportContract.test.js`.
