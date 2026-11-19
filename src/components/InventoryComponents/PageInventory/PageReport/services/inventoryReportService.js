@@ -6,6 +6,40 @@ import {
 
 import { sortInventoryRows } from "../utils/inventoryReportUtils";
 
+// PostgREST trunca cada respuesta en 1000 filas sin devolver error. Las
+// consultas del reporte se leen por paginas de ese tamano y se detienen en un
+// tope explicito, el mismo criterio que el catalogo de ProductsContext.
+export const INVENTORY_REPORT_PAGE_SIZE = 1000;
+export const MAX_INVENTORY_REPORT_ROWS = 10000;
+
+const fetchAllPages = async (buildQuery) => {
+  const rows = [];
+
+  for (
+    let from = 0;
+    from < MAX_INVENTORY_REPORT_ROWS;
+    from += INVENTORY_REPORT_PAGE_SIZE
+  ) {
+    const to =
+      Math.min(from + INVENTORY_REPORT_PAGE_SIZE, MAX_INVENTORY_REPORT_ROWS) -
+      1;
+    const { data, error } = await buildQuery().range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+
+    if (page.length < to - from + 1) {
+      break;
+    }
+  }
+
+  return rows;
+};
+
 const POLI_BRANCH_ID = "412f367f-7c86-45ca-9e91-b8fe6274b232";
 
 const INVENTORY_SELECT_CANDIDATES = [
@@ -159,21 +193,21 @@ const fetchInventoryRowsByBranch = async (branchId) => {
   let lastError = null;
 
   for (const selectClause of INVENTORY_SELECT_CANDIDATES) {
-    const result = await supabase
-      .from("branch_inventory")
-      .select(selectClause)
-      .eq("branch_id", branchId)
-      .eq("is_active", true)
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (result.error) {
-      lastError = result.error;
+    try {
+      inventoryRows = await fetchAllPages(() =>
+        supabase
+          .from("branch_inventory")
+          .select(selectClause)
+          .eq("branch_id", branchId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+      );
+    } catch (queryError) {
+      lastError = queryError;
       continue;
     }
 
-    inventoryRows = result.data ?? [];
     lastError = null;
     break;
   }
@@ -185,22 +219,16 @@ const fetchInventoryRowsByBranch = async (branchId) => {
   return inventoryRows;
 };
 
-const fetchNoStockProducts = async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select(NO_STOCK_PRODUCTS_SELECT)
-    .eq("status", true)
-    .eq("tracks_inventory", false)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  return Array.isArray(data) ? data : [];
-};
+const fetchNoStockProducts = () =>
+  fetchAllPages(() =>
+    supabase
+      .from("products")
+      .select(NO_STOCK_PRODUCTS_SELECT)
+      .eq("status", true)
+      .eq("tracks_inventory", false)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+  );
 
 export const fetchBranchOptions = async (currentBranch) => {
   try {
