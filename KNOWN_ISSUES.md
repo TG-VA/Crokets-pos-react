@@ -2848,6 +2848,11 @@ compara primero el hint y conserva el texto del mensaje solo como fallback tempo
 sin hint; se retira en un PR de seguimiento. Aplicada en remoto el 19 nov 2026
 (`20261119203449`).
 
+**Actualización (19 nov 2026):** `20261118170000` ya está aplicada en remoto (versión
+`20261119203449`). PR #222 retira el fallback por mensaje: `isAdminGrantRequiredError` reconoce el
+rechazo solo por `code = '42501'` y `hint = 'ADMIN_GRANT_REQUIRED'`, y vive en
+`adminAuthorizationService.js`, compartido por Agregar y Ajustes.
+
 ---
 
 ### 94. `admin_action_grants` no purga las autorizaciones vencidas
