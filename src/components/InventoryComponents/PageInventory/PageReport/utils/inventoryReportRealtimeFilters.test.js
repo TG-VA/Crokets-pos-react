@@ -120,3 +120,33 @@ describe("isRelevantDepartmentChange", () => {
     ).toBe(true);
   });
 });
+
+describe("filtros con filas sin registro en la sucursal", () => {
+  const noBranchRows = [
+    {
+      productId: "p1",
+      codigo: "7501",
+      nombre: "CROQUETA",
+      depto: "ALIMENTO",
+      departmentId: "d1",
+      tracksInventory: true,
+      noBranchRecord: true,
+    },
+  ];
+
+  it("ignora un cambio de precio de un producto sin registro", () => {
+    const payload = {
+      eventType: "UPDATE",
+      new: productRecord({ sale_price: 99 }),
+    };
+    expect(isRelevantProductChange(payload, noBranchRows)).toBe(false);
+  });
+
+  it("recarga si se renombra el departamento de un producto sin registro", () => {
+    const payload = {
+      eventType: "UPDATE",
+      new: { id: "d1", name: "ALIMENTOS" },
+    };
+    expect(isRelevantDepartmentChange(payload, noBranchRows)).toBe(true);
+  });
+});

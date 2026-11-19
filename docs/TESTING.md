@@ -113,7 +113,7 @@ y el proceso principal de Electron:
 | Reporte de inventario: consultas paginadas, D1 y D2       | `.../PageReport/services/inventoryReportService.test.js`                           |
 | Reporte de inventario: estado, conteos, filtro y orden    | `.../PageReport/services/inventoryReportCalculationService.test.js`                |
 | Reporte de inventario: servicio Realtime                  | `.../PageReport/services/inventoryReportRealtimeService.test.js`                   |
-| Reporte de inventario: relevancia de cambios Realtime     | `.../PageReport/utils/inventoryReportRealtimeFilters.test.js`                      |
+| Realtime: relevancia, incluye filas sin registro          | `.../PageReport/utils/inventoryReportRealtimeFilters.test.js`                      |
 | Reporte de inventario: formateadores                      | `.../PageReport/utils/inventoryReportFormatters.test.js`                           |
 | Reporte de inventario: exportación (columna de estado)    | `.../PageReport/utils/exportInventoryReport.test.js`                               |
 | Reporte de inventario: carga, Realtime y error            | `.../PageReport/hooks/useInventoryReport.test.js`                                  |

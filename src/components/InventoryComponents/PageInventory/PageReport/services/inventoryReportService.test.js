@@ -196,6 +196,7 @@ describe("fetchInventoryReportRows: productos sin registro en la sucursal", () =
     name: `PRODUCTO ${id}`,
     status: true,
     tracks_inventory: true,
+    department_id: "d1",
     departments: { name: "ALIMENTO" },
     ...overrides,
   });
@@ -223,6 +224,7 @@ describe("fetchInventoryReportRows: productos sin registro en la sucursal", () =
       existencia: null,
       min: null,
       max: null,
+      departmentId: "d1",
       tracksInventory: true,
       noBranchRecord: true,
     });
@@ -254,6 +256,7 @@ describe("fetchInventoryReportRows: productos sin registro en la sucursal", () =
 
     expect(row).toMatchObject({
       productId: "s1",
+      departmentId: "d1",
       tracksInventory: false,
       noStockProduct: true,
       noBranchRecord: false,

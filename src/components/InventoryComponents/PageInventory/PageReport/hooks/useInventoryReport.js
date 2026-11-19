@@ -28,9 +28,8 @@ const useInventoryReport = () => {
   const [branchOverride, setBranchOverride] = useState("");
 
   // La sucursal efectiva se deriva: la seleccion explicita del usuario manda y,
-  // mientras no exista, se usa la sucursal del contexto. Antes esto se resolvia
-  // con un efecto que hacia setSelectedBranchId(branch.id) y provocaba un
-  // re-render en cascada; ahora no hay estado que sincronizar.
+  // mientras no exista, se usa la sucursal del contexto. Derivarla evita un
+  // efecto de sincronizacion y su re-render en cascada.
   // Una terminal admin no tiene stock propio: el usuario elige la sucursal.
   const defaultBranchId = isOperationalBranch(branch) ? branch.id : "";
   const selectedBranchId = branchOverride || defaultBranchId;
