@@ -11,7 +11,7 @@ import {
   normalizeAdjustmentQuantityInput,
   parseAdjustmentQuantity,
 } from "../utils/adjustmentQuantity";
-import useInventoryAlertModal from "../../shared/hooks/useInventoryAlertModal";
+import { useAppModal } from "../../../../../hooks/useAppModal";
 import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
 import useAdjustmentProductSelection from "./useAdjustmentProductSelection";
 
@@ -30,7 +30,7 @@ const useInventoryAdjustment = () => {
   } = useProducts();
   const { branch } = useBranch();
 
-  const { appModal, closeAppModal, showAppAlert } = useInventoryAlertModal();
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
   const {
     reauthorizationOpen,
     requestReauthorization,

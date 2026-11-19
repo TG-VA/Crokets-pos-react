@@ -9,7 +9,7 @@ import {
 } from "../services/inventoryAddService";
 import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
-import useInventoryAlertModal from "../../shared/hooks/useInventoryAlertModal";
+import { useAppModal } from "../../../../../hooks/useAppModal";
 import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
 
 const useInventoryAdd = () => {
@@ -22,7 +22,7 @@ const useInventoryAdd = () => {
   } = useProducts();
   const { branch } = useBranch();
 
-  const { appModal, closeAppModal, showAppAlert } = useInventoryAlertModal();
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
   const {
     reauthorizationOpen,
     requestReauthorization,
