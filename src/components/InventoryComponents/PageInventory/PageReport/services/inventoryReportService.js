@@ -6,74 +6,10 @@ import {
 
 import { sortInventoryRows } from "./inventoryReportCalculationService";
 
-// PostgREST trunca cada respuesta en 1000 filas sin devolver error. Las
-// consultas del reporte se leen por paginas de ese tamano y se detienen en un
-// tope explicito, el mismo criterio que el catalogo de ProductsContext.
-export const INVENTORY_REPORT_PAGE_SIZE = 1000;
-export const MAX_INVENTORY_REPORT_ROWS = 10000;
-
-const fetchAllPages = async (buildQuery) => {
-  const rows = [];
-
-  for (
-    let from = 0;
-    from < MAX_INVENTORY_REPORT_ROWS;
-    from += INVENTORY_REPORT_PAGE_SIZE
-  ) {
-    const to =
-      Math.min(from + INVENTORY_REPORT_PAGE_SIZE, MAX_INVENTORY_REPORT_ROWS) -
-      1;
-    const { data, error } = await buildQuery().range(from, to);
-
-    if (error) {
-      throw error;
-    }
-
-    const page = Array.isArray(data) ? data : [];
-    rows.push(...page);
-
-    if (page.length < to - from + 1) {
-      break;
-    }
-  }
-
-  return rows;
-};
-
-const INVENTORY_SELECT = `
-  id,
-  branch_id,
-  product_id,
-  stock,
-  min_stock,
-  max_stock,
-  is_active,
-  products:product_id(
-    id,
-    barcode,
-    name,
-    department_id,
-    is_global,
-    status,
-    tracks_inventory,
-    departments(
-      name
-    )
-  )
-`;
-
-const PRODUCTS_SELECT = `
-  id,
-  barcode,
-  name,
-  department_id,
-  is_global,
-  status,
-  tracks_inventory,
-  departments(
-    name
-  )
-`;
+// El RPC devuelve todo el reporte de la sucursal en un solo jsonb, asi que el
+// limite de filas de PostgREST no lo trunca. row_kind distingue las filas de
+// inventario de los productos sin registro (D2) y sin control de inventario.
+const INVENTORY_REPORT_RPC = "get_branch_inventory_report";
 
 // Ante un error al listar sucursales solo se ofrece la sucursal actual, y solo
 // si es operativa: el selector nunca muestra sucursales que el catalogo no
@@ -92,88 +28,44 @@ const buildBranchFallback = (currentBranch) => {
   ];
 };
 
-const getDepartmentName = (product) => {
-  const departments = product?.departments;
+const toNullableNumber = (value) => (value == null ? null : Number(value) || 0);
 
-  if (Array.isArray(departments)) {
-    return String(departments[0]?.name ?? "");
-  }
+const mapBaseRow = (item) => ({
+  inventoryRowId: item?.inventory_row_id ?? null,
+  productId: item?.product_id ?? null,
+  codigo: String(item?.barcode ?? ""),
+  nombre: String(item?.name ?? ""),
+  depto: String(item?.department_name ?? ""),
+  departmentId: item?.department_id ?? null,
+});
 
-  return String(departments?.name ?? "");
-};
-
-const mapInventoryRow = (item) => {
-  const product = item?.products ?? {};
-
-  return {
-    inventoryRowId: item?.id ?? null,
-    productId: item?.product_id ?? product?.id ?? null,
-    codigo: String(product?.barcode ?? ""),
-    nombre: String(product?.name ?? ""),
-    depto: getDepartmentName(product),
-    departmentId: product?.department_id ?? null,
-    existencia: Number(item?.stock ?? 0) || 0,
-    min: Number(item?.min_stock ?? 0) || 0,
-    max: Number(item?.max_stock ?? 0) || 0,
-    tracksInventory: product?.tracks_inventory !== false,
-    noStockProduct: false,
-    noBranchRecord: false,
-  };
-};
-
-const mapNoStockProduct = (product) => ({
-  inventoryRowId: null,
-  productId: product?.id ?? null,
-  codigo: String(product?.barcode ?? ""),
-  nombre: String(product?.name ?? ""),
-  depto: getDepartmentName(product),
-  departmentId: product?.department_id ?? null,
-  existencia: null,
-  min: null,
-  max: null,
-  tracksInventory: false,
-  noStockProduct: true,
+const mapInventoryRow = (item) => ({
+  ...mapBaseRow(item),
+  existencia: toNullableNumber(item?.stock) ?? 0,
+  min: toNullableNumber(item?.min_stock) ?? 0,
+  max: toNullableNumber(item?.max_stock) ?? 0,
+  tracksInventory: item?.tracks_inventory !== false,
+  noStockProduct: false,
   noBranchRecord: false,
 });
 
-// Producto con control de inventario que no tiene fila activa en la sucursal:
-// sus valores quedan en null para no confundirlo con un agotado.
-const mapNoBranchRecordProduct = (product) => ({
-  inventoryRowId: null,
-  productId: product?.id ?? null,
-  codigo: String(product?.barcode ?? ""),
-  nombre: String(product?.name ?? ""),
-  depto: getDepartmentName(product),
-  departmentId: product?.department_id ?? null,
+// Sin fila activa en la sucursal: existencia, minimo y maximo quedan en null
+// para no confundir el producto con un agotado.
+const mapProductWithoutRow = (item, noBranchRecord) => ({
+  ...mapBaseRow(item),
   existencia: null,
   min: null,
   max: null,
-  tracksInventory: true,
-  noStockProduct: false,
-  noBranchRecord: true,
+  tracksInventory: noBranchRecord,
+  noStockProduct: !noBranchRecord,
+  noBranchRecord,
 });
 
-const fetchInventoryRowsByBranch = (branchId) =>
-  fetchAllPages(() =>
-    supabase
-      .from("branch_inventory")
-      .select(INVENTORY_SELECT)
-      .eq("branch_id", branchId)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: true })
-  );
-
-const fetchActiveProductsByTracking = (tracksInventory) =>
-  fetchAllPages(() =>
-    supabase
-      .from("products")
-      .select(PRODUCTS_SELECT)
-      .eq("status", true)
-      .eq("tracks_inventory", tracksInventory)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: true })
-  );
+const ROW_MAPPERS = {
+  inventory: mapInventoryRow,
+  no_branch_record: (item) => mapProductWithoutRow(item, true),
+  no_stock: (item) => mapProductWithoutRow(item, false),
+};
 
 export const fetchBranchOptions = async (currentBranch) => {
   try {
@@ -199,52 +91,17 @@ export const fetchInventoryReportRows = async (branchId) => {
     return [];
   }
 
-  const inventoryRows = await fetchInventoryRowsByBranch(branchId);
-
-  const activeInventoryRows = inventoryRows.filter((item) => {
-    const product = item?.products;
-
-    if (!product?.id) {
-      return false;
-    }
-
-    return product.status === true;
+  const { data, error } = await supabase.rpc(INVENTORY_REPORT_RPC, {
+    p_branch_id: branchId,
   });
 
-  const mappedInventoryRows = activeInventoryRows.map(mapInventoryRow);
+  if (error) {
+    throw error;
+  }
 
-  // Un producto solo puede aparecer una vez: la fila de inventario manda y
-  // luego cada consulta de productos agrega unicamente los que faltan.
-  const seenProductIds = new Set(
-    mappedInventoryRows.map((item) => item.productId).filter(Boolean)
-  );
+  const rows = (Array.isArray(data) ? data : [])
+    .filter((item) => item?.product_id && ROW_MAPPERS[item.row_kind])
+    .map((item) => ROW_MAPPERS[item.row_kind](item));
 
-  const takeUnseen = (products, mapProduct) =>
-    products
-      .filter((product) => {
-        if (!product?.id || seenProductIds.has(product.id)) {
-          return false;
-        }
-
-        seenProductIds.add(product.id);
-        return true;
-      })
-      .map(mapProduct);
-
-  const [trackedProducts, noStockProducts] = await Promise.all([
-    fetchActiveProductsByTracking(true),
-    fetchActiveProductsByTracking(false),
-  ]);
-
-  const mappedNoBranchRecordProducts = takeUnseen(
-    trackedProducts,
-    mapNoBranchRecordProduct
-  );
-  const mappedNoStockProducts = takeUnseen(noStockProducts, mapNoStockProduct);
-
-  return sortInventoryRows([
-    ...mappedInventoryRows,
-    ...mappedNoBranchRecordProducts,
-    ...mappedNoStockProducts,
-  ]);
+  return sortInventoryRows(rows);
 };
