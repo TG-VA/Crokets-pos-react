@@ -85,7 +85,7 @@ const INVENTORY_SELECT_CANDIDATES = [
   `,
 ];
 
-const NO_STOCK_PRODUCTS_SELECT = `
+const PRODUCTS_SELECT = `
   id,
   barcode,
   name,
@@ -139,6 +139,7 @@ const mapInventoryRow = (item) => {
     max: Number(item?.max_stock ?? 0) || 0,
     tracksInventory: product?.tracks_inventory !== false,
     noStockProduct: false,
+    noBranchRecord: false,
   };
 };
 
@@ -153,6 +154,23 @@ const mapNoStockProduct = (product) => ({
   max: null,
   tracksInventory: false,
   noStockProduct: true,
+  noBranchRecord: false,
+});
+
+// Producto con control de inventario que no tiene fila activa en la sucursal:
+// sus valores quedan en null para no confundirlo con un agotado.
+const mapNoBranchRecordProduct = (product) => ({
+  inventoryRowId: null,
+  productId: product?.id ?? null,
+  codigo: String(product?.barcode ?? ""),
+  nombre: String(product?.name ?? ""),
+  depto: getDepartmentName(product),
+  existencia: null,
+  min: null,
+  max: null,
+  tracksInventory: true,
+  noStockProduct: false,
+  noBranchRecord: true,
 });
 
 const fetchInventoryRowsByBranch = async (branchId) => {
@@ -186,13 +204,13 @@ const fetchInventoryRowsByBranch = async (branchId) => {
   return inventoryRows;
 };
 
-const fetchNoStockProducts = () =>
+const fetchActiveProductsByTracking = (tracksInventory) =>
   fetchAllPages(() =>
     supabase
       .from("products")
-      .select(NO_STOCK_PRODUCTS_SELECT)
+      .select(PRODUCTS_SELECT)
       .eq("status", true)
-      .eq("tracks_inventory", false)
+      .eq("tracks_inventory", tracksInventory)
       .order("created_at", { ascending: false })
       .order("id", { ascending: true })
   );
@@ -235,15 +253,38 @@ export const fetchInventoryReportRows = async (branchId) => {
 
   const mappedInventoryRows = activeInventoryRows.map(mapInventoryRow);
 
-  const inventoryProductIds = new Set(
+  // Un producto solo puede aparecer una vez: la fila de inventario manda y
+  // luego cada consulta de productos agrega unicamente los que faltan.
+  const seenProductIds = new Set(
     mappedInventoryRows.map((item) => item.productId).filter(Boolean)
   );
 
-  const noStockProducts = await fetchNoStockProducts();
+  const takeUnseen = (products, mapProduct) =>
+    products
+      .filter((product) => {
+        if (!product?.id || seenProductIds.has(product.id)) {
+          return false;
+        }
 
-  const mappedNoStockProducts = noStockProducts
-    .filter((product) => !inventoryProductIds.has(product.id))
-    .map(mapNoStockProduct);
+        seenProductIds.add(product.id);
+        return true;
+      })
+      .map(mapProduct);
 
-  return sortInventoryRows([...mappedInventoryRows, ...mappedNoStockProducts]);
+  const [trackedProducts, noStockProducts] = await Promise.all([
+    fetchActiveProductsByTracking(true),
+    fetchActiveProductsByTracking(false),
+  ]);
+
+  const mappedNoBranchRecordProducts = takeUnseen(
+    trackedProducts,
+    mapNoBranchRecordProduct
+  );
+  const mappedNoStockProducts = takeUnseen(noStockProducts, mapNoStockProduct);
+
+  return sortInventoryRows([
+    ...mappedInventoryRows,
+    ...mappedNoBranchRecordProducts,
+    ...mappedNoStockProducts,
+  ]);
 };

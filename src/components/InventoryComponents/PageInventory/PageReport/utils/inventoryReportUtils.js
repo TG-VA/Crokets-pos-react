@@ -22,6 +22,11 @@ export const STOCK_FILTER_OPTIONS = [
     statusType: "notApplicable",
     label: "No aplica",
   },
+  {
+    value: `${STOCK_FILTER_PREFIX}noBranchRecord`,
+    statusType: "noBranchRecord",
+    label: "Sin registro en sucursal",
+  },
 ];
 
 export const INITIAL_FACET_FILTERS = {
@@ -119,13 +124,20 @@ export const getProductBaseName = (productName) => {
     .trim();
 };
 
+// Primero los productos con fila en la sucursal, luego los controlados sin
+// registro y al final los que no llevan control de inventario.
+const getInventoryGroupRank = (row) => {
+  if (row?.tracksInventory === false) return 2;
+  if (row?.noBranchRecord === true) return 1;
+  return 0;
+};
+
 export const sortInventoryRows = (list) => {
   return [...(Array.isArray(list) ? list : [])].sort((a, b) => {
-    const aTracksInventory = a?.tracksInventory !== false;
-    const bTracksInventory = b?.tracksInventory !== false;
+    const byGroup = getInventoryGroupRank(a) - getInventoryGroupRank(b);
 
-    if (aTracksInventory !== bTracksInventory) {
-      return aTracksInventory ? -1 : 1;
+    if (byGroup !== 0) {
+      return byGroup;
     }
 
     const aName = normalizeProductNameForSorting(a?.nombre);
@@ -192,6 +204,13 @@ export const sortInventoryRows = (list) => {
 };
 
 export const getStockStatus = (row) => {
+  if (row?.noBranchRecord === true) {
+    return {
+      type: "noBranchRecord",
+      label: "Sin registro en sucursal",
+    };
+  }
+
   if (
     row?.tracksInventory === false ||
     row?.existencia === null ||
@@ -365,6 +384,7 @@ export const getStockStatusCounts = (rows = []) => {
       lowStock: 0,
       available: 0,
       notApplicable: 0,
+      noBranchRecord: 0,
     }
   );
 };

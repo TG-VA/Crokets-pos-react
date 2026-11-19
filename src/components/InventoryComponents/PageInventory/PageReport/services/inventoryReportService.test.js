@@ -184,3 +184,94 @@ describe("fetchBranchOptions: solo sucursales operativas", () => {
     expect(getBranchOptionsFallback(null)).toEqual([]);
   });
 });
+
+describe("fetchInventoryReportRows: productos sin registro en la sucursal", () => {
+  beforeEach(() => {
+    supabase.from.mockReset();
+  });
+
+  const product = (id, overrides = {}) => ({
+    id,
+    barcode: `C-${id}`,
+    name: `PRODUCTO ${id}`,
+    status: true,
+    tracks_inventory: true,
+    departments: { name: "ALIMENTO" },
+    ...overrides,
+  });
+
+  const byTracking = (products) => (call) => {
+    const tracking = call.filters.find(
+      ([column]) => column === "tracks_inventory"
+    );
+    return products.filter(
+      (item) => !tracking || item.tracks_inventory === tracking[1]
+    );
+  };
+
+  it("mapea con flag explicito y valores nulos al producto sin fila", async () => {
+    mockTables({
+      branch_inventory: [],
+      products: byTracking([product("p1")]),
+    });
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      productId: "p1",
+      inventoryRowId: null,
+      existencia: null,
+      min: null,
+      max: null,
+      tracksInventory: true,
+      noBranchRecord: true,
+    });
+  });
+
+  it("un producto con fila en la sucursal no se repite como sin registro", async () => {
+    const [inventoryRow] = buildInventoryRows(1);
+    mockTables({
+      branch_inventory: [inventoryRow],
+      products: byTracking([product(inventoryRow.product_id), product("p9")]),
+    });
+
+    const rows = await fetchInventoryReportRows("b1");
+    const ids = rows.map((row) => row.productId);
+
+    expect(ids).toEqual([inventoryRow.product_id, "p9"]);
+    expect(rows[0].noBranchRecord).toBe(false);
+    expect(rows[0].existencia).toBe(5);
+    expect(rows[1].noBranchRecord).toBe(true);
+  });
+
+  it("los productos sin control de inventario no se marcan sin registro", async () => {
+    mockTables({
+      branch_inventory: [],
+      products: byTracking([product("s1", { tracks_inventory: false })]),
+    });
+
+    const [row] = await fetchInventoryReportRows("b1");
+
+    expect(row).toMatchObject({
+      productId: "s1",
+      tracksInventory: false,
+      noStockProduct: true,
+      noBranchRecord: false,
+    });
+  });
+
+  it("consulta los controlados solo activos y con tracks_inventory = true", async () => {
+    const calls = mockTables({ branch_inventory: [], products: [] });
+
+    await fetchInventoryReportRows("b1");
+
+    const trackedCall = calls.find(
+      (call) =>
+        call.table === "products" &&
+        call.filters.some(
+          ([column, value]) => column === "tracks_inventory" && value === true
+        )
+    );
+    expect(trackedCall.filters).toContainEqual(["status", true]);
+  });
+});

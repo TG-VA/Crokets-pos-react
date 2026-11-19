@@ -22,7 +22,9 @@ const InventoryReportRow = ({
         ? styles.lowStockRow
         : stockStatus.type === "notApplicable"
           ? styles.notApplicableRow
-          : "";
+          : stockStatus.type === "noBranchRecord"
+            ? styles.noBranchRecordRow
+            : "";
 
   const hasInventory = row?.tracksInventory !== false;
 
