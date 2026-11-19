@@ -107,4 +107,25 @@ describe("Inventory - enrutado", () => {
     await waitFor(() => expect(screen.getByTestId("page-add")).toBeTruthy());
     expect(screen.queryByTestId("admin-auth-modal")).toBeNull();
   });
+
+  it("la URL directa de Ajustes pide autorizacion a un no admin", async () => {
+    checkUserIsAdmin.mockResolvedValue(false);
+
+    renderAt("/inventory/ajustes");
+
+    const modal = await screen.findByTestId("admin-auth-modal");
+    expect(modal.textContent).toBe("inventory_adjust_access");
+    expect(screen.queryByTestId("page-adjustments")).toBeNull();
+  });
+
+  it("un admin entra directo a Ajustes", async () => {
+    checkUserIsAdmin.mockResolvedValue(true);
+
+    renderAt("/inventory/ajustes");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("page-adjustments")).toBeTruthy()
+    );
+    expect(screen.queryByTestId("admin-auth-modal")).toBeNull();
+  });
 });

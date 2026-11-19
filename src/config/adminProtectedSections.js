@@ -101,6 +101,12 @@ export const PROTECTED_INVENTORY_SECTIONS = [
     routeLabel: "Agregar inventario",
     action: "inventory_add_access",
   },
+  {
+    id: "ajustes",
+    routePath: "/inventory/ajustes",
+    routeLabel: "Ajustes de inventario",
+    action: "inventory_adjust_access",
+  },
 ];
 
 export const PROTECTED_INVOICE_SECTIONS = [

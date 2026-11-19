@@ -22,6 +22,7 @@ const INVENTORY_HOME_PATH = "/inventory/reporte-inventario";
 
 const PROTECTED_INVENTORY_COMPONENTS = {
   "/inventory/agregar": PageAdd,
+  "/inventory/ajustes": PageAdjustments,
 };
 
 const Inventory = () => {
@@ -69,7 +70,6 @@ const Inventory = () => {
               );
             }
           )}
-          <Route path="/ajustes" element={<PageAdjustments />} />
           <Route path="/reporte-inventario" element={<PageReport />} />
           <Route
             path="/reporte-movimientos"

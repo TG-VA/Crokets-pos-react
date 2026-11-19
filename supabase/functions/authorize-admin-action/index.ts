@@ -15,6 +15,7 @@ const corsHeaders = {
 // que es cuando la interfaz lo olvida.
 const DB_ENFORCED_GRANT_MINUTES: Record<string, number> = {
   inventory_add_access: 30,
+  inventory_adjust_access: 30,
 };
 
 const jsonResponse = (body: unknown, status = 200) => {

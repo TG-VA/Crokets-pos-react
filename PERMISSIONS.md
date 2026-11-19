@@ -147,6 +147,12 @@ nombre del usuario que llama, para la sucursal, con 30 minutos de vigencia. Pasa
 rechaza el alta y Agregar vuelve a abrir el modal en la misma pantalla; al autorizar, reintenta el
 alta sin perder la captura.
 
+**Inventario > Ajustes: autorización de administrador (18 nov 2026).**
+Ajustes (`/inventory/ajustes`) sigue el mismo esquema que Agregar con la acción
+`inventory_adjust_access`: `ProtectedRoute` y modal en la pestaña, y control en base de datos en
+`apply_inventory_adjustment` (`20261118150000`), que exige `is_admin()` o un grant vigente de 30
+minutos. Al vencer, Ajustes vuelve a abrir el modal y reintenta sin perder la captura.
+
 **Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
 `import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
 rechaza con `Solo un administrador puede importar productos.` antes de insertar. Es control en base

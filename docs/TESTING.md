@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (17 nov 2026)
+## Cobertura actual (18 nov 2026)
 
-331 archivos de test (**3401 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+343 archivos de test (**3511 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -69,9 +69,10 @@ y el proceso principal de Electron:
 | Inventario: alta vía RPC transaccional                    | `.../PageAdd/services/inventoryAddService.test.js`                                 |
 | Inventario: contrato SQL del alta transaccional y CPP     | `supabase/migrations/addInventoryEntryContract.test.js`                            |
 | Inventario: Agregar protegido por administrador           | `.../NavbarInventory/NavbarInventory.test.jsx`                                     |
-| Inventario: índice y URL directa de Agregar protegida     | `src/pages/Inventory/Inventory.test.jsx`                                           |
+| Inventario: índice y URL directa de Agregar/Ajustes       | `src/pages/Inventory/Inventory.test.jsx`                                           |
 | Inventario: mensaje de CPP al agregar (redondeado)        | `.../PageAdd/utils/inventoryAddFormatters.test.js`                                 |
-| Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Inventario: ajuste por RPC, sin costo y hints traducidos  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Contrato SQL del ajuste: guarda, lock, sin CPP, hints     | `supabase/migrations/applyInventoryAdjustmentContract.test.js`                     |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
 | Contrato SQL de RLS y escritura admin en branches         | `supabase/migrations/branchesRlsAdminWriteContract.test.js`                        |
@@ -207,8 +208,8 @@ y el proceso principal de Electron:
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
 | Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
-| Ajustes: carga, error y rechazo por codigo y F10 (hook)   | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
-| Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Ajustes: carga, F10, grant vencido y reintento (hook)     | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
+| Ajustes: buscador y accion del modal de reautorizacion    | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
 | Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
 | Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
 | Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |

@@ -258,6 +258,27 @@ aplica solo la migración, un cajero autorizado recibe el error; si se despliega
 autorización falla al no existir la tabla. Rollback: reaplicar la función de `20261117230000`,
 redesplegar la edge function anterior y `drop table public.admin_action_grants;`.
 
+## Ajuste transaccional de inventario (`20261118150000`)
+
+`20261118150000_apply_inventory_adjustment_rpc.sql` crea
+`apply_inventory_adjustment(uuid, uuid, numeric, text, text)` para Inventario > Ajustes, que antes
+escribía `branch_inventory` e `inventory_movements` desde el cliente en llamadas sueltas.
+
+- Exige acceso a la sucursal e `is_admin()` o una fila vigente de `admin_action_grants` para
+  `inventory_adjust_access` (mismo criterio que `add_inventory_entry`). Si no, rechaza con `42501`.
+- Bloquea la fila (advisory lock + `for update`), valida el stock resultante con el dato vigente y
+  escribe stock y movimiento `adjustment` en una sola transacción.
+- No toca `cost_price`: el cliente sobrescribía el CPP de la sucursal con el costo del catálogo.
+  `unit_cost`/`total_cost` quedan `NULL`, como en los movimientos que no son entradas.
+- Rechaza productos sin fila en la sucursal (el alta es de Agregar) con `hint = 'INVENTORY_NOT_REGISTERED'`
+  y el stock negativo con `hint = 'NEGATIVE_STOCK'`; el cliente traduce el hint a su mensaje.
+- `authorize-admin-action` registra el grant de `inventory_adjust_access` (30 minutos).
+
+**Orden de despliegue:** aplicar la migración y desplegar `authorize-admin-action` antes del
+instalador. Los instaladores anteriores siguen escribiendo directo en las tablas hasta actualizarse.
+Rollback: `drop function public.apply_inventory_adjustment(uuid, uuid, numeric, text, text);`,
+redesplegar la edge function anterior y volver al frontend anterior.
+
 ## Hora local en la recepción de pedidos (`20261118120000`)
 
 `20261118120000_store_orders_receipt_local_time.sql` reaplica `receive_store_order` (misma firma y
@@ -351,6 +372,7 @@ lo restauró `20261115170000` (`KNOWN_ISSUES.md` #90).
 
 | Fecha       | Migración                                                                                                | Estado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 18 nov 2026 | `20261118150000_apply_inventory_adjustment_rpc.sql`                                                      | **Aplicada** en remoto como `20261118230953 apply_inventory_adjustment_rpc`, junto con `authorize-admin-action` v8 (`verify_jwt` sigue en `false`). Verificado: una sola sobrecarga; `anon = false`, `authenticated = true`. Prueba con rollback: ajuste de -1 sobre stock 4 deja 3 con CPP 250.00 intacto; -999999 se rechaza por stock negativo.                                                                                                                                                                                                                                                                                                                                                                                          |
 | 17 nov 2026 | `20261118140000_users_roles_write_admin_only.sql`                                                        | **Aplicada** en remoto como `20261118225546 users_roles_write_admin_only`, con el instalador v1.0.15. Verificado con `has_table_privilege`: `anon` y `authenticated` solo tienen `SELECT` en las cinco tablas y ningún privilegio de escritura por columna; `admin_update_user` y `admin_set_user_status` con `anon = false`, `authenticated = true`.                                                                                                                                                                                                                                                                                                                                                                                       |
 | 17 nov 2026 | `20261117235000_add_inventory_entry_admin_or_grant.sql`                                                  | **Aplicada** en remoto como `20261117235350 add_inventory_entry_admin_or_grant`, junto con `authorize-admin-action` v5 (`verify_jwt` sigue en `false`). La v6 (17 nov 2026) agrega las correcciones del review de #213: `ok: false` al fallar el grant y `Object.hasOwn`. La v7 (17 nov 2026) baja la vigencia del grant a 30 minutos. Verificado: una sola sobrecarga con la guarda; `admin_action_grants` con RLS, 0 políticas, sin `select` para `anon`/`authenticated`; `anon` sin `EXECUTE`.                                                                                                                                                                                                                                           |
 | 17 nov 2026 | `20261118130000_backfill_store_orders_receipt_local_time.sql`                                            | **Aplicada** en remoto como `20261117225849 backfill_store_orders_receipt_local_time`. Verificado: 10 de 10 movimientos de recepción quedan en `accepted_at` convertido a la zona de la sucursal (`America/Cancun`) y 0 siguen en UTC.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
