@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeAdjustmentQuantityInput,
   parseAdjustmentQuantity,
-} from "./adjustmentQuantity";
+} from "./adjustmentQuantityCalculationService";
 
 describe("normalizeAdjustmentQuantityInput", () => {
   it.each([

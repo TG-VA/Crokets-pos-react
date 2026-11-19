@@ -10,7 +10,7 @@ import {
 import {
   normalizeAdjustmentQuantityInput,
   parseAdjustmentQuantity,
-} from "../utils/adjustmentQuantity";
+} from "../services/adjustmentQuantityCalculationService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import useGrantReauthorization from "../../shared/hooks/useGrantReauthorization";
 import useAdjustmentProductSelection from "./useAdjustmentProductSelection";
