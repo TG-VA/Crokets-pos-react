@@ -209,6 +209,27 @@ describe("inventoryAddService", () => {
       ).toBe(true);
     });
 
+    it("reconoce el rechazo por su hint aunque cambie el texto", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "42501",
+          hint: "ADMIN_GRANT_REQUIRED",
+          message: "Texto reescrito por cualquier motivo.",
+        })
+      ).toBe(true);
+    });
+
+    it("con un hint distinto no usa el fallback por mensaje", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "42501",
+          hint: "OTRO_HINT",
+          message:
+            "Agregar inventario requiere la autorizacion de un administrador.",
+        })
+      ).toBe(false);
+    });
+
     it("no confunde la falta de acceso a la sucursal con una autorizacion vencida", () => {
       expect(
         isAdminGrantRequiredError({
@@ -222,6 +243,7 @@ describe("inventoryAddService", () => {
       expect(
         isAdminGrantRequiredError({
           code: "P0001",
+          hint: "ADMIN_GRANT_REQUIRED",
           message: "requiere la autorizacion de un administrador",
         })
       ).toBe(false);

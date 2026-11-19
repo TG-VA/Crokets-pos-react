@@ -31,6 +31,7 @@ const product = {
 
 const grantError = {
   code: "42501",
+  hint: "ADMIN_GRANT_REQUIRED",
   message: "Agregar inventario requiere la autorizacion de un administrador.",
 };
 
