@@ -3030,18 +3030,12 @@ recepción.
 
 ---
 
-## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, cuarta ronda)
+## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, quinta ronda)
 
-Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `c4f4448`,
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 0 sugerencias). Head `f90ae02`,
 base `a3961cb`. Ejecución: 346 archivos / 3538 tests verdes; build OK; `check:agents` OK; Prettier OK;
-ESLint 0 errores. Mutaciones: 12 en la tercera ronda y 2 en esta, todas detectadas. I1, I2, S1, S2,
-S3, S4, S5 y S6 resueltos (S4: `useGrantReauthorization` movido a `src/hooks/` en `c4f4448`).
-
-### Hallazgos abiertos
-
-| #   | Hallazgo                                                                     | Severidad  |
-| --- | ---------------------------------------------------------------------------- | ---------- |
-| S7  | La entrada del historial incluida en el PR quedo desfasada respecto del head | Sugerencia |
+ESLint 0 errores. Mutaciones: 15 en total entre las rondas, todas detectadas. I1, I2 y S1 a S7
+resueltos.
 
 ### Estado al cierre
 
