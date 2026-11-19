@@ -2992,6 +2992,10 @@ escribiendo directo en la tabla (por ejemplo con un instalador anterior). Se cie
 - `InventoryReportTable` recibe `filters`, `filterActions` y `branchDetails`; el `label` usa
   `htmlFor`; las utilidades se dividen en `utils/inventoryReportFormatters.js` y
   `services/inventoryReportCalculationService.js`.
+- Las filas sin registro en la sucursal y las sin control de inventario incluyen `departmentId`
+  (hallazgo I1 de la auditoría del PR #226, commit `70084932`). Sin ese campo los filtros de
+  Realtime no las asociaban a su departamento: un cambio de precio de esos productos recargaba todo
+  el reporte y renombrar su departamento no refrescaba la fila.
 
 **Cobertura de tests:** `inventoryReportService.test.js` (paginación, tope, D1, D2 con fila, sin
 fila, sin control y duplicado, error propagado sin reintento), `inventoryReportCalculationService.test.js`
