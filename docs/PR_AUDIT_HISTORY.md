@@ -3027,3 +3027,17 @@ ESLint 0 errores. Mutaciones: 16 ejecutadas en dos rondas, 16 detectadas. I1 (Na
 Descripción del PR y `docs/TESTING.md` actualizados con la migración `20261117180000` (`92461115`).
 Pendiente de verificación humana en Electron (`npm run dev`) y en base remota del CPP tras la
 recepción.
+
+---
+
+## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, quinta ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 0 sugerencias). Head `f90ae02`,
+base `a3961cb`. Ejecución: 346 archivos / 3538 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 15 en total entre las rondas, todas detectadas. I1, I2 y S1 a S7
+resueltos.
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): reautorización con grant vencido en
+Agregar y Ajustes, y avisos con `useAppModal`.

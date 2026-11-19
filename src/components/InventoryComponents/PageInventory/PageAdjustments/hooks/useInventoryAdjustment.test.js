@@ -154,4 +154,60 @@ describe("useInventoryAdjustment", () => {
     expect(result.current.reauthorizationOpen).toBe(false);
     expect(result.current.appModal.title).toBe("Inventario ajustado");
   });
+
+  it("limpia la seleccion y cierra el buscador despues de guardar", async () => {
+    applyInventoryAdjustment.mockReset();
+    applyInventoryAdjustment.mockResolvedValueOnce({ newStock: 3 });
+    const { result } = renderWithCapture();
+    act(() => {
+      result.current.openSearchModal();
+    });
+
+    await act(async () => {
+      await result.current.handleSubmitAdjustment();
+    });
+
+    expect(result.current.selectedProduct).toBeNull();
+    expect(result.current.barcode).toBe("");
+    expect(result.current.searchModalOpen).toBe(false);
+    expect(result.current.quantityToAdjust).toBe("");
+  });
+
+  it("limpia la seleccion y cierra el buscador al cancelar", () => {
+    const { result } = renderWithCapture();
+    act(() => {
+      result.current.openSearchModal();
+    });
+
+    act(() => {
+      result.current.cancelCurrentOperation();
+    });
+
+    expect(result.current.selectedProduct).toBeNull();
+    expect(result.current.barcode).toBe("");
+    expect(result.current.searchModalOpen).toBe(false);
+    expect(result.current.quantityToAdjust).toBe("");
+  });
+
+  it.each([
+    ["NEGATIVE_STOCK", "Stock insuficiente"],
+    ["INVENTORY_NOT_REGISTERED", "Inventario no registrado"],
+  ])("muestra un aviso especifico para el error %s", async (code, title) => {
+    applyInventoryAdjustment.mockReset();
+    applyInventoryAdjustment.mockRejectedValueOnce({
+      code,
+      message: "Detalle",
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result } = renderWithCapture();
+
+    await act(async () => {
+      await result.current.handleSubmitAdjustment();
+    });
+
+    expect(result.current.appModal.type).toBe("warning");
+    expect(result.current.appModal.title).toBe(title);
+    expect(result.current.appModal.message).toBe("Detalle");
+    console.error.mockRestore();
+  });
 });
