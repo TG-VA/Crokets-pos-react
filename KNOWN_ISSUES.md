@@ -2936,3 +2936,74 @@ viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre.
 admin o grant solo vale para la RPC: la RLS `branch_inventory_update` sigue permitiendo UPDATE con
 `can_manage_inventory`, que el cajero tiene, así que un cajero puede cambiar `stock` sin grant
 escribiendo directo en la tabla (por ejemplo con un instalador anterior). Se cierra junto con #13.
+
+### 97. Inventario > Reporte de inventario truncaba en 1000 filas, inyectaba una sucursal fija y ocultaba productos sin registro
+
+**Estado:** Resuelto (19 nov 2026, rama `fix/inventario-reporte-hallazgos`).
+
+**Severidad:** Alta.
+
+**Problema:**
+
+- `fetchInventoryRowsByBranch` y `fetchNoStockProducts` consultaban sin `.limit()` ni `.range()`.
+  PostgREST corta cada respuesta en 1000 filas sin devolver error (ver #16), así que una sucursal
+  con más registros perdía productos en silencio.
+- El selector agregaba siempre la sucursal fija `POLI_BRANCH_ID` aunque no viniera de
+  `fetchOperationalBranches`, y el fallback ante error la ofrecía también. El nombre por defecto del
+  Excel era `POLIGONO`.
+- Los productos con `tracks_inventory = true` sin fila en `branch_inventory` de la sucursal no
+  aparecían en el reporte.
+- `INVENTORY_SELECT_CANDIDATES` reintentaba con un segundo select y ocultaba el error original.
+- `useInventoryReport` tenía dos rutas de carga por recurso (callbacks para Realtime y efectos para
+  la carga inicial), importaba `supabase` directamente y recargaba todo ante cualquier cambio de
+  `products` o `departments`. Ante un error vaciaba la tabla.
+- `InventoryReportTable` recibía 19 props sueltas, la etiqueta `Sucursal` no estaba asociada a su
+  `select` y `inventoryReportUtils.js` (444 líneas) mezclaba formateo con cálculo.
+
+**Decisiones de negocio:**
+
+- **D1.** El selector solo muestra las sucursales operativas que devuelve
+  `fetchOperationalBranches`; no se inyecta ninguna adicional. Ante error, el fallback ofrece solo
+  la sucursal actual y solo si es operativa.
+- **D2.** Los productos activos con `tracks_inventory = true` sin fila activa en `branch_inventory`
+  de la sucursal se muestran con el estado "Sin registro en sucursal" (`noBranchRecord: true`).
+  Existencia, mínimo y máximo quedan en `null` (se muestran vacíos, no 0) y no cuentan como
+  agotados ni como stock bajo.
+
+**Solución:**
+
+- Las consultas se leen por páginas de 1000 con `.range()` hasta `MAX_INVENTORY_REPORT_ROWS`
+  (10000), con orden estable (`created_at`, `id`).
+- Se eliminan `POLI_BRANCH_ID` e `includePoligonoBranch`; el nombre por defecto del archivo es
+  `SUCURSAL`.
+- D2 agrega su estado al badge, a la faceta de existencia, a los conteos, al ordenamiento
+  (registrados, luego sin registro, luego sin control) y a la nueva columna `ESTADO` del Excel. Un
+  producto nunca aparece dos veces: la fila de inventario manda y cada consulta de productos solo
+  agrega los que faltan.
+- Un solo select de inventario; el error se propaga tal cual.
+- Una sola ruta de carga por recurso: Realtime solo incrementa un token de recarga. Se mantiene
+  `useRequestStatus`.
+- `inventoryReportRealtimeService` concentra los canales. Los cambios de `products` y
+  `departments` pasan por filtros puros (`inventoryReportRealtimeFilters`) que los comparan con las
+  filas en pantalla, porque las tablas no usan `REPLICA IDENTITY FULL`: un cambio de precio, costo
+  o comisión ya no recarga el reporte. Se conserva el debounce de 250 ms.
+- Las filas se guardan junto con su sucursal: un error de recarga conserva los últimos datos
+  válidos de esa sucursal y nunca los muestra bajo otra.
+- `InventoryReportTable` recibe `filters`, `filterActions` y `branchDetails`; el `label` usa
+  `htmlFor`; las utilidades se dividen en `utils/inventoryReportFormatters.js` y
+  `services/inventoryReportCalculationService.js`.
+- Las filas sin registro en la sucursal y las sin control de inventario incluyen `departmentId`
+  (hallazgo I1 de la auditoría del PR #226, commit `70084932`). Sin ese campo los filtros de
+  Realtime no las asociaban a su departamento: un cambio de precio de esos productos recargaba todo
+  el reporte y renombrar su departamento no refrescaba la fila.
+
+**Cobertura de tests:** `inventoryReportService.test.js` (paginación, tope, D1, D2 con fila, sin
+fila, sin control y duplicado, error propagado sin reintento), `inventoryReportCalculationService.test.js`
+(estado, conteos, filtro y orden de D2), `exportInventoryReport.test.js` (columna de estado),
+`inventoryReportFormatters.test.js`, `inventoryReportRealtimeFilters.test.js`,
+`inventoryReportRealtimeService.test.js`, `useInventoryReport.test.js` (ruta única, recarga
+acotada, respuesta descartada y conservación de datos ante error) y `PageReport.test.jsx` (etiqueta
+del selector).
+
+**Pendiente:** el tope de 10000 filas sigue siendo un límite del cliente. Si una sucursal lo
+supera, migrar el reporte a un RPC paginado como `get_branch_products_paginated` (#16).

@@ -4,56 +4,65 @@ import {
   isOperationalBranch,
 } from "../../../../../services/branchScopeService";
 
-import { sortInventoryRows } from "../utils/inventoryReportUtils";
+import { sortInventoryRows } from "./inventoryReportCalculationService";
 
-const POLI_BRANCH_ID = "412f367f-7c86-45ca-9e91-b8fe6274b232";
+// PostgREST trunca cada respuesta en 1000 filas sin devolver error. Las
+// consultas del reporte se leen por paginas de ese tamano y se detienen en un
+// tope explicito, el mismo criterio que el catalogo de ProductsContext.
+export const INVENTORY_REPORT_PAGE_SIZE = 1000;
+export const MAX_INVENTORY_REPORT_ROWS = 10000;
 
-const INVENTORY_SELECT_CANDIDATES = [
-  `
+const fetchAllPages = async (buildQuery) => {
+  const rows = [];
+
+  for (
+    let from = 0;
+    from < MAX_INVENTORY_REPORT_ROWS;
+    from += INVENTORY_REPORT_PAGE_SIZE
+  ) {
+    const to =
+      Math.min(from + INVENTORY_REPORT_PAGE_SIZE, MAX_INVENTORY_REPORT_ROWS) -
+      1;
+    const { data, error } = await buildQuery().range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+
+    if (page.length < to - from + 1) {
+      break;
+    }
+  }
+
+  return rows;
+};
+
+const INVENTORY_SELECT = `
+  id,
+  branch_id,
+  product_id,
+  stock,
+  min_stock,
+  max_stock,
+  is_active,
+  products:product_id(
     id,
-    branch_id,
-    product_id,
-    stock,
-    min_stock,
-    max_stock,
-    is_active,
-    products:product_id(
-      id,
-      barcode,
-      name,
-      department_id,
-      is_global,
-      status,
-      tracks_inventory,
-      departments(
-        name
-      )
+    barcode,
+    name,
+    department_id,
+    is_global,
+    status,
+    tracks_inventory,
+    departments(
+      name
     )
-  `,
-  `
-    id,
-    branch_id,
-    product_id,
-    stock,
-    min_stock,
-    max_stock,
-    is_active,
-    products(
-      id,
-      barcode,
-      name,
-      department_id,
-      is_global,
-      status,
-      tracks_inventory,
-      departments(
-        name
-      )
-    )
-  `,
-];
+  )
+`;
 
-const NO_STOCK_PRODUCTS_SELECT = `
+const PRODUCTS_SELECT = `
   id,
   barcode,
   name,
@@ -66,50 +75,19 @@ const NO_STOCK_PRODUCTS_SELECT = `
   )
 `;
 
+// Ante un error al listar sucursales solo se ofrece la sucursal actual, y solo
+// si es operativa: el selector nunca muestra sucursales que el catalogo no
+// confirmo como operativas.
 const buildBranchFallback = (currentBranch) => {
-  if (!currentBranch?.id) {
+  if (!currentBranch?.id || !isOperationalBranch(currentBranch)) {
     return [];
   }
 
-  const branches = [
-    {
-      id: POLI_BRANCH_ID,
-      name: "POLÍGONO",
-      code: "",
-    },
-  ];
-
-  if (
-    currentBranch.id !== POLI_BRANCH_ID &&
-    isOperationalBranch(currentBranch)
-  ) {
-    branches.push({
-      id: currentBranch.id,
-      name: currentBranch?.name || "Sucursal actual",
-      code: currentBranch?.code || "",
-    });
-  }
-
-  return branches;
-};
-
-const includePoligonoBranch = (branches) => {
-  const branchesList = Array.isArray(branches) ? branches : [];
-
-  const includesPoligono = branchesList.some(
-    (item) => item?.id === POLI_BRANCH_ID
-  );
-
-  if (includesPoligono) {
-    return branchesList;
-  }
-
   return [
-    ...branchesList,
     {
-      id: POLI_BRANCH_ID,
-      name: "POLÍGONO",
-      code: "",
+      id: currentBranch.id,
+      name: currentBranch.name || "Sucursal actual",
+      code: currentBranch.code || "",
     },
   ];
 };
@@ -133,11 +111,13 @@ const mapInventoryRow = (item) => {
     codigo: String(product?.barcode ?? ""),
     nombre: String(product?.name ?? ""),
     depto: getDepartmentName(product),
+    departmentId: product?.department_id ?? null,
     existencia: Number(item?.stock ?? 0) || 0,
     min: Number(item?.min_stock ?? 0) || 0,
     max: Number(item?.max_stock ?? 0) || 0,
     tracksInventory: product?.tracks_inventory !== false,
     noStockProduct: false,
+    noBranchRecord: false,
   };
 };
 
@@ -147,60 +127,53 @@ const mapNoStockProduct = (product) => ({
   codigo: String(product?.barcode ?? ""),
   nombre: String(product?.name ?? ""),
   depto: getDepartmentName(product),
+  departmentId: product?.department_id ?? null,
   existencia: null,
   min: null,
   max: null,
   tracksInventory: false,
   noStockProduct: true,
+  noBranchRecord: false,
 });
 
-const fetchInventoryRowsByBranch = async (branchId) => {
-  let inventoryRows = [];
-  let lastError = null;
+// Producto con control de inventario que no tiene fila activa en la sucursal:
+// sus valores quedan en null para no confundirlo con un agotado.
+const mapNoBranchRecordProduct = (product) => ({
+  inventoryRowId: null,
+  productId: product?.id ?? null,
+  codigo: String(product?.barcode ?? ""),
+  nombre: String(product?.name ?? ""),
+  depto: getDepartmentName(product),
+  departmentId: product?.department_id ?? null,
+  existencia: null,
+  min: null,
+  max: null,
+  tracksInventory: true,
+  noStockProduct: false,
+  noBranchRecord: true,
+});
 
-  for (const selectClause of INVENTORY_SELECT_CANDIDATES) {
-    const result = await supabase
+const fetchInventoryRowsByBranch = (branchId) =>
+  fetchAllPages(() =>
+    supabase
       .from("branch_inventory")
-      .select(selectClause)
+      .select(INVENTORY_SELECT)
       .eq("branch_id", branchId)
       .eq("is_active", true)
-      .order("created_at", {
-        ascending: false,
-      });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+  );
 
-    if (result.error) {
-      lastError = result.error;
-      continue;
-    }
-
-    inventoryRows = result.data ?? [];
-    lastError = null;
-    break;
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-
-  return inventoryRows;
-};
-
-const fetchNoStockProducts = async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select(NO_STOCK_PRODUCTS_SELECT)
-    .eq("status", true)
-    .eq("tracks_inventory", false)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  return Array.isArray(data) ? data : [];
-};
+const fetchActiveProductsByTracking = (tracksInventory) =>
+  fetchAllPages(() =>
+    supabase
+      .from("products")
+      .select(PRODUCTS_SELECT)
+      .eq("status", true)
+      .eq("tracks_inventory", tracksInventory)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+  );
 
 export const fetchBranchOptions = async (currentBranch) => {
   try {
@@ -210,7 +183,7 @@ export const fetchBranchOptions = async (currentBranch) => {
       throw error;
     }
 
-    return includePoligonoBranch(data);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     error.branchFallback = buildBranchFallback(currentBranch);
     throw error;
@@ -240,15 +213,38 @@ export const fetchInventoryReportRows = async (branchId) => {
 
   const mappedInventoryRows = activeInventoryRows.map(mapInventoryRow);
 
-  const inventoryProductIds = new Set(
+  // Un producto solo puede aparecer una vez: la fila de inventario manda y
+  // luego cada consulta de productos agrega unicamente los que faltan.
+  const seenProductIds = new Set(
     mappedInventoryRows.map((item) => item.productId).filter(Boolean)
   );
 
-  const noStockProducts = await fetchNoStockProducts();
+  const takeUnseen = (products, mapProduct) =>
+    products
+      .filter((product) => {
+        if (!product?.id || seenProductIds.has(product.id)) {
+          return false;
+        }
 
-  const mappedNoStockProducts = noStockProducts
-    .filter((product) => !inventoryProductIds.has(product.id))
-    .map(mapNoStockProduct);
+        seenProductIds.add(product.id);
+        return true;
+      })
+      .map(mapProduct);
 
-  return sortInventoryRows([...mappedInventoryRows, ...mappedNoStockProducts]);
+  const [trackedProducts, noStockProducts] = await Promise.all([
+    fetchActiveProductsByTracking(true),
+    fetchActiveProductsByTracking(false),
+  ]);
+
+  const mappedNoBranchRecordProducts = takeUnseen(
+    trackedProducts,
+    mapNoBranchRecordProduct
+  );
+  const mappedNoStockProducts = takeUnseen(noStockProducts, mapNoStockProduct);
+
+  return sortInventoryRows([
+    ...mappedInventoryRows,
+    ...mappedNoBranchRecordProducts,
+    ...mappedNoStockProducts,
+  ]);
 };

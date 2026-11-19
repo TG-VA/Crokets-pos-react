@@ -1,7 +1,8 @@
 import React from "react";
 import styles from "./InventoryReportRows.module.css";
 
-import { getStockStatus, toUpperSafe } from "../utils/inventoryReportUtils";
+import { getStockStatus } from "../services/inventoryReportCalculationService";
+import { toUpperSafe } from "../utils/inventoryReportFormatters";
 
 import InventoryDetailRow from "./InventoryDetailRow";
 
@@ -22,7 +23,9 @@ const InventoryReportRow = ({
         ? styles.lowStockRow
         : stockStatus.type === "notApplicable"
           ? styles.notApplicableRow
-          : "";
+          : stockStatus.type === "noBranchRecord"
+            ? styles.noBranchRecordRow
+            : "";
 
   const hasInventory = row?.tracksInventory !== false;
 

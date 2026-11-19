@@ -341,6 +341,10 @@
   background: #8a9299;
 }
 
+.noBranchRecordDot {
+  background: #6b84a8;
+}
+
 .stockStatusLabel {
   min-width: 0;
 }
