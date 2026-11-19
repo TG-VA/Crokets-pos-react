@@ -2916,6 +2916,9 @@ bloqueo de fila, no toca el CPP, rechaza productos sin fila y exige admin o gran
 `inventory_adjust_access`. Ajustes entra a `PROTECTED_INVENTORY_SECTIONS` y pide reautorizar al
 vencer el grant. Lo fijan `applyInventoryAdjustmentContract.test.js`,
 `inventoryAdjustmentService.test.js` y `useInventoryAdjustment.test.js`.
+`20261118160000` (aplicada en remoto como `20261118235405`) añade `hint = 'ADMIN_GRANT_REQUIRED'`
+a ese rechazo y el cliente lo detecta solo por el hint, sin depender del texto del mensaje; el
+fallback por mensaje se retiró al quedar aplicada.
 
 **Pendiente fuera de este cambio:** la tabla `inventory_adjustments` sigue sin uso (motivo y notas
 viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre. La exigencia de
