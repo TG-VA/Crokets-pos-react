@@ -19,6 +19,7 @@ import {
 import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 
 const REALTIME_REFRESH_DELAY_MS = 250;
+const EMPTY_ROWS = [];
 
 const useInventoryReport = () => {
   const { branch } = useBranch();
@@ -34,7 +35,10 @@ const useInventoryReport = () => {
   const defaultBranchId = isOperationalBranch(branch) ? branch.id : "";
   const selectedBranchId = branchOverride || defaultBranchId;
 
-  const [rows, setRows] = useState([]);
+  // Las filas se guardan junto con la sucursal que las produjo: ante un error
+  // de recarga se conservan los ultimos datos validos de esa sucursal, pero
+  // nunca se muestran bajo otra sucursal.
+  const [report, setReport] = useState({ branchId: "", rows: [] });
   const [error, setError] = useState("");
 
   // La carga se deriva de la sucursal pedida en lugar de marcarse con un
@@ -47,10 +51,12 @@ const useInventoryReport = () => {
   // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
   const visibleError = isStale ? "" : error;
 
-  // Sin sucursal no hay reporte que mostrar; antes esto se resolvia limpiando
-  // filas y error desde dentro de la carga, con lo que ademas habia que esperar
-  // un turno de render para que la tabla quedara vacia.
-  const visibleRows = selectedBranchId ? rows : [];
+  // Sin sucursal, o mientras la sucursal pedida no tenga datos propios, la
+  // tabla queda vacia.
+  const rows =
+    selectedBranchId && report.branchId === selectedBranchId
+      ? report.rows
+      : EMPTY_ROWS;
 
   // Cada recarga en tiempo real solo incrementa su token: la peticion vive en
   // un unico efecto por recurso, que tambien cubre la carga inicial y el
@@ -95,14 +101,13 @@ const useInventoryReport = () => {
     fetchInventoryReportRows(selectedBranchId)
       .then((inventoryRows) => {
         if (cancelled) return;
-        setRows(inventoryRows);
+        setReport({ branchId: selectedBranchId, rows: inventoryRows });
         setError("");
         markSettled();
       })
       .catch((loadError) => {
         if (cancelled) return;
         console.error("Error cargando reporte de inventario:", loadError);
-        setRows([]);
         setError("No se pudo cargar el reporte de inventario.");
         markSettled();
       });
@@ -182,7 +187,7 @@ const useInventoryReport = () => {
   return {
     branchOptions,
     selectedBranchId,
-    rows: visibleRows,
+    rows,
     loading: isLoading,
     error: visibleError,
     handleBranchChange,

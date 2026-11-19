@@ -172,3 +172,44 @@ describe("useInventoryReport ruta unica de carga", () => {
     expect(result.current.rows).toEqual([{ id: "b2-row" }]);
   });
 });
+
+describe("useInventoryReport ante error de carga", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    branchState.current = { id: "b1", branch_type: "operational" };
+    fetchBranchOptions.mockResolvedValue([{ id: "b1", name: "Centro" }]);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("conserva las ultimas filas validas y muestra el error", async () => {
+    fetchInventoryReportRows
+      .mockResolvedValueOnce([{ id: "r1" }])
+      .mockRejectedValueOnce(new Error("red caida"));
+
+    const { result } = renderHook(() => useInventoryReport());
+    await waitFor(() => expect(result.current.rows).toEqual([{ id: "r1" }]));
+
+    emitRealtimeChange("branch_inventory");
+
+    await waitFor(() =>
+      expect(result.current.error).toBe(
+        "No se pudo cargar el reporte de inventario."
+      )
+    );
+    expect(result.current.rows).toEqual([{ id: "r1" }]);
+  });
+
+  it("no muestra filas de otra sucursal si falla la carga de la nueva", async () => {
+    fetchInventoryReportRows
+      .mockResolvedValueOnce([{ id: "r1" }])
+      .mockRejectedValueOnce(new Error("red caida"));
+
+    const { result } = renderHook(() => useInventoryReport());
+    await waitFor(() => expect(result.current.rows).toEqual([{ id: "r1" }]));
+
+    act(() => result.current.handleBranchChange("b2"));
+
+    await waitFor(() => expect(result.current.error).not.toBe(""));
+    expect(result.current.rows).toEqual([]);
+  });
+});
