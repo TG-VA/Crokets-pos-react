@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect, vi } from "vitest";
-import {
-  ADMIN_GRANT_REQUIRED_HINT,
-  ADMIN_GRANT_REQUIRED_MESSAGE,
-} from "../../src/components/InventoryComponents/PageInventory/PageAdd/services/inventoryAddService";
+import { ADMIN_GRANT_REQUIRED_HINT } from "../../src/components/InventoryComponents/PageInventory/PageAdd/services/inventoryAddService";
 
 vi.mock("../../src/lib/supabaseClient", () => ({ supabase: {} }));
 
@@ -14,6 +11,11 @@ const MIGRATION = join(
 );
 
 const normalizedSql = readFileSync(MIGRATION, "utf8").replace(/\s+/g, " ");
+
+// Texto del rechazo en SQL. El cliente ya no lo compara (solo el hint), pero
+// sigue fijando que 20261118170000 no cambio el mensaje.
+const ADMIN_GRANT_REQUIRED_MESSAGE =
+  "requiere la autorizacion de un administrador";
 
 const SIGNATURE = "public.add_inventory_entry(uuid, uuid, numeric, numeric)";
 
@@ -57,7 +59,7 @@ describe("contrato SQL de add_inventory_entry con admin o autorizacion", () => {
     );
   });
 
-  it("rechaza con 42501 y el texto que reconoce el cliente para reautorizar", () => {
+  it("rechaza con 42501 y el texto de autorizacion requerida", () => {
     expect(normalizedSql).toContain(
       `raise exception 'Agregar inventario ${ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
     );

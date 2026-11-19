@@ -199,16 +199,6 @@ describe("inventoryAddService", () => {
   });
 
   describe("isAdminGrantRequiredError", () => {
-    it("reconoce el rechazo por autorizacion faltante o vencida", () => {
-      expect(
-        isAdminGrantRequiredError({
-          code: "42501",
-          message:
-            "Agregar inventario requiere la autorizacion de un administrador.",
-        })
-      ).toBe(true);
-    });
-
     it("reconoce el rechazo por su hint aunque cambie el texto", () => {
       expect(
         isAdminGrantRequiredError({
@@ -219,7 +209,14 @@ describe("inventoryAddService", () => {
       ).toBe(true);
     });
 
-    it("con un hint distinto no usa el fallback por mensaje", () => {
+    it("sin el hint no lo reconoce aunque el mensaje coincida", () => {
+      expect(
+        isAdminGrantRequiredError({
+          code: "42501",
+          message:
+            "Agregar inventario requiere la autorizacion de un administrador.",
+        })
+      ).toBe(false);
       expect(
         isAdminGrantRequiredError({
           code: "42501",

@@ -5,6 +5,13 @@ import { supabase } from "./supabaseClient";
 // autorizacion vigente de `authorize-admin-action`. Contrato con las migraciones.
 export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
 
+/**
+ * Indica si una RPC de inventario rechazo la operacion porque la autorizacion
+ * del administrador no existe o ya vencio (42501 con el hint del contrato).
+ */
+export const isAdminGrantRequiredError = (error) =>
+  error?.code === "42501" && error.hint === ADMIN_GRANT_REQUIRED_HINT;
+
 export const authorizeAdminAction = async ({
   username,
   password,
