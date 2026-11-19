@@ -29,8 +29,25 @@ describe("migracion get_branch_inventory_report", () => {
     expect(sql).toContain("'no_stock'");
   });
 
+  it("da prioridad a la fila de inventario sobre el producto sin registro", () => {
+    expect(sql).toMatch(
+      /when bi\.id is not null then 'inventory'\s+when p\.tracks_inventory is true then 'no_branch_record'/
+    );
+  });
+
+  it("excluye productos con tracks_inventory nulo y sin fila", () => {
+    expect(sql).toContain(
+      "bi.id is not null or p.tracks_inventory is not null"
+    );
+  });
+
+  it("fija el search_path", () => {
+    expect(sql).toMatch(/set search_path = public/i);
+  });
+
   it("no usa security definer y no concede EXECUTE a anon", () => {
     expect(sql).not.toMatch(/security definer/i);
+    expect(sql).toMatch(/revoke execute[^;]*from public/i);
     expect(sql).toMatch(/revoke[^;]*from anon/i);
     expect(sql).toMatch(/grant execute[^;]*to authenticated/i);
     expect(sql).not.toMatch(/grant\s+execute[^;]*\banon\b/i);
