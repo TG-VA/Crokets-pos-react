@@ -72,12 +72,14 @@ const useMovementsReport = () => {
 
   const [error, setError] = useState("");
 
-  // La carga se deriva de la sucursal pedida en lugar de marcarse con un
-  // setLoading(true) sincrono, que provocaba un re-render en cascada. Sin
-  // sucursal la clave es null, que es la clave inicial de las peticiones
+  // La carga se deriva de la sucursal y el rango pedidos en lugar de marcarse
+  // con un setLoading(true) sincrono, que provocaba un re-render en cascada.
+  // Sin sucursal la clave es null, que es la clave inicial de las peticiones
   // resueltas, asi que no hay nada pendiente que mostrar.
   const { isLoading, isStale, markSettled } = useRequestStatus(
-    selectedBranchId || null
+    selectedBranchId
+      ? `${selectedBranchId}|${startDateKey}|${endDateKey}`
+      : null
   );
 
   // El error de una peticion anterior no debe mostrarse mientras corre la nueva.
@@ -109,6 +111,8 @@ const useMovementsReport = () => {
     try {
       const movements = await loadMovementsReport({
         branchId: selectedBranchId,
+        startDateKey,
+        endDateKey,
       });
 
       setRows(movements);
@@ -129,7 +133,7 @@ const useMovementsReport = () => {
     } finally {
       markSettled();
     }
-  }, [selectedBranchId, markSettled]);
+  }, [selectedBranchId, startDateKey, endDateKey, markSettled]);
 
   // Los efectos llaman directo a las funciones de datos importadas y aplican el
   // estado en la continuacion asincrona; los callbacks quedan para las llamadas
@@ -162,6 +166,8 @@ const useMovementsReport = () => {
 
     loadMovementsReport({
       branchId: selectedBranchId,
+      startDateKey,
+      endDateKey,
     })
       .then((movements) => {
         if (cancelled) return;
@@ -186,7 +192,7 @@ const useMovementsReport = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedBranchId, markSettled]);
+  }, [selectedBranchId, startDateKey, endDateKey, markSettled]);
 
   // La sucursal del contexto solo pisa la seleccion cuando aun no hay una
   // eleccion propia o cuando sigue apuntando a la sucursal "POLI". El ajuste se

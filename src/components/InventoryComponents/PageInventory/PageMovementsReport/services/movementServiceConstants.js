@@ -4,7 +4,8 @@ export const INVENTORY_MOVEMENTS_TABLE = "inventory_movements";
 
 export const REWARD_REDEMPTIONS_TABLE = "sale_reward_redemptions";
 
-export const DEFAULT_MAX_MOVEMENTS = 500;
+// Tope de filas por respuesta de PostgREST (db-max-rows).
+export const MOVEMENTS_PAGE_SIZE = 1000;
 
 export const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v5";
 

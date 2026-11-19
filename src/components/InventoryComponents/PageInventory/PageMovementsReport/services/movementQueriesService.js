@@ -6,6 +6,7 @@ import {
 
 import {
   INVENTORY_MOVEMENTS_TABLE,
+  MOVEMENTS_PAGE_SIZE,
   MOVEMENTS_CANCELED_SALES_SELECT_KEY,
   MOVEMENTS_PRODUCTS_SELECT_KEY,
   MOVEMENTS_REDEMPTIONS_SELECT_KEY,
@@ -25,6 +26,43 @@ import {
   isMissingRelationError,
   setCachedValue,
 } from "./movementServiceUtils";
+
+// PostgREST corta cada respuesta en 1000 filas sin devolver error. Las
+// consultas del periodo se leen por paginas con .range() hasta que una pagina
+// llega incompleta, sin tope total: el rango de fechas ya acota el volumen.
+export const fetchAllPages = async (buildQuery) => {
+  const rows = [];
+
+  for (let from = 0; ; from += MOVEMENTS_PAGE_SIZE) {
+    const to = from + MOVEMENTS_PAGE_SIZE - 1;
+    const { data, error } = await buildQuery().range(from, to);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+
+    if (page.length < MOVEMENTS_PAGE_SIZE) {
+      return { data: rows, error: null };
+    }
+  }
+};
+
+const applyDateWindow = (query, column, { startISO, endISO } = {}) => {
+  let nextQuery = query;
+
+  if (startISO) {
+    nextQuery = nextQuery.gte(column, startISO);
+  }
+
+  if (endISO) {
+    nextQuery = nextQuery.lt(column, endISO);
+  }
+
+  return nextQuery;
+};
 
 const buildFallbackBranches = (currentBranch) => {
   const fallbackBranches = [
@@ -83,11 +121,12 @@ export const loadMovementBranches = async ({ currentBranch = null } = {}) => {
   }
 };
 
-export const loadBaseMovements = async ({ branchId, maxMovements }) => {
-  let query = supabase
-    .from(INVENTORY_MOVEMENTS_TABLE)
-    .select(
-      `
+export const loadBaseMovements = async ({ branchId, startISO, endISO }) => {
+  const buildQuery = () => {
+    let query = supabase
+      .from(INVENTORY_MOVEMENTS_TABLE)
+      .select(
+        `
         id,
         sale_id,
         branch_id,
@@ -100,17 +139,22 @@ export const loadBaseMovements = async ({ branchId, maxMovements }) => {
         user_id,
         created_at
       `
-    )
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(maxMovements);
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .order("id", {
+        ascending: false,
+      });
 
-  if (branchId) {
-    query = query.eq("branch_id", branchId);
-  }
+    if (branchId) {
+      query = query.eq("branch_id", branchId);
+    }
 
-  const response = await query;
+    return applyDateWindow(query, "created_at", { startISO, endISO });
+  };
+
+  const response = await fetchAllPages(buildQuery);
 
   if (response.error) {
     throw response.error;
@@ -119,7 +163,7 @@ export const loadBaseMovements = async ({ branchId, maxMovements }) => {
   return Array.isArray(response.data) ? response.data : [];
 };
 
-export const loadRewardRedemptions = async ({ branchId, maxMovements }) => {
+export const loadRewardRedemptions = async ({ branchId, startISO, endISO }) => {
   const cachedSelect = getCachedValue(MOVEMENTS_REDEMPTIONS_SELECT_KEY);
 
   const candidates = [
@@ -208,19 +252,25 @@ export const loadRewardRedemptions = async ({ branchId, maxMovements }) => {
   ].filter(Boolean);
 
   for (const selectFields of candidates) {
-    let query = supabase
-      .from(REWARD_REDEMPTIONS_TABLE)
-      .select(selectFields)
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(maxMovements);
+    const buildQuery = () => {
+      let query = supabase
+        .from(REWARD_REDEMPTIONS_TABLE)
+        .select(selectFields)
+        .order("created_at", {
+          ascending: false,
+        })
+        .order("id", {
+          ascending: false,
+        });
 
-    if (branchId) {
-      query = query.eq("branch_id", branchId);
-    }
+      if (branchId) {
+        query = query.eq("branch_id", branchId);
+      }
 
-    const response = await query;
+      return applyDateWindow(query, "created_at", { startISO, endISO });
+    };
+
+    const response = await fetchAllPages(buildQuery);
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_REDEMPTIONS_SELECT_KEY, selectFields);
@@ -405,8 +455,8 @@ const loadRowsByColumn = async ({
   return [];
 };
 
-export const loadSalesByBranch = async ({ branchId, maxMovements }) => {
-  if (!branchId || !Number.isFinite(maxMovements) || maxMovements <= 0) {
+export const loadSalesByBranch = async ({ branchId, startISO, endISO }) => {
+  if (!branchId) {
     return [];
   }
 
@@ -414,12 +464,18 @@ export const loadSalesByBranch = async ({ branchId, maxMovements }) => {
   const candidates = getSalesSelectCandidates(cachedSelect);
 
   for (const selectFields of candidates) {
-    const response = await supabase
-      .from("sales")
-      .select(selectFields)
-      .eq("branch_id", branchId)
-      .order("sale_date", { ascending: false })
-      .limit(maxMovements);
+    const response = await fetchAllPages(() =>
+      applyDateWindow(
+        supabase
+          .from("sales")
+          .select(selectFields)
+          .eq("branch_id", branchId)
+          .order("sale_date", { ascending: false })
+          .order("id", { ascending: false }),
+        "sale_date",
+        { startISO, endISO }
+      )
+    );
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_SALES_SELECT_KEY, selectFields);

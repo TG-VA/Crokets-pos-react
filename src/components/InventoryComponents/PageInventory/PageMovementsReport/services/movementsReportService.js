@@ -1,4 +1,4 @@
-import { DEFAULT_MAX_MOVEMENTS } from "./movementServiceConstants";
+import { getServerDateWindow } from "../utils/movementDateUtils";
 
 import {
   loadBaseMovements,
@@ -27,7 +27,6 @@ import {
 } from "./movementServiceUtils";
 
 export {
-  DEFAULT_MAX_MOVEMENTS,
   INVENTORY_MOVEMENTS_TABLE,
   POLI_BRANCH_ID,
   REWARD_REDEMPTIONS_TABLE,
@@ -37,22 +36,25 @@ export { loadMovementBranches } from "./movementQueriesService";
 
 export const loadMovementsReport = async ({
   branchId,
-  maxMovements = DEFAULT_MAX_MOVEMENTS,
+  startDateKey,
+  endDateKey,
 }) => {
+  const dateWindow = getServerDateWindow(startDateKey, endDateKey) ?? {};
+
   const [baseRows, rewardRows, standaloneSales] = await Promise.all([
     loadBaseMovements({
       branchId,
-      maxMovements,
+      ...dateWindow,
     }),
 
     loadRewardRedemptions({
       branchId,
-      maxMovements,
+      ...dateWindow,
     }),
 
     loadSalesByBranch({
       branchId,
-      maxMovements,
+      ...dateWindow,
     }),
   ]);
 
