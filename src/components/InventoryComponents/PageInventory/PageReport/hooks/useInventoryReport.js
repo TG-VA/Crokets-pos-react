@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { useBranch } from "../../../../../contexts/BranchContext";
@@ -45,42 +45,15 @@ const useInventoryReport = () => {
   // un turno de render para que la tabla quedara vacia.
   const visibleRows = selectedBranchId ? rows : [];
 
-  const isMountedRef = useRef(true);
-  const inventoryRequestIdRef = useRef(0);
-  const inventoryRefreshTimeoutRef = useRef(null);
+  // Cada recarga en tiempo real solo incrementa su token: la peticion vive en
+  // un unico efecto por recurso, que tambien cubre la carga inicial y el
+  // cambio de sucursal, y descarta respuestas de peticiones ya reemplazadas.
+  const [branchesReloadToken, setBranchesReloadToken] = useState(0);
+  const [inventoryReloadToken, setInventoryReloadToken] = useState(0);
+
   const branchesRefreshTimeoutRef = useRef(null);
+  const inventoryRefreshTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const loadBranches = useCallback(async () => {
-    try {
-      const options = await fetchBranchOptions(branch);
-
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      setBranchOptions(options);
-    } catch (loadError) {
-      console.error("Error cargando sucursales:", loadError);
-
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      setBranchOptions(getBranchOptionsFallback(branch));
-    }
-  }, [branch]);
-
-  // El efecto llama directo a la funcion de datos importada y aplica el estado
-  // en la continuacion asincrona; `loadBranches` queda para el refresco en
-  // tiempo real disparado por la suscripcion.
   useEffect(() => {
     let cancelled = false;
 
@@ -98,7 +71,34 @@ const useInventoryReport = () => {
     return () => {
       cancelled = true;
     };
-  }, [branch]);
+  }, [branch, branchesReloadToken]);
+
+  useEffect(() => {
+    if (!selectedBranchId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    fetchInventoryReportRows(selectedBranchId)
+      .then((inventoryRows) => {
+        if (cancelled) return;
+        setRows(inventoryRows);
+        setError("");
+        markSettled();
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error("Error cargando reporte de inventario:", loadError);
+        setRows([]);
+        setError("No se pudo cargar el reporte de inventario.");
+        markSettled();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBranchId, inventoryReloadToken, markSettled]);
 
   useEffect(() => {
     const scheduleBranchesRefresh = () => {
@@ -107,7 +107,7 @@ const useInventoryReport = () => {
       }
 
       branchesRefreshTimeoutRef.current = window.setTimeout(() => {
-        loadBranches();
+        setBranchesReloadToken((token) => token + 1);
       }, REALTIME_REFRESH_DELAY_MS);
     };
 
@@ -140,75 +140,7 @@ const useInventoryReport = () => {
 
       supabase.removeChannel(channel);
     };
-  }, [loadBranches]);
-
-  const loadInventoryByBranch = useCallback(async () => {
-    if (!selectedBranchId) {
-      return;
-    }
-
-    const requestId = inventoryRequestIdRef.current + 1;
-
-    inventoryRequestIdRef.current = requestId;
-
-    if (isMountedRef.current) {
-      setError("");
-    }
-
-    try {
-      const inventoryRows = await fetchInventoryReportRows(selectedBranchId);
-
-      const isLatestRequest = inventoryRequestIdRef.current === requestId;
-
-      if (isMountedRef.current && isLatestRequest) {
-        setRows(inventoryRows);
-      }
-    } catch (loadError) {
-      console.error("Error cargando reporte de inventario:", loadError);
-
-      const isLatestRequest = inventoryRequestIdRef.current === requestId;
-
-      if (isMountedRef.current && isLatestRequest) {
-        setRows([]);
-        setError("No se pudo cargar el reporte de inventario.");
-      }
-    } finally {
-      const isLatestRequest = inventoryRequestIdRef.current === requestId;
-
-      if (isMountedRef.current && isLatestRequest) {
-        markSettled();
-      }
-    }
-  }, [selectedBranchId, markSettled]);
-
-  useEffect(() => {
-    if (!selectedBranchId) {
-      return undefined;
-    }
-
-    let cancelled = false;
-    const requestId = inventoryRequestIdRef.current + 1;
-    inventoryRequestIdRef.current = requestId;
-
-    fetchInventoryReportRows(selectedBranchId)
-      .then((inventoryRows) => {
-        if (cancelled) return;
-        setRows(inventoryRows);
-        setError("");
-        markSettled();
-      })
-      .catch((loadError) => {
-        if (cancelled) return;
-        console.error("Error cargando reporte de inventario:", loadError);
-        setRows([]);
-        setError("No se pudo cargar el reporte de inventario.");
-        markSettled();
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedBranchId, markSettled]);
+  }, []);
 
   useEffect(() => {
     if (!selectedBranchId) {
@@ -221,7 +153,7 @@ const useInventoryReport = () => {
       }
 
       inventoryRefreshTimeoutRef.current = window.setTimeout(() => {
-        loadInventoryByBranch();
+        setInventoryReloadToken((token) => token + 1);
       }, REALTIME_REFRESH_DELAY_MS);
     };
 
@@ -270,7 +202,7 @@ const useInventoryReport = () => {
 
       supabase.removeChannel(channel);
     };
-  }, [selectedBranchId, loadInventoryByBranch]);
+  }, [selectedBranchId]);
 
   const handleBranchChange = (branchId) => {
     setBranchOverride(branchId);

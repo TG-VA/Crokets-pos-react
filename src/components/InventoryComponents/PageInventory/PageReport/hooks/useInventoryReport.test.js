@@ -27,10 +27,19 @@ vi.mock("../services/inventoryReportService", () => ({
 }));
 
 import useInventoryReport from "./useInventoryReport";
+import { supabase } from "../../../../../lib/supabaseClient";
 import {
   fetchBranchOptions,
   fetchInventoryReportRows,
 } from "../services/inventoryReportService";
+
+const emitRealtimeChange = (table) => {
+  const channel = supabase.channel();
+  const binding = channel.on.mock.calls.find(
+    ([, config]) => config?.table === table
+  );
+  act(() => binding[2]({ eventType: "UPDATE", new: {}, old: {} }));
+};
 
 describe("useInventoryReport sucursal inicial", () => {
   beforeEach(() => {
@@ -67,5 +76,64 @@ describe("useInventoryReport sucursal inicial", () => {
       expect(fetchInventoryReportRows).toHaveBeenCalledWith("b1")
     );
     await waitFor(() => expect(result.current.rows).toEqual([{ id: "r1" }]));
+  });
+});
+
+describe("useInventoryReport ruta unica de carga", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    branchState.current = { id: "b1", branch_type: "operational" };
+    fetchBranchOptions.mockResolvedValue([{ id: "b1", name: "Centro" }]);
+  });
+
+  it("un cambio en tiempo real recarga el inventario por la misma consulta", async () => {
+    fetchInventoryReportRows
+      .mockResolvedValueOnce([{ id: "r1" }])
+      .mockResolvedValueOnce([{ id: "r2" }]);
+
+    const { result } = renderHook(() => useInventoryReport());
+    await waitFor(() => expect(result.current.rows).toEqual([{ id: "r1" }]));
+
+    emitRealtimeChange("branch_inventory");
+
+    await waitFor(() => expect(result.current.rows).toEqual([{ id: "r2" }]));
+    expect(fetchInventoryReportRows).toHaveBeenCalledTimes(2);
+    expect(fetchInventoryReportRows).toHaveBeenLastCalledWith("b1");
+  });
+
+  it("un cambio de sucursales recarga las opciones", async () => {
+    fetchInventoryReportRows.mockResolvedValue([]);
+    fetchBranchOptions
+      .mockResolvedValueOnce([{ id: "b1", name: "Centro" }])
+      .mockResolvedValueOnce([
+        { id: "b1", name: "Centro" },
+        { id: "b2", name: "Norte" },
+      ]);
+
+    const { result } = renderHook(() => useInventoryReport());
+    await waitFor(() => expect(result.current.branchOptions).toHaveLength(1));
+
+    emitRealtimeChange("branches");
+
+    await waitFor(() => expect(result.current.branchOptions).toHaveLength(2));
+  });
+
+  it("descarta la respuesta de una sucursal ya reemplazada", async () => {
+    let resolveFirst;
+    fetchInventoryReportRows
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirst = resolve))
+      )
+      .mockResolvedValueOnce([{ id: "b2-row" }]);
+
+    const { result } = renderHook(() => useInventoryReport());
+    act(() => result.current.handleBranchChange("b2"));
+
+    await waitFor(() =>
+      expect(result.current.rows).toEqual([{ id: "b2-row" }])
+    );
+
+    await act(async () => resolveFirst([{ id: "b1-row" }]));
+    expect(result.current.rows).toEqual([{ id: "b2-row" }]);
   });
 });
