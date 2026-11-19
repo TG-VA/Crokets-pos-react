@@ -1,4 +1,7 @@
-import { ADMIN_GRANT_REQUIRED_HINT } from "../../../../../lib/adminAuthorizationService";
+import {
+  ADMIN_GRANT_REQUIRED_HINT,
+  isAdminGrantRequiredError,
+} from "../../../../../lib/adminAuthorizationService";
 import { supabase } from "../../../../../lib/supabaseClient";
 
 const getProductId = (product) => {
@@ -27,14 +30,7 @@ const toNumber = (value) => {
 // `add_inventory_entry` usa 42501 tanto para la falta de autorizacion como para
 // la falta de acceso a la sucursal; solo la primera se resuelve autorizando.
 // El hint es contrato con la migracion: lo fija `addInventoryEntryAdminGrantContract.test.js`.
-export { ADMIN_GRANT_REQUIRED_HINT };
-
-/**
- * Indica si la RPC rechazo el alta porque la autorizacion del administrador no
- * existe o ya vencio.
- */
-export const isAdminGrantRequiredError = (error) =>
-  error?.code === "42501" && error.hint === ADMIN_GRANT_REQUIRED_HINT;
+export { ADMIN_GRANT_REQUIRED_HINT, isAdminGrantRequiredError };
 
 /**
  * Registra una entrada de inventario en la sucursal activa.
