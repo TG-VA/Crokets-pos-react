@@ -69,6 +69,17 @@ describe("useAdjustmentProductSelection", () => {
     expect(showAppAlert).toHaveBeenCalledTimes(2);
   });
 
+  it("ignora una seleccion vacia del buscador F10", () => {
+    const { result, showAppAlert } = setup();
+
+    act(() => result.current.openSearchModal());
+    act(() => result.current.loadProduct(null));
+
+    expect(showAppAlert).not.toHaveBeenCalled();
+    expect(result.current.selectedProduct).toBeNull();
+    expect(result.current.searchModalOpen).toBe(true);
+  });
+
   it("carga desde F10 cerrando el buscador y limpia la seleccion", () => {
     const { result } = setup();
 
