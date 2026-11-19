@@ -3027,3 +3027,26 @@ ESLint 0 errores. Mutaciones: 16 ejecutadas en dos rondas, 16 detectadas. I1 (Na
 Descripción del PR y `docs/TESTING.md` actualizados con la migración `20261117180000` (`92461115`).
 Pendiente de verificación humana en Electron (`npm run dev`) y en base remota del CPP tras la
 recepción.
+
+---
+
+## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (18 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 3 sugerencias). Head `af9a120`,
+base `a3961cb`. Ejecución: 346 archivos / 3537 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 12 ejecutadas, 11 detectadas. I1 (modal duplicado), I2 (limpieza sin
+test), S1 (títulos de error) y S2 (carpeta `utils/`) de la auditoría anterior resueltos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                         | Severidad  | Estado                                                                                     |
+| --- | -------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| S3  | La guarda `if (!product) return;` de `loadProduct` no tiene test (M12 sobrevive) | Sugerencia | Corregido en `0577bf6`: test de `loadProduct(null)` en `useAdjustmentProductSelection`     |
+| S4  | `PageInventory/shared/hooks/` es una ubicación nueva frente a `src/hooks/`       | Sugerencia | Se mantiene la ubicación junto a sus dos consumidores; convención documentada en el PR     |
+| S5  | La descripción del PR lista archivos y conteos de la versión anterior            | Sugerencia | Corregido: descripción actualizada (`useAppModal`, `adjustmentQuantityCalculationService`) |
+
+### Estado al cierre
+
+`docs/TESTING.md` actualizado a 346 archivos / 3538 tests. Pendiente de verificación humana en
+Electron (`npm run dev`): reautorización con grant vencido en Agregar y Ajustes, y avisos con
+`useAppModal`.
