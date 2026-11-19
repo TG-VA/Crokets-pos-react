@@ -4,7 +4,7 @@ import {
   isOperationalBranch,
 } from "../../../../../services/branchScopeService";
 
-import { sortInventoryRows } from "../utils/inventoryReportUtils";
+import { sortInventoryRows } from "./inventoryReportCalculationService";
 
 // PostgREST trunca cada respuesta en 1000 filas sin devolver error. Las
 // consultas del reporte se leen por paginas de ese tamano y se detienen en un

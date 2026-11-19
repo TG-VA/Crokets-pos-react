@@ -6,10 +6,9 @@ import {
   getStockStatusCounts,
   getStockSummary,
   INITIAL_FACET_FILTERS,
-  normalizeFilenameSegment,
   sortInventoryRows,
   STOCK_FILTER_PREFIX,
-} from "./inventoryReportUtils";
+} from "./inventoryReportCalculationService";
 
 const withRecord = {
   productId: "a",
@@ -48,17 +47,6 @@ const untracked = {
   noBranchRecord: false,
 };
 const rows = [withRecord, lowStock, noRecord, untracked];
-
-describe("normalizeFilenameSegment", () => {
-  it("usa un valor neutro cuando no hay nombre de sucursal", () => {
-    expect(normalizeFilenameSegment("")).toBe("SUCURSAL");
-    expect(normalizeFilenameSegment(null)).toBe("SUCURSAL");
-  });
-
-  it("normaliza acentos, codigo entre parentesis y simbolos", () => {
-    expect(normalizeFilenameSegment("Jardín Norte (JN)")).toBe("JARDIN NORTE");
-  });
-});
 
 describe("estado Sin registro en sucursal", () => {
   it("tiene estado propio", () => {

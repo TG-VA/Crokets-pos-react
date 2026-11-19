@@ -4,7 +4,7 @@ import styles from "./InventoryFilters.module.css";
 import {
   QUANTITY_FILTER_PREFIX,
   STOCK_FILTER_OPTIONS,
-} from "../utils/inventoryReportUtils";
+} from "../services/inventoryReportCalculationService";
 
 const ExistenceFilterPopover = ({
   isOpen = false,

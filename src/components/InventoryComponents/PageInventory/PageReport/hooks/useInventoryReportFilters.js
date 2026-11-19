@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   QUANTITY_FILTER_PREFIX,
   INITIAL_FACET_FILTERS,
-} from "../utils/inventoryReportUtils";
+} from "../services/inventoryReportCalculationService";
 
 const useInventoryReportFilters = () => {
   const [facetFilters, setFacetFilters] = useState(INITIAL_FACET_FILTERS);

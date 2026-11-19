@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 
+import { getStockStatus } from "../services/inventoryReportCalculationService";
 import {
   formatDateTime,
   toUpperSafe,
@@ -7,8 +8,7 @@ import {
   formatDateForFilename,
   normalizeFilenameSegment,
   getExistenceFilterLabel,
-  getStockStatus,
-} from "./inventoryReportUtils";
+} from "./inventoryReportFormatters";
 
 const EXPORT_COLUMN_COUNT = 7;
 

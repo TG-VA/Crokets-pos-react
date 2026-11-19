@@ -1,7 +1,8 @@
 import React from "react";
 import styles from "./InventoryReportRows.module.css";
 
-import { getStockStatus, toUpperSafe } from "../utils/inventoryReportUtils";
+import { getStockStatus } from "../services/inventoryReportCalculationService";
+import { toUpperSafe } from "../utils/inventoryReportFormatters";
 
 import InventoryDetailRow from "./InventoryDetailRow";
 

@@ -10,13 +10,13 @@ import useInventoryReportFilters from "./hooks/useInventoryReportFilters";
 import { usePagination } from "../../../../hooks/usePagination";
 
 import {
-  getSelectedBranchLabel,
   getActiveFilterCount,
   filterInventoryRows,
   getStockSummary,
   getStockStatusCounts,
   buildFacetOptions,
-} from "./utils/inventoryReportUtils";
+} from "./services/inventoryReportCalculationService";
+import { getSelectedBranchLabel } from "./utils/inventoryReportFormatters";
 
 import { exportInventoryReport } from "./utils/exportInventoryReport";
 
