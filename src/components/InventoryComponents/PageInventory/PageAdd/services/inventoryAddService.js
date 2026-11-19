@@ -1,3 +1,4 @@
+import { ADMIN_GRANT_REQUIRED_HINT } from "../../../../../lib/adminAuthorizationService";
 import { supabase } from "../../../../../lib/supabaseClient";
 
 const getProductId = (product) => {
@@ -26,7 +27,7 @@ const toNumber = (value) => {
 // `add_inventory_entry` usa 42501 tanto para la falta de autorizacion como para
 // la falta de acceso a la sucursal; solo la primera se resuelve autorizando.
 // El hint es contrato con la migracion: lo fija `addInventoryEntryAdminGrantContract.test.js`.
-export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
+export { ADMIN_GRANT_REQUIRED_HINT };
 
 // Fallback temporal para la RPC sin hint (20261117235000). Retirar cuando
 // 20261118170000 este aplicada en remoto.

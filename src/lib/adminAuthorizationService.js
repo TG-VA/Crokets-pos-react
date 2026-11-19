@@ -1,5 +1,10 @@
 import { supabase } from "./supabaseClient";
 
+// Hint con el que las RPC de inventario (`add_inventory_entry` y
+// `apply_inventory_adjustment`) rechazan a quien no es admin ni tiene una
+// autorizacion vigente de `authorize-admin-action`. Contrato con las migraciones.
+export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
+
 export const authorizeAdminAction = async ({
   username,
   password,
