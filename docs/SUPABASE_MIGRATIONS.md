@@ -260,9 +260,9 @@ redesplegar la edge function anterior y `drop table public.admin_action_grants;`
 
 `20261118170000_add_inventory_entry_grant_hint.sql` reaplica `add_inventory_entry` sin otro cambio
 que añadir `hint = 'ADMIN_GRANT_REQUIRED'` al `42501` de autorización ausente o vencida. El cliente
-compara primero el hint y conserva un fallback por mensaje mientras remoto no tenga esta versión, así
-que el orden de despliegue no rompe el modal de reautorización. Rollback: reaplicar la función de
-`20261117235000` (el fallback la sigue reconociendo).
+detecta ese rechazo solo por el hint (el fallback por mensaje se retiró porque remoto ya tiene la
+versión con hint). Rollback: reaplicar `20261117235000` y volver al frontend con el fallback por
+mensaje, porque sin el hint el cliente deja de abrir el modal de reautorización.
 
 ## Ajuste transaccional de inventario (`20261118150000`)
 
