@@ -148,14 +148,14 @@ describe("inventoryAdjustmentService", () => {
     ).toBe(false);
   });
 
-  it("acepta el mensaje sin hint de la version ya desplegada", () => {
+  it("no depende del texto del mensaje cuando falta el hint", () => {
     expect(
       isAdminGrantRequiredError({
         code: "42501",
         message:
           "Ajustar inventario requiere la autorizacion de un administrador.",
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isAdminGrantRequiredError({
         code: "42501",

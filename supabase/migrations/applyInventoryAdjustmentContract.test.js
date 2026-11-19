@@ -4,10 +4,12 @@ import { describe, it, expect, vi } from "vitest";
 import {
   ADJUSTMENT_ERROR_HINTS,
   ADMIN_GRANT_REQUIRED_HINT,
-  LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE,
 } from "../../src/components/InventoryComponents/PageInventory/PageAdjustments/services/inventoryAdjustmentService";
 
 vi.mock("../../src/lib/supabaseClient", () => ({ supabase: {} }));
+
+const ADMIN_GRANT_REQUIRED_MESSAGE =
+  "Ajustar inventario requiere la autorizacion de un administrador.";
 
 const MIGRATION = join(
   process.cwd(),
@@ -45,7 +47,7 @@ describe("contrato SQL del ajuste transaccional de inventario", () => {
       "and not public.is_admin() and not exists ( select 1 from public.admin_action_grants g where g.granted_to = v_actor and g.action = 'inventory_adjust_access' and g.branch_id = p_branch_id and g.expires_at > now() ) then"
     );
     expect(normalizedSql).toContain(
-      `raise exception 'Ajustar inventario ${LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501';`
+      `raise exception '${ADMIN_GRANT_REQUIRED_MESSAGE}' using errcode = '42501';`
     );
   });
 
@@ -105,7 +107,7 @@ const stripHeader = (sql) =>
 describe("contrato SQL del hint de autorizacion vencida (20261118160000)", () => {
   it("rechaza la falta de autorizacion con el hint que compara el cliente", () => {
     expect(hintSql).toContain(
-      `raise exception 'Ajustar inventario ${LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE}.' using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}';`
+      `raise exception '${ADMIN_GRANT_REQUIRED_MESSAGE}' using errcode = '42501', hint = '${ADMIN_GRANT_REQUIRED_HINT}';`
     );
   });
 

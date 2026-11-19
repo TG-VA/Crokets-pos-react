@@ -281,9 +281,10 @@ redesplegar la edge function anterior y volver al frontend anterior.
 
 `20261118160000_apply_inventory_adjustment_grant_hint.sql` reaplica la función sin otro cambio que
 añadir `hint = 'ADMIN_GRANT_REQUIRED'` al `42501` de autorización ausente o vencida. El cliente
-detecta ese rechazo por el hint (antes comparaba el texto del mensaje) y conserva un fallback por
-mensaje mientras remoto tenga la versión sin hint. Aplicar antes del frontend que lo usa. Rollback:
-reaplicar `20261118150000`.
+detecta ese rechazo solo por el hint (antes comparaba el texto del mensaje; el fallback se retiró
+porque remoto ya tiene la versión con hint). Aplicar antes del frontend que lo usa. Rollback:
+reaplicar `20261118150000` y volver al frontend con el fallback por mensaje, porque sin el hint el
+cliente deja de abrir el modal de reautorización.
 
 ## Hora local en la recepción de pedidos (`20261118120000`)
 

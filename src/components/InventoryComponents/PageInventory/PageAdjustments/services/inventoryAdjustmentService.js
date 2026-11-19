@@ -22,29 +22,12 @@ export const ADJUSTMENT_ERROR_HINTS = [
 // vigente; distingue ese 42501 de la falta de acceso a la sucursal.
 export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
 
-// Compatibilidad: la version desplegada antes de 20261118160000 no envia el
-// hint. Retirar este fallback cuando esa migracion este aplicada en remoto.
-export const LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE =
-  "requiere la autorizacion de un administrador";
-
 /**
  * Indica si la RPC rechazo el ajuste porque la autorizacion del administrador
  * no existe o ya vencio.
  */
-export const isAdminGrantRequiredError = (error) => {
-  if (error?.code !== "42501") {
-    return false;
-  }
-
-  if (error.hint === ADMIN_GRANT_REQUIRED_HINT) {
-    return true;
-  }
-
-  return (
-    !error.hint &&
-    String(error.message ?? "").includes(LEGACY_ADMIN_GRANT_REQUIRED_MESSAGE)
-  );
-};
+export const isAdminGrantRequiredError = (error) =>
+  error?.code === "42501" && error.hint === ADMIN_GRANT_REQUIRED_HINT;
 
 const toAdjustmentError = (error) => {
   if (!ADJUSTMENT_ERROR_HINTS.includes(error?.hint)) {
