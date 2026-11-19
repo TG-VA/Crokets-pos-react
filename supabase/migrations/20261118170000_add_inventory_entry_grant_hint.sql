@@ -5,8 +5,8 @@
 -- reautorizacion. Ahora el raise lleva `hint = 'ADMIN_GRANT_REQUIRED'`, igual que
 -- `apply_inventory_adjustment` (20261118160000). El resto de la funcion es identico a
 -- 20261117235000 (mismos permisos, bloqueo, validaciones y movimiento).
--- Despliegue: aplicar antes del frontend que compara `error.hint`. El cliente
--- conserva un fallback por mensaje para la version sin hint.
+-- Despliegue: el orden no importa; el cliente conserva un fallback por mensaje
+-- para la version sin hint.
 -- Rollback: reaplicar la definicion de la funcion en 20261117235000_add_inventory_entry_admin_or_grant.sql.
 
 create or replace function public.add_inventory_entry(
