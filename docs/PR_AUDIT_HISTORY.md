@@ -3030,19 +3030,18 @@ recepción.
 
 ---
 
-## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, tercera ronda)
+## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, cuarta ronda)
 
-Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 2 sugerencias). Head `8f1ac77`,
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `c4f4448`,
 base `a3961cb`. Ejecución: 346 archivos / 3538 tests verdes; build OK; `check:agents` OK; Prettier OK;
-ESLint 0 errores. Mutaciones: 12 ejecutadas, 12 detectadas. I1, I2, S1, S2 (primera ronda) y S3, S5
-(segunda ronda) resueltos.
+ESLint 0 errores. Mutaciones: 12 en la tercera ronda y 2 en esta, todas detectadas. I1, I2, S1, S2,
+S3, S4, S5 y S6 resueltos (S4: `useGrantReauthorization` movido a `src/hooks/` en `c4f4448`).
 
 ### Hallazgos abiertos
 
-| #   | Hallazgo                                                                             | Severidad  |
-| --- | ------------------------------------------------------------------------------------ | ---------- |
-| S4  | `useGrantReauthorization` vive en `PageInventory/shared/hooks/` y no en `src/hooks/` | Sugerencia |
-| S6  | El PR anexaba su propio informe con estados declarados por el autor y no verificados | Sugerencia |
+| #   | Hallazgo                                                                     | Severidad  |
+| --- | ---------------------------------------------------------------------------- | ---------- |
+| S7  | La entrada del historial incluida en el PR quedo desfasada respecto del head | Sugerencia |
 
 ### Estado al cierre
 
