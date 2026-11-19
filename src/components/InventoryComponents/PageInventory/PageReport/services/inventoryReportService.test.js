@@ -10,10 +10,13 @@ vi.mock("../../../../../services/branchScopeService", () => ({
 }));
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
 import {
   INVENTORY_REPORT_PAGE_SIZE,
   MAX_INVENTORY_REPORT_ROWS,
+  fetchBranchOptions,
   fetchInventoryReportRows,
+  getBranchOptionsFallback,
 } from "./inventoryReportService";
 
 /*
@@ -134,5 +137,50 @@ describe("fetchInventoryReportRows: limite de filas de Supabase", () => {
     const rows = await fetchInventoryReportRows("b1");
 
     expect(rows).toHaveLength(1200);
+  });
+});
+
+describe("fetchBranchOptions: solo sucursales operativas", () => {
+  beforeEach(() => {
+    fetchOperationalBranches.mockReset();
+  });
+
+  it("devuelve tal cual las sucursales operativas, sin inyectar otras", async () => {
+    const branches = [
+      { id: "b1", name: "Centro", code: "" },
+      { id: "b2", name: "Torres", code: "T" },
+    ];
+    fetchOperationalBranches.mockResolvedValue({ data: branches, error: null });
+
+    await expect(fetchBranchOptions({ id: "b1" })).resolves.toEqual(branches);
+  });
+
+  it("ante error el fallback ofrece solo la sucursal actual operativa", async () => {
+    fetchOperationalBranches.mockResolvedValue({
+      data: [],
+      error: new Error("boom"),
+    });
+    const current = {
+      id: "b1",
+      name: "Centro",
+      code: "C",
+      branch_type: "operational",
+    };
+
+    const error = await fetchBranchOptions(current).catch((err) => err);
+
+    expect(error.branchFallback).toEqual([
+      { id: "b1", name: "Centro", code: "C" },
+    ]);
+    expect(getBranchOptionsFallback(current)).toEqual([
+      { id: "b1", name: "Centro", code: "C" },
+    ]);
+  });
+
+  it("el fallback queda vacio si la sucursal actual no es operativa", () => {
+    expect(
+      getBranchOptionsFallback({ id: "adm", branch_type: "admin" })
+    ).toEqual([]);
+    expect(getBranchOptionsFallback(null)).toEqual([]);
   });
 });

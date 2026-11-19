@@ -40,8 +40,6 @@ const fetchAllPages = async (buildQuery) => {
   return rows;
 };
 
-const POLI_BRANCH_ID = "412f367f-7c86-45ca-9e91-b8fe6274b232";
-
 const INVENTORY_SELECT_CANDIDATES = [
   `
     id,
@@ -100,50 +98,19 @@ const NO_STOCK_PRODUCTS_SELECT = `
   )
 `;
 
+// Ante un error al listar sucursales solo se ofrece la sucursal actual, y solo
+// si es operativa: el selector nunca muestra sucursales que el catalogo no
+// confirmo como operativas.
 const buildBranchFallback = (currentBranch) => {
-  if (!currentBranch?.id) {
+  if (!currentBranch?.id || !isOperationalBranch(currentBranch)) {
     return [];
   }
 
-  const branches = [
-    {
-      id: POLI_BRANCH_ID,
-      name: "POLÍGONO",
-      code: "",
-    },
-  ];
-
-  if (
-    currentBranch.id !== POLI_BRANCH_ID &&
-    isOperationalBranch(currentBranch)
-  ) {
-    branches.push({
-      id: currentBranch.id,
-      name: currentBranch?.name || "Sucursal actual",
-      code: currentBranch?.code || "",
-    });
-  }
-
-  return branches;
-};
-
-const includePoligonoBranch = (branches) => {
-  const branchesList = Array.isArray(branches) ? branches : [];
-
-  const includesPoligono = branchesList.some(
-    (item) => item?.id === POLI_BRANCH_ID
-  );
-
-  if (includesPoligono) {
-    return branchesList;
-  }
-
   return [
-    ...branchesList,
     {
-      id: POLI_BRANCH_ID,
-      name: "POLÍGONO",
-      code: "",
+      id: currentBranch.id,
+      name: currentBranch.name || "Sucursal actual",
+      code: currentBranch.code || "",
     },
   ];
 };
@@ -238,7 +205,7 @@ export const fetchBranchOptions = async (currentBranch) => {
       throw error;
     }
 
-    return includePoligonoBranch(data);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     error.branchFallback = buildBranchFallback(currentBranch);
     throw error;

@@ -238,10 +238,7 @@ export const exportInventoryReport = async ({
     },
   };
 
-  const branchNameForFile = normalizeFilenameSegment(
-    selectedBranchLabel,
-    "POLIGONO"
-  );
+  const branchNameForFile = normalizeFilenameSegment(selectedBranchLabel);
 
   const filename =
     `INVENTARIO ${branchNameForFile} ` + `${formatDateForFilename()}.xlsx`;

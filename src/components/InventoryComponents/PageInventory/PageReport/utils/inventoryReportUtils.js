@@ -70,7 +70,7 @@ export const formatDateForFilename = (value = new Date()) => {
   return `${day}-${month}-${year}`;
 };
 
-export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
+export const normalizeFilenameSegment = (value, fallback = "SUCURSAL") => {
   const normalized = String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
