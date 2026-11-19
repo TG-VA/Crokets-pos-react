@@ -1,3 +1,4 @@
+import { ADMIN_GRANT_REQUIRED_HINT } from "../../../../../lib/adminAuthorizationService";
 import { supabase } from "../../../../../lib/supabaseClient";
 
 const getProductId = (product) => {
@@ -20,7 +21,7 @@ export const ADJUSTMENT_ERROR_HINTS = [
 
 // Hint con el que la RPC rechaza a quien no es admin ni tiene autorizacion
 // vigente; distingue ese 42501 de la falta de acceso a la sucursal.
-export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
+export { ADMIN_GRANT_REQUIRED_HINT };
 
 /**
  * Indica si la RPC rechazo el ajuste porque la autorizacion del administrador

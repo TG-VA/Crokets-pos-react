@@ -2842,6 +2842,12 @@ módulo) y se ajusta la base de datos y el manejo del rechazo:
 La base de datos no puede saber cuándo se sale del módulo, así que el grant puede seguir vigente hasta
 30 minutos después.
 
+**Actualización (18 nov 2026):** `20261118170000` añade `hint = 'ADMIN_GRANT_REQUIRED'` al rechazo
+por autorización de `add_inventory_entry`, igual que Ajustes (#96). `isAdminGrantRequiredError`
+compara primero el hint y conserva el texto del mensaje solo como fallback temporal para la versión
+sin hint; se retira en un PR de seguimiento. Aplicada en remoto el 19 nov 2026
+(`20261119203449`).
+
 ---
 
 ### 94. `admin_action_grants` no purga las autorizaciones vencidas
