@@ -72,7 +72,7 @@ y el proceso principal de Electron:
 | Inventario: índice y URL directa de Agregar/Ajustes       | `src/pages/Inventory/Inventory.test.jsx`                                           |
 | Inventario: mensaje de CPP al agregar (redondeado)        | `.../PageAdd/utils/inventoryAddFormatters.test.js`                                 |
 | Inventario: ajuste por RPC, sin costo y hints traducidos  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
-| Contrato SQL del ajuste: guarda, lock, sin CPP, hints     | `supabase/migrations/applyInventoryAdjustmentContract.test.js`                     |
+| Contrato SQL del ajuste: guarda, lock, CPP, hints y grant | `supabase/migrations/applyInventoryAdjustmentContract.test.js`                     |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
 | Contrato SQL de RLS y escritura admin en branches         | `supabase/migrations/branchesRlsAdminWriteContract.test.js`                        |

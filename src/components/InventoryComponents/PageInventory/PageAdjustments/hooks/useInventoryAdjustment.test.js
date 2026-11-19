@@ -27,6 +27,7 @@ import useInventoryAdjustment from "./useInventoryAdjustment";
 
 const grantError = {
   code: "42501",
+  hint: "ADMIN_GRANT_REQUIRED",
   message: "Ajustar inventario requiere la autorizacion de un administrador.",
 };
 

@@ -18,21 +18,16 @@ export const ADJUSTMENT_ERROR_HINTS = [
   "INVENTORY_NOT_REGISTERED",
 ];
 
-// Texto con el que la RPC rechaza a quien no es admin ni tiene autorizacion
+// Hint con el que la RPC rechaza a quien no es admin ni tiene autorizacion
 // vigente; distingue ese 42501 de la falta de acceso a la sucursal.
-export const ADMIN_GRANT_REQUIRED_MESSAGE =
-  "requiere la autorizacion de un administrador";
+export const ADMIN_GRANT_REQUIRED_HINT = "ADMIN_GRANT_REQUIRED";
 
 /**
  * Indica si la RPC rechazo el ajuste porque la autorizacion del administrador
  * no existe o ya vencio.
  */
-export const isAdminGrantRequiredError = (error) => {
-  return (
-    error?.code === "42501" &&
-    String(error?.message ?? "").includes(ADMIN_GRANT_REQUIRED_MESSAGE)
-  );
-};
+export const isAdminGrantRequiredError = (error) =>
+  error?.code === "42501" && error.hint === ADMIN_GRANT_REQUIRED_HINT;
 
 const toAdjustmentError = (error) => {
   if (!ADJUSTMENT_ERROR_HINTS.includes(error?.hint)) {
