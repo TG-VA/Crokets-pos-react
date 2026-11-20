@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import MovementsKpiCards from "./components/MovementsKpiCards";
 import MovementsReportControls from "./components/MovementsReportControls";
 import MovementsReportTable from "./components/MovementsReportTable";
 import PaginationBar from "../../../PaginationBar/PaginationBar";
@@ -10,6 +11,7 @@ import useMovementsReport from "./hooks/useMovementsReport";
 import useResizableColumns from "./hooks/useResizableColumns";
 import { usePagination } from "../../../../hooks/usePagination";
 
+import { calculateMovementKpis } from "./services/movementsCalculationService";
 import { exportMovementsReport } from "./utils/movementsExportUtils";
 
 import { joinClasses } from "./utils/movementFormatters";
@@ -110,6 +112,11 @@ const PageMovementsReport = () => {
     return Object.values(facetFilters).filter((selection) => selection !== null)
       .length;
   }, [facetFilters]);
+
+  const kpis = useMemo(
+    () => calculateMovementKpis(filteredRows),
+    [filteredRows]
+  );
 
   const handleExportMovements = async () => {
     if (exporting || filteredRows.length === 0) {
@@ -220,6 +227,8 @@ const PageMovementsReport = () => {
             <strong>{periodRowsCount}</strong> movimiento(s)
           </span>
         </div>
+
+        <MovementsKpiCards kpis={kpis} />
 
         {loading && rows.length === 0 ? (
           <div className={styles.info}>Cargando movimientos...</div>

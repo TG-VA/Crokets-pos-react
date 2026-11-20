@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildNoStockRows,
+  calculateMovementKpis,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
 } from "./movementsCalculationService";
@@ -477,5 +478,39 @@ describe("movementsCalculationService", () => {
         "Segundo ajuste",
       ]);
     });
+  });
+});
+
+describe("calculateMovementKpis", () => {
+  it("separa ajustes y reparte el resto por signo", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "entry", quantity: 10 },
+      { movement_type: "transfer", quantity: 4 },
+      { movement_type: "sale", quantity: -3 },
+      { movement_type: "transfer", quantity: -2 },
+      { movement_type: "adjustment", quantity: 5 },
+      { movement_type: "adjustment", quantity: -7 },
+    ]);
+
+    expect(kpis).toEqual({
+      entries: { units: 14, count: 2 },
+      exits: { units: 5, count: 2 },
+      adjustments: { units: -2, count: 2 },
+      net: 7,
+    });
+  });
+
+  it("ignora cantidades no numericas y las forzadas a 0", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "entry", quantity: "x" },
+      { movement_type: "product_update", quantity: 9 },
+    ]);
+
+    expect(kpis.net).toBe(0);
+    expect(kpis.entries.count).toBe(0);
+  });
+
+  it("devuelve ceros sin filas", () => {
+    expect(calculateMovementKpis(null).net).toBe(0);
   });
 });

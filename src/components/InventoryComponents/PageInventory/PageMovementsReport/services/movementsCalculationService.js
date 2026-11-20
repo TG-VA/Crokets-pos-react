@@ -512,3 +512,52 @@ export const hydrateMissingRedemptions = ({
       };
     });
 };
+
+const toSafeQuantity = (value) => {
+  const quantity = Number(value);
+
+  return Number.isFinite(quantity) ? quantity : 0;
+};
+
+/**
+ * KPIs del periodo sobre las filas visibles. La cantidad ya viene con signo
+ * (salida negativa, entrada positiva), asi que los ajustes se cuentan aparte y
+ * con su neto, y el resto se reparte en entradas y salidas segun su signo. La
+ * cantidad se lee de buildRowView para respetar las filas que la fuerzan a 0.
+ */
+export const calculateMovementKpis = (rows) => {
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+
+  const kpis = {
+    entries: { units: 0, count: 0 },
+    exits: { units: 0, count: 0 },
+    adjustments: { units: 0, count: 0 },
+    net: 0,
+  };
+
+  normalizedRows.forEach((row) => {
+    const view = buildRowView(row);
+    const quantity = toSafeQuantity(view.qty);
+
+    kpis.net += quantity;
+
+    if (view.rawTypeKey === "adjustment") {
+      kpis.adjustments.units += quantity;
+      kpis.adjustments.count += 1;
+      return;
+    }
+
+    if (quantity > 0) {
+      kpis.entries.units += quantity;
+      kpis.entries.count += 1;
+      return;
+    }
+
+    if (quantity < 0) {
+      kpis.exits.units += Math.abs(quantity);
+      kpis.exits.count += 1;
+    }
+  });
+
+  return kpis;
+};
