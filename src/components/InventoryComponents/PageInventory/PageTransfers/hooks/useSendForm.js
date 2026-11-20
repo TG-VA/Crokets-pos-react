@@ -126,6 +126,11 @@ const useSendForm = ({
         return;
       }
 
+      if (availableStock <= 0) {
+        setError("Sin stock en la sucursal origen.");
+        return;
+      }
+
       const existingItem = draftItems.find(
         (item) => item.productId === productId
       );

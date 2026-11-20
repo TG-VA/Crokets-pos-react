@@ -113,6 +113,23 @@ const useProductLookup = ({
       );
     });
 
+    // Preferimos la unica coincidencia con stock para no abrir el modal cuando
+    // el usuario ya sabe que producto quiere (comportamiento previo al PR).
+    const partialMatchesWithStock = partialMatches.filter(
+      (product) => Number(product?.existencia ?? 0) > 0
+    );
+
+    if (partialMatchesWithStock.length === 1) {
+      setError("");
+      onProductSelected(partialMatchesWithStock[0], 1);
+      if (typeof resetAfterSelection === "function") {
+        resetAfterSelection();
+      }
+      return;
+    }
+
+    // Una unica coincidencia agotada se envia igual para que el formulario
+    // muestre el aviso de sin stock en la sucursal origen.
     if (partialMatches.length === 1) {
       setError("");
       onProductSelected(partialMatches[0], 1);

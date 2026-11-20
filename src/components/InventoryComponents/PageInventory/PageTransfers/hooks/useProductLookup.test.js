@@ -117,6 +117,101 @@ describe("useProductLookup", () => {
     expect(result.current.searchModalOpen).toBe(true);
   });
 
+  it("handleLookupProduct: elige la unica coincidencia con stock", () => {
+    const lookupProducts = [
+      {
+        id: "a10",
+        codigo: "ADU-10",
+        descripcion: "CROQUETA ADULTO 10KG",
+        tracks_inventory: true,
+        existencia: 5,
+      },
+      {
+        id: "a20",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        existencia: 0,
+      },
+    ];
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(onProductSelected).toHaveBeenCalledWith(lookupProducts[0], 1);
+    expect(result.current.searchModalOpen).toBe(false);
+  });
+
+  it("handleLookupProduct: envia la unica coincidencia aunque este agotada", () => {
+    const lookupProducts = [
+      {
+        id: "a20",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        existencia: 0,
+      },
+    ];
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(onProductSelected).toHaveBeenCalledWith(lookupProducts[0], 1);
+  });
+
+  it("handleLookupProduct: abre modal si varias coincidencias tienen stock", () => {
+    const lookupProducts = [
+      {
+        id: "a10",
+        codigo: "ADU-10",
+        descripcion: "CROQUETA ADULTO 10KG",
+        tracks_inventory: true,
+        existencia: 5,
+      },
+      {
+        id: "a20",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        existencia: 8,
+      },
+    ];
+    const setError = vi.fn();
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, setError, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(result.current.searchModalOpen).toBe(true);
+    expect(onProductSelected).not.toHaveBeenCalled();
+    expect(setError).toHaveBeenCalledWith(
+      "Hay 2 coincidencias. Selecciona una del modal."
+    );
+  });
+
   it("handleLookupProduct: error si no hay coincidencias", () => {
     const setError = vi.fn();
     const { result } = renderHook(() =>

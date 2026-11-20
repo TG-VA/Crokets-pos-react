@@ -103,6 +103,18 @@ describe("useSendForm", () => {
     );
   });
 
+  it("no agrega un producto agotado y avisa que no hay stock", () => {
+    const setError = vi.fn();
+    const { result } = renderHook(() => useSendForm(createProps({ setError })));
+
+    act(() => {
+      capturedOnProductSelected({ ...products[0], existencia: 0 }, 1);
+    });
+
+    expect(result.current.draftItems).toHaveLength(0);
+    expect(setError).toHaveBeenCalledWith("Sin stock en la sucursal origen.");
+  });
+
   it("error si la cantidad supera el stock", () => {
     const setError = vi.fn();
     const { result } = renderHook(() => useSendForm(createProps({ setError })));
