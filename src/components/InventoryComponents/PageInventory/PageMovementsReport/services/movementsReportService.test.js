@@ -45,7 +45,7 @@ import {
   loadRewardRedemptions,
   loadSaleDetailsBySales,
   loadSalesByBranch,
-} from "./movementQueriesService";
+} from "./movementsReportService";
 import {
   IN_FILTER_BATCH_SIZE,
   MOVEMENTS_PAGE_SIZE,
@@ -70,7 +70,7 @@ const WINDOW = {
   endISO: "2026-03-01T06:00:00.000Z",
 };
 
-describe("movementQueriesService", () => {
+describe("movementsReportService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queries.length = 0;
