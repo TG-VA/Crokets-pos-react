@@ -40,41 +40,41 @@ import {
 } from "./movementsCalculationService";
 
 // PostgREST corta cada respuesta en 1000 filas sin devolver error. Las
-// consultas del periodo se leen por paginas con .range() hasta que una pagina
-// llega incompleta, sin tope total: el rango de fechas ya acota el volumen.
-// Un insert entre dos paginas desplaza el offset y repite la ultima fila leida,
-// por eso las filas con id se descartan si ya aparecieron.
+// consultas se leen por paginas con un cursor sobre id (keyset): cada pagina
+// pide las filas con id mayor al ultimo leido, hasta que una llega incompleta.
+// A diferencia de .range(), un insert o un borrado entre paginas no repite ni
+// salta filas. El orden de lectura no importa: el reporte se ordena al final.
 export const fetchAllPages = async (buildQuery) => {
   const rows = [];
-  const seenIds = new Set();
+  let lastId = null;
 
-  for (let from = 0; ; from += MOVEMENTS_PAGE_SIZE) {
-    const to = from + MOVEMENTS_PAGE_SIZE - 1;
-    const { data, error } = await buildQuery().range(from, to);
+  for (;;) {
+    let query = buildQuery().order("id", { ascending: true });
+
+    if (lastId !== null) {
+      query = query.gt("id", lastId);
+    }
+
+    const { data, error } = await query.limit(MOVEMENTS_PAGE_SIZE);
 
     if (error) {
       return { data: null, error };
     }
 
     const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
 
-    page.forEach((row) => {
-      const id = row?.id;
+    const nextId = page[page.length - 1]?.id;
 
-      if (id === undefined || id === null) {
-        rows.push(row);
-        return;
-      }
-
-      if (!seenIds.has(id)) {
-        seenIds.add(id);
-        rows.push(row);
-      }
-    });
-
-    if (page.length < MOVEMENTS_PAGE_SIZE) {
+    if (
+      page.length < MOVEMENTS_PAGE_SIZE ||
+      nextId === undefined ||
+      nextId === null
+    ) {
       return { data: rows, error: null };
     }
+
+    lastId = nextId;
   }
 };
 
@@ -174,10 +174,8 @@ export const loadMovementBranches = async ({ currentBranch = null } = {}) => {
 
 export const loadBaseMovements = async ({ branchId, startISO, endISO }) => {
   const buildQuery = () => {
-    let query = supabase
-      .from(INVENTORY_MOVEMENTS_TABLE)
-      .select(
-        `
+    let query = supabase.from(INVENTORY_MOVEMENTS_TABLE).select(
+      `
         id,
         sale_id,
         branch_id,
@@ -190,13 +188,7 @@ export const loadBaseMovements = async ({ branchId, startISO, endISO }) => {
         user_id,
         created_at
       `
-      )
-      .order("created_at", {
-        ascending: false,
-      })
-      .order("id", {
-        ascending: false,
-      });
+    );
 
     if (branchId) {
       query = query.eq("branch_id", branchId);
@@ -304,15 +296,7 @@ export const loadRewardRedemptions = async ({ branchId, startISO, endISO }) => {
 
   for (const selectFields of candidates) {
     const buildQuery = () => {
-      let query = supabase
-        .from(REWARD_REDEMPTIONS_TABLE)
-        .select(selectFields)
-        .order("created_at", {
-          ascending: false,
-        })
-        .order("id", {
-          ascending: false,
-        });
+      let query = supabase.from(REWARD_REDEMPTIONS_TABLE).select(selectFields);
 
       if (branchId) {
         query = query.eq("branch_id", branchId);
@@ -361,11 +345,7 @@ export const loadProducts = async (productIds) => {
 
   for (const selectFields of candidates) {
     const response = await fetchByIdsInBatches(productIds, (batch) =>
-      supabase
-        .from("products")
-        .select(selectFields)
-        .in("id", batch)
-        .order("id", { ascending: true })
+      supabase.from("products").select(selectFields).in("id", batch)
     );
 
     if (!response.error) {
@@ -395,11 +375,7 @@ export const loadUsers = async (userIds) => {
 
   for (const selectFields of candidates) {
     const response = await fetchByIdsInBatches(userIds, (batch) =>
-      supabase
-        .from("users")
-        .select(selectFields)
-        .in("id", batch)
-        .order("id", { ascending: true })
+      supabase.from("users").select(selectFields).in("id", batch)
     );
 
     if (!response.error) {
@@ -451,11 +427,7 @@ export const loadSales = async (saleIds) => {
 
   for (const selectFields of candidates) {
     const response = await fetchByIdsInBatches(saleIds, (batch) =>
-      supabase
-        .from("sales")
-        .select(selectFields)
-        .in("id", batch)
-        .order("id", { ascending: true })
+      supabase.from("sales").select(selectFields).in("id", batch)
     );
 
     if (!response.error) {
@@ -491,11 +463,7 @@ const loadRowsByColumn = async ({
 
   for (const selectFields of selectCandidates) {
     const response = await fetchByIdsInBatches(values, (batch) =>
-      supabase
-        .from(table)
-        .select(selectFields)
-        .in(column, batch)
-        .order("id", { ascending: true })
+      supabase.from(table).select(selectFields).in(column, batch)
     );
 
     if (!response.error) {
@@ -529,12 +497,7 @@ export const loadSalesByBranch = async ({ branchId, startISO, endISO }) => {
   for (const selectFields of candidates) {
     const response = await fetchAllPages(() =>
       applyDateWindow(
-        supabase
-          .from("sales")
-          .select(selectFields)
-          .eq("branch_id", branchId)
-          .order("sale_date", { ascending: false })
-          .order("id", { ascending: false }),
+        supabase.from("sales").select(selectFields).eq("branch_id", branchId),
         "sale_date",
         { startISO, endISO }
       )
@@ -620,11 +583,7 @@ export const loadRewards = async (rewardIds) => {
 
   for (const selectFields of candidates) {
     const response = await fetchByIdsInBatches(rewardIds, (batch) =>
-      supabase
-        .from("rewards")
-        .select(selectFields)
-        .in("id", batch)
-        .order("id", { ascending: true })
+      supabase.from("rewards").select(selectFields).in("id", batch)
     );
 
     if (!response.error) {
