@@ -42,8 +42,11 @@ import {
 // PostgREST corta cada respuesta en 1000 filas sin devolver error. Las
 // consultas del periodo se leen por paginas con .range() hasta que una pagina
 // llega incompleta, sin tope total: el rango de fechas ya acota el volumen.
+// Un insert entre dos paginas desplaza el offset y repite la ultima fila leida,
+// por eso las filas con id se descartan si ya aparecieron.
 export const fetchAllPages = async (buildQuery) => {
   const rows = [];
+  const seenIds = new Set();
 
   for (let from = 0; ; from += MOVEMENTS_PAGE_SIZE) {
     const to = from + MOVEMENTS_PAGE_SIZE - 1;
@@ -54,7 +57,20 @@ export const fetchAllPages = async (buildQuery) => {
     }
 
     const page = Array.isArray(data) ? data : [];
-    rows.push(...page);
+
+    page.forEach((row) => {
+      const id = row?.id;
+
+      if (id === undefined || id === null) {
+        rows.push(row);
+        return;
+      }
+
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        rows.push(row);
+      }
+    });
 
     if (page.length < MOVEMENTS_PAGE_SIZE) {
       return { data: rows, error: null };
@@ -636,7 +652,12 @@ export const loadMovementsReport = async ({
   startDateKey,
   endDateKey,
 }) => {
-  const dateWindow = getServerDateWindow(startDateKey, endDateKey) ?? {};
+  const dateWindow = getServerDateWindow(startDateKey, endDateKey);
+
+  // Sin ventana valida no se consulta: leer sin filtro traeria todo el historial.
+  if (!dateWindow) {
+    return [];
+  }
 
   const [baseRows, rewardRows, standaloneSales] = await Promise.all([
     loadBaseMovements({

@@ -41,15 +41,18 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 import {
   fetchAllPages,
   loadBaseMovements,
+  loadMovementsReport,
   loadProducts,
   loadRewardRedemptions,
   loadSaleDetailsBySales,
+  loadSales,
   loadSalesByBranch,
 } from "./movementsReportService";
 import {
   IN_FILTER_BATCH_SIZE,
   MOVEMENTS_PAGE_SIZE,
   MOVEMENTS_PRODUCTS_SELECT_KEY,
+  MOVEMENTS_SALES_SELECT_KEY,
 } from "./movementServiceConstants";
 
 const buildIds = (count) =>
@@ -192,5 +195,55 @@ describe("movementsReportService", () => {
     await loadProducts(["p1"]);
 
     expect(callsOf(queries[0], "select")[0][1]).toBe("id, name");
+  });
+  it("descarta filas repetidas cuando un insert desplaza el offset", async () => {
+    const shifted = fullPage("a");
+    pages.current = [
+      fullPage("a"),
+      {
+        data: [shifted.data[MOVEMENTS_PAGE_SIZE - 1], { id: "b-0" }],
+        error: null,
+      },
+    ];
+
+    const result = await fetchAllPages(() => from("x"));
+
+    expect(result.data).toHaveLength(MOVEMENTS_PAGE_SIZE + 1);
+    expect(new Set(result.data.map((row) => row.id)).size).toBe(
+      MOVEMENTS_PAGE_SIZE + 1
+    );
+  });
+
+  it("no consulta sin una ventana de fechas valida", async () => {
+    const rows = await loadMovementsReport({
+      branchId: "b1",
+      startDateKey: "no-es-fecha",
+      endDateKey: "tampoco",
+    });
+
+    expect(rows).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("guarda en cache el select de ventas que funciono y lo reusa", async () => {
+    pages.current = [
+      {
+        data: null,
+        error: { message: "column sales.folio does not exist" },
+      },
+      { data: [{ id: "s1" }], error: null },
+    ];
+
+    await loadSales(["s1"]);
+
+    const workingSelect = callsOf(queries[1], "select")[0][1];
+    expect(window.localStorage.getItem(MOVEMENTS_SALES_SELECT_KEY)).toBe(
+      workingSelect
+    );
+
+    queries.length = 0;
+    await loadSales(["s1"]);
+
+    expect(callsOf(queries[0], "select")[0][1]).toBe(workingSelect);
   });
 });
