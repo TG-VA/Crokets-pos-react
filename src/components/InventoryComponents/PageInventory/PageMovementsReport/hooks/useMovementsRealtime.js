@@ -1,11 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { supabase } from "../../../../../lib/supabaseClient";
-
-import {
-  INVENTORY_MOVEMENTS_TABLE,
-  REWARD_REDEMPTIONS_TABLE,
-} from "../services/movementsReportService";
+import { subscribeToMovements } from "../services/movementsRealtimeService";
 
 const REALTIME_DEBOUNCE_MS = 500;
 const FALLBACK_REFRESH_INTERVAL_MS = 30000;
@@ -42,33 +37,10 @@ const useMovementsRealtime = ({
       }, REALTIME_DEBOUNCE_MS);
     };
 
-    const channel = supabase
-      .channel(`movements-report-realtime-${selectedBranchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: INVENTORY_MOVEMENTS_TABLE,
-          filter: `branch_id=eq.${selectedBranchId}`,
-        },
-        queueRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: REWARD_REDEMPTIONS_TABLE,
-          filter: `branch_id=eq.${selectedBranchId}`,
-        },
-        queueRefresh
-      )
-      .subscribe((status) => {
-        if (import.meta.env.DEV && status === "CHANNEL_ERROR") {
-          console.error("Error en realtime del reporte de movimientos.");
-        }
-      });
+    const unsubscribe = subscribeToMovements({
+      branchId: selectedBranchId,
+      onChange: queueRefresh,
+    });
 
     pollingIntervalRef.current = window.setInterval(() => {
       refreshFunctionRef.current?.();
@@ -87,7 +59,7 @@ const useMovementsRealtime = ({
         pollingIntervalRef.current = null;
       }
 
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [enabled, selectedBranchId]);
 };
