@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 
-import { subscribeToMovements } from "../services/movementsRealtimeService";
+import {
+  FAILED_REALTIME_STATUSES,
+  subscribeToMovements,
+} from "../services/movementsRealtimeService";
 
 const REALTIME_DEBOUNCE_MS = 500;
 const FALLBACK_REFRESH_INTERVAL_MS = 30000;
@@ -37,14 +40,37 @@ const useMovementsRealtime = ({
       }, REALTIME_DEBOUNCE_MS);
     };
 
+    const stopPolling = () => {
+      if (pollingIntervalRef.current) {
+        window.clearInterval(pollingIntervalRef.current);
+
+        pollingIntervalRef.current = null;
+      }
+    };
+
+    // El sondeo es solo un respaldo: arranca cuando el canal falla y se detiene
+    // en cuanto vuelve a quedar suscrito.
+    const handleStatusChange = (status) => {
+      if (FAILED_REALTIME_STATUSES.has(status)) {
+        if (!pollingIntervalRef.current) {
+          pollingIntervalRef.current = window.setInterval(() => {
+            refreshFunctionRef.current?.();
+          }, FALLBACK_REFRESH_INTERVAL_MS);
+        }
+
+        return;
+      }
+
+      if (status === "SUBSCRIBED") {
+        stopPolling();
+      }
+    };
+
     const unsubscribe = subscribeToMovements({
       branchId: selectedBranchId,
       onChange: queueRefresh,
+      onStatusChange: handleStatusChange,
     });
-
-    pollingIntervalRef.current = window.setInterval(() => {
-      refreshFunctionRef.current?.();
-    }, FALLBACK_REFRESH_INTERVAL_MS);
 
     return () => {
       if (refreshTimerRef.current) {
@@ -53,11 +79,7 @@ const useMovementsRealtime = ({
         refreshTimerRef.current = null;
       }
 
-      if (pollingIntervalRef.current) {
-        window.clearInterval(pollingIntervalRef.current);
-
-        pollingIntervalRef.current = null;
-      }
+      stopPolling();
 
       unsubscribe();
     };
