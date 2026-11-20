@@ -10,7 +10,6 @@ const useReceiveForm = ({
   reloadOrders,
   setActiveTab,
   pendingReceiptOrders,
-  submitting,
   setSubmitting,
   clearFeedback,
   setError,
@@ -59,7 +58,7 @@ const useReceiveForm = ({
     );
 
     setReceiptQuantities(nextReceiptQuantities);
-  }, [selectedReceiptOrderId]);
+  }, [selectedReceiptOrder, selectedReceiptOrderId]);
 
   const handleSelectReceiptOrder = useCallback(
     (orderId) => {
