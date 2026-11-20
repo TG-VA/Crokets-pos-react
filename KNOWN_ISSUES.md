@@ -1021,6 +1021,23 @@ ventana del periodo, además de por las ventas del rango.
 
 ---
 
+### 99. Reporte de movimientos: el planner no usa los índices por sucursal y fecha
+
+**Estado:** abierto (20 nov 2026) — registrado en el PR #230.
+
+`fetchAllPages` (`.../PageMovementsReport/services/movementsReportService.js`) pagina con
+`ORDER BY id LIMIT 1000` y filtra por `branch_id` y ventana de fecha. Con ~570 filas en
+`inventory_movements`, `EXPLAIN (ANALYZE, BUFFERS)` en producción elige `inventory_movements_pkey` y
+filtra (5 ms, 269 filas descartadas); los índices de la migración `20261119200000` no se usan.
+
+**Impacto:** ninguno hoy. Con cientos de miles de movimientos y un periodo corto, cada página
+recorrería por `id` muchas filas fuera de la ventana.
+
+**Recomendación futura:** si el reporte se vuelve lento, cambiar el cursor a `(created_at, id)` para
+que el orden coincida con `idx_inventory_movements_branch_created_at`.
+
+---
+
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod
