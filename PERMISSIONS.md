@@ -95,15 +95,16 @@ documento — si se necesita, hay que crearlo explícitamente en `roles` y asign
 Introspección directa de `pg_policies` + `pg_class.relrowsecurity` sobre el proyecto remoto. El
 control real por tabla queda así:
 
-| Estado                   | Tablas (ejemplos)                                                                                                                                                         | Control real                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| RLS + `is_admin()`       | `user_branches` (escritura)                                                                                                                                               | solo `admin` escribe; cada usuario ve sus filas    |
-| RLS + `has_permission()` | `branch_inventory`                                                                                                                                                        | único módulo con permiso granular                  |
-| RLS + `USING (true)`     | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions`                                                                                    | cualquier `authenticated`, sin importar el rol     |
-| RLS + dueño de fila      | `cash_register_sessions`, `cash_movements`                                                                                                                                | cada usuario su propia sesión/movimientos          |
-| RLS + lectura `anon`     | `postal_codes`, `tax_regimes`                                                                                                                                             | catálogos de lectura pre/post login                |
-| RLS sin políticas        | `app_settings`, `cfdi_settings`                                                                                                                                           | deny-all salvo owner/RPC                           |
-| RLS deshabilitado        | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, `roles`, `permissions`, `role_permissions`, `user_roles`, `users`, `branches`, etc. (~37) | acceso por `GRANT` de tabla, sin filtrado de filas |
+| Estado                   | Tablas (ejemplos)                                                                          | Control real                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| RLS + `is_admin()`       | `user_branches` (escritura)                                                                | solo `admin` escribe; cada usuario ve sus filas        |
+| RLS + `has_permission()` | `branch_inventory`                                                                         | único módulo con permiso granular                      |
+| RLS + `USING (true)`     | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions`     | cualquier `authenticated`, sin importar el rol         |
+| RLS + dueño de fila      | `cash_register_sessions`, `cash_movements`                                                 | cada usuario su propia sesión/movimientos              |
+| RLS + lectura `anon`     | `postal_codes`, `tax_regimes`                                                              | catálogos de lectura pre/post login                    |
+| RLS sin políticas        | `app_settings`, `cfdi_settings`                                                            | deny-all salvo owner/RPC                               |
+| Sin RLS, solo lectura    | `users`, `roles`, `permissions`, `role_permissions`, `user_roles` (desde `20261118140000`) | escritura solo por RPC con `is_admin()` o service role |
+| RLS deshabilitado        | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, etc.       | acceso por `GRANT` de tabla, sin filtrado de filas     |
 
 **Hallazgo (KNOWN_ISSUES #13):** `admin` y `cajero` tienen exactamente los mismos permisos
 (`can_manage_inventory`, `can_view_branch`). No existe hoy ninguna diferencia de autorización a
@@ -118,12 +119,39 @@ activar RLS sobre ~37 tablas sin políticas rompería el acceso y el modelo vige
 administrativas en el cliente (#38) **no es un control de seguridad** y cualquier usuario
 autenticado puede saltárselo. La mitigación aplicada sobre las RPCs transaccionales se detalla abajo.
 
+**Usuarios y roles: escritura solo para administradores (17 nov 2026, migración `20261118140000`,
+KNOWN_ISSUES #95).** `anon` y `authenticated` ya no pueden escribir en `users`, `roles`,
+`permissions`, `role_permissions` ni `user_roles`; antes cualquiera podía cambiar su `role_id` a
+`admin` y saltar `is_admin()`. Configuración > Usuarios guarda con `admin_update_user` y
+`admin_set_user_status`, que exigen `is_admin()` sobre `auth.uid()` (`42501` si no) e impiden que
+un administrador se quite su propio rol o se desactive. Un cajero con autorización del modal puede
+entrar a la pantalla, pero no guardar.
+
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
 En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se muestran si el hook `useIsAdmin`
 (`src/hooks/useIsAdmin.js`, sobre `checkUserIsAdmin`) confirma que el usuario es administrador. Es
 **gateo de interfaz, no un control de seguridad**: entra en el riesgo aceptado de
 `KNOWN_ISSUES.md` #10/#13/#38. No se creó permiso ni rol nuevo, así que la tabla de permisos no cambia.
 Aplicarlo en base de datos requeriría una migración.
+
+**Inventario > Agregar: autorización de administrador (17 nov 2026, PR #211).**
+La sección Agregar de Inventario (`/inventory/agregar`) se envuelve en `ProtectedRoute` con la acción
+`inventory_add_access` (`PROTECTED_INVENTORY_SECTIONS` en `src/config/adminProtectedSections.js`) y
+la pestaña de `NavbarInventory` abre `AdminAuthorizationModal` a quien no es administrador. Un cajero
+entra si un administrador autoriza.
+
+Desde la migración `20261117235000` también es control en base de datos: `add_inventory_entry`
+exige `is_admin()` o una autorización vigente en `admin_action_grants`. Como la autorización del
+modal no cambia la sesión, `authorize-admin-action` registra para `inventory_add_access` una fila a
+nombre del usuario que llama, para la sucursal, con 30 minutos de vigencia. Pasado ese plazo la RPC
+rechaza el alta y Agregar vuelve a abrir el modal en la misma pantalla; al autorizar, reintenta el
+alta sin perder la captura.
+
+**Inventario > Ajustes: autorización de administrador (18 nov 2026).**
+Ajustes (`/inventory/ajustes`) sigue el mismo esquema que Agregar con la acción
+`inventory_adjust_access`: `ProtectedRoute` y modal en la pestaña, y control en base de datos en
+`apply_inventory_adjustment` (`20261118150000`), que exige `is_admin()` o un grant vigente de 30
+minutos. Al vencer, Ajustes vuelve a abrir el modal y reintenta sin perder la captura.
 
 **Importar productos: solo administradores (10 nov 2026, migración `20261110130000`).**
 `import_products_transaction` es la primera RPC que exige `public.is_admin()` sobre `auth.uid()`:
@@ -141,7 +169,8 @@ Las RPCs que mueven dinero o inventario (`create_sale_transaction` ×3, `cancel_
 `receive_transfer_order`, `cancel_sale`, `complete_sale`) ya no conceden `EXECUTE` a `anon` ni a
 `PUBLIC` (solo `authenticated`/`service_role`) y fijan el actor con `p_user_id := coalesce(auth.uid(),
 p_user_id)`, de modo que un usuario autenticado no puede suplantar a otro pasando un `p_user_id`
-ajeno. `auth.uid()` es el mismo valor que `public.users.id` (así lo resuelve `is_admin()`). Cierra el
+ajeno. `add_inventory_entry` (`20261117230000`, PR #211) sigue el mismo criterio: revoca `anon` y
+`PUBLIC` y no recibe `p_user_id`; toma el actor directamente de `auth.uid()`. `auth.uid()` es el mismo valor que `public.users.id` (así lo resuelve `is_admin()`). Cierra el
 acceso anónimo y la suplantación, no la ausencia de RLS. Ver `docs/SUPABASE_MIGRATIONS.md`.
 
 ### Excepción de autorización pre-auth (`get_branch_by_device`)

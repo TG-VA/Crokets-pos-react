@@ -146,10 +146,8 @@ const InventoryAddForm = ({
 
         <input
           className={styles.input}
-          type="number"
-          inputMode="decimal"
-          step="0.01"
-          value={Number(salePrice).toFixed(2)}
+          type="text"
+          value={formatCurrency(salePrice)}
           readOnly
           tabIndex={-1}
         />

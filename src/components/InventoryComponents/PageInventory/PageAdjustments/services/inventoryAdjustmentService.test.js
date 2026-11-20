@@ -1,39 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
-  supabase: { from: vi.fn() },
-}));
-
-vi.mock("../../../../../utils/inventoryMovements", () => ({
-  getSystemLocalTimestamp: vi.fn(() => "2026-10-28T12:00:00"),
-  logInventoryMovement: vi.fn(),
+  supabase: { rpc: vi.fn(), from: vi.fn() },
 }));
 
 import { supabase } from "../../../../../lib/supabaseClient";
-import { logInventoryMovement } from "../../../../../utils/inventoryMovements";
-import { applyInventoryAdjustment } from "./inventoryAdjustmentService";
+import {
+  applyInventoryAdjustment,
+  isAdminGrantRequiredError,
+} from "./inventoryAdjustmentService";
 
 const BRANCH_ID = "branch-1";
-
-const buildQuery = (row) => {
-  const q = {
-    select: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-    eq: vi.fn(),
-    maybeSingle: vi.fn(),
-  };
-
-  q.select.mockReturnValue(q);
-  q.insert.mockResolvedValue({ error: null });
-  q.update.mockReturnValue(q);
-  q.eq.mockReturnValue(q);
-  q.maybeSingle.mockResolvedValue({ data: row, error: null });
-  q.then = (onFulfilled, onRejected) =>
-    Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected);
-
-  return q;
-};
 
 const product = {
   product_id: "product-1",
@@ -44,14 +21,42 @@ const product = {
 
 describe("inventoryAdjustmentService", () => {
   beforeEach(() => {
+    supabase.rpc.mockReset();
     supabase.from.mockReset();
-    logInventoryMovement.mockReset();
-    logInventoryMovement.mockResolvedValue({ success: true });
   });
 
-  it("no escribe sale_price al ajustar una fila existente con precio", async () => {
-    const q = buildQuery({ id: "inv-1", stock: 5, has_been_stocked: true });
-    supabase.from.mockReturnValue(q);
+  it("delega el ajuste en la RPC transaccional sin escribir tablas desde el cliente", async () => {
+    supabase.rpc.mockResolvedValue({
+      data: { previousStock: 5, newStock: 3 },
+      error: null,
+    });
+
+    const result = await applyInventoryAdjustment({
+      branchId: BRANCH_ID,
+      product,
+      quantity: -2,
+      reason: "  Merma ",
+      notes: " bolsa rota ",
+    });
+
+    expect(supabase.rpc).toHaveBeenCalledWith("apply_inventory_adjustment", {
+      p_branch_id: BRANCH_ID,
+      p_product_id: "product-1",
+      p_quantity: -2,
+      p_reason: "Merma",
+      p_notes: "bolsa rota",
+    });
+    expect(supabase.from).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      productId: "product-1",
+      previousStock: 5,
+      newStock: 3,
+      quantity: -2,
+    });
+  });
+
+  it("no envia costo: el ajuste no altera el CPP de la sucursal", async () => {
+    supabase.rpc.mockResolvedValue({ data: {}, error: null });
 
     await applyInventoryAdjustment({
       branchId: BRANCH_ID,
@@ -60,41 +65,102 @@ describe("inventoryAdjustmentService", () => {
       reason: "Conteo",
     });
 
-    const payload = q.update.mock.calls[0][0];
-    expect(payload.stock).toBe(8);
-    expect(payload).not.toHaveProperty("sale_price");
+    const [, params] = supabase.rpc.mock.calls[0];
+    expect(Object.keys(params).some((key) => key.includes("cost"))).toBe(false);
+    expect(params.p_notes).toBeNull();
   });
 
-  it("no escribe sale_price al ajustar una fila existente sin precio", async () => {
-    const q = buildQuery({ id: "inv-1", stock: 5, has_been_stocked: true });
-    supabase.from.mockReturnValue(q);
+  it.each(["NEGATIVE_STOCK", "INVENTORY_NOT_REGISTERED"])(
+    "traduce el hint %s de la RPC al code que muestra la pantalla",
+    async (hint) => {
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { code: "P0001", message: "rechazo", hint },
+      });
 
-    await applyInventoryAdjustment({
-      branchId: BRANCH_ID,
-      product: { ...product, precio: undefined },
-      quantity: -2,
-      reason: "Merma",
-    });
+      await expect(
+        applyInventoryAdjustment({
+          branchId: BRANCH_ID,
+          product,
+          quantity: -9,
+          reason: "Merma",
+        })
+      ).rejects.toMatchObject({ code: hint, message: "rechazo" });
+    }
+  );
 
-    const payload = q.update.mock.calls[0][0];
-    expect(payload.stock).toBe(3);
-    expect(payload).not.toHaveProperty("sale_price");
+  it("propaga sin cambios los demas errores de la RPC", async () => {
+    const rpcError = { code: "42501", message: "No tienes acceso" };
+    supabase.rpc.mockResolvedValue({ data: null, error: rpcError });
+
+    await expect(
+      applyInventoryAdjustment({
+        branchId: BRANCH_ID,
+        product,
+        quantity: 1,
+        reason: "Conteo",
+      })
+    ).rejects.toBe(rpcError);
   });
 
-  it("fija sale_price solo en el alta de una fila nueva", async () => {
-    const q = buildQuery(null);
-    supabase.from.mockReturnValue(q);
+  it("valida en el cliente antes de llamar la RPC", async () => {
+    await expect(
+      applyInventoryAdjustment({
+        branchId: BRANCH_ID,
+        product,
+        quantity: 0,
+        reason: "x",
+      })
+    ).rejects.toThrow("La diferencia debe ser distinta de 0.");
+    await expect(
+      applyInventoryAdjustment({
+        branchId: BRANCH_ID,
+        product,
+        quantity: 1,
+        reason: " ",
+      })
+    ).rejects.toThrow("Captura el motivo del ajuste.");
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
 
-    await applyInventoryAdjustment({
-      branchId: BRANCH_ID,
-      product,
-      quantity: 4,
-      reason: "Alta",
-    });
+  it("reconoce el 42501 de autorizacion por su hint", () => {
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        hint: "ADMIN_GRANT_REQUIRED",
+        message: "Texto reescrito por cualquier motivo.",
+      })
+    ).toBe(true);
+    expect(
+      isAdminGrantRequiredError({
+        code: "P0001",
+        hint: "ADMIN_GRANT_REQUIRED",
+        message: "",
+      })
+    ).toBe(false);
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        hint: "OTRO_HINT",
+        message:
+          "Ajustar inventario requiere la autorizacion de un administrador.",
+      })
+    ).toBe(false);
+  });
 
-    expect(q.update).not.toHaveBeenCalled();
-    expect(q.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ stock: 4, sale_price: 289 })
-    );
+  it("no depende del texto del mensaje cuando falta el hint", () => {
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        message:
+          "Ajustar inventario requiere la autorizacion de un administrador.",
+      })
+    ).toBe(false);
+    expect(
+      isAdminGrantRequiredError({
+        code: "42501",
+        message: "No tienes acceso a esta sucursal.",
+      })
+    ).toBe(false);
   });
 });

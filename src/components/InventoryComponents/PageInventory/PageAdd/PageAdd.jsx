@@ -1,5 +1,6 @@
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import AppModal from "../../../AppModal/AppModal";
+import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
 import InventoryAddForm from "./components/InventoryAddForm";
 import useInventoryAdd from "./hooks/useInventoryAdd";
@@ -19,6 +20,8 @@ const PageAdd = () => {
     submitArmed,
     saving,
     appModal,
+    reauthorizationOpen,
+    branchId,
     currentInventory,
     newInventory,
     salePrice,
@@ -37,6 +40,8 @@ const PageAdd = () => {
     handleLookup,
     loadProduct,
     handleSubmit,
+    closeReauthorization,
+    handleReauthorized,
   } = useInventoryAdd();
 
   const { handleContentKeyDown } = useInventoryAddKeyboard({
@@ -128,6 +133,17 @@ const PageAdd = () => {
           onConfirm={appModal.onConfirm || closeAppModal}
           onCancel={appModal.onCancel || closeAppModal}
           onClose={closeAppModal}
+        />
+
+        <AdminAuthorizationModal
+          isOpen={reauthorizationOpen}
+          onClose={closeReauthorization}
+          onAuthorized={handleReauthorized}
+          action="inventory_add_access"
+          title="Autorización vencida"
+          message="La autorización para agregar inventario venció. Un administrador debe autorizar de nuevo para guardar esta entrada."
+          targetId="/inventory/agregar"
+          branchId={branchId}
         />
       </div>
     </div>

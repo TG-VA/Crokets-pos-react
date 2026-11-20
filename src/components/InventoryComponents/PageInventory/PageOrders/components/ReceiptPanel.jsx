@@ -33,8 +33,10 @@ const getDifferenceLabel = (difference) => {
 const ReceiptPanel = ({
   order,
   quantities,
+  costs = {},
   isComplete,
   missingItems,
+  missingCostCount = 0,
   receiptNote = "",
   isNoteRequired = false,
   noteError = "",
@@ -43,6 +45,7 @@ const ReceiptPanel = ({
   canSubmit,
   onChangeOrder,
   onQuantityChange,
+  onCostChange,
   onReceiptNoteChange,
   getDifferencePreview,
   onSubmit,
@@ -128,6 +131,7 @@ const ReceiptPanel = ({
               <th>Departamento</th>
               <th className={styles.numeric}>Esperado</th>
               <th className={styles.numeric}>Conteo físico</th>
+              <th className={styles.numeric}>Costo</th>
               <th className={styles.numeric}>Diferencia</th>
             </tr>
           </thead>
@@ -135,6 +139,7 @@ const ReceiptPanel = ({
             {visibleItems.map((item) => {
               const difference = getDifferencePreview(item);
               const value = quantities[item.productId] ?? "";
+              const cost = costs[item.productId] ?? "";
 
               return (
                 <tr key={item.id || item.productId}>
@@ -156,6 +161,21 @@ const ReceiptPanel = ({
                       onFocus={(event) => event.target.select()}
                       placeholder="Captura"
                       aria-label={`Cantidad recibida de ${item.productName}`}
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <td className={styles.numeric}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.quantityInput}
+                      value={cost}
+                      onChange={(event) =>
+                        onCostChange(item.productId, event.target.value)
+                      }
+                      onFocus={(event) => event.target.select()}
+                      placeholder="0.00"
+                      aria-label={`Costo unitario de ${item.productName}`}
                       disabled={isSubmitting}
                     />
                   </td>
@@ -206,7 +226,15 @@ const ReceiptPanel = ({
           role="status"
           aria-live="polite"
         >
-          {isComplete ? (
+          {isComplete && missingCostCount > 0 ? (
+            <span
+              className={`${receiptStyles.statusPill} ${receiptStyles.statusPillMissing}`}
+            >
+              <img src={WarningIcon} alt="" aria-hidden="true" />
+              Falta el costo de {missingCostCount}{" "}
+              {missingCostCount === 1 ? "producto" : "productos"}
+            </span>
+          ) : isComplete ? (
             <span
               className={`${receiptStyles.statusPill} ${receiptStyles.statusPillOk}`}
             >

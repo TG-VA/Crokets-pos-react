@@ -6,32 +6,64 @@ import FacetFilterButton from "./FacetFilterButton";
 import FacetFilterPopover from "./FacetFilterPopover";
 import ExistenceFilterPopover from "./ExistenceFilterPopover";
 
+const EMPTY_FILTERS = {
+  facetFilters: {},
+  facetOptions: {},
+  facetSearch: {},
+  openFacet: null,
+  existenceQuantity: "",
+  stockStatusCounts: {},
+};
+
+const EMPTY_BRANCH_DETAILS = {
+  expandedProductId: null,
+  otherStocksByProduct: {},
+  loadingDetailsByProduct: {},
+  detailsErrorByProduct: {},
+};
+
+/*
+  Las props se agrupan por subdominio: `filters` (estado y valores de las
+  facetas), `filterActions` (callbacks de las facetas) y `branchDetails`
+  (existencias en otras sucursales). La tabla consume cada grupo completo y
+  reparte a sus hijos solo lo que cada uno usa.
+*/
 const InventoryReportTable = ({
   rows = [],
   loading = false,
-  expandedProductId = null,
-  otherStocksByProduct = {},
-  loadingDetailsByProduct = {},
-  detailsErrorByProduct = {},
-  onToggleOtherStocks,
-
-  facetFilters = {},
-  facetOptions = {},
-  facetSearch = {},
-  openFacet = null,
-  existenceQuantity = "",
-  stockStatusCounts = {},
-
-  onToggleFacet,
-  onSearchFacet,
-  onSelectAllFacet,
-  onClearFacet,
-  onToggleFacetValue,
-  onQuantityChange,
-  onApplyQuantity,
-  onRemoveQuantity,
-  onCloseFacet,
+  filters = EMPTY_FILTERS,
+  filterActions = {},
+  branchDetails = EMPTY_BRANCH_DETAILS,
 }) => {
+  const {
+    facetFilters = {},
+    facetOptions = {},
+    facetSearch = {},
+    openFacet = null,
+    existenceQuantity = "",
+    stockStatusCounts = {},
+  } = filters;
+
+  const {
+    onToggleFacet,
+    onSearchFacet,
+    onSelectAllFacet,
+    onClearFacet,
+    onToggleFacetValue,
+    onQuantityChange,
+    onApplyQuantity,
+    onRemoveQuantity,
+    onCloseFacet,
+  } = filterActions;
+
+  const {
+    expandedProductId = null,
+    otherStocksByProduct = {},
+    loadingDetailsByProduct = {},
+    detailsErrorByProduct = {},
+    onToggleOtherStocks,
+  } = branchDetails;
+
   const renderStandardFilter = (filterKey) => (
     <>
       <FacetFilterButton

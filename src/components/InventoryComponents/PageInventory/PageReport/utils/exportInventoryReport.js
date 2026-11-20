@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 
+import { getStockStatus } from "../services/inventoryReportCalculationService";
 import {
   formatDateTime,
   toUpperSafe,
@@ -7,7 +8,19 @@ import {
   formatDateForFilename,
   normalizeFilenameSegment,
   getExistenceFilterLabel,
-} from "./inventoryReportUtils";
+} from "./inventoryReportFormatters";
+
+const EXPORT_COLUMN_COUNT = 7;
+
+export const buildInventoryExportRowValues = (row) => [
+  toUpperSafe(row?.codigo),
+  toUpperSafe(row?.nombre),
+  toUpperSafe(row?.depto),
+  formatInventoryValue(row?.existencia),
+  formatInventoryValue(row?.min),
+  formatInventoryValue(row?.max),
+  getStockStatus(row).label,
+];
 
 export const exportInventoryReport = async ({
   filteredRows = [],
@@ -35,9 +48,10 @@ export const exportInventoryReport = async ({
     { key: "existencia", width: 17 },
     { key: "min", width: 12 },
     { key: "max", width: 12 },
+    { key: "estado", width: 26 },
   ];
 
-  worksheet.mergeCells("A1:F1");
+  worksheet.mergeCells("A1:G1");
 
   const titleCell = worksheet.getCell("A1");
 
@@ -157,6 +171,7 @@ export const exportInventoryReport = async ({
     "EXISTENCIA",
     "MÍNIMO",
     "MÁXIMO",
+    "ESTADO",
   ];
 
   worksheet.getRow(headerRowNumber).eachCell((cell) => {
@@ -187,16 +202,13 @@ export const exportInventoryReport = async ({
   filteredRows.forEach((row, index) => {
     const excelRow = worksheet.getRow(dataStartRow + index);
 
-    excelRow.values = [
-      toUpperSafe(row.codigo),
-      toUpperSafe(row.nombre),
-      toUpperSafe(row.depto),
-      formatInventoryValue(row.existencia),
-      formatInventoryValue(row.min),
-      formatInventoryValue(row.max),
-    ];
+    excelRow.values = buildInventoryExportRowValues(row);
 
-    for (let columnNumber = 1; columnNumber <= 6; columnNumber += 1) {
+    for (
+      let columnNumber = 1;
+      columnNumber <= EXPORT_COLUMN_COUNT;
+      columnNumber += 1
+    ) {
       const cell = excelRow.getCell(columnNumber);
 
       cell.font = {
@@ -234,14 +246,11 @@ export const exportInventoryReport = async ({
     },
     to: {
       row: headerRowNumber,
-      column: 6,
+      column: EXPORT_COLUMN_COUNT,
     },
   };
 
-  const branchNameForFile = normalizeFilenameSegment(
-    selectedBranchLabel,
-    "POLIGONO"
-  );
+  const branchNameForFile = normalizeFilenameSegment(selectedBranchLabel);
 
   const filename =
     `INVENTARIO ${branchNameForFile} ` + `${formatDateForFilename()}.xlsx`;

@@ -94,30 +94,25 @@ export const updateUser = async ({ id, name, username, roleId }) => {
     };
   }
 
-  const payload = {};
+  const params = {
+    p_user_id: id,
+    p_name: typeof name === "string" ? name.trim() : null,
+    p_username:
+      typeof username === "string" ? username.trim().toLowerCase() : null,
+    p_role_id: roleId || null,
+  };
 
-  if (typeof name === "string") {
-    payload.name = name.trim();
-  }
-
-  if (typeof username === "string") {
-    payload.username = username.trim().toLowerCase();
-  }
-
-  if (roleId) {
-    payload.role_id = roleId;
-  }
-
-  if (Object.keys(payload).length === 0) {
+  if (
+    params.p_name === null &&
+    params.p_username === null &&
+    params.p_role_id === null
+  ) {
     return { success: true, data: null, error: null };
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .update(payload)
-    .eq("id", id)
-    .select("id, name, username, email, status, role_id, created_at")
-    .maybeSingle();
+  // La tabla users no admite escritura directa desde el cliente: la RPC exige
+  // is_admin() y evita que un administrador se quite su propio rol.
+  const { data, error } = await supabase.rpc("admin_update_user", params);
 
   if (error) {
     console.error("Error actualizando usuario:", error);
@@ -145,12 +140,10 @@ export const updateUserStatus = async ({ id, status }) => {
     };
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .update({ status })
-    .eq("id", id)
-    .select("id, name, username, email, status, role_id, created_at")
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("admin_set_user_status", {
+    p_user_id: id,
+    p_status: status,
+  });
 
   if (error) {
     console.error("Error cambiando el estado del usuario:", error);

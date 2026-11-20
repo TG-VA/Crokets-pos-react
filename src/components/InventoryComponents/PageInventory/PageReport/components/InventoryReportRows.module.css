@@ -110,6 +110,23 @@ table tbody tr.notApplicableRow:hover > td {
   text-decoration: underline;
 }
 
+.noBranchRecordRow > td {
+  background: #f7f9fc;
+}
+
+table tbody tr.noBranchRecordRow:hover > td {
+  background: #eef2f8;
+}
+
+.noBranchRecord .stockValue {
+  color: #737b82;
+}
+
+.noBranchRecord .stockBadge {
+  background: #e6ecf5;
+  color: #4a5b74;
+}
+
 .notApplicableText {
   display: inline-flex;
   align-items: center;

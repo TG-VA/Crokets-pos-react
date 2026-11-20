@@ -14,6 +14,7 @@ import {
 vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
     functions: {
       invoke: vi.fn(),
     },
@@ -207,16 +208,11 @@ describe("usersDataService", () => {
 
   describe("updateUser", () => {
     const buildUpdateMock = (response) => {
-      const maybeSingle = vi.fn().mockResolvedValue(response);
-      const select = vi.fn().mockReturnValue({ maybeSingle });
-      const eq = vi.fn().mockReturnValue({ select });
-      const update = vi.fn().mockReturnValue({ eq });
-      supabase.from.mockReturnValue({ update });
-      return { update, eq, select, maybeSingle };
+      supabase.rpc.mockResolvedValue(response);
     };
 
     it("actualiza nombre y rol y devuelve la fila normalizada", async () => {
-      const { update, eq } = buildUpdateMock({
+      buildUpdateMock({
         data: {
           id: "u1",
           name: "Ana Actualizada",
@@ -235,17 +231,19 @@ describe("usersDataService", () => {
         roleId: "role-cashier",
       });
 
-      expect(update).toHaveBeenCalledWith({
-        name: "Ana Actualizada",
-        role_id: "role-cashier",
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_user", {
+        p_user_id: "u1",
+        p_name: "Ana Actualizada",
+        p_username: null,
+        p_role_id: "role-cashier",
       });
-      expect(eq).toHaveBeenCalledWith("id", "u1");
+      expect(supabase.from).not.toHaveBeenCalled();
       expect(result.success).toBe(true);
       expect(result.data.roleId).toBe("role-cashier");
     });
 
     it("envia el username recortado y en minusculas", async () => {
-      const { update } = buildUpdateMock({
+      buildUpdateMock({
         data: {
           id: "u1",
           name: "Ana",
@@ -265,10 +263,11 @@ describe("usersDataService", () => {
         roleId: "role-admin",
       });
 
-      expect(update).toHaveBeenCalledWith({
-        name: "Ana",
-        username: "nueva",
-        role_id: "role-admin",
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_update_user", {
+        p_user_id: "u1",
+        p_name: "Ana",
+        p_username: "nueva",
+        p_role_id: "role-admin",
       });
       expect(result.success).toBe(true);
       expect(result.data.username).toBe("nueva");
@@ -278,7 +277,7 @@ describe("usersDataService", () => {
       const result = await updateUser({ id: "u1" });
 
       expect(result).toEqual({ success: true, data: null, error: null });
-      expect(supabase.from).not.toHaveBeenCalled();
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
     it("rechaza la actualizacion sin id", async () => {
@@ -306,23 +305,21 @@ describe("usersDataService", () => {
 
   describe("updateUserStatus", () => {
     const buildStatusMock = (response) => {
-      const maybeSingle = vi.fn().mockResolvedValue(response);
-      const select = vi.fn().mockReturnValue({ maybeSingle });
-      const eq = vi.fn().mockReturnValue({ select });
-      const update = vi.fn().mockReturnValue({ eq });
-      supabase.from.mockReturnValue({ update });
-      return { update };
+      supabase.rpc.mockResolvedValue(response);
     };
 
     it("desactiva a un usuario", async () => {
-      const { update } = buildStatusMock({
+      buildStatusMock({
         data: { id: "u1", status: false, username: "ana" },
         error: null,
       });
 
       const result = await updateUserStatus({ id: "u1", status: false });
 
-      expect(update).toHaveBeenCalledWith({ status: false });
+      expect(supabase.rpc).toHaveBeenCalledWith("admin_set_user_status", {
+        p_user_id: "u1",
+        p_status: false,
+      });
       expect(result.success).toBe(true);
       expect(result.data.status).toBe(false);
     });
@@ -331,7 +328,7 @@ describe("usersDataService", () => {
       const result = await updateUserStatus({ id: "u1", status: "false" });
 
       expect(result.success).toBe(false);
-      expect(supabase.from).not.toHaveBeenCalled();
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
 
     it("propaga el error de Supabase", async () => {

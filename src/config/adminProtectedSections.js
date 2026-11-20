@@ -93,6 +93,22 @@ export const PROTECTED_PRODUCT_SECTIONS = [
   },
 ];
 
+// Agregar inventario mueve el CPP de la sucursal: por eso requiere administrador.
+export const PROTECTED_INVENTORY_SECTIONS = [
+  {
+    id: "agregar",
+    routePath: "/inventory/agregar",
+    routeLabel: "Agregar inventario",
+    action: "inventory_add_access",
+  },
+  {
+    id: "ajustes",
+    routePath: "/inventory/ajustes",
+    routeLabel: "Ajustes de inventario",
+    action: "inventory_adjust_access",
+  },
+];
+
 export const PROTECTED_INVOICE_SECTIONS = [
   {
     id: "configuracion",
@@ -194,6 +210,7 @@ export const createAuthorizedRoutesFromState = (navigationState, sections) => {
 const ADMIN_PROTECTED_SECTIONS = {
   reports: PROTECTED_REPORT_SECTIONS,
   products: PROTECTED_PRODUCT_SECTIONS,
+  inventory: PROTECTED_INVENTORY_SECTIONS,
   invoices: PROTECTED_INVOICE_SECTIONS,
   settings: PROTECTED_SETTINGS_SECTIONS,
   settingsEntry: PROTECTED_SETTINGS_ENTRY,
