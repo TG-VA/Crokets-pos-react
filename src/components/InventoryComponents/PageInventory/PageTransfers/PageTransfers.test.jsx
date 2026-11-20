@@ -138,4 +138,15 @@ describe("PageTransfers buscador de productos", () => {
 
     expect(transfersState.handleProductPromoted).toHaveBeenCalledTimes(1);
   });
+
+  it("comparte con el buscador los productos ya seleccionados del borrador", () => {
+    transfersState.draftItems = [
+      { productId: "g1", name: "Alimento global", quantity: 2 },
+      { productId: "", name: "Sin id", quantity: 1 },
+    ];
+
+    render(<PageTransfers />);
+
+    expect(lastSearchModalProps.current.selectedProductIds).toEqual(["g1"]);
+  });
 });
