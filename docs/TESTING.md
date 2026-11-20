@@ -118,6 +118,7 @@ y el proceso principal de Electron:
 | Reporte de inventario: exportación (columna de estado)    | `.../PageReport/utils/exportInventoryReport.test.js`                               |
 | Reporte de inventario: carga, Realtime y error            | `.../PageReport/hooks/useInventoryReport.test.js`                                  |
 | Reporte de inventario: contrato del RPC                   | `supabase/migrations/getBranchInventoryReportContract.test.js`                     |
+| Reporte de movimientos: contrato de indices por fecha     | `supabase/migrations/movementsReportWindowIdxContract.test.js`                     |
 | Reporte de movimientos: reset por filtro, sucursal, fecha | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
 | Reporte de movimientos: periodo, lotes, cursor y cache    | `.../PageMovementsReport/services/movementsReportService.test.js`                  |
 | Reporte de movimientos: KPIs sin SIN STOCK y filas        | `.../PageMovementsReport/services/movementsCalculationService.test.js`             |
