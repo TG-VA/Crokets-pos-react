@@ -631,12 +631,6 @@ export const loadRewards = async (rewardIds) => {
   return [];
 };
 
-export {
-  INVENTORY_MOVEMENTS_TABLE,
-  POLI_BRANCH_ID,
-  REWARD_REDEMPTIONS_TABLE,
-} from "./movementServiceConstants";
-
 export const loadMovementsReport = async ({
   branchId,
   startDateKey,

@@ -8,11 +8,7 @@ import {
 const REALTIME_DEBOUNCE_MS = 500;
 const FALLBACK_REFRESH_INTERVAL_MS = 30000;
 
-const useMovementsRealtime = ({
-  selectedBranchId,
-  reloadMovements,
-  enabled = true,
-}) => {
+const useMovementsRealtime = ({ selectedBranchId, reloadMovements }) => {
   const refreshTimerRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   const refreshFunctionRef = useRef(reloadMovements);
@@ -22,11 +18,7 @@ const useMovementsRealtime = ({
   }, [reloadMovements]);
 
   useEffect(() => {
-    if (
-      !enabled ||
-      !selectedBranchId ||
-      typeof refreshFunctionRef.current !== "function"
-    ) {
+    if (!selectedBranchId || typeof refreshFunctionRef.current !== "function") {
       return undefined;
     }
 
@@ -83,7 +75,7 @@ const useMovementsRealtime = ({
 
       unsubscribe();
     };
-  }, [enabled, selectedBranchId]);
+  }, [selectedBranchId]);
 };
 
 export default useMovementsRealtime;

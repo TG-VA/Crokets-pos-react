@@ -11,7 +11,6 @@ vi.mock("../../../../../contexts/BranchContext", () => ({
 }));
 
 vi.mock("../services/movementsReportService", () => ({
-  POLI_BRANCH_ID: "poli",
   loadMovementBranches,
   loadMovementsReport,
 }));

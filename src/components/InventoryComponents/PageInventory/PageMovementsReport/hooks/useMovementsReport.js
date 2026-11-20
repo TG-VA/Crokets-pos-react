@@ -7,8 +7,8 @@ import { useRequestStatus } from "../../../../../hooks/useRequestStatus";
 import {
   loadMovementBranches,
   loadMovementsReport,
-  POLI_BRANCH_ID,
 } from "../services/movementsReportService";
+import { POLI_BRANCH_ID } from "../services/movementServiceConstants";
 
 import {
   createDateRange,
@@ -88,18 +88,6 @@ const useMovementsReport = () => {
   // Sin sucursal no hay reporte que mostrar; antes se vaciaba la tabla desde
   // dentro de la carga, con lo que ademas habia que esperar un turno de render.
   const visibleRows = selectedBranchId ? rows : [];
-
-  const loadBranches = useCallback(async () => {
-    const branches = await loadMovementBranches({
-      currentBranch: branch,
-    });
-
-    setBranchOptions(branches);
-
-    setSelectedBranchId((currentSelectedBranchId) =>
-      resolveBranchSelection(currentSelectedBranchId, branches, branch)
-    );
-  }, [branch?.id, branch?.name, branch?.code]);
 
   // El efecto de sucursales llama directo a la funcion de datos y aplica el
   // estado en la continuacion asincrona.
@@ -281,7 +269,6 @@ const useMovementsReport = () => {
   return {
     branchOptions,
     selectedBranchId,
-    selectedBranch,
     selectedBranchLabel,
 
     startDateKey,
@@ -296,15 +283,11 @@ const useMovementsReport = () => {
     error: visibleError,
 
     setSelectedBranchId,
-    setStartDateKey,
-    setEndDateKey,
-    setRangePreset,
 
     handleStartDateChange,
     handleEndDateChange,
     selectRangePreset,
 
-    loadBranches,
     reloadMovements,
   };
 };
