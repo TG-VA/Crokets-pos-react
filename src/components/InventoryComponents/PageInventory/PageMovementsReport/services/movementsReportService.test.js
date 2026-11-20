@@ -196,6 +196,7 @@ describe("movementsReportService", () => {
 
     expect(callsOf(queries[0], "select")[0][1]).toBe("id, name");
   });
+
   it("descarta filas repetidas cuando un insert desplaza el offset", async () => {
     const shifted = fullPage("a");
     pages.current = [
