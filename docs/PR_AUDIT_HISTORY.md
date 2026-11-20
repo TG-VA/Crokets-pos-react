@@ -3118,7 +3118,7 @@ resueltos.
 Pendiente de verificación humana en Electron (`npm run dev`): reautorización con grant vencido en
 Agregar y Ajustes, y avisos con `useAppModal`.
 
-## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (20 de noviembre de 2026, cuarta ronda)
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación armada` (20 de noviembre de 2026, cuarta ronda)
 
 Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `6173d9f`,
 base `4560b1a`. Commits nuevos auditados: `0dd0922`, `a6aa1ea` (solo docs) y merge `6173d9f`, sin
@@ -3127,9 +3127,9 @@ Prettier OK; ESLint 0 errores (2 warnings preexistentes). Mutaciones: 2 ejecutad
 
 ### Hallazgos abiertos
 
-| #   | Hallazgo                                                                        | Severidad  |
-| --- | ------------------------------------------------------------------------------- | ---------- |
-| 7   | La descripcion reporta 21 commits / 3435 tests y 10 archivos; son 24 / 3636 y 11 | Sugerencia |
+| #   | Hallazgo                                                                         | Severidad  |
+| --- | -------------------------------------------------------------------------------- | ---------- |
+| 7   | La descripción reporta 21 commits / 3435 tests y 10 archivos; son 24 / 3636 y 11 | Sugerencia |
 
 ### Estado al cierre
 
