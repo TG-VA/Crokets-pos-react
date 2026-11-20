@@ -3006,3 +3006,22 @@ ESLint 0 errores. Mutaciones: 4 ejecutadas, 4 detectadas. S1 y S2 de la auditor�
 
 Pendiente de verificación humana en Electron (`npm run dev`): edición de sucursal por un usuario no
 admin con la RLS de `branches` activa.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (18 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 2 sugerencias). Head `42e7918`,
+base `9d35499`. Ejecución: 331 archivos / 3410 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                    | Severidad  |
+| --- | ------------------------------------------------------------------------------------------- | ---------- |
+| I1  | `onProductPromoted` en `PageTransfers` sin test: borrarlo deja la suite en verde            | Importante |
+| S1  | `selectedProductIds` en `PageTransfers` sin test                                            | Sugerencia |
+| S2  | Sin filtro de existencia, la busqueda por texto cuenta agotados y muestra "mas de 0 piezas" | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
+recarga del catálogo origen en terminal admin y operativa.
