@@ -10,18 +10,19 @@ import useInventoryReportFilters from "./hooks/useInventoryReportFilters";
 import { usePagination } from "../../../../hooks/usePagination";
 
 import {
-  getSelectedBranchLabel,
   getActiveFilterCount,
   filterInventoryRows,
   getStockSummary,
   getStockStatusCounts,
   buildFacetOptions,
-} from "./utils/inventoryReportUtils";
+} from "./services/inventoryReportCalculationService";
+import { getSelectedBranchLabel } from "./utils/inventoryReportFormatters";
 
 import { exportInventoryReport } from "./utils/exportInventoryReport";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
+const BRANCH_SELECT_ID = "inventory-report-branch";
 
 const PageReport = () => {
   const {
@@ -140,9 +141,12 @@ const PageReport = () => {
 
           <div className={styles.controls}>
             <div className={styles.controlField}>
-              <label className={styles.label}>Sucursal</label>
+              <label className={styles.label} htmlFor={BRANCH_SELECT_ID}>
+                Sucursal
+              </label>
 
               <select
+                id={BRANCH_SELECT_ID}
                 className={styles.select}
                 value={selectedBranchId}
                 onChange={(event) => handleBranchChange(event.target.value)}
@@ -232,26 +236,32 @@ const PageReport = () => {
         <InventoryReportTable
           rows={pageRows}
           loading={loading}
-          expandedProductId={expandedProductId}
-          otherStocksByProduct={otherStocksByProduct}
-          loadingDetailsByProduct={loadingDetailsByProduct}
-          detailsErrorByProduct={detailsErrorByProduct}
-          onToggleOtherStocks={handleToggleOtherStocks}
-          facetFilters={facetFilters}
-          facetOptions={facetOptions}
-          facetSearch={facetSearch}
-          openFacet={openFacet}
-          existenceQuantity={existenceQuantity}
-          stockStatusCounts={stockStatusCounts}
-          onToggleFacet={toggleFacet}
-          onSearchFacet={handleSearchFacet}
-          onSelectAllFacet={handleSelectAllFacet}
-          onClearFacet={(key) => clearFacet(key, { close: true })}
-          onToggleFacetValue={toggleFacetValue}
-          onQuantityChange={handleExistenceQuantityChange}
-          onApplyQuantity={applyExistenceQuantityFilter}
-          onRemoveQuantity={removeExistenceQuantityFilter}
-          onCloseFacet={closeFacet}
+          filters={{
+            facetFilters,
+            facetOptions,
+            facetSearch,
+            openFacet,
+            existenceQuantity,
+            stockStatusCounts,
+          }}
+          filterActions={{
+            onToggleFacet: toggleFacet,
+            onSearchFacet: handleSearchFacet,
+            onSelectAllFacet: handleSelectAllFacet,
+            onClearFacet: (key) => clearFacet(key, { close: true }),
+            onToggleFacetValue: toggleFacetValue,
+            onQuantityChange: handleExistenceQuantityChange,
+            onApplyQuantity: applyExistenceQuantityFilter,
+            onRemoveQuantity: removeExistenceQuantityFilter,
+            onCloseFacet: closeFacet,
+          }}
+          branchDetails={{
+            expandedProductId,
+            otherStocksByProduct,
+            loadingDetailsByProduct,
+            detailsErrorByProduct,
+            onToggleOtherStocks: handleToggleOtherStocks,
+          }}
         />
 
         {filteredRows.length > 0 && (

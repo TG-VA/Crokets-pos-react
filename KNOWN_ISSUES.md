@@ -1343,6 +1343,10 @@ mutaciones administrativas sobre PostgREST (`cash_movements`, `customers`, `prod
 validación/auditoría de `reason`/`action`/`targetId`; se resolverían con RLS + `has_permission()` o con
 un token de autorización de un solo uso desde la edge function (ver `docs/EDGE_FUNCTIONS.md`).
 
+**Actualización (17 nov 2026, PR #213):** `inventory_add_access` ya se valida en el servidor.
+`add_inventory_entry` exige `is_admin()` o una autorización vigente en `admin_action_grants`, que
+registra `authorize-admin-action`. Las demás acciones siguen como riesgo aceptado. Ver #93 y #94.
+
 ### 39. Endurecimiento de Electron incompleto (SEC-4)
 
 **Estado:** Resuelto — 14 sep 2026.
@@ -2813,6 +2817,59 @@ caso es poco probable; la base de datos nunca aceptó el cambio.
 
 ---
 
+### 93. Inventario > Agregar no vuelve a pedir autorización cuando vence el grant o cambia la sucursal
+
+**Estado:** Resuelto (17 nov 2026) en el PR #213. Detectado en la review del mismo PR.
+
+**Severidad:** Media.
+
+`Inventory.jsx` guarda la ruta autorizada en `authorizedRoutes` (`Set` en estado) sin vencimiento y
+sin sucursal. La RPC `add_inventory_entry` exige una fila de `admin_action_grants` vigente (12 horas)
+para la misma sucursal. Si el cajero deja Inventario abierto más de 12 horas, o cambia la sucursal
+con la página montada, `ProtectedRoute` no vuelve a abrir el modal y el alta falla con `42501`. Para
+volver a autorizar hay que salir de Inventario y entrar de nuevo.
+
+**Resolución:** se mantiene el patrón del resto del POS (la autorización vale mientras se sigue en el
+módulo) y se ajusta la base de datos y el manejo del rechazo:
+
+- `authorize-admin-action` (v7) registra el grant por 30 minutos en lugar de 12 horas, para que no
+  sobreviva mucho a la salida del módulo.
+- `useInventoryAdd` reconoce el rechazo por autorización (`isAdminGrantRequiredError`: `42501` con el
+  mensaje de autorización, no el de acceso a la sucursal), abre `AdminAuthorizationModal` en la misma
+  pantalla y reintenta el alta al autorizar, sin perder la captura. Cubre también el cambio de
+  sucursal y el grant borrado en la base de datos.
+
+La base de datos no puede saber cuándo se sale del módulo, así que el grant puede seguir vigente hasta
+30 minutos después.
+
+**Actualización (18 nov 2026):** `20261118170000` añade `hint = 'ADMIN_GRANT_REQUIRED'` al rechazo
+por autorización de `add_inventory_entry`, igual que Ajustes (#96). `isAdminGrantRequiredError`
+compara primero el hint y conserva el texto del mensaje solo como fallback temporal para la versión
+sin hint; se retira en un PR de seguimiento. Aplicada en remoto el 19 nov 2026
+(`20261119203449`).
+
+**Actualización (19 nov 2026):** `20261118170000` ya está aplicada en remoto (versión
+`20261119203449`). PR #222 retira el fallback por mensaje: `isAdminGrantRequiredError` reconoce el
+rechazo solo por `code = '42501'` y `hint = 'ADMIN_GRANT_REQUIRED'`, y vive en
+`adminAuthorizationService.js`, compartido por Agregar y Ajustes.
+
+---
+
+### 94. `admin_action_grants` no purga las autorizaciones vencidas
+
+**Estado:** Abierto (17 nov 2026). Detectado en la review del PR #213.
+
+**Severidad:** Baja.
+
+Cada autorización de `inventory_add_access` inserta una fila y nada borra las vencidas. El índice
+`(granted_to, action, branch_id, expires_at)` mantiene barata la consulta de la RPC, así que no
+afecta al rendimiento a corto plazo.
+
+**Recomendación:** borrar en la edge function las filas vencidas del mismo usuario, acción y sucursal
+antes del insert (requiere `grant delete` a `service_role`), o un job periódico.
+
+---
+
 ## Cómo usar este documento
 
 - Al encontrar un problema nuevo durante el desarrollo, agregarlo aquí con severidad y una
@@ -2821,3 +2878,138 @@ caso es poco probable; la base de datos nunca aceptó el cambio.
   commit/PR que lo corrigió, para mantener historial de qué se ha ido arreglando.
 - Los ítems nuevos se numeran de forma consecutiva al final (no se renumeran los existentes), para
   que las referencias cruzadas desde `BACKLOG.md` y otros documentos no queden rotas.
+
+---
+
+### 95. `users` y las tablas de roles aceptan escritura de `anon` y `authenticated`
+
+**Estado:** Resuelto y aplicado al remoto — 18 nov 2026, migración `20261118140000_users_roles_write_admin_only.sql` (#214, instalador v1.0.15). Verificado con `has_table_privilege`: `anon` y `authenticated` solo tienen `SELECT` en las cinco tablas.
+
+**Severidad:** Crítica.
+
+`users`, `roles`, `role_permissions`, `permissions` y `user_roles` tienen RLS desactivado y grants de
+`INSERT`, `UPDATE`, `DELETE` y `TRUNCATE` para `anon` y `authenticated`. Como `is_admin()` lee
+`users.role_id`, cualquiera con la clave anon del instalador puede cambiar el rol de un usuario a
+`admin`, desactivar administradores o renombrar usuarios. Eso salta todo control que dependa de
+`is_admin()` (importar productos, `branches`, `user_branches`, la guarda de `add_inventory_entry`).
+El riesgo aceptado de #13 cubría la falta de RLS, pero no esta escalada.
+
+**Solución:** `20261118140000_users_roles_write_admin_only.sql` revoca todos los privilegios en las
+cinco tablas a `anon` y `authenticated` y vuelve a otorgar solo `select`; crea `admin_update_user` y
+`admin_set_user_status`, que exigen `is_admin()`. Configuración > Usuarios usa esas RPCs; un cajero
+con autorización del modal puede ver la pantalla, pero no guardar cambios. Las edge functions de
+usuarios usan service role y no cambian.
+
+**Despliegue:** al aplicar la migración, los instaladores anteriores ya no pueden editar usuarios
+hasta actualizarse. Crear usuarios y cambiar contraseñas siguen funcionando (edge functions).
+
+### 96. Inventario > Ajustes sobrescribía el CPP, no era atómico y no pedía autorización
+
+**Estado:** En curso (18 nov 2026). Migración `20261118150000` y `authorize-admin-action` v8 aplicadas en remoto; PR #217 pendiente de merge.
+
+**Severidad:** Alta.
+
+`inventoryAdjustmentService` leía `branch_inventory`, hacía update o insert y registraba el
+movimiento en llamadas sueltas desde el cliente:
+
+- El update escribía `cost_price` con `products.cost_price`. Desde #211 esa columna es el Costo
+  Promedio Ponderado de la sucursal: un ajuste de -1 sobre un CPP de $12.40 con catálogo en $10 lo
+  dejaba en $10 y falseaba valorización y rentabilidad.
+- Una venta entre la lectura y el update se perdía, y la validación de stock negativo usaba un dato
+  viejo. Si fallaba el log, el stock cambiaba sin movimiento en el kardex.
+- La página no estaba protegida: un cajero podía restar stock sin autorización, aunque Agregar sí
+  la pide.
+- Un ajuste positivo sobre un producto sin fila en la sucursal la creaba sin costo, haciendo de
+  Agregar sin pasar por él.
+
+**Solución:** `apply_inventory_adjustment` (`20261118150000`) hace todo en una transacción con
+bloqueo de fila, no toca el CPP, rechaza productos sin fila y exige admin o grant de
+`inventory_adjust_access`. Ajustes entra a `PROTECTED_INVENTORY_SECTIONS` y pide reautorizar al
+vencer el grant. Lo fijan `applyInventoryAdjustmentContract.test.js`,
+`inventoryAdjustmentService.test.js` y `useInventoryAdjustment.test.js`.
+`20261118160000` (aplicada en remoto como `20261118235405`) añade `hint = 'ADMIN_GRANT_REQUIRED'`
+a ese rechazo y el cliente lo detecta solo por el hint, sin depender del texto del mensaje; el
+fallback por mensaje se retiró al quedar aplicada.
+
+**Pendiente fuera de este cambio:** la tabla `inventory_adjustments` sigue sin uso (motivo y notas
+viajan concatenados en `inventory_movements.reason`) y el motivo es texto libre. La exigencia de
+admin o grant solo vale para la RPC: la RLS `branch_inventory_update` sigue permitiendo UPDATE con
+`can_manage_inventory`, que el cajero tiene, así que un cajero puede cambiar `stock` sin grant
+escribiendo directo en la tabla (por ejemplo con un instalador anterior). Se cierra junto con #13.
+
+### 97. Inventario > Reporte de inventario truncaba en 1000 filas, inyectaba una sucursal fija y ocultaba productos sin registro
+
+**Estado:** Resuelto (19 nov 2026, rama `fix/inventario-reporte-hallazgos`).
+
+**Severidad:** Alta.
+
+**Problema:**
+
+- `fetchInventoryRowsByBranch` y `fetchNoStockProducts` consultaban sin `.limit()` ni `.range()`.
+  PostgREST corta cada respuesta en 1000 filas sin devolver error (ver #16), así que una sucursal
+  con más registros perdía productos en silencio.
+- El selector agregaba siempre la sucursal fija `POLI_BRANCH_ID` aunque no viniera de
+  `fetchOperationalBranches`, y el fallback ante error la ofrecía también. El nombre por defecto del
+  Excel era `POLIGONO`.
+- Los productos con `tracks_inventory = true` sin fila en `branch_inventory` de la sucursal no
+  aparecían en el reporte.
+- `INVENTORY_SELECT_CANDIDATES` reintentaba con un segundo select y ocultaba el error original.
+- `useInventoryReport` tenía dos rutas de carga por recurso (callbacks para Realtime y efectos para
+  la carga inicial), importaba `supabase` directamente y recargaba todo ante cualquier cambio de
+  `products` o `departments`. Ante un error vaciaba la tabla.
+- `InventoryReportTable` recibía 19 props sueltas, la etiqueta `Sucursal` no estaba asociada a su
+  `select` y `inventoryReportUtils.js` (444 líneas) mezclaba formateo con cálculo.
+
+**Decisiones de negocio:**
+
+- **D1.** El selector solo muestra las sucursales operativas que devuelve
+  `fetchOperationalBranches`; no se inyecta ninguna adicional. Ante error, el fallback ofrece solo
+  la sucursal actual y solo si es operativa.
+- **D2.** Los productos activos con `tracks_inventory = true` sin fila activa en `branch_inventory`
+  de la sucursal se muestran con el estado "Sin registro en sucursal" (`noBranchRecord: true`).
+  Existencia, mínimo y máximo quedan en `null` (se muestran vacíos, no 0) y no cuentan como
+  agotados ni como stock bajo.
+
+**Solución:**
+
+- Las consultas se leen por páginas de 1000 con `.range()` hasta `MAX_INVENTORY_REPORT_ROWS`
+  (10000), con orden estable (`created_at`, `id`).
+- Se eliminan `POLI_BRANCH_ID` e `includePoligonoBranch`; el nombre por defecto del archivo es
+  `SUCURSAL`.
+- D2 agrega su estado al badge, a la faceta de existencia, a los conteos, al ordenamiento
+  (registrados, luego sin registro, luego sin control) y a la nueva columna `ESTADO` del Excel. Un
+  producto nunca aparece dos veces: la fila de inventario manda y cada consulta de productos solo
+  agrega los que faltan.
+- Un solo select de inventario; el error se propaga tal cual.
+- Una sola ruta de carga por recurso: Realtime solo incrementa un token de recarga. Se mantiene
+  `useRequestStatus`.
+- `inventoryReportRealtimeService` concentra los canales. Los cambios de `products` y
+  `departments` pasan por filtros puros (`inventoryReportRealtimeFilters`) que los comparan con las
+  filas en pantalla, porque las tablas no usan `REPLICA IDENTITY FULL`: un cambio de precio, costo
+  o comisión ya no recarga el reporte. Se conserva el debounce de 250 ms.
+- Las filas se guardan junto con su sucursal: un error de recarga conserva los últimos datos
+  válidos de esa sucursal y nunca los muestra bajo otra.
+- `InventoryReportTable` recibe `filters`, `filterActions` y `branchDetails`; el `label` usa
+  `htmlFor`; las utilidades se dividen en `utils/inventoryReportFormatters.js` y
+  `services/inventoryReportCalculationService.js`.
+- Las filas sin registro en la sucursal y las sin control de inventario incluyen `departmentId`
+  (hallazgo I1 de la auditoría del PR #226, commit `70084932`). Sin ese campo los filtros de
+  Realtime no las asociaban a su departamento: un cambio de precio de esos productos recargaba todo
+  el reporte y renombrar su departamento no refrescaba la fila.
+
+**Cobertura de tests:** `inventoryReportService.test.js` (paginación, tope, D1, D2 con fila, sin
+fila, sin control y duplicado, error propagado sin reintento), `inventoryReportCalculationService.test.js`
+(estado, conteos, filtro y orden de D2), `exportInventoryReport.test.js` (columna de estado),
+`inventoryReportFormatters.test.js`, `inventoryReportRealtimeFilters.test.js`,
+`inventoryReportRealtimeService.test.js`, `useInventoryReport.test.js` (ruta única, recarga
+acotada, respuesta descartada y conservación de datos ante error) y `PageReport.test.jsx` (etiqueta
+del selector).
+
+**Tope de 10000 filas (S1 de la auditoría del PR #226):** resuelto en el PR #227.
+El RPC `get_branch_inventory_report(p_branch_id)` (migración
+`20261119190000`) hace en SQL la unión de filas de inventario, productos sin registro (D2) y
+productos sin control, y devuelve un solo `jsonb` con `row_kind` por fila: `db-max-rows` de
+PostgREST no lo trunca y ya no hay tope ni paginación en el cliente. Se eligió un RPC único en lugar
+de uno paginado porque los filtros, conteos, orden y exportación a Excel trabajan sobre todas las
+filas de la sucursal. Es `security invoker` (aplica la RLS del llamador) y solo `authenticated`
+tiene `EXECUTE`. Contrato en `getBranchInventoryReportContract.test.js`.

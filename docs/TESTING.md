@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (16 nov 2026)
+## Cobertura actual (19 nov 2026)
 
-330 archivos de test (**3394 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+352 archivos de test (**3590 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -66,19 +66,29 @@ y el proceso principal de Electron:
 | Reporte de rentabilidad                                   | `.../PageProfitabilityReport/services/profitabilityReportService.test.js`          |
 | Reporte de inventario (datos)                             | `.../PageInventoryReport/services/inventoryReportService.test.js`                  |
 | Reporte de inventario (cálculos)                          | `.../PageInventoryReport/services/inventoryReportCalculationService.test.js`       |
-| Inventario: alta con CPP                                  | `.../PageAdd/services/inventoryAddService.test.js`                                 |
-| Inventario: ajuste sin reescribir precio                  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Inventario: alta vía RPC transaccional                    | `.../PageAdd/services/inventoryAddService.test.js`                                 |
+| Inventario: contrato SQL del alta transaccional y CPP     | `supabase/migrations/addInventoryEntryContract.test.js`                            |
+| Inventario: Agregar protegido por administrador           | `.../NavbarInventory/NavbarInventory.test.jsx`                                     |
+| Inventario: índice y URL directa de Agregar/Ajustes       | `src/pages/Inventory/Inventory.test.jsx`                                           |
+| Inventario: mensaje de CPP al agregar (redondeado)        | `.../PageAdd/utils/inventoryAddFormatters.test.js`                                 |
+| Inventario: ajuste por RPC, sin costo y hints traducidos  | `.../PageAdjustments/services/inventoryAdjustmentService.test.js`                  |
+| Contrato SQL del ajuste: guarda, lock, CPP, hints y grant | `supabase/migrations/applyInventoryAdjustmentContract.test.js`                     |
 | Precio de sucursal en 0 cae al catalogo                   | `src/utils/branchSalePrice.test.js`                                                |
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
 | Contrato SQL de RLS y escritura admin en branches         | `supabase/migrations/branchesRlsAdminWriteContract.test.js`                        |
+| Contrato SQL de escritura admin en usuarios y roles       | `supabase/migrations/usersRolesWriteAdminOnlyContract.test.js`                     |
 | Contrato SQL de username insensible a mayusculas          | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
 | Contrato SQL del CHECK de username en minusculas          | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
 | Contrato de authorize-admin-action (username)             | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |
+| Contrato de authorize-admin-action (grant de inventario)  | `supabase/functions/authorizeAdminActionGrantContract.test.js`                     |
+| Contrato SQL del alta: admin o grant y hint del rechazo   | `supabase/migrations/addInventoryEntryAdminGrantContract.test.js`                  |
 | Contrato de admin-create-user (username)                  | `supabase/functions/adminCreateUserUsernameContract.test.js`                       |
 | Normalizacion de username (helper compartido)             | `supabase/functions/normalizeUsername.test.js`                                     |
 | Inventario: cálculo del CPP móvil                         | `src/services/inventory/inventoryCostCalculationService.test.js`                   |
 | Inventario: proyección de CPP en interfaz                 | `.../PageAdd/services/inventoryAddProjectionService.test.js`                       |
 | Inventario: hook de captura de costo                      | `.../PageAdd/hooks/useInventoryAddCost.test.js`                                    |
+| Inventario: reautorización al vencer el grant             | `.../PageAdd/hooks/useInventoryAdd.test.js`                                        |
+| Inventario: modal de reautorización cableado en Agregar   | `.../PageAdd/PageAdd.test.jsx`                                                     |
 | Inventario: componente de captura de costo                | `.../PageAdd/components/InventoryAddCostEntry.test.jsx`                            |
 | Inventario: movimientos (payload de costo)                | `src/utils/inventoryMovements.test.js`                                             |
 | Corte de cajero (cálculos)                                | `src/pages/CashCut/services/cashCutCalculationService.test.js`                     |
@@ -100,6 +110,14 @@ y el proceso principal de Electron:
 | Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
 | Paginación global (incluye reset por `resetKeys`)         | `src/hooks/usePagination.test.js`                                                  |
 | Reporte de inventario: paginacion y reset al filtrar      | `.../PageInventory/PageReport/PageReport.test.jsx`                                 |
+| Reporte de inventario: RPC sin tope, mapeo, D1 y D2       | `.../PageReport/services/inventoryReportService.test.js`                           |
+| Reporte de inventario: estado, conteos, filtro y orden    | `.../PageReport/services/inventoryReportCalculationService.test.js`                |
+| Reporte de inventario: servicio Realtime                  | `.../PageReport/services/inventoryReportRealtimeService.test.js`                   |
+| Realtime: relevancia, incluye filas sin registro          | `.../PageReport/utils/inventoryReportRealtimeFilters.test.js`                      |
+| Reporte de inventario: formateadores                      | `.../PageReport/utils/inventoryReportFormatters.test.js`                           |
+| Reporte de inventario: exportación (columna de estado)    | `.../PageReport/utils/exportInventoryReport.test.js`                               |
+| Reporte de inventario: carga, Realtime y error            | `.../PageReport/hooks/useInventoryReport.test.js`                                  |
+| Reporte de inventario: contrato del RPC                   | `supabase/migrations/getBranchInventoryReportContract.test.js`                     |
 | Reporte de movimientos: reset por filtro, sucursal, fecha | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
 | Navegación protegida                                      | `src/hooks/useProtectedNavigation.test.js`                                         |
 | Secciones protegidas                                      | `src/config/adminProtectedSections.test.js`                                        |
@@ -198,8 +216,11 @@ y el proceso principal de Electron:
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
 | Pedidos: catalogo de productos locales                    | `.../PageOrders/services/localProductsCatalogService.test.js`                      |
 | Pedidos: confirmacion para volver global un producto      | `.../Modals/InventorySearchModal/components/MakeGlobalConfirmModal.test.jsx`       |
-| Ajustes: carga, error y rechazo por codigo y F10 (hook)   | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
-| Ajustes: carga y error en el buscador de la pagina        | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Ajustes: carga, F10, grant vencido y reintento (hook)     | `.../PageAdjustments/hooks/useInventoryAdjustment.test.js`                         |
+| Ajustes: buscador y accion del modal de reautorizacion    | `.../PageAdjustments/PageAdjustments.test.jsx`                                     |
+| Ajustes: busqueda y seleccion del producto (hook)         | `.../PageAdjustments/hooks/useAdjustmentProductSelection.test.js`                  |
+| Ajustes: normalizacion y parseo de la diferencia          | `.../PageAdjustments/services/adjustmentQuantityCalculationService.test.js`        |
+| Inventario: reautorizacion por grant vencido compartida   | `src/hooks/useGrantReauthorization.test.js`                                        |
 | Productos: buscador (dialogo, sin kits, clic y flechas)   | `.../Modals/ProductsSearchModal/ProductsSearchModal.test.jsx`                      |
 | Buscadores: dialogo compartido (botones, conteo y cierre) | `src/components/ModalControls/ProductSearchDialog.test.jsx`                        |
 | Ventas: buscador de productos como dialogo                | `.../SalesComponents/Modals/SearchModal/SearchModal.test.jsx`                      |
@@ -218,7 +239,7 @@ y el proceso principal de Electron:
 | Pedidos: badge del nombre del pedido                      | `.../PageOrders/components/OrderNameBadge.test.jsx`                                |
 | Pedidos: modal de detalle (cabecera, titulo y ruta)       | `.../PageOrders/components/OrderDetailModal.test.jsx`                              |
 | Pedidos: aviso con cierre automatico                      | `.../PageOrders/components/FeedbackBanner.test.jsx`                                |
-| Pedidos: estilos (clases definidas, badges en negrita)    | `.../PageOrders/PageOrders.styles.test.js`                                         |
+| Pedidos: estilos (clases, negritas, encabezado recepcion) | `.../PageOrders/PageOrders.styles.test.js`                                         |
 | Pedidos: contrato SQL de nombres en mayusculas            | `supabase/migrations/storeOrdersUppercaseContract.test.js`                         |
 | Modal base (footer, capa en la pila e icono en large)     | `src/components/AppModal/AppModal.test.jsx`                                        |
 | Pila de modales (capas y bloqueo de atajos)               | `src/contexts/ModalStackContext.test.jsx`                                          |
@@ -247,23 +268,21 @@ y el proceso principal de Electron:
 | Pedidos: contrato SQL de permisos (revoke anon)           | `supabase/migrations/storeOrdersRevokeAnonContract.test.js`                        |
 | Pedidos: contrato SQL de integridad                       | `supabase/migrations/storeOrdersIntegrityContract.test.js`                         |
 | Pedidos: contrato SQL de nota de recepcion                | `supabase/migrations/storeOrdersReceiptNotesContract.test.js`                      |
+| Pedidos: contrato SQL de costo de recepcion y CPP         | `supabase/migrations/storeOrdersReceiptCostContract.test.js`                       |
+| Pedidos: contrato SQL de costos finitos y tope            | `supabase/migrations/storeOrdersReceiptCostFiniteContract.test.js`                 |
+| Pedidos: contrato SQL de hora local en la recepción       | `supabase/migrations/storeOrdersReceiptLocalTimeContract.test.js`                  |
 
 ### Cobertura transitiva del resolver de costo
 
 `src/services/inventory/inventoryCostResolutionService.js` no tiene un archivo de test propio. Se
-prueba **a través de sus dos consumidores**, que es donde importa el comportamiento:
+prueba a través de `.../PageAdd/services/inventoryAddProjectionService.test.js` (18 casos), el camino
+de la interfaz.
 
-- `.../PageAdd/services/inventoryAddService.test.js` (20 casos) lo ejerce por el camino de persistencia.
-- `.../PageAdd/services/inventoryAddProjectionService.test.js` (18 casos) lo ejerce por el camino de la interfaz.
-
-Es intencional: el módulo no tiene comportamiento propio más allá de `resolveCurrentCost`,
-`resolveIncomingCostPrice` y `toNonNegativeNumber`, y probarlo por separado duplicaría los mismos
-escenarios con nombres distintos. Una mutación que hace que el resolver compartido ignore el
-`cost_price` de `branch_inventory` y herede el de catálogo rompe **5 casos, todos en
-`inventoryAddService.test.js` y ninguno en la suite de proyección**: `getCurrentUnitCost` siempre
-resuelve con `inventoryRow = null` (el producto ya trae el costo resuelto para la sucursal), de modo
-que esa rama es inalcanzable desde la interfaz y no puede detectarse por ese camino. La detección
-está donde el servidor sí lee la fila: la suite de persistencia.
+Desde `20261117230000` el alta ya no usa el resolver para persistir: `add_inventory_entry` resuelve
+el CPP vigente en SQL (`branch_inventory.cost_price` con fallback al catálogo).
+`addInventoryEntryContract.test.js` fija esa regla, el bloqueo de la fila y la fórmula contra el SQL
+real. La paridad entre la proyección (JS) y la RPC (SQL) no tiene un test que ejecute ambas: una
+regla nueva de costo debe cambiarse en los dos lados.
 
 ## Patrones y convenciones
 
@@ -351,11 +370,10 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   entrada negativa, fraccionadas, redondeo a 2 decimales) y la proteccion R2: stock negativo tratado
   como 0, costo entrante negativo neutralizado a 0 y resultado nunca negativo. Tambien fija la
   coercion de `NaN`, `Infinity`, `null`, `undefined`, strings numericos y la invocacion sin
-  argumentos. `inventoryAddService.test.js` (20 casos) fija que el alta persista el CPP exacto en
-  `branch_inventory.cost_price`, que respete un `cost_price` ya calculado en 0 frente al fallback del
-  catalogo (el `??` en vez de `||`), que inserte con el costo entrante cuando no hay fila previa, que
-  mande `unitCost`/`totalCost` a `logInventoryMovement` redondeados a 2 decimales y que propague
-  errores de lectura y escritura sin registrar el movimiento. `inventoryMovements.test.js` (8 casos)
+  argumentos. `inventoryAddService.test.js` fija que el alta llame una sola vez a `add_inventory_entry`
+  sin escribir tablas desde el cliente, que mande `null` como costo en entrada manual o costo no
+  numérico (y `0` cuando el costo es cero) y que propague el error de la RPC. El cálculo del CPP en
+  la persistencia lo fija `addInventoryEntryContract.test.js` contra el SQL. `inventoryMovements.test.js` (8 casos)
   fija el mapeo de `unit_cost`/`total_cost` con `Math.max(0, ...)` (R2), que los movimientos que no
   informan costo (ajustes, ventas, devoluciones) sigan guardando NULL, que un `null` explicito se
   guarde como NULL y no como 0, y que el fallback por columna ausente omita ambas columnas en lugar

@@ -2,6 +2,7 @@ import React from "react";
 
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
 import AppModal from "../../../AppModal/AppModal";
+import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 
 import InventoryAdjustmentForm from "./components/InventoryAdjustmentForm";
 import useInventoryAdjustment from "./hooks/useInventoryAdjustment";
@@ -23,6 +24,8 @@ const PageAdjustments = () => {
     submitArmed,
     saving,
     appModal,
+    reauthorizationOpen,
+    branchId,
 
     currentStock,
     newStock,
@@ -49,6 +52,8 @@ const PageAdjustments = () => {
     handleLookup,
     loadProduct,
     handleSubmitAdjustment,
+    closeReauthorization,
+    handleReauthorized,
   } = useInventoryAdjustment();
 
   const { handleContentKeyDown } = useInventoryAdjustmentKeyboard({
@@ -147,6 +152,17 @@ const PageAdjustments = () => {
           onConfirm={appModal.onConfirm || closeAppModal}
           onCancel={appModal.onCancel || closeAppModal}
           onClose={closeAppModal}
+        />
+
+        <AdminAuthorizationModal
+          isOpen={reauthorizationOpen}
+          onClose={closeReauthorization}
+          onAuthorized={handleReauthorized}
+          action="inventory_adjust_access"
+          title="Autorización vencida"
+          message="La autorización para ajustar inventario venció. Un administrador debe autorizar de nuevo para guardar este ajuste."
+          targetId="/inventory/ajustes"
+          branchId={branchId}
         />
       </div>
     </div>

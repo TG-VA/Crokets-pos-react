@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import ADMIN_PROTECTED_SECTIONS, {
+  PROTECTED_INVENTORY_SECTIONS,
   PROTECTED_INVOICE_SECTIONS,
   PROTECTED_PRODUCT_SECTIONS,
   PROTECTED_REPORT_SECTIONS,
@@ -79,6 +80,21 @@ describe("withProtectedMetadata", () => {
 
     expect(product.action).toBe("products_new_access");
     expect(invoice.action).toBe("invoice_settings_access");
+  });
+
+  it("protege Agregar y Ajustes de inventario y deja publicas las demas pestañas", () => {
+    const [add, adjust, kardex] = withProtectedMetadata(
+      [
+        { id: "agregar", label: "Agregar", path: "/inventory/agregar" },
+        { id: "ajustes", label: "Ajustes", path: "/inventory/ajustes" },
+        { id: "kardex", label: "Kardex", path: "/inventory/kardex" },
+      ],
+      PROTECTED_INVENTORY_SECTIONS
+    );
+
+    expect(add.action).toBe("inventory_add_access");
+    expect(adjust.action).toBe("inventory_adjust_access");
+    expect(kardex.action).toBeUndefined();
   });
 
   it("protege las pestañas internas de configuración", () => {

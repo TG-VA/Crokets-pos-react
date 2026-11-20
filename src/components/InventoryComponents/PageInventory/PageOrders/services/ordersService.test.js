@@ -44,6 +44,7 @@ const pendingOrder = {
       productId: "product-1",
       productName: "Croqueta",
       expectedQty: 2,
+      costPrice: 100,
     },
   ],
 };
@@ -165,6 +166,7 @@ describe("ordersService", () => {
         receiveStoreOrder({
           order: pendingOrder,
           currentBranchId: "branch-2",
+          costs: { "product-1": "100" },
           quantities: { "product-1": "1.5" },
           user: { id: "user-1" },
         })
@@ -178,6 +180,7 @@ describe("ordersService", () => {
         receiveStoreOrder({
           order: pendingOrder,
           currentBranchId: "branch-2",
+          costs: { "product-1": "100" },
           quantities: { "product-1": "1" },
           user: { id: "user-1" },
         })
@@ -191,6 +194,7 @@ describe("ordersService", () => {
         receiveStoreOrder({
           order: pendingOrder,
           currentBranchId: "branch-2",
+          costs: { "product-1": "100" },
           quantities: { "product-1": "3" },
           receiptNote: "   ",
           user: { id: "user-1" },
@@ -208,6 +212,7 @@ describe("ordersService", () => {
       await receiveStoreOrder({
         order: pendingOrder,
         currentBranchId: "branch-2",
+        costs: { "product-1": "100" },
         quantities: { "product-1": "1" },
         receiptNote: "  Faltó una bolsa  ",
         user: { id: "user-1" },
@@ -229,6 +234,7 @@ describe("ordersService", () => {
       await receiveStoreOrder({
         order: pendingOrder,
         currentBranchId: "branch-2",
+        costs: { "product-1": "100" },
         quantities: { "product-1": "2" },
         receiptNote: "   ",
         user: { id: "user-1" },
@@ -251,10 +257,50 @@ describe("ordersService", () => {
         receiveStoreOrder({
           order: pendingOrder,
           currentBranchId: "branch-2",
+          costs: { "product-1": "100" },
           quantities: { "product-1": "2" },
           user: { id: "user-1" },
         })
       ).rejects.toThrow(/no se pudo recuperar el pedido/);
+    });
+  });
+
+  describe("receiveStoreOrder costo", () => {
+    it("rechaza la recepcion sin costo en una partida recibida", async () => {
+      await expect(
+        receiveStoreOrder({
+          order: pendingOrder,
+          currentBranchId: "branch-2",
+          quantities: { "product-1": "2" },
+          costs: { "product-1": "" },
+          user: { id: "user-1" },
+        })
+      ).rejects.toThrow(/costo/);
+
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it("envia el mapa de costos redondeado a 2 decimales", async () => {
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, orderId: "order-1" },
+        error: null,
+      });
+      fetchStoreOrderById.mockResolvedValue({ id: "order-1" });
+
+      await receiveStoreOrder({
+        order: pendingOrder,
+        currentBranchId: "branch-2",
+        quantities: { "product-1": "2" },
+        costs: { "product-1": "98.5" },
+        user: { id: "user-1" },
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "receive_store_order",
+        expect.objectContaining({
+          p_received_cost_map: { "product-1": 98.5 },
+        })
+      );
     });
   });
 

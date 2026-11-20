@@ -3025,3 +3025,38 @@ ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
 
 Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
 recarga del catálogo origen en terminal admin y operativa.
+
+---
+
+## Informe de Auditoría — PR #209 `feat(pedidos): capturar el costo al recibir un pedido y recalcular el CPP` (17 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `a8fae24`,
+base `781d407`. Ejecución: 333 archivos / 3431 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 16 ejecutadas en dos rondas, 16 detectadas. I1 (NaN en la RPC), I2
+(precarga 0.00) y S1 (mensaje duplicado) de la auditoría anterior resueltos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                      | Severidad  | Estado                                                                     |
+| --- | ----------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- |
+| S2  | Un costo mayor a `RECEIPT_COST_MAX` se reporta como "Falta el costo" en la UI | Sugerencia | Corregido en `219d36e6`: `sanitizeCostInput` rechaza la captura sobre tope |
+
+### Estado al cierre
+
+Descripción del PR y `docs/TESTING.md` actualizados con la migración `20261117180000` (`92461115`).
+Pendiente de verificación humana en Electron (`npm run dev`) y en base remota del CPP tras la
+recepción.
+
+---
+
+## Informe de Auditoría — PR #219 `refactor(ajustes): dividir useInventoryAdjustment por subdominio` (19 de noviembre de 2026, quinta ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 0 sugerencias). Head `f90ae02`,
+base `a3961cb`. Ejecución: 346 archivos / 3538 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 15 en total entre las rondas, todas detectadas. I1, I2 y S1 a S7
+resueltos.
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): reautorización con grant vencido en
+Agregar y Ajustes, y avisos con `useAppModal`.

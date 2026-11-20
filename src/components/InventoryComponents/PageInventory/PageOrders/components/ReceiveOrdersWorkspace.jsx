@@ -11,17 +11,20 @@ const ReceiveOrdersWorkspace = ({
   pendingOrders = [],
   selectedOrder,
   quantities,
+  costs,
   receiptNote,
   isNoteRequired,
   noteError,
   isComplete,
   missingItems,
+  missingCostCount,
   error,
   isSubmitting,
   canSubmit,
   currentBranchName,
   onSelectOrder,
   onQuantityChange,
+  onCostChange,
   onReceiptNoteChange,
   getDifferencePreview,
   onSubmit,
@@ -112,16 +115,19 @@ const ReceiveOrdersWorkspace = ({
           key={selectedOrder.id}
           order={selectedOrder}
           quantities={quantities}
+          costs={costs}
           receiptNote={receiptNote}
           isNoteRequired={isNoteRequired}
           noteError={noteError}
           isComplete={isComplete}
           missingItems={missingItems}
+          missingCostCount={missingCostCount}
           error={error}
           isSubmitting={isSubmitting}
           canSubmit={canSubmit}
           onChangeOrder={() => onSelectOrder(null)}
           onQuantityChange={onQuantityChange}
+          onCostChange={onCostChange}
           onReceiptNoteChange={onReceiptNoteChange}
           getDifferencePreview={getDifferencePreview}
           onSubmit={onSubmit}

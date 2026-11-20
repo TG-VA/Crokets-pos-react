@@ -5,7 +5,7 @@ import useInventoryReportFilters from "./useInventoryReportFilters";
 import {
   INITIAL_FACET_FILTERS,
   QUANTITY_FILTER_PREFIX,
-} from "../utils/inventoryReportUtils";
+} from "../services/inventoryReportCalculationService";
 
 describe("useInventoryReportFilters", () => {
   it("inicializa filtros vacios", () => {

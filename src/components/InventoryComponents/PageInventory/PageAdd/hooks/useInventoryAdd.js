@@ -2,23 +2,15 @@ import { useMemo, useRef, useState } from "react";
 
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
-import { useAuth } from "../../../../../contexts/AuthContext";
 
-import { addInventoryToProduct } from "../services/inventoryAddService";
+import {
+  addInventoryToProduct,
+  isAdminGrantRequiredError,
+} from "../services/inventoryAddService";
+import { buildCostSummary } from "../utils/inventoryAddFormatters";
 import useInventoryAddCost from "./useInventoryAddCost";
-
-const INITIAL_APP_MODAL = {
-  isOpen: false,
-  type: "info",
-  title: "",
-  message: "",
-  confirmText: "Entendido",
-  cancelText: "Cancelar",
-  showCancel: false,
-  loading: false,
-  onConfirm: null,
-  onCancel: null,
-};
+import { useAppModal } from "../../../../../hooks/useAppModal";
+import useGrantReauthorization from "../../../../../hooks/useGrantReauthorization";
 
 const useInventoryAdd = () => {
   const {
@@ -29,7 +21,14 @@ const useInventoryAdd = () => {
     refreshProducts,
   } = useProducts();
   const { branch } = useBranch();
-  const { user } = useAuth();
+
+  const { appModal, closeAppModal, showAppAlert } = useAppModal();
+  const {
+    reauthorizationOpen,
+    requestReauthorization,
+    closeReauthorization,
+    confirmReauthorization,
+  } = useGrantReauthorization();
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
@@ -37,7 +36,6 @@ const useInventoryAdd = () => {
   const [quantityToAdd, setQuantityToAdd] = useState("");
   const [submitArmed, setSubmitArmed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [appModal, setAppModal] = useState(INITIAL_APP_MODAL);
 
   const quantityInputRef = useRef(null);
   const barcodeInputRef = useRef(null);
@@ -90,36 +88,6 @@ const useInventoryAdd = () => {
     setBarcode("");
     setQuantityToAdd("");
     setSearchModalOpen(false);
-  };
-
-  const closeAppModal = () => {
-    setAppModal((previous) => ({
-      ...previous,
-      isOpen: false,
-      loading: false,
-      onConfirm: null,
-      onCancel: null,
-    }));
-  };
-
-  const showAppAlert = ({
-    type = "info",
-    title = "Aviso",
-    message = "",
-    confirmText = "Entendido",
-  }) => {
-    setAppModal({
-      isOpen: true,
-      type,
-      title,
-      message,
-      confirmText,
-      cancelText: "Cancelar",
-      showCancel: false,
-      loading: false,
-      onConfirm: closeAppModal,
-      onCancel: closeAppModal,
-    });
   };
 
   const openSearchModal = () => {
@@ -254,12 +222,11 @@ const useInventoryAdd = () => {
     try {
       setSaving(true);
 
-      await addInventoryToProduct({
+      const result = await addInventoryToProduct({
         branchId: branch.id,
         product: selectedProduct,
         quantity: parsedQuantityToAdd,
         incomingCostPrice: costEntry.resolveIncomingCostPriceForSubmit(),
-        userId: user?.id || null,
       });
 
       await refreshProducts();
@@ -277,10 +244,17 @@ const useInventoryAdd = () => {
       showAppAlert({
         type: "success",
         title: "Inventario actualizado",
-        message: `${descriptionUpper}\nInventario agregado: +${savedQuantity} PZ`,
+        message: `${descriptionUpper}\nInventario agregado: +${savedQuantity} PZ\n${buildCostSummary(result)}`,
         confirmText: "Aceptar",
       });
     } catch (error) {
+      // La autorizacion vencio o no existe: se vuelve a pedir sin salir de la
+      // pantalla y sin perder la captura.
+      if (isAdminGrantRequiredError(error)) {
+        requestReauthorization();
+        return;
+      }
+
       console.error("Error agregando inventario:", error);
 
       showAppAlert({
@@ -291,6 +265,10 @@ const useInventoryAdd = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleReauthorized = () => {
+    confirmReauthorization(handleSubmit);
   };
 
   return {
@@ -304,6 +282,8 @@ const useInventoryAdd = () => {
     submitArmed,
     saving,
     appModal,
+    reauthorizationOpen,
+    branchId: branch?.id || null,
 
     currentInventory,
     newInventory,
@@ -327,6 +307,8 @@ const useInventoryAdd = () => {
     handleLookup,
     loadProduct,
     handleSubmit,
+    closeReauthorization,
+    handleReauthorized,
   };
 };
 

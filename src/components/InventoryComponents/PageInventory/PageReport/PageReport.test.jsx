@@ -137,3 +137,12 @@ describe("PageReport paginacion", () => {
     expect(screen.queryByRole("button", { name: "Siguiente" })).toBeNull();
   });
 });
+
+describe("PageReport accesibilidad", () => {
+  it("el selector de sucursal tiene etiqueta asociada", () => {
+    mockReport([]);
+    render(<PageReport />);
+
+    expect(screen.getByLabelText("Sucursal").tagName).toBe("SELECT");
+  });
+});
