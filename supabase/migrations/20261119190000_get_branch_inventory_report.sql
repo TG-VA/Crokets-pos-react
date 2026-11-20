@@ -1,5 +1,5 @@
--- Reporte de inventario por sucursal en una sola llamada y sin tope de filas (S1 del PR #226,
--- KNOWN_ISSUES #97). Antes el cliente leia branch_inventory y products por paginas de 1000 hasta
+-- Reporte de inventario por sucursal en una sola llamada y sin tope de filas
+-- (KNOWN_ISSUES #97). Antes el cliente leia branch_inventory y products por paginas de 1000 hasta
 -- 10000 filas. Devuelve un solo jsonb para que db-max-rows de PostgREST no corte el resultado.
 --
 -- Cada elemento trae row_kind:
