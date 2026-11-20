@@ -205,25 +205,59 @@ describe("movementsReportService", () => {
   });
 
   it("continua desde el ultimo id leido aunque se borren filas entre paginas", async () => {
-    pages.current = [fullPage("a"), { data: [{ id: "b-0" }], error: null }];
+    // Dataset que responde como PostgREST: filtra por .gt sobre id, ordena y
+    // corta en .limit. Tras servir la primera pagina se borra una fila ya leida.
+    const total = MOVEMENTS_PAGE_SIZE * 2 + 1;
+    let dataset = Array.from({ length: total }, (_, index) => ({
+      id: `r-${String(index).padStart(5, "0")}`,
+    }));
+    const deletedId = dataset[500].id;
+    let served = 0;
 
-    const result = await fetchAllPages(() => from("x"));
+    const buildQuery = () => {
+      let cursor = null;
+      const serve = (page) => {
+        served += 1;
+        if (served === 1) {
+          dataset = dataset.filter((row) => row.id !== deletedId);
+        }
+        return Promise.resolve({ data: page, error: null });
+      };
+      const query = {
+        order: () => query,
+        // Paginacion por offset, para que el test distinga cursor de .range().
+        range: (start, end) => serve(dataset.slice(start, end + 1)),
+        gt: (_column, value) => {
+          cursor = value;
+          return query;
+        },
+        limit: (count) => {
+          const page = dataset
+            .filter((row) => cursor === null || row.id > cursor)
+            .sort((left, right) => left.id.localeCompare(right.id))
+            .slice(0, count);
+          return serve(page);
+        },
+      };
+      return query;
+    };
 
-    expect(result.data).toHaveLength(MOVEMENTS_PAGE_SIZE + 1);
-    expect(callsOf(queries[1], "gt")).toEqual([
-      ["gt", "id", `a-${MOVEMENTS_PAGE_SIZE - 1}`],
-    ]);
-    expect(callsOf(queries[1], "range")).toEqual([]);
+    const result = await fetchAllPages(buildQuery);
+
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(total);
+    expect(new Set(result.data.map((row) => row.id)).size).toBe(total);
   });
 
-  it("se detiene si la ultima fila de una pagina llena no trae id", async () => {
+  it("devuelve error si la ultima fila de una pagina llena no trae id", async () => {
     const page = fullPage("a");
     page.data[MOVEMENTS_PAGE_SIZE - 1] = { name: "sin id" };
     pages.current = [page];
 
     const result = await fetchAllPages(() => from("x"));
 
-    expect(result.data).toHaveLength(MOVEMENTS_PAGE_SIZE);
+    expect(result.data).toBeNull();
+    expect(result.error).toBeInstanceOf(Error);
     expect(queries).toHaveLength(1);
   });
 

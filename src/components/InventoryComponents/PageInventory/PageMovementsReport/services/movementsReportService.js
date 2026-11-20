@@ -66,12 +66,16 @@ export const fetchAllPages = async (buildQuery) => {
 
     const nextId = page[page.length - 1]?.id;
 
-    if (
-      page.length < MOVEMENTS_PAGE_SIZE ||
-      nextId === undefined ||
-      nextId === null
-    ) {
+    if (page.length < MOVEMENTS_PAGE_SIZE) {
       return { data: rows, error: null };
+    }
+
+    // Sin id no hay cursor: cortar aqui devolveria datos truncados como exito.
+    if (nextId === undefined || nextId === null) {
+      return {
+        data: null,
+        error: new Error("fetchAllPages: fila sin id, no se puede paginar"),
+      };
     }
 
     lastId = nextId;
