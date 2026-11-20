@@ -1,8 +1,169 @@
 import {
   buildRedemptionReason,
-  buildSaleProductKey,
+  formatMovementType,
+  formatReason,
+  formatTicket,
+  formatTransferReason,
   getRowMovementTypeKey,
+  getSalesObject,
 } from "../utils/movementFormatters";
+
+import {
+  formatDateTime,
+  getDateKeyFromValue,
+} from "../utils/movementDateUtils";
+
+export const getRowTypeInfo = (row) => {
+  const rawTypeKey = getRowMovementTypeKey(row);
+
+  const hasRedemption =
+    row?.has_sale_redemption === true &&
+    (rawTypeKey === "sale" || rawTypeKey === "redemption");
+
+  const saleTotal = Number(getSalesObject(row)?.total);
+
+  // Ticket con canje y ademas cobro: es venta/canje. Si el total es 0 o menor
+  // el ticket fue solo canje. Cuando el total no se puede leer se conserva el
+  // comportamiento previo (venta/canje) para no cambiar el marcado existente.
+  const isRedemptionOnly =
+    hasRedemption && Number.isFinite(saleTotal) && saleTotal <= 0;
+
+  if (isRedemptionOnly) {
+    return {
+      typeKey: "redemption",
+      typeLabel: formatMovementType("redemption"),
+      typeFilterKeys: ["redemption"],
+      rawTypeKey,
+    };
+  }
+
+  if (hasRedemption) {
+    return {
+      typeKey: "sale_redemption",
+      typeLabel: formatMovementType("sale_redemption"),
+      typeFilterKeys: ["sale_redemption", "sale", "redemption"],
+      rawTypeKey,
+    };
+  }
+
+  return {
+    typeKey: rawTypeKey,
+    typeLabel: formatMovementType(rawTypeKey || row?.movement_type),
+    typeFilterKeys: rawTypeKey ? [rawTypeKey] : [],
+    rawTypeKey,
+  };
+};
+
+export const buildSaleProductKey = (saleId, productId) => {
+  const saleKey = String(saleId ?? "").trim();
+
+  const productKey = String(productId ?? "").trim();
+
+  if (!saleKey || !productKey) {
+    return null;
+  }
+
+  return `${saleKey}::${productKey}`;
+};
+
+export const buildRowView = (row) => {
+  const product = row?.products ?? {};
+
+  const sale = getSalesObject(row);
+
+  const user = row?.users ?? {};
+
+  const ticketRaw =
+    String(sale?.ticket_number ?? "").trim() ||
+    String(sale?.folio ?? "").trim() ||
+    String(sale?.ticket ?? "").trim() ||
+    String(sale?.receipt_number ?? "").trim() ||
+    String(row?.sale_id ?? "").trim() ||
+    String(row?.saleId ?? "").trim() ||
+    "";
+
+  const ticket = formatTicket(ticketRaw);
+
+  const movementTypeKey = getRowMovementTypeKey(row);
+
+  const useSystemTime = !sale?.sale_date;
+  const assumeUtcNaive = ["transfer", "canceled", "return"].includes(
+    movementTypeKey
+  );
+
+  const soldAtValue =
+    movementTypeKey === "sale" || movementTypeKey === "redemption"
+      ? (sale?.sale_date ??
+        row?.report_sort_at ??
+        row?.created_at ??
+        sale?.created_at ??
+        null)
+      : (row?.report_sort_at ??
+        row?.created_at ??
+        sale?.sale_date ??
+        sale?.created_at ??
+        null);
+
+  const soldAt = formatDateTime(soldAtValue, {
+    useSystemTime,
+    assumeUtcNaive,
+  });
+
+  const soldAtDateKey = getDateKeyFromValue(soldAtValue, {
+    useSystemTime,
+    assumeUtcNaive,
+  });
+
+  const productName = (
+    String(row?.display_product_name ?? "").trim() ||
+    String(product?.name ?? "").trim() ||
+    String(row?.product_id ?? "").trim() ||
+    "—"
+  ).toUpperCase();
+
+  const username = (
+    String(user?.username ?? "").trim() ||
+    String(row?.user_id ?? "").trim() ||
+    "—"
+  ).toUpperCase();
+
+  const { rawTypeKey, typeKey, typeLabel, typeFilterKeys } =
+    getRowTypeInfo(row);
+
+  const reason = formatTransferReason(row?.reason) ?? formatReason(row?.reason);
+
+  const shouldForceZeroQuantity =
+    typeKey === "product_update" || typeKey === "product_delete";
+
+  const quantity = shouldForceZeroQuantity ? 0 : (row?.quantity ?? 0);
+
+  return {
+    soldAtValue,
+    soldAt,
+    soldAtDateKey,
+
+    productName,
+
+    ticketRaw,
+    ticket,
+
+    rawTypeKey,
+    typeKey,
+    typeLabel,
+    typeFilterKeys,
+
+    qty: quantity,
+    prev: row?.previous_stock ?? null,
+    next: row?.new_stock ?? null,
+
+    reason,
+    username,
+  };
+};
+
+export const isNoStockMovement = (rowView) => {
+  return String(rowView?.reason ?? "").includes("(SIN STOCK)");
+};
 
 const getRewardLabel = (reward) => {
   return String(

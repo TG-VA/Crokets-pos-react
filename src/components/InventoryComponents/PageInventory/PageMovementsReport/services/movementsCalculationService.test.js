@@ -4,7 +4,7 @@ import {
   buildNoStockRows,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
-} from "./movementReportBuilder";
+} from "./movementsCalculationService";
 
 const buildDeps = () => ({
   productsById: new Map([["p1", { id: "p1", name: "Croquetas" }]]),
@@ -22,7 +22,7 @@ const buildDeps = () => ({
   rewardsById: new Map([["r1", { id: "r1", name: "Premio Lealtad" }]]),
 });
 
-describe("movementReportBuilder", () => {
+describe("movementsCalculationService", () => {
   describe("hydrateBaseMovements", () => {
     it("hidrata filas base con producto, usuario y venta", () => {
       const deps = buildDeps();

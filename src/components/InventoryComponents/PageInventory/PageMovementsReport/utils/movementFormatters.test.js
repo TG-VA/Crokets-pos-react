@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { getRowTypeInfo, formatMovementType } from "./movementFormatters";
+import { formatMovementType } from "./movementFormatters";
+import { getRowTypeInfo } from "../services/movementsCalculationService";
 import { parseMovementDate } from "./movementDateUtils";
 
 describe("movementFormatters - getRowTypeInfo", () => {

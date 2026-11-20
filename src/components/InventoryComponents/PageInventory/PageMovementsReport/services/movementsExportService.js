@@ -1,12 +1,12 @@
 import ExcelJS from "exceljs";
 
 import {
-  buildRowView,
   formatMovementType,
-  isNoStockMovement,
   normalizeFilenameSegment,
   toUpperSafe,
 } from "../utils/movementFormatters";
+
+import { buildRowView, isNoStockMovement } from "./movementsCalculationService";
 
 import { formatDateKeyLabel, formatDateTime } from "../utils/movementDateUtils";
 

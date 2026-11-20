@@ -18,7 +18,7 @@ import {
   buildNoStockRows,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
-} from "./movementReportBuilder";
+} from "./movementsCalculationService";
 
 import {
   createEntityMap,

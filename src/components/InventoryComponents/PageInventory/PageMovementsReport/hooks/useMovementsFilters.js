@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import {
-  buildRowView,
-  MOVEMENT_TYPE_LABELS,
-} from "../utils/movementFormatters";
+import { buildRowView } from "../services/movementsCalculationService";
+import { MOVEMENT_TYPE_LABELS } from "../utils/movementFormatters";
 
 import { createDateRange } from "../utils/movementDateUtils";
 

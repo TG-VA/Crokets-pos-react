@@ -1,6 +1,9 @@
 import React from "react";
 
-import { buildRowView, isNoStockMovement } from "../utils/movementFormatters";
+import {
+  buildRowView,
+  isNoStockMovement,
+} from "../services/movementsCalculationService";
 
 import MovementsFilterPopover from "./MovementsFilterPopover";
 
