@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (19 nov 2026)
 
-362 archivos de test (**3652 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+362 archivos de test (**3653 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -119,7 +119,7 @@ y el proceso principal de Electron:
 | Reporte de inventario: carga, Realtime y error            | `.../PageReport/hooks/useInventoryReport.test.js`                                  |
 | Reporte de inventario: contrato del RPC                   | `supabase/migrations/getBranchInventoryReportContract.test.js`                     |
 | Reporte de movimientos: reset por filtro, sucursal, fecha | `.../PageMovementsReport/PageMovementsReport.test.jsx`                             |
-| Reporte de movimientos: periodo, lotes, dedupe y cache    | `.../PageMovementsReport/services/movementsReportService.test.js`                  |
+| Reporte de movimientos: periodo, lotes, cursor y cache    | `.../PageMovementsReport/services/movementsReportService.test.js`                  |
 | Reporte de movimientos: KPIs sin SIN STOCK y filas        | `.../PageMovementsReport/services/movementsCalculationService.test.js`             |
 | Reporte de movimientos: suscripcion realtime              | `.../PageMovementsReport/services/movementsRealtimeService.test.js`                |
 | Reporte de movimientos: recarga y respuestas obsoletas    | `.../PageMovementsReport/hooks/useMovementsReport.test.js`                         |
