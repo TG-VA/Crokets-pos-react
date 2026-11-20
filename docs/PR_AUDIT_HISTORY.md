@@ -3006,3 +3006,98 @@ ESLint 0 errores. Mutaciones: 4 ejecutadas, 4 detectadas. S1 y S2 de la auditor�
 
 Pendiente de verificación humana en Electron (`npm run dev`): edición de sucursal por un usuario no
 admin con la RLS de `branches` activa.
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (15 de noviembre de 2026, primera ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 3 sugerencias). Head `5d378c7`,
+base `765b0ca`. 16 commits. Ejecución: 303 archivos / 3245 tests verdes; build OK; `check:agents` OK;
+Prettier OK; ESLint 0 errores (2 warnings preexistentes en `useReceiveForm.js`). Mutaciones: 16
+ejecutadas, 13 detectadas, 2 equivalentes (M13, M15), 1 sobreviviente (M11).
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                                      | Severidad  |
+| --- | --------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Con valor por defecto en 0, los productos de páginas no revisadas regresan a origen sin aviso | Importante |
+| 2   | El texto "Doble click o Enter para confirmar" contradice el armado en dos pasos               | Sugerencia |
+| 3   | `onFocus select()` sin test (M11 sobrevive)                                                   | Sugerencia |
+| 4   | Nota obsoleta de commits adelantados en la descripción                                        | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`) de los 10 pasos manuales y de la altura
+de la lista de pendientes en 1366x768.
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (17 de noviembre de 2026, segunda ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 3 sugerencias). Head `60cd27a`,
+base `781d407`. Commits nuevos auditados: `e33bf80`, `30963d0`, `107171c`, merge `60cd27a`.
+Ejecución: 331 archivos / 3434 tests verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0
+errores (2 warnings preexistentes en `useReceiveForm.js`). Mutaciones: 6 ejecutadas, 4 detectadas, 2
+sobrevivientes (N1, N2).
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo                                                           | Estado               |
+| --- | ------------------------------------------------------------------ | -------------------- |
+| 1   | Productos en 0 de páginas no revisadas regresan a origen sin aviso | Resuelto (`107171c`) |
+| 2   | Texto "Doble click o Enter" contradice el armado en dos pasos      | Resuelto (`30963d0`) |
+| 3   | `onFocus select()` sin test (M11)                                  | Resuelto (`e33bf80`) |
+| 4   | Nota obsoleta de commits adelantados en la descripción             | Resuelto             |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                           | Severidad  |
+| --- | ---------------------------------------------------------------------------------- | ---------- |
+| 5   | Ocultar el aviso con todo en 0 no tiene test (N1 sobrevive)                        | Sugerencia |
+| 6   | La variante en singular del aviso no tiene test (N2 sobrevive)                     | Sugerencia |
+| 7   | La descripción reporta 303 archivos / 3254 tests y 19 commits; son 331 / 3434 y 20 | Sugerencia |
+
+### Estado al cierre
+
+Falta la confirmación humana de la prueba manual en Electron (`npm run dev`) que el autor reporta
+como hecha, incluido el desborde del aviso en 1366x768.
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (18 de noviembre de 2026, tercera ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `30085ee`,
+base `781d407`. Commit nuevo auditado: `30085ee` (solo tests). Ejecución: 331 archivos / 3435 tests
+verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0 errores (2 warnings preexistentes en
+`useReceiveForm.js`). Mutaciones: 2 ejecutadas, 2 detectadas.
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo                                                       | Estado               |
+| --- | -------------------------------------------------------------- | -------------------- |
+| 5   | Ocultar el aviso con todo en 0 no tiene test (N1 sobrevive)    | Resuelto (`30085ee`) |
+| 6   | La variante en singular del aviso no tiene test (N2 sobrevive) | Resuelto (`30085ee`) |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                  | Severidad  |
+| --- | ------------------------------------------------------------------------- | ---------- |
+| 7   | La descripción reporta 303 / 3254 tests y 19 commits; son 331 / 3435 y 21 | Sugerencia |
+
+### Estado al cierre
+
+Falta la confirmación humana de la prueba manual en Electron (`npm run dev`), incluido el desborde
+del aviso en 1366x768.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (18 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 2 sugerencias). Head `42e7918`,
+base `9d35499`. Ejecución: 331 archivos / 3410 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                    | Severidad  |
+| --- | ------------------------------------------------------------------------------------------- | ---------- |
+| I1  | `onProductPromoted` en `PageTransfers` sin test: borrarlo deja la suite en verde            | Importante |
+| S1  | `selectedProductIds` en `PageTransfers` sin test                                            | Sugerencia |
+| S2  | Sin filtro de existencia, la busqueda por texto cuenta agotados y muestra "mas de 0 piezas" | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
+recarga del catálogo origen en terminal admin y operativa.
