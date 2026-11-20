@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 
 import PageTransfers from "./PageTransfers";
 
-const { transfersState } = vi.hoisted(() => ({
+const { transfersState, lastSearchModalProps } = vi.hoisted(() => ({
   transfersState: {
     activeTab: "send",
     loadingProducts: false,
@@ -16,7 +16,22 @@ const { transfersState } = vi.hoisted(() => ({
     closeSearchModal: vi.fn(),
     loadProductForTransfer: vi.fn(),
   },
+  lastSearchModalProps: { current: null },
 }));
+
+vi.mock(
+  "../../Modals/InventorySearchModal/InventorySearchModal",
+  async (importOriginal) => {
+    const { default: ActualInventorySearchModal } = await importOriginal();
+
+    return {
+      default: (props) => {
+        lastSearchModalProps.current = props;
+        return <ActualInventorySearchModal {...props} />;
+      },
+    };
+  }
+);
 
 vi.mock("react-router-dom", () => ({
   useLocation: () => ({ pathname: "/inventory/traspasos" }),
@@ -41,6 +56,8 @@ vi.mock("./components/modals/TransferDetailModal", () => ({
 
 describe("PageTransfers buscador de productos", () => {
   afterEach(() => {
+    lastSearchModalProps.current = null;
+    transfersState.handleProductPromoted.mockClear();
     Object.assign(transfersState, {
       loadingProducts: false,
       productsError: null,
@@ -108,5 +125,17 @@ describe("PageTransfers buscador de productos", () => {
 
     expect(outOfStockItem.getAttribute("aria-disabled")).toBe("true");
     expect(localItem.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("cablea onProductPromoted del buscador con el handler de la pagina", () => {
+    render(<PageTransfers />);
+
+    expect(lastSearchModalProps.current).not.toBeNull();
+
+    act(() => {
+      lastSearchModalProps.current.onProductPromoted();
+    });
+
+    expect(transfersState.handleProductPromoted).toHaveBeenCalledTimes(1);
   });
 });
