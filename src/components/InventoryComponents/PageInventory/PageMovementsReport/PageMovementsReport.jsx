@@ -12,6 +12,8 @@ import { usePagination } from "../../../../hooks/usePagination";
 
 import { exportMovementsReport } from "./utils/movementsExportUtils";
 
+import { joinClasses } from "./utils/movementFormatters";
+
 import styles from "./PageMovementsReports.module.css";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -137,6 +139,11 @@ const PageMovementsReport = () => {
     }
   };
 
+  const handleBranchChange = (branchId) => {
+    setExportError("");
+    setSelectedBranchId(branchId);
+  };
+
   const handleClearFilters = () => {
     resetAllFilters();
     setExportError("");
@@ -168,10 +175,7 @@ const PageMovementsReport = () => {
             onStartDateChange={handleStartDateChange}
             onEndDateChange={handleEndDateChange}
             onSelectRangePreset={selectRangePreset}
-            onBranchChange={(branchId) => {
-              setExportError("");
-              setSelectedBranchId(branchId);
-            }}
+            onBranchChange={handleBranchChange}
             onExport={handleExportMovements}
           />
         </div>
@@ -179,9 +183,10 @@ const PageMovementsReport = () => {
         <div className={styles.toolbar}>
           <div className={styles.filterSummary}>
             <span
-              className={`${styles.filterStatusBadge} ${
-                activeFilterCount > 0 ? styles.filterStatusBadgeActive : ""
-              }`}
+              className={joinClasses(
+                styles.filterStatusBadge,
+                activeFilterCount > 0 && styles.filterStatusBadgeActive
+              )}
             >
               {activeFilterCount === 0
                 ? "Sin filtros activos"

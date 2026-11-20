@@ -157,3 +157,7 @@ export const buildRedemptionReason = (rewardLabel, pointsValue) => {
 
   return `redemption: ${reasonParts.join(" - ")}`;
 };
+
+// Une clases CSS Module omitiendo las condicionales falsas, para que no queden
+// espacios colgantes en el className del DOM.
+export const joinClasses = (...classes) => classes.filter(Boolean).join(" ");

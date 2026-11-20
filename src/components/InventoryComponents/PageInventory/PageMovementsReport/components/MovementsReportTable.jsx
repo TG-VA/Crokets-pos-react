@@ -5,6 +5,8 @@ import {
   isNoStockMovement,
 } from "../services/movementsCalculationService";
 
+import { joinClasses } from "../utils/movementFormatters";
+
 import MovementsFilterPopover from "./MovementsFilterPopover";
 
 import styles from "./MovementsReportTable.module.css";
@@ -77,7 +79,9 @@ const MovementsReportTable = ({
   };
 
   return (
-    <div className={`${styles.tableWrap} ${isResizing ? styles.resizing : ""}`}>
+    <div
+      className={joinClasses(styles.tableWrap, isResizing && styles.resizing)}
+    >
       <table className={styles.table}>
         <colgroup>
           {normalizedColumns.map((column) => (
@@ -115,9 +119,11 @@ const MovementsReportTable = ({
                     {isFilterable ? (
                       <button
                         type="button"
-                        className={`${styles.filterButton} ${
-                          active ? styles.filterButtonActive : ""
-                        } ${isOpen ? styles.filterButtonOpen : ""}`}
+                        className={joinClasses(
+                          styles.filterButton,
+                          active && styles.filterButtonActive,
+                          isOpen && styles.filterButtonOpen
+                        )}
                         onClick={() => onToggleFacet?.(column.key)}
                         data-mov-filter-button={column.key}
                         aria-label={`Filtrar ${column.label}`}

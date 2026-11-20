@@ -3,7 +3,15 @@ import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
 
+import { joinClasses } from "../utils/movementFormatters";
+
 import styles from "./MovementsReportControls.module.css";
+
+const RANGE_PRESETS = [
+  { value: "today", label: "Hoy" },
+  { value: "week", label: "Esta semana" },
+  { value: "month", label: "Este mes" },
+];
 
 const MovementsReportControls = ({
   startDateValue = null,
@@ -68,44 +76,22 @@ const MovementsReportControls = ({
         </div>
 
         <div className={styles.quickActions}>
-          <button
-            type="button"
-            className={`${styles.quickButton} ${
-              rangePreset === "today" ? styles.quickButtonActive : ""
-            }`}
-            onClick={() => {
-              onSelectRangePreset?.("today");
-            }}
-            aria-pressed={rangePreset === "today"}
-          >
-            Hoy
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.quickButton} ${
-              rangePreset === "week" ? styles.quickButtonActive : ""
-            }`}
-            onClick={() => {
-              onSelectRangePreset?.("week");
-            }}
-            aria-pressed={rangePreset === "week"}
-          >
-            Esta semana
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.quickButton} ${
-              rangePreset === "month" ? styles.quickButtonActive : ""
-            }`}
-            onClick={() => {
-              onSelectRangePreset?.("month");
-            }}
-            aria-pressed={rangePreset === "month"}
-          >
-            Este mes
-          </button>
+          {RANGE_PRESETS.map((preset) => (
+            <button
+              key={preset.value}
+              type="button"
+              className={joinClasses(
+                styles.quickButton,
+                rangePreset === preset.value && styles.quickButtonActive
+              )}
+              onClick={() => {
+                onSelectRangePreset?.(preset.value);
+              }}
+              aria-pressed={rangePreset === preset.value}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
       </div>
 
