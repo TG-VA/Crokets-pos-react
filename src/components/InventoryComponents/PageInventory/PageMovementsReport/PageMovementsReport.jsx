@@ -14,7 +14,7 @@ import { exportMovementsReport } from "./utils/movementsExportUtils";
 
 import { joinClasses } from "./utils/movementFormatters";
 
-import styles from "./PageMovementsReports.module.css";
+import styles from "./PageMovementsReport.module.css";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
