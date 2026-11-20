@@ -10,7 +10,7 @@ import useMovementsReport from "./hooks/useMovementsReport";
 import useResizableColumns from "./hooks/useResizableColumns";
 import { usePagination } from "../../../../hooks/usePagination";
 
-import { exportMovementsReport } from "./services/movementsExportService";
+import { exportMovementsReport } from "./utils/movementsExportUtils";
 
 import styles from "./PageMovementsReports.module.css";
 

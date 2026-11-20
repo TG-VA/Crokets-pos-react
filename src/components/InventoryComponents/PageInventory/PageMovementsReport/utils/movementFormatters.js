@@ -116,19 +116,6 @@ export const formatTicket = (value) => {
   return ticket.slice(0, 8);
 };
 
-export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
-  const normalizedValue = String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\([^)]*\)/g, "")
-    .replace(/[^\w\s-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-
-  return normalizedValue || fallback;
-};
-
 export const toUpperSafe = (value, fallback = "—") => {
   const normalizedValue = String(value ?? "").trim();
 

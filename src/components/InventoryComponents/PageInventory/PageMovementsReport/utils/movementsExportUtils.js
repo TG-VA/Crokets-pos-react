@@ -1,14 +1,26 @@
 import ExcelJS from "exceljs";
 
+import { formatMovementType, toUpperSafe } from "./movementFormatters";
+
 import {
-  formatMovementType,
-  normalizeFilenameSegment,
-  toUpperSafe,
-} from "../utils/movementFormatters";
+  buildRowView,
+  isNoStockMovement,
+} from "../services/movementsCalculationService";
 
-import { buildRowView, isNoStockMovement } from "./movementsCalculationService";
+import { formatDateKeyLabel, formatDateTime } from "./movementDateUtils";
 
-import { formatDateKeyLabel, formatDateTime } from "../utils/movementDateUtils";
+export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
+  const normalizedValue = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^\w\s-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  return normalizedValue || fallback;
+};
 
 const EXCEL_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

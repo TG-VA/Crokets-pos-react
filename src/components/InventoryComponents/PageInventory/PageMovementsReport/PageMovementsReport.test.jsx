@@ -26,7 +26,7 @@ vi.mock("./components/MovementsReportControls", () => ({
   default: () => null,
 }));
 
-vi.mock("./services/movementsExportService", () => ({
+vi.mock("./utils/movementsExportUtils", () => ({
   exportMovementsReport: vi.fn(),
 }));
 
