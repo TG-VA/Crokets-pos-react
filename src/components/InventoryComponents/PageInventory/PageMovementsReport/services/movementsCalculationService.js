@@ -524,6 +524,7 @@ const toSafeQuantity = (value) => {
  * (salida negativa, entrada positiva), asi que los ajustes se cuentan aparte y
  * con su neto, y el resto se reparte en entradas y salidas segun su signo. La
  * cantidad se lee de buildRowView para respetar las filas que la fuerzan a 0.
+ * Las filas "(SIN STOCK)" no mueven inventario y quedan fuera de los KPIs.
  */
 export const calculateMovementKpis = (rows) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
@@ -537,6 +538,11 @@ export const calculateMovementKpis = (rows) => {
 
   normalizedRows.forEach((row) => {
     const view = buildRowView(row);
+
+    if (isNoStockMovement(view)) {
+      return;
+    }
+
     const quantity = toSafeQuantity(view.qty);
 
     kpis.net += quantity;

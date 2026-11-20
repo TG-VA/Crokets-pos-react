@@ -510,6 +510,20 @@ describe("calculateMovementKpis", () => {
     expect(kpis.entries.count).toBe(0);
   });
 
+  it("deja fuera de los KPIs las filas SIN STOCK", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "sale", quantity: -3, reason: "Venta (SIN STOCK)" },
+      { movement_type: "entry", quantity: 2 },
+    ]);
+
+    expect(kpis).toEqual({
+      entries: { units: 2, count: 1 },
+      exits: { units: 0, count: 0 },
+      adjustments: { units: 0, count: 0 },
+      net: 2,
+    });
+  });
+
   it("devuelve ceros sin filas", () => {
     expect(calculateMovementKpis(null).net).toBe(0);
   });
