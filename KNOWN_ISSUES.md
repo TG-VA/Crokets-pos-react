@@ -1003,6 +1003,24 @@ solo para administradores, o encapsular la persistencia en una función RPC `SEC
 
 ---
 
+### 98. Reporte de movimientos: devoluciones y cancelaciones de ventas fuera del periodo no aparecen
+
+**Estado:** abierto (19 nov 2026) — registrado en el PR #229.
+
+`loadMovementsReport` (`.../PageMovementsReport/services/movementsReportService.js`) busca las
+cancelaciones y devoluciones por las ventas del periodo (`loadCanceledSalesBySales` y
+`loadSaleReturnsBySales` reciben los `sale_id` del rango). Una devolución registrada hoy sobre una
+venta de un mes anterior no aparece en el reporte de hoy, aunque su movimiento ocurrió en el periodo.
+
+**Impacto:** el reporte puede omitir devoluciones y cancelaciones de productos sin inventario cuya
+venta original quedó fuera del rango elegido. Los movimientos con stock vienen de
+`inventory_movements` filtrados por su propia fecha y no se ven afectados.
+
+**Recomendación futura:** consultar `canceled_sales` y `sale_returns` por su propia fecha dentro de la
+ventana del periodo, además de por las ventas del rango.
+
+---
+
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod

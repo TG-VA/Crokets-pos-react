@@ -249,3 +249,27 @@ export const getDateRangeForPreset = (dateKey, preset = "day") => {
 
   return createDateRange(baseKey, baseKey);
 };
+
+// inventory_movements.created_at es timestamp sin zona y mezcla marcas UTC con
+// horas locales, asi que la ventana que se manda al servidor se ensancha un dia
+// por lado. El corte exacto por dia local lo sigue haciendo el filtro en memoria.
+export const SERVER_RANGE_PADDING_DAYS = 1;
+
+export const getServerDateWindow = (startDateKey, endDateKey) => {
+  const range = createDateRange(startDateKey, endDateKey);
+
+  if (!range) {
+    return null;
+  }
+
+  const start = new Date(range.start);
+  start.setDate(start.getDate() - SERVER_RANGE_PADDING_DAYS);
+
+  const end = new Date(range.end);
+  end.setDate(end.getDate() + 1 + SERVER_RANGE_PADDING_DAYS);
+
+  return {
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+  };
+};
