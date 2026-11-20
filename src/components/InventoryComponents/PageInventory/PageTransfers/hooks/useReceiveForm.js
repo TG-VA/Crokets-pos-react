@@ -58,7 +58,9 @@ const useReceiveForm = ({
     );
 
     setReceiptQuantities(nextReceiptQuantities);
-  }, [selectedReceiptOrder, selectedReceiptOrderId]);
+    // El reinicio debe ocurrir solo al cambiar de folio, no cuando una recarga
+    // (polling o realtime) crea nuevos objetos para la misma orden.
+  }, [selectedReceiptOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectReceiptOrder = useCallback(
     (orderId) => {

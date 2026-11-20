@@ -75,6 +75,51 @@ describe("useReceiveForm", () => {
     expect(result.current.selectedReceiptOrderId).toBe("t1");
   });
 
+  it("conserva las cantidades capturadas al recargar la lista de ordenes", () => {
+    const { result, rerender } = renderHook((props) => useReceiveForm(props), {
+      initialProps: createProps(),
+    });
+
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "7");
+    });
+
+    const refreshedOrders = pendingOrders.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({ ...item })),
+    }));
+
+    rerender(createProps({ pendingReceiptOrders: refreshedOrders }));
+
+    expect(result.current.receiptQuantities.p1).toBe("7");
+  });
+
+  it("reinicia las cantidades al cambiar de folio", () => {
+    const secondOrder = {
+      id: "t2",
+      folio: "TR-010126-000002",
+      status: "pending_receipt",
+      originBranchName: "Origen",
+      items: [{ productId: "p3", name: "Juguete", requestedQty: 2 }],
+    };
+
+    const { result } = renderHook(() =>
+      useReceiveForm(
+        createProps({ pendingReceiptOrders: [...pendingOrders, secondOrder] })
+      )
+    );
+
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "7");
+    });
+
+    act(() => {
+      result.current.handleSelectReceiptOrder("t2");
+    });
+
+    expect(result.current.receiptQuantities).toEqual({ p3: "0" });
+  });
+
   it("handleConfirmReceipt: error si no hay orden seleccionada", async () => {
     const setError = vi.fn();
     const { result } = renderHook(() =>
