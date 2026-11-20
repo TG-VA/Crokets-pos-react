@@ -18,6 +18,8 @@ import { joinClasses } from "./utils/movementFormatters";
 
 import styles from "./PageMovementsReport.module.css";
 
+const EMPTY_PERIOD_MESSAGE = "Sin movimientos en el periodo.";
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -235,12 +237,28 @@ const PageMovementsReport = () => {
         ) : null}
 
         {displayedError ? (
-          <div className={styles.error}>{displayedError}</div>
+          <div className={styles.errorRow}>
+            <div className={styles.error}>{displayedError}</div>
+
+            {error && !exportError ? (
+              <button
+                type="button"
+                className={styles.clearFiltersButton}
+                onClick={reloadMovements}
+                disabled={loading}
+              >
+                Reintentar
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         <MovementsReportTable
           rows={pageRows}
           loading={loading}
+          emptyMessage={
+            periodRowsCount === 0 && !error ? EMPTY_PERIOD_MESSAGE : undefined
+          }
           columns={columns}
           columnWidths={columnWidths}
           isResizing={isResizing}

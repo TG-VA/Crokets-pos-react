@@ -156,6 +156,17 @@
   font-weight: 700;
 }
 
+.errorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.errorRow .error {
+  margin-bottom: 0;
+}
+
 .error {
   margin-bottom: 0.5rem;
   color: #b42318;

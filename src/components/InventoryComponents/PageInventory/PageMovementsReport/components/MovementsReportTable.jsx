@@ -38,6 +38,7 @@ const getStockValue = (rowView, stockValue) => {
 const MovementsReportTable = ({
   rows = [],
   loading = false,
+  emptyMessage = "No hay movimientos que coincidan con los filtros seleccionados.",
 
   columns = [],
   columnWidths = {},
@@ -192,7 +193,7 @@ const MovementsReportTable = ({
                 colSpan={normalizedColumns.length || 9}
                 className={styles.empty}
               >
-                No hay movimientos que coincidan con los filtros seleccionados.
+                {emptyMessage}
               </td>
             </tr>
           ) : (
