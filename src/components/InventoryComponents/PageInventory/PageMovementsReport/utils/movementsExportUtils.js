@@ -1,5 +1,3 @@
-import ExcelJS from "exceljs";
-
 import { formatMovementType, toUpperSafe } from "./movementFormatters";
 
 import {
@@ -442,6 +440,10 @@ export const exportMovementsReport = async ({
   facetFilters = {},
 }) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
+
+  // exceljs pesa cientos de KB; se carga solo al exportar para no inflar el
+  // bundle inicial de la pagina.
+  const { default: ExcelJS } = await import("exceljs");
 
   const workbook = new ExcelJS.Workbook();
 
