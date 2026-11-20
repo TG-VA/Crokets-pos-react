@@ -66,7 +66,7 @@ const mockReport = ({
     handleStartDateChange: vi.fn(),
     handleEndDateChange: vi.fn(),
     selectRangePreset: vi.fn(),
-    refreshMovementsSilently: vi.fn(),
+    reloadMovements: vi.fn(),
   });
 
 const INITIAL_FILTERS = { product: null };

@@ -12,16 +12,16 @@ const FALLBACK_REFRESH_INTERVAL_MS = 30000;
 
 const useMovementsRealtime = ({
   selectedBranchId,
-  refreshMovementsSilently,
+  reloadMovements,
   enabled = true,
 }) => {
   const refreshTimerRef = useRef(null);
   const pollingIntervalRef = useRef(null);
-  const refreshFunctionRef = useRef(refreshMovementsSilently);
+  const refreshFunctionRef = useRef(reloadMovements);
 
   useEffect(() => {
-    refreshFunctionRef.current = refreshMovementsSilently;
-  }, [refreshMovementsSilently]);
+    refreshFunctionRef.current = reloadMovements;
+  }, [reloadMovements]);
 
   useEffect(() => {
     if (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useDidChange } from "../../../../../hooks/useDidChange";
@@ -101,43 +101,8 @@ const useMovementsReport = () => {
     );
   }, [branch?.id, branch?.name, branch?.code]);
 
-  const loadMovements = useCallback(async () => {
-    if (!selectedBranchId) {
-      return [];
-    }
-
-    setError("");
-
-    try {
-      const movements = await loadMovementsReport({
-        branchId: selectedBranchId,
-        startDateKey,
-        endDateKey,
-      });
-
-      setRows(movements);
-
-      return movements;
-    } catch (loadError) {
-      console.error("Error cargando reporte de movimientos:", loadError);
-
-      const message =
-        import.meta.env.DEV && loadError?.message
-          ? `No se pudo cargar el reporte de movimientos. ${loadError.message}`
-          : "No se pudo cargar el reporte de movimientos.";
-
-      setError(message);
-      setRows([]);
-
-      return [];
-    } finally {
-      markSettled();
-    }
-  }, [selectedBranchId, startDateKey, endDateKey, markSettled]);
-
-  // Los efectos llaman directo a las funciones de datos importadas y aplican el
-  // estado en la continuacion asincrona; los callbacks quedan para las llamadas
-  // imperativas (recarga manual y refresco).
+  // El efecto de sucursales llama directo a la funcion de datos y aplica el
+  // estado en la continuacion asincrona.
   useEffect(() => {
     let cancelled = false;
 
@@ -157,27 +122,32 @@ const useMovementsReport = () => {
     };
   }, [branch?.id, branch?.name, branch?.code]);
 
-  useEffect(() => {
-    if (!selectedBranchId) {
-      return undefined;
-    }
+  // Cada carga toma un numero de peticion; una respuesta que llega cuando ya
+  // hay otra mas nueva (cambio de sucursal o de rango, refresco en tiempo
+  // real) se descarta para no pisar los datos vigentes.
+  const latestRequestRef = useRef(0);
 
-    let cancelled = false;
+  // La consulta no toca estado; el resultado se aplica en la continuacion
+  // asincrona, igual desde el efecto que desde un refresco en tiempo real.
+  const fetchMovements = useCallback(() => {
+    latestRequestRef.current += 1;
+    const requestId = latestRequestRef.current;
 
-    loadMovementsReport({
+    return loadMovementsReport({
       branchId: selectedBranchId,
       startDateKey,
       endDateKey,
-    })
-      .then((movements) => {
-        if (cancelled) return;
-        setRows(movements);
-        setError("");
-        markSettled();
-      })
-      .catch((loadError) => {
-        if (cancelled) return;
+    }).then(
+      (movements) => ({ requestId, movements, loadError: null }),
+      (loadError) => ({ requestId, movements: [], loadError })
+    );
+  }, [selectedBranchId, startDateKey, endDateKey]);
 
+  const applyMovements = useCallback(
+    ({ requestId, movements, loadError }) => {
+      if (requestId !== latestRequestRef.current) return;
+
+      if (loadError) {
         console.error("Error cargando reporte de movimientos:", loadError);
 
         setError(
@@ -185,14 +155,35 @@ const useMovementsReport = () => {
             ? `No se pudo cargar el reporte de movimientos. ${loadError.message}`
             : "No se pudo cargar el reporte de movimientos."
         );
-        setRows([]);
-        markSettled();
-      });
+      } else {
+        setError("");
+      }
+
+      setRows(movements);
+      markSettled();
+    },
+    [markSettled]
+  );
+
+  useEffect(() => {
+    if (!selectedBranchId) {
+      return undefined;
+    }
+
+    fetchMovements().then(applyMovements);
 
     return () => {
-      cancelled = true;
+      latestRequestRef.current += 1;
     };
-  }, [selectedBranchId, startDateKey, endDateKey, markSettled]);
+  }, [selectedBranchId, fetchMovements, applyMovements]);
+
+  const reloadMovements = useCallback(() => {
+    if (!selectedBranchId) {
+      return Promise.resolve();
+    }
+
+    return fetchMovements().then(applyMovements);
+  }, [selectedBranchId, fetchMovements, applyMovements]);
 
   // La sucursal del contexto solo pisa la seleccion cuando aun no hay una
   // eleccion propia o cuando sigue apuntando a la sucursal "POLI". El ajuste se
@@ -287,18 +278,6 @@ const useMovementsReport = () => {
     setRangePreset(normalizedPreset === "day" ? "today" : normalizedPreset);
   }, []);
 
-  const refreshMovements = useCallback(() => {
-    return loadMovements({
-      silent: false,
-    });
-  }, [loadMovements]);
-
-  const refreshMovementsSilently = useCallback(() => {
-    return loadMovements({
-      silent: true,
-    });
-  }, [loadMovements]);
-
   return {
     branchOptions,
     selectedBranchId,
@@ -326,9 +305,7 @@ const useMovementsReport = () => {
     selectRangePreset,
 
     loadBranches,
-    loadMovements,
-    refreshMovements,
-    refreshMovementsSilently,
+    reloadMovements,
   };
 };
 

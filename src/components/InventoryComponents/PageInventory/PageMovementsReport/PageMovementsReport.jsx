@@ -43,12 +43,12 @@ const PageMovementsReport = () => {
     handleEndDateChange,
     selectRangePreset,
 
-    refreshMovementsSilently,
+    reloadMovements,
   } = useMovementsReport();
 
   useMovementsRealtime({
     selectedBranchId,
-    refreshMovementsSilently,
+    reloadMovements,
   });
 
   const {
