@@ -89,7 +89,14 @@ export const fetchCommissionsData = async ({
     throw new Error("Error al consultar las ventas en el periodo.");
   }
 
-  const rows = rpcRows || [];
+  // Las paginas usan OFFSET: una venta registrada durante la lectura desplaza
+  // las filas y repetiria la ultima partida de una pagina en la siguiente.
+  const seenDetailIds = new Set();
+  const rows = (rpcRows || []).filter((row) => {
+    if (seenDetailIds.has(row.detail_id)) return false;
+    seenDetailIds.add(row.detail_id);
+    return true;
+  });
 
   const detailedRows = rows.map((row) => ({
     detailId: row.detail_id,

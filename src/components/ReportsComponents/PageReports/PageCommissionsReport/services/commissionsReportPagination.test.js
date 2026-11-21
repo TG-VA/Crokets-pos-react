@@ -63,4 +63,35 @@ describe("commissionsReportService: lectura completa de la RPC", () => {
     expect(detailedRows[0].saleId).toBe(buildId("s", 2));
     expect(detailedRows[8].saleId).toBe(buildId("s", 0));
   });
+
+  it("no repite partidas si se registra una venta entre dos paginas", async () => {
+    const liveRows = [...rows];
+    const base = createFakeSupabase({
+      rpcs: { get_commissions_report_data: liveRows },
+    });
+    let rpcCalls = 0;
+    fake.current = {
+      ...base,
+      rpc: (...args) => {
+        rpcCalls += 1;
+        if (rpcCalls === 2) {
+          liveRows.push({
+            ...rows[0],
+            detail_id: buildId("d", 99),
+            sale_id: buildId("s", 99),
+            created_at: "2026-11-20T12:00:00Z",
+          });
+        }
+        return base.rpc(...args);
+      },
+    };
+
+    const { detailedRows } = await fetchCommissionsData({
+      startDateIso: "2026-11-01T00:00:00Z",
+      endDateIso: "2026-11-30T23:59:59Z",
+    });
+
+    const detailIds = detailedRows.map((row) => row.detailId);
+    expect(new Set(detailIds).size).toBe(detailIds.length);
+  });
 });
