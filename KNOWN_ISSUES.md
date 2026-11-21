@@ -1054,7 +1054,8 @@ si ningún PR lo usa.
 
 ### 101. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
+**Estado:** resuelto (21 nov 2026) — rama `fix/historial-ventas-datos-parciales`. Registrado en el PR
+#237 (hallazgo S2 de la review).
 
 `fetchSalesRelatedData` (`src/components/SalesComponents/services/salesHistoryService.js`) lee
 detalles, usuarios, clientes, pagos, cancelaciones y devoluciones con `fetchByIdsInBatches`. Si una
@@ -1067,6 +1068,12 @@ en una devolución).
 **Recomendación futura:** no lanzar el error, porque bloquearía todo el historial del día. Devolver
 un indicador de datos parciales desde el servicio, exponerlo en el hook del historial y mostrar en
 la vista un aviso con opción de reintentar, conservando el `console.error`.
+
+**Resolución:** `fetchSalesRelatedData` registra cada error con `console.error` y devuelve
+`incomplete: true`; `fetchHistoryTickets` devuelve `{ tickets, incomplete }`. `useSalesHistory`
+expone `ticketsIncomplete` y `retryLoadTickets`, y `SalesHistoryModal` muestra los tickets con un
+aviso y el botón Reintentar. Un error de `fetchTicketsBatch` sigue vaciando la lista. Cobertura en
+`salesHistoryService.test.js`, `useSalesHistory.test.js` y `SalesHistoryModal.escape.test.jsx`.
 
 ---
 
