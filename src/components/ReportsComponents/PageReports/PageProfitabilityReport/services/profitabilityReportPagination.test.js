@@ -125,7 +125,7 @@ describe("profitabilityReportService: margen con lectura paginada", () => {
   El costo de un kit sale solo del catalogo y del inventario (no del embed de
   sale_details), asi que distingue si products o branch_inventory se truncaron.
   Con paginas de 2 los componentes quedan en la tercera pagina de products y en
-  la segunda de branch_inventory:
+  la segunda de branch_inventory, y el kit k1 en la segunda de product_kits:
     p-z1: sin fila en inventario -> costo de catalogo $7
     p-z2: inventario $11 (catalogo $99, solo si el inventario se trunca)
   Costo del kit: 7 + 11 = $18.
@@ -183,6 +183,19 @@ describe("profitabilityReportService: costo de kit con catalogo e inventario pag
         departments: [{ id: "d1", name: "Alimentos" }],
         products: kitProducts,
         product_kits: [
+          // Kits de relleno con id menor: k1 cae en la segunda pagina.
+          {
+            id: "k0a",
+            kit_product_id: "p-relleno-a",
+            is_active: true,
+            product_kit_items: [],
+          },
+          {
+            id: "k0b",
+            kit_product_id: "p-relleno-b",
+            is_active: true,
+            product_kit_items: [],
+          },
           {
             id: "k1",
             kit_product_id: "p-kit",
