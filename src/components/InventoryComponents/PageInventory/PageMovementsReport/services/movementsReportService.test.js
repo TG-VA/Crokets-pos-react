@@ -48,11 +48,13 @@ import {
   loadSalesByBranch,
 } from "./movementsReportService";
 import {
-  IN_FILTER_BATCH_SIZE,
-  MOVEMENTS_PAGE_SIZE,
   MOVEMENTS_PRODUCTS_SELECT_KEY,
   MOVEMENTS_SALES_SELECT_KEY,
 } from "./movementServiceConstants";
+import {
+  DEFAULT_IN_FILTER_BATCH_SIZE as IN_FILTER_BATCH_SIZE,
+  DEFAULT_PAGE_SIZE as MOVEMENTS_PAGE_SIZE,
+} from "../../../../../services/supabase/paginatedQuery";
 
 const buildIds = (count) =>
   Array.from({ length: count }, (_, index) => `id-${index}`);

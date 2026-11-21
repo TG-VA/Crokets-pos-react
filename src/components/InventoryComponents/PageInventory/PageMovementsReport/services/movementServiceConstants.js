@@ -4,12 +4,6 @@ export const INVENTORY_MOVEMENTS_TABLE = "inventory_movements";
 
 export const REWARD_REDEMPTIONS_TABLE = "sale_reward_redemptions";
 
-// Tope de filas por respuesta de PostgREST (db-max-rows).
-export const MOVEMENTS_PAGE_SIZE = 1000;
-
-// Ids por consulta .in(): 200 UUID quedan muy por debajo del largo de URL.
-export const IN_FILTER_BATCH_SIZE = 200;
-
 export const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v5";
 
 export const MOVEMENTS_PRODUCTS_SELECT_KEY = "movementsReportProductsSelect_v3";
