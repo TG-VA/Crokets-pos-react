@@ -9,18 +9,19 @@ export const DEFAULT_IN_FILTER_BATCH_SIZE = 200;
 // pide las filas con id mayor al ultimo leido, hasta que una llega incompleta.
 // A diferencia de .range(), un insert o un borrado entre paginas no repite ni
 // salta filas. El orden de lectura no importa: el llamador ordena al final.
+// Las tablas sin id pasan su llave unica en cursorColumn.
 export const fetchAllPages = async (
   buildQuery,
-  { pageSize = DEFAULT_PAGE_SIZE } = {}
+  { pageSize = DEFAULT_PAGE_SIZE, cursorColumn = "id" } = {}
 ) => {
   const rows = [];
   let lastId = null;
 
   for (;;) {
-    let query = buildQuery().order("id", { ascending: true });
+    let query = buildQuery().order(cursorColumn, { ascending: true });
 
     if (lastId !== null) {
-      query = query.gt("id", lastId);
+      query = query.gt(cursorColumn, lastId);
     }
 
     const { data, error } = await query.limit(pageSize);
@@ -32,7 +33,7 @@ export const fetchAllPages = async (
     const page = Array.isArray(data) ? data : [];
     rows.push(...page);
 
-    const nextId = page[page.length - 1]?.id;
+    const nextId = page[page.length - 1]?.[cursorColumn];
 
     if (page.length < pageSize) {
       return { data: rows, error: null };
@@ -42,7 +43,9 @@ export const fetchAllPages = async (
     if (nextId === undefined || nextId === null) {
       return {
         data: null,
-        error: new Error("fetchAllPages: fila sin id, no se puede paginar"),
+        error: new Error(
+          `fetchAllPages: fila sin ${cursorColumn}, no se puede paginar`
+        ),
       };
     }
 
@@ -58,6 +61,7 @@ export const fetchByIdsInBatches = async (
   {
     batchSize = DEFAULT_IN_FILTER_BATCH_SIZE,
     pageSize = DEFAULT_PAGE_SIZE,
+    cursorColumn = "id",
   } = {}
 ) => {
   const batches = [];
@@ -67,7 +71,9 @@ export const fetchByIdsInBatches = async (
   }
 
   const results = await Promise.all(
-    batches.map((batch) => fetchAllPages(() => buildQuery(batch), { pageSize }))
+    batches.map((batch) =>
+      fetchAllPages(() => buildQuery(batch), { pageSize, cursorColumn })
+    )
   );
 
   const failed = results.find((result) => result.error);

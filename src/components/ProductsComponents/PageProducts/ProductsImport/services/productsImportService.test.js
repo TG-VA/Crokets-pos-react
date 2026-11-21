@@ -7,7 +7,17 @@ vi.mock("../../../../../services/satClavesService", () => ({
   validateSatClaves: vi.fn(),
 }));
 
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
 import { supabase } from "../../../../../lib/supabaseClient";
+import { createFakePostgrest } from "../../../../../services/supabase/fakePostgrest.testUtils";
 import { validateSatClaves } from "../../../../../services/satClavesService";
 import {
   fetchValidationData,
@@ -25,6 +35,8 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
     eq: vi.fn(),
     neq: vi.fn(),
     in: vi.fn(),
+    gt: vi.fn(),
+    limit: vi.fn(),
     maybeSingle: vi.fn(),
     single: vi.fn(),
     order: vi.fn(),
@@ -37,6 +49,8 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   q.eq.mockReturnValue(q);
   q.neq.mockReturnValue(q);
   q.in.mockReturnValue(q);
+  q.gt.mockReturnValue(q);
+  q.limit.mockReturnValue(q);
   q.order.mockReturnValue(q);
   q.maybeSingle.mockResolvedValue({ data: null, error: null });
   q.single.mockResolvedValue({ data: null, error: null });
@@ -105,6 +119,35 @@ describe("productsImportService", () => {
       expect(productsQ.in).toHaveBeenCalledWith("barcode", ["BC1"]);
       expect(departmentsQ.select).toHaveBeenCalledWith("id, name, status");
       expect(validateSatClaves).toHaveBeenCalledWith(["SAT1"]);
+    });
+
+    it("detecta duplicados en todos los lotes de codigos de barras", async () => {
+      // Lotes y paginas de 2: 5 codigos distintos ocupan 3 lotes de .in().
+      const fake = createFakePostgrest({
+        products: ["BC1", "BC2", "BC3", "BC4", "BC5", "BC9"].map(
+          (barcode, index) => ({ id: `p-${index}`, barcode })
+        ),
+        departments: [{ id: "d1", name: "Alimentos", status: true }],
+      });
+      supabase.from.mockImplementation(fake.from);
+      validateSatClaves.mockResolvedValue([]);
+
+      const result = await fetchValidationData(
+        ["BC1", "BC2", "BC2", "BC3", "BC4", "BC5", "BC7"],
+        []
+      );
+
+      expect(result.existingProducts.map((product) => product.barcode)).toEqual(
+        ["BC1", "BC2", "BC3", "BC4", "BC5"]
+      );
+      const batches = fake.calls
+        .filter((call) => call.table === "products")
+        .map(
+          (call) =>
+            call.filters.find(({ column }) => column === "barcode").value
+        );
+      expect(batches).toContainEqual(["BC1", "BC2"]);
+      expect(batches).toContainEqual(["BC5", "BC7"]);
     });
 
     it("omite la consulta de productos si no hay códigos", async () => {
