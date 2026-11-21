@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  getProductStock,
+  isGlobalProduct,
+} from "../../../../../services/inventory/inventoryProductCalculationService";
 import { filterTransferProducts } from "../utils/transfersUtils";
 
 const useProductLookup = ({
@@ -112,10 +116,10 @@ const useProductLookup = ({
       );
     });
 
-    // Preferimos la unica coincidencia con stock para no abrir el modal cuando
-    // el usuario ya sabe que producto quiere (comportamiento previo al PR).
+    // Preferimos la unica coincidencia traspasable (global y con stock) para no
+    // abrir el modal cuando el usuario ya sabe que producto quiere.
     const partialMatchesWithStock = partialMatches.filter(
-      (product) => Number(product?.existencia ?? 0) > 0
+      (product) => isGlobalProduct(product) && getProductStock(product) > 0
     );
 
     if (partialMatchesWithStock.length === 1) {

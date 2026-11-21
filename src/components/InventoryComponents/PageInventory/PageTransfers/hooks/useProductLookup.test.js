@@ -124,6 +124,7 @@ describe("useProductLookup", () => {
         codigo: "ADU-10",
         descripcion: "CROQUETA ADULTO 10KG",
         tracks_inventory: true,
+        is_global: true,
         existencia: 5,
       },
       {
@@ -131,6 +132,7 @@ describe("useProductLookup", () => {
         codigo: "ADU-20",
         descripcion: "CROQUETA ADULTO 20KG",
         tracks_inventory: true,
+        is_global: true,
         existencia: 0,
       },
     ];
@@ -157,6 +159,7 @@ describe("useProductLookup", () => {
         codigo: "ADU-20",
         descripcion: "CROQUETA ADULTO 20KG",
         tracks_inventory: true,
+        is_global: true,
         existencia: 0,
       },
     ];
@@ -182,6 +185,7 @@ describe("useProductLookup", () => {
         codigo: "ADU-10",
         descripcion: "CROQUETA ADULTO 10KG",
         tracks_inventory: true,
+        is_global: true,
         existencia: 5,
       },
       {
@@ -189,6 +193,7 @@ describe("useProductLookup", () => {
         codigo: "ADU-20",
         descripcion: "CROQUETA ADULTO 20KG",
         tracks_inventory: true,
+        is_global: true,
         existencia: 8,
       },
     ];
@@ -210,6 +215,107 @@ describe("useProductLookup", () => {
     expect(setError).toHaveBeenCalledWith(
       "Hay 2 coincidencias. Selecciona una del modal."
     );
+  });
+
+  it("handleLookupProduct: no envia directo un producto local cuando el global esta agotado", () => {
+    const lookupProducts = [
+      {
+        id: "a10",
+        codigo: "ADU-10",
+        descripcion: "CROQUETA ADULTO 10KG",
+        tracks_inventory: true,
+        is_global: true,
+        existencia: 0,
+      },
+      {
+        id: "a20",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        is_global: false,
+        existencia: 3,
+      },
+    ];
+    const setError = vi.fn();
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, setError, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(result.current.searchModalOpen).toBe(true);
+    expect(onProductSelected).not.toHaveBeenCalled();
+    expect(setError).toHaveBeenCalledWith(
+      "Hay 2 coincidencias. Selecciona una del modal."
+    );
+  });
+
+  it("handleLookupProduct: envia directo el global con stock aunque exista un local con stock", () => {
+    const lookupProducts = [
+      {
+        id: "a10",
+        codigo: "ADU-10",
+        descripcion: "CROQUETA ADULTO 10KG",
+        tracks_inventory: true,
+        is_global: true,
+        existencia: 5,
+      },
+      {
+        id: "a20",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        is_global: false,
+        existencia: 3,
+      },
+    ];
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(onProductSelected).toHaveBeenCalledWith(lookupProducts[0], 1);
+    expect(result.current.searchModalOpen).toBe(false);
+  });
+
+  it("handleLookupProduct: cuenta como stock el campo stock cuando no hay existencia", () => {
+    const lookupProducts = [
+      {
+        id: "a10",
+        codigo: "ADU-10",
+        descripcion: "CROQUETA ADULTO 10KG",
+        tracks_inventory: true,
+        is_global: true,
+        stock: 4,
+      },
+    ];
+    const onProductSelected = vi.fn();
+    const { result } = renderHook(() =>
+      useProductLookup(
+        createProps({ products: lookupProducts, onProductSelected })
+      )
+    );
+    act(() => {
+      result.current.setProductSearch("croqueta adulto");
+    });
+    act(() => {
+      result.current.handleLookupProduct();
+    });
+    expect(onProductSelected).toHaveBeenCalledWith(lookupProducts[0], 1);
+    expect(result.current.searchModalOpen).toBe(false);
   });
 
   it("handleLookupProduct: error si no hay coincidencias", () => {
