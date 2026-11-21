@@ -13,6 +13,7 @@ import {
   fetchByIdsInBatches,
 } from "../../../services/supabase/paginatedQuery";
 import { CUT_SELECT_FIELDS } from "./cashCutConstants";
+import { sortRowsBy } from "../../../services/supabase/sortRows";
 
 export {
   calculateSalesTotals,
@@ -89,11 +90,7 @@ export const fetchExistingShiftCut = async ({ sessionId }) =>
  * mas reciente a la mas antigua, con desempate por id.
  */
 const sortByDateDesc = (rows, column) =>
-  [...(rows || [])].sort(
-    (left, right) =>
-      String(right[column] ?? "").localeCompare(String(left[column] ?? "")) ||
-      String(left.id).localeCompare(String(right.id))
-  );
+  sortRowsBy(rows, column, { type: "date", ascending: false });
 
 /**
  * Ventas del turno (completadas, canceladas y reembolsadas).

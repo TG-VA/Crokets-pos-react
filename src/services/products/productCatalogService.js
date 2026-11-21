@@ -7,15 +7,11 @@ import {
   formatGlobalProductsWithoutInventory,
 } from "./productFormatters";
 import { fetchAllPages } from "../supabase/paginatedQuery";
+import { sortRowsBy } from "../supabase/sortRows";
 
 // Las paginas llegan ordenadas por id; el catalogo conserva el orden de alta.
 const sortByCreatedAt = (rows) =>
-  [...(rows || [])].sort(
-    (left, right) =>
-      String(left.created_at ?? "").localeCompare(
-        String(right.created_at ?? "")
-      ) || String(left.id).localeCompare(String(right.id))
-  );
+  sortRowsBy(rows, "created_at", { type: "date" });
 
 export const fetchDepartments = async () => {
   try {

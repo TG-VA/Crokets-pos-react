@@ -1,5 +1,6 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortRowsBy } from "../../../../../services/supabase/sortRows";
 
 const toDateOrNull = (value) => (value ? String(value).slice(0, 10) : null);
 
@@ -149,9 +150,5 @@ export const fetchActiveNonKitProducts = async () => {
   );
 
   if (error) throw error;
-  return [...(data || [])].sort(
-    (left, right) =>
-      String(left.name ?? "").localeCompare(String(right.name ?? "")) ||
-      String(left.id).localeCompare(String(right.id))
-  );
+  return sortRowsBy(data, "name");
 };
