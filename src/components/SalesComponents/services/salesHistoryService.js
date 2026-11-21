@@ -1,4 +1,10 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { fetchPointsBalanceByCustomer } from "../../../services/customers/customerPointsBalanceService";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../services/supabase/paginatedQuery";
+import { sortByDateDesc } from "../../../utils/sortByDateDesc";
 
 const TIME_ZONE = "America/Cancun";
 
@@ -131,34 +137,27 @@ export const buildCustomerPointsMaps = async ({
 }) => {
   const sIds = [...new Set(saleIds.filter(Boolean))],
     cIds = [...new Set(customerIds.filter(Boolean))];
-  const [sRes, retRes, rewRes, balRes] = await Promise.all([
+  const fetchSalePoints = (source) =>
     sIds.length
-      ? supabase
-          .from("customer_points")
-          .select("customer_id, related_sale_id, points, source")
-          .in("related_sale_id", sIds)
-          .eq("source", "sale")
-      : Promise.resolve({ data: [] }),
-    sIds.length
-      ? supabase
-          .from("customer_points")
-          .select("customer_id, related_sale_id, points, source")
-          .in("related_sale_id", sIds)
-          .eq("source", "partial_return")
-      : Promise.resolve({ data: [] }),
-    sIds.length
-      ? supabase
-          .from("customer_points")
-          .select("customer_id, related_sale_id, points, source")
-          .in("related_sale_id", sIds)
-          .eq("source", "reward")
-      : Promise.resolve({ data: [] }),
-    cIds.length
-      ? supabase
-          .from("customer_points")
-          .select("customer_id, points")
-          .in("customer_id", cIds)
-      : Promise.resolve({ data: [] }),
+      ? fetchByIdsInBatches(sIds, (batch) =>
+          supabase
+            .from("customer_points")
+            .select("id, customer_id, related_sale_id, points, source")
+            .in("related_sale_id", batch)
+            .eq("source", source)
+        )
+      : Promise.resolve({ data: [] });
+  // El saldo es informativo en el historial: si falla, el ticket se muestra sin el.
+  const fetchBalances = () =>
+    fetchPointsBalanceByCustomer(cIds).catch((error) => {
+      console.error("Error cargando saldos de puntos del historial:", error);
+      return {};
+    });
+  const [sRes, retRes, rewRes, balanceByCustomer] = await Promise.all([
+    fetchSalePoints("sale"),
+    fetchSalePoints("partial_return"),
+    fetchSalePoints("reward"),
+    fetchBalances(),
   ]);
 
   const agg = (data, condition, abs = false) =>
@@ -175,12 +174,7 @@ export const buildCustomerPointsMaps = async ({
     pointsBySale: agg(sRes.data || [], (p) => p > 0),
     returnedPointsBySale: agg(retRes.data || [], (p) => p < 0, true),
     rewardPointsBySale: agg(rewRes.data || [], (p) => p < 0, true),
-    balanceByCustomer: (balRes.data || []).reduce((acc, row) => {
-      if (row.customer_id)
-        acc[row.customer_id] =
-          (acc[row.customer_id] || 0) + Number(row.points || 0);
-      return acc;
-    }, {}),
+    balanceByCustomer,
   };
 };
 
@@ -246,19 +240,21 @@ export const fetchTicketsBatch = async (
   end,
   cashierFilter
 ) => {
-  let query = supabase
-    .from("sales")
-    .select(
-      "id, sale_date, subtotal, tax, total, discount_total, status, user_id, customer_id, branch_id, notes"
-    )
-    .eq("branch_id", branchId)
-    .gte("sale_date", start)
-    .lte("sale_date", end)
-    .order("sale_date", { ascending: false });
-  if (cashierFilter !== "all") query = query.eq("user_id", cashierFilter);
-  const { data: sales, error } = await query;
+  const buildQuery = () => {
+    let query = supabase
+      .from("sales")
+      .select(
+        "id, sale_date, subtotal, tax, total, discount_total, status, user_id, customer_id, branch_id, notes"
+      )
+      .eq("branch_id", branchId)
+      .gte("sale_date", start)
+      .lte("sale_date", end);
+    if (cashierFilter !== "all") query = query.eq("user_id", cashierFilter);
+    return query;
+  };
+  const { data: sales, error } = await fetchAllPages(buildQuery);
   if (error) throw error;
-  return sales || [];
+  return sortByDateDesc(sales, "sale_date");
 };
 
 export const executeCancelSaleTransaction = async (
@@ -282,29 +278,34 @@ export const executeCancelSaleTransaction = async (
 // --- NUEVAS FUNCIONES EXTRAÍDAS DEL HOOK ---
 
 export const fetchSalesRelatedData = async (saleIds, userIds, customerIds) => {
+  // Cada lote del .in() se pagina: un dia con muchas ventas pasa de 1000
+  // renglones de detalle o pagos.
+  const fetchIn = (values, table, columns, column) =>
+    fetchByIdsInBatches(values, (batch) =>
+      supabase.from(table).select(columns).in(column, batch)
+    );
   const [detRes, uRes, cRes, pRes, canRes, retRes] = await Promise.all([
-    supabase
-      .from("sale_details")
-      .select("sale_id, quantity")
-      .in("sale_id", saleIds),
-    supabase.from("users").select("id, username, email").in("id", userIds),
-    supabase.from("customers").select("id, name, phone").in("id", customerIds),
-    supabase
-      .from("sale_payments")
-      .select(
-        "sale_id, amount, currency, exchange_rate, payment_method_id, reference"
-      )
-      .in("sale_id", saleIds),
-    supabase
-      .from("canceled_sales")
-      .select("sale_id, cancel_reason, refund_method_id, created_at")
-      .in("sale_id", saleIds),
-    supabase
-      .from("sale_returns")
-      .select(
-        "id, sale_id, total_refund, refund_method_id, return_reason, created_at"
-      )
-      .in("sale_id", saleIds),
+    fetchIn(saleIds, "sale_details", "id, sale_id, quantity", "sale_id"),
+    fetchIn(userIds, "users", "id, username, email", "id"),
+    fetchIn(customerIds, "customers", "id, name, phone", "id"),
+    fetchIn(
+      saleIds,
+      "sale_payments",
+      "id, sale_id, amount, currency, exchange_rate, payment_method_id, reference",
+      "sale_id"
+    ),
+    fetchIn(
+      saleIds,
+      "canceled_sales",
+      "id, sale_id, cancel_reason, refund_method_id, created_at",
+      "sale_id"
+    ),
+    fetchIn(
+      saleIds,
+      "sale_returns",
+      "id, sale_id, total_refund, refund_method_id, return_reason, created_at",
+      "sale_id"
+    ),
   ]);
   return {
     details: detRes.data || [],
