@@ -6,8 +6,16 @@ import {
   formatBranchKardexProducts,
   formatGlobalProductsWithoutInventory,
 } from "./productFormatters";
+import { fetchAllPages } from "../supabase/paginatedQuery";
 
-const MAX_CATALOG_ROWS_TO_LOAD = 1000;
+// Las paginas llegan ordenadas por id; el catalogo conserva el orden de alta.
+const sortByCreatedAt = (rows) =>
+  [...(rows || [])].sort(
+    (left, right) =>
+      String(left.created_at ?? "").localeCompare(
+        String(right.created_at ?? "")
+      ) || String(left.id).localeCompare(String(right.id))
+  );
 
 export const fetchDepartments = async () => {
   try {
@@ -114,19 +122,20 @@ const PRODUCT_SELECT_FIELDS = `
 export const fetchBranchCatalog = async (branchId) => {
   try {
     const { data: departmentsData, error: departmentsFetchError } =
-      await supabase
-        .from("departments")
-        .select("id, name")
-        .limit(MAX_CATALOG_ROWS_TO_LOAD);
+      await fetchAllPages(() =>
+        supabase.from("departments").select("id, name")
+      );
 
     if (departmentsFetchError) throw departmentsFetchError;
 
     const departmentsMap = buildDepartmentMap(departmentsData);
 
-    const { data: inventoryRows, error: inventoryError } = await supabase
-      .from("branch_inventory")
-      .select(
-        `
+    const { data: inventoryPages, error: inventoryError } = await fetchAllPages(
+      () =>
+        supabase
+          .from("branch_inventory")
+          .select(
+            `
       id,
       branch_id,
       product_id,
@@ -143,22 +152,26 @@ export const fetchBranchCatalog = async (branchId) => {
         ${PRODUCT_SELECT_FIELDS}
       )
     `
-      )
-      .eq("branch_id", branchId)
-      .order("created_at", { ascending: true })
-      .limit(MAX_CATALOG_ROWS_TO_LOAD);
+          )
+          .eq("branch_id", branchId)
+    );
 
     if (inventoryError) throw inventoryError;
 
-    const { data: globalProducts, error: globalProductsError } = await supabase
-      .from("products")
-      .select(PRODUCT_SELECT_FIELDS)
-      .eq("is_global", true)
-      .eq("status", true)
-      .order("created_at", { ascending: true })
-      .limit(MAX_CATALOG_ROWS_TO_LOAD);
+    const inventoryRows = sortByCreatedAt(inventoryPages);
+
+    const { data: globalPages, error: globalProductsError } =
+      await fetchAllPages(() =>
+        supabase
+          .from("products")
+          .select(PRODUCT_SELECT_FIELDS)
+          .eq("is_global", true)
+          .eq("status", true)
+      );
 
     if (globalProductsError) throw globalProductsError;
+
+    const globalProducts = sortByCreatedAt(globalPages);
 
     const formattedBranchKardexProducts = formatBranchKardexProducts(
       inventoryRows,
