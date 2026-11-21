@@ -4,6 +4,8 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 
 const POINTS_MOVEMENT_COLUMNS = `
           *,
@@ -30,16 +32,17 @@ const POINTS_MOVEMENT_COLUMNS = `
 
 /**
  * Movimientos de puntos con sus relaciones, del mas reciente al mas antiguo.
+ * El resumen y los filtros se calculan en memoria sobre el historial completo,
+ * por eso se leen todas las paginas en vez de paginar en servidor.
  */
 export const fetchPointsMovements = async () => {
-  const { data, error } = await supabase
-    .from("customer_points")
-    .select(POINTS_MOVEMENT_COLUMNS)
-    .order("created_at", { ascending: false });
+  const { data, error } = await fetchAllPages(() =>
+    supabase.from("customer_points").select(POINTS_MOVEMENT_COLUMNS)
+  );
 
   if (error) throw error;
 
-  return data || [];
+  return sortByDateDesc(data);
 };
 
 /**
