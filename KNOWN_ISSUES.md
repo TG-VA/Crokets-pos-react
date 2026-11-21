@@ -1052,7 +1052,25 @@ si ningún PR lo usa.
 
 ---
 
-### 101. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
+### 101. `fetchByIdsInBatches` lanza todos los lotes a la vez y quedan lecturas sin paginar
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #236.
+
+`fetchByIdsInBatches` (`src/services/supabase/paginatedQuery.js`) dispara todos los lotes de 200 ids
+con `Promise.all`. Un archivo de importacion de 20 000 codigos de barras son 100 peticiones
+simultaneas (mas las de `validateSatClaves`), y un turno de 2 000 ventas lanza 10 lotes por cada una
+de las 4 consultas por `sale_id` del corte. Ademas, `fetchSatClaves` (catalogo SAT completo) y
+`cash_movements` de la sesion siguen sin paginar sobre el tope de 1000 filas.
+
+**Impacto:** no corrompe datos, pero puede disparar limites de tasa o de conexiones de PostgREST en
+sucursales o importaciones grandes; las dos lecturas sin paginar pueden truncarse en silencio.
+
+**Recomendacion futura:** agregar a `fetchByIdsInBatches` un parametro `concurrency` (por ejemplo 4)
+que procese los lotes en tandas, y pasar `fetchSatClaves` y `cash_movements` a `fetchAllPages`.
+
+---
+
+### 102. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
 
 **Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
 
