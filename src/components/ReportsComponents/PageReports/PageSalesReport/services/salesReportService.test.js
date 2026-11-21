@@ -104,4 +104,30 @@ describe("salesReportService: exportacion completa", () => {
       rows.filter((row) => row.discountType === "Canje Puntos")
     ).toHaveLength(5);
   });
+
+  it("getAllSalesForExport ordena por instante y no por texto cuando falta la fraccion", async () => {
+    fake.current = createFakeSupabase({
+      tables: {
+        v_sales_report_list: [
+          {
+            ...sales[0],
+            id: buildId("s", 0),
+            created_at: "2026-11-10T12:00:00.5+00:00",
+          },
+          {
+            ...sales[1],
+            id: buildId("s", 1),
+            created_at: "2026-11-10T12:00:00+00:00",
+          },
+        ],
+      },
+    });
+
+    const rows = await getAllSalesForExport(filters);
+
+    expect(rows.map((row) => row.ticketNumber)).toEqual([
+      buildId("s", 0).toUpperCase(),
+      buildId("s", 1).toUpperCase(),
+    ]);
+  });
 });
