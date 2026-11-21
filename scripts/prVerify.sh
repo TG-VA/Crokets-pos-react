@@ -25,7 +25,7 @@ for f in "${FILES[@]+"${FILES[@]}"}"; do
     *.js | *.jsx | *.mjs) LINT_FILES+=("$f") ;;
   esac
   case "$f" in
-    *.js | *.jsx | *.mjs | *.css | *.json | *.md) FORMAT_FILES+=("$f") ;;
+    *.js | *.jsx | *.mjs | *.css | *.json | *.md | *.html) FORMAT_FILES+=("$f") ;;
   esac
 done
 
