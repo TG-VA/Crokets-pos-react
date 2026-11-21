@@ -1,8 +1,11 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  DEFAULT_PAGE_SIZE,
+  fetchAllPages,
+} from "../../../../../services/supabase/paginatedQuery";
+import { sortKardexMovementsByDateDesc } from "../utils/kardexMovementUtils";
 
 export const KARDEX_MOVEMENTS_TABLE = "inventory_movements";
-
-export const DEFAULT_KARDEX_LIMIT = 1000;
 
 const normalizeDateKey = (value) => {
   const normalizedValue = String(value ?? "").trim();
@@ -116,41 +119,43 @@ const mapRowsWithoutCostColumns = (data) =>
     total_cost: null,
   }));
 
+/**
+ * Lee todos los movimientos del producto en la sucursal. PostgREST corta cada
+ * respuesta en 1000 filas, asi que la consulta se pagina con un cursor sobre id;
+ * el orden por fecha se aplica en memoria al terminar.
+ */
 const runKardexMovementsQuery = async ({
   productId,
   branchId,
   dateFrom,
   dateTo,
-  limit,
+  pageSize,
   includeCostColumns,
 }) => {
-  let query = supabase
-    .from(KARDEX_MOVEMENTS_TABLE)
-    .select(buildKardexMovementsSelect(includeCostColumns))
-    .eq("product_id", productId)
-    .eq("branch_id", branchId)
-    .order("created_at", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .limit(limit);
-
   const { fromIso, toIso } = buildKardexIsoRange({
     dateFrom,
     dateTo,
   });
 
-  if (fromIso) {
-    query = query.gte("created_at", fromIso);
-  }
+  const buildQuery = () => {
+    let query = supabase
+      .from(KARDEX_MOVEMENTS_TABLE)
+      .select(buildKardexMovementsSelect(includeCostColumns))
+      .eq("product_id", productId)
+      .eq("branch_id", branchId);
 
-  if (toIso) {
-    query = query.lte("created_at", toIso);
-  }
+    if (fromIso) {
+      query = query.gte("created_at", fromIso);
+    }
 
-  const { data, error } = await query;
+    if (toIso) {
+      query = query.lte("created_at", toIso);
+    }
 
-  return { data, error };
+    return query;
+  };
+
+  return fetchAllPages(buildQuery, { pageSize });
 };
 
 export const loadKardexMovements = async ({
@@ -158,7 +163,7 @@ export const loadKardexMovements = async ({
   branchId,
   dateFrom = "",
   dateTo = "",
-  limit = DEFAULT_KARDEX_LIMIT,
+  pageSize = DEFAULT_PAGE_SIZE,
 }) => {
   if (!productId) {
     return [];
@@ -177,7 +182,7 @@ export const loadKardexMovements = async ({
     throw new Error(rangeValidation.message);
   }
 
-  const queryArgs = { productId, branchId, dateFrom, dateTo, limit };
+  const queryArgs = { productId, branchId, dateFrom, dateTo, pageSize };
 
   const { data, error } = await runKardexMovementsQuery({
     ...queryArgs,
@@ -185,7 +190,7 @@ export const loadKardexMovements = async ({
   });
 
   if (!error) {
-    return Array.isArray(data) ? data : [];
+    return sortKardexMovementsByDateDesc(data);
   }
 
   if (!isMissingCostColumnError(error)) {
@@ -212,5 +217,5 @@ export const loadKardexMovements = async ({
     throw retry.error;
   }
 
-  return mapRowsWithoutCostColumns(retry.data);
+  return sortKardexMovementsByDateDesc(mapRowsWithoutCostColumns(retry.data));
 };

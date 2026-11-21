@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (19 nov 2026)
+## Cobertura actual (20 nov 2026)
 
-363 archivos de test (**3657 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+367 archivos de test (**3691 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -170,7 +170,11 @@ y el proceso principal de Electron:
 | Ticket: servicios de puntos                               | `src/utils/ticket/ticketPointsService.test.js`                                     |
 | Ticket: secciones                                         | `src/utils/ticket/ticketSections.test.js`                                          |
 | Reportes: ciclo de vida del dashboard                     | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
+| Supabase: paginacion sobre el tope de 1000 filas          | `src/services/supabase/paginatedQuery.test.js`                                     |
+| Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
+| Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
+| Kardex: Realtime y sondeo de respaldo                     | `.../PageKardex/hooks/useKardexRealtime.test.js`                                   |
 | Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
 | Kardex: tabla (columnas de valuacion)                     | `.../PageKardex/components/KardexTable.test.jsx`                                   |
 | Kardex: panel con paginacion                              | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
@@ -434,6 +438,20 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
   `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
   `RouterComponent` (por omisión `HashRouter`), igual que `App`.
+- **Paginacion sobre el tope de PostgREST y estado de stock comun** (20 nov 2026, rama
+  `fix/kardex-paginacion-y-estado-stock`): PostgREST corta cada respuesta en 1000 filas sin error.
+  `src/services/supabase/paginatedQuery.js` concentra `fetchAllPages` (cursor keyset sobre `id`),
+  `fetchByIdsInBatches` (lotes del `.in()`) y `fetchAllRpcPages` (`.range()` para RPC con un
+  `.order()` estable del llamador). Las tres aceptan `pageSize`/`batchSize` para que los tests
+  paginen con 2 filas en vez de crear 1000; `paginatedQuery.test.js` fija el cursor, la pagina
+  incompleta como fin, la fila sin `id` como error y que el primer error corta sin filas parciales.
+  `kardexService.test.js` fija que el kardex lee varias paginas, ordena en memoria por `created_at`
+  descendente con desempate por `id`, que el reintento sin costos tambien pagina y que el error de la
+  segunda pagina se propaga. `src/utils/stockStatus.test.js` y `kardexMovementUtils.test.js` fijan los
+  bordes de la regla comun (stock igual al minimo, 0, negativo, minimo 0, sin inventario) y el
+  sobrestock exclusivo de Kardex. `useKardexRealtime.test.js` fija que el sondeo de 30 s solo corre
+  tras `CHANNEL_ERROR`/`TIMED_OUT`, se detiene con `SUBSCRIBED` tras recargar una vez los slots
+  seleccionados, y que el fallo del refresco en segundo plano se registra con `console.error`.
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida

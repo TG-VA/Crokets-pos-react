@@ -8,6 +8,8 @@ const REALTIME_DEBOUNCE_MS = 500;
 
 const FALLBACK_REFRESH_INTERVAL_MS = 30000;
 
+const FAILED_REALTIME_STATUSES = new Set(["CHANNEL_ERROR", "TIMED_OUT"]);
+
 const EMPTY_SELECTED_PRODUCT_IDS = [null, null];
 
 const useKardexRealtime = ({
@@ -61,12 +63,7 @@ const useKardexRealtime = ({
 
     const refreshSlotSafely = (slot) => {
       Promise.resolve(refreshFunctionRef.current?.(slot)).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error(
-            "Error actualizando el Kardex en segundo plano:",
-            error
-          );
-        }
+        console.error("Error actualizando el Kardex en segundo plano:", error);
       });
     };
 
@@ -103,6 +100,49 @@ const useKardexRealtime = ({
       });
     };
 
+    const refreshSelectedSlots = () => {
+      selectedProductIdsRef.current.forEach((productId, slot) => {
+        if (productId) {
+          refreshSlotSafely(slot);
+        }
+      });
+    };
+
+    const stopPolling = () => {
+      if (pollingIntervalRef.current !== null) {
+        window.clearInterval(pollingIntervalRef.current);
+
+        pollingIntervalRef.current = null;
+      }
+    };
+
+    // El sondeo es solo un respaldo: arranca cuando el canal falla y se detiene
+    // en cuanto vuelve a quedar suscrito.
+    const handleStatusChange = (status) => {
+      if (FAILED_REALTIME_STATUSES.has(status)) {
+        console.error(`Error en Realtime del Kardex: ${status}`);
+
+        if (pollingIntervalRef.current === null) {
+          pollingIntervalRef.current = window.setInterval(
+            refreshSelectedSlots,
+            FALLBACK_REFRESH_INTERVAL_MS
+          );
+        }
+
+        return;
+      }
+
+      if (status === "SUBSCRIBED") {
+        // Los eventos emitidos con el canal caido no se reenvian: si veniamos de
+        // un fallo, se recarga una vez para cubrir ese hueco.
+        if (pollingIntervalRef.current !== null) {
+          refreshSelectedSlots();
+        }
+
+        stopPolling();
+      }
+    };
+
     const channel = supabase
       .channel(`kardex-realtime-${branchId}`)
       .on(
@@ -115,30 +155,14 @@ const useKardexRealtime = ({
         },
         queueAffectedProducts
       )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error(`Error en Realtime del Kardex: ${status}`);
-        }
-      });
-
-    pollingIntervalRef.current = window.setInterval(() => {
-      selectedProductIdsRef.current.forEach((productId, slot) => {
-        if (productId) {
-          refreshSlotSafely(slot);
-        }
-      });
-    }, FALLBACK_REFRESH_INTERVAL_MS);
+      .subscribe(handleStatusChange);
 
     return () => {
       refreshTimersRef.current.forEach((_timerId, slot) => {
         clearSlotTimer(slot);
       });
 
-      if (pollingIntervalRef.current !== null) {
-        window.clearInterval(pollingIntervalRef.current);
-
-        pollingIntervalRef.current = null;
-      }
+      stopPolling();
 
       supabase.removeChannel(channel);
     };
