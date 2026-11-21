@@ -1,35 +1,46 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 import { fetchInChunks } from "./reportsDashboardUtils";
 
+const SALE_IDS_BATCH_SIZE = 150;
+
+const bySaleDate = (left, right) =>
+  String(left.sale_date).localeCompare(String(right.sale_date));
+
+// El cursor de fetchAllPages ordena por id: el orden por fecha se aplica en memoria.
 export const getSalesRows = async ({ branchId, start, end }) => {
-  let query = supabase
-    .from("sales")
-    .select(
+  const { data, error } = await fetchAllPages(() => {
+    let query = supabase
+      .from("sales")
+      .select(
+        `
+        id,
+        sale_date,
+        subtotal,
+        tax,
+        total,
+        discount_total,
+        status,
+        branch_id
       `
-      id,
-      sale_date,
-      subtotal,
-      tax,
-      total,
-      discount_total,
-      status,
-      branch_id
-    `
-    )
-    .gte("sale_date", start)
-    .lte("sale_date", end)
-    .order("sale_date", { ascending: true });
+      )
+      .gte("sale_date", start)
+      .lte("sale_date", end);
 
-  if (branchId && branchId !== "ALL" && branchId !== "Todas") {
-    query = query.eq("branch_id", branchId);
-  }
+    if (branchId && branchId !== "ALL" && branchId !== "Todas") {
+      query = query.eq("branch_id", branchId);
+    }
 
-  const { data, error } = await query;
+    return query;
+  });
 
   if (error) throw error;
 
-  return data || [];
+  return data.sort(bySaleDate);
 };
 
 export const getBranchesCatalog = async () => {
@@ -45,46 +56,54 @@ export const getBranchesCatalog = async () => {
 export const getSaleDetails = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  return fetchInChunks(saleIds, 150, async (chunk) => {
-    const { data, error } = await supabase
-      .from("sale_details")
-      .select(
+  const { data, error } = await fetchByIdsInBatches(
+    saleIds,
+    (batch) =>
+      supabase
+        .from("sale_details")
+        .select(
+          `
+          id,
+          sale_id,
+          product_id,
+          quantity,
+          total_price
         `
-        sale_id,
-        product_id,
-        quantity,
-        total_price
-      `
-      )
-      .in("sale_id", chunk);
+        )
+        .in("sale_id", batch),
+    { batchSize: SALE_IDS_BATCH_SIZE }
+  );
 
-    if (error) throw error;
+  if (error) throw error;
 
-    return data || [];
-  });
+  return data;
 };
 
 export const getSalePayments = async (saleIds) => {
   if (!saleIds.length) return [];
 
-  return fetchInChunks(saleIds, 150, async (chunk) => {
-    const { data, error } = await supabase
-      .from("sale_payments")
-      .select(
+  const { data, error } = await fetchByIdsInBatches(
+    saleIds,
+    (batch) =>
+      supabase
+        .from("sale_payments")
+        .select(
+          `
+          id,
+          sale_id,
+          amount,
+          currency,
+          exchange_rate,
+          payment_method_id
         `
-        sale_id,
-        amount,
-        currency,
-        exchange_rate,
-        payment_method_id
-      `
-      )
-      .in("sale_id", chunk);
+        )
+        .in("sale_id", batch),
+    { batchSize: SALE_IDS_BATCH_SIZE }
+  );
 
-    if (error) throw error;
+  if (error) throw error;
 
-    return data || [];
-  });
+  return data;
 };
 
 export const getProductsByIds = async (productIds) => {
