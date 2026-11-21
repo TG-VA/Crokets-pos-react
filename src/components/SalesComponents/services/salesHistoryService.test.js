@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 vi.mock("../../../lib/supabaseClient", () => ({
   supabase: { from: vi.fn() },
@@ -39,6 +39,10 @@ const buildSale = (index, saleDate, overrides = {}) => ({
 
 describe("salesHistoryService", () => {
   let fake;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   beforeEach(() => {
     const saleIds = [0, 1, 2].map((index) => buildId("s", index));
@@ -154,6 +158,5 @@ describe("salesHistoryService", () => {
       "Error cargando saldos de puntos del historial:",
       pageError
     );
-    consoleError.mockRestore();
   });
 });
