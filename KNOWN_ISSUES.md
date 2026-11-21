@@ -1052,6 +1052,24 @@ si ningún PR lo usa.
 
 ---
 
+### 101. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
+
+`fetchSalesRelatedData` (`src/components/SalesComponents/services/salesHistoryService.js`) lee
+detalles, usuarios, clientes, pagos, cancelaciones y devoluciones con `fetchByIdsInBatches`. Si una
+lectura devuelve `{ data: null, error }`, el retorno usa `data || []` y el error se pierde.
+
+**Impacto:** ante una falla de red, el historial muestra tickets sin pagos, detalles o cliente como
+si los datos fueran correctos, y el usuario puede decidir con información incompleta (por ejemplo,
+en una devolución).
+
+**Recomendación futura:** no lanzar el error, porque bloquearía todo el historial del día. Devolver
+un indicador de datos parciales desde el servicio, exponerlo en el hook del historial y mostrar en
+la vista un aviso con opción de reintentar, conservando el `console.error`.
+
+---
+
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod
