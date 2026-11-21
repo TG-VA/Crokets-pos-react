@@ -286,17 +286,24 @@ export const fetchCashMovementsBySession = async ({
     return { data: [], error: null };
   }
 
-  let query = supabase
-    .from("cash_movements")
-    .select("id, movement_type, amount, description, created_at")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: false });
+  const result = await fetchAllPages(() => {
+    let query = supabase
+      .from("cash_movements")
+      .select("id, movement_type, amount, description, created_at")
+      .eq("session_id", sessionId);
 
-  if (endAt) {
-    query = query.lte("created_at", endAt);
+    if (endAt) {
+      query = query.lte("created_at", endAt);
+    }
+
+    return query;
+  });
+
+  if (result.error) {
+    return result;
   }
 
-  return query;
+  return { data: sortByDateDesc(result.data, "created_at"), error: null };
 };
 
 /**
