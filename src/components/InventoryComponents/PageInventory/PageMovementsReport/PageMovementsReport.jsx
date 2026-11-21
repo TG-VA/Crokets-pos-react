@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import MovementsKpiCards from "./components/MovementsKpiCards";
 import MovementsReportControls from "./components/MovementsReportControls";
 import MovementsReportTable from "./components/MovementsReportTable";
 import PaginationBar from "../../../PaginationBar/PaginationBar";
@@ -10,9 +11,14 @@ import useMovementsReport from "./hooks/useMovementsReport";
 import useResizableColumns from "./hooks/useResizableColumns";
 import { usePagination } from "../../../../hooks/usePagination";
 
-import { exportMovementsReport } from "./services/movementsExportService";
+import { calculateMovementKpis } from "./services/movementsCalculationService";
+import { exportMovementsReport } from "./utils/movementsExportUtils";
 
-import styles from "./PageMovementsReports.module.css";
+import { joinClasses } from "./utils/movementFormatters";
+
+import styles from "./PageMovementsReport.module.css";
+
+const EMPTY_PERIOD_MESSAGE = "Sin movimientos en el periodo.";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
@@ -43,12 +49,12 @@ const PageMovementsReport = () => {
     handleEndDateChange,
     selectRangePreset,
 
-    refreshMovementsSilently,
+    reloadMovements,
   } = useMovementsReport();
 
   useMovementsRealtime({
     selectedBranchId,
-    refreshMovementsSilently,
+    reloadMovements,
   });
 
   const {
@@ -109,6 +115,11 @@ const PageMovementsReport = () => {
       .length;
   }, [facetFilters]);
 
+  const kpis = useMemo(
+    () => calculateMovementKpis(filteredRows),
+    [filteredRows]
+  );
+
   const handleExportMovements = async () => {
     if (exporting || filteredRows.length === 0) {
       return;
@@ -135,6 +146,11 @@ const PageMovementsReport = () => {
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleBranchChange = (branchId) => {
+    setExportError("");
+    setSelectedBranchId(branchId);
   };
 
   const handleClearFilters = () => {
@@ -168,10 +184,7 @@ const PageMovementsReport = () => {
             onStartDateChange={handleStartDateChange}
             onEndDateChange={handleEndDateChange}
             onSelectRangePreset={selectRangePreset}
-            onBranchChange={(branchId) => {
-              setExportError("");
-              setSelectedBranchId(branchId);
-            }}
+            onBranchChange={handleBranchChange}
             onExport={handleExportMovements}
           />
         </div>
@@ -179,9 +192,10 @@ const PageMovementsReport = () => {
         <div className={styles.toolbar}>
           <div className={styles.filterSummary}>
             <span
-              className={`${styles.filterStatusBadge} ${
-                activeFilterCount > 0 ? styles.filterStatusBadgeActive : ""
-              }`}
+              className={joinClasses(
+                styles.filterStatusBadge,
+                activeFilterCount > 0 && styles.filterStatusBadgeActive
+              )}
             >
               {activeFilterCount === 0
                 ? "Sin filtros activos"
@@ -216,17 +230,35 @@ const PageMovementsReport = () => {
           </span>
         </div>
 
+        <MovementsKpiCards kpis={kpis} />
+
         {loading && rows.length === 0 ? (
           <div className={styles.info}>Cargando movimientos...</div>
         ) : null}
 
         {displayedError ? (
-          <div className={styles.error}>{displayedError}</div>
+          <div className={styles.errorRow}>
+            <div className={styles.error}>{displayedError}</div>
+
+            {error && !exportError ? (
+              <button
+                type="button"
+                className={styles.clearFiltersButton}
+                onClick={reloadMovements}
+                disabled={loading}
+              >
+                Reintentar
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         <MovementsReportTable
           rows={pageRows}
           loading={loading}
+          emptyMessage={
+            periodRowsCount === 0 && !error ? EMPTY_PERIOD_MESSAGE : undefined
+          }
           columns={columns}
           columnWidths={columnWidths}
           isResizing={isResizing}

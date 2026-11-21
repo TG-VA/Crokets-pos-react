@@ -1003,6 +1003,41 @@ solo para administradores, o encapsular la persistencia en una función RPC `SEC
 
 ---
 
+### 98. Reporte de movimientos: devoluciones y cancelaciones de ventas fuera del periodo no aparecen
+
+**Estado:** abierto (19 nov 2026) — registrado en el PR #229.
+
+`loadMovementsReport` (`.../PageMovementsReport/services/movementsReportService.js`) busca las
+cancelaciones y devoluciones por las ventas del periodo (`loadCanceledSalesBySales` y
+`loadSaleReturnsBySales` reciben los `sale_id` del rango). Una devolución registrada hoy sobre una
+venta de un mes anterior no aparece en el reporte de hoy, aunque su movimiento ocurrió en el periodo.
+
+**Impacto:** el reporte puede omitir devoluciones y cancelaciones de productos sin inventario cuya
+venta original quedó fuera del rango elegido. Los movimientos con stock vienen de
+`inventory_movements` filtrados por su propia fecha y no se ven afectados.
+
+**Recomendación futura:** consultar `canceled_sales` y `sale_returns` por su propia fecha dentro de la
+ventana del periodo, además de por las ventas del rango.
+
+---
+
+### 99. Reporte de movimientos: el planner no usa los índices por sucursal y fecha
+
+**Estado:** abierto (20 nov 2026) — registrado en el PR #230.
+
+`fetchAllPages` (`.../PageMovementsReport/services/movementsReportService.js`) pagina con
+`ORDER BY id LIMIT 1000` y filtra por `branch_id` y ventana de fecha. Con ~570 filas en
+`inventory_movements`, `EXPLAIN (ANALYZE, BUFFERS)` en producción elige `inventory_movements_pkey` y
+filtra (5 ms, 269 filas descartadas); los índices de la migración `20261119200000` no se usan.
+
+**Impacto:** ninguno hoy. Con cientos de miles de movimientos y un periodo corto, cada página
+recorrería por `id` muchas filas fuera de la ventana.
+
+**Recomendación futura:** si el reporte se vuelve lento, cambiar el cursor a `(created_at, id)` para
+que el orden coincida con `idx_inventory_movements_branch_created_at`.
+
+---
+
 ## Bajo
 
 ### 11. Icono de la app con ruta idéntica en dev/prod

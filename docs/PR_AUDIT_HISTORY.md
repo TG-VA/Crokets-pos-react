@@ -3135,3 +3135,12 @@ Prettier OK; ESLint 0 errores (2 warnings preexistentes). Mutaciones: 2 ejecutad
 
 Falta la confirmación humana de la prueba manual en Electron (`npm run dev`), incluido el desborde
 del aviso en 1366x768.
+---
+
+## Informe de Auditoría — PR #233 `chore: quitar symlink node_modules del indice` (20 de noviembre de 2026, segunda ronda)
+
+Veredicto: APROBADO (0 bloqueantes, 0 importantes, 0 sugerencias). Head `5162b7e`, base `189633a`.
+Quita del indice el symlink `node_modules` (modo 120000) y cambia `node_modules/` por `node_modules`
+en `.gitignore` para ignorar tambien symlinks. Ejecución: 363 archivos / 3657 tests verdes; build OK;
+`check:agents` OK; `git check-ignore` -> `.gitignore:2`; CI verde. S1 de la primera ronda
+(documentar `npm ci` tras el merge) resuelta en la descripción del PR.

@@ -1,14 +1,24 @@
-import ExcelJS from "exceljs";
+import { formatMovementType, toUpperSafe } from "./movementFormatters";
 
 import {
   buildRowView,
-  formatMovementType,
   isNoStockMovement,
-  normalizeFilenameSegment,
-  toUpperSafe,
-} from "../utils/movementFormatters";
+} from "../services/movementsCalculationService";
 
-import { formatDateKeyLabel, formatDateTime } from "../utils/movementDateUtils";
+import { formatDateKeyLabel, formatDateTime } from "./movementDateUtils";
+
+export const normalizeFilenameSegment = (value, fallback = "POLIGONO") => {
+  const normalizedValue = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^\w\s-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  return normalizedValue || fallback;
+};
 
 const EXCEL_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -430,6 +440,10 @@ export const exportMovementsReport = async ({
   facetFilters = {},
 }) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
+
+  // exceljs pesa cientos de KB; se carga solo al exportar para no inflar el
+  // bundle inicial de la pagina.
+  const { default: ExcelJS } = await import("exceljs");
 
   const workbook = new ExcelJS.Workbook();
 
