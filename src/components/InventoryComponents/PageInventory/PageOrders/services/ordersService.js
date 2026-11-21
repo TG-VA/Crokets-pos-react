@@ -1,5 +1,7 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 
 import {
   isReceiptComplete,
@@ -39,17 +41,18 @@ export const fetchOrderBranchOptions = async (currentBranch) => {
   }
 };
 
+// El historial filtra y pagina en memoria: se leen todas las paginas en vez de
+// paginar en servidor.
 export const loadStoreOrders = async () => {
-  const { data, error } = await supabase
-    .from("store_orders")
-    .select(STORE_ORDER_SELECT)
-    .order("sent_at", { ascending: false });
+  const { data, error } = await fetchAllPages(() =>
+    supabase.from("store_orders").select(STORE_ORDER_SELECT)
+  );
 
   if (error) {
     throw error;
   }
 
-  return Array.isArray(data) ? data : [];
+  return sortByDateDesc(data, "sent_at");
 };
 
 export const countPendingStoreOrders = async (branchId) => {
