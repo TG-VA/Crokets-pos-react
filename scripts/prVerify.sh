@@ -2,8 +2,8 @@
 # Verificaciones de un PR en el directorio actual (worktree del PR).
 # Uso: scripts/prVerify.sh <base-ref>
 # Corre la suite, el build, el chequeo de AGENTS.md, Prettier y ESLint sobre
-# los archivos del diff contra <base-ref>. Imprime la salida real de cada paso
-# y al final una tabla de resultados. Sale con 1 si algun paso falla.
+# los archivos del diff contra <base-ref> (incluye cambios sin commitear, igual que CI).
+# Imprime la salida real de cada paso y al final una tabla de resultados. Sale con 1 si algun paso falla.
 
 set -u
 
@@ -16,7 +16,7 @@ fi
 FILES=()
 while IFS= read -r f; do
   [ -f "$f" ] && FILES+=("$f")
-done < <(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD)
+done < <(git diff --name-only --diff-filter=ACMR "$(git merge-base "$BASE" HEAD)")
 
 LINT_FILES=()
 FORMAT_FILES=()
