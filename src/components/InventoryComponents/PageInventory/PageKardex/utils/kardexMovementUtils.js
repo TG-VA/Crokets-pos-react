@@ -1,3 +1,5 @@
+import { getStockLevel } from "../../../../../utils/stockStatus";
+
 const toFiniteNumber = (value, fallback = null) => {
   if (value === null || value === undefined || value === "") {
     return fallback;
@@ -96,6 +98,25 @@ export const buildKardexRows = (movements, options = {}) => {
   );
 };
 
+const KARDEX_STOCK_LEVEL_STATUS = {
+  outOfStock: {
+    key: "outOfStock",
+    label: "AGOTADO",
+  },
+  lowStock: {
+    key: "lowStock",
+    label: "STOCK BAJO",
+  },
+  available: {
+    key: "available",
+    label: "DISPONIBLE",
+  },
+};
+
+/**
+ * Estado de stock del kardex: aplica la regla comun del POS y solo agrega encima
+ * los casos propios de esta vista (sin inventario y sobrestock con maximo).
+ */
 export const getKardexStockStatus = ({
   currentStock,
   minimumStock,
@@ -122,24 +143,7 @@ export const getKardexStockStatus = ({
     };
   }
 
-  if (stock <= minimum) {
-    return {
-      key: "outOfStock",
-      label: "AGOTADO",
-    };
-  }
-
-  if (minimum > 0 && stock <= minimum * 1.5) {
-    return {
-      key: "lowStock",
-      label: "POR AGOTARSE",
-    };
-  }
-
-  return {
-    key: "available",
-    label: "DISPONIBLE",
-  };
+  return KARDEX_STOCK_LEVEL_STATUS[getStockLevel({ stock, minimum })];
 };
 
 export const getKardexProductId = (product) => {
