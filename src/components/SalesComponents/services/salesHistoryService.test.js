@@ -115,6 +115,40 @@ describe("salesHistoryService", () => {
     expect(related.users).toEqual([{ id: "u-1", username: "ana" }]);
   });
 
+  it("fetchSalesRelatedData marca la respuesta incompleta si falla una tabla", async () => {
+    const saleIds = [0, 1, 2].map((index) => buildId("s", index));
+    const pageError = { message: "boom" };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    supabase.from.mockImplementation((table) => {
+      const query = fake.from(table);
+      if (table === "sale_payments") {
+        query.limit = () => Promise.resolve({ data: null, error: pageError });
+      }
+      return query;
+    });
+
+    const related = await fetchSalesRelatedData(saleIds, ["u-1"], ["c-1"]);
+
+    expect(related.incomplete).toBe(true);
+    expect(related.payments).toEqual([]);
+    expect(related.details).toHaveLength(5);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error cargando datos relacionados del historial:",
+      pageError
+    );
+    consoleError.mockRestore();
+  });
+
+  it("fetchSalesRelatedData no marca incompleta una lectura sin errores", async () => {
+    const saleIds = [0, 1, 2].map((index) => buildId("s", index));
+
+    const related = await fetchSalesRelatedData(saleIds, ["u-1"], ["c-1"]);
+
+    expect(related.incomplete).toBe(false);
+  });
+
   it("buildCustomerPointsMaps suma todas las paginas de puntos y de saldo", async () => {
     const saleIds = [0, 1].map((index) => buildId("s", index));
 
