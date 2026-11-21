@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../services/supabase/paginatedQuery";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -39,23 +40,25 @@ const getSessionCashSales = async ({ branchId, userId, openedAt }) => {
   if (!branchId || !userId || !openedAt) return 0;
 
   // OPTIMIZACIÓN: JOIN nativo en Supabase para evitar doble consulta
-  const { data: sales, error } = await supabase
-    .from("sales")
-    .select(
+  const { data: sales, error } = await fetchAllPages(() =>
+    supabase
+      .from("sales")
+      .select(
+        `
+        id,
+        sale_payments (
+          amount,
+          currency,
+          exchange_rate,
+          payment_methods!inner ( affects_cash )
+        )
       `
-      id,
-      sale_payments (
-        amount,
-        currency,
-        exchange_rate,
-        payment_methods!inner ( affects_cash )
       )
-    `
-    )
-    .eq("branch_id", branchId)
-    .eq("user_id", userId)
-    .in("status", ["completed", "cancelled", "refunded"])
-    .gte("created_at", openedAt);
+      .eq("branch_id", branchId)
+      .eq("user_id", userId)
+      .in("status", ["completed", "cancelled", "refunded"])
+      .gte("created_at", openedAt)
+  );
 
   if (error) throw error;
 
@@ -80,18 +83,22 @@ const getSessionCashRefunds = async ({ branchId, userId, openedAt }) => {
     { data: cancellations, error: cancelError },
     { data: partialReturns, error: returnError },
   ] = await Promise.all([
-    supabase
-      .from("canceled_sales")
-      .select("refund_amount, payment_methods!inner(affects_cash)")
-      .eq("branch_id", branchId)
-      .eq("user_id", userId)
-      .gte("canceled_at", openedAt),
-    supabase
-      .from("sale_returns")
-      .select("total_refund, payment_methods!inner(affects_cash)")
-      .eq("branch_id", branchId)
-      .eq("user_id", userId)
-      .gte("created_at", openedAt),
+    fetchAllPages(() =>
+      supabase
+        .from("canceled_sales")
+        .select("id, refund_amount, payment_methods!inner(affects_cash)")
+        .eq("branch_id", branchId)
+        .eq("user_id", userId)
+        .gte("canceled_at", openedAt)
+    ),
+    fetchAllPages(() =>
+      supabase
+        .from("sale_returns")
+        .select("id, total_refund, payment_methods!inner(affects_cash)")
+        .eq("branch_id", branchId)
+        .eq("user_id", userId)
+        .gte("created_at", openedAt)
+    ),
   ]);
 
   if (cancelError) throw cancelError;

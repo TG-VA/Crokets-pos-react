@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (20 nov 2026)
+## Cobertura actual (21 nov 2026)
 
-367 archivos de test (**3691 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+372 archivos de test (**3714 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -173,6 +173,10 @@ y el proceso principal de Electron:
 | Supabase: paginacion sobre el tope de 1000 filas          | `src/services/supabase/paginatedQuery.test.js`                                     |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
+| Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
+| Corte de caja: turno de varias paginas y lotes            | `src/pages/CashCut/services/cashCutReportPagination.test.js`                       |
+| Ventas: efectivo disponible de la sesion                  | `src/components/SalesComponents/services/salesCashService.test.js`                 |
+| Claves SAT: validacion por lotes                          | `src/services/satClavesService.test.js`                                            |
 | Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
 | Kardex: Realtime y sondeo de respaldo                     | `.../PageKardex/hooks/useKardexRealtime.test.js`                                   |
 | Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
@@ -309,6 +313,8 @@ regla nueva de costo debe cambiarse en los dos lados.
     es `thenable`.
   - `rpcBuilder({ data, error })` — simula `supabase.rpc(...)`.
     Estos helpers están duplicados por archivo (candidatos a extraerse a un helper compartido).
+  - Para probar paginacion, usar `createFakePostgrest` y `withSmallPages` de
+    `src/services/supabase/fakePostgrest.testUtils.js` en lugar de crear 1000 filas.
 - **Hooks:** se prueban con `renderHook`/`act` de `@testing-library/react`.
   Para cambiar las props en un caso de prueba, `renderHook` necesita `initialProps` y el callback
   debe recibir ese objeto como parámetro: `renderHook((props) => useX(props), { initialProps })`.
@@ -438,6 +444,23 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
   `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
   `RouterComponent` (por omisión `HashRouter`), igual que `App`.
+- **Paginacion del catalogo, el corte y la importacion** (21 nov 2026, rama
+  `fix/paginacion-catalogo-y-caja`): `src/services/supabase/fakePostgrest.testUtils.js` es un doble
+  compartido de `supabase.from()` que responde como PostgREST: aplica `eq`/`in`/`gte`/`lte`/`gt`,
+  ordena por los `.order()` recibidos y **corta cada respuesta en `maxRows` (2) aunque se pida un
+  `.limit()` mayor**. `withSmallPages` se usa en un `vi.mock` de `paginatedQuery` para forzar
+  paginas y lotes de 2, asi pocas filas simulan varias paginas; cada test nuevo falla si el
+  servicio vuelve a la consulta sin paginar. `productCatalogService.test.js` fija que el catalogo de
+  la sucursal y los globales activos llegan completos y en orden de alta (`created_at` ascendente).
+  `cashCutReportPagination.test.js` fija que un turno de varias paginas y varios lotes de `.in()` da
+  los mismos totales de ventas, pagos por metodo, dolares, departamentos y canjes que el turno
+  completo, y que cancelaciones y devoluciones salen de la mas reciente a la mas antigua.
+  `salesCashService.test.js` fija el efectivo disponible con ventas, cancelaciones y devoluciones de
+  varias paginas. `localProductsCatalogService.test.js` y `productKitsService.test.js` fijan los
+  productos locales de pedidos y el selector de kits (orden por nombre). `satClavesService.test.js`
+  y `productsImportService.test.js` fijan la validacion de importacion por lotes, sin repetidos y con
+  `cursorColumn: "clave"` en la tabla SAT, que no tiene `id`; `paginatedQuery.test.js` suma los
+  casos de `cursorColumn`.
 - **Paginacion sobre el tope de PostgREST y estado de stock comun** (20 nov 2026, rama
   `fix/kardex-paginacion-y-estado-stock`): PostgREST corta cada respuesta en 1000 filas sin error.
   `src/services/supabase/paginatedQuery.js` concentra `fetchAllPages` (cursor keyset sobre `id`),

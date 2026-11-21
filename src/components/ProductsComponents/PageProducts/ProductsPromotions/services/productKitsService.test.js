@@ -4,7 +4,17 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
 import { supabase } from "../../../../../lib/supabaseClient";
+import { createFakePostgrest } from "../../../../../services/supabase/fakePostgrest.testUtils";
 import {
   fetchKits,
   checkKitDuplicates,
@@ -364,16 +374,43 @@ describe("productKitsService", () => {
   });
 
   describe("fetchActiveNonKitProducts", () => {
-    it("trae productos activos que no son kits", async () => {
-      productsQ.then = (ok) =>
-        Promise.resolve({ data: [{ id: "p1" }], error: null }).then(ok);
+    /*
+      El doble corta cada respuesta en 2 filas y paginatedQuery usa paginas de
+      2: sin paginar, el selector del kit perderia productos.
+    */
+    const buildProduct = (id, name, overrides = {}) => ({
+      id,
+      name,
+      status: true,
+      is_kit: false,
+      ...overrides,
+    });
 
+    beforeEach(() => {
+      const fake = createFakePostgrest({
+        products: [
+          buildProduct("p-1", "Croqueta"),
+          buildProduct("p-2", "Arena"),
+          buildProduct("p-3", "Collar"),
+          buildProduct("p-4", "Bebedero"),
+          buildProduct("p-5", "Arena"),
+          buildProduct("p-6", "Kit cachorro", { is_kit: true }),
+          buildProduct("p-7", "Hueso", { status: false }),
+        ],
+      });
+      supabase.from.mockImplementation(fake.from);
+    });
+
+    it("trae todos los productos activos que no son kits, por nombre", async () => {
       const result = await fetchActiveNonKitProducts();
 
-      expect(result).toEqual([{ id: "p1" }]);
-      expect(productsQ.eq).toHaveBeenCalledWith("status", true);
-      expect(productsQ.eq).toHaveBeenCalledWith("is_kit", false);
-      expect(productsQ.order).toHaveBeenCalledWith("name", { ascending: true });
+      expect(result.map((product) => product.id)).toEqual([
+        "p-2",
+        "p-5",
+        "p-4",
+        "p-3",
+        "p-1",
+      ]);
     });
   });
 });
