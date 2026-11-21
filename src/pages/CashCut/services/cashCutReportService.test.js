@@ -33,6 +33,7 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
     in: vi.fn(),
     gte: vi.fn(),
     lte: vi.fn(),
+    gt: vi.fn(),
     order: vi.fn(),
     limit: vi.fn(),
   };
@@ -233,9 +234,7 @@ describe("cashCutReportService", () => {
         "canceled_at",
         "2026-09-01T09:00:00.000Z"
       );
-      expect(q.order).toHaveBeenCalledWith("canceled_at", {
-        ascending: false,
-      });
+      expect(q.order).toHaveBeenCalledWith("id", { ascending: true });
       expect(q.lte).not.toHaveBeenCalled();
     });
 
@@ -279,9 +278,7 @@ describe("cashCutReportService", () => {
         "created_at",
         "2026-09-01T09:00:00.000Z"
       );
-      expect(q.order).toHaveBeenCalledWith("created_at", {
-        ascending: false,
-      });
+      expect(q.order).toHaveBeenCalledWith("id", { ascending: true });
       expect(q.lte).not.toHaveBeenCalled();
     });
 
@@ -334,7 +331,7 @@ describe("cashCutReportService", () => {
 
       expect(supabase.from).toHaveBeenCalledWith("sale_payments");
       expect(q.select).toHaveBeenCalledWith(
-        "amount, payment_method_id, payment_methods(id, name, affects_cash)"
+        "id, amount, payment_method_id, payment_methods(id, name, affects_cash)"
       );
       expect(q.in).toHaveBeenCalledWith("sale_id", ["s1"]);
       expect(q.eq).toHaveBeenCalledWith("branch_id", "b1");
@@ -349,7 +346,9 @@ describe("cashCutReportService", () => {
       await fetchUsdPayments({ saleIds: ["s1"], branchId: "b1" });
 
       expect(supabase.from).toHaveBeenCalledWith("sale_payments");
-      expect(q.select).toHaveBeenCalledWith("amount, currency, exchange_rate");
+      expect(q.select).toHaveBeenCalledWith(
+        "id, amount, currency, exchange_rate"
+      );
       expect(q.in).toHaveBeenCalledWith("sale_id", ["s1"]);
       expect(q.eq).toHaveBeenCalledWith("branch_id", "b1");
       expect(q.eq).toHaveBeenCalledWith("currency", "USD");
@@ -365,7 +364,7 @@ describe("cashCutReportService", () => {
 
       expect(supabase.from).toHaveBeenCalledWith("sale_details");
       expect(q.select).toHaveBeenCalledWith(
-        "total_price, products(department_id, departments(name))"
+        "id, total_price, products(department_id, departments(name))"
       );
       expect(q.in).toHaveBeenCalledWith("sale_id", ["s1"]);
     });

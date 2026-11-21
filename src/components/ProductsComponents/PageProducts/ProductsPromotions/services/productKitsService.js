@@ -1,4 +1,6 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortRowsBy } from "../../../../../services/supabase/sortRows";
 
 const toDateOrNull = (value) => (value ? String(value).slice(0, 10) : null);
 
@@ -135,16 +137,18 @@ export const softDeleteKitTransaction = async (kitId, kitProductId) => {
   return true;
 };
 
+// Las paginas llegan ordenadas por id; el selector del kit las muestra por nombre.
 export const fetchActiveNonKitProducts = async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      `id, barcode, name, cost_price, sale_price, status, is_kit, is_global, tracks_inventory`
-    )
-    .eq("status", true)
-    .eq("is_kit", false)
-    .order("name", { ascending: true });
+  const { data, error } = await fetchAllPages(() =>
+    supabase
+      .from("products")
+      .select(
+        `id, barcode, name, cost_price, sale_price, status, is_kit, is_global, tracks_inventory`
+      )
+      .eq("status", true)
+      .eq("is_kit", false)
+  );
 
   if (error) throw error;
-  return data || [];
+  return sortRowsBy(data, "name");
 };

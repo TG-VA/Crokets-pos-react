@@ -7,6 +7,7 @@ import {
   fetchAllRpcPages,
   fetchByIdsInBatches,
 } from "./paginatedQuery";
+import { createFakePostgrest } from "./fakePostgrest.testUtils";
 
 /*
   Las consultas son dobles que responden como PostgREST: filtran por .gt e .in,
@@ -115,9 +116,45 @@ describe("fetchAllPages", () => {
     expect(result.error).toBeInstanceOf(Error);
     expect(calls).toHaveLength(1);
   });
+
+  it("pagina sobre cursorColumn en tablas sin id", async () => {
+    const claves = ["10101500", "10101501", "10101502"].map((clave) => ({
+      clave,
+    }));
+    const fake = createFakePostgrest({ sat: claves });
+
+    const result = await fetchAllPages(() => fake.from("sat").select("clave"), {
+      pageSize: 2,
+      cursorColumn: "clave",
+    });
+
+    expect(result).toEqual({ data: claves, error: null });
+    expect(fake.calls[0].orders).toEqual([
+      { column: "clave", ascending: true },
+    ]);
+    expect(fake.calls[1].filters).toEqual([
+      expect.objectContaining({ column: "clave", value: "10101501" }),
+    ]);
+  });
 });
 
 describe("fetchByIdsInBatches", () => {
+  it("pasa cursorColumn a la paginacion de cada lote", async () => {
+    const claves = ["a", "b", "c", "d", "e"].map((clave) => ({ clave }));
+    const fake = createFakePostgrest({ sat: claves });
+
+    const result = await fetchByIdsInBatches(
+      ["a", "b", "c", "e"],
+      (batch) => fake.from("sat").select("clave").in("clave", batch),
+      { batchSize: 2, pageSize: 2, cursorColumn: "clave" }
+    );
+
+    expect(result.data.map((row) => row.clave)).toEqual(["a", "b", "c", "e"]);
+    expect(fake.calls.every((call) => call.orders[0].column === "clave")).toBe(
+      true
+    );
+  });
+
   it("parte los ids en lotes de 200 por defecto", async () => {
     const rows = buildRows(450);
     const { buildQuery, calls } = createSource(() => rows);
