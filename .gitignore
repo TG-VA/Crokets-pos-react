@@ -77,3 +77,7 @@ debug-*.md
 
 # Auto-updater: token embebido generado en CI durante el build del instalador.
 electron/updaterConfig.json
+
+# Configuracion local de Claude Code
+.claude/settings.local.json
+.claude/worktrees/
