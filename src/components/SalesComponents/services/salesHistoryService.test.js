@@ -123,4 +123,37 @@ describe("salesHistoryService", () => {
     expect(maps.rewardPointsBySale).toEqual({ [saleIds[1]]: 5 });
     expect(maps.balanceByCustomer).toEqual({ "c-1": 125 });
   });
+
+  it("buildCustomerPointsMaps conserva los puntos por venta si falla el saldo", async () => {
+    const saleIds = [0, 1].map((index) => buildId("s", index));
+    const pageError = { message: "boom" };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    supabase.from.mockImplementation((table) => {
+      const query = fake.from(table);
+      const applyIn = query.in;
+      query.in = (column, values) => {
+        applyIn(column, values);
+        if (column === "customer_id") {
+          query.limit = () => Promise.resolve({ data: null, error: pageError });
+        }
+        return query;
+      };
+      return query;
+    });
+
+    const maps = await buildCustomerPointsMaps({
+      saleIds,
+      customerIds: ["c-1"],
+    });
+
+    expect(maps.balanceByCustomer).toEqual({});
+    expect(maps.pointsBySale).toEqual({ [saleIds[0]]: 30 });
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error cargando saldos de puntos del historial:",
+      pageError
+    );
+    consoleError.mockRestore();
+  });
 });
