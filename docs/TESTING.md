@@ -11,7 +11,7 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (20 nov 2026)
+## Cobertura actual (21 nov 2026)
 
 371 archivos de test (**3706 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
@@ -469,7 +469,7 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   ni se saltan entre paginas gracias al desempate por `detail_id`, y que una venta registrada entre
   dos paginas no duplica partidas (deduplicacion por `detail_id`). El costo de un kit con sus
   componentes en paginas posteriores de `products` y `branch_inventory` protege la lectura
-  completa del catalogo y del inventario. Las cancelaciones del dia (`getTodayCancelledSales`) se
+  completa del catalogo, del inventario y de los kits (`product_kits`). Las cancelaciones del dia (`getTodayCancelledSales`) se
   cuentan sobre varias paginas, y el orden por fecha de inicio y de la exportacion de ventas
   compara instantes, no texto (`12:00:00+00:00` antes que `12:00:00.5+00:00`).
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
