@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (21 nov 2026)
 
-372 archivos de test (**3704 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+373 archivos de test (**3707 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -176,6 +176,7 @@ y el proceso principal de Electron:
 | Clientes de puntos y movimientos (paginados)              | `.../CustomersList/services/customersListService.test.js`                          |
 | Historial de puntos (paginado)                            | `.../PointsHistory/services/pointsHistoryService.test.js`                          |
 | Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
+| Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |
 | Ventas: saldo de puntos del cliente                       | `.../SalesComponents/services/salesCustomerPointsService.test.js`                  |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
