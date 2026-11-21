@@ -35,6 +35,26 @@ describe("sortRowsBy", () => {
     ]);
   });
 
+  it("deja las fechas nulas o invalidas al inicio en ascendente y al final en descendente", () => {
+    const rows = [
+      { id: "b", created_at: null },
+      { id: "a", created_at: "2026-11-21T10:00:00+00:00" },
+      { id: "c", created_at: "no-fecha" },
+      // Anterior a 1970: distingue -Infinity de un 0 (epoch) para los nulos.
+      { id: "d", created_at: "1969-12-31T23:59:59+00:00" },
+    ];
+
+    expect(ids(sortRowsBy(rows, "created_at", { type: "date" }))).toEqual([
+      "b",
+      "c",
+      "d",
+      "a",
+    ]);
+    expect(
+      ids(sortRowsBy(rows, "created_at", { type: "date", ascending: false }))
+    ).toEqual(["a", "d", "b", "c"]);
+  });
+
   it("no muta la entrada y tolera null", () => {
     const rows = [{ id: "b" }, { id: "a" }];
     sortRowsBy(rows, "created_at", { type: "date" });

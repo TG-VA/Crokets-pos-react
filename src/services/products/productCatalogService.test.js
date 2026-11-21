@@ -99,6 +99,29 @@ describe("productCatalogService", () => {
     ]);
   });
 
+  it("ordena el alta como fecha y no como texto", async () => {
+    // Como texto, la fraccion quedaria antes que el segundo exacto.
+    const exact = buildProduct(0, {
+      created_at: "2026-11-21T10:00:00+00:00",
+    });
+    const fraction = buildProduct(1, {
+      created_at: "2026-11-21T10:00:00.12+00:00",
+    });
+    fake = createFakePostgrest({
+      departments: [{ id: "d-1", name: "Alimento" }],
+      branch_inventory: [fraction, exact].map(buildInventoryRow),
+      products: [],
+    });
+    supabase.from.mockImplementation(fake.from);
+
+    const result = await fetchBranchCatalog("b-1");
+
+    expect(result.data.products.map((product) => product.codigo)).toEqual([
+      "BC0",
+      "BC1",
+    ]);
+  });
+
   it("resuelve departamentos de mas de una pagina", async () => {
     const result = await fetchBranchCatalog("b-1");
 
