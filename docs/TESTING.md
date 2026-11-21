@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (20 nov 2026)
 
-371 archivos de test (**3701 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+375 archivos de test (**3709 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -175,6 +175,10 @@ y el proceso principal de Electron:
 | Reportes: exportacion de ventas sin tope                  | `.../PageSalesReport/services/salesReportService.test.js`                          |
 | Reportes: margen de rentabilidad con lectura paginada     | `.../PageProfitabilityReport/services/profitabilityReportPagination.test.js`       |
 | Reportes: comisiones por paginas de la RPC                | `.../PageCommissionsReport/services/commissionsReportPagination.test.js`           |
+| Reportes: caja (sesiones, movimientos, pagos, detalle)    | `.../PageCashReport/services/cashReportPagination.test.js`                         |
+| Reportes: inventario por paginas de la RPC                | `.../PageInventoryReport/services/inventoryReportPagination.test.js`               |
+| Reportes: productos vendidos e inventario muerto          | `.../PageProductsReport/services/productReportsPagination.test.js`                 |
+| Reportes: clientes y detalle 360 sin tope                 | `.../PageCustomersReport/services/customersReportPagination.test.js`               |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
 | Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
@@ -467,6 +471,14 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   reporte daba ingreso $150, costo $90 y 40%; leyendo todo da $540, $360 y 33.33%.
   `commissionsReportPagination.test.js` fija que partidas con el mismo `created_at` no se repiten
   ni se saltan entre paginas gracias al desempate por `detail_id`.
+- **Reportes sobre el tope de PostgREST, parte 2** (21 nov 2026, 8 casos en 4 archivos, rama
+  `fix/paginacion-reportes-b`): caja, inventario, productos y clientes leen todas las filas con
+  `paginatedQuery` y el doble `fakeSupabase.testUtils.js` (que suma `.single()` para el detalle de
+  sesion). `cashReportPagination.test.js` fija que sesiones con el mismo `opened_at` no se repiten
+  gracias al desempate por `session_id`, y que movimientos y detalle conservan el orden por fecha
+  aplicado en memoria. `inventoryReportPagination.test.js` fija el orden por `product_name` con
+  desempate por `product_id`. Los tests de contrato existentes de caja e inventario ahora esperan
+  `.order()` + `.range(0, 999)` en la RPC y `.limit(1000)` por pagina en lugar de los topes fijos.
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
