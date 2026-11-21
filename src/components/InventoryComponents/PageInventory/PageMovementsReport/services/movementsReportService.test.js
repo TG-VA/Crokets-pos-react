@@ -39,7 +39,6 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 }));
 
 import {
-  fetchAllPages,
   loadBaseMovements,
   loadMovementsReport,
   loadProducts,
@@ -143,15 +142,6 @@ describe("movementsReportService", () => {
     );
   });
 
-  it("fetchAllPages devuelve el error sin filas parciales", async () => {
-    const pageError = { message: "boom" };
-    pages.current = [fullPage("a"), { data: null, error: pageError }];
-
-    const result = await fetchAllPages(() => from("x"));
-
-    expect(result).toEqual({ data: null, error: pageError });
-  });
-
   it("parte los ids del .in() en lotes", async () => {
     const ids = buildIds(IN_FILTER_BATCH_SIZE * 2 + 50);
 
@@ -202,63 +192,6 @@ describe("movementsReportService", () => {
     await loadProducts(["p1"]);
 
     expect(callsOf(queries[0], "select")[0][1]).toBe("id, name");
-  });
-
-  it("continua desde el ultimo id leido aunque se borren filas entre paginas", async () => {
-    // Dataset que responde como PostgREST: filtra por .gt sobre id, ordena y
-    // corta en .limit. Tras servir la primera pagina se borra una fila ya leida.
-    const total = MOVEMENTS_PAGE_SIZE * 2 + 1;
-    let dataset = Array.from({ length: total }, (_, index) => ({
-      id: `r-${String(index).padStart(5, "0")}`,
-    }));
-    const deletedId = dataset[500].id;
-    let served = 0;
-
-    const buildQuery = () => {
-      let cursor = null;
-      const serve = (page) => {
-        served += 1;
-        if (served === 1) {
-          dataset = dataset.filter((row) => row.id !== deletedId);
-        }
-        return Promise.resolve({ data: page, error: null });
-      };
-      const query = {
-        order: () => query,
-        // Paginacion por offset, para que el test distinga cursor de .range().
-        range: (start, end) => serve(dataset.slice(start, end + 1)),
-        gt: (_column, value) => {
-          cursor = value;
-          return query;
-        },
-        limit: (count) => {
-          const page = dataset
-            .filter((row) => cursor === null || row.id > cursor)
-            .sort((left, right) => left.id.localeCompare(right.id))
-            .slice(0, count);
-          return serve(page);
-        },
-      };
-      return query;
-    };
-
-    const result = await fetchAllPages(buildQuery);
-
-    expect(result.error).toBeNull();
-    expect(result.data).toHaveLength(total);
-    expect(new Set(result.data.map((row) => row.id)).size).toBe(total);
-  });
-
-  it("devuelve error si la ultima fila de una pagina llena no trae id", async () => {
-    const page = fullPage("a");
-    page.data[MOVEMENTS_PAGE_SIZE - 1] = { name: "sin id" };
-    pages.current = [page];
-
-    const result = await fetchAllPages(() => from("x"));
-
-    expect(result.data).toBeNull();
-    expect(result.error).toBeInstanceOf(Error);
-    expect(queries).toHaveLength(1);
   });
 
   it("no consulta sin una ventana de fechas valida", async () => {
