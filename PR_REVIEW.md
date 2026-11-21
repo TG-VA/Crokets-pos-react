@@ -95,4 +95,4 @@ Los informes de auditoría de cada PR aprobado se archivan de forma cronológica
 
 - [docs/PR_AUDIT_HISTORY.md](file:///Users/tristanvenegas/Documents/Crokets-pos-react/docs/PR_AUDIT_HISTORY.md)
 
-Al aprobar y auditar un nuevo PR, anexa el informe correspondiente al final de `docs/PR_AUDIT_HISTORY.md`.
+Al aprobar un PR, el auditor entrega el informe listo para anexar y una persona lo anexa al final de `docs/PR_AUDIT_HISTORY.md`. Los agentes no editan ese archivo.
