@@ -8,6 +8,10 @@
  */
 
 import { supabase } from "../../../lib/supabaseClient";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../services/supabase/paginatedQuery";
 import { CUT_SELECT_FIELDS } from "./cashCutConstants";
 
 export {
@@ -81,6 +85,17 @@ export const fetchExistingShiftCut = async ({ sessionId }) =>
     .maybeSingle();
 
 /**
+ * Las paginas llegan ordenadas por id; las listas del turno se devuelven de la
+ * mas reciente a la mas antigua, con desempate por id.
+ */
+const sortByDateDesc = (rows, column) =>
+  [...(rows || [])].sort(
+    (left, right) =>
+      String(right[column] ?? "").localeCompare(String(left[column] ?? "")) ||
+      String(left.id).localeCompare(String(right.id))
+  );
+
+/**
  * Ventas del turno (completadas, canceladas y reembolsadas).
  * `endAt` acota el tope superior para vistas historicas.
  */
@@ -90,19 +105,23 @@ export const fetchSalesByShift = async ({
   startAt,
   endAt = null,
 }) => {
-  let query = supabase
-    .from("sales")
-    .select("id, subtotal, tax, total, created_at, status")
-    .eq("branch_id", branchId)
-    .eq("user_id", userId)
-    .in("status", ["completed", "cancelled", "refunded"])
-    .gte("created_at", startAt);
+  const buildQuery = () => {
+    let query = supabase
+      .from("sales")
+      .select("id, subtotal, tax, total, created_at, status")
+      .eq("branch_id", branchId)
+      .eq("user_id", userId)
+      .in("status", ["completed", "cancelled", "refunded"])
+      .gte("created_at", startAt);
 
-  if (endAt) {
-    query = query.lte("created_at", endAt);
-  }
+    if (endAt) {
+      query = query.lte("created_at", endAt);
+    }
 
-  return query;
+    return query;
+  };
+
+  return fetchAllPages(buildQuery);
 };
 
 /**
@@ -114,35 +133,44 @@ export const fetchCancellationsByShift = async ({
   startAt,
   endAt = null,
 }) => {
-  let query = supabase
-    .from("canceled_sales")
-    .select(
-      `
-        id,
-        sale_id,
-        cancel_reason,
-        refund_amount,
-        refund_method_id,
-        canceled_at,
-        user_id,
-        branch_id,
-        payment_methods (
+  const buildQuery = () => {
+    let query = supabase
+      .from("canceled_sales")
+      .select(
+        `
           id,
-          name,
-          affects_cash
-        )
-      `
-    )
-    .eq("branch_id", branchId)
-    .eq("user_id", userId)
-    .gte("canceled_at", startAt)
-    .order("canceled_at", { ascending: false });
+          sale_id,
+          cancel_reason,
+          refund_amount,
+          refund_method_id,
+          canceled_at,
+          user_id,
+          branch_id,
+          payment_methods (
+            id,
+            name,
+            affects_cash
+          )
+        `
+      )
+      .eq("branch_id", branchId)
+      .eq("user_id", userId)
+      .gte("canceled_at", startAt);
 
-  if (endAt) {
-    query = query.lte("canceled_at", endAt);
+    if (endAt) {
+      query = query.lte("canceled_at", endAt);
+    }
+
+    return query;
+  };
+
+  const { data, error } = await fetchAllPages(buildQuery);
+
+  if (error) {
+    return { data: null, error };
   }
 
-  return query;
+  return { data: sortByDateDesc(data, "canceled_at"), error: null };
 };
 
 /**
@@ -154,35 +182,44 @@ export const fetchPartialReturnsByShift = async ({
   startAt,
   endAt = null,
 }) => {
-  let query = supabase
-    .from("sale_returns")
-    .select(
-      `
-        id,
-        sale_id,
-        return_reason,
-        total_refund,
-        refund_method_id,
-        created_at,
-        user_id,
-        branch_id,
-        payment_methods (
+  const buildQuery = () => {
+    let query = supabase
+      .from("sale_returns")
+      .select(
+        `
           id,
-          name,
-          affects_cash
-        )
-      `
-    )
-    .eq("branch_id", branchId)
-    .eq("user_id", userId)
-    .gte("created_at", startAt)
-    .order("created_at", { ascending: false });
+          sale_id,
+          return_reason,
+          total_refund,
+          refund_method_id,
+          created_at,
+          user_id,
+          branch_id,
+          payment_methods (
+            id,
+            name,
+            affects_cash
+          )
+        `
+      )
+      .eq("branch_id", branchId)
+      .eq("user_id", userId)
+      .gte("created_at", startAt);
 
-  if (endAt) {
-    query = query.lte("created_at", endAt);
+    if (endAt) {
+      query = query.lte("created_at", endAt);
+    }
+
+    return query;
+  };
+
+  const { data, error } = await fetchAllPages(buildQuery);
+
+  if (error) {
+    return { data: null, error };
   }
 
-  return query;
+  return { data: sortByDateDesc(data, "created_at"), error: null };
 };
 
 /**
@@ -195,43 +232,51 @@ export const fetchRewardRedemptions = async ({ saleIds = [] } = {}) => {
     return { data: [], error: null };
   }
 
-  return supabase
-    .from("sale_reward_redemptions")
-    .select("id, sale_id, quantity, total_points, reversed_at")
-    .in("sale_id", cleanSaleIds);
+  return fetchByIdsInBatches(cleanSaleIds, (batch) =>
+    supabase
+      .from("sale_reward_redemptions")
+      .select("id, sale_id, quantity, total_points, reversed_at")
+      .in("sale_id", batch)
+  );
 };
 
 /**
  * Pagos por venta con el metodo de pago embebido.
  */
 export const fetchPaymentsByMethod = async ({ saleIds, branchId }) =>
-  supabase
-    .from("sale_payments")
-    .select(
-      "amount, payment_method_id, payment_methods(id, name, affects_cash)"
-    )
-    .in("sale_id", saleIds)
-    .eq("branch_id", branchId);
+  fetchByIdsInBatches(saleIds || [], (batch) =>
+    supabase
+      .from("sale_payments")
+      .select(
+        "id, amount, payment_method_id, payment_methods(id, name, affects_cash)"
+      )
+      .in("sale_id", batch)
+      .eq("branch_id", branchId)
+  );
 
 /**
  * Pagos en dolares (USD) de las ventas del turno.
  */
 export const fetchUsdPayments = async ({ saleIds, branchId }) =>
-  supabase
-    .from("sale_payments")
-    .select("amount, currency, exchange_rate")
-    .in("sale_id", saleIds)
-    .eq("branch_id", branchId)
-    .eq("currency", "USD");
+  fetchByIdsInBatches(saleIds || [], (batch) =>
+    supabase
+      .from("sale_payments")
+      .select("id, amount, currency, exchange_rate")
+      .in("sale_id", batch)
+      .eq("branch_id", branchId)
+      .eq("currency", "USD")
+  );
 
 /**
  * Detalle de venta con producto y departamento embebidos.
  */
 export const fetchDepartmentSales = async ({ saleIds }) =>
-  supabase
-    .from("sale_details")
-    .select("total_price, products(department_id, departments(name))")
-    .in("sale_id", saleIds);
+  fetchByIdsInBatches(saleIds || [], (batch) =>
+    supabase
+      .from("sale_details")
+      .select("id, total_price, products(department_id, departments(name))")
+      .in("sale_id", batch)
+  );
 
 /**
  * Movimientos de caja de la sesion. `endAt` acota el tope superior historico.
