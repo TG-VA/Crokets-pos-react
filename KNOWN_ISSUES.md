@@ -1025,7 +1025,8 @@ ventana del periodo, además de por las ventas del rango.
 
 **Estado:** abierto (20 nov 2026) — registrado en el PR #230.
 
-`fetchAllPages` (`.../PageMovementsReport/services/movementsReportService.js`) pagina con
+`fetchAllPages` (`src/services/supabase/paginatedQuery.js`, usado por el reporte de movimientos y
+el kardex) pagina con
 `ORDER BY id LIMIT 1000` y filtra por `branch_id` y ventana de fecha. Con ~570 filas en
 `inventory_movements`, `EXPLAIN (ANALYZE, BUFFERS)` en producción elige `inventory_movements_pkey` y
 filtra (5 ms, 269 filas descartadas); los índices de la migración `20261119200000` no se usan.
