@@ -1054,7 +1054,7 @@ si ningún PR lo usa.
 
 ### 101. `fetchByIdsInBatches` lanza todos los lotes a la vez y quedan lecturas sin paginar
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #236.
+**Estado:** resuelto (21 nov 2026) — rama `fix/concurrencia-lotes-y-lecturas-sin-paginar`; registrado en el PR #236.
 
 `fetchByIdsInBatches` (`src/services/supabase/paginatedQuery.js`) dispara todos los lotes de 200 ids
 con `Promise.all`. Un archivo de importacion de 20 000 codigos de barras son 100 peticiones
@@ -1067,6 +1067,13 @@ sucursales o importaciones grandes; las dos lecturas sin paginar pueden truncars
 
 **Recomendacion futura:** agregar a `fetchByIdsInBatches` un parametro `concurrency` (por ejemplo 4)
 que procese los lotes en tandas, y pasar `fetchSatClaves` y `cash_movements` a `fetchAllPages`.
+
+**Resolucion:** `fetchByIdsInBatches` acepta `concurrency` (por defecto
+`DEFAULT_BATCH_CONCURRENCY = 4`): procesa los lotes en tandas de 4 y no lanza mas tandas tras el
+primer error. `fetchSatClaves` pagina sobre `clave` con `fetchAllPages` y ordena por `descripcion` en
+memoria. `fetchCashMovementsBySession` (corte de caja) pagina sobre `id` y devuelve los movimientos
+del mas reciente al mas antiguo con `sortRowsBy`. Los `cash_movements` de `salesCashService` y de los
+reportes de caja no forman parte de este caso.
 
 ---
 
