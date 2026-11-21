@@ -78,3 +78,28 @@ export const fetchByIdsInBatches = async (
 
   return { data: results.flatMap((result) => result.data), error: null };
 };
+
+// Las RPC que devuelven listas no admiten cursor sobre id: se paginan por offset
+// con .range() hasta recibir una pagina incompleta. El llamador debe pasar un
+// .order() estable en buildRpc para que las paginas no repitan ni salten filas.
+export const fetchAllRpcPages = async (
+  buildRpc,
+  { pageSize = DEFAULT_PAGE_SIZE } = {}
+) => {
+  const rows = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildRpc().range(from, from + pageSize - 1);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+
+    if (page.length < pageSize) {
+      return { data: rows, error: null };
+    }
+  }
+};

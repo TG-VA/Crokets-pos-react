@@ -4,6 +4,7 @@ import {
   DEFAULT_IN_FILTER_BATCH_SIZE,
   DEFAULT_PAGE_SIZE,
   fetchAllPages,
+  fetchAllRpcPages,
   fetchByIdsInBatches,
 } from "./paginatedQuery";
 
@@ -160,5 +161,58 @@ describe("fetchByIdsInBatches", () => {
     );
 
     expect(result).toEqual({ data: null, error: pageError });
+  });
+});
+
+const createRpcSource = (rows, { errorOnCall = null, error = null } = {}) => {
+  const ranges = [];
+
+  const buildRpc = () => ({
+    range: (from, to) => {
+      ranges.push([from, to]);
+      if (ranges.length === errorOnCall) {
+        return Promise.resolve({ data: null, error });
+      }
+      return Promise.resolve({ data: rows.slice(from, to + 1), error: null });
+    },
+  });
+
+  return { buildRpc, ranges };
+};
+
+describe("fetchAllRpcPages", () => {
+  it("lee una sola pagina incompleta", async () => {
+    const { buildRpc, ranges } = createRpcSource(buildRows(3));
+
+    const result = await fetchAllRpcPages(buildRpc);
+
+    expect(result).toEqual({ data: buildRows(3), error: null });
+    expect(ranges).toEqual([[0, 999]]);
+  });
+
+  it("pide paginas con .range() hasta una pagina incompleta", async () => {
+    const { buildRpc, ranges } = createRpcSource(buildRows(5));
+
+    const result = await fetchAllRpcPages(buildRpc, { pageSize: 2 });
+
+    expect(result).toEqual({ data: buildRows(5), error: null });
+    expect(ranges).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 5],
+    ]);
+  });
+
+  it("corta con el error de la segunda pagina sin filas parciales", async () => {
+    const pageError = { message: "boom" };
+    const { buildRpc, ranges } = createRpcSource(buildRows(5), {
+      errorOnCall: 2,
+      error: pageError,
+    });
+
+    const result = await fetchAllRpcPages(buildRpc, { pageSize: 2 });
+
+    expect(result).toEqual({ data: null, error: pageError });
+    expect(ranges).toHaveLength(2);
   });
 });
