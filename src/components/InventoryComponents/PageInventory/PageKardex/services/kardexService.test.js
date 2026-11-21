@@ -7,7 +7,6 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 
 import {
-  DEFAULT_KARDEX_LIMIT,
   KARDEX_MOVEMENTS_TABLE,
   buildKardexIsoRange,
   loadKardexMovements,
@@ -21,6 +20,7 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
     gte: vi.fn(),
     lte: vi.fn(),
     order: vi.fn(),
+    gt: vi.fn(),
     limit: vi.fn(),
   };
 
@@ -56,9 +56,8 @@ describe("kardexService", () => {
   });
 
   describe("constantes", () => {
-    it("expone la tabla de movimientos y el limite por defecto", () => {
+    it("expone la tabla de movimientos", () => {
       expect(KARDEX_MOVEMENTS_TABLE).toBe("inventory_movements");
-      expect(DEFAULT_KARDEX_LIMIT).toBe(1000);
     });
   });
 
@@ -128,7 +127,7 @@ describe("kardexService", () => {
       expect(columns).toContain("new_stock");
     });
 
-    it("filtra por producto y sucursal, orden descendente y con limite", async () => {
+    it("filtra por producto y sucursal y pagina por id en lotes de 1000", async () => {
       const query = thenableQuery({ data: [], error: null });
 
       supabase.from.mockReturnValue(query);
@@ -136,7 +135,6 @@ describe("kardexService", () => {
       await loadKardexMovements({
         productId: "p1",
         branchId: "b1",
-        limit: 50,
       });
 
       expect(supabase.from).toHaveBeenCalledWith("inventory_movements");
@@ -144,23 +142,76 @@ describe("kardexService", () => {
         ["product_id", "p1"],
         ["branch_id", "b1"],
       ]);
-      expect(query.order).toHaveBeenCalledWith("created_at", {
-        ascending: false,
-        nullsFirst: false,
+      expect(query.order.mock.calls).toEqual([["id", { ascending: true }]]);
+      expect(query.limit).toHaveBeenCalledWith(1000);
+    });
+
+    it("lee todas las paginas y ordena por fecha descendente con desempate por id", async () => {
+      const firstPage = thenableQuery({
+        data: [
+          { id: "a", created_at: "2026-03-01T10:00:00.000Z" },
+          { id: "b", created_at: "2026-03-03T10:00:00.000Z" },
+        ],
+        error: null,
       });
-      expect(query.limit).toHaveBeenCalledWith(50);
+      const secondPage = thenableQuery({
+        data: [{ id: "c", created_at: "2026-03-01T10:00:00.000Z" }],
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(firstPage)
+        .mockReturnValueOnce(secondPage);
+
+      const rows = await loadKardexMovements({
+        productId: "p1",
+        branchId: "b1",
+        pageSize: 2,
+      });
+
+      expect(secondPage.gt).toHaveBeenCalledWith("id", "b");
+      expect(rows.map((row) => row.id)).toEqual(["b", "c", "a"]);
+    });
+
+    it("propaga el error de la segunda pagina sin devolver datos parciales", async () => {
+      supabase.from
+        .mockReturnValueOnce(
+          thenableQuery({ data: [{ id: "a" }, { id: "b" }], error: null })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: new Error("fallo de red") })
+        );
+
+      await expect(
+        loadKardexMovements({ productId: "p1", branchId: "b1", pageSize: 2 })
+      ).rejects.toThrow("fallo de red");
+
+      expect(supabase.from).toHaveBeenCalledTimes(2);
     });
 
     it("conserva los costos tal cual los entrega la base", async () => {
       const movements = [
         {
           id: "m1",
+          created_at: "2026-03-03T10:00:00.000Z",
           quantity: 5,
           unit_cost: 120.5,
           total_cost: 602.5,
         },
-        { id: "m2", quantity: 2, unit_cost: null, total_cost: null },
-        { id: "m3", quantity: 1, unit_cost: 0, total_cost: 0 },
+        {
+          id: "m2",
+          created_at: "2026-03-02T10:00:00.000Z",
+          quantity: 2,
+          unit_cost: null,
+          total_cost: null,
+        },
+        {
+          id: "m3",
+          created_at: "2026-03-01T10:00:00.000Z",
+          quantity: 1,
+          unit_cost: 0,
+          total_cost: 0,
+        },
       ];
 
       supabase.from.mockReturnValue(thenableQuery({ data: movements }));
@@ -335,6 +386,29 @@ describe("kardexService", () => {
       ).rejects.toThrow("permiso denegado");
 
       expect(supabase.from).toHaveBeenCalledTimes(2);
+    });
+
+    it("el reintento sin costos tambien pagina", async () => {
+      supabase.from
+        .mockReturnValueOnce(
+          thenableQuery({ data: null, error: buildMissingColumnCodeError() })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: [{ id: "a" }, { id: "b" }], error: null })
+        )
+        .mockReturnValueOnce(
+          thenableQuery({ data: [{ id: "c" }], error: null })
+        );
+
+      const movements = await loadKardexMovements({
+        productId: "p1",
+        branchId: "b1",
+        pageSize: 2,
+      });
+
+      expect(supabase.from).toHaveBeenCalledTimes(3);
+      expect(getSelectedColumnsAt(2)).not.toContain("unit_cost");
+      expect(movements.map((row) => row.id)).toEqual(["c", "b", "a"]);
     });
 
     it("no reintenta cuando la primera consulta es exitosa", async () => {
