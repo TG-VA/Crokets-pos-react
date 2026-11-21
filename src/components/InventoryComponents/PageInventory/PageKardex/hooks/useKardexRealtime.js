@@ -61,12 +61,7 @@ const useKardexRealtime = ({
 
     const refreshSlotSafely = (slot) => {
       Promise.resolve(refreshFunctionRef.current?.(slot)).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error(
-            "Error actualizando el Kardex en segundo plano:",
-            error
-          );
-        }
+        console.error("Error actualizando el Kardex en segundo plano:", error);
       });
     };
 
