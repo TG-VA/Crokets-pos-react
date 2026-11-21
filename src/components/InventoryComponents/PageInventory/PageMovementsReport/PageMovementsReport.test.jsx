@@ -26,7 +26,7 @@ vi.mock("./components/MovementsReportControls", () => ({
   default: () => null,
 }));
 
-vi.mock("./services/movementsExportService", () => ({
+vi.mock("./utils/movementsExportUtils", () => ({
   exportMovementsReport: vi.fn(),
 }));
 
@@ -66,19 +66,23 @@ const mockReport = ({
     handleStartDateChange: vi.fn(),
     handleEndDateChange: vi.fn(),
     selectRangePreset: vi.fn(),
-    refreshMovementsSilently: vi.fn(),
+    reloadMovements: vi.fn(),
   });
 
 const INITIAL_FILTERS = { product: null };
 
-const mockFilters = (filteredRows, facetFilters = INITIAL_FILTERS) =>
+const mockFilters = (
+  filteredRows,
+  facetFilters = INITIAL_FILTERS,
+  periodRowsCount = filteredRows.length
+) =>
   useMovementsFilters.mockReturnValue({
     filterableColumns: new Set(),
     facetFilters,
     facetSearch: {},
     openFacet: null,
     filteredRows,
-    periodRowsCount: filteredRows.length,
+    periodRowsCount,
     toggleFacet: vi.fn(),
     setFacetSearchValue: vi.fn(),
     clearFacetSearch: vi.fn(),
@@ -159,5 +163,47 @@ describe("PageMovementsReport paginacion", () => {
     render(<PageMovementsReport />);
 
     expect(screen.queryByRole("button", { name: "Siguiente" })).toBeNull();
+  });
+});
+
+describe("PageMovementsReport estados", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("avisa que el periodo no tiene movimientos", () => {
+    mockReport();
+    mockFilters([]);
+    render(<PageMovementsReport />);
+
+    expect(screen.getByText("Sin movimientos en el periodo.")).toBeTruthy();
+  });
+
+  it("conserva el aviso de filtros cuando el periodo si tiene filas", () => {
+    mockReport();
+    mockFilters([], INITIAL_FILTERS, 3);
+    render(<PageMovementsReport />);
+
+    expect(
+      screen.getByText(
+        "No hay movimientos que coincidan con los filtros seleccionados."
+      )
+    ).toBeTruthy();
+  });
+
+  it("reintenta la carga desde el aviso de error", () => {
+    mockReport();
+    const reloadMovements = vi.fn();
+    useMovementsReport.mockReturnValue({
+      ...useMovementsReport(),
+      error: "No se pudo cargar el reporte de movimientos.",
+      reloadMovements,
+    });
+    mockFilters([]);
+    render(<PageMovementsReport />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(reloadMovements).toHaveBeenCalledTimes(1);
   });
 });

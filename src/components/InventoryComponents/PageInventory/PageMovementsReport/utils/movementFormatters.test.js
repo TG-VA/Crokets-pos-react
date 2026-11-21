@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { getRowTypeInfo, formatMovementType } from "./movementFormatters";
+import { formatMovementType, joinClasses } from "./movementFormatters";
+import { getRowTypeInfo } from "../services/movementsCalculationService";
 import { parseMovementDate } from "./movementDateUtils";
 
 describe("movementFormatters - getRowTypeInfo", () => {
@@ -118,5 +119,12 @@ describe("movementDateUtils - parseMovementDate", () => {
     const parsed = parseMovementDate(rawValue, { assumeUtcNaive: true });
 
     expect(parsed?.getTime()).toBe(new Date(rawValue).getTime());
+  });
+});
+
+describe("movementFormatters - joinClasses", () => {
+  it("omite clases falsas sin dejar espacios colgantes", () => {
+    expect(joinClasses("a", false, "", null, undefined)).toBe("a");
+    expect(joinClasses("a", "b")).toBe("a b");
   });
 });

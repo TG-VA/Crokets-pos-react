@@ -1,6 +1,11 @@
 import React from "react";
 
-import { buildRowView, isNoStockMovement } from "../utils/movementFormatters";
+import {
+  buildRowView,
+  isNoStockMovement,
+} from "../services/movementsCalculationService";
+
+import { joinClasses } from "../utils/movementFormatters";
 
 import MovementsFilterPopover from "./MovementsFilterPopover";
 
@@ -33,6 +38,7 @@ const getStockValue = (rowView, stockValue) => {
 const MovementsReportTable = ({
   rows = [],
   loading = false,
+  emptyMessage = "No hay movimientos que coincidan con los filtros seleccionados.",
 
   columns = [],
   columnWidths = {},
@@ -74,7 +80,9 @@ const MovementsReportTable = ({
   };
 
   return (
-    <div className={`${styles.tableWrap} ${isResizing ? styles.resizing : ""}`}>
+    <div
+      className={joinClasses(styles.tableWrap, isResizing && styles.resizing)}
+    >
       <table className={styles.table}>
         <colgroup>
           {normalizedColumns.map((column) => (
@@ -112,9 +120,11 @@ const MovementsReportTable = ({
                     {isFilterable ? (
                       <button
                         type="button"
-                        className={`${styles.filterButton} ${
-                          active ? styles.filterButtonActive : ""
-                        } ${isOpen ? styles.filterButtonOpen : ""}`}
+                        className={joinClasses(
+                          styles.filterButton,
+                          active && styles.filterButtonActive,
+                          isOpen && styles.filterButtonOpen
+                        )}
                         onClick={() => onToggleFacet?.(column.key)}
                         data-mov-filter-button={column.key}
                         aria-label={`Filtrar ${column.label}`}
@@ -183,7 +193,7 @@ const MovementsReportTable = ({
                 colSpan={normalizedColumns.length || 9}
                 className={styles.empty}
               >
-                No hay movimientos que coincidan con los filtros seleccionados.
+                {emptyMessage}
               </td>
             </tr>
           ) : (

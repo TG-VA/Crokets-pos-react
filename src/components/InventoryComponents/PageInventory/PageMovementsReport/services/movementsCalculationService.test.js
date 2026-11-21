@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildNoStockRows,
+  calculateMovementKpis,
   hydrateBaseMovements,
   hydrateMissingRedemptions,
-} from "./movementReportBuilder";
+} from "./movementsCalculationService";
 
 const buildDeps = () => ({
   productsById: new Map([["p1", { id: "p1", name: "Croquetas" }]]),
@@ -22,7 +23,7 @@ const buildDeps = () => ({
   rewardsById: new Map([["r1", { id: "r1", name: "Premio Lealtad" }]]),
 });
 
-describe("movementReportBuilder", () => {
+describe("movementsCalculationService", () => {
   describe("hydrateBaseMovements", () => {
     it("hidrata filas base con producto, usuario y venta", () => {
       const deps = buildDeps();
@@ -477,5 +478,53 @@ describe("movementReportBuilder", () => {
         "Segundo ajuste",
       ]);
     });
+  });
+});
+
+describe("calculateMovementKpis", () => {
+  it("separa ajustes y reparte el resto por signo", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "entry", quantity: 10 },
+      { movement_type: "transfer", quantity: 4 },
+      { movement_type: "sale", quantity: -3 },
+      { movement_type: "transfer", quantity: -2 },
+      { movement_type: "adjustment", quantity: 5 },
+      { movement_type: "adjustment", quantity: -7 },
+    ]);
+
+    expect(kpis).toEqual({
+      entries: { units: 14, count: 2 },
+      exits: { units: 5, count: 2 },
+      adjustments: { units: -2, count: 2 },
+      net: 7,
+    });
+  });
+
+  it("ignora cantidades no numericas y las forzadas a 0", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "entry", quantity: "x" },
+      { movement_type: "product_update", quantity: 9 },
+    ]);
+
+    expect(kpis.net).toBe(0);
+    expect(kpis.entries.count).toBe(0);
+  });
+
+  it("deja fuera de los KPIs las filas SIN STOCK", () => {
+    const kpis = calculateMovementKpis([
+      { movement_type: "sale", quantity: -3, reason: "Venta (SIN STOCK)" },
+      { movement_type: "entry", quantity: 2 },
+    ]);
+
+    expect(kpis).toEqual({
+      entries: { units: 2, count: 1 },
+      exits: { units: 0, count: 0 },
+      adjustments: { units: 0, count: 0 },
+      net: 2,
+    });
+  });
+
+  it("devuelve ceros sin filas", () => {
+    expect(calculateMovementKpis(null).net).toBe(0);
   });
 });
