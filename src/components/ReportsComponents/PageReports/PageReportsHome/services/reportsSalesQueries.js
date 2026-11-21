@@ -8,8 +8,9 @@ import { fetchInChunks } from "./reportsDashboardUtils";
 
 const SALE_IDS_BATCH_SIZE = 150;
 
+// Por instante: PostgreSQL omite la fraccion cero y el orden de texto fallaria.
 const bySaleDate = (left, right) =>
-  String(left.sale_date).localeCompare(String(right.sale_date));
+  Date.parse(left.sale_date) - Date.parse(right.sale_date);
 
 // El cursor de fetchAllPages ordena por id: el orden por fecha se aplica en memoria.
 export const getSalesRows = async ({ branchId, start, end }) => {

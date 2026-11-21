@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (20 nov 2026)
 
-375 archivos de test (**3709 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+375 archivos de test (**3714 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -460,7 +460,7 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   sobrestock exclusivo de Kardex. `useKardexRealtime.test.js` fija que el sondeo de 30 s solo corre
   tras `CHANNEL_ERROR`/`TIMED_OUT`, se detiene con `SUBSCRIBED` tras recargar una vez los slots
   seleccionados, y que el fallo del refresco en segundo plano se registra con `console.error`.
-- **Reportes sobre el tope de PostgREST, parte 1** (21 nov 2026, 10 casos en 4 archivos, rama
+- **Reportes sobre el tope de PostgREST, parte 1** (21 nov 2026, 15 casos en 4 archivos, rama
   `fix/paginacion-reportes`): inicio, ventas, rentabilidad y comisiones leen todas las filas con
   `paginatedQuery`. `src/services/supabase/fakeSupabase.testUtils.js` es un doble de `supabase`
   que responde como PostgREST (filtros `eq`/`in`/`not`/`ilike`/`gt`..., `.order()`, `.range()` y
@@ -470,7 +470,12 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   `profitabilityReportPagination.test.js` fija la traza de margen: con la lectura truncada el
   reporte daba ingreso $150, costo $90 y 40%; leyendo todo da $540, $360 y 33.33%.
   `commissionsReportPagination.test.js` fija que partidas con el mismo `created_at` no se repiten
-  ni se saltan entre paginas gracias al desempate por `detail_id`.
+  ni se saltan entre paginas gracias al desempate por `detail_id`, y que una venta registrada entre
+  dos paginas no duplica partidas (deduplicacion por `detail_id`). El costo de un kit con sus
+  componentes en paginas posteriores de `products` y `branch_inventory` protege la lectura
+  completa del catalogo y del inventario. Las cancelaciones del dia (`getTodayCancelledSales`) se
+  cuentan sobre varias paginas, y el orden por fecha de inicio y de la exportacion de ventas
+  compara instantes, no texto (`12:00:00+00:00` antes que `12:00:00.5+00:00`).
 - **Reportes sobre el tope de PostgREST, parte 2** (21 nov 2026, 8 casos en 4 archivos, rama
   `fix/paginacion-reportes-b`): caja, inventario, productos y clientes leen todas las filas con
   `paginatedQuery` y el doble `fakeSupabase.testUtils.js` (que suma `.single()` para el detalle de

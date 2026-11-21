@@ -161,8 +161,9 @@ export const getSaleDetailsById = async (saleId) => {
 
 const SALE_IDS_BATCH_SIZE = 150;
 
+// Por instante: PostgreSQL omite la fraccion cero y el orden de texto fallaria.
 const byCreatedAtDesc = (left, right) =>
-  String(right.created_at).localeCompare(String(left.created_at));
+  Date.parse(right.created_at) - Date.parse(left.created_at);
 
 // La exportacion lee todas las ventas del filtro: el cursor de fetchAllPages
 // ordena por id y el orden por fecha se aplica en memoria.

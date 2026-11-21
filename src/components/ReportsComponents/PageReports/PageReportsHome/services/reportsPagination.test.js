@@ -36,6 +36,7 @@ import {
 import {
   getReturnItems,
   getSaleReturns,
+  getTodayCancelledSales,
   getTodayReturns,
 } from "./reportsReturnsService";
 
@@ -83,6 +84,13 @@ const returnItems = saleReturns.flatMap((ret, returnIndex) =>
   }))
 );
 
+// Cinco cancelaciones del dia sobre ventas distintas: tres paginas de 2.
+const canceledSales = sales.map((sale, index) => ({
+  id: buildId("c", index),
+  sale_id: sale.id,
+  created_at: `${DAY}T16:00:00Z`,
+}));
+
 const saleIds = sales.map((sale) => sale.id);
 
 describe("reportes de inicio: lectura completa por paginas", () => {
@@ -94,6 +102,7 @@ describe("reportes de inicio: lectura completa por paginas", () => {
         sale_payments: salePayments,
         sale_returns: saleReturns,
         sale_return_items: returnItems,
+        canceled_sales: canceledSales,
       },
     });
   });
@@ -149,5 +158,37 @@ describe("reportes de inicio: lectura completa por paginas", () => {
     expect(result.count).toBe(5);
     expect(result.amount).toBe(50);
     expect(result.units).toBe(15);
+  });
+
+  it("getTodayCancelledSales cuenta todas las cancelaciones del dia", async () => {
+    const count = await getTodayCancelledSales({
+      branchId: "ALL",
+      todayStart: `${DAY}T00:00:00Z`,
+      todayEnd: `${DAY}T23:59:59Z`,
+    });
+
+    expect(count).toBe(5);
+  });
+
+  it("getSalesRows ordena por instante y no por texto cuando falta la fraccion", async () => {
+    fake.current = createFakeSupabase({
+      tables: {
+        sales: [
+          { id: buildId("s", 0), sale_date: "2026-11-10T12:00:00.5+00:00" },
+          { id: buildId("s", 1), sale_date: "2026-11-10T12:00:00+00:00" },
+        ],
+      },
+    });
+
+    const rows = await getSalesRows({
+      branchId: "ALL",
+      start: "2026-11-10T00:00:00+00:00",
+      end: "2026-11-10T23:59:59+00:00",
+    });
+
+    expect(rows.map((row) => row.sale_date)).toEqual([
+      "2026-11-10T12:00:00+00:00",
+      "2026-11-10T12:00:00.5+00:00",
+    ]);
   });
 });
