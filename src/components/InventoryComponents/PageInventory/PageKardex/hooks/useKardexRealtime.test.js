@@ -80,8 +80,38 @@ describe("useKardexRealtime", () => {
     expect(refreshSlotSilently).toHaveBeenCalledWith(0);
 
     lastChannel().onStatus("SUBSCRIBED");
+    expect(refreshSlotSilently).toHaveBeenCalledTimes(3);
     vi.advanceTimersByTime(60000);
+    expect(refreshSlotSilently).toHaveBeenCalledTimes(3);
+  });
+
+  it("recarga los slots seleccionados al reconectar antes del primer sondeo", () => {
+    const { refreshSlotSilently } = renderRealtime({
+      selectedProductIds: ["p1", "p2"],
+    });
+
+    lastChannel().onStatus("CHANNEL_ERROR");
+    vi.advanceTimersByTime(10000);
+    expect(refreshSlotSilently).not.toHaveBeenCalled();
+
+    lastChannel().onStatus("SUBSCRIBED");
     expect(refreshSlotSilently).toHaveBeenCalledTimes(2);
+    expect(refreshSlotSilently).toHaveBeenCalledWith(0);
+    expect(refreshSlotSilently).toHaveBeenCalledWith(1);
+  });
+
+  it("registra con console.error el fallo del refresco en segundo plano", async () => {
+    const failure = new Error("sin red");
+    const { refreshSlotSilently } = renderRealtime();
+    refreshSlotSilently.mockRejectedValueOnce(failure);
+
+    lastChannel().onChange({ new: { product_id: "p1" } });
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Error actualizando el Kardex en segundo plano:",
+      failure
+    );
   });
 
   it("agrupa cambios seguidos del producto seleccionado en una recarga", () => {

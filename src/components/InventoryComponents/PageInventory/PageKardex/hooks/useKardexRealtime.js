@@ -133,6 +133,12 @@ const useKardexRealtime = ({
       }
 
       if (status === "SUBSCRIBED") {
+        // Los eventos emitidos con el canal caido no se reenvian: si veniamos de
+        // un fallo, se recarga una vez para cubrir ese hueco.
+        if (pollingIntervalRef.current !== null) {
+          refreshSelectedSlots();
+        }
+
         stopPolling();
       }
     };

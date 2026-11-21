@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (20 nov 2026)
 
-367 archivos de test (**3689 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+367 archivos de test (**3691 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -450,7 +450,8 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   segunda pagina se propaga. `src/utils/stockStatus.test.js` y `kardexMovementUtils.test.js` fijan los
   bordes de la regla comun (stock igual al minimo, 0, negativo, minimo 0, sin inventario) y el
   sobrestock exclusivo de Kardex. `useKardexRealtime.test.js` fija que el sondeo de 30 s solo corre
-  tras `CHANNEL_ERROR`/`TIMED_OUT` y se detiene con `SUBSCRIBED`.
+  tras `CHANNEL_ERROR`/`TIMED_OUT`, se detiene con `SUBSCRIBED` tras recargar una vez los slots
+  seleccionados, y que el fallo del refresco en segundo plano se registra con `console.error`.
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
