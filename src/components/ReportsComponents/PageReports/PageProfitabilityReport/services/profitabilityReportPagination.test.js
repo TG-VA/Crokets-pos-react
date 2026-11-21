@@ -109,7 +109,7 @@ describe("profitabilityReportService: margen con lectura paginada", () => {
     expect(result.kpis.grossMarginPercent).toBeCloseTo(33.33, 2);
   });
 
-  it("lee el catalogo y el inventario completos para los tres productos", async () => {
+  it("agrega unidades y utilidad de cada producto de todas las ventas", async () => {
     const result = await fetchProfitabilityReportData({ branchId: "b1" });
 
     expect(result.productsProfitability).toHaveLength(3);
@@ -118,5 +118,107 @@ describe("profitabilityReportService: margen con lectura paginada", () => {
     );
     expect(productB.totalUnits).toBe(6);
     expect(productB.grossProfit).toBe(60);
+  });
+});
+
+/*
+  El costo de un kit sale solo del catalogo y del inventario (no del embed de
+  sale_details), asi que distingue si products o branch_inventory se truncaron.
+  Con paginas de 2 los componentes quedan en la tercera pagina de products y en
+  la segunda de branch_inventory:
+    p-z1: sin fila en inventario -> costo de catalogo $7
+    p-z2: inventario $11 (catalogo $99, solo si el inventario se trunca)
+  Costo del kit: 7 + 11 = $18.
+*/
+describe("profitabilityReportService: costo de kit con catalogo e inventario paginados", () => {
+  const kitProducts = [
+    ...products,
+    {
+      id: "p-kit",
+      name: "Kit",
+      department_id: null,
+      cost_price: 0,
+      is_kit: true,
+    },
+    {
+      id: "p-z1",
+      name: "Z1",
+      department_id: "d1",
+      cost_price: 7,
+      is_kit: false,
+    },
+    {
+      id: "p-z2",
+      name: "Z2",
+      department_id: "d1",
+      cost_price: 99,
+      is_kit: false,
+    },
+  ];
+
+  const kitInventory = [
+    ...branchInventory,
+    {
+      id: buildId("bi", 3),
+      branch_id: "b1",
+      product_id: "p-z2",
+      cost_price: 11,
+      sale_price: 0,
+      stock: 10,
+    },
+  ];
+
+  const kitSale = {
+    id: buildId("s", 0),
+    sale_date: "2026-11-10T12:00:00.000Z",
+    total: 50,
+    discount_total: 0,
+    status: "completed",
+    branch_id: "b1",
+  };
+
+  beforeEach(() => {
+    fake.current = createFakeSupabase({
+      tables: {
+        departments: [{ id: "d1", name: "Alimentos" }],
+        products: kitProducts,
+        product_kits: [
+          {
+            id: "k1",
+            kit_product_id: "p-kit",
+            is_active: true,
+            product_kit_items: [
+              { component_product_id: "p-z1", quantity: 1 },
+              { component_product_id: "p-z2", quantity: 1 },
+            ],
+          },
+        ],
+        branch_inventory: kitInventory,
+        sales: [kitSale],
+        sale_details: [
+          {
+            id: buildId("d", 0),
+            sale_id: kitSale.id,
+            product_id: "p-kit",
+            quantity: 1,
+            unit_price: 50,
+            discount_amount: 0,
+            total_price: 50,
+            cost_price: 0,
+            products: { id: "p-kit", name: "Kit", cost_price: 0 },
+          },
+        ],
+      },
+    });
+  });
+
+  it("lee el catalogo y el inventario completos para costear los componentes", async () => {
+    const result = await fetchProfitabilityReportData({ branchId: "b1" });
+
+    const kit = result.productsProfitability.find(
+      (product) => product.productId === "p-kit"
+    );
+    expect(kit.totalCost).toBe(18);
+    expect(kit.grossProfit).toBe(32);
   });
 });
