@@ -1037,6 +1037,19 @@ recorrería por `id` muchas filas fuera de la ventana.
 **Recomendación futura:** si el reporte se vuelve lento, cambiar el cursor a `(created_at, id)` para
 que el orden coincida con `idx_inventory_movements_branch_created_at`.
 
+### 100. `fetchAllRpcPages` sin llamadores, pendiente de adopción
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #234.
+
+`fetchAllRpcPages` (`src/services/supabase/paginatedQuery.js`) pagina RPCs con `.range()` y tiene
+tests, pero ningún módulo lo usa todavía. Se dejó en el PR #234 por decisión acordada para los PRs
+que migren las RPCs de reportes que hoy pueden truncarse en 1000 filas.
+
+**Impacto:** ninguno en ejecución; es código sin llamadores mientras no se adopte.
+
+**Recomendación futura:** adoptarlo en el primer reporte basado en RPC que lo necesite, o borrarlo
+si ningún PR lo usa.
+
 ---
 
 ## Bajo
