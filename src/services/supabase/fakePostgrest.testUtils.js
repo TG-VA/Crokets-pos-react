@@ -72,6 +72,8 @@ const createQuery = (rows, { maxRows, calls, table }) => {
       call.limit = count;
       return query;
     },
+    single: () =>
+      run().then(({ data }) => ({ data: data[0] ?? null, error: null })),
     then: (onFulfilled, onRejected) => run().then(onFulfilled, onRejected),
   };
 
