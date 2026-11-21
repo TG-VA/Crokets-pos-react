@@ -7,6 +7,8 @@ const historyState = vi.hoisted(() => ({
   appModal: { isOpen: false },
   ticketOverrides: {},
   setPartialReturnOpen: null,
+  ticketsIncomplete: false,
+  retryLoadTickets: vi.fn(),
 }));
 
 vi.mock("../../../../contexts/AuthContext", () => ({
@@ -38,6 +40,8 @@ vi.mock("./useSalesHistory", () => ({
     cashierFilter: "",
     setCashierFilter: vi.fn(),
     tickets: [],
+    ticketsIncomplete: historyState.ticketsIncomplete,
+    retryLoadTickets: historyState.retryLoadTickets,
     cashiers: [],
     paymentMethods: [],
     loadingTickets: false,
@@ -160,4 +164,33 @@ describe("SalesHistoryModal: resumen de puntos del cliente", () => {
       expect(screen.queryByText("Puntos del cliente")).toBeNull();
     }
   );
+});
+
+describe("SalesHistoryModal: aviso de historial incompleto", () => {
+  beforeEach(() => {
+    historyState.notesOpen = false;
+    historyState.partialReturnOpen = false;
+    historyState.appModal = { isOpen: false };
+    historyState.ticketOverrides = {};
+    historyState.ticketsIncomplete = false;
+    historyState.retryLoadTickets = vi.fn();
+  });
+
+  it("no muestra el aviso si los datos llegaron completos", () => {
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("muestra el aviso y reintenta la carga al pulsar Reintentar", () => {
+    historyState.ticketsIncomplete = true;
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.getByRole("alert").textContent).toMatch(
+      /No se pudieron cargar todos los datos/
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(historyState.retryLoadTickets).toHaveBeenCalledTimes(1);
+  });
 });
