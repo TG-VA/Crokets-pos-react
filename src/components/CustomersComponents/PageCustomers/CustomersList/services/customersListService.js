@@ -7,6 +7,10 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 
 const POINTS_CUSTOMER_COLUMNS = `
           id,
@@ -34,15 +38,16 @@ const FISCAL_CUSTOMER_COLUMNS = `
         `;
 
 /**
- * Cliente de puntos habilitado, con el orden que espera la tabla.
+ * Clientes de puntos habilitados. Se leen por paginas sobre id; el orden de la
+ * tabla lo aplica `filterAndSortCustomers` en memoria.
  */
 export const fetchPointsCustomers = async () => {
-  const { data, error } = await supabase
-    .from("customers")
-    .select(POINTS_CUSTOMER_COLUMNS)
-    .eq("is_points_customer", true)
-    .order("status", { ascending: false, nullsFirst: false })
-    .order("name", { ascending: true, nullsFirst: false });
+  const { data, error } = await fetchAllPages(() =>
+    supabase
+      .from("customers")
+      .select(POINTS_CUSTOMER_COLUMNS)
+      .eq("is_points_customer", true)
+  );
 
   if (error) throw error;
 
@@ -56,10 +61,13 @@ export const fetchPointsCustomers = async () => {
 export const fetchPointsMovements = async (customerIds = []) => {
   if (customerIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("customer_points")
-    .select("customer_id, points, movement_type")
-    .in("customer_id", customerIds);
+  // Los saldos suman todos los movimientos: un lote truncado los subestima.
+  const { data, error } = await fetchByIdsInBatches(customerIds, (batch) =>
+    supabase
+      .from("customer_points")
+      .select("id, customer_id, points, movement_type")
+      .in("customer_id", batch)
+  );
 
   if (error) throw error;
 
