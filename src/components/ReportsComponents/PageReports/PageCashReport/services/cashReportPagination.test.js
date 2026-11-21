@@ -49,6 +49,9 @@ const sessions = [0, 1, 2].map((index) => ({
 }));
 
 // Cinco movimientos en la sesion 0: tres entradas de $10 y dos retiros de $5.
+// Las horas no siguen el orden de id (el del cursor): solo el orden en memoria
+// produce la secuencia por fecha que esperan los tests.
+const MOVEMENT_HOURS = [12, 14, 10, 13, 11];
 const movements = [0, 1, 2, 3, 4].map((index) => ({
   id: buildId("m", index),
   session_id: sessions[0].session_id,
@@ -56,7 +59,7 @@ const movements = [0, 1, 2, 3, 4].map((index) => ({
   branch_id: "b1",
   movement_type: index < 3 ? "entrada" : "retiro",
   amount: index < 3 ? 10 : 5,
-  created_at: `2026-11-10T1${4 - index}:00:00Z`,
+  created_at: `2026-11-10T${MOVEMENT_HOURS[index]}:00:00Z`,
 }));
 
 const sales = [0, 1, 2].map((index) => ({
@@ -133,7 +136,9 @@ describe("reporte de caja: lectura completa por paginas", () => {
     const result = await fetchCashMovements({});
 
     expect(result).toHaveLength(5);
-    expect(result.map((row) => row.id)).toEqual(movements.map((row) => row.id));
+    expect(result.map((row) => row.id)).toEqual(
+      [1, 3, 0, 4, 2].map((index) => buildId("m", index))
+    );
   });
 
   it("fetchPaymentMethodsSummary suma todos los pagos", async () => {
@@ -147,7 +152,9 @@ describe("reporte de caja: lectura completa por paginas", () => {
     const detail = await fetchCashSessionDetail(sessions[0].session_id);
 
     expect(detail.movements).toHaveLength(5);
-    expect(detail.movements[0].id).toBe(buildId("m", 4));
+    expect(detail.movements.map((row) => row.id)).toEqual(
+      [2, 4, 0, 3, 1].map((index) => buildId("m", index))
+    );
     expect(detail.totalManualIn).toBe(30);
     expect(detail.salesCount).toBe(3);
     expect(detail.cashSalesTotal).toBe(100);
