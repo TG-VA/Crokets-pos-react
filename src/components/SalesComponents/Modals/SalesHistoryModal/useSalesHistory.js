@@ -50,6 +50,7 @@ export const useSalesHistory = ({
   const [dateFilter, setDateFilter] = useState(getTodayDateFilter);
   const [cashierFilter, setCashierFilter] = useState("all");
   const [tickets, setTickets] = useState([]);
+  const [ticketsIncomplete, setTicketsIncomplete] = useState(false);
   const [cashiers, setCashiers] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -138,8 +139,9 @@ export const useSalesHistory = ({
     useRequestStatus(ticketsRequestKey);
 
   const applyTickets = useCallback(
-    (nextTickets) => {
+    ({ tickets: nextTickets, incomplete }) => {
       setTickets(nextTickets);
+      setTicketsIncomplete(incomplete);
       markSettled();
     },
     [markSettled]
@@ -149,12 +151,13 @@ export const useSalesHistory = ({
     if (!ticketsRequestKey) return [];
 
     try {
-      const nextTickets = await fetchHistoryTickets(ticketsRequestKey);
-      applyTickets(nextTickets);
-      return nextTickets;
+      const result = await fetchHistoryTickets(ticketsRequestKey);
+      applyTickets(result);
+      return result.tickets;
     } catch (e) {
       console.error(e);
       setTickets([]);
+      setTicketsIncomplete(false);
       markSettled();
       return [];
     }
@@ -187,9 +190,10 @@ export const useSalesHistory = ({
     let cancelled = false;
 
     fetchHistoryTickets(ticketsRequestKey)
-      .then((nextTickets) => {
+      .then((result) => {
         if (cancelled) return;
-        applyTickets(nextTickets);
+        applyTickets(result);
+        const nextTickets = result.tickets;
 
         // Se autoselecciona la venta mas reciente una vez por fecha cargada.
         // Una respuesta tardia la descarta el guard cancelled; la fecha de la
@@ -209,6 +213,7 @@ export const useSalesHistory = ({
         if (cancelled) return;
         console.error(e);
         setTickets([]);
+        setTicketsIncomplete(false);
         // Si el dia cambio, la venta seleccionada ya no pertenece a la lista.
         if (autoSelectedDateRef.current !== ticketsRequestKey.dateFilter) {
           setSelectedTicket(null);
@@ -772,6 +777,8 @@ export const useSalesHistory = ({
     cashierFilter,
     setCashierFilter,
     tickets,
+    ticketsIncomplete,
+    retryLoadTickets: loadTickets,
     cashiers,
     paymentMethods,
     loadingTickets,
