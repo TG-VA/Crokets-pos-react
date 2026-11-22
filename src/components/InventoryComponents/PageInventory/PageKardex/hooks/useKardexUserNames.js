@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { loadUsers } from "../../PageMovementsReport/services/movementsReportService";
+import { loadUsers } from "../../../../../services/userLookupService";
 
 const buildUserIdsKey = (userIds) =>
   [...new Set((userIds ?? []).filter(Boolean).map(String))].sort().join("|");
