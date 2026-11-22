@@ -22,7 +22,7 @@
  * En la vista comparativa las celdas de fecha y descripcion ocupan dos lineas
  * (48-50px por fila), de modo que diez filas mas el encabezado miden cerca de
  * 540px. El maximo de 560px las muestra completas sin scroll en cualquier
- * circunstancia y reserva el scroll vertical para paginas de 25 o 50
+ * circunstancia y reserva el scroll vertical para paginas de 25, 50 o 100
  * movimientos, de modo que el encabezado sticky siga visible.
  */
 .tableWrap {
@@ -40,7 +40,7 @@
 
 .table {
   width: 100%;
-  min-width: 650px;
+  min-width: 760px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -112,7 +112,7 @@
 }
 
 .colDescripcion {
-  width: 36%;
+  width: 26%;
   text-align: left;
 }
 
@@ -270,4 +270,34 @@
   .table {
     min-width: 900px;
   }
+}
+
+.summaryRow td {
+  height: 40px;
+  border-top: 2px solid #e8e8e8;
+  background-color: #fdf1e6;
+  font-weight: 800;
+  text-align: center;
+}
+
+.summaryLabel {
+  padding: 0 0.6rem;
+  color: #333333;
+  font-size: 0.78rem;
+}
+
+.colUsuario {
+  width: 10%;
+  text-align: center;
+}
+
+.cellUsuario {
+  overflow: hidden;
+  padding: 0.5rem 0.35rem;
+  color: var(--textColor);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

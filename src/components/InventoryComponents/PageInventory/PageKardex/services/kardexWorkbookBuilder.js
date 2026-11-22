@@ -1,3 +1,5 @@
+import { buildKardexRangeSummary } from "./kardexCalculationService";
+
 import {
   formatKardexDateTime,
   getKardexMovementDescription,
@@ -18,10 +20,12 @@ const HEADER_ROW_NUMBER = 11;
 
 const DATA_START_ROW_NUMBER = HEADER_ROW_NUMBER + 1;
 
-const TABLE_COLUMN_COUNT = 7;
+const TABLE_COLUMN_COUNT = 8;
 
 /* Primera columna de importes: costo de compra (6) e importe total (7). */
 const MONEY_FIRST_COLUMN_NUMBER = 6;
+
+const MONEY_LAST_COLUMN_NUMBER = 7;
 
 /*
  * Formato de una sola seccion porque las columnas de valuacion solo reciben
@@ -107,11 +111,15 @@ const configureWorksheetColumns = (worksheet) => {
       key: "importeTotal",
       width: 16,
     },
+    {
+      key: "usuario",
+      width: 18,
+    },
   ];
 };
 
 const configureTitle = (worksheet) => {
-  worksheet.mergeCells("A1:G1");
+  worksheet.mergeCells("A1:H1");
 
   const titleCell = worksheet.getCell("A1");
 
@@ -218,6 +226,7 @@ const configureTableHeader = (worksheet) => {
     "EXISTENCIA",
     "COSTO COMPRA",
     "IMPORTE TOTAL",
+    "USUARIO",
   ];
 
   headerRow.height = 22;
@@ -286,6 +295,8 @@ const renderKardexRows = ({ worksheet, rows }) => {
       getKardexCostValue(row?.unit_cost),
 
       getKardexCostValue(row?.total_cost),
+
+      row?.userName || EMPTY_VALUE_LABEL,
     ];
 
     excelRow.height = 20;
@@ -297,7 +308,9 @@ const renderKardexRows = ({ worksheet, rows }) => {
     ) {
       const cell = excelRow.getCell(columnNumber);
 
-      const isMoneyColumn = columnNumber >= MONEY_FIRST_COLUMN_NUMBER;
+      const isMoneyColumn =
+        columnNumber >= MONEY_FIRST_COLUMN_NUMBER &&
+        columnNumber <= MONEY_LAST_COLUMN_NUMBER;
 
       const isNumericMoney = isMoneyColumn && typeof cell.value === "number";
 
@@ -342,6 +355,89 @@ const renderKardexRows = ({ worksheet, rows }) => {
   });
 };
 
+const styleSummaryRow = (excelRow) => {
+  excelRow.height = 20;
+
+  for (
+    let columnNumber = 1;
+    columnNumber <= TABLE_COLUMN_COUNT;
+    columnNumber += 1
+  ) {
+    const cell = excelRow.getCell(columnNumber);
+
+    cell.font = {
+      bold: true,
+      name: "Arial",
+    };
+
+    cell.border = THIN_BORDER;
+
+    cell.alignment = {
+      horizontal: columnNumber >= 3 ? "center" : "left",
+      vertical: "middle",
+    };
+
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: {
+        argb: "FFF3F3F3",
+      },
+    };
+  }
+};
+
+/**
+ * Pie del kardex: saldo anterior (solo con rango de fechas) y totales del
+ * rango. Usa el mismo calculo que la tabla en pantalla: con filtro por tipo,
+ * `rows` trae lo filtrado y `rangeRows` el rango completo para los saldos.
+ */
+const renderSummaryRows = ({
+  worksheet,
+  rows,
+  rangeRows,
+  showOpeningBalance,
+}) => {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const summary = buildKardexRangeSummary(
+    Array.isArray(rangeRows) ? rangeRows : rows,
+    { visibleRows: rows }
+  );
+
+  let rowNumber = DATA_START_ROW_NUMBER + rows.length;
+
+  if (showOpeningBalance) {
+    const openingRow = worksheet.getRow(rowNumber);
+
+    openingRow.values = [
+      "SALDO ANTERIOR",
+      null,
+      null,
+      null,
+      summary.openingStock ?? EMPTY_VALUE_LABEL,
+    ];
+
+    styleSummaryRow(openingRow);
+
+    rowNumber += 1;
+  }
+
+  const totalsRow = worksheet.getRow(rowNumber);
+
+  totalsRow.values = [
+    "TOTALES",
+    null,
+    summary.totalEntries,
+    summary.totalExits > 0 ? -summary.totalExits : 0,
+    summary.closingStock ?? EMPTY_VALUE_LABEL,
+  ];
+
+  styleSummaryRow(totalsRow);
+};
+
 const configureWorksheetView = (worksheet) => {
   worksheet.autoFilter = {
     from: {
@@ -373,6 +469,7 @@ export const buildKardexWorksheet = ({
   worksheet,
   product,
   rows = [],
+  rangeRows = null,
   dateFrom = "",
   dateTo = "",
 }) => {
@@ -399,6 +496,13 @@ export const buildKardexWorksheet = ({
   renderKardexRows({
     worksheet,
     rows: normalizedRows,
+  });
+
+  renderSummaryRows({
+    worksheet,
+    rows: normalizedRows,
+    rangeRows,
+    showOpeningBalance: Boolean(dateFrom || dateTo),
   });
 
   configureWorksheetView(worksheet);

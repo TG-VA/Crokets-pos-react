@@ -31,7 +31,7 @@ const panelProps = (overrides = {}) => ({
 const getBodyRowReasons = () =>
   screen
     .getAllByRole("row")
-    .slice(1)
+    .filter((row) => row.closest("tbody"))
     .map((row) => within(row).queryByText(/LOTE (\d+)/)?.textContent ?? "");
 
 const clickPageButton = (name) =>
@@ -111,7 +111,7 @@ describe("KardexProductPanel", () => {
 
     const cells = screen.getAllByRole("row")[1].querySelectorAll("td");
 
-    expect(cells).toHaveLength(7);
+    expect(cells).toHaveLength(8);
     expect(cells[5].textContent).toContain("$");
     expect(cells[6].textContent).toContain("$");
   });
@@ -128,6 +128,25 @@ describe("KardexProductPanel", () => {
     expect(screen.getByText("Página 1 de 1")).toBeTruthy();
     expect(getBodyRowReasons()).toHaveLength(25);
     expect(screen.getByText(/Mostrando 1 a 25 de 25 movimientos/)).toBeTruthy();
+  });
+
+  it("ofrece paginas de 100 movimientos", () => {
+    render(<KardexProductPanel {...panelProps()} />);
+
+    changePageSize(100);
+
+    expect(screen.getByText("Página 1 de 1")).toBeTruthy();
+    expect(getBodyRowReasons()).toHaveLength(25);
+  });
+
+  it("reinicia la pagina al cambiar el filtro por tipo", () => {
+    const { rerender } = render(<KardexProductPanel {...panelProps()} />);
+
+    clickPageButton("Siguiente");
+
+    rerender(<KardexProductPanel {...panelProps()} typeFilter="entry" />);
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
   });
 
   it("reinicia la pagina al cambiar de producto", () => {

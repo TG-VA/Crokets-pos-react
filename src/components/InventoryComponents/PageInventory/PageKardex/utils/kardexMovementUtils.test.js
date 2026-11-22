@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getKardexStockChange,
   getKardexStockStatus,
   sortKardexMovementsByDateDesc,
 } from "./kardexMovementUtils";
@@ -56,5 +57,46 @@ describe("sortKardexMovementsByDateDesc", () => {
     ]);
 
     expect(sorted.map((row) => row.id)).toEqual(["c", "b", "a", "x"]);
+  });
+});
+
+describe("getKardexStockChange", () => {
+  it("usa la diferencia de stocks cuando ambos existen", () => {
+    expect(
+      getKardexStockChange({ previous_stock: 10, new_stock: 7, quantity: 99 })
+    ).toMatchObject({ difference: -3, entryQty: 0, exitQty: 3 });
+  });
+
+  it("sin stocks usa quantity con su signo en tipos ambiguos", () => {
+    expect(
+      getKardexStockChange({ movement_type: "adjustment", quantity: -4 })
+    ).toMatchObject({ difference: -4, entryQty: 0, exitQty: 4 });
+    expect(
+      getKardexStockChange({ movement_type: "transfer", quantity: 6 })
+    ).toMatchObject({ difference: 6, entryQty: 6, exitQty: 0 });
+  });
+
+  it("sin stocks fuerza salida en ventas aunque quantity venga positivo", () => {
+    expect(
+      getKardexStockChange({
+        movement_type: "sale",
+        quantity: 2,
+        previous_stock: null,
+      })
+    ).toMatchObject({ difference: -2, exitQty: 2, previousStock: null });
+  });
+
+  it("sin stocks fuerza entrada en devoluciones, cancelaciones y entradas", () => {
+    ["return", "canceled", "entry"].forEach((movement_type) => {
+      expect(
+        getKardexStockChange({ movement_type, quantity: -5, new_stock: 8 })
+      ).toMatchObject({ difference: 5, entryQty: 5, exitQty: 0 });
+    });
+  });
+
+  it("sin stocks ni quantity valido no mueve nada", () => {
+    expect(
+      getKardexStockChange({ movement_type: "sale", quantity: "x" })
+    ).toMatchObject({ difference: 0, entryQty: 0, exitQty: 0 });
   });
 });
