@@ -33,16 +33,6 @@ const CustomerModal = ({ isOpen, onClose, onSaved, customerToEdit }) => {
       >
         <div className={styles.header}>
           <h2 id="customer-modal-title">{modalTitle}</h2>
-
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={handleRequestClose}
-            disabled={saving}
-            aria-label="Cerrar modal"
-          >
-            ×
-          </button>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
