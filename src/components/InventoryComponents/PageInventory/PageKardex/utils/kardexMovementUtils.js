@@ -18,22 +18,66 @@ const toFiniteNumber = (value, fallback = null) => {
 export const sortKardexMovementsByDateDesc = (movements) =>
   sortByDateDesc(movements);
 
+/*
+ * Tipos cuyo sentido es fijo. `quantity` ya se guarda como delta con signo
+ * (CHECK new_stock = previous_stock + quantity), pero los registros historicos
+ * del fallback de logInventoryMovement pueden traerlo sin signo; en estos tipos
+ * se fuerza el sentido. Ajustes, traspasos y tipos desconocidos respetan el
+ * signo guardado.
+ */
+const EXIT_MOVEMENT_TYPES = new Set([
+  "sale",
+  "transfer_out",
+  "inventory_deactivate",
+  "product_delete",
+]);
+
+const ENTRY_MOVEMENT_TYPES = new Set([
+  "return",
+  "canceled",
+  "cancelled",
+  "entry",
+  "purchase",
+  "transfer_in",
+  "inventory_add",
+  "inventory_activate",
+]);
+
+const getQuantityDifference = (movement) => {
+  const quantity = toFiniteNumber(movement?.quantity, 0);
+
+  const movementType = String(movement?.movement_type ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (quantity === 0) {
+    return 0;
+  }
+
+  if (EXIT_MOVEMENT_TYPES.has(movementType)) {
+    return -Math.abs(quantity);
+  }
+
+  if (ENTRY_MOVEMENT_TYPES.has(movementType)) {
+    return Math.abs(quantity);
+  }
+
+  return quantity;
+};
+
+/**
+ * Entradas y salidas de un movimiento. Sale de `new_stock - previous_stock`; si
+ * falta alguno de los dos stocks, se usa `quantity` como respaldo.
+ */
 export const getKardexStockChange = (movement) => {
   const previousStock = toFiniteNumber(movement?.previous_stock);
 
   const newStock = toFiniteNumber(movement?.new_stock);
 
-  if (previousStock === null || newStock === null) {
-    return {
-      previousStock,
-      newStock,
-      difference: 0,
-      entryQty: 0,
-      exitQty: 0,
-    };
-  }
-
-  const difference = newStock - previousStock;
+  const difference =
+    previousStock === null || newStock === null
+      ? getQuantityDifference(movement)
+      : newStock - previousStock;
 
   return {
     previousStock,
