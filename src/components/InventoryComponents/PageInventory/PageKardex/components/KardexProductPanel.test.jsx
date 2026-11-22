@@ -111,7 +111,7 @@ describe("KardexProductPanel", () => {
 
     const cells = screen.getAllByRole("row")[1].querySelectorAll("td");
 
-    expect(cells).toHaveLength(7);
+    expect(cells).toHaveLength(8);
     expect(cells[5].textContent).toContain("$");
     expect(cells[6].textContent).toContain("$");
   });

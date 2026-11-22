@@ -20,10 +20,12 @@ const HEADER_ROW_NUMBER = 11;
 
 const DATA_START_ROW_NUMBER = HEADER_ROW_NUMBER + 1;
 
-const TABLE_COLUMN_COUNT = 7;
+const TABLE_COLUMN_COUNT = 8;
 
 /* Primera columna de importes: costo de compra (6) e importe total (7). */
 const MONEY_FIRST_COLUMN_NUMBER = 6;
+
+const MONEY_LAST_COLUMN_NUMBER = 7;
 
 /*
  * Formato de una sola seccion porque las columnas de valuacion solo reciben
@@ -109,11 +111,15 @@ const configureWorksheetColumns = (worksheet) => {
       key: "importeTotal",
       width: 16,
     },
+    {
+      key: "usuario",
+      width: 18,
+    },
   ];
 };
 
 const configureTitle = (worksheet) => {
-  worksheet.mergeCells("A1:G1");
+  worksheet.mergeCells("A1:H1");
 
   const titleCell = worksheet.getCell("A1");
 
@@ -220,6 +226,7 @@ const configureTableHeader = (worksheet) => {
     "EXISTENCIA",
     "COSTO COMPRA",
     "IMPORTE TOTAL",
+    "USUARIO",
   ];
 
   headerRow.height = 22;
@@ -288,6 +295,8 @@ const renderKardexRows = ({ worksheet, rows }) => {
       getKardexCostValue(row?.unit_cost),
 
       getKardexCostValue(row?.total_cost),
+
+      row?.userName || EMPTY_VALUE_LABEL,
     ];
 
     excelRow.height = 20;
@@ -299,7 +308,9 @@ const renderKardexRows = ({ worksheet, rows }) => {
     ) {
       const cell = excelRow.getCell(columnNumber);
 
-      const isMoneyColumn = columnNumber >= MONEY_FIRST_COLUMN_NUMBER;
+      const isMoneyColumn =
+        columnNumber >= MONEY_FIRST_COLUMN_NUMBER &&
+        columnNumber <= MONEY_LAST_COLUMN_NUMBER;
 
       const isNumericMoney = isMoneyColumn && typeof cell.value === "number";
 

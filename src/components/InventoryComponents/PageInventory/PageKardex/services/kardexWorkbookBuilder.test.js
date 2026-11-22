@@ -72,8 +72,8 @@ describe("kardexWorkbookBuilder", () => {
   });
 
   describe("estructura del worksheet", () => {
-    it("define las siete columnas con sus anchos", () => {
-      expect(worksheet.columns).toHaveLength(7);
+    it("define las ocho columnas con sus anchos", () => {
+      expect(worksheet.columns).toHaveLength(8);
 
       expect(getColumnKeys(worksheet)).toEqual([
         "fecha",
@@ -83,21 +83,22 @@ describe("kardexWorkbookBuilder", () => {
         "existencia",
         "costoCompra",
         "importeTotal",
+        "usuario",
       ]);
 
       expect(worksheet.getColumn("costoCompra").width).toBe(16);
       expect(worksheet.getColumn("importeTotal").width).toBe(16);
     });
 
-    it("centra el titulo sobre las siete columnas", () => {
-      expect(worksheet.model.merges).toContain("A1:G1");
+    it("centra el titulo sobre las ocho columnas", () => {
+      expect(worksheet.model.merges).toContain("A1:H1");
 
       expect(worksheet.getCell("A1").isMerged).toBe(true);
       expect(worksheet.getCell("A1").value).toBe("KARDEX");
       expect(worksheet.getCell("A1").alignment.horizontal).toBe("center");
     });
 
-    it("escribe los siete encabezados de la tabla", () => {
+    it("escribe los ocho encabezados de la tabla", () => {
       expect(getHeaderValues(worksheet)).toEqual([
         "FECHA",
         "DESCRIPCIÓN / MOTIVO",
@@ -106,13 +107,14 @@ describe("kardexWorkbookBuilder", () => {
         "EXISTENCIA",
         "COSTO COMPRA",
         "IMPORTE TOTAL",
+        "USUARIO",
       ]);
     });
 
-    it("extiende el autofiltro hasta la septima columna", () => {
+    it("extiende el autofiltro hasta la octava columna", () => {
       expect(worksheet.autoFilter).toEqual({
         from: { row: HEADER_ROW_NUMBER, column: 1 },
-        to: { row: HEADER_ROW_NUMBER, column: 7 },
+        to: { row: HEADER_ROW_NUMBER, column: 8 },
       });
     });
 
@@ -127,7 +129,7 @@ describe("kardexWorkbookBuilder", () => {
     it("escribe el costo de compra y el importe total como numeros", () => {
       const row = worksheet.getRow(DATA_START_ROW_NUMBER);
 
-      expect(row.values.slice(1)).toHaveLength(7);
+      expect(row.values.slice(1)).toHaveLength(8);
       expect(row.getCell(6).value).toBe(120.5);
       expect(row.getCell(7).value).toBe(602.5);
     });
@@ -212,10 +214,10 @@ describe("kardexWorkbookBuilder", () => {
   });
 
   describe("formato de las filas de datos", () => {
-    it("respeta la fuente Arial y el borde en las siete celdas", () => {
+    it("respeta la fuente Arial y el borde en las ocho celdas", () => {
       const row = worksheet.getRow(DATA_START_ROW_NUMBER);
 
-      for (let columnNumber = 1; columnNumber <= 7; columnNumber += 1) {
+      for (let columnNumber = 1; columnNumber <= 8; columnNumber += 1) {
         const cell = row.getCell(columnNumber);
 
         expect(cell.font).toEqual({ name: "Arial" });
@@ -250,6 +252,21 @@ describe("kardexWorkbookBuilder", () => {
       expect(row.getCell(3).value).toBeNull();
       expect(row.getCell(4).value).toBe(-3);
       expect(row.getCell(5).value).toBe(32);
+    });
+  });
+
+  describe("columna de usuario", () => {
+    it("escribe el nombre del usuario y guion si falta", () => {
+      const sheet = buildWorksheet({
+        rows: [buildRow({ userName: "CAJERO1" }), buildRow({ id: "m2" })],
+      });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER).getCell(8).value).toBe(
+        "CAJERO1"
+      );
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 1).getCell(8).value).toBe(
+        "—"
+      );
     });
   });
 
@@ -308,15 +325,15 @@ describe("kardexWorkbookBuilder", () => {
     it("genera la estructura aunque no haya movimientos", () => {
       const vacio = buildWorksheet({ rows: [] });
 
-      expect(vacio.columns).toHaveLength(7);
-      expect(getHeaderValues(vacio)).toHaveLength(7);
+      expect(vacio.columns).toHaveLength(8);
+      expect(getHeaderValues(vacio)).toHaveLength(8);
       expect(vacio.getCell("B9").value).toBe("0");
     });
 
     it("tolera filas no tabulares", () => {
       const invalido = buildWorksheet({ rows: null });
 
-      expect(invalido.columns).toHaveLength(7);
+      expect(invalido.columns).toHaveLength(8);
       expect(invalido.getCell("B9").value).toBe("0");
     });
 

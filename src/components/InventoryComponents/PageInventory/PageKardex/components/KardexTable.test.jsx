@@ -47,6 +47,7 @@ describe("KardexTable", () => {
         "EXISTENCIA",
         "COSTO COMPRA",
         "IMPORTE TOTAL",
+        "USUARIO",
       ]);
     });
   });
@@ -57,7 +58,7 @@ describe("KardexTable", () => {
 
       const cells = getBodyRowCells(1);
 
-      expect(cells).toHaveLength(7);
+      expect(cells).toHaveLength(8);
       expect(cells[5].textContent).toBe(formatKardexCurrency(120.5));
       expect(cells[6].textContent).toBe(formatKardexCurrency(602.5));
     });

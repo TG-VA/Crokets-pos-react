@@ -59,6 +59,8 @@ const KardexTable = ({
             <th className={styles.colCostoCompra}>COSTO COMPRA</th>
 
             <th className={styles.colImporte}>IMPORTE TOTAL</th>
+
+            <th className={styles.colUsuario}>USUARIO</th>
           </tr>
         </thead>
 
@@ -117,6 +119,10 @@ const KardexTable = ({
                 <td className={styles.cellImporte}>
                   {formatKardexOptionalCurrency(row?.total_cost)}
                 </td>
+
+                <td className={styles.cellUsuario} title={row?.userName || ""}>
+                  {row?.userName || "—"}
+                </td>
               </tr>
             );
           })}
@@ -134,7 +140,7 @@ const KardexTable = ({
                   {summary.openingStock ?? "—"}
                 </td>
 
-                <td colSpan={2} />
+                <td colSpan={3} />
               </tr>
             ) : null}
 
@@ -155,7 +161,7 @@ const KardexTable = ({
                 {summary.closingStock ?? "—"}
               </td>
 
-              <td colSpan={2} />
+              <td colSpan={3} />
             </tr>
           </tfoot>
         ) : null}
