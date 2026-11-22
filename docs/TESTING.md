@@ -106,6 +106,7 @@ y el proceso principal de Electron:
 | Contrato SQL de RPCs transaccionales                      | `supabase/migrations/transactionalRpcsContract.test.js`                            |
 | Contrato SQL del snapshot de costo de venta               | `supabase/migrations/costSnapshotContract.test.js`                                 |
 | Proceso principal de Electron                             | `electron/mainProcess.test.js`                                                     |
+| Auto-updater: build.publish publico sin token             | `electron/updaterPublishConfig.test.js`                                            |
 | Impresión de tickets (proceso principal)                  | `electron/ticketPrintService.test.js`                                              |
 | Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
 | Paginación global (incluye reset por `resetKeys`)         | `src/hooks/usePagination.test.js`                                                  |
