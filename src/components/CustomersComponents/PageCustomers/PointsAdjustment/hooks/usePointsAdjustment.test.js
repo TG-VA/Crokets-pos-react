@@ -3,11 +3,17 @@ import { renderHook, act } from "@testing-library/react";
 
 vi.mock("../services/pointsAdjustmentService", () => ({
   fetchCurrentAuthUser: vi.fn(),
-  fetchCustomerPointMovements: vi.fn(),
   fetchUserProfileWithRole: vi.fn(),
   insertPointsMovement: vi.fn(),
   searchPointsCustomers: vi.fn(),
 }));
+
+vi.mock(
+  "../../../../../services/customers/customerPointsBalanceService",
+  () => ({
+    fetchCustomerPointsBalance: vi.fn(),
+  })
+);
 
 vi.mock("../../services/customersRealtimeService", () => ({
   subscribeToTableChanges: vi.fn(() => vi.fn()),
@@ -19,11 +25,11 @@ vi.mock("../../../../../contexts/BranchContext", () => ({
 
 import {
   fetchCurrentAuthUser,
-  fetchCustomerPointMovements,
   fetchUserProfileWithRole,
   insertPointsMovement,
   searchPointsCustomers,
 } from "../services/pointsAdjustmentService";
+import { fetchCustomerPointsBalance } from "../../../../../services/customers/customerPointsBalanceService";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import { ADMIN_AUTH_STORAGE_KEY } from "../services/pointsAdjustmentCalculationService";
 import { usePointsAdjustment } from "./usePointsAdjustment";
@@ -83,10 +89,7 @@ describe("usePointsAdjustment", () => {
       status: true,
       roles: { name: "admin" },
     });
-    fetchCustomerPointMovements.mockResolvedValue([
-      { points: 100, movement_type: "earn" },
-      { points: -30, movement_type: "redeem" },
-    ]);
+    fetchCustomerPointsBalance.mockResolvedValue(70);
     insertPointsMovement.mockResolvedValue(undefined);
     searchPointsCustomers.mockResolvedValue([]);
 
@@ -160,14 +163,14 @@ describe("usePointsAdjustment", () => {
       const { result } = renderPointsAdjustment();
       await flush();
 
-      fetchCustomerPointMovements.mockClear();
+      fetchCustomerPointsBalance.mockClear();
 
       await act(async () => {
         await result.current.handleSelectCustomer(INACTIVE_CUSTOMER);
       });
 
       expect(result.current.selectedCustomer).toBeNull();
-      expect(fetchCustomerPointMovements).not.toHaveBeenCalled();
+      expect(fetchCustomerPointsBalance).not.toHaveBeenCalled();
     });
   });
 

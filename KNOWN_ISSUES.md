@@ -1025,7 +1025,8 @@ ventana del periodo, además de por las ventas del rango.
 
 **Estado:** abierto (20 nov 2026) — registrado en el PR #230.
 
-`fetchAllPages` (`.../PageMovementsReport/services/movementsReportService.js`) pagina con
+`fetchAllPages` (`src/services/supabase/paginatedQuery.js`, usado por el reporte de movimientos y
+el kardex) pagina con
 `ORDER BY id LIMIT 1000` y filtra por `branch_id` y ventana de fecha. Con ~570 filas en
 `inventory_movements`, `EXPLAIN (ANALYZE, BUFFERS)` en producción elige `inventory_movements_pkey` y
 filtra (5 ms, 269 filas descartadas); los índices de la migración `20261119200000` no se usan.
@@ -1035,6 +1036,55 @@ recorrería por `id` muchas filas fuera de la ventana.
 
 **Recomendación futura:** si el reporte se vuelve lento, cambiar el cursor a `(created_at, id)` para
 que el orden coincida con `idx_inventory_movements_branch_created_at`.
+
+### 100. `fetchAllRpcPages` sin llamadores, pendiente de adopción
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #234.
+
+`fetchAllRpcPages` (`src/services/supabase/paginatedQuery.js`) pagina RPCs con `.range()` y tiene
+tests, pero ningún módulo lo usa todavía. Se dejó en el PR #234 por decisión acordada para los PRs
+que migren las RPCs de reportes que hoy pueden truncarse en 1000 filas.
+
+**Impacto:** ninguno en ejecución; es código sin llamadores mientras no se adopte.
+
+**Recomendación futura:** adoptarlo en el primer reporte basado en RPC que lo necesite, o borrarlo
+si ningún PR lo usa.
+
+---
+
+### 101. `fetchByIdsInBatches` lanza todos los lotes a la vez y quedan lecturas sin paginar
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #236.
+
+`fetchByIdsInBatches` (`src/services/supabase/paginatedQuery.js`) dispara todos los lotes de 200 ids
+con `Promise.all`. Un archivo de importacion de 20 000 codigos de barras son 100 peticiones
+simultaneas (mas las de `validateSatClaves`), y un turno de 2 000 ventas lanza 10 lotes por cada una
+de las 4 consultas por `sale_id` del corte. Ademas, `fetchSatClaves` (catalogo SAT completo) y
+`cash_movements` de la sesion siguen sin paginar sobre el tope de 1000 filas.
+
+**Impacto:** no corrompe datos, pero puede disparar limites de tasa o de conexiones de PostgREST en
+sucursales o importaciones grandes; las dos lecturas sin paginar pueden truncarse en silencio.
+
+**Recomendacion futura:** agregar a `fetchByIdsInBatches` un parametro `concurrency` (por ejemplo 4)
+que procese los lotes en tandas, y pasar `fetchSatClaves` y `cash_movements` a `fetchAllPages`.
+
+---
+
+### 102. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
+
+**Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
+
+`fetchSalesRelatedData` (`src/components/SalesComponents/services/salesHistoryService.js`) lee
+detalles, usuarios, clientes, pagos, cancelaciones y devoluciones con `fetchByIdsInBatches`. Si una
+lectura devuelve `{ data: null, error }`, el retorno usa `data || []` y el error se pierde.
+
+**Impacto:** ante una falla de red, el historial muestra tickets sin pagos, detalles o cliente como
+si los datos fueran correctos, y el usuario puede decidir con información incompleta (por ejemplo,
+en una devolución).
+
+**Recomendación futura:** no lanzar el error, porque bloquearía todo el historial del día. Devolver
+un indicador de datos parciales desde el servicio, exponerlo en el hook del historial y mostrar en
+la vista un aviso con opción de reintentar, conservando el `console.error`.
 
 ---
 

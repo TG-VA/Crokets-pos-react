@@ -7,6 +7,15 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
   },
 }));
 
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
 vi.mock("../utils/transfersUtils", () => ({
   createTransferFolio: () => "TR-010126-000000",
   normalizeTransferOrder: (data) => data,
@@ -20,10 +29,15 @@ vi.mock("./transfersDetailService", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchTransferOrderById } from "./transfersDetailService";
 import {
+  buildId,
+  createFakePostgrest,
+} from "../../../../../services/supabase/fakePostgrest.testUtils";
+import {
   fetchTransferBranchOptions,
   createTransferOrder,
   receiveTransferOrder,
   cancelTransferOrder,
+  loadTransferOrders,
 } from "./transfersService";
 
 const mockFrom = {
@@ -36,6 +50,30 @@ describe("transfersService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     supabase.from.mockReturnValue(mockFrom);
+  });
+
+  describe("loadTransferOrders", () => {
+    it("lee todas las paginas y ordena por created_at descendente", async () => {
+      const fake = createFakePostgrest({
+        inventory_transfers: [
+          "2026-01-02T00:00:00Z",
+          "2026-01-05T00:00:00Z",
+          "2026-01-01T00:00:00Z",
+          "2026-01-04T00:00:00Z",
+          "2026-01-03T00:00:00Z",
+        ].map((createdAt, index) => ({
+          id: buildId("t", index),
+          created_at: createdAt,
+        })),
+      });
+      supabase.from.mockImplementation(fake.from);
+
+      const orders = await loadTransferOrders();
+
+      expect(orders.map((order) => order.id)).toEqual(
+        [1, 3, 4, 0, 2].map((index) => buildId("t", index))
+      );
+    });
   });
 
   describe("fetchTransferBranchOptions", () => {

@@ -3,11 +3,13 @@ import {
   fetchOperationalBranches,
   isOperationalBranch,
 } from "../../../../../services/branchScopeService";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 
 import {
-  IN_FILTER_BATCH_SIZE,
   INVENTORY_MOVEMENTS_TABLE,
-  MOVEMENTS_PAGE_SIZE,
   MOVEMENTS_CANCELED_SALES_SELECT_KEY,
   MOVEMENTS_PRODUCTS_SELECT_KEY,
   MOVEMENTS_REDEMPTIONS_SELECT_KEY,
@@ -38,72 +40,6 @@ import {
   hydrateBaseMovements,
   hydrateMissingRedemptions,
 } from "./movementsCalculationService";
-
-// PostgREST corta cada respuesta en 1000 filas sin devolver error. Las
-// consultas se leen por paginas con un cursor sobre id (keyset): cada pagina
-// pide las filas con id mayor al ultimo leido, hasta que una llega incompleta.
-// A diferencia de .range(), un insert o un borrado entre paginas no repite ni
-// salta filas. El orden de lectura no importa: el reporte se ordena al final.
-export const fetchAllPages = async (buildQuery) => {
-  const rows = [];
-  let lastId = null;
-
-  for (;;) {
-    let query = buildQuery().order("id", { ascending: true });
-
-    if (lastId !== null) {
-      query = query.gt("id", lastId);
-    }
-
-    const { data, error } = await query.limit(MOVEMENTS_PAGE_SIZE);
-
-    if (error) {
-      return { data: null, error };
-    }
-
-    const page = Array.isArray(data) ? data : [];
-    rows.push(...page);
-
-    const nextId = page[page.length - 1]?.id;
-
-    if (page.length < MOVEMENTS_PAGE_SIZE) {
-      return { data: rows, error: null };
-    }
-
-    // Sin id no hay cursor: cortar aqui devolveria datos truncados como exito.
-    if (nextId === undefined || nextId === null) {
-      return {
-        data: null,
-        error: new Error("fetchAllPages: fila sin id, no se puede paginar"),
-      };
-    }
-
-    lastId = nextId;
-  }
-};
-
-// Un .in() con miles de UUID rebasa el largo maximo de URL, y un lote con mas
-// de 1000 coincidencias choca con el tope de filas. Los ids se parten en lotes
-// y cada lote se pagina; el primer error corta la lectura completa.
-export const fetchByIdsInBatches = async (values, buildQuery) => {
-  const batches = [];
-
-  for (let start = 0; start < values.length; start += IN_FILTER_BATCH_SIZE) {
-    batches.push(values.slice(start, start + IN_FILTER_BATCH_SIZE));
-  }
-
-  const results = await Promise.all(
-    batches.map((batch) => fetchAllPages(() => buildQuery(batch)))
-  );
-
-  const failed = results.find((result) => result.error);
-
-  if (failed) {
-    return { data: null, error: failed.error };
-  }
-
-  return { data: results.flatMap((result) => result.data), error: null };
-};
 
 const applyDateWindow = (query, column, { startISO, endISO } = {}) => {
   let nextQuery = query;

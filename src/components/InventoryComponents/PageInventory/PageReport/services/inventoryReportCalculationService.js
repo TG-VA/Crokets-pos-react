@@ -1,3 +1,5 @@
+import { getStockStatus } from "../../../../../utils/stockStatus";
+
 export const STOCK_FILTER_PREFIX = "status:";
 export const QUANTITY_FILTER_PREFIX = "quantity:";
 
@@ -148,48 +150,6 @@ export const sortInventoryRows = (list) => {
       }
     );
   });
-};
-
-export const getStockStatus = (row) => {
-  if (row?.noBranchRecord === true) {
-    return {
-      type: "noBranchRecord",
-      label: "Sin registro en sucursal",
-    };
-  }
-
-  if (
-    row?.tracksInventory === false ||
-    row?.existencia === null ||
-    row?.existencia === undefined
-  ) {
-    return {
-      type: "notApplicable",
-      label: "No aplica",
-    };
-  }
-
-  const stock = Number(row.existencia ?? 0);
-  const minimumStock = Number(row.min ?? 0);
-
-  if (stock <= 0) {
-    return {
-      type: "outOfStock",
-      label: "Agotado",
-    };
-  }
-
-  if (minimumStock > 0 && stock <= minimumStock) {
-    return {
-      type: "lowStock",
-      label: "Stock bajo",
-    };
-  }
-
-  return {
-    type: "available",
-    label: "Disponible",
-  };
 };
 
 export const getActiveFilterCount = (facetFilters = {}) => {

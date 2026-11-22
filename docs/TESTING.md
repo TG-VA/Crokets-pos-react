@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (19 nov 2026)
+## Cobertura actual (21 nov 2026)
 
-363 archivos de test (**3657 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+382 archivos de test (**3745 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -170,7 +170,26 @@ y el proceso principal de Electron:
 | Ticket: servicios de puntos                               | `src/utils/ticket/ticketPointsService.test.js`                                     |
 | Ticket: secciones                                         | `src/utils/ticket/ticketSections.test.js`                                          |
 | Reportes: ciclo de vida del dashboard                     | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
+| Supabase: paginacion sobre el tope de 1000 filas          | `src/services/supabase/paginatedQuery.test.js`                                     |
+| Reportes: inicio lee todas las paginas                    | `.../PageReportsHome/services/reportsPagination.test.js`                           |
+| Reportes: exportacion de ventas sin tope                  | `.../PageSalesReport/services/salesReportService.test.js`                          |
+| Reportes: margen de rentabilidad con lectura paginada     | `.../PageProfitabilityReport/services/profitabilityReportPagination.test.js`       |
+| Reportes: comisiones por paginas de la RPC                | `.../PageCommissionsReport/services/commissionsReportPagination.test.js`           |
+| Saldo de puntos compartido (paginado)                     | `src/services/customers/customerPointsBalanceService.test.js`                      |
+| Orden por fecha descendente de lecturas paginadas         | `src/utils/sortByDateDesc.test.js`                                                 |
+| Clientes de puntos y movimientos (paginados)              | `.../CustomersList/services/customersListService.test.js`                          |
+| Historial de puntos (paginado)                            | `.../PointsHistory/services/pointsHistoryService.test.js`                          |
+| Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
+| Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |
+| Ventas: saldo de puntos del cliente                       | `.../SalesComponents/services/salesCustomerPointsService.test.js`                  |
+| Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
+| Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
+| Corte de caja: turno de varias paginas y lotes            | `src/pages/CashCut/services/cashCutReportPagination.test.js`                       |
+| Ventas: efectivo disponible de la sesion                  | `src/components/SalesComponents/services/salesCashService.test.js`                 |
+| Claves SAT: validacion por lotes                          | `src/services/satClavesService.test.js`                                            |
+| Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
+| Kardex: Realtime y sondeo de respaldo                     | `.../PageKardex/hooks/useKardexRealtime.test.js`                                   |
 | Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
 | Kardex: tabla (columnas de valuacion)                     | `.../PageKardex/components/KardexTable.test.jsx`                                   |
 | Kardex: panel con paginacion                              | `.../PageKardex/components/KardexProductPanel.test.jsx`                            |
@@ -305,6 +324,8 @@ regla nueva de costo debe cambiarse en los dos lados.
     es `thenable`.
   - `rpcBuilder({ data, error })` — simula `supabase.rpc(...)`.
     Estos helpers están duplicados por archivo (candidatos a extraerse a un helper compartido).
+  - Para probar paginacion, usar `createFakePostgrest` y `withSmallPages` de
+    `src/services/supabase/fakePostgrest.testUtils.js` en lugar de crear 1000 filas.
 - **Hooks:** se prueban con `renderHook`/`act` de `@testing-library/react`.
   Para cambiar las props en un caso de prueba, `renderHook` necesita `initialProps` y el callback
   debe recibir ese objeto como parámetro: `renderHook((props) => useX(props), { initialProps })`.
@@ -320,6 +341,10 @@ regla nueva de costo debe cambiarse en los dos lados.
   restaurarlo con `vi.useRealTimers()` en `afterEach`. Sin esto la prueba se rompe sola cuando la
   fecha real rebasa la capturada. Ejemplos: `KitFormSection.test.jsx` y
   `KitRenewValidityForm.test.jsx`.
+- **Doble de PostgREST para paginacion:** `createFakePostgrest` + `withSmallPages` de
+  `src/services/supabase/fakePostgrest.testUtils.js`. Ojo con `beforeEach(() => mock.mockReset())`:
+  la flecha sin llaves devuelve el mock y Vitest lo ejecuta como teardown sin argumentos; usar
+  cuerpo con llaves.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 
 ## Huecos de cobertura
@@ -434,6 +459,65 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   wildcard y la resiliencia de `useResponsiveScale` con y sin `window.electronAPI`. Para poder usar
   `MemoryRouter` sin anidar dos routers de React Router 7, `AppRoutes` es named export y acepta
   `RouterComponent` (por omisión `HashRouter`), igual que `App`.
+- **Paginacion del catalogo, el corte y la importacion** (21 nov 2026, rama
+  `fix/paginacion-catalogo-y-caja`): `src/services/supabase/fakePostgrest.testUtils.js` es un doble
+  compartido de `supabase.from()` que responde como PostgREST: aplica `eq`/`in`/`gte`/`lte`/`gt`,
+  ordena por los `.order()` recibidos y **corta cada respuesta en `maxRows` (2) aunque se pida un
+  `.limit()` mayor**. `withSmallPages` se usa en un `vi.mock` de `paginatedQuery` para forzar
+  paginas y lotes de 2, asi pocas filas simulan varias paginas; cada test nuevo falla si el
+  servicio vuelve a la consulta sin paginar. `productCatalogService.test.js` fija que el catalogo de
+  la sucursal y los globales activos llegan completos y en orden de alta (`created_at` ascendente).
+  `cashCutReportPagination.test.js` fija que un turno de varias paginas y varios lotes de `.in()` da
+  los mismos totales de ventas, pagos por metodo, dolares, departamentos y canjes que el turno
+  completo, y que cancelaciones y devoluciones salen de la mas reciente a la mas antigua.
+  `salesCashService.test.js` fija el efectivo disponible con ventas, cancelaciones y devoluciones de
+  varias paginas. `localProductsCatalogService.test.js` y `productKitsService.test.js` fijan los
+  productos locales de pedidos y el selector de kits (orden por nombre). `satClavesService.test.js`
+  y `productsImportService.test.js` fijan la validacion de importacion por lotes, sin repetidos y con
+  `cursorColumn: "clave"` en la tabla SAT, que no tiene `id`; `paginatedQuery.test.js` suma los
+  casos de `cursorColumn`.
+- **Paginacion de listas e historiales** (21 nov 2026, rama `fix/paginacion-listas-historiales`):
+  extiende `fetchAllPages`/`fetchByIdsInBatches` a clientes de puntos, historial de puntos,
+  facturas (clientes fiscales, pendientes e historial), historial de ventas, traspasos, pedidos y
+  cobertura de kits. Cada servicio tiene un caso que cruza varias paginas con
+  `src/services/supabase/fakePostgrest.testUtils.js`: el doble corta cada respuesta en 2 filas como
+  PostgREST con `max-rows`, y `withSmallPages` (via `vi.mock` de `paginatedQuery`) fuerza paginas y
+  lotes de 2, asi pocas filas bastan. Los casos fallan contra la lectura sin paginar. El saldo de
+  puntos se lee solo desde `customerPointsBalanceService` (ventas, devoluciones, ajuste manual,
+  consulta de recompensas, modal de cliente e historial de ventas); su test fija la suma de todas las
+  paginas, ids nulos o repetidos, el saldo 0 y que el error de una pagina se lanza en vez de devolver
+  un saldo parcial. `sortByDateDesc.test.js` fija el orden en memoria que reemplaza al `.order()` de
+  servidor (fechas invalidas al final, desempate por `id`, columna configurable).
+- **Paginacion sobre el tope de PostgREST y estado de stock comun** (20 nov 2026, rama
+  `fix/kardex-paginacion-y-estado-stock`): PostgREST corta cada respuesta en 1000 filas sin error.
+  `src/services/supabase/paginatedQuery.js` concentra `fetchAllPages` (cursor keyset sobre `id`),
+  `fetchByIdsInBatches` (lotes del `.in()`) y `fetchAllRpcPages` (`.range()` para RPC con un
+  `.order()` estable del llamador). Las tres aceptan `pageSize`/`batchSize` para que los tests
+  paginen con 2 filas en vez de crear 1000; `paginatedQuery.test.js` fija el cursor, la pagina
+  incompleta como fin, la fila sin `id` como error y que el primer error corta sin filas parciales.
+  `kardexService.test.js` fija que el kardex lee varias paginas, ordena en memoria por `created_at`
+  descendente con desempate por `id`, que el reintento sin costos tambien pagina y que el error de la
+  segunda pagina se propaga. `src/utils/stockStatus.test.js` y `kardexMovementUtils.test.js` fijan los
+  bordes de la regla comun (stock igual al minimo, 0, negativo, minimo 0, sin inventario) y el
+  sobrestock exclusivo de Kardex. `useKardexRealtime.test.js` fija que el sondeo de 30 s solo corre
+  tras `CHANNEL_ERROR`/`TIMED_OUT`, se detiene con `SUBSCRIBED` tras recargar una vez los slots
+  seleccionados, y que el fallo del refresco en segundo plano se registra con `console.error`.
+- **Reportes sobre el tope de PostgREST, parte 1** (21 nov 2026, 15 casos en 4 archivos, rama
+  `fix/paginacion-reportes`): inicio, ventas, rentabilidad y comisiones leen todas las filas con
+  `paginatedQuery`. `src/services/supabase/fakeSupabase.testUtils.js` es un doble de `supabase`
+  que responde como PostgREST (filtros `eq`/`in`/`not`/`ilike`/`gt`..., `.order()`, `.range()` y
+  RPC) y corta cada respuesta en `maxRows` aunque se pida un `.limit()` mayor; `withSmallPages`
+  fuerza paginas y lotes de 2 en `paginatedQuery` via `vi.mock`. Con 5 ventas y 3 partidas por
+  venta cada test lee varias paginas por consulta y por lote, y falla con el codigo anterior.
+  `profitabilityReportPagination.test.js` fija la traza de margen: con la lectura truncada el
+  reporte daba ingreso $150, costo $90 y 40%; leyendo todo da $540, $360 y 33.33%.
+  `commissionsReportPagination.test.js` fija que partidas con el mismo `created_at` no se repiten
+  ni se saltan entre paginas gracias al desempate por `detail_id`, y que una venta registrada entre
+  dos paginas no duplica partidas (deduplicacion por `detail_id`). El costo de un kit con sus
+  componentes en paginas posteriores de `products` y `branch_inventory` protege la lectura
+  completa del catalogo, del inventario y de los kits (`product_kits`). Las cancelaciones del dia (`getTodayCancelledSales`) se
+  cuentan sobre varias paginas, y el orden por fecha de inicio y de la exportacion de ventas
+  compara instantes, no texto (`12:00:00+00:00` antes que `12:00:00.5+00:00`).
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
