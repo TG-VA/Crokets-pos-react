@@ -24,9 +24,13 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
-const rpcBuilder = (resolve = { data: null, error: null }) => ({
-  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
-});
+const rpcBuilder = (resolve = { data: null, error: null }) => {
+  const builder = {
+    order: vi.fn(() => builder),
+    range: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+  };
+  return builder;
+};
 
 const inventoryRow = (overrides = {}) => ({
   product_id: "p1",
@@ -96,9 +100,12 @@ describe("inventoryReportService", () => {
       expect(supabase.rpc).toHaveBeenCalledWith("get_inventory_report_data", {
         p_branch_id: null,
       });
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
-        100000
-      );
+      const builder = supabase.rpc.mock.results[0].value;
+      expect(builder.order.mock.calls).toEqual([
+        ["product_name", { ascending: true }],
+        ["product_id", { ascending: true }],
+      ]);
+      expect(builder.range).toHaveBeenCalledWith(0, 999);
       expect(result.items).toEqual([]);
       expect(result.kpis).toMatchObject({
         totalCostValuation: 0,

@@ -50,7 +50,7 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 - El proyecto usa **Vitest**; correr **`npm test`** antes de commitear.
 - Agregar tests para lógica nueva no trivial (cálculos, contratos de servicios, hooks). Ver
   `docs/TESTING.md` para el runner, patrones de mock y huecos de cobertura.
-- **Pipeline de CI y Verificaciones Incrementales:** Cada PR corre automáticamente en `.github/workflows/ci.yml`:
+- **Pipeline de CI y Verificaciones Incrementales:** Cada PR (no borrador) corre automáticamente en `.github/workflows/ci.yml`. Para ahorrar minutos de Actions, no corre en push a `main`, ignora cambios solo de `docs/**` y `*.md`, y cancela la corrida anterior del mismo PR al recibir un push nuevo. Correr `npm run check:agents && npm test` en local y agrupar correcciones en un solo push:
   - `npm run check:agents`: Valida cero emojis, cero `!important` en CSS, cero `console.log`/`warn` y EOF newlines sobre el diff.
   - `ESLint incremental`: Ejecuta `xargs npx eslint` sobre los archivos modificados del diff.
   - `Prettier incremental`: Ejecuta `xargs npx prettier --check` sobre el diff.
@@ -72,7 +72,7 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 ## Releases y Actualizaciones (Auto-Updater)
 
 - Para compilar el instalador de Windows o publicar una actualización desatendida vía GitHub Releases, consultar **`DEPLOYMENT.md`**.
-- El proyecto utiliza `electron-updater` con un token de lectura embebido para el repositorio privado. Toda nueva versión se publica incrementando `package.json` (`npm version patch --no-git-tag-version`), commiteando en `main`, creando el tag `vX.X.X` y haciendo `git push origin main --tags`. Esto dispara el workflow `.github/workflows/release-windows.yml` que inyecta el token y publica el `.exe`, `.blockmap` y `latest.yml`.
+- El proyecto utiliza `electron-updater` contra GitHub Releases del repositorio público, sin token (no embeber credenciales en el instalador). Toda nueva versión se publica incrementando `package.json` (`npm version patch --no-git-tag-version`), commiteando en `main`, creando el tag `vX.X.X` y haciendo `git push origin main --tags`. Esto dispara el workflow `.github/workflows/release-windows.yml` que publica el `.exe`, `.blockmap` y `latest.yml`.
 - No alterar el patrón `"artifactName": "POS-CROKETS-Setup-${version}.${ext}"` en `package.json` (garantiza que GitHub Releases no reemplace espacios por puntos y rompa la coincidencia con `latest.yml`).
 
 ## Qué evitar

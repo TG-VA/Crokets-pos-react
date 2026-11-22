@@ -1054,7 +1054,7 @@ si ningún PR lo usa.
 
 ### 101. `fetchByIdsInBatches` lanza todos los lotes a la vez y quedan lecturas sin paginar
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #236.
+**Estado:** resuelto (21 nov 2026) — rama `fix/concurrencia-lotes-y-lecturas-sin-paginar`; registrado en el PR #236.
 
 `fetchByIdsInBatches` (`src/services/supabase/paginatedQuery.js`) dispara todos los lotes de 200 ids
 con `Promise.all`. Un archivo de importacion de 20 000 codigos de barras son 100 peticiones
@@ -1068,11 +1068,19 @@ sucursales o importaciones grandes; las dos lecturas sin paginar pueden truncars
 **Recomendacion futura:** agregar a `fetchByIdsInBatches` un parametro `concurrency` (por ejemplo 4)
 que procese los lotes en tandas, y pasar `fetchSatClaves` y `cash_movements` a `fetchAllPages`.
 
+**Resolucion:** `fetchByIdsInBatches` acepta `concurrency` (por defecto
+`DEFAULT_BATCH_CONCURRENCY = 4`): procesa los lotes en tandas de 4 y no lanza mas tandas tras el
+primer error. `fetchSatClaves` pagina sobre `clave` con `fetchAllPages` y ordena por `descripcion` en
+memoria. `fetchCashMovementsBySession` (corte de caja) pagina sobre `id` y devuelve los movimientos
+del mas reciente al mas antiguo con `sortRowsBy`. Los `cash_movements` de `salesCashService` y de los
+reportes de caja no forman parte de este caso.
+
 ---
 
 ### 102. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
+**Estado:** resuelto (21 nov 2026) — rama `fix/historial-ventas-datos-parciales`. Registrado en el PR
+#237 (hallazgo S2 de la review).
 
 `fetchSalesRelatedData` (`src/components/SalesComponents/services/salesHistoryService.js`) lee
 detalles, usuarios, clientes, pagos, cancelaciones y devoluciones con `fetchByIdsInBatches`. Si una
@@ -1085,6 +1093,12 @@ en una devolución).
 **Recomendación futura:** no lanzar el error, porque bloquearía todo el historial del día. Devolver
 un indicador de datos parciales desde el servicio, exponerlo en el hook del historial y mostrar en
 la vista un aviso con opción de reintentar, conservando el `console.error`.
+
+**Resolución:** `fetchSalesRelatedData` registra cada error con `console.error` y devuelve
+`incomplete: true`; `fetchHistoryTickets` devuelve `{ tickets, incomplete }`. `useSalesHistory`
+expone `ticketsIncomplete` y `retryLoadTickets`, y `SalesHistoryModal` muestra los tickets con un
+aviso y el botón Reintentar. Un error de `fetchTicketsBatch` sigue vaciando la lista. Cobertura en
+`salesHistoryService.test.js`, `useSalesHistory.test.js` y `SalesHistoryModal.escape.test.jsx`.
 
 ---
 

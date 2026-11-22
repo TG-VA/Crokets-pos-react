@@ -17,6 +17,7 @@ import {
 } from "../../../services/supabase/fakePostgrest.testUtils";
 import {
   buildCustomerPointsMaps,
+  fetchHistoryTickets,
   fetchSalesRelatedData,
   fetchTicketsBatch,
 } from "./salesHistoryService";
@@ -70,6 +71,7 @@ describe("salesHistoryService", () => {
       })),
       canceled_sales: [],
       sale_returns: [],
+      sale_reward_redemptions: [],
       customer_points: [
         ...[0, 1, 2].map((index) => ({
           id: buildId("cp", index),
@@ -113,6 +115,77 @@ describe("salesHistoryService", () => {
     expect(related.details).toHaveLength(5);
     expect(related.payments).toHaveLength(3);
     expect(related.users).toEqual([{ id: "u-1", username: "ana" }]);
+  });
+
+  it("fetchSalesRelatedData marca la respuesta incompleta si falla una tabla", async () => {
+    const saleIds = [0, 1, 2].map((index) => buildId("s", index));
+    const pageError = { message: "boom" };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    supabase.from.mockImplementation((table) => {
+      const query = fake.from(table);
+      if (table === "sale_payments") {
+        query.limit = () => Promise.resolve({ data: null, error: pageError });
+      }
+      return query;
+    });
+
+    const related = await fetchSalesRelatedData(saleIds, ["u-1"], ["c-1"]);
+
+    expect(related.incomplete).toBe(true);
+    expect(related.payments).toEqual([]);
+    expect(related.details).toHaveLength(5);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error cargando datos relacionados del historial:",
+      pageError
+    );
+    consoleError.mockRestore();
+  });
+
+  it("fetchSalesRelatedData no marca incompleta una lectura sin errores", async () => {
+    const saleIds = [0, 1, 2].map((index) => buildId("s", index));
+
+    const related = await fetchSalesRelatedData(saleIds, ["u-1"], ["c-1"]);
+
+    expect(related.incomplete).toBe(false);
+  });
+
+  it("fetchHistoryTickets propaga incomplete si falla una tabla relacionada", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    supabase.from.mockImplementation((table) => {
+      const query = fake.from(table);
+      if (table === "sale_payments") {
+        query.limit = () =>
+          Promise.resolve({ data: null, error: { message: "boom" } });
+      }
+      return query;
+    });
+
+    const result = await fetchHistoryTickets({
+      branchId: "b-1",
+      dateFilter: "2026-03-15",
+      cashierFilter: "u-1",
+      searchFolio: "",
+      paymentMethods: [],
+    });
+
+    expect(result.incomplete).toBe(true);
+    expect(result.tickets.map((ticket) => ticket.id)).toEqual(
+      [1, 2, 0].map((index) => buildId("s", index))
+    );
+  });
+
+  it("fetchHistoryTickets sin ventas devuelve lista vacia completa", async () => {
+    const result = await fetchHistoryTickets({
+      branchId: "b-1",
+      dateFilter: "2026-03-20",
+      cashierFilter: "u-1",
+      searchFolio: "",
+      paymentMethods: [],
+    });
+
+    expect(result).toEqual({ tickets: [], incomplete: false });
   });
 
   it("buildCustomerPointsMaps suma todas las paginas de puntos y de saldo", async () => {
