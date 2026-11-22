@@ -8,8 +8,6 @@ export const MOVEMENTS_SALES_SELECT_KEY = "movementsReportSalesSelect_v5";
 
 export const MOVEMENTS_PRODUCTS_SELECT_KEY = "movementsReportProductsSelect_v3";
 
-export const MOVEMENTS_USERS_SELECT_KEY = "movementsReportUsersSelect_v1";
-
 export const MOVEMENTS_SALE_DETAILS_SELECT_KEY =
   "movementsReportSaleDetailsSelect_v1";
 

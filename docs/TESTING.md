@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-396 archivos de test (**3849 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+397 archivos de test (**3855 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -136,6 +136,7 @@ y el proceso principal de Electron:
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
 | Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
+| Busqueda de usuarios por id (y clave de cache del select) | `src/services/userLookupService.test.js`                                           |
 | Alcance de sucursales (consultas)                         | `src/services/branchScopeService.test.js`                                          |
 | Alcance de sucursales (origen de stock)                   | `src/services/branchScopeCalculationService.test.js`                               |
 | Contrato SQL de branches.branch_type                      | `supabase/migrations/branchesBranchTypeContract.test.js`                           |
