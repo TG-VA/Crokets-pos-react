@@ -51,6 +51,8 @@ describe("profitabilityReportService (concurrencia acotada)", () => {
         const q = {};
         q.select = vi.fn(() => q);
         q.in = vi.fn(() => q);
+        q.order = vi.fn(() => q);
+        q.gt = vi.fn(() => q);
         q.limit = vi.fn(() => {
           saleDetailsCalls += 1;
           active += 1;
@@ -94,6 +96,8 @@ describe("profitabilityReportService (concurrencia acotada)", () => {
           return q;
         });
         q.in = vi.fn(() => q);
+        q.order = vi.fn(() => q);
+        q.gt = vi.fn(() => q);
         q.limit = vi.fn(() => Promise.resolve({ data: [], error: null }));
         return q;
       }

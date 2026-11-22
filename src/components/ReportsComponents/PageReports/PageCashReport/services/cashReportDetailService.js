@@ -1,4 +1,8 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 
 /**
  * Obtiene el detalle exhaustivo de una sesión específica (para el modal de detalle)
@@ -49,26 +53,31 @@ export const fetchCashSessionDetail = async (sessionId) => {
     if (!sessionData) return null;
 
     // 2. Movimientos manuales asociados a la sesión
-    const { data: movementsData, error: movErr } = await supabase
-      .from("cash_movements")
-      .select(
+    // El cursor ordena por id: el orden cronologico se aplica en memoria.
+    const { data: movementsData, error: movErr } = await fetchAllPages(() =>
+      supabase
+        .from("cash_movements")
+        .select(
+          `
+          id,
+          user_id,
+          movement_type,
+          amount,
+          description,
+          created_at,
+          users (username)
         `
-        id,
-        user_id,
-        movement_type,
-        amount,
-        description,
-        created_at,
-        users (username)
-      `
-      )
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: true })
-      .limit(5000);
+        )
+        .eq("session_id", sessionId)
+    );
 
     if (movErr) {
       console.error("Error obteniendo movimientos de la sesión:", movErr);
     }
+
+    movementsData?.sort((left, right) =>
+      String(left.created_at).localeCompare(String(right.created_at))
+    );
 
     // 3. Ventas, descuentos y pagos en el lapso de la sesión
     const sessionStart = sessionData.opened_at;
@@ -82,21 +91,23 @@ export const fetchCashSessionDetail = async (sessionId) => {
     if (sessionData.branch_id && sessionData.user_id && sessionStart) {
       try {
         const [salesRes, paymentsRes] = await Promise.all([
-          supabase
-            .from("sales")
-            .select(
-              "id, subtotal, tax, total, discount_total, status, created_at"
-            )
-            .eq("branch_id", sessionData.branch_id)
-            .eq("user_id", sessionData.user_id)
-            .gte("created_at", sessionStart)
-            .lte("created_at", sessionEnd)
-            .in("status", ["completed", "partial_refund"])
-            .limit(5000),
-          supabase
-            .from("sale_payments")
-            .select(
-              `
+          fetchAllPages(() =>
+            supabase
+              .from("sales")
+              .select(
+                "id, subtotal, tax, total, discount_total, status, created_at"
+              )
+              .eq("branch_id", sessionData.branch_id)
+              .eq("user_id", sessionData.user_id)
+              .gte("created_at", sessionStart)
+              .lte("created_at", sessionEnd)
+              .in("status", ["completed", "partial_refund"])
+          ),
+          fetchAllPages(() =>
+            supabase
+              .from("sale_payments")
+              .select(
+                `
               id,
               sale_id,
               amount,
@@ -110,13 +121,13 @@ export const fetchCashSessionDetail = async (sessionId) => {
                 created_at
               )
             `
-            )
-            .eq("sales.branch_id", sessionData.branch_id)
-            .eq("sales.user_id", sessionData.user_id)
-            .gte("sales.created_at", sessionStart)
-            .lte("sales.created_at", sessionEnd)
-            .in("sales.status", ["completed", "partial_refund"])
-            .limit(5000),
+              )
+              .eq("sales.branch_id", sessionData.branch_id)
+              .eq("sales.user_id", sessionData.user_id)
+              .gte("sales.created_at", sessionStart)
+              .lte("sales.created_at", sessionEnd)
+              .in("sales.status", ["completed", "partial_refund"])
+          ),
         ]);
 
         salesData = salesRes.data || [];
@@ -125,17 +136,19 @@ export const fetchCashSessionDetail = async (sessionId) => {
         const saleIds = salesData.map((s) => s.id);
         if (saleIds.length > 0) {
           const [rewardsRes, detailsRes] = await Promise.all([
-            supabase
-              .from("sale_reward_redemptions")
-              .select(
-                "id, sale_id, sale_detail_id, reward_name, product_name, quantity, total_points, discount_amount, status, reversed_at, created_at"
-              )
-              .in("sale_id", saleIds)
-              .limit(5000),
-            supabase
-              .from("sale_details")
-              .select(
-                `
+            fetchByIdsInBatches(saleIds, (batch) =>
+              supabase
+                .from("sale_reward_redemptions")
+                .select(
+                  "id, sale_id, sale_detail_id, reward_name, product_name, quantity, total_points, discount_amount, status, reversed_at, created_at"
+                )
+                .in("sale_id", batch)
+            ),
+            fetchByIdsInBatches(saleIds, (batch) =>
+              supabase
+                .from("sale_details")
+                .select(
+                  `
                 id,
                 sale_id,
                 product_id,
@@ -155,10 +168,10 @@ export const fetchCashSessionDetail = async (sessionId) => {
                   created_at
                 )
               `
-              )
-              .in("sale_id", saleIds)
-              .gt("discount_amount", 0)
-              .limit(5000),
+                )
+                .in("sale_id", batch)
+                .gt("discount_amount", 0)
+            ),
           ]);
 
           if (!rewardsRes.error && rewardsRes.data) {

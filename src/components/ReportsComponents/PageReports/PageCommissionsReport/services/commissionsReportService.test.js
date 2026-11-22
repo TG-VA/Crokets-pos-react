@@ -29,9 +29,13 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
-const rpcBuilder = (resolve = { data: null, error: null }) => ({
-  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
-});
+const rpcBuilder = (resolve = { data: null, error: null }) => {
+  const builder = {
+    order: vi.fn(() => builder),
+    range: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+  };
+  return builder;
+};
 
 describe("commissionsReportService", () => {
   const startDateIso = "2026-09-01T00:00:00.000Z";
@@ -59,9 +63,12 @@ describe("commissionsReportService", () => {
       const params = supabase.rpc.mock.calls[0][1];
       expect(params).not.toHaveProperty("p_page");
       expect(params).not.toHaveProperty("p_page_size");
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
-        100000
-      );
+      const builder = supabase.rpc.mock.results[0].value;
+      expect(builder.order.mock.calls).toEqual([
+        ["created_at", { ascending: false }],
+        ["detail_id", { ascending: true }],
+      ]);
+      expect(builder.range).toHaveBeenCalledWith(0, 999);
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {

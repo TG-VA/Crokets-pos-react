@@ -4,6 +4,10 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 import { calculateCustomerFavoriteProducts } from "./customersReportCalculationService";
 
 /**
@@ -22,11 +26,13 @@ export const fetchCustomerDetailReport = async (customerId) => {
 
     if (custErr) throw custErr;
 
-    // 2. Historial de ventas del cliente (todas sus ventas cronológicas)
-    const { data: sales, error: salesErr } = await supabase
-      .from("sales")
-      .select(
-        `
+    // 2. Historial de ventas del cliente (todas sus ventas cronológicas). El
+    // cursor ordena por id: el orden por fecha descendente se aplica en memoria.
+    const { data: sales, error: salesErr } = await fetchAllPages(() =>
+      supabase
+        .from("sales")
+        .select(
+          `
         id,
         sale_date,
         subtotal,
@@ -45,23 +51,28 @@ export const fetchCustomerDetailReport = async (customerId) => {
           username
         )
       `
-      )
-      .eq("customer_id", customerId)
-      .order("sale_date", { ascending: false });
+        )
+        .eq("customer_id", customerId)
+    );
 
     if (salesErr) throw salesErr;
 
-    const salesList = sales || [];
+    const salesList = sales.sort((left, right) =>
+      String(right.sale_date).localeCompare(String(left.sale_date))
+    );
     const saleIds = salesList.map((s) => s.id);
 
     // 3. Cargar detalles (productos) de cada venta
     let saleDetails = [];
 
     if (saleIds.length > 0) {
-      const { data: detData, error: detErr } = await supabase
-        .from("sale_details")
-        .select(
-          `
+      const { data: detData, error: detErr } = await fetchByIdsInBatches(
+        saleIds,
+        (batch) =>
+          supabase
+            .from("sale_details")
+            .select(
+              `
           id,
           sale_id,
           product_id,
@@ -75,8 +86,9 @@ export const fetchCustomerDetailReport = async (customerId) => {
             barcode
           )
         `
-        )
-        .in("sale_id", saleIds);
+            )
+            .in("sale_id", batch)
+      );
 
       if (!detErr && detData) {
         saleDetails = detData;
@@ -95,10 +107,11 @@ export const fetchCustomerDetailReport = async (customerId) => {
     // 4. Historial completo de movimientos de puntos del cliente
     let pointsLedger = [];
     try {
-      const { data: pLedgerData, error: pointsErr } = await supabase
-        .from("customer_points")
-        .select(
-          `
+      const { data: pLedgerData, error: pointsErr } = await fetchAllPages(() =>
+        supabase
+          .from("customer_points")
+          .select(
+            `
           id,
           points,
           movement_type,
@@ -119,12 +132,14 @@ export const fetchCustomerDetailReport = async (customerId) => {
             name
           )
         `
-        )
-        .eq("customer_id", customerId)
-        .order("created_at", { ascending: false });
+          )
+          .eq("customer_id", customerId)
+      );
 
       if (!pointsErr && pLedgerData) {
-        pointsLedger = pLedgerData;
+        pointsLedger = pLedgerData.sort((left, right) =>
+          String(right.created_at).localeCompare(String(left.created_at))
+        );
       }
     } catch (pEx) {
       console.error("Error al cargar puntos de cliente:", pEx);

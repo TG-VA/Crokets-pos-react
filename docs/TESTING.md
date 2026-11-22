@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (21 nov 2026)
 
-378 archivos de test (**3741 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+386 archivos de test (**3766 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -171,6 +171,10 @@ y el proceso principal de Electron:
 | Ticket: secciones                                         | `src/utils/ticket/ticketSections.test.js`                                          |
 | Reportes: ciclo de vida del dashboard                     | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
 | Supabase: paginacion sobre el tope de 1000 filas          | `src/services/supabase/paginatedQuery.test.js`                                     |
+| Reportes: inicio lee todas las paginas                    | `.../PageReportsHome/services/reportsPagination.test.js`                           |
+| Reportes: exportacion de ventas sin tope                  | `.../PageSalesReport/services/salesReportService.test.js`                          |
+| Reportes: margen de rentabilidad con lectura paginada     | `.../PageProfitabilityReport/services/profitabilityReportPagination.test.js`       |
+| Reportes: comisiones por paginas de la RPC                | `.../PageCommissionsReport/services/commissionsReportPagination.test.js`           |
 | Saldo de puntos compartido (paginado)                     | `src/services/customers/customerPointsBalanceService.test.js`                      |
 | Orden por fecha descendente de lecturas paginadas         | `src/utils/sortByDateDesc.test.js`                                                 |
 | Clientes de puntos y movimientos (paginados)              | `.../CustomersList/services/customersListService.test.js`                          |
@@ -178,6 +182,10 @@ y el proceso principal de Electron:
 | Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
 | Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |
 | Ventas: saldo de puntos del cliente                       | `.../SalesComponents/services/salesCustomerPointsService.test.js`                  |
+| Reportes: caja (sesiones, movimientos, pagos, detalle)    | `.../PageCashReport/services/cashReportPagination.test.js`                         |
+| Reportes: inventario por paginas de la RPC                | `.../PageInventoryReport/services/inventoryReportPagination.test.js`               |
+| Reportes: productos vendidos e inventario muerto          | `.../PageProductsReport/services/productReportsPagination.test.js`                 |
+| Reportes: clientes y detalle 360 sin tope                 | `.../PageCustomersReport/services/customersReportPagination.test.js`               |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
 | Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
@@ -498,6 +506,30 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   sobrestock exclusivo de Kardex. `useKardexRealtime.test.js` fija que el sondeo de 30 s solo corre
   tras `CHANNEL_ERROR`/`TIMED_OUT`, se detiene con `SUBSCRIBED` tras recargar una vez los slots
   seleccionados, y que el fallo del refresco en segundo plano se registra con `console.error`.
+- **Reportes sobre el tope de PostgREST, parte 1** (21 nov 2026, 15 casos en 4 archivos, rama
+  `fix/paginacion-reportes`): inicio, ventas, rentabilidad y comisiones leen todas las filas con
+  `paginatedQuery`. `src/services/supabase/fakeSupabase.testUtils.js` es un doble de `supabase`
+  que responde como PostgREST (filtros `eq`/`in`/`not`/`ilike`/`gt`..., `.order()`, `.range()` y
+  RPC) y corta cada respuesta en `maxRows` aunque se pida un `.limit()` mayor; `withSmallPages`
+  fuerza paginas y lotes de 2 en `paginatedQuery` via `vi.mock`. Con 5 ventas y 3 partidas por
+  venta cada test lee varias paginas por consulta y por lote, y falla con el codigo anterior.
+  `profitabilityReportPagination.test.js` fija la traza de margen: con la lectura truncada el
+  reporte daba ingreso $150, costo $90 y 40%; leyendo todo da $540, $360 y 33.33%.
+  `commissionsReportPagination.test.js` fija que partidas con el mismo `created_at` no se repiten
+  ni se saltan entre paginas gracias al desempate por `detail_id`, y que una venta registrada entre
+  dos paginas no duplica partidas (deduplicacion por `detail_id`). El costo de un kit con sus
+  componentes en paginas posteriores de `products` y `branch_inventory` protege la lectura
+  completa del catalogo, del inventario y de los kits (`product_kits`). Las cancelaciones del dia (`getTodayCancelledSales`) se
+  cuentan sobre varias paginas, y el orden por fecha de inicio y de la exportacion de ventas
+  compara instantes, no texto (`12:00:00+00:00` antes que `12:00:00.5+00:00`).
+- **Reportes sobre el tope de PostgREST, parte 2** (21 nov 2026, 8 casos en 4 archivos, rama
+  `fix/paginacion-reportes-b`): caja, inventario, productos y clientes leen todas las filas con
+  `paginatedQuery` y el doble `fakeSupabase.testUtils.js` (que suma `.single()` para el detalle de
+  sesion). `cashReportPagination.test.js` fija que sesiones con el mismo `opened_at` no se repiten
+  gracias al desempate por `session_id`, y que movimientos y detalle conservan el orden por fecha
+  aplicado en memoria. `inventoryReportPagination.test.js` fija el orden por `product_name` con
+  desempate por `product_id`. Los tests de contrato existentes de caja e inventario ahora esperan
+  `.order()` + `.range(0, 999)` en la RPC y `.limit(1000)` por pagina en lugar de los topes fijos.
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida
