@@ -15,6 +15,8 @@ const KardexTable = ({
   product = null,
   loading = false,
   error = "",
+  summary = null,
+  showOpeningBalance = false,
 }) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
 
@@ -119,6 +121,44 @@ const KardexTable = ({
             );
           })}
         </tbody>
+
+        {summary ? (
+          <tfoot>
+            {showOpeningBalance ? (
+              <tr className={styles.summaryRow}>
+                <td className={styles.summaryLabel} colSpan={4}>
+                  SALDO ANTERIOR
+                </td>
+
+                <td className={styles.cellExistencia}>
+                  {summary.openingStock ?? "—"}
+                </td>
+
+                <td colSpan={2} />
+              </tr>
+            ) : null}
+
+            <tr className={styles.summaryRow}>
+              <td className={styles.summaryLabel} colSpan={2}>
+                TOTALES
+              </td>
+
+              <td className={styles.cellEntradas}>
+                {summary.totalEntries > 0 ? `+${summary.totalEntries}` : "0"}
+              </td>
+
+              <td className={styles.cellSalidas}>
+                {summary.totalExits > 0 ? `-${summary.totalExits}` : "0"}
+              </td>
+
+              <td className={styles.cellExistencia}>
+                {summary.closingStock ?? "—"}
+              </td>
+
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        ) : null}
       </table>
     </div>
   );

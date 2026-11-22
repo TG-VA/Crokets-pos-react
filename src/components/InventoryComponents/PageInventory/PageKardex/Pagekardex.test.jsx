@@ -75,9 +75,7 @@ vi.mock("./hooks/useKardexRemoveConfirmation", () => ({
 }));
 
 const countRenderedDataRows = () =>
-  screen
-    .getAllByRole("row")
-    .filter((row) => row.querySelectorAll("td").length > 0).length;
+  screen.getAllByRole("row").filter((row) => row.closest("tbody")).length;
 
 describe("PageKardex exportacion", () => {
   beforeEach(() => {

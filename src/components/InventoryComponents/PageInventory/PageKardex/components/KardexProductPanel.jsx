@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 
 import { usePagination } from "../../../../../hooks/usePagination";
+
+import { buildKardexRangeSummary } from "../services/kardexCalculationService";
 
 import { getKardexRangeLabel } from "../utils/kardexFormatters";
 
@@ -52,6 +54,11 @@ const KardexProductPanel = ({
   });
 
   const productKey = getKardexProductKey(product);
+
+  const summary = useMemo(
+    () => buildKardexRangeSummary(normalizedRows),
+    [normalizedRows]
+  );
 
   // Cambiar de producto o de rango de fechas reinicia la pagina para que el
   // panel no abra en una pagina vacia o fuera del nuevo conjunto de datos.
@@ -116,6 +123,8 @@ const KardexProductPanel = ({
           product={product}
           loading={loading}
           error={error}
+          summary={summary}
+          showOpeningBalance={hasActiveRange}
         />
 
         {normalizedRows.length > 0 && (

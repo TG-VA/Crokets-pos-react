@@ -253,6 +253,57 @@ describe("kardexWorkbookBuilder", () => {
     });
   });
 
+  describe("saldo anterior y totales", () => {
+    const rangeRows = [
+      buildRow({
+        id: "m2",
+        entryQty: 0,
+        exitQty: 3,
+        previousStock: 15,
+        runningStock: 12,
+      }),
+      buildRow({
+        id: "m1",
+        entryQty: 5,
+        exitQty: 0,
+        previousStock: 10,
+        runningStock: 15,
+      }),
+    ];
+
+    it("agrega saldo anterior y totales debajo de los movimientos con rango", () => {
+      const sheet = buildWorksheet({ rows: rangeRows });
+
+      const openingRow = sheet.getRow(DATA_START_ROW_NUMBER + 2);
+
+      const totalsRow = sheet.getRow(DATA_START_ROW_NUMBER + 3);
+
+      expect(openingRow.getCell(1).value).toBe("SALDO ANTERIOR");
+      expect(openingRow.getCell(5).value).toBe(10);
+      expect(totalsRow.getCell(1).value).toBe("TOTALES");
+      expect(totalsRow.getCell(3).value).toBe(5);
+      expect(totalsRow.getCell(4).value).toBe(-3);
+      expect(totalsRow.getCell(5).value).toBe(12);
+    });
+
+    it("omite el saldo anterior sin rango de fechas", () => {
+      const sheet = buildWorksheet({
+        rows: rangeRows,
+        overrides: { dateFrom: "", dateTo: "" },
+      });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 2).getCell(1).value).toBe(
+        "TOTALES"
+      );
+    });
+
+    it("no agrega pie sin movimientos", () => {
+      const sheet = buildWorksheet({ rows: [] });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER).getCell(1).value).toBeNull();
+    });
+  });
+
   describe("entradas inválidas", () => {
     it("genera la estructura aunque no haya movimientos", () => {
       const vacio = buildWorksheet({ rows: [] });

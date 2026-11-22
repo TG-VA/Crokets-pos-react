@@ -271,3 +271,17 @@
     min-width: 900px;
   }
 }
+
+.summaryRow td {
+  height: 40px;
+  border-top: 2px solid #e8e8e8;
+  background-color: #fdf1e6;
+  font-weight: 800;
+  text-align: center;
+}
+
+.summaryLabel {
+  padding: 0 0.6rem;
+  color: #333333;
+  font-size: 0.78rem;
+}

@@ -31,7 +31,7 @@ const panelProps = (overrides = {}) => ({
 const getBodyRowReasons = () =>
   screen
     .getAllByRole("row")
-    .slice(1)
+    .filter((row) => row.closest("tbody"))
     .map((row) => within(row).queryByText(/LOTE (\d+)/)?.textContent ?? "");
 
 const clickPageButton = (name) =>

@@ -1,3 +1,5 @@
+import { buildKardexRangeSummary } from "./kardexCalculationService";
+
 import {
   formatKardexDateTime,
   getKardexMovementDescription,
@@ -342,6 +344,80 @@ const renderKardexRows = ({ worksheet, rows }) => {
   });
 };
 
+const styleSummaryRow = (excelRow) => {
+  excelRow.height = 20;
+
+  for (
+    let columnNumber = 1;
+    columnNumber <= TABLE_COLUMN_COUNT;
+    columnNumber += 1
+  ) {
+    const cell = excelRow.getCell(columnNumber);
+
+    cell.font = {
+      bold: true,
+      name: "Arial",
+    };
+
+    cell.border = THIN_BORDER;
+
+    cell.alignment = {
+      horizontal: columnNumber >= 3 ? "center" : "left",
+      vertical: "middle",
+    };
+
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: {
+        argb: "FFF3F3F3",
+      },
+    };
+  }
+};
+
+/**
+ * Pie del kardex: saldo anterior (solo con rango de fechas) y totales del
+ * rango. Usa el mismo calculo que la tabla en pantalla.
+ */
+const renderSummaryRows = ({ worksheet, rows, showOpeningBalance }) => {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const summary = buildKardexRangeSummary(rows);
+
+  let rowNumber = DATA_START_ROW_NUMBER + rows.length;
+
+  if (showOpeningBalance) {
+    const openingRow = worksheet.getRow(rowNumber);
+
+    openingRow.values = [
+      "SALDO ANTERIOR",
+      null,
+      null,
+      null,
+      summary.openingStock ?? EMPTY_VALUE_LABEL,
+    ];
+
+    styleSummaryRow(openingRow);
+
+    rowNumber += 1;
+  }
+
+  const totalsRow = worksheet.getRow(rowNumber);
+
+  totalsRow.values = [
+    "TOTALES",
+    null,
+    summary.totalEntries,
+    summary.totalExits > 0 ? -summary.totalExits : 0,
+    summary.closingStock ?? EMPTY_VALUE_LABEL,
+  ];
+
+  styleSummaryRow(totalsRow);
+};
+
 const configureWorksheetView = (worksheet) => {
   worksheet.autoFilter = {
     from: {
@@ -399,6 +475,12 @@ export const buildKardexWorksheet = ({
   renderKardexRows({
     worksheet,
     rows: normalizedRows,
+  });
+
+  renderSummaryRows({
+    worksheet,
+    rows: normalizedRows,
+    showOpeningBalance: Boolean(dateFrom || dateTo),
   });
 
   configureWorksheetView(worksheet);

@@ -140,4 +140,34 @@ describe("KardexTable", () => {
       expect(screen.getByText(/No hay movimientos registrados/)).toBeTruthy();
     });
   });
+
+  describe("pie del rango", () => {
+    const summary = {
+      openingStock: 10,
+      totalEntries: 5,
+      totalExits: 2,
+      closingStock: 13,
+    };
+
+    it("muestra saldo anterior y totales cuando hay rango activo", () => {
+      render(
+        <KardexTable rows={[buildRow()]} summary={summary} showOpeningBalance />
+      );
+
+      expect(screen.getByText("SALDO ANTERIOR")).toBeTruthy();
+      expect(screen.getByText("TOTALES")).toBeTruthy();
+      const totalsCells = [
+        ...screen.getByText("TOTALES").closest("tr").querySelectorAll("td"),
+      ].map((cell) => cell.textContent);
+
+      expect(totalsCells.slice(1, 4)).toEqual(["+5", "-2", "13"]);
+    });
+
+    it("omite el saldo anterior sin rango", () => {
+      render(<KardexTable rows={[buildRow()]} summary={summary} />);
+
+      expect(screen.queryByText("SALDO ANTERIOR")).toBeNull();
+      expect(screen.getByText("TOTALES")).toBeTruthy();
+    });
+  });
 });
