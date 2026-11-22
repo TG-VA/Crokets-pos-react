@@ -382,9 +382,7 @@ describe("cashCutReportService", () => {
         "id, movement_type, amount, description, created_at"
       );
       expect(q.eq).toHaveBeenCalledWith("session_id", "s1");
-      expect(q.order).toHaveBeenCalledWith("created_at", {
-        ascending: false,
-      });
+      expect(q.order).toHaveBeenCalledWith("id", { ascending: true });
       expect(q.lte).not.toHaveBeenCalled();
     });
 

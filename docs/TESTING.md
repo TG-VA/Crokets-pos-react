@@ -191,7 +191,7 @@ y el proceso principal de Electron:
 | Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
 | Corte de caja: turno de varias paginas y lotes            | `src/pages/CashCut/services/cashCutReportPagination.test.js`                       |
 | Ventas: efectivo disponible de la sesion                  | `src/components/SalesComponents/services/salesCashService.test.js`                 |
-| Claves SAT: validacion por lotes                          | `src/services/satClavesService.test.js`                                            |
+| Claves SAT: catalogo paginado y validacion por lotes      | `src/services/satClavesService.test.js`                                            |
 | Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
 | Kardex: Realtime y sondeo de respaldo                     | `.../PageKardex/hooks/useKardexRealtime.test.js`                                   |
 | Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
@@ -480,6 +480,13 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   y `productsImportService.test.js` fijan la validacion de importacion por lotes, sin repetidos y con
   `cursorColumn: "clave"` en la tabla SAT, que no tiene `id`; `paginatedQuery.test.js` suma los
   casos de `cursorColumn`.
+- **Lotes en tandas y lecturas restantes sin paginar** (21 nov 2026, rama
+  `fix/concurrencia-lotes-y-lecturas-sin-paginar`, KNOWN_ISSUES #101): `paginatedQuery.test.js` fija
+  que `fetchByIdsInBatches` no tiene mas de 4 lotes en vuelo por defecto y que no lanza mas tandas
+  despues de un error. `satClavesService.test.js` fija que `fetchSatClaves` lee todas las paginas de
+  claves activas sobre `clave` y ordena por descripcion. `cashCutReportPagination.test.js` fija que
+  `fetchCashMovementsBySession` lee todos los movimientos de la sesion, con el tope `endAt`, del mas
+  reciente al mas antiguo.
 - **Paginacion de listas e historiales** (21 nov 2026, rama `fix/paginacion-listas-historiales`):
   extiende `fetchAllPages`/`fetchByIdsInBatches` a clientes de puntos, historial de puntos,
   facturas (clientes fiscales, pendientes e historial), historial de ventas, traspasos, pedidos y

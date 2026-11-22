@@ -5,6 +5,9 @@ export const DEFAULT_PAGE_SIZE = 1000;
 // Un .in() con miles de UUID rebasa el largo maximo de URL.
 export const DEFAULT_IN_FILTER_BATCH_SIZE = 200;
 
+// Lotes en vuelo a la vez: evita cientos de peticiones simultaneas a PostgREST.
+export const DEFAULT_BATCH_CONCURRENCY = 4;
+
 // Las consultas se leen por paginas con un cursor sobre id (keyset): cada pagina
 // pide las filas con id mayor al ultimo leido, hasta que una llega incompleta.
 // A diferencia de .range(), un insert o un borrado entre paginas no repite ni
@@ -54,7 +57,8 @@ export const fetchAllPages = async (
 };
 
 // Un lote con mas de 1000 coincidencias choca con el tope de filas. Los ids se
-// parten en lotes y cada lote se pagina; el primer error corta la lectura completa.
+// parten en lotes y cada lote se pagina. Los lotes corren en tandas de
+// `concurrency`; el primer error corta la lectura y no lanza mas tandas.
 export const fetchByIdsInBatches = async (
   values,
   buildQuery,
@@ -62,6 +66,7 @@ export const fetchByIdsInBatches = async (
     batchSize = DEFAULT_IN_FILTER_BATCH_SIZE,
     pageSize = DEFAULT_PAGE_SIZE,
     cursorColumn = "id",
+    concurrency = DEFAULT_BATCH_CONCURRENCY,
   } = {}
 ) => {
   const batches = [];
@@ -70,19 +75,28 @@ export const fetchByIdsInBatches = async (
     batches.push(values.slice(start, start + batchSize));
   }
 
-  const results = await Promise.all(
-    batches.map((batch) =>
-      fetchAllPages(() => buildQuery(batch), { pageSize, cursorColumn })
-    )
-  );
+  const step = Math.max(1, Math.floor(concurrency) || 1);
+  const rows = [];
 
-  const failed = results.find((result) => result.error);
+  for (let start = 0; start < batches.length; start += step) {
+    const results = await Promise.all(
+      batches
+        .slice(start, start + step)
+        .map((batch) =>
+          fetchAllPages(() => buildQuery(batch), { pageSize, cursorColumn })
+        )
+    );
 
-  if (failed) {
-    return { data: null, error: failed.error };
+    const failed = results.find((result) => result.error);
+
+    if (failed) {
+      return { data: null, error: failed.error };
+    }
+
+    results.forEach((result) => rows.push(...result.data));
   }
 
-  return { data: results.flatMap((result) => result.data), error: null };
+  return { data: rows, error: null };
 };
 
 // Las RPC que devuelven listas no admiten cursor sobre id: se paginan por offset
