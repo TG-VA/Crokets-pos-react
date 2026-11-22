@@ -3,17 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import { fetchPointsBalanceByCustomer } from "../../../../../services/customers/customerPointsBalanceService";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import { normalizePhoneDigits } from "../../utils/customerFormatters";
 import {
   fetchPointsCustomers,
-  fetchPointsMovements,
   searchFiscalCustomerByPhone,
   updateCustomerStatus,
 } from "../services/customersListService";
 import {
   buildPointsCustomerFromFiscal,
-  calculatePointsBalanceByCustomer,
   filterAndSortCustomers,
   isCompletePhone,
   isPhoneAvailableInPoints,
@@ -52,11 +51,11 @@ export const useCustomersList = () => {
         return;
       }
 
-      const pointsRows = await fetchPointsMovements(
-        customersData.map((customer) => customer.id)
+      setPointsByCustomer(
+        await fetchPointsBalanceByCustomer(
+          customersData.map((customer) => customer.id)
+        )
       );
-
-      setPointsByCustomer(calculatePointsBalanceByCustomer(pointsRows));
     } catch (err) {
       console.error("Error cargando clientes:", err);
       setCustomers([]);
