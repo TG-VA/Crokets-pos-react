@@ -1,5 +1,6 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchByIdsInBatches } from "../../../../../services/supabase/paginatedQuery";
 import {
   computeMissingBranches,
   groupBranchNamesByProduct,
@@ -23,10 +24,14 @@ export const fetchMissingBranchesForProduct = async (productId) => {
 export const fetchBranchNamesByProduct = async (productIds) => {
   if (!productIds || productIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("branch_inventory")
-    .select("product_id, is_active, branches:branch_id (name, is_active)")
-    .in("product_id", productIds);
+  // Cada producto tiene una fila por sucursal: un lote de kits pasa pronto de
+  // 1000 filas de inventario.
+  const { data, error } = await fetchByIdsInBatches(productIds, (batch) =>
+    supabase
+      .from("branch_inventory")
+      .select("id, product_id, is_active, branches:branch_id (name, is_active)")
+      .in("product_id", batch)
+  );
 
   if (error) throw error;
   return groupBranchNamesByProduct(data);

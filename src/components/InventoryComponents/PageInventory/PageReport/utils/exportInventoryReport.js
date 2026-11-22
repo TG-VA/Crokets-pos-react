@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-import { getStockStatus } from "../services/inventoryReportCalculationService";
+import { getStockStatus } from "../../../../../utils/stockStatus";
 import {
   formatDateTime,
   toUpperSafe,

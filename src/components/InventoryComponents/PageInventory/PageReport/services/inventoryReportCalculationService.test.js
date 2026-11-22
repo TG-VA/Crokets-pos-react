@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   filterInventoryRows,
-  getStockStatus,
   getStockStatusCounts,
   getStockSummary,
   INITIAL_FACET_FILTERS,
   sortInventoryRows,
   STOCK_FILTER_PREFIX,
 } from "./inventoryReportCalculationService";
+import { getStockStatus } from "../../../../../utils/stockStatus";
 
 const withRecord = {
   productId: "a",

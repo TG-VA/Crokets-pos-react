@@ -1,13 +1,17 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { validateSatClaves } from "../../../../../services/satClavesService";
+import { fetchByIdsInBatches } from "../../../../../services/supabase/paginatedQuery";
 
 export const fetchValidationData = async (barcodes, satCodes) => {
   let existingProducts = [];
   if (barcodes.length > 0) {
-    const { data, error } = await supabase
-      .from("products")
-      .select("id, barcode")
-      .in("barcode", barcodes);
+    // Lotes de .in() para no rebasar el largo de URL; sin repetidos para que
+    // un producto no llegue dos veces desde lotes distintos.
+    const { data, error } = await fetchByIdsInBatches(
+      [...new Set(barcodes)],
+      (batch) =>
+        supabase.from("products").select("id, barcode").in("barcode", batch)
+    );
     if (error) throw error;
     existingProducts = data || [];
   }

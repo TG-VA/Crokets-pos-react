@@ -7,6 +7,8 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 
 const PENDING_SALES_COLUMNS = `
           id,
@@ -48,22 +50,27 @@ const PENDING_SALES_COLUMNS = `
  * una vista o una RPC.
  */
 export const fetchCompletedBranchSales = async ({ branchId, dayRange }) => {
-  let query = supabase
-    .from("sales")
-    .select(PENDING_SALES_COLUMNS)
-    .eq("branch_id", branchId)
-    .eq("status", "completed")
-    .order("sale_date", { ascending: false });
+  // Sin rango se lee todo el historial de la sucursal: se pagina para no
+  // perder ventas por el tope de filas de PostgREST.
+  const buildQuery = () => {
+    let query = supabase
+      .from("sales")
+      .select(PENDING_SALES_COLUMNS)
+      .eq("branch_id", branchId)
+      .eq("status", "completed");
 
-  if (dayRange) {
-    query = query
-      .gte("sale_date", dayRange.start)
-      .lte("sale_date", dayRange.end);
-  }
+    if (dayRange) {
+      query = query
+        .gte("sale_date", dayRange.start)
+        .lte("sale_date", dayRange.end);
+    }
 
-  const { data, error } = await query;
+    return query;
+  };
+
+  const { data, error } = await fetchAllPages(buildQuery);
 
   if (error) throw error;
 
-  return data || [];
+  return sortByDateDesc(data, "sale_date");
 };

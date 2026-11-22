@@ -5,6 +5,7 @@
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 import { mapWithConcurrency } from "../../../../../utils/asyncUtils";
 import {
   aggregateProductsProfitability,
@@ -24,12 +25,16 @@ const SALE_DETAILS_CONCURRENCY = 4;
  * operacion. Sin esta columna el reporte solo podria leer el costo vivo de
  * `branch_inventory` o del catalogo, que es justamente lo que reescribia el margen
  * historico.
+ *
+ * Cada lote se pagina: 100 ventas pueden sumar mas de las 1000 filas que
+ * PostgREST entrega por respuesta.
  */
 const fetchSaleDetailsChunk = async (chunk) => {
-  const { data, error } = await supabase
-    .from("sale_details")
-    .select(
-      `
+  const { data, error } = await fetchAllPages(() =>
+    supabase
+      .from("sale_details")
+      .select(
+        `
       id,
       sale_id,
       product_id,
@@ -46,9 +51,9 @@ const fetchSaleDetailsChunk = async (chunk) => {
         cost_price
       )
     `
-    )
-    .in("sale_id", chunk)
-    .limit(100000);
+      )
+      .in("sale_id", chunk)
+  );
 
   if (error) {
     console.error("Error al cargar lote de detalles de venta:", error);
@@ -112,12 +117,15 @@ export const fetchProfitabilityReportData = async ({
     // 1-3. Cargar catalogos en paralelo (departments, products, kits no dependen entre si)
     const [departmentsList, productsRes, kitsRes] = await Promise.all([
       fetchDepartmentsList(),
-      supabase
-        .from("products")
-        .select(
-          "id, name, barcode, department_id, cost_price, sale_price, status, is_kit"
-        ),
-      supabase.from("product_kits").select(`
+      fetchAllPages(() =>
+        supabase
+          .from("products")
+          .select(
+            "id, name, barcode, department_id, cost_price, sale_price, status, is_kit"
+          )
+      ),
+      fetchAllPages(() =>
+        supabase.from("product_kits").select(`
           id,
           kit_product_id,
           is_active,
@@ -125,7 +133,8 @@ export const fetchProfitabilityReportData = async ({
             component_product_id,
             quantity
           )
-        `),
+        `)
+      ),
     ]);
 
     if (productsRes.error) throw productsRes.error;
@@ -155,40 +164,46 @@ export const fetchProfitabilityReportData = async ({
     }
 
     // 4. Cargar inventario por sucursal y ventas del periodo en paralelo
-    let branchInvQuery = supabase
-      .from("branch_inventory")
-      .select("branch_id, product_id, cost_price, sale_price, stock");
+    const buildBranchInvQuery = () => {
+      let branchInvQuery = supabase
+        .from("branch_inventory")
+        .select("id, branch_id, product_id, cost_price, sale_price, stock");
 
-    if (branchId !== "ALL") {
-      branchInvQuery = branchInvQuery.eq("branch_id", branchId);
-    }
+      if (branchId !== "ALL") {
+        branchInvQuery = branchInvQuery.eq("branch_id", branchId);
+      }
 
-    let salesQuery = supabase
-      .from("sales")
-      .select("id, sale_date, total, discount_total, status, branch_id")
-      .not("status", "in", '("cancelled","cancelada")');
+      return branchInvQuery;
+    };
 
-    if (branchId !== "ALL") {
-      salesQuery = salesQuery.eq("branch_id", branchId);
-    }
+    const buildSalesQuery = () => {
+      let salesQuery = supabase
+        .from("sales")
+        .select("id, sale_date, total, discount_total, status, branch_id")
+        .not("status", "in", '("cancelled","cancelada")');
 
-    if (startDate) {
-      const startIso = new Date(startDate);
-      startIso.setHours(0, 0, 0, 0);
-      salesQuery = salesQuery.gte("sale_date", startIso.toISOString());
-    }
+      if (branchId !== "ALL") {
+        salesQuery = salesQuery.eq("branch_id", branchId);
+      }
 
-    if (endDate) {
-      const endIso = new Date(endDate);
-      endIso.setHours(23, 59, 59, 999);
-      salesQuery = salesQuery.lte("sale_date", endIso.toISOString());
-    }
+      if (startDate) {
+        const startIso = new Date(startDate);
+        startIso.setHours(0, 0, 0, 0);
+        salesQuery = salesQuery.gte("sale_date", startIso.toISOString());
+      }
 
-    salesQuery = salesQuery.limit(100000);
+      if (endDate) {
+        const endIso = new Date(endDate);
+        endIso.setHours(23, 59, 59, 999);
+        salesQuery = salesQuery.lte("sale_date", endIso.toISOString());
+      }
+
+      return salesQuery;
+    };
 
     const [branchInvResult, salesResult] = await Promise.all([
-      branchInvQuery,
-      salesQuery,
+      fetchAllPages(buildBranchInvQuery),
+      fetchAllPages(buildSalesQuery),
     ]);
 
     if (branchInvResult.error) {
