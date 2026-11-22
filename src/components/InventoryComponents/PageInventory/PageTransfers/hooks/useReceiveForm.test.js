@@ -54,17 +54,17 @@ describe("useReceiveForm", () => {
     expect(result.current.selectedReceiptOrder).toBeNull();
   });
 
-  it("inicializa receiptQuantities con las cantidades solicitadas", () => {
+  it("inicializa receiptQuantities en 0 para cada producto", () => {
     const { result } = renderHook(() => useReceiveForm(createProps()));
-    expect(result.current.receiptQuantities).toEqual({ p1: 10, p2: 5 });
+    expect(result.current.receiptQuantities).toEqual({ p1: "0", p2: "0" });
   });
 
   it("handleReceiptQuantityChange actualiza la cantidad", () => {
     const { result } = renderHook(() => useReceiveForm(createProps()));
     act(() => {
-      result.current.handleReceiptQuantityChange("p1", 7);
+      result.current.handleReceiptQuantityChange("p1", "7");
     });
-    expect(result.current.receiptQuantities.p1).toBe(7);
+    expect(result.current.receiptQuantities.p1).toBe("7");
   });
 
   it("handleSelectReceiptOrder cambia la orden seleccionada", () => {
@@ -73,6 +73,51 @@ describe("useReceiveForm", () => {
       result.current.handleSelectReceiptOrder("t1");
     });
     expect(result.current.selectedReceiptOrderId).toBe("t1");
+  });
+
+  it("conserva las cantidades capturadas al recargar la lista de ordenes", () => {
+    const { result, rerender } = renderHook((props) => useReceiveForm(props), {
+      initialProps: createProps(),
+    });
+
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "7");
+    });
+
+    const refreshedOrders = pendingOrders.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({ ...item })),
+    }));
+
+    rerender(createProps({ pendingReceiptOrders: refreshedOrders }));
+
+    expect(result.current.receiptQuantities.p1).toBe("7");
+  });
+
+  it("reinicia las cantidades al cambiar de folio", () => {
+    const secondOrder = {
+      id: "t2",
+      folio: "TR-010126-000002",
+      status: "pending_receipt",
+      originBranchName: "Origen",
+      items: [{ productId: "p3", name: "Juguete", requestedQty: 2 }],
+    };
+
+    const { result } = renderHook(() =>
+      useReceiveForm(
+        createProps({ pendingReceiptOrders: [...pendingOrders, secondOrder] })
+      )
+    );
+
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "7");
+    });
+
+    act(() => {
+      result.current.handleSelectReceiptOrder("t2");
+    });
+
+    expect(result.current.receiptQuantities).toEqual({ p3: "0" });
   });
 
   it("handleConfirmReceipt: error si no hay orden seleccionada", async () => {
@@ -98,12 +143,15 @@ describe("useReceiveForm", () => {
     const { result } = renderHook(() =>
       useReceiveForm(createProps({ setSuccess }))
     );
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "10");
+    });
     await act(async () => {
       await result.current.handleConfirmReceipt();
     });
     expect(receiveTransferOrder).toHaveBeenCalledWith({
       transferOrderId: "t1",
-      receivedQuantities: { p1: 10, p2: 5 },
+      receivedQuantities: { p1: "10", p2: "0" },
       currentBranch: { id: "b2", name: "Destino" },
       user: { id: "u2", username: "recepcionista" },
     });
@@ -123,6 +171,9 @@ describe("useReceiveForm", () => {
     const { result } = renderHook(() =>
       useReceiveForm(createProps({ setSuccess }))
     );
+    act(() => {
+      result.current.handleReceiptQuantityChange("p2", "4");
+    });
     await act(async () => {
       await result.current.handleConfirmReceipt();
     });
@@ -131,12 +182,29 @@ describe("useReceiveForm", () => {
     );
   });
 
+  it("handleConfirmReceipt: no confirma si todas las cantidades estan en 0", async () => {
+    const setError = vi.fn();
+    const { result } = renderHook(() =>
+      useReceiveForm(createProps({ setError }))
+    );
+    await act(async () => {
+      await result.current.handleConfirmReceipt();
+    });
+    expect(setError).toHaveBeenCalledWith(
+      "Captura al menos una cantidad recibida."
+    );
+    expect(receiveTransferOrder).not.toHaveBeenCalled();
+  });
+
   it("handleConfirmReceipt: error si el RPC falla", async () => {
     receiveTransferOrder.mockRejectedValueOnce(new Error("Cantidad invalida"));
     const setError = vi.fn();
     const { result } = renderHook(() =>
       useReceiveForm(createProps({ setError }))
     );
+    act(() => {
+      result.current.handleReceiptQuantityChange("p1", "5");
+    });
     await act(async () => {
       await result.current.handleConfirmReceipt();
     });

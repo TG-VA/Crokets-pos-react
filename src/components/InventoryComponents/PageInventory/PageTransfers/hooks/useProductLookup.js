@@ -6,7 +6,6 @@ const useProductLookup = ({
   products,
   activeTab,
   getProductByCodigo,
-  clearFeedback,
   setError,
   onProductSelected,
   resetAfterSelection,
@@ -137,6 +136,7 @@ const useProductLookup = ({
     getProductByCodigo,
     onProductSelected,
     productSearch,
+    resetAfterSelection,
     searchableProducts,
     setError,
   ]);

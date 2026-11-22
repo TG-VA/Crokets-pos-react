@@ -749,6 +749,12 @@
   transform: none;
 }
 
+.primaryButtonArmed {
+  background: var(--successText);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(29, 135, 81, 0.24);
+}
+
 .actionRow {
   display: flex;
   justify-content: space-between;
@@ -762,12 +768,34 @@
   line-height: 1.45;
 }
 
+.confirmHint {
+  display: block;
+  margin-top: 4px;
+  color: var(--croketsBlueDark);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.unreceivedNotice {
+  display: block;
+  margin-top: 2px;
+  color: var(--warningText);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .orderList {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow: auto;
+  /* 590px estima lo que ocupan encabezado, pestanas y paddings arriba y abajo. */
+  max-height: max(460px, calc(100vh - 590px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 .orderCard {

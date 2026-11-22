@@ -12,7 +12,6 @@ const useSendForm = ({
   refreshProducts,
   reloadOrders,
   setActiveTab,
-  submitting,
   setSubmitting,
   clearFeedback,
   setError,

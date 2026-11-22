@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { receiveTransferOrder } from "../services/transfersService";
+import { hasReceivedUnits } from "../utils/transfersUtils";
 
 const useReceiveForm = ({
   branch,
@@ -9,7 +10,6 @@ const useReceiveForm = ({
   reloadOrders,
   setActiveTab,
   pendingReceiptOrders,
-  submitting,
   setSubmitting,
   clearFeedback,
   setError,
@@ -51,14 +51,16 @@ const useReceiveForm = ({
 
     const nextReceiptQuantities = selectedReceiptOrder.items.reduce(
       (accumulator, item) => {
-        accumulator[item.productId] = Number(item.requestedQty ?? 0) || 0;
+        accumulator[item.productId] = "0";
         return accumulator;
       },
       {}
     );
 
     setReceiptQuantities(nextReceiptQuantities);
-  }, [selectedReceiptOrderId]);
+    // El reinicio debe ocurrir solo al cambiar de folio, no cuando una recarga
+    // (polling o realtime) crea nuevos objetos para la misma orden.
+  }, [selectedReceiptOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectReceiptOrder = useCallback(
     (orderId) => {
@@ -83,6 +85,11 @@ const useReceiveForm = ({
   const handleConfirmReceipt = useCallback(async () => {
     if (!selectedReceiptOrder) {
       setError("Selecciona una orden pendiente para recibir.");
+      return;
+    }
+
+    if (!hasReceivedUnits(selectedReceiptOrder.items, receiptQuantities)) {
+      setError("Captura al menos una cantidad recibida.");
       return;
     }
 
