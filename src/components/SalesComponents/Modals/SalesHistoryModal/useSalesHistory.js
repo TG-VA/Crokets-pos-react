@@ -1,5 +1,12 @@
 import { isNamedCustomer } from "../../services/publicCustomerService";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   getPaymentMethodLabel,
   getPaymentSummary,
@@ -50,6 +57,8 @@ export const useSalesHistory = ({
   const [dateFilter, setDateFilter] = useState(getTodayDateFilter);
   const [cashierFilter, setCashierFilter] = useState("all");
   const [tickets, setTickets] = useState([]);
+  const [ticketsIncomplete, setTicketsIncomplete] = useState(false);
+  const [retryingTickets, setRetryingTickets] = useState(false);
   const [cashiers, setCashiers] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -138,27 +147,48 @@ export const useSalesHistory = ({
     useRequestStatus(ticketsRequestKey);
 
   const applyTickets = useCallback(
-    (nextTickets) => {
+    ({ tickets: nextTickets, incomplete }) => {
       setTickets(nextTickets);
+      setTicketsIncomplete(incomplete);
       markSettled();
     },
     [markSettled]
   );
 
+  // Clave vigente: una recarga manual que responde despues de un cambio de
+  // filtro trae datos de otra consulta y se descarta.
+  const currentTicketsKeyRef = useRef(ticketsRequestKey);
+  useLayoutEffect(() => {
+    currentTicketsKeyRef.current = ticketsRequestKey;
+  }, [ticketsRequestKey]);
+
   const loadTickets = useCallback(async () => {
     if (!ticketsRequestKey) return [];
+    const isStale = () => currentTicketsKeyRef.current !== ticketsRequestKey;
 
     try {
-      const nextTickets = await fetchHistoryTickets(ticketsRequestKey);
-      applyTickets(nextTickets);
-      return nextTickets;
+      const result = await fetchHistoryTickets(ticketsRequestKey);
+      if (isStale()) return [];
+      applyTickets(result);
+      return result.tickets;
     } catch (e) {
       console.error(e);
+      if (isStale()) return [];
       setTickets([]);
+      setTicketsIncomplete(false);
       markSettled();
       return [];
     }
   }, [ticketsRequestKey, applyTickets, markSettled]);
+
+  const retryLoadTickets = useCallback(async () => {
+    setRetryingTickets(true);
+    try {
+      await loadTickets();
+    } finally {
+      setRetryingTickets(false);
+    }
+  }, [loadTickets]);
 
   useEffect(() => {
     if (!isOpen || !branchId) return undefined;
@@ -187,9 +217,10 @@ export const useSalesHistory = ({
     let cancelled = false;
 
     fetchHistoryTickets(ticketsRequestKey)
-      .then((nextTickets) => {
+      .then((result) => {
         if (cancelled) return;
-        applyTickets(nextTickets);
+        applyTickets(result);
+        const nextTickets = result.tickets;
 
         // Se autoselecciona la venta mas reciente una vez por fecha cargada.
         // Una respuesta tardia la descarta el guard cancelled; la fecha de la
@@ -209,6 +240,7 @@ export const useSalesHistory = ({
         if (cancelled) return;
         console.error(e);
         setTickets([]);
+        setTicketsIncomplete(false);
         // Si el dia cambio, la venta seleccionada ya no pertenece a la lista.
         if (autoSelectedDateRef.current !== ticketsRequestKey.dateFilter) {
           setSelectedTicket(null);
@@ -772,6 +804,9 @@ export const useSalesHistory = ({
     cashierFilter,
     setCashierFilter,
     tickets,
+    ticketsIncomplete,
+    retryLoadTickets,
+    retryingTickets,
     cashiers,
     paymentMethods,
     loadingTickets,

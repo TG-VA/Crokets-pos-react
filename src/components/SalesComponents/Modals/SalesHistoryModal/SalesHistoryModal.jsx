@@ -33,6 +33,7 @@ import InvoiceIcon from "../../../../assets/icons/file-invoice-dollar-solid-full
 import NotesIcon from "../../../../assets/icons/pen-solid-full.svg";
 import UserIcon from "../../../../assets/icons/user-solid.svg";
 import BoxesIcon from "../../../../assets/icons/boxes-stacked-solid-full.svg";
+import WarningIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 // Registramos el idioma español para el calendario
 registerLocale("es", es);
@@ -50,6 +51,9 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
     cashierFilter,
     setCashierFilter,
     tickets,
+    ticketsIncomplete,
+    retryLoadTickets,
+    retryingTickets,
     cashiers,
     paymentMethods,
     loadingTickets,
@@ -297,6 +301,24 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                 </div>
               </div>
             </div>
+
+            {ticketsIncomplete && !loadingTickets && (
+              <div className={styles.incompleteNotice} role="alert">
+                <img src={WarningIcon} alt="" aria-hidden="true" />
+                <span>
+                  No se pudieron cargar todos los datos de las ventas. Pagos,
+                  artículos o clientes pueden aparecer incompletos.
+                </span>
+                <button
+                  type="button"
+                  className={styles.incompleteRetryBtn}
+                  onClick={retryLoadTickets}
+                  disabled={retryingTickets}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
 
             <div className={styles.ticketListContainer}>
               <table className={styles.ticketTable}>

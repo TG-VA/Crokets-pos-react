@@ -35,6 +35,7 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
     ilike: vi.fn(),
     gte: vi.fn(),
     lte: vi.fn(),
+    gt: vi.fn(),
     order: vi.fn(),
     limit: vi.fn(),
   };
@@ -46,9 +47,13 @@ const thenableQuery = (resolve = { data: null, error: null }) => {
   return q;
 };
 
-const rpcBuilder = (resolve = { data: null, error: null }) => ({
-  limit: vi.fn().mockReturnValue(Promise.resolve(resolve)),
-});
+const rpcBuilder = (resolve = { data: null, error: null }) => {
+  const builder = {
+    order: vi.fn(() => builder),
+    range: vi.fn().mockReturnValue(Promise.resolve(resolve)),
+  };
+  return builder;
+};
 
 const sessionRow = {
   session_id: "s1",
@@ -122,9 +127,12 @@ describe("cashReportService", () => {
       expect(params.p_session_status).toBe(null);
       expect(params.p_start_date).toBe(localMidnightIso(startInput));
       expect(params.p_end_date).toBe(localEndOfDayIso(endInput));
-      expect(supabase.rpc.mock.results[0].value.limit).toHaveBeenCalledWith(
-        100000
-      );
+      const builder = supabase.rpc.mock.results[0].value;
+      expect(builder.order.mock.calls).toEqual([
+        ["opened_at", { ascending: false }],
+        ["session_id", { ascending: true }],
+      ]);
+      expect(builder.range).toHaveBeenCalledWith(0, 999);
     });
 
     it("envia los ids de filtro cuando no son ALL", async () => {
@@ -152,7 +160,7 @@ describe("cashReportService", () => {
       expect(supabase.from).not.toHaveBeenCalled();
     });
 
-    it("consulta movimientos en lote con los id de sesion y sin cap bajo", async () => {
+    it("consulta movimientos por lote de sesiones en paginas de 1000", async () => {
       supabase.rpc.mockReturnValue(
         rpcBuilder({ data: [sessionRow], error: null })
       );
@@ -166,7 +174,7 @@ describe("cashReportService", () => {
         "id, session_id, movement_type, amount"
       );
       expect(movQ.in).toHaveBeenCalledWith("session_id", ["s1"]);
-      expect(movQ.limit).toHaveBeenCalledWith(100000);
+      expect(movQ.limit).toHaveBeenCalledWith(1000);
     });
 
     it("mapea cada sesion al shape del hook con expectedCash", async () => {
@@ -269,7 +277,7 @@ describe("cashReportService", () => {
   });
 
   describe("fetchCashMovements", () => {
-    it("construye la query con filtros y limite de movimientos", async () => {
+    it("construye la query con filtros y paginas de 1000", async () => {
       const movQ = thenableQuery({ data: [], error: null });
       supabase.from.mockReturnValue(movQ);
 
@@ -296,7 +304,7 @@ describe("cashReportService", () => {
         "created_at",
         localEndOfDayIso(endInput)
       );
-      expect(movQ.limit).toHaveBeenCalledWith(10000);
+      expect(movQ.limit).toHaveBeenCalledWith(1000);
     });
 
     it("relanza error si falla la consulta", async () => {

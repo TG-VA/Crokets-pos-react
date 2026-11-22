@@ -1,52 +1,64 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 
 import { fetchInChunks, toNumber, uniqueValues } from "./reportsDashboardUtils";
+
+const IDS_BATCH_SIZE = 150;
 
 export const getSaleReturns = async (saleIds = []) => {
   if (!saleIds.length) return [];
 
-  return fetchInChunks(saleIds, 150, async (chunk) => {
-    const { data, error } = await supabase
-      .from("sale_returns")
-      .select(
+  const { data, error } = await fetchByIdsInBatches(
+    saleIds,
+    (batch) =>
+      supabase
+        .from("sale_returns")
+        .select(
+          `
+          id,
+          sale_id,
+          total_refund,
+          created_at
         `
-        id,
-        sale_id,
-        total_refund,
-        created_at
-      `
-      )
-      .in("sale_id", chunk);
+        )
+        .in("sale_id", batch),
+    { batchSize: IDS_BATCH_SIZE }
+  );
 
-    if (error) throw error;
+  if (error) throw error;
 
-    return data || [];
-  });
+  return data;
 };
 
 export const getReturnItems = async (returnIds = []) => {
   if (!returnIds.length) return [];
 
-  return fetchInChunks(returnIds, 150, async (chunk) => {
-    const { data, error } = await supabase
-      .from("sale_return_items")
-      .select(
+  const { data, error } = await fetchByIdsInBatches(
+    returnIds,
+    (batch) =>
+      supabase
+        .from("sale_return_items")
+        .select(
+          `
+          id,
+          return_id,
+          sale_detail_id,
+          product_id,
+          quantity,
+          unit_price,
+          total_price
         `
-        id,
-        return_id,
-        sale_detail_id,
-        product_id,
-        quantity,
-        unit_price,
-        total_price
-      `
-      )
-      .in("return_id", chunk);
+        )
+        .in("return_id", batch),
+    { batchSize: IDS_BATCH_SIZE }
+  );
 
-    if (error) throw error;
+  if (error) throw error;
 
-    return data || [];
-  });
+  return data;
 };
 
 export const getTodayCancelledSales = async ({
@@ -54,11 +66,14 @@ export const getTodayCancelledSales = async ({
   todayStart,
   todayEnd,
 }) => {
-  const { data: cancelledRows, error: cancelledError } = await supabase
-    .from("canceled_sales")
-    .select("sale_id, created_at")
-    .gte("created_at", todayStart)
-    .lte("created_at", todayEnd);
+  const { data: cancelledRows, error: cancelledError } = await fetchAllPages(
+    () =>
+      supabase
+        .from("canceled_sales")
+        .select("id, sale_id, created_at")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd)
+  );
 
   if (cancelledError) {
     throw cancelledError;
@@ -93,18 +108,20 @@ export const getTodayCancelledSales = async ({
 };
 
 export const getTodayReturns = async ({ branchId, todayStart, todayEnd }) => {
-  const { data: returnRows, error: returnsError } = await supabase
-    .from("sale_returns")
-    .select(
+  const { data: returnRows, error: returnsError } = await fetchAllPages(() =>
+    supabase
+      .from("sale_returns")
+      .select(
+        `
+        id,
+        sale_id,
+        total_refund,
+        created_at
       `
-      id,
-      sale_id,
-      total_refund,
-      created_at
-    `
-    )
-    .gte("created_at", todayStart)
-    .lte("created_at", todayEnd);
+      )
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd)
+  );
 
   if (returnsError) {
     throw returnsError;

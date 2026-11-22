@@ -1,5 +1,6 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchAllRpcPages } from "../../../../../services/supabase/paginatedQuery";
 import {
   mapInventoryRowsToItems,
   calculateInventoryKpis,
@@ -36,11 +37,16 @@ export const fetchBranchesList = async () => {
  */
 export const fetchInventoryReportData = async (branchId = "ALL") => {
   try {
-    const { data: rpcRows, error: rpcError } = await supabase
-      .rpc("get_inventory_report_data", {
-        p_branch_id: branchId !== "ALL" ? branchId : null,
-      })
-      .limit(100000);
+    // La RPC ordena por nombre; el desempate por product_id (una fila por
+    // producto) deja un orden estable para que las paginas no repitan filas.
+    const { data: rpcRows, error: rpcError } = await fetchAllRpcPages(() =>
+      supabase
+        .rpc("get_inventory_report_data", {
+          p_branch_id: branchId !== "ALL" ? branchId : null,
+        })
+        .order("product_name", { ascending: true })
+        .order("product_id", { ascending: true })
+    );
 
     if (rpcError) throw rpcError;
 

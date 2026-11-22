@@ -7,6 +7,10 @@ const historyState = vi.hoisted(() => ({
   appModal: { isOpen: false },
   ticketOverrides: {},
   setPartialReturnOpen: null,
+  ticketsIncomplete: false,
+  retryLoadTickets: vi.fn(),
+  retryingTickets: false,
+  loadingTickets: false,
 }));
 
 vi.mock("../../../../contexts/AuthContext", () => ({
@@ -38,9 +42,12 @@ vi.mock("./useSalesHistory", () => ({
     cashierFilter: "",
     setCashierFilter: vi.fn(),
     tickets: [],
+    ticketsIncomplete: historyState.ticketsIncomplete,
+    retryLoadTickets: historyState.retryLoadTickets,
+    retryingTickets: historyState.retryingTickets,
     cashiers: [],
     paymentMethods: [],
-    loadingTickets: false,
+    loadingTickets: historyState.loadingTickets,
     loadingDetail: false,
     cancelProcessing: false,
     printProcessing: false,
@@ -160,4 +167,53 @@ describe("SalesHistoryModal: resumen de puntos del cliente", () => {
       expect(screen.queryByText("Puntos del cliente")).toBeNull();
     }
   );
+});
+
+describe("SalesHistoryModal: aviso de historial incompleto", () => {
+  beforeEach(() => {
+    historyState.notesOpen = false;
+    historyState.partialReturnOpen = false;
+    historyState.appModal = { isOpen: false };
+    historyState.ticketOverrides = {};
+    historyState.ticketsIncomplete = false;
+    historyState.retryLoadTickets = vi.fn();
+    historyState.retryingTickets = false;
+    historyState.loadingTickets = false;
+  });
+
+  it("no muestra el aviso si los datos llegaron completos", () => {
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("muestra el aviso y reintenta la carga al pulsar Reintentar", () => {
+    historyState.ticketsIncomplete = true;
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.getByRole("alert").textContent).toMatch(
+      /No se pudieron cargar todos los datos/
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(historyState.retryLoadTickets).toHaveBeenCalledTimes(1);
+  });
+
+  it("oculta el aviso mientras la lista carga", () => {
+    historyState.ticketsIncomplete = true;
+    historyState.loadingTickets = true;
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("deshabilita Reintentar mientras el reintento esta en curso", () => {
+    historyState.ticketsIncomplete = true;
+    historyState.retryingTickets = true;
+    render(<SalesHistoryModal isOpen onClose={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Reintentar" }).disabled).toBe(
+      true
+    );
+  });
 });

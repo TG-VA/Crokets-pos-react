@@ -6,6 +6,7 @@
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchAllRpcPages } from "../../../../../services/supabase/paginatedQuery";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
 
@@ -66,22 +67,36 @@ export const fetchCommissionsData = async ({
   cashierId = "ALL",
   departmentId = "ALL",
 }) => {
-  const { data: rpcRows, error: rpcError } = await supabase
-    .rpc("get_commissions_report_data", {
-      p_start_date: startDateIso,
-      p_end_date: endDateIso,
-      p_branch_id: branchId !== "ALL" ? branchId : null,
-      p_cashier_id: cashierId !== "ALL" ? cashierId : null,
-      p_department_id: departmentId !== "ALL" ? departmentId : null,
-    })
-    .limit(100000);
+  // La RPC ordena solo por created_at y las partidas de una venta empatan: su
+  // p_page con OFFSET podria repetir o saltar filas entre paginas. Sin
+  // p_page_size devuelve todo y PostgREST pagina con un orden desempatado por
+  // detail_id, que conserva el orden de fecha descendente.
+  const { data: rpcRows, error: rpcError } = await fetchAllRpcPages(() =>
+    supabase
+      .rpc("get_commissions_report_data", {
+        p_start_date: startDateIso,
+        p_end_date: endDateIso,
+        p_branch_id: branchId !== "ALL" ? branchId : null,
+        p_cashier_id: cashierId !== "ALL" ? cashierId : null,
+        p_department_id: departmentId !== "ALL" ? departmentId : null,
+      })
+      .order("created_at", { ascending: false })
+      .order("detail_id", { ascending: true })
+  );
 
   if (rpcError) {
     console.error("Error al consultar comisiones via RPC:", rpcError);
     throw new Error("Error al consultar las ventas en el periodo.");
   }
 
-  const rows = rpcRows || [];
+  // Las paginas usan OFFSET: una venta registrada durante la lectura desplaza
+  // las filas y repetiria la ultima partida de una pagina en la siguiente.
+  const seenDetailIds = new Set();
+  const rows = (rpcRows || []).filter((row) => {
+    if (seenDetailIds.has(row.detail_id)) return false;
+    seenDetailIds.add(row.detail_id);
+    return true;
+  });
 
   const detailedRows = rows.map((row) => ({
     detailId: row.detail_id,
