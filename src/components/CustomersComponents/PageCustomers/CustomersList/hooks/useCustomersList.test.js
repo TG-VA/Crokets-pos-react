@@ -26,9 +26,14 @@ vi.mock("../services/customersListService", () => ({
   updateCustomerStatus: vi.fn(),
 }));
 
+import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import { fetchPointsBalanceByCustomer } from "../../../../../services/customers/customerPointsBalanceService";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
-import { fetchPointsCustomers } from "../services/customersListService";
+import {
+  fetchPointsCustomers,
+  searchFiscalCustomerByPhone,
+  updateCustomerStatus,
+} from "../services/customersListService";
 import {
   REALTIME_RELOAD_DEBOUNCE_MS,
   useCustomersList,
@@ -36,6 +41,8 @@ import {
 
 const ANA = { id: "c1", name: "ANA", phone: "5512345678", status: true };
 const LUIS = { id: "c2", name: "LUIS", phone: "5587654321", status: true };
+const INACTIVE = { id: "c3", name: "EVA", phone: "5500000000", status: false };
+const FISCAL = { id: "f1", name: "FISCAL SA", phone: "5599999999" };
 
 const deferred = () => {
   let resolve;
@@ -67,6 +74,148 @@ describe("useCustomersList", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("carga clientes y saldos al montar", async () => {
+    const { result } = renderHook(() => useCustomersList());
+
+    expect(result.current.loadingCustomers).toBe(true);
+    await flush();
+
+    expect(fetchPointsBalanceByCustomer).toHaveBeenCalledWith(["c1"]);
+    expect(result.current.filteredCustomers).toEqual([ANA]);
+    expect(result.current.pointsByCustomer).toEqual({ c1: 40 });
+    expect(result.current.loadingCustomers).toBe(false);
+  });
+
+  describe("cambio de estado", () => {
+    const confirm = () =>
+      act(async () => {
+        await result.current.appModal.onConfirm();
+      });
+    let result;
+
+    beforeEach(async () => {
+      updateCustomerStatus.mockResolvedValue();
+      ({ result } = renderHook(() => useCustomersList()));
+      await flush();
+    });
+
+    it("un admin desactiva tras confirmar, sin pedir autorizacion", async () => {
+      checkUserIsAdmin.mockResolvedValue(true);
+
+      await act(async () => result.current.handleToggleStatus(ANA));
+
+      expect(checkUserIsAdmin).toHaveBeenCalledWith("user-1");
+      expect(result.current.adminAuthOpen).toBe(false);
+      expect(result.current.appModal.title).toBe("Desactivar cliente");
+      expect(updateCustomerStatus).not.toHaveBeenCalled();
+
+      await confirm();
+
+      expect(updateCustomerStatus).toHaveBeenCalledWith({
+        customerId: "c1",
+        nextStatus: false,
+      });
+      expect(result.current.appModal.title).toBe("Cliente desactivado");
+    });
+
+    it("un no admin pasa por AdminAuthorizationModal y luego confirma", async () => {
+      checkUserIsAdmin.mockResolvedValue(false);
+
+      await act(async () => result.current.handleToggleStatus(ANA));
+
+      expect(result.current.adminAuthOpen).toBe(true);
+      expect(result.current.pendingDeactivateCustomer).toBe(ANA);
+      expect(result.current.appModal.isOpen).toBe(false);
+
+      await act(async () => result.current.handleAdminAuthorized());
+
+      expect(result.current.adminAuthOpen).toBe(false);
+      expect(result.current.pendingDeactivateCustomer).toBeNull();
+      expect(result.current.appModal.title).toBe("Desactivar cliente");
+
+      await confirm();
+
+      expect(updateCustomerStatus).toHaveBeenCalledWith({
+        customerId: "c1",
+        nextStatus: false,
+      });
+    });
+
+    it("cerrar la autorizacion no desactiva", async () => {
+      checkUserIsAdmin.mockResolvedValue(false);
+
+      await act(async () => result.current.handleToggleStatus(ANA));
+      act(() => result.current.handleCloseAdminAuth());
+
+      expect(result.current.adminAuthOpen).toBe(false);
+      expect(result.current.appModal.isOpen).toBe(false);
+      expect(updateCustomerStatus).not.toHaveBeenCalled();
+    });
+
+    it("activar solo pide confirmacion, sin revisar el rol", async () => {
+      await act(async () => result.current.handleToggleStatus(INACTIVE));
+
+      expect(checkUserIsAdmin).not.toHaveBeenCalled();
+      expect(result.current.adminAuthOpen).toBe(false);
+      expect(result.current.appModal.title).toBe("Activar cliente");
+
+      await confirm();
+
+      expect(updateCustomerStatus).toHaveBeenCalledWith({
+        customerId: "c3",
+        nextStatus: true,
+      });
+    });
+  });
+
+  describe("busqueda fiscal", () => {
+    it("busca 300 ms despues del ultimo cambio de un telefono completo", async () => {
+      searchFiscalCustomerByPhone.mockResolvedValue(FISCAL);
+      const { result } = renderHook(() => useCustomersList());
+      await flush();
+
+      act(() => result.current.setSearchTerm("55-9999-999"));
+      act(() => result.current.setSearchTerm("55-9999-9999"));
+      await act(async () => {
+        vi.advanceTimersByTime(299);
+      });
+      expect(searchFiscalCustomerByPhone).not.toHaveBeenCalled();
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+      });
+
+      expect(searchFiscalCustomerByPhone).toHaveBeenCalledTimes(1);
+      expect(searchFiscalCustomerByPhone).toHaveBeenCalledWith("5599999999");
+      expect(result.current.fiscalCustomerFound).toBe(FISCAL);
+    });
+
+    it("no busca si el telefono ya es de un cliente de puntos", async () => {
+      const { result } = renderHook(() => useCustomersList());
+      await flush();
+
+      act(() => result.current.setSearchTerm(ANA.phone));
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      expect(searchFiscalCustomerByPhone).not.toHaveBeenCalled();
+      expect(result.current.fiscalCustomerFound).toBeNull();
+    });
+
+    it("no busca con un telefono incompleto", async () => {
+      const { result } = renderHook(() => useCustomersList());
+      await flush();
+
+      act(() => result.current.setSearchTerm("551234"));
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(searchFiscalCustomerByPhone).not.toHaveBeenCalled();
+    });
   });
 
   describe("realtime", () => {
