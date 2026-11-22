@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-395 archivos de test (**3812 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+395 archivos de test (**3849 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
