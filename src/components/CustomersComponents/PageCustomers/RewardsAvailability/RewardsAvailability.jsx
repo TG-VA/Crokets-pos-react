@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./RewardsAvailability.module.css";
 import AppModal from "../../../AppModal/AppModal";
 import RewardsAvailabilityCustomerSearch from "./components/RewardsAvailabilityCustomerSearch";
