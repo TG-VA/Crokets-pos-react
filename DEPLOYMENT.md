@@ -151,17 +151,10 @@ sucursal ni configurar variables de entorno en las máquinas de los clientes.
 
 ### Cómo funciona
 
-- **Token embebido para repositorio privado:** al compilar el instalador en GitHub Actions, el secreto
-  `GH_READ_TOKEN` (token de GitHub con permiso de lectura de contenidos sobre el repositorio privado) se
-  inyecta en `electron/updaterConfig.json`. El archivo está en `.gitignore` y se empaqueta dentro del
-  instalador. Al iniciar, `electron/updaterService.js` lee el token e inicializa el auto-updater.
-- **Activación de `PrivateGitHubProvider`:** `electron-updater` requiere que el token esté presente en
-  `process.env.GH_TOKEN` y configurado en `updater.setFeedURL(...)` para instanciar `PrivateGitHubProvider`
-  en lugar del provider público (que devolvería 404 al consultar un repositorio privado).
-- **Jerarquía de resolución del token:**
-  1. Variable de entorno del sistema (`CROKETS_GH_READ_TOKEN` o `GH_TOKEN`), si existiera.
-  2. Token embebido en `electron/updaterConfig.json` (inyectado durante el build en CI).
-  3. `null` (modo público o sin autenticación).
+- **Feed público sin token:** el repositorio `TG-VA/Crokets-pos-react` es público, por lo que
+  `electron-updater` consulta GitHub Releases con el provider público y sin autenticación. El
+  instalador no embebe ningún token (se retiró el antiguo `GH_READ_TOKEN`, que quedaba expuesto en
+  cada `.exe` publicado).
 - **Convención de nombres de artefacto (`artifactName`):** en `package.json`, la sección `build.nsis`
   define `"artifactName": "POS-CROKETS-Setup-${version}.${ext}"`. Es indispensable que el nombre no
   contenga espacios: al subir artefactos a GitHub Releases, la API de GitHub reemplaza automáticamente los
@@ -211,9 +204,8 @@ git push origin main --tags
 
 El tag dispara el workflow `Release Windows Installer` (`.github/workflows/release-windows.yml`), que:
 
-1. Inyecta el token embebido desde `secrets.GH_READ_TOKEN`.
-2. Compila el instalador NSIS (`dist/POS-CROKETS-Setup-X.X.X.exe`), el mapa `.blockmap` y `dist/latest.yml`.
-3. Publica automáticamente el Release en GitHub con los tres artefactos adjuntos.
+1. Compila el instalador NSIS (`dist/POS-CROKETS-Setup-X.X.X.exe`), el mapa `.blockmap` y `dist/latest.yml`.
+2. Publica automáticamente el Release en GitHub con los tres artefactos adjuntos.
 
 Las terminales de producción detectarán la nueva versión en el siguiente arranque (10 segundos después de
 abrir la aplicación) y descargarán la actualización de forma desatendida. Un `workflow_dispatch` manual
@@ -244,9 +236,8 @@ que no alimenta el auto-updater.
 - **Preload** (`electron/preload.js`): expone `invoke` (con la lista blanca de canales realmente
   registrados en el proceso principal) y un `on` restringido a los canales push permitidos
   (`update-status`); se eliminaron `send` y los canales sin handler.
-- **Auto-actualizaciones** (`electron/updaterService.js`): el token de lectura del feed privado se
-  lee solo en el proceso principal; nunca se expone al renderer (ver "Ciclo de Vida de
-  Actualizaciones Automáticas").
+- **Auto-actualizaciones** (`electron/updaterService.js`): consulta el feed público de GitHub
+  Releases sin token (ver "Ciclo de Vida de Actualizaciones Automáticas").
 
 ## Datos y respaldo
 
@@ -259,16 +250,6 @@ migración:
   rollback automático, por lo que el respaldo es la red de seguridad.
 - **Nunca** commitear respaldos ni archivos `.sqlite`/`.env` (ver `.gitignore`).
 
-### Auto-updater desatendido (token embebido)
+### Auto-updater desatendido
 
-Los clientes de Windows ya **no necesitan configurar variables de entorno** para recibir actualizaciones automáticas, incluso cuando el repositorio es privado. Esto es posible gracias a la inyección automática del token de lectura durante el build en CI/CD:
-
-1. En el workflow `release-windows.yml`, el paso **"Inject embedded updater read token"** crea `electron/updaterConfig.json` con el contenido `{ "ghReadToken": "<GH_READ_TOKEN>" }`, tomando el valor del secreto `GH_READ_TOKEN` de GitHub Actions.
-2. El archivo `electron/updaterConfig.json` está añadido a `.gitignore` para evitar que el token sea commiteado por accidente.
-3. En tiempo de ejecución, `electron/updaterService.js` resuelve el token siguiendo esta jerarquía:
-   - **Prioridad 1:** Variable de entorno del sistema (`CROKETS_GH_READ_TOKEN` o `GH_TOKEN`). Útil para desarrollo, pruebas locales o configuraciones personalizadas.
-   - **Prioridad 2:** Token embebido desde `electron/updaterConfig.json` (`ghReadToken`). Generado en CI y empaquetado dentro del `.exe`. Esta es la ruta que permite el funcionamiento desatendido en las máquinas cliente.
-   - **Prioridad 3:** `null` (sin autenticación). Solo aplicable si el repositorio fuera público o el feed de releases no requiriera autenticación.
-4. `electron-updater` añade la cabecera `Authorization: token <token>` a las peticiones al feed de GitHub Releases, permitiendo descargar actualizaciones del repositorio privado.
-
-**Requisito de configuración en GitHub Actions:** el repositorio debe tener definido el secreto `GH_READ_TOKEN` con un Personal Access Token (classic o fine-grained) que tenga, como mínimo, el permiso **`Contents: Read-only`** sobre `TG-VA/Crokets-pos-react`. Este secreto solo se utiliza en tiempo de build del instalador de Windows y **no se incluye en el bundle del renderer**.
+Los clientes de Windows no necesitan configurar variables de entorno ni tokens: como el repositorio es público, `electron-updater` descarga las actualizaciones de GitHub Releases sin autenticación. No volver a embeber tokens en el instalador: cualquier credencial dentro del `.exe` es extraíble por quien lo descargue.
