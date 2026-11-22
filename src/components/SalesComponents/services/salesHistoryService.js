@@ -307,7 +307,16 @@ export const fetchSalesRelatedData = async (saleIds, userIds, customerIds) => {
       "sale_id"
     ),
   ]);
+  // Un error no bloquea el historial: se registra y se marca la respuesta como
+  // incompleta para que la vista avise y permita reintentar.
+  const failed = [detRes, uRes, cRes, pRes, canRes, retRes].filter(
+    (res) => res.error
+  );
+  failed.forEach((res) =>
+    console.error("Error cargando datos relacionados del historial:", res.error)
+  );
   return {
+    incomplete: failed.length > 0,
     details: detRes.data || [],
     users: uRes.data || [],
     customers: cRes.data || [],
@@ -384,7 +393,8 @@ export const fetchCanceledSaleData = async (saleId) => {
  *   searchFolio: string,
  *   paymentMethods: Array
  * }} params
- * @returns {Promise<Array>} Tickets mapeados y filtrados por folio.
+ * @returns {Promise<{ tickets: Array, incomplete: boolean }>} Tickets mapeados
+ *   y filtrados por folio; incomplete indica que fallo algun dato relacionado.
  */
 export const fetchHistoryTickets = async ({
   branchId,
@@ -398,7 +408,7 @@ export const fetchHistoryTickets = async ({
 
   const sales = await fetchTicketsBatch(branchId, start, end, cashierFilter);
 
-  if (!sales.length) return [];
+  if (!sales.length) return { tickets: [], incomplete: false };
 
   const saleIds = sales.map((s) => s.id);
   const userIds = [...new Set(sales.map((s) => s.user_id).filter(Boolean))];
@@ -508,7 +518,8 @@ export const fetchHistoryTickets = async ({
     })
   );
 
-  return mapped.filter((t) =>
+  const tickets = mapped.filter((t) =>
     t.folio.toLowerCase().includes(searchFolio.trim().toLowerCase())
   );
+  return { tickets, incomplete: related.incomplete };
 };
