@@ -63,4 +63,31 @@ describe("useKardexUserNames", () => {
 
     consoleError.mockRestore();
   });
+
+  it("vuelve a pedir un id cuya carga fallo", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    loadUsers.mockRejectedValueOnce(new Error("boom"));
+    loadUsers.mockResolvedValueOnce([{ id: "u9", username: "admin" }]);
+
+    const { result, rerender } = renderHook(
+      ({ ids }) => useKardexUserNames(ids),
+      {
+        initialProps: { ids: ["u9"] },
+      }
+    );
+
+    await waitFor(() => expect(consoleError).toHaveBeenCalled());
+
+    rerender({ ids: ["u9", "u10"] });
+
+    await waitFor(() => expect(result.current.get("u9")).toBe("ADMIN"));
+
+    expect(loadUsers).toHaveBeenCalledTimes(2);
+    expect(loadUsers).toHaveBeenLastCalledWith(["u10", "u9"]);
+
+    consoleError.mockRestore();
+  });
 });

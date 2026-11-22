@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 
 vi.mock("../../../../../services/branchScopeService", () => ({
   fetchAllBranches: vi.fn(),
@@ -41,6 +41,38 @@ describe("useKardexBranchNames", () => {
     expect(result.current.size).toBe(0);
 
     consoleError.mockRestore();
+  });
+
+  it("ignora la respuesta de una carga ya descartada", async () => {
+    let resolveStale;
+
+    fetchAllBranches
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStale = resolve;
+          })
+      )
+      .mockResolvedValueOnce({
+        data: [{ id: "b1", name: "Nuevo" }],
+        error: null,
+      });
+
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useKardexBranchNames({ enabled }),
+      { initialProps: { enabled: true } }
+    );
+
+    rerender({ enabled: false });
+    rerender({ enabled: true });
+
+    await waitFor(() => expect(result.current.get("b1")).toBe("NUEVO"));
+
+    await act(async () => {
+      resolveStale({ data: [{ id: "b1", name: "Viejo" }], error: null });
+    });
+
+    expect(result.current.get("b1")).toBe("NUEVO");
   });
 
   it("no consulta deshabilitado", () => {

@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-393 archivos de test (**3802 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+394 archivos de test (**3805 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -206,6 +206,7 @@ y el proceso principal de Electron:
 | Kardex: estado del filtro por tipo (hook)                 | `.../PageKardex/hooks/useKardexTypeFilter.test.js`                                 |
 | Kardex: nombres de usuario en lote                        | `.../PageKardex/hooks/useKardexUserNames.test.js`                                  |
 | Kardex: sucursales de traspasos                           | `.../PageKardex/hooks/useKardexBranchNames.test.js`                                |
+| Kardex: usuario y sucursal aplicados a las filas          | `.../PageKardex/hooks/useKardexMovements.test.js`                                  |
 | Kardex: canal Realtime                                    | `.../PageKardex/services/kardexRealtimeService.test.js`                            |
 | Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
