@@ -160,8 +160,8 @@ sucursal ni configurar variables de entorno en las máquinas de los clientes.
   updater read token" de `release-windows.yml` conservan `private: true` y el token embebido. Al
   revocar el token, esas terminales reciben 401 al consultar el feed y dejan de actualizarse sin
   aviso en la UI: hay que reinstalarlas a mano con el instalador actual. Estado de la revocación del
-  token classic "Crokets POS Auto Updater" y del secreto `GH_READ_TOKEN`: pendiente (anotar aquí la
-  fecha cuando ocurra).
+  token classic "Crokets POS Auto Updater" y del secreto `GH_READ_TOKEN`: revocados el
+  2026-11-22.
 - **Convención de nombres de artefacto (`artifactName`):** en `package.json`, la sección `build.nsis`
   define `"artifactName": "POS-CROKETS-Setup-${version}.${ext}"`. Es indispensable que el nombre no
   contenga espacios: al subir artefactos a GitHub Releases, la API de GitHub reemplaza automáticamente los
