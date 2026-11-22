@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   KARDEX_ALL_TYPES_FILTER,
+  KARDEX_OTHER_TYPES_FILTER,
   KARDEX_TYPE_FILTER_OPTIONS,
   filterKardexRowsByType,
 } from "./kardexTypeFilters";
@@ -11,6 +12,8 @@ const rows = [
   { id: 2, movement_type: "transfer_out" },
   { id: 3, movement_type: "CANCELLED" },
   { id: 4, movement_type: "purchase" },
+  { id: 5, movement_type: "redemption" },
+  { id: 6, movement_type: "product_update" },
 ];
 
 const ids = (result) => result.map((row) => row.id);
@@ -25,6 +28,12 @@ describe("filterKardexRowsByType", () => {
     expect(ids(filterKardexRowsByType(rows, "transfer"))).toEqual([2]);
     expect(ids(filterKardexRowsByType(rows, "canceled"))).toEqual([3]);
     expect(ids(filterKardexRowsByType(rows, "entry"))).toEqual([4]);
+  });
+
+  it("el filtro Otros conserva solo los tipos que ninguna opcion lista", () => {
+    expect(
+      ids(filterKardexRowsByType(rows, KARDEX_OTHER_TYPES_FILTER))
+    ).toEqual([5, 6]);
   });
 
   it("tolera filas no tabulares", () => {
