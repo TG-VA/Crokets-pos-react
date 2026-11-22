@@ -1,5 +1,9 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import {
+  fetchAllPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 import { formatDynamicDate } from "../../../../../utils/formatters";
 
 const toUpper = (str) => (str ? str.toUpperCase() : "");
@@ -155,19 +159,21 @@ export const getSaleDetailsById = async (saleId) => {
   });
 };
 
-// EXPORTACIÓN LIMITADA (Protección contra RAM Overflow)
-const EXPORT_LIMIT = 5000;
+const SALE_IDS_BATCH_SIZE = 150;
 
+// Por instante: PostgreSQL omite la fraccion cero y el orden de texto fallaria.
+const byCreatedAtDesc = (left, right) =>
+  Date.parse(right.created_at) - Date.parse(left.created_at);
+
+// La exportacion lee todas las ventas del filtro: el cursor de fetchAllPages
+// ordena por id y el orden por fecha se aplica en memoria.
 export const getAllSalesForExport = async (filters) => {
-  let query = supabase
-    .from("v_sales_report_list")
-    .select("*")
-    .limit(EXPORT_LIMIT);
-  query = applyFilters(query, filters);
-  query.order("created_at", { ascending: false });
-
-  const { data, error } = await query;
+  const { data, error } = await fetchAllPages(() =>
+    applyFilters(supabase.from("v_sales_report_list").select("*"), filters)
+  );
   if (error) throw new Error("Error al descargar el resumen para exportación.");
+
+  data.sort(byCreatedAtDesc);
 
   return data.map((sale) => ({
     ticketNumber: sale.id ? sale.id.substring(0, 8).toUpperCase() : "S/N",
@@ -185,15 +191,16 @@ export const getAllSalesForExport = async (filters) => {
 };
 
 export const getDetailedSalesForExport = async (filters) => {
-  let query = supabase
-    .from("v_sales_report_list")
-    .select(
-      "id, branch_name, cashier_name, customer_name, computed_status, created_at"
+  const { data: sales, error: salesError } = await fetchAllPages(() =>
+    applyFilters(
+      supabase
+        .from("v_sales_report_list")
+        .select(
+          "id, branch_name, cashier_name, customer_name, computed_status, created_at"
+        ),
+      filters
     )
-    .limit(EXPORT_LIMIT);
-  query = applyFilters(query, filters);
-
-  const { data: sales, error: salesError } = await query;
+  );
   if (salesError)
     throw new Error("Error descargando cabeceras para exportación detallada.");
   if (!sales || sales.length === 0) return [];
@@ -202,75 +209,81 @@ export const getDetailedSalesForExport = async (filters) => {
   const salesById = new Map(sales.map((sale) => [sale.id, sale]));
   const saleIds = Array.from(salesById.keys());
 
-  const chunkSize = 150;
-  let allDetailedRows = [];
+  const [detailsRes, rewardsRes] = await Promise.all([
+    fetchByIdsInBatches(
+      saleIds,
+      (batch) =>
+        supabase
+          .from("sale_details")
+          .select(
+            "id, sale_id, product_id, quantity, unit_price, discount_amount, discount_type, total_price, products (name, barcode)"
+          )
+          .in("sale_id", batch),
+      { batchSize: SALE_IDS_BATCH_SIZE }
+    ),
+    fetchByIdsInBatches(
+      saleIds,
+      (batch) =>
+        supabase
+          .from("sale_reward_redemptions")
+          .select("id, sale_detail_id, product_id, reward_name")
+          .in("sale_id", batch),
+      { batchSize: SALE_IDS_BATCH_SIZE }
+    ),
+  ]);
 
-  for (let i = 0; i < saleIds.length; i += chunkSize) {
-    const chunk = saleIds.slice(i, i + chunkSize);
-    const [detailsRes, rewardsRes] = await Promise.all([
-      supabase
-        .from("sale_details")
-        .select(
-          "id, sale_id, product_id, quantity, unit_price, discount_amount, discount_type, total_price, products (name, barcode)"
-        )
-        .in("sale_id", chunk),
-      supabase
-        .from("sale_reward_redemptions")
-        .select("sale_detail_id, product_id, reward_name")
-        .in("sale_id", chunk),
-    ]);
+  // FIX: Rechazo estricto si falla un lote, evita Excels incompletos
+  if (detailsRes.error)
+    throw new Error("Error en la descarga de detalles del reporte.");
 
-    // FIX: Rechazo estricto si falla el chunk, evita Excels incompletos
-    if (detailsRes.error)
-      throw new Error("Error en la descarga de detalles del reporte.");
+  const rewardDetailIds = new Set(
+    (rewardsRes.data || []).map((reward) => reward.sale_detail_id)
+  );
+  const allDetailedRows = [];
 
-    detailsRes.data.forEach((item) => {
-      const parentSale = salesById.get(item.sale_id);
-      if (!parentSale) return;
+  detailsRes.data.forEach((item) => {
+    const parentSale = salesById.get(item.sale_id);
+    if (!parentSale) return;
 
-      let discountReason = "Ninguno";
-      if (Number(item.discount_amount) > 0) {
-        // FIX: Match estricto
-        const isReward = (rewardsRes.data || []).find(
-          (r) => r.sale_detail_id === item.id
-        );
-        if (isReward) {
-          discountReason = "Canje Puntos";
-        } else {
-          const typeStr = item.discount_type
-            ? item.discount_type.toLowerCase()
-            : "";
-          if (typeStr === "amount") discountReason = "Monto Fijo";
-          else if (typeStr === "percentage") discountReason = "Porcentaje";
-          else if (typeStr === "manual" || typeStr === "global")
-            discountReason = toUpper(typeStr);
-          else discountReason = "Manual";
-        }
+    let discountReason = "Ninguno";
+    if (Number(item.discount_amount) > 0) {
+      // FIX: Match estricto
+      if (rewardDetailIds.has(item.id)) {
+        discountReason = "Canje Puntos";
+      } else {
+        const typeStr = item.discount_type
+          ? item.discount_type.toLowerCase()
+          : "";
+        if (typeStr === "amount") discountReason = "Monto Fijo";
+        else if (typeStr === "percentage") discountReason = "Porcentaje";
+        else if (typeStr === "manual" || typeStr === "global")
+          discountReason = toUpper(typeStr);
+        else discountReason = "Manual";
       }
+    }
 
-      allDetailedRows.push({
-        ticketNumber: parentSale.id
-          ? parentSale.id.substring(0, 8).toUpperCase()
-          : "S/N",
-        date: formatDynamicDate(parentSale.created_at, filters.timeZone),
-        branch: parentSale.branch_name || "Principal",
-        cashier: parentSale.cashier_name
-          ? toUpper(parentSale.cashier_name)
-          : "SISTEMA",
-        client: parentSale.customer_name
-          ? toUpper(parentSale.customer_name)
-          : "PÚBLICO GENERAL",
-        status: parentSale.computed_status,
-        productName: item.products?.name || "Producto Eliminado",
-        barcode: item.products?.barcode || "N/A",
-        quantity: Number(item.quantity) || 0,
-        unitPrice: Number(item.unit_price) || 0,
-        discountType: discountReason,
-        discountAmount: Number(item.discount_amount) || 0,
-        totalPrice: Number(item.total_price) || 0,
-      });
+    allDetailedRows.push({
+      ticketNumber: parentSale.id
+        ? parentSale.id.substring(0, 8).toUpperCase()
+        : "S/N",
+      date: formatDynamicDate(parentSale.created_at, filters.timeZone),
+      branch: parentSale.branch_name || "Principal",
+      cashier: parentSale.cashier_name
+        ? toUpper(parentSale.cashier_name)
+        : "SISTEMA",
+      client: parentSale.customer_name
+        ? toUpper(parentSale.customer_name)
+        : "PÚBLICO GENERAL",
+      status: parentSale.computed_status,
+      productName: item.products?.name || "Producto Eliminado",
+      barcode: item.products?.barcode || "N/A",
+      quantity: Number(item.quantity) || 0,
+      unitPrice: Number(item.unit_price) || 0,
+      discountType: discountReason,
+      discountAmount: Number(item.discount_amount) || 0,
+      totalPrice: Number(item.total_price) || 0,
     });
-  }
+  });
   return allDetailedRows;
 };
 
