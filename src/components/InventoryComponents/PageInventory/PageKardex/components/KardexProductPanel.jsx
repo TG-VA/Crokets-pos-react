@@ -22,6 +22,8 @@ const KardexProductPanel = ({
   slot = 0,
   product = null,
   rows = [],
+  rangeRows = null,
+  typeFilter = "",
   movementState = null,
 
   appliedDateFrom = "",
@@ -55,16 +57,20 @@ const KardexProductPanel = ({
 
   const productKey = getKardexProductKey(product);
 
+  // Los saldos usan todo el rango; los totales, solo las filas filtradas.
   const summary = useMemo(
-    () => buildKardexRangeSummary(normalizedRows),
-    [normalizedRows]
+    () =>
+      buildKardexRangeSummary(rangeRows ?? normalizedRows, {
+        visibleRows: normalizedRows,
+      }),
+    [rangeRows, normalizedRows]
   );
 
   // Cambiar de producto o de rango de fechas reinicia la pagina para que el
   // panel no abra en una pagina vacia o fuera del nuevo conjunto de datos.
   useEffect(() => {
     resetPagination();
-  }, [productKey, appliedDateFrom, appliedDateTo, resetPagination]);
+  }, [productKey, appliedDateFrom, appliedDateTo, typeFilter, resetPagination]);
 
   if (!product) {
     return null;

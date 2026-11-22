@@ -119,6 +119,31 @@ describe("PageKardex exportacion", () => {
       MOVEMENTS_TOTAL
     );
   });
+
+  it("con filtro por tipo exporta lo filtrado y vuelve a la pagina 1", () => {
+    render(<PageKardex />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    fireEvent.change(screen.getByLabelText("Tipo"), {
+      target: { value: "sale" },
+    });
+
+    expect(screen.getByText(/No hay movimientos registrados/)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Tipo"), {
+      target: { value: "entry" },
+    });
+
+    expect(screen.getByText("Página 1 de 3")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Exportar" }));
+
+    const payload = exportKardexReport.mock.calls[0][0];
+
+    expect(payload.rows).toHaveLength(MOVEMENTS_TOTAL);
+    expect(payload.rangeRows).toHaveLength(MOVEMENTS_TOTAL);
+  });
 });
 
 describe("PageKardex buscador de productos", () => {

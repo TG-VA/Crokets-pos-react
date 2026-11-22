@@ -9,6 +9,7 @@ import KardexProductPanel from "./components/KardexProductPanel";
 
 import useKardex from "./hooks/useKardex";
 import useKardexRemoveConfirmation from "./hooks/useKardexRemoveConfirmation";
+import useKardexTypeFilter from "./hooks/useKardexTypeFilter";
 
 import { exportKardexReport } from "./services/kardexExportService";
 
@@ -55,6 +56,9 @@ const PageKardex = () => {
     clearDateFilter,
   } = useKardex();
 
+  const { typeFilter, setTypeFilter, filteredRowsBySlot } =
+    useKardexTypeFilter(rowsBySlot);
+
   const selectedProductCount = useMemo(() => {
     return selectedProductIds.filter(Boolean).length;
   }, [selectedProductIds]);
@@ -96,7 +100,7 @@ const PageKardex = () => {
   const handleExport = async (slot) => {
     const product = selectedProducts[slot];
 
-    const rows = rowsBySlot[slot] ?? [];
+    const rows = filteredRowsBySlot[slot] ?? [];
 
     if (!product || rows.length === 0) {
       return;
@@ -113,6 +117,7 @@ const PageKardex = () => {
       await exportKardexReport({
         product,
         rows,
+        rangeRows: rowsBySlot[slot] ?? [],
         dateFrom: appliedDateFrom,
         dateTo: appliedDateTo,
       });
@@ -158,6 +163,11 @@ const PageKardex = () => {
           onApplyDateFilter={handleApplyDateFilter}
           onClearDateFilter={handleClearDateFilter}
           onOpenProductSearch={() => openProductSearch()}
+          typeFilter={typeFilter}
+          onTypeFilterChange={(nextTypeFilter) => {
+            setExportError("");
+            setTypeFilter(nextTypeFilter);
+          }}
         />
 
         {exportError ? (
@@ -184,7 +194,9 @@ const PageKardex = () => {
                   key={product?.id ?? product?.product_id ?? slot}
                   slot={slot}
                   product={product}
-                  rows={rowsBySlot[slot] ?? []}
+                  rows={filteredRowsBySlot[slot] ?? []}
+                  rangeRows={rowsBySlot[slot] ?? []}
+                  typeFilter={typeFilter}
                   movementState={movementsState[slot]}
                   appliedDateFrom={appliedDateFrom}
                   appliedDateTo={appliedDateTo}

@@ -38,7 +38,8 @@
 }
 
 .searchInput,
-.dateInput {
+.dateInput,
+.typeSelect {
   width: 100%;
   height: 42px;
   padding: 0 12px;
@@ -60,7 +61,8 @@
 }
 
 .searchInput:focus,
-.dateInput:focus {
+.dateInput:focus,
+.typeSelect:focus {
   outline: none;
   border-color: var(--croketsBlue);
   box-shadow: 0 0 0 3px rgba(16, 146, 177, 0.13);
@@ -184,4 +186,16 @@
     width: 100%;
     min-width: 0;
   }
+}
+
+.typeGroup {
+  width: 180px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.typeSelect {
+  cursor: pointer;
 }

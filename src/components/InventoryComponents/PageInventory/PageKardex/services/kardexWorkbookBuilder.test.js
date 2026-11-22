@@ -303,6 +303,20 @@ describe("kardexWorkbookBuilder", () => {
       expect(totalsRow.getCell(5).value).toBe(12);
     });
 
+    it("con filtro por tipo suma solo lo filtrado y conserva los saldos", () => {
+      const sheet = buildWorksheet({
+        rows: [rangeRows[1]],
+        overrides: { rangeRows },
+      });
+
+      const totalsRow = sheet.getRow(DATA_START_ROW_NUMBER + 2);
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 1).getCell(5).value).toBe(10);
+      expect(totalsRow.getCell(3).value).toBe(5);
+      expect(totalsRow.getCell(4).value).toBe(0);
+      expect(totalsRow.getCell(5).value).toBe(12);
+    });
+
     it("omite el saldo anterior sin rango de fechas", () => {
       const sheet = buildWorksheet({
         rows: rangeRows,

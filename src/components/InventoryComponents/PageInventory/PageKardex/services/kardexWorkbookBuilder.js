@@ -389,14 +389,23 @@ const styleSummaryRow = (excelRow) => {
 
 /**
  * Pie del kardex: saldo anterior (solo con rango de fechas) y totales del
- * rango. Usa el mismo calculo que la tabla en pantalla.
+ * rango. Usa el mismo calculo que la tabla en pantalla: con filtro por tipo,
+ * `rows` trae lo filtrado y `rangeRows` el rango completo para los saldos.
  */
-const renderSummaryRows = ({ worksheet, rows, showOpeningBalance }) => {
+const renderSummaryRows = ({
+  worksheet,
+  rows,
+  rangeRows,
+  showOpeningBalance,
+}) => {
   if (rows.length === 0) {
     return;
   }
 
-  const summary = buildKardexRangeSummary(rows);
+  const summary = buildKardexRangeSummary(
+    Array.isArray(rangeRows) ? rangeRows : rows,
+    { visibleRows: rows }
+  );
 
   let rowNumber = DATA_START_ROW_NUMBER + rows.length;
 
@@ -460,6 +469,7 @@ export const buildKardexWorksheet = ({
   worksheet,
   product,
   rows = [],
+  rangeRows = null,
   dateFrom = "",
   dateTo = "",
 }) => {
@@ -491,6 +501,7 @@ export const buildKardexWorksheet = ({
   renderSummaryRows({
     worksheet,
     rows: normalizedRows,
+    rangeRows,
     showOpeningBalance: Boolean(dateFrom || dateTo),
   });
 
