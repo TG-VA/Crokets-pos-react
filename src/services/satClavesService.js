@@ -2,8 +2,8 @@ import { supabase } from "../lib/supabaseClient";
 import { fetchAllPages, fetchByIdsInBatches } from "./supabase/paginatedQuery";
 import { sortRowsBy } from "./supabase/sortRows";
 
-// El catalogo SAT rebasa las 1000 filas: se pagina sobre clave (la tabla no
-// tiene id) y se ordena por descripcion en memoria.
+// Se pagina sobre clave (la tabla no tiene id) para no truncar en 1000 filas
+// si el catalogo crece, y se ordena por descripcion en memoria.
 export const fetchSatClaves = async () => {
   const { data, error } = await fetchAllPages(
     () =>
