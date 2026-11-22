@@ -18,7 +18,10 @@ import {
   buildId,
   createFakePostgrest,
 } from "../../../../../services/supabase/fakePostgrest.testUtils";
-import { fetchPointsCustomers } from "./customersListService";
+import {
+  fetchPointsCustomers,
+  searchFiscalCustomerByPhone,
+} from "./customersListService";
 
 /*
   El doble corta cada respuesta en 2 filas, como PostgREST con max-rows: sin
@@ -70,5 +73,45 @@ describe("customersListService", () => {
     });
 
     await expect(fetchPointsCustomers()).rejects.toBe(pageError);
+  });
+
+  describe("searchFiscalCustomerByPhone", () => {
+    // Query que resuelve con `result` al pedir `.limit()`; sin `.maybeSingle()`.
+    const mockFiscalQuery = (result) => {
+      const query = {
+        select: vi.fn(() => query),
+        eq: vi.fn(() => query),
+        or: vi.fn(() => query),
+        limit: vi.fn(() => Promise.resolve(result)),
+      };
+      supabase.from.mockImplementation(() => query);
+      return query;
+    };
+
+    it("devuelve el primero cuando dos clientes fiscales comparten telefono", async () => {
+      const first = { id: "f1", phone: "5512345678" };
+      const query = mockFiscalQuery({
+        data: [first, { id: "f2", phone: "5512345678" }],
+        error: null,
+      });
+
+      expect(await searchFiscalCustomerByPhone("5512345678")).toBe(first);
+      expect(query.limit).toHaveBeenCalledWith(1);
+    });
+
+    it("devuelve null sin coincidencias", async () => {
+      mockFiscalQuery({ data: [], error: null });
+
+      expect(await searchFiscalCustomerByPhone("5512345678")).toBeNull();
+    });
+
+    it("lanza el error de la consulta", async () => {
+      const queryError = { message: "boom" };
+      mockFiscalQuery({ data: null, error: queryError });
+
+      await expect(searchFiscalCustomerByPhone("5512345678")).rejects.toBe(
+        queryError
+      );
+    });
   });
 });

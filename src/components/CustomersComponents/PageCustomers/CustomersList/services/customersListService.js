@@ -54,7 +54,8 @@ export const fetchPointsCustomers = async () => {
 
 /**
  * Cliente fiscal con el mismo telefono que todavia no es cliente de puntos, para
- * ofrecerlo como alta sin duplicar el registro.
+ * ofrecerlo como alta sin duplicar el registro. Si varios comparten telefono
+ * devuelve el primero en lugar de fallar.
  */
 export const searchFiscalCustomerByPhone = async (phone) => {
   const { data, error } = await supabase
@@ -63,11 +64,11 @@ export const searchFiscalCustomerByPhone = async (phone) => {
     .eq("phone", phone)
     .eq("is_billing_customer", true)
     .or("is_points_customer.is.null,is_points_customer.eq.false")
-    .maybeSingle();
+    .limit(1);
 
   if (error) throw error;
 
-  return data || null;
+  return data?.[0] || null;
 };
 
 /**
