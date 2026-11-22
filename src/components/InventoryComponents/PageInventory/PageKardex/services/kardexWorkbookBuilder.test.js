@@ -72,8 +72,8 @@ describe("kardexWorkbookBuilder", () => {
   });
 
   describe("estructura del worksheet", () => {
-    it("define las siete columnas con sus anchos", () => {
-      expect(worksheet.columns).toHaveLength(7);
+    it("define las ocho columnas con sus anchos", () => {
+      expect(worksheet.columns).toHaveLength(8);
 
       expect(getColumnKeys(worksheet)).toEqual([
         "fecha",
@@ -83,21 +83,22 @@ describe("kardexWorkbookBuilder", () => {
         "existencia",
         "costoCompra",
         "importeTotal",
+        "usuario",
       ]);
 
       expect(worksheet.getColumn("costoCompra").width).toBe(16);
       expect(worksheet.getColumn("importeTotal").width).toBe(16);
     });
 
-    it("centra el titulo sobre las siete columnas", () => {
-      expect(worksheet.model.merges).toContain("A1:G1");
+    it("centra el titulo sobre las ocho columnas", () => {
+      expect(worksheet.model.merges).toContain("A1:H1");
 
       expect(worksheet.getCell("A1").isMerged).toBe(true);
       expect(worksheet.getCell("A1").value).toBe("KARDEX");
       expect(worksheet.getCell("A1").alignment.horizontal).toBe("center");
     });
 
-    it("escribe los siete encabezados de la tabla", () => {
+    it("escribe los ocho encabezados de la tabla", () => {
       expect(getHeaderValues(worksheet)).toEqual([
         "FECHA",
         "DESCRIPCIÓN / MOTIVO",
@@ -106,13 +107,14 @@ describe("kardexWorkbookBuilder", () => {
         "EXISTENCIA",
         "COSTO COMPRA",
         "IMPORTE TOTAL",
+        "USUARIO",
       ]);
     });
 
-    it("extiende el autofiltro hasta la septima columna", () => {
+    it("extiende el autofiltro hasta la octava columna", () => {
       expect(worksheet.autoFilter).toEqual({
         from: { row: HEADER_ROW_NUMBER, column: 1 },
-        to: { row: HEADER_ROW_NUMBER, column: 7 },
+        to: { row: HEADER_ROW_NUMBER, column: 8 },
       });
     });
 
@@ -127,7 +129,7 @@ describe("kardexWorkbookBuilder", () => {
     it("escribe el costo de compra y el importe total como numeros", () => {
       const row = worksheet.getRow(DATA_START_ROW_NUMBER);
 
-      expect(row.values.slice(1)).toHaveLength(7);
+      expect(row.values.slice(1)).toHaveLength(8);
       expect(row.getCell(6).value).toBe(120.5);
       expect(row.getCell(7).value).toBe(602.5);
     });
@@ -212,10 +214,10 @@ describe("kardexWorkbookBuilder", () => {
   });
 
   describe("formato de las filas de datos", () => {
-    it("respeta la fuente Arial y el borde en las siete celdas", () => {
+    it("respeta la fuente Arial y el borde en las ocho celdas", () => {
       const row = worksheet.getRow(DATA_START_ROW_NUMBER);
 
-      for (let columnNumber = 1; columnNumber <= 7; columnNumber += 1) {
+      for (let columnNumber = 1; columnNumber <= 8; columnNumber += 1) {
         const cell = row.getCell(columnNumber);
 
         expect(cell.font).toEqual({ name: "Arial" });
@@ -253,19 +255,99 @@ describe("kardexWorkbookBuilder", () => {
     });
   });
 
+  describe("columna de usuario", () => {
+    it("escribe el nombre del usuario y guion si falta", () => {
+      const sheet = buildWorksheet({
+        rows: [buildRow({ userName: "CAJERO1" }), buildRow({ id: "m2" })],
+      });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER).getCell(8).value).toBe(
+        "CAJERO1"
+      );
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 1).getCell(8).value).toBe(
+        "—"
+      );
+    });
+  });
+
+  describe("saldo anterior y totales", () => {
+    const rangeRows = [
+      buildRow({
+        id: "m2",
+        entryQty: 0,
+        exitQty: 3,
+        previousStock: 15,
+        runningStock: 12,
+      }),
+      buildRow({
+        id: "m1",
+        entryQty: 5,
+        exitQty: 0,
+        previousStock: 10,
+        runningStock: 15,
+      }),
+    ];
+
+    it("agrega saldo anterior y totales debajo de los movimientos con rango", () => {
+      const sheet = buildWorksheet({ rows: rangeRows });
+
+      const openingRow = sheet.getRow(DATA_START_ROW_NUMBER + 2);
+
+      const totalsRow = sheet.getRow(DATA_START_ROW_NUMBER + 3);
+
+      expect(openingRow.getCell(1).value).toBe("SALDO ANTERIOR");
+      expect(openingRow.getCell(5).value).toBe(10);
+      expect(totalsRow.getCell(1).value).toBe("TOTALES");
+      expect(totalsRow.getCell(3).value).toBe(5);
+      expect(totalsRow.getCell(4).value).toBe(-3);
+      expect(totalsRow.getCell(5).value).toBe(12);
+    });
+
+    it("con filtro por tipo suma solo lo filtrado y conserva los saldos", () => {
+      const sheet = buildWorksheet({
+        rows: [rangeRows[1]],
+        overrides: { rangeRows },
+      });
+
+      const totalsRow = sheet.getRow(DATA_START_ROW_NUMBER + 2);
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 1).getCell(5).value).toBe(10);
+      expect(totalsRow.getCell(3).value).toBe(5);
+      expect(totalsRow.getCell(4).value).toBe(0);
+      expect(totalsRow.getCell(5).value).toBe(12);
+    });
+
+    it("omite el saldo anterior sin rango de fechas", () => {
+      const sheet = buildWorksheet({
+        rows: rangeRows,
+        overrides: { dateFrom: "", dateTo: "" },
+      });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER + 2).getCell(1).value).toBe(
+        "TOTALES"
+      );
+    });
+
+    it("no agrega pie sin movimientos", () => {
+      const sheet = buildWorksheet({ rows: [] });
+
+      expect(sheet.getRow(DATA_START_ROW_NUMBER).getCell(1).value).toBeNull();
+    });
+  });
+
   describe("entradas inválidas", () => {
     it("genera la estructura aunque no haya movimientos", () => {
       const vacio = buildWorksheet({ rows: [] });
 
-      expect(vacio.columns).toHaveLength(7);
-      expect(getHeaderValues(vacio)).toHaveLength(7);
+      expect(vacio.columns).toHaveLength(8);
+      expect(getHeaderValues(vacio)).toHaveLength(8);
       expect(vacio.getCell("B9").value).toBe("0");
     });
 
     it("tolera filas no tabulares", () => {
       const invalido = buildWorksheet({ rows: null });
 
-      expect(invalido.columns).toHaveLength(7);
+      expect(invalido.columns).toHaveLength(8);
       expect(invalido.getCell("B9").value).toBe("0");
     });
 

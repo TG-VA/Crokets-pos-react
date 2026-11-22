@@ -161,3 +161,61 @@ describe("getKardexMovementDescription - prefijos tecnicos residuales", () => {
     ).toBe("AJUSTE");
   });
 });
+
+describe("getKardexMovementDescription en traspasos", () => {
+  it("agrega el origen en traspasos de entrada", () => {
+    expect(
+      getKardexMovementDescription({
+        movement_type: "transfer",
+        quantity: 4,
+        relatedBranchName: "CENTRO",
+      })
+    ).toBe("TRASPASO — ORIGEN: CENTRO");
+  });
+
+  it("agrega el destino en traspasos de salida y conserva el motivo", () => {
+    expect(
+      getKardexMovementDescription({
+        movement_type: "transfer",
+        previous_stock: 10,
+        new_stock: 6,
+        quantity: -4,
+        reason: "Envio",
+        relatedBranchName: "NORTE",
+      })
+    ).toBe("TRASPASO — DESTINO: NORTE — Envio");
+  });
+
+  it("usa el sentido del tipo en transfer_in y transfer_out", () => {
+    expect(
+      getKardexMovementDescription({
+        movement_type: "transfer_out",
+        quantity: 3,
+        relatedBranchName: "SUR",
+      })
+    ).toBe("TRASPASO SALIDA — DESTINO: SUR");
+    expect(
+      getKardexMovementDescription({
+        movement_type: "transfer_in",
+        quantity: -3,
+        relatedBranchName: "SUR",
+      })
+    ).toBe("TRASPASO ENTRADA — ORIGEN: SUR");
+  });
+
+  it("sin sucursal relacionada deja la descripcion previa", () => {
+    expect(getKardexMovementDescription({ movement_type: "transfer" })).toBe(
+      "TRASPASO"
+    );
+  });
+
+  it("no agrega sucursal a movimientos que no son traspaso", () => {
+    expect(
+      getKardexMovementDescription({
+        movement_type: "adjustment",
+        reason: "Conteo",
+        relatedBranchName: "SUR",
+      })
+    ).toBe("AJUSTE — Conteo");
+  });
+});

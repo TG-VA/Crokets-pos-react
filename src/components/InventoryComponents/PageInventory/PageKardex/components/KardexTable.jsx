@@ -1,5 +1,3 @@
-import React from "react";
-
 import {
   formatKardexDateTime,
   formatKardexOptionalCurrency,
@@ -15,6 +13,8 @@ const KardexTable = ({
   product = null,
   loading = false,
   error = "",
+  summary = null,
+  showOpeningBalance = false,
 }) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
 
@@ -57,12 +57,16 @@ const KardexTable = ({
             <th className={styles.colCostoCompra}>COSTO COMPRA</th>
 
             <th className={styles.colImporte}>IMPORTE TOTAL</th>
+
+            <th className={styles.colUsuario}>USUARIO</th>
           </tr>
         </thead>
 
         <tbody>
           {normalizedRows.map((row, index) => {
             const runningStock = row?.runningStock;
+
+            const description = getKardexMovementDescription(row);
 
             const hasLowStock =
               runningStock !== null &&
@@ -77,11 +81,8 @@ const KardexTable = ({
                   {formatKardexDateTime(row?.created_at)}
                 </td>
 
-                <td
-                  className={styles.cellDescripcion}
-                  title={getKardexMovementDescription(row)}
-                >
-                  {getKardexMovementDescription(row)}
+                <td className={styles.cellDescripcion} title={description}>
+                  {description}
                 </td>
 
                 <td
@@ -115,10 +116,52 @@ const KardexTable = ({
                 <td className={styles.cellImporte}>
                   {formatKardexOptionalCurrency(row?.total_cost)}
                 </td>
+
+                <td className={styles.cellUsuario} title={row?.userName || ""}>
+                  {row?.userName || "—"}
+                </td>
               </tr>
             );
           })}
         </tbody>
+
+        {summary ? (
+          <tfoot>
+            {showOpeningBalance ? (
+              <tr className={styles.summaryRow}>
+                <td className={styles.summaryLabel} colSpan={4}>
+                  SALDO ANTERIOR
+                </td>
+
+                <td className={styles.cellExistencia}>
+                  {summary.openingStock ?? "—"}
+                </td>
+
+                <td colSpan={3} />
+              </tr>
+            ) : null}
+
+            <tr className={styles.summaryRow}>
+              <td className={styles.summaryLabel} colSpan={2}>
+                TOTALES
+              </td>
+
+              <td className={styles.cellEntradas}>
+                {summary.totalEntries > 0 ? `+${summary.totalEntries}` : "0"}
+              </td>
+
+              <td className={styles.cellSalidas}>
+                {summary.totalExits > 0 ? `-${summary.totalExits}` : "0"}
+              </td>
+
+              <td className={styles.cellExistencia}>
+                {summary.closingStock ?? "—"}
+              </td>
+
+              <td colSpan={3} />
+            </tr>
+          </tfoot>
+        ) : null}
       </table>
     </div>
   );

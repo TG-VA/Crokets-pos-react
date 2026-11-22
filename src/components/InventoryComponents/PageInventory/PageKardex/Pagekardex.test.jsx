@@ -8,14 +8,18 @@ const MOVEMENTS_TOTAL = 25;
 
 const PAGE_SIZE = 10;
 
+const SALES_TOTAL = 5;
+
 const { exportKardexReport, kardexState } = vi.hoisted(() => {
+  const isSale = (index) => index % 5 === 0;
+
   const buildRow = (index) => ({
     id: `m${index}`,
     created_at: `2026-03-${String((index % 28) + 1).padStart(2, "0")}T15:30:00.000Z`,
-    movement_type: "purchase",
+    movement_type: isSale(index) ? "sale" : "purchase",
     reason: `LOTE ${index}`,
-    entryQty: 5,
-    exitQty: 0,
+    entryQty: isSale(index) ? 0 : 5,
+    exitQty: isSale(index) ? 1 : 0,
     runningStock: 10 + index,
     unit_cost: 100,
     total_cost: 500,
@@ -75,9 +79,7 @@ vi.mock("./hooks/useKardexRemoveConfirmation", () => ({
 }));
 
 const countRenderedDataRows = () =>
-  screen
-    .getAllByRole("row")
-    .filter((row) => row.querySelectorAll("td").length > 0).length;
+  screen.getAllByRole("row").filter((row) => row.closest("tbody")).length;
 
 describe("PageKardex exportacion", () => {
   beforeEach(() => {
@@ -120,6 +122,32 @@ describe("PageKardex exportacion", () => {
     expect(exportKardexReport.mock.calls[0][0].rows).toHaveLength(
       MOVEMENTS_TOTAL
     );
+  });
+
+  it("con filtro por tipo exporta lo filtrado y vuelve a la pagina 1", () => {
+    render(<PageKardex />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Tipo"), {
+      target: { value: "sale" },
+    });
+
+    expect(screen.getByText("Página 1 de 1")).toBeTruthy();
+    expect(countRenderedDataRows()).toBe(SALES_TOTAL);
+
+    fireEvent.click(screen.getByRole("button", { name: "Exportar" }));
+
+    const payload = exportKardexReport.mock.calls[0][0];
+
+    expect(payload.rows).toHaveLength(SALES_TOTAL);
+    expect(payload.rows.length).toBeLessThan(payload.rangeRows.length);
+    expect(payload.rows.every((row) => row.movement_type === "sale")).toBe(
+      true
+    );
+    expect(payload.rangeRows).toHaveLength(MOVEMENTS_TOTAL);
   });
 });
 

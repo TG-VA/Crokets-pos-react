@@ -31,6 +31,7 @@ const buildKardexFilename = ({ product, dateFrom, dateTo }) => {
 export const exportKardexReport = async ({
   product,
   rows = [],
+  rangeRows = null,
   dateFrom = "",
   dateTo = "",
 }) => {
@@ -52,6 +53,7 @@ export const exportKardexReport = async ({
     worksheet,
     product,
     rows: normalizedRows,
+    rangeRows,
     dateFrom,
     dateTo,
   });

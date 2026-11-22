@@ -3112,3 +3112,34 @@ PostgREST no lo trunca y ya no hay tope ni paginación en el cliente. Se eligió
 de uno paginado porque los filtros, conteos, orden y exportación a Excel trabajan sobre todas las
 filas de la sucursal. Es `security invoker` (aplica la RLS del llamador) y solo `authenticated`
 tiene `EXECUTE`. Contrato en `getBranchInventoryReportContract.test.js`.
+
+---
+
+### 103. Kardex: filas en guion sin stocks, sin saldo del rango, sin usuario ni sucursal del traspaso
+
+**Estado:** resuelto (22 nov 2026, rama `feat/kardex-mejoras`).
+
+**Problema:** entradas y salidas salian solo de `new_stock - previous_stock`, de modo que un
+movimiento sin alguno de los stocks quedaba en guion. Con rango de fechas no habia saldo inicial ni
+totales, la tabla no mostraba quien hizo el movimiento ni la otra sucursal de un traspaso, y no se
+podia filtrar por tipo.
+
+**Solucion:**
+
+- `getKardexStockChange` usa `quantity` cuando falta algun stock. `quantity` es el delta con signo
+  (CHECK `new_stock = previous_stock + quantity`); en tipos de sentido fijo (`sale`, `return`,
+  `canceled`, `entry`, etc.) se fuerza el sentido por si un registro historico lo trae sin signo.
+- `kardexCalculationService.buildKardexRangeSummary`: el saldo anterior es el `previousStock` del
+  movimiento mas antiguo del rango. Con el rango vacio no se consulta el ultimo movimiento previo
+  (se evita una lectura extra) y la tabla muestra su estado vacio. Tabla y Excel muestran
+  `SALDO ANTERIOR` (solo con rango) y `TOTALES` (entradas, salidas y saldo final).
+- Columna `USUARIO`: `user_id` se resuelve en lote con `loadUsers` del reporte de movimientos
+  (tabla `users`, campo `username`).
+- Traspasos: `related_branch_id` se resuelve con `fetchAllBranches` y la descripcion agrega
+  `ORIGEN` o `DESTINO`.
+- Filtro por tipo en memoria (`useKardexTypeFilter`); el Excel exporta lo filtrado y conserva los
+  saldos del rango completo.
+
+**Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
+migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
+filtro los agrupa en `Ajuste`.

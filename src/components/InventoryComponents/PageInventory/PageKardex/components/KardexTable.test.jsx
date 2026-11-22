@@ -47,6 +47,7 @@ describe("KardexTable", () => {
         "EXISTENCIA",
         "COSTO COMPRA",
         "IMPORTE TOTAL",
+        "USUARIO",
       ]);
     });
   });
@@ -57,7 +58,7 @@ describe("KardexTable", () => {
 
       const cells = getBodyRowCells(1);
 
-      expect(cells).toHaveLength(7);
+      expect(cells).toHaveLength(8);
       expect(cells[5].textContent).toBe(formatKardexCurrency(120.5));
       expect(cells[6].textContent).toBe(formatKardexCurrency(602.5));
     });
@@ -138,6 +139,36 @@ describe("KardexTable", () => {
       render(<KardexTable rows={null} />);
 
       expect(screen.getByText(/No hay movimientos registrados/)).toBeTruthy();
+    });
+  });
+
+  describe("pie del rango", () => {
+    const summary = {
+      openingStock: 10,
+      totalEntries: 5,
+      totalExits: 2,
+      closingStock: 13,
+    };
+
+    it("muestra saldo anterior y totales cuando hay rango activo", () => {
+      render(
+        <KardexTable rows={[buildRow()]} summary={summary} showOpeningBalance />
+      );
+
+      expect(screen.getByText("SALDO ANTERIOR")).toBeTruthy();
+      expect(screen.getByText("TOTALES")).toBeTruthy();
+      const totalsCells = [
+        ...screen.getByText("TOTALES").closest("tr").querySelectorAll("td"),
+      ].map((cell) => cell.textContent);
+
+      expect(totalsCells.slice(1, 4)).toEqual(["+5", "-2", "13"]);
+    });
+
+    it("omite el saldo anterior sin rango", () => {
+      render(<KardexTable rows={[buildRow()]} summary={summary} />);
+
+      expect(screen.queryByText("SALDO ANTERIOR")).toBeNull();
+      expect(screen.getByText("TOTALES")).toBeTruthy();
     });
   });
 });

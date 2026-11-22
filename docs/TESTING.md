@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (21 nov 2026)
+## Cobertura actual (22 nov 2026)
 
-386 archivos de test (**3766 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+394 archivos de test (**3805 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -201,6 +201,13 @@ y el proceso principal de Electron:
 | Kardex: exportador Excel                                  | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
 | Kardex: exportacion sobre el dataset completo             | `.../PageKardex/Pagekardex.test.jsx`                                               |
 | Kardex: carga y error de productos (hook)                 | `.../PageKardex/hooks/useKardex.test.js`                                           |
+| Kardex: saldo anterior y totales del rango                | `.../PageKardex/services/kardexCalculationService.test.js`                         |
+| Kardex: filtro por tipo de movimiento                     | `.../PageKardex/utils/kardexTypeFilters.test.js`                                   |
+| Kardex: estado del filtro por tipo (hook)                 | `.../PageKardex/hooks/useKardexTypeFilter.test.js`                                 |
+| Kardex: nombres de usuario en lote                        | `.../PageKardex/hooks/useKardexUserNames.test.js`                                  |
+| Kardex: sucursales de traspasos                           | `.../PageKardex/hooks/useKardexBranchNames.test.js`                                |
+| Kardex: usuario y sucursal aplicados a las filas          | `.../PageKardex/hooks/useKardexMovements.test.js`                                  |
+| Kardex: canal Realtime                                    | `.../PageKardex/services/kardexRealtimeService.test.js`                            |
 | Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
 | Facturación: validación fiscal                            | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |

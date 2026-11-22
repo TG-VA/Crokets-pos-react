@@ -1,3 +1,5 @@
+import { getKardexStockChange } from "./kardexMovementUtils";
+
 export const KARDEX_TIME_ZONE = "America/Cancun";
 
 export const formatKardexDateTime = (value) => {
@@ -154,6 +156,25 @@ const isInventoryAddReason = (reason) => {
   return INVENTORY_ADD_REASON_PATTERN.test(normalizeKardexText(reason));
 };
 
+/**
+ * Sucursal del otro extremo de un traspaso (`related_branch_id`, resuelta a
+ * `relatedBranchName`). El sentido sale del tipo cuando es fijo y, en el tipo
+ * generico `transfer`, del signo del movimiento.
+ */
+const appendTransferBranch = (label, movement, direction) => {
+  const branchName = normalizeKardexText(movement?.relatedBranchName);
+
+  if (!branchName) {
+    return label;
+  }
+
+  const isExit =
+    direction === "out" ||
+    (direction !== "in" && getKardexStockChange(movement).difference < 0);
+
+  return `${label} — ${isExit ? "DESTINO" : "ORIGEN"}: ${branchName}`;
+};
+
 export const getKardexMovementDescription = (movement) => {
   const movementType = getKardexMovementType(movement);
 
@@ -198,10 +219,16 @@ export const getKardexMovementDescription = (movement) => {
       return appendReason("COMPRA", reason);
 
     case "transfer_in":
-      return appendReason("TRASPASO ENTRADA", reason);
+      return appendReason(
+        appendTransferBranch("TRASPASO ENTRADA", movement, "in"),
+        reason
+      );
 
     case "transfer_out":
-      return appendReason("TRASPASO SALIDA", reason);
+      return appendReason(
+        appendTransferBranch("TRASPASO SALIDA", movement, "out"),
+        reason
+      );
 
     case "inventory_activate":
       return appendReason("ACTIVACIÓN DE INVENTARIO", reason);
@@ -225,7 +252,7 @@ export const getKardexMovementDescription = (movement) => {
       return appendReason("ENTRADA", reason);
 
     case "transfer":
-      return appendReason("TRASPASO", reason);
+      return appendReason(appendTransferBranch("TRASPASO", movement), reason);
 
     default:
       return reason || movementType.toUpperCase() || "—";

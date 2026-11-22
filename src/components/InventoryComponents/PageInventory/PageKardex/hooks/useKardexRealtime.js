@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { supabase } from "../../../../../lib/supabaseClient";
-
-import { KARDEX_MOVEMENTS_TABLE } from "../services/kardexService";
+import { subscribeToKardexMovements } from "../services/kardexRealtimeService";
 
 const REALTIME_DEBOUNCE_MS = 500;
 
@@ -49,8 +47,11 @@ const useKardexRealtime = ({
       return undefined;
     }
 
+    // Copia local del ref: el cleanup debe limpiar los timers de este efecto.
+    const refreshTimers = refreshTimersRef.current;
+
     const clearSlotTimer = (slot) => {
-      const timerId = refreshTimersRef.current[slot];
+      const timerId = refreshTimers[slot];
 
       if (timerId === null) {
         return;
@@ -58,7 +59,7 @@ const useKardexRealtime = ({
 
       window.clearTimeout(timerId);
 
-      refreshTimersRef.current[slot] = null;
+      refreshTimers[slot] = null;
     };
 
     const refreshSlotSafely = (slot) => {
@@ -70,8 +71,8 @@ const useKardexRealtime = ({
     const queueSlotRefresh = (slot) => {
       clearSlotTimer(slot);
 
-      refreshTimersRef.current[slot] = window.setTimeout(() => {
-        refreshTimersRef.current[slot] = null;
+      refreshTimers[slot] = window.setTimeout(() => {
+        refreshTimers[slot] = null;
 
         refreshSlotSafely(slot);
       }, REALTIME_DEBOUNCE_MS);
@@ -143,28 +144,20 @@ const useKardexRealtime = ({
       }
     };
 
-    const channel = supabase
-      .channel(`kardex-realtime-${branchId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: KARDEX_MOVEMENTS_TABLE,
-          filter: `branch_id=eq.${branchId}`,
-        },
-        queueAffectedProducts
-      )
-      .subscribe(handleStatusChange);
+    const unsubscribe = subscribeToKardexMovements({
+      branchId,
+      onChange: queueAffectedProducts,
+      onStatus: handleStatusChange,
+    });
 
     return () => {
-      refreshTimersRef.current.forEach((_timerId, slot) => {
+      refreshTimers.forEach((_timerId, slot) => {
         clearSlotTimer(slot);
       });
 
       stopPolling();
 
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [branchId, enabled, selectedIdsKey]);
 };
