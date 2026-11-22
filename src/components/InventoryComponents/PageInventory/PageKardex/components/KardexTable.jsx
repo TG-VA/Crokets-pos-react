@@ -68,6 +68,8 @@ const KardexTable = ({
           {normalizedRows.map((row, index) => {
             const runningStock = row?.runningStock;
 
+            const description = getKardexMovementDescription(row);
+
             const hasLowStock =
               runningStock !== null &&
               runningStock !== undefined &&
@@ -83,9 +85,9 @@ const KardexTable = ({
 
                 <td
                   className={styles.cellDescripcion}
-                  title={getKardexMovementDescription(row)}
+                  title={description}
                 >
-                  {getKardexMovementDescription(row)}
+                  {description}
                 </td>
 
                 <td
