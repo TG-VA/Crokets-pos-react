@@ -1,5 +1,12 @@
 import { isNamedCustomer } from "../../services/publicCustomerService";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   getPaymentMethodLabel,
   getPaymentSummary,
@@ -51,6 +58,7 @@ export const useSalesHistory = ({
   const [cashierFilter, setCashierFilter] = useState("all");
   const [tickets, setTickets] = useState([]);
   const [ticketsIncomplete, setTicketsIncomplete] = useState(false);
+  const [retryingTickets, setRetryingTickets] = useState(false);
   const [cashiers, setCashiers] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -147,21 +155,40 @@ export const useSalesHistory = ({
     [markSettled]
   );
 
+  // Clave vigente: una recarga manual que responde despues de un cambio de
+  // filtro trae datos de otra consulta y se descarta.
+  const currentTicketsKeyRef = useRef(ticketsRequestKey);
+  useLayoutEffect(() => {
+    currentTicketsKeyRef.current = ticketsRequestKey;
+  }, [ticketsRequestKey]);
+
   const loadTickets = useCallback(async () => {
     if (!ticketsRequestKey) return [];
+    const isStale = () => currentTicketsKeyRef.current !== ticketsRequestKey;
 
     try {
       const result = await fetchHistoryTickets(ticketsRequestKey);
+      if (isStale()) return [];
       applyTickets(result);
       return result.tickets;
     } catch (e) {
       console.error(e);
+      if (isStale()) return [];
       setTickets([]);
       setTicketsIncomplete(false);
       markSettled();
       return [];
     }
   }, [ticketsRequestKey, applyTickets, markSettled]);
+
+  const retryLoadTickets = useCallback(async () => {
+    setRetryingTickets(true);
+    try {
+      await loadTickets();
+    } finally {
+      setRetryingTickets(false);
+    }
+  }, [loadTickets]);
 
   useEffect(() => {
     if (!isOpen || !branchId) return undefined;
@@ -778,7 +805,8 @@ export const useSalesHistory = ({
     setCashierFilter,
     tickets,
     ticketsIncomplete,
-    retryLoadTickets: loadTickets,
+    retryLoadTickets,
+    retryingTickets,
     cashiers,
     paymentMethods,
     loadingTickets,

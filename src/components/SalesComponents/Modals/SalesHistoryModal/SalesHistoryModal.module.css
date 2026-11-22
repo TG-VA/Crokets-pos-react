@@ -219,8 +219,13 @@
   cursor: pointer;
 }
 
-.incompleteRetryBtn:hover {
+.incompleteRetryBtn:hover:not(:disabled) {
   background-color: #fff1cc;
+}
+
+.incompleteRetryBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .ticketTable {

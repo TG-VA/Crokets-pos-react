@@ -156,6 +156,67 @@ describe("useSalesHistory - seleccion inicial", () => {
     expect(result.current.ticketsIncomplete).toBe(false);
   });
 
+  it("limpia el aviso si el reintento falla", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchHistoryTickets.mockResolvedValue({
+      tickets: TICKETS,
+      incomplete: true,
+    });
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.ticketsIncomplete).toBe(true));
+
+    fetchHistoryTickets.mockRejectedValue(new Error("boom"));
+    await act(async () => {
+      await result.current.retryLoadTickets();
+    });
+
+    expect(result.current.ticketsIncomplete).toBe(false);
+    expect(result.current.tickets).toEqual([]);
+    expect(result.current.retryingTickets).toBe(false);
+  });
+
+  it("descarta un reintento que responde despues de cambiar de dia", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 2, 16, 12, 0, 0));
+    const DAY_17 = [
+      { id: "s3", folio: "F-3", status: "completed", total: 300, payments: [] },
+    ];
+    fetchHistoryTickets.mockResolvedValue({
+      tickets: TICKETS,
+      incomplete: true,
+    });
+    const { result } = renderSalesHistory();
+    await waitFor(() => expect(result.current.ticketsIncomplete).toBe(true));
+
+    let resolveRetry;
+    fetchHistoryTickets.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRetry = resolve;
+        })
+    );
+    let retryPromise;
+    act(() => {
+      retryPromise = result.current.retryLoadTickets();
+    });
+    expect(result.current.retryingTickets).toBe(true);
+
+    fetchHistoryTickets.mockResolvedValue(complete(DAY_17));
+    await act(async () => {
+      result.current.setDateFilter("2026-03-17");
+    });
+    await waitFor(() => expect(result.current.tickets).toEqual(DAY_17));
+
+    await act(async () => {
+      resolveRetry({ tickets: TICKETS, incomplete: true });
+      await retryPromise;
+    });
+
+    expect(result.current.tickets).toEqual(DAY_17);
+    expect(result.current.ticketsIncomplete).toBe(false);
+    expect(result.current.retryingTickets).toBe(false);
+  });
+
   it("deja la seleccion vacia si no hay ventas", async () => {
     fetchHistoryTickets.mockResolvedValue(complete([]));
     const { result } = renderSalesHistory();

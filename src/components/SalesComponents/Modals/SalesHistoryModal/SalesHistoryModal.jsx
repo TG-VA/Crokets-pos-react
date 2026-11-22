@@ -53,6 +53,7 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
     tickets,
     ticketsIncomplete,
     retryLoadTickets,
+    retryingTickets,
     cashiers,
     paymentMethods,
     loadingTickets,
@@ -312,6 +313,7 @@ const SalesHistoryModal = memo(({ isOpen, onClose, onSaleCancelled }) => {
                   type="button"
                   className={styles.incompleteRetryBtn}
                   onClick={retryLoadTickets}
+                  disabled={retryingTickets}
                 >
                   Reintentar
                 </button>
