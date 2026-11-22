@@ -13,7 +13,7 @@ import KardexTable from "./KardexTable";
 
 import styles from "./KardexProductPanel.module.css";
 
-const KARDEX_PAGE_SIZE_OPTIONS = [10, 25, 50];
+const KARDEX_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const getKardexProductKey = (product) =>
   String(product?.id ?? product?.product_id ?? "");

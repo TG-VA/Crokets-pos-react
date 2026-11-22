@@ -22,7 +22,7 @@
  * En la vista comparativa las celdas de fecha y descripcion ocupan dos lineas
  * (48-50px por fila), de modo que diez filas mas el encabezado miden cerca de
  * 540px. El maximo de 560px las muestra completas sin scroll en cualquier
- * circunstancia y reserva el scroll vertical para paginas de 25 o 50
+ * circunstancia y reserva el scroll vertical para paginas de 25, 50 o 100
  * movimientos, de modo que el encabezado sticky siga visible.
  */
 .tableWrap {
