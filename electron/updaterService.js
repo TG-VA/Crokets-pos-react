@@ -13,64 +13,8 @@ function createUpdaterState() {
   return { available: false, downloaded: false, version: null };
 }
 
-// Token de lectura dedicado para el feed de GitHub Releases. Sin prefijo VITE_
-// a proposito: Vite incrustaria la credencial en el bundle del renderer.
-// El provider de GitHub (publish.private = true) ya consume GH_TOKEN/GITHUB_TOKEN
-// del entorno; esta variable permite usar un token de lectura acotado.
-const READ_TOKEN_ENV_VAR = "CROKETS_GH_READ_TOKEN";
-
-// Ruta del archivo de configuración embebido para el token del auto-updater.
-const EMBEDDED_UPDATER_CONFIG_PATH = "./updaterConfig.json";
-
-// Carga el token de lectura embebido desde el archivo de configuración.
-// Debe ser tolerante a errores: si el archivo no existe o está corrupto,
-// devuelve null sin arrojar excepciones.
-function loadEmbeddedUpdaterToken(configPath = EMBEDDED_UPDATER_CONFIG_PATH) {
-  try {
-    const fs = require("fs");
-    const path = require("path");
-    const resolvedPath = path.isAbsolute(configPath)
-      ? configPath
-      : path.resolve(__dirname, configPath);
-    if (!fs.existsSync(resolvedPath)) {
-      return null;
-    }
-    const raw = fs.readFileSync(resolvedPath, "utf8");
-    const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed.ghReadToken === "string" &&
-      parsed.ghReadToken.trim()
-    ) {
-      return parsed.ghReadToken.trim();
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-// Token de lectura dedicado para el feed del repositorio privado.
-// Jerarquía: 1) Variable de entorno, 2) Token embebido, 3) null
-function resolveReadToken(env, embeddedConfig) {
-  const envToken = env?.[READ_TOKEN_ENV_VAR] || env?.GH_TOKEN || null;
-  if (envToken) {
-    return envToken;
-  }
-  if (typeof embeddedConfig !== "undefined") {
-    if (
-      embeddedConfig &&
-      typeof embeddedConfig.ghReadToken === "string" &&
-      embeddedConfig.ghReadToken.trim()
-    ) {
-      return embeddedConfig.ghReadToken.trim();
-    }
-    return null;
-  }
-  return loadEmbeddedUpdaterToken();
-}
-
-function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
+// El repositorio es publico: el feed de GitHub Releases se consulta sin token.
+function configureAutoUpdater(updater = getAutoUpdater()) {
   if (!updater) {
     return;
   }
@@ -79,32 +23,6 @@ function configureAutoUpdater(env, updater = getAutoUpdater(), embeddedConfig) {
   updater.autoInstallOnAppQuit = true;
   updater.allowPrerelease = false;
   updater.logger = console;
-
-  const token = resolveReadToken(env, embeddedConfig);
-  if (token) {
-    // electron-updater requiere GH_TOKEN en el entorno para instanciar PrivateGitHubProvider
-    // en lugar del GitHubProvider publico para repositorios privados.
-    process.env.GH_TOKEN = process.env.GH_TOKEN || token;
-
-    updater.requestHeaders = {
-      ...(updater.requestHeaders ?? {}),
-      Authorization: `token ${token}`,
-    };
-
-    if (typeof updater.setFeedURL === "function") {
-      try {
-        updater.setFeedURL({
-          provider: "github",
-          owner: "TG-VA",
-          repo: "Crokets-pos-react",
-          private: true,
-          token,
-        });
-      } catch (err) {
-        console.error("Error al configurar feed URL del auto-updater:", err);
-      }
-    }
-  }
 }
 
 // Notifica a todas las ventanas vivas el estado vigente de la actualizacion.
@@ -192,15 +110,7 @@ function scheduleInitialCheck(checkForUpdates) {
   return () => clearTimeout(timer);
 }
 
-function initAutoUpdater({
-  app,
-  isDev,
-  ipcMain,
-  BrowserWindow,
-  env = process.env,
-  updater,
-  embeddedConfig,
-}) {
+function initAutoUpdater({ app, isDev, ipcMain, BrowserWindow, updater }) {
   const state = createUpdaterState();
   const getResolvedUpdater = () => updater || (isDev ? null : getAutoUpdater());
   const checkForUpdates = () => {
@@ -226,7 +136,7 @@ function initAutoUpdater({
   }
 
   const activeUpdater = getResolvedUpdater();
-  configureAutoUpdater(env, activeUpdater, embeddedConfig);
+  configureAutoUpdater(activeUpdater);
   registerUpdaterEvents({ BrowserWindow, state, updater: activeUpdater });
 
   const cancelInitialCheck = scheduleInitialCheck(checkForUpdates);
@@ -242,9 +152,7 @@ module.exports = {
   createUpdaterState,
   getAutoUpdater,
   initAutoUpdater,
-  loadEmbeddedUpdaterToken,
   registerUpdaterEvents,
   registerUpdaterIpc,
-  resolveReadToken,
   scheduleInitialCheck,
 };
