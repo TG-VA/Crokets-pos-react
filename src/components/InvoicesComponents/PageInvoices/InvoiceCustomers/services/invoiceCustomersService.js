@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 
 const FISCAL_CUSTOMERS_COLUMNS = `
           id,
@@ -44,16 +45,16 @@ const POINTS_CUSTOMER_COLUMNS = `
         `;
 
 /**
- * Clientes de facturacion. El doble `order` resuelve el caso de las razones
- * sociales nulas, que en SQL ordenan al final.
+ * Clientes de facturacion. Se leen por paginas sobre id; el orden de la tabla
+ * lo aplica `sortCustomersByStatusAndName` en memoria.
  */
 export const fetchInvoiceCustomers = async () => {
-  const { data, error } = await supabase
-    .from("customers")
-    .select(FISCAL_CUSTOMERS_COLUMNS)
-    .eq("is_billing_customer", true)
-    .order("status", { ascending: false, nullsFirst: false })
-    .order("razon_social", { ascending: true, nullsFirst: false });
+  const { data, error } = await fetchAllPages(() =>
+    supabase
+      .from("customers")
+      .select(FISCAL_CUSTOMERS_COLUMNS)
+      .eq("is_billing_customer", true)
+  );
 
   if (error) throw error;
 

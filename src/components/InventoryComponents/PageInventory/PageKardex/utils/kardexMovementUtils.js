@@ -1,3 +1,4 @@
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 import { getStockLevel } from "../../../../../utils/stockStatus";
 
 const toFiniteNumber = (value, fallback = null) => {
@@ -10,39 +11,12 @@ const toFiniteNumber = (value, fallback = null) => {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 };
 
-const getTimestamp = (value) => {
-  const time = new Date(value ?? "").getTime();
-
-  return Number.isNaN(time) ? null : time;
-};
-
 /**
  * Ordena los movimientos del mas reciente al mas antiguo. Las fechas nulas o
  * invalidas van al final y el id desempata para que el orden sea estable.
  */
-export const sortKardexMovementsByDateDesc = (movements) => {
-  const normalizedMovements = Array.isArray(movements) ? movements : [];
-
-  return [...normalizedMovements].sort((left, right) => {
-    const leftTime = getTimestamp(left?.created_at);
-
-    const rightTime = getTimestamp(right?.created_at);
-
-    if (leftTime !== rightTime) {
-      if (leftTime === null) {
-        return 1;
-      }
-
-      if (rightTime === null) {
-        return -1;
-      }
-
-      return rightTime - leftTime;
-    }
-
-    return String(right?.id ?? "").localeCompare(String(left?.id ?? ""));
-  });
-};
+export const sortKardexMovementsByDateDesc = (movements) =>
+  sortByDateDesc(movements);
 
 export const getKardexStockChange = (movement) => {
   const previousStock = toFiniteNumber(movement?.previous_stock);

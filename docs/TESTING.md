@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (21 nov 2026)
 
-372 archivos de test (**3714 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+378 archivos de test (**3730 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -171,6 +171,13 @@ y el proceso principal de Electron:
 | Ticket: secciones                                         | `src/utils/ticket/ticketSections.test.js`                                          |
 | Reportes: ciclo de vida del dashboard                     | `.../PageReportsHome/hooks/useReportsDashboard.test.js`                            |
 | Supabase: paginacion sobre el tope de 1000 filas          | `src/services/supabase/paginatedQuery.test.js`                                     |
+| Saldo de puntos compartido (paginado)                     | `src/services/customers/customerPointsBalanceService.test.js`                      |
+| Orden por fecha descendente de lecturas paginadas         | `src/utils/sortByDateDesc.test.js`                                                 |
+| Clientes de puntos y movimientos (paginados)              | `.../CustomersList/services/customersListService.test.js`                          |
+| Historial de puntos (paginado)                            | `.../PointsHistory/services/pointsHistoryService.test.js`                          |
+| Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
+| Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |
+| Ventas: saldo de puntos del cliente                       | `.../SalesComponents/services/salesCustomerPointsService.test.js`                  |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
 | Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
@@ -330,6 +337,10 @@ regla nueva de costo debe cambiarse en los dos lados.
   restaurarlo con `vi.useRealTimers()` en `afterEach`. Sin esto la prueba se rompe sola cuando la
   fecha real rebasa la capturada. Ejemplos: `KitFormSection.test.jsx` y
   `KitRenewValidityForm.test.jsx`.
+- **Doble de PostgREST para paginacion:** `createFakePostgrest` + `withSmallPages` de
+  `src/services/supabase/fakePostgrest.testUtils.js`. Ojo con `beforeEach(() => mock.mockReset())`:
+  la flecha sin llaves devuelve el mock y Vitest lo ejecuta como teardown sin argumentos; usar
+  cuerpo con llaves.
 - **Estilo:** seguir el patrón existente; no introducir un framework de mocking distinto.
 
 ## Huecos de cobertura
@@ -461,6 +472,18 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   y `productsImportService.test.js` fijan la validacion de importacion por lotes, sin repetidos y con
   `cursorColumn: "clave"` en la tabla SAT, que no tiene `id`; `paginatedQuery.test.js` suma los
   casos de `cursorColumn`.
+- **Paginacion de listas e historiales** (21 nov 2026, rama `fix/paginacion-listas-historiales`):
+  extiende `fetchAllPages`/`fetchByIdsInBatches` a clientes de puntos, historial de puntos,
+  facturas (clientes fiscales, pendientes e historial), historial de ventas, traspasos, pedidos y
+  cobertura de kits. Cada servicio tiene un caso que cruza varias paginas con
+  `src/services/supabase/fakePostgrest.testUtils.js`: el doble corta cada respuesta en 2 filas como
+  PostgREST con `max-rows`, y `withSmallPages` (via `vi.mock` de `paginatedQuery`) fuerza paginas y
+  lotes de 2, asi pocas filas bastan. Los casos fallan contra la lectura sin paginar. El saldo de
+  puntos se lee solo desde `customerPointsBalanceService` (ventas, devoluciones, ajuste manual,
+  consulta de recompensas, modal de cliente e historial de ventas); su test fija la suma de todas las
+  paginas, ids nulos o repetidos, el saldo 0 y que el error de una pagina se lanza en vez de devolver
+  un saldo parcial. `sortByDateDesc.test.js` fija el orden en memoria que reemplaza al `.order()` de
+  servidor (fechas invalidas al final, desempate por `id`, columna configurable).
 - **Paginacion sobre el tope de PostgREST y estado de stock comun** (20 nov 2026, rama
   `fix/kardex-paginacion-y-estado-stock`): PostgREST corta cada respuesta en 1000 filas sin error.
   `src/services/supabase/paginatedQuery.js` concentra `fetchAllPages` (cursor keyset sobre `id`),

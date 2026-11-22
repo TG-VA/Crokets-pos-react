@@ -7,7 +7,9 @@
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 import { buildInvoicesDateRange } from "./invoicesHistoryCalculationService";
 
 const INVOICES_COLUMNS = `
@@ -71,22 +73,25 @@ export const fetchInvoicesHistory = async ({
 }) => {
   const range = buildInvoicesDateRange(startDate, endDate);
 
-  let query = supabase
-    .from("invoices")
-    .select(INVOICES_COLUMNS)
-    .gte("created_at", range.start)
-    .lte("created_at", range.end)
-    .order("created_at", { ascending: false });
+  const buildQuery = () => {
+    let query = supabase
+      .from("invoices")
+      .select(INVOICES_COLUMNS)
+      .gte("created_at", range.start)
+      .lte("created_at", range.end);
 
-  if (branchFilter === "current") {
-    query = query.eq("branch_id", currentBranchId);
-  } else if (branchFilter !== "all") {
-    query = query.eq("branch_id", branchFilter);
-  }
+    if (branchFilter === "current") {
+      query = query.eq("branch_id", currentBranchId);
+    } else if (branchFilter !== "all") {
+      query = query.eq("branch_id", branchFilter);
+    }
 
-  const { data, error } = await query;
+    return query;
+  };
+
+  const { data, error } = await fetchAllPages(buildQuery);
 
   if (error) throw error;
 
-  return data || [];
+  return sortByDateDesc(data);
 };
