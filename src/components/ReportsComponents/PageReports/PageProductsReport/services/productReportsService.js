@@ -1,4 +1,5 @@
 import { supabase } from "../../../../../lib/supabaseClient";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 
 export const fetchProductsReportData = async ({
   startDate,
@@ -10,10 +11,12 @@ export const fetchProductsReportData = async ({
   }
 
   // 1. CONSULTAR VENTAS DEL PERIODO
-  let salesQuery = supabase
-    .from("sale_details")
-    .select(
-      `
+  const buildSalesQuery = () => {
+    let salesQuery = supabase
+      .from("sale_details")
+      .select(
+        `
+      id,
       quantity,
       total_price,
       product_id,
@@ -25,16 +28,20 @@ export const fetchProductsReportData = async ({
       ),
       sales!inner ( status, branch_id, created_at )
     `
-    )
-    .eq("sales.status", "completed")
-    .gte("sales.created_at", startDate)
-    .lte("sales.created_at", endDate);
+      )
+      .eq("sales.status", "completed")
+      .gte("sales.created_at", startDate)
+      .lte("sales.created_at", endDate);
 
-  if (branchId !== "ALL") {
-    salesQuery = salesQuery.eq("sales.branch_id", branchId);
-  }
+    if (branchId !== "ALL") {
+      salesQuery = salesQuery.eq("sales.branch_id", branchId);
+    }
 
-  const { data: saleDetails, error: salesError } = await salesQuery;
+    return salesQuery;
+  };
+
+  const { data: saleDetails, error: salesError } =
+    await fetchAllPages(buildSalesQuery);
 
   if (salesError) throw salesError;
 
@@ -83,10 +90,12 @@ export const fetchProductsReportData = async ({
   });
 
   // 3. CONSULTAR INVENTARIO (CRUZAR STOCK Y MUERTOS)
-  let inventoryQuery = supabase
-    .from("branch_inventory")
-    .select(
-      `
+  const buildInventoryQuery = () => {
+    let inventoryQuery = supabase
+      .from("branch_inventory")
+      .select(
+        `
+      id,
       stock,
       product_id,
       products (
@@ -96,14 +105,18 @@ export const fetchProductsReportData = async ({
         department:departments ( name ) 
       )
     `
-    )
-    .eq("is_active", true); // Quitamos el > 0 temporalmente para ver todo el panorama
+      )
+      .eq("is_active", true); // Quitamos el > 0 temporalmente para ver todo el panorama
 
-  if (branchId !== "ALL") {
-    inventoryQuery = inventoryQuery.eq("branch_id", branchId);
-  }
+    if (branchId !== "ALL") {
+      inventoryQuery = inventoryQuery.eq("branch_id", branchId);
+    }
 
-  const { data: inventoryRows, error: inventoryError } = await inventoryQuery;
+    return inventoryQuery;
+  };
+
+  const { data: inventoryRows, error: inventoryError } =
+    await fetchAllPages(buildInventoryQuery);
   if (inventoryError) throw inventoryError;
 
   const deadStockMap = {};

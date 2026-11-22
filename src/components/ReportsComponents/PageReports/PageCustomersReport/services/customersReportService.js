@@ -8,6 +8,7 @@ import {
   fetchAllBranches,
   fetchOperationalBranches,
 } from "../../../../../services/branchScopeService";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 import {
   calculatePointsByCustomer,
   aggregateSalesByCustomer,
@@ -48,7 +49,8 @@ export const fetchCustomersReportData = async ({
 }) => {
   try {
     // 1. Cargar catálogo de clientes
-    const customersQuery = supabase.from("customers").select(`
+    const buildCustomersQuery = () =>
+      supabase.from("customers").select(`
         id,
         name,
         phone,
@@ -61,10 +63,11 @@ export const fetchCustomersReportData = async ({
       `);
 
     // 2. Cargar historial completo de ventas para clientes identificados
-    let salesQuery = supabase
-      .from("sales")
-      .select(
-        `
+    const buildSalesQuery = () => {
+      let salesQuery = supabase
+        .from("sales")
+        .select(
+          `
         id,
         sale_date,
         total,
@@ -73,13 +76,16 @@ export const fetchCustomersReportData = async ({
         customer_id,
         branch_id
       `
-      )
-      .not("customer_id", "is", null);
+        )
+        .not("customer_id", "is", null);
 
-    if (branchId !== "ALL") salesQuery = salesQuery.eq("branch_id", branchId);
+      if (branchId !== "ALL") salesQuery = salesQuery.eq("branch_id", branchId);
+      return salesQuery;
+    };
 
     // 3. Cargar historial completo de movimientos de puntos
-    let pointsQuery = supabase.from("customer_points").select(`
+    const buildPointsQuery = () => {
+      let pointsQuery = supabase.from("customer_points").select(`
         id,
         customer_id,
         points,
@@ -89,10 +95,14 @@ export const fetchCustomersReportData = async ({
         created_at
       `);
 
-    if (branchId !== "ALL") pointsQuery = pointsQuery.eq("branch_id", branchId);
+      if (branchId !== "ALL")
+        pointsQuery = pointsQuery.eq("branch_id", branchId);
+      return pointsQuery;
+    };
 
     // 4. Cargar historial completo de redenciones de recompensas
-    let redemptionsQuery = supabase.from("sale_reward_redemptions").select(`
+    const buildRedemptionsQuery = () => {
+      let redemptionsQuery = supabase.from("sale_reward_redemptions").select(`
         id,
         sale_id,
         customer_id,
@@ -105,20 +115,22 @@ export const fetchCustomersReportData = async ({
         created_at
       `);
 
-    if (branchId !== "ALL")
-      redemptionsQuery = redemptionsQuery.eq("branch_id", branchId);
+      if (branchId !== "ALL")
+        redemptionsQuery = redemptionsQuery.eq("branch_id", branchId);
+      return redemptionsQuery;
+    };
 
     const branchesQuery = fetchAllBranches({
       columns: "id, name, timezone, code",
     });
 
-    // Ejecutar consultas principales en paralelo
+    // Ejecutar consultas principales en paralelo, cada una paginada
     const [customersRes, salesRes, pointsRes, redemptionsRes, branchesRes] =
       await Promise.all([
-        customersQuery,
-        salesQuery,
-        pointsQuery,
-        redemptionsQuery,
+        fetchAllPages(buildCustomersQuery),
+        fetchAllPages(buildSalesQuery),
+        fetchAllPages(buildPointsQuery),
+        fetchAllPages(buildRedemptionsQuery),
         branchesQuery,
       ]);
 
@@ -174,10 +186,11 @@ export const fetchCustomersReportData = async ({
 
       for (let i = 0; i < saleIdsForDetails.length; i += chunkSize) {
         const chunk = saleIdsForDetails.slice(i, i + chunkSize);
-        const { data: chunkData, error: chunkErr } = await supabase
-          .from("sale_details")
-          .select(
-            `
+        const { data: chunkData, error: chunkErr } = await fetchAllPages(() =>
+          supabase
+            .from("sale_details")
+            .select(
+              `
             id,
             sale_id,
             product_id,
@@ -195,8 +208,9 @@ export const fetchCustomersReportData = async ({
               created_at
             )
           `
-          )
-          .in("sale_id", chunk);
+            )
+            .in("sale_id", chunk)
+        );
 
         if (!chunkErr && chunkData) {
           saleDetailsList.push(...chunkData);

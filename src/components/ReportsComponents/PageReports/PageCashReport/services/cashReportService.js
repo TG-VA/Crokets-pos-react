@@ -5,6 +5,11 @@
 
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import {
+  fetchAllPages,
+  fetchAllRpcPages,
+  fetchByIdsInBatches,
+} from "../../../../../services/supabase/paginatedQuery";
 
 // Re-exportar servicios modulares
 export {
@@ -81,15 +86,20 @@ export const fetchCashSessions = async ({
   try {
     const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
 
-    const { data: rpcRows, error: rpcError } = await supabase
-      .rpc("get_cash_report_sessions", {
-        p_branch_id: branchId !== "ALL" ? branchId : null,
-        p_start_date: startIso || null,
-        p_end_date: endIso || null,
-        p_cashier_id: cashierId !== "ALL" ? cashierId : null,
-        p_session_status: sessionStatus !== "ALL" ? sessionStatus : null,
-      })
-      .limit(100000);
+    // La RPC ordena por opened_at; el desempate por session_id deja un orden
+    // estable para que las paginas de .range() no repitan ni salten sesiones.
+    const { data: rpcRows, error: rpcError } = await fetchAllRpcPages(() =>
+      supabase
+        .rpc("get_cash_report_sessions", {
+          p_branch_id: branchId !== "ALL" ? branchId : null,
+          p_start_date: startIso || null,
+          p_end_date: endIso || null,
+          p_cashier_id: cashierId !== "ALL" ? cashierId : null,
+          p_session_status: sessionStatus !== "ALL" ? sessionStatus : null,
+        })
+        .order("opened_at", { ascending: false })
+        .order("session_id", { ascending: true })
+    );
 
     if (rpcError) throw rpcError;
 
@@ -100,14 +110,17 @@ export const fetchCashSessions = async ({
 
     const sessionIds = rawSessions.map((s) => s.session_id);
 
-    // Consultar movimientos de caja en lote (1 query, no N)
+    // Consultar movimientos de caja por lotes de sesiones, cada lote paginado
     let movementsBySession = {};
     try {
-      const { data: movsRes, error: movsError } = await supabase
-        .from("cash_movements")
-        .select("id, session_id, movement_type, amount")
-        .in("session_id", sessionIds)
-        .limit(100000);
+      const { data: movsRes, error: movsError } = await fetchByIdsInBatches(
+        sessionIds,
+        (batch) =>
+          supabase
+            .from("cash_movements")
+            .select("id, session_id, movement_type, amount")
+            .in("session_id", batch)
+      );
 
       if (movsError) {
         console.error(
@@ -191,9 +204,10 @@ export const fetchCashMovements = async ({
   movementType = "ALL",
 }) => {
   try {
-    let query = supabase
-      .from("cash_movements")
-      .select(
+    const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
+
+    const buildQuery = () => {
+      let query = supabase.from("cash_movements").select(
         `
         id,
         session_id,
@@ -213,30 +227,36 @@ export const fetchCashMovements = async ({
           timezone
         )
       `
-      )
-      .order("created_at", { ascending: false });
+      );
 
-    if (branchId && branchId !== "ALL") {
-      query = query.eq("branch_id", branchId);
-    }
+      if (branchId && branchId !== "ALL") {
+        query = query.eq("branch_id", branchId);
+      }
 
-    if (cashierId && cashierId !== "ALL") {
-      query = query.eq("user_id", cashierId);
-    }
+      if (cashierId && cashierId !== "ALL") {
+        query = query.eq("user_id", cashierId);
+      }
 
-    if (movementType && movementType !== "ALL") {
-      query = query.ilike("movement_type", `%${movementType}%`);
-    }
+      if (movementType && movementType !== "ALL") {
+        query = query.ilike("movement_type", `%${movementType}%`);
+      }
 
-    const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
-    if (startIso && endIso) {
-      query = query.gte("created_at", startIso).lte("created_at", endIso);
-    }
+      if (startIso && endIso) {
+        query = query.gte("created_at", startIso).lte("created_at", endIso);
+      }
 
-    const { data, error } = await query.limit(10000);
+      return query;
+    };
+
+    // El cursor ordena por id: el orden por fecha descendente se aplica en memoria.
+    const { data, error } = await fetchAllPages(buildQuery);
     if (error) throw error;
 
-    return data || [];
+    data.sort((left, right) =>
+      String(right.created_at).localeCompare(String(left.created_at))
+    );
+
+    return data;
   } catch (err) {
     console.error(
       "Error al consultar movimientos de caja en cashReportService:",
@@ -255,10 +275,13 @@ export const fetchPaymentMethodsSummary = async ({
   endDate = null,
 }) => {
   try {
-    let query = supabase
-      .from("sale_payments")
-      .select(
-        `
+    const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
+
+    const buildQuery = () => {
+      let query = supabase
+        .from("sale_payments")
+        .select(
+          `
         id,
         sale_id,
         payment_method_id,
@@ -276,21 +299,23 @@ export const fetchPaymentMethodsSummary = async ({
           created_at
         )
       `
-      )
-      .in("sales.status", ["completed", "partial_refund"]);
+        )
+        .in("sales.status", ["completed", "partial_refund"]);
 
-    if (branchId && branchId !== "ALL") {
-      query = query.eq("branch_id", branchId);
-    }
+      if (branchId && branchId !== "ALL") {
+        query = query.eq("branch_id", branchId);
+      }
 
-    const { startIso, endIso } = buildIsoDateRange(startDate, endDate);
-    if (startIso && endIso) {
-      query = query
-        .gte("sales.created_at", startIso)
-        .lte("sales.created_at", endIso);
-    }
+      if (startIso && endIso) {
+        query = query
+          .gte("sales.created_at", startIso)
+          .lte("sales.created_at", endIso);
+      }
 
-    const { data, error } = await query.limit(15000);
+      return query;
+    };
+
+    const { data, error } = await fetchAllPages(buildQuery);
     if (error) throw error;
 
     // Agrupar por método de pago
