@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { fetchCustomerPointsBalance } from "../../../services/customers/customerPointsBalanceService";
 
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
 const DEFAULT_POINTS_AMOUNT = 50;
@@ -57,17 +58,14 @@ export const reverseCustomerPointsByPartialReturn = async ({
   if (!customerId || earnedPoints <= 0)
     return { registered: false, points: 0, reason: "NO_EARNED_POINTS" };
 
-  const [partialPointsRes, balanceRes, returnsRes] = await Promise.all([
+  const [partialPointsRes, currentBalance, returnsRes] = await Promise.all([
     supabase
       .from("customer_points")
       .select("points")
       .eq("customer_id", customerId)
       .eq("related_sale_id", selectedTicket.id)
       .eq("source", "partial_return"),
-    supabase
-      .from("customer_points")
-      .select("points")
-      .eq("customer_id", customerId),
+    fetchCustomerPointsBalance(customerId),
     supabase
       .from("sale_returns")
       .select("total_refund")
@@ -75,15 +73,10 @@ export const reverseCustomerPointsByPartialReturn = async ({
   ]);
 
   if (partialPointsRes.error) throw partialPointsRes.error;
-  if (balanceRes.error) throw balanceRes.error;
   if (returnsRes.error) throw returnsRes.error;
 
   const alreadyReversedByReturns = (partialPointsRes.data || []).reduce(
     (acc, row) => acc + Math.abs(Math.min(Number(row.points || 0), 0)),
-    0
-  );
-  const currentBalance = (balanceRes.data || []).reduce(
-    (acc, row) => acc + Number(row.points || 0),
     0
   );
   const dbReturnedTotal = (returnsRes.data || []).reduce(

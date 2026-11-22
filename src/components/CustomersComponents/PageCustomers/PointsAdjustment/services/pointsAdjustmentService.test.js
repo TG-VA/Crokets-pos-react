@@ -7,7 +7,6 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 import {
   fetchCurrentAuthUser,
-  fetchCustomerPointMovements,
   fetchUserProfileWithRole,
   insertPointsMovement,
   searchPointsCustomers,
@@ -140,42 +139,6 @@ describe("pointsAdjustmentService", () => {
       );
 
       await expect(searchPointsCustomers("ana")).rejects.toThrow("busqueda");
-    });
-  });
-
-  describe("fetchCustomerPointMovements", () => {
-    it("pide solo los puntos del cliente", async () => {
-      const movements = [{ points: 100 }, { points: -30 }];
-      const query = thenableQuery({ data: movements, error: null });
-      supabase.from.mockReturnValue(query);
-
-      await expect(fetchCustomerPointMovements("c1")).resolves.toEqual(
-        movements
-      );
-
-      expect(supabase.from).toHaveBeenCalledWith("customer_points");
-      expect(query.eq).toHaveBeenCalledWith("customer_id", "c1");
-    });
-
-    it("no consulta sin cliente seleccionado", async () => {
-      await expect(fetchCustomerPointMovements(null)).resolves.toEqual([]);
-      expect(supabase.from).not.toHaveBeenCalled();
-    });
-
-    it("devuelve lista vacia cuando el cliente no tiene movimientos", async () => {
-      supabase.from.mockReturnValue(thenableQuery({ data: null, error: null }));
-
-      await expect(fetchCustomerPointMovements("c1")).resolves.toEqual([]);
-    });
-
-    it("propaga el error de la consulta", async () => {
-      supabase.from.mockReturnValue(
-        thenableQuery({ data: null, error: new Error("movimientos") })
-      );
-
-      await expect(fetchCustomerPointMovements("c1")).rejects.toThrow(
-        "movimientos"
-      );
     });
   });
 

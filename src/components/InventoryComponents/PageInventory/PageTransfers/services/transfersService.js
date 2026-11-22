@@ -1,5 +1,7 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchOperationalBranches } from "../../../../../services/branchScopeService";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
+import { sortByDateDesc } from "../../../../../utils/sortByDateDesc";
 
 import {
   createTransferFolio,
@@ -41,17 +43,18 @@ export const fetchTransferBranchOptions = async (currentBranch) => {
   }
 };
 
+// El historial filtra y pagina en memoria, y los pendientes se cuentan sobre la
+// lista completa: se leen todas las paginas en vez de paginar en servidor.
 export const loadTransferOrders = async () => {
-  const { data, error } = await supabase
-    .from("inventory_transfers")
-    .select(TRANSFER_SELECT)
-    .order("created_at", { ascending: false });
+  const { data, error } = await fetchAllPages(() =>
+    supabase.from("inventory_transfers").select(TRANSFER_SELECT)
+  );
 
   if (error) {
     throw error;
   }
 
-  return (Array.isArray(data) ? data : []).map(normalizeTransferOrder);
+  return sortByDateDesc(data).map(normalizeTransferOrder);
 };
 
 export const createTransferOrder = async ({

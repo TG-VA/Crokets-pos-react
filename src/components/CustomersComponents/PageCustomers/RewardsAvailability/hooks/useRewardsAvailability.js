@@ -3,10 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import { sortCustomersByName } from "../../utils/customerFormatters";
-import { calculatePointsBalance } from "../../services/customerPointsCalculationService";
+import { fetchCustomerPointsBalance } from "../../../../../services/customers/customerPointsBalanceService";
 import {
   fetchActiveRewards,
-  fetchCustomerPointsMovements,
   searchActivePointsCustomers,
 } from "../services/rewardsAvailabilityService";
 import {
@@ -67,9 +66,7 @@ export const useRewardsAvailability = () => {
     try {
       setLoadingPoints(true);
 
-      const movements = await fetchCustomerPointsMovements(customerId);
-
-      setCustomerPoints(calculatePointsBalance(movements));
+      setCustomerPoints(await fetchCustomerPointsBalance(customerId));
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
       setCustomerPoints(0);

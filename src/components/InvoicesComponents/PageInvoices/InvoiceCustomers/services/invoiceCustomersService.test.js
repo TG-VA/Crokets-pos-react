@@ -8,6 +8,8 @@ const buildChain = (result) => {
     select: vi.fn(() => builder),
     or: vi.fn(() => builder),
     order: vi.fn(() => builder),
+    gt: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
     update: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     maybeSingle: vi.fn(async () => result),
@@ -20,17 +22,35 @@ const buildChain = (result) => {
   return builder;
 };
 
+// El caso de varias paginas desvia supabase.from al doble de PostgREST.
+let fakeFrom = null;
 let nextResult = { data: [], error: null };
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: {
     from: (table) => {
+      if (fakeFrom) return fakeFrom(table);
+
       fromCalls.push(table);
 
       return buildChain(nextResult);
     },
   },
 }));
+
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
+import {
+  buildId,
+  createFakePostgrest,
+} from "../../../../../services/supabase/fakePostgrest.testUtils";
 
 import {
   fetchInvoiceCustomers,
@@ -43,28 +63,38 @@ const lastChain = () => chains[chains.length - 1];
 
 describe("invoiceCustomersService", () => {
   beforeEach(() => {
+    fakeFrom = null;
     fromCalls.length = 0;
     chains.length = 0;
     nextResult = { data: [], error: null };
   });
 
   describe("fetchInvoiceCustomers", () => {
-    it("trae solo los clientes con datos fiscales, activos primero", async () => {
+    it("trae solo los clientes con datos fiscales", async () => {
       nextResult = { data: [{ id: "c1" }], error: null };
 
       const customers = await fetchInvoiceCustomers();
 
       expect(fromCalls).toEqual(["customers"]);
       expect(lastChain().eq).toHaveBeenCalledWith("is_billing_customer", true);
-      expect(lastChain().order).toHaveBeenCalledWith("status", {
-        ascending: false,
-        nullsFirst: false,
-      });
-      expect(lastChain().order).toHaveBeenCalledWith("razon_social", {
-        ascending: true,
-        nullsFirst: false,
-      });
       expect(customers).toEqual([{ id: "c1" }]);
+    });
+
+    it("lee todas las paginas de clientes fiscales", async () => {
+      const fake = createFakePostgrest({
+        customers: [0, 1, 2, 3, 4].map((index) => ({
+          id: buildId("c", index),
+          is_billing_customer: index !== 2,
+        })),
+      });
+      fakeFrom = fake.from;
+
+      const customers = await fetchInvoiceCustomers();
+
+      expect(customers.map((customer) => customer.id)).toEqual(
+        [0, 1, 3, 4].map((index) => buildId("c", index))
+      );
+      expect(fake.calls.length).toBeGreaterThan(1);
     });
 
     it("devuelve arreglo vacio cuando no hay clientes fiscales", async () => {
