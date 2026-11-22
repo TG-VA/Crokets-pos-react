@@ -50,7 +50,7 @@ Para garantizar la escalabilidad y evitar archivos monolíticos o cuellos de bot
 - El proyecto usa **Vitest**; correr **`npm test`** antes de commitear.
 - Agregar tests para lógica nueva no trivial (cálculos, contratos de servicios, hooks). Ver
   `docs/TESTING.md` para el runner, patrones de mock y huecos de cobertura.
-- **Pipeline de CI y Verificaciones Incrementales:** Cada PR corre automáticamente en `.github/workflows/ci.yml`:
+- **Pipeline de CI y Verificaciones Incrementales:** Cada PR (no borrador) corre automáticamente en `.github/workflows/ci.yml`. Para ahorrar minutos de Actions, no corre en push a `main`, ignora cambios solo de `docs/**` y `*.md`, y cancela la corrida anterior del mismo PR al recibir un push nuevo. Correr `npm run check:agents && npm test` en local y agrupar correcciones en un solo push:
   - `npm run check:agents`: Valida cero emojis, cero `!important` en CSS, cero `console.log`/`warn` y EOF newlines sobre el diff.
   - `ESLint incremental`: Ejecuta `xargs npx eslint` sobre los archivos modificados del diff.
   - `Prettier incremental`: Ejecuta `xargs npx prettier --check` sobre el diff.
