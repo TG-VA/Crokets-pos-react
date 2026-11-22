@@ -6,6 +6,7 @@ import {
 } from "../utils/kardexMovementUtils";
 
 import useKardexMovementSlots from "./useKardexMovementSlots";
+import useKardexBranchNames from "./useKardexBranchNames";
 import useKardexRealtime from "./useKardexRealtime";
 import useKardexUserNames from "./useKardexUserNames";
 
@@ -79,6 +80,10 @@ const useKardexMovements = ({
 
   const userNamesById = useKardexUserNames(userIds);
 
+  const branchNamesById = useKardexBranchNames({
+    enabled: selectedProductIds.some(Boolean),
+  });
+
   const rowsBySlot = useMemo(() => {
     return KARDEX_SLOTS.map((slot) => {
       const product = selectedProducts[slot];
@@ -90,9 +95,11 @@ const useKardexMovements = ({
       }).map((row) => ({
         ...row,
         userName: userNamesById.get(String(row?.user_id ?? "")) ?? "",
+        relatedBranchName:
+          branchNamesById.get(String(row?.related_branch_id ?? "")) ?? "",
       }));
     });
-  }, [selectedProducts, movementsState, userNamesById]);
+  }, [selectedProducts, movementsState, userNamesById, branchNamesById]);
 
   return {
     movementsState,
