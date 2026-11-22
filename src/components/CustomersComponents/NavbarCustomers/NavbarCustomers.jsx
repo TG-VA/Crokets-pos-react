@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import styles from "./NavbarCustomers.module.css";
-import { supabase } from "../../../lib/supabaseClient";
+import { useAuth } from "../../../contexts/AuthContext";
+import { checkUserIsAdmin } from "../../../lib/permissionsService";
 
 import AdminAuthorizationModal from "../../AdminAuthorizationModal/AdminAuthorizationModal";
 
@@ -26,6 +27,7 @@ const clearCustomerAdminAuthorizations = (exceptOptionId = null) => {
 
 const NavbarCustomers = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [checkingOption, setCheckingOption] = useState(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -70,47 +72,6 @@ const NavbarCustomers = () => {
     },
   ];
 
-  const getRoleName = (profile) => {
-    if (Array.isArray(profile?.roles)) {
-      return profile.roles[0]?.name || "";
-    }
-
-    return profile?.roles?.name || "";
-  };
-
-  const checkCurrentUserIsAdmin = async () => {
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !authUser?.id) {
-      return false;
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select(
-        `
-        id,
-        status,
-        roles (
-          name
-        )
-      `
-      )
-      .eq("id", authUser.id)
-      .maybeSingle();
-
-    if (profileError || !profile) {
-      return false;
-    }
-
-    const roleName = String(getRoleName(profile) || "").toLowerCase();
-
-    return profile.status !== false && roleName === "admin";
-  };
-
   const authorizeOptionTemporarily = (option) => {
     const storageKey = ADMIN_AUTH_STORAGE_KEYS[option.id];
 
@@ -134,7 +95,7 @@ const NavbarCustomers = () => {
     try {
       setCheckingOption(option.id);
 
-      const isAdmin = await checkCurrentUserIsAdmin();
+      const isAdmin = await checkUserIsAdmin(user?.id);
 
       if (isAdmin) {
         authorizeOptionTemporarily(option);
