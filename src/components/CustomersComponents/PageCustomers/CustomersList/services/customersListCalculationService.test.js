@@ -36,6 +36,50 @@ describe("customersListCalculationService", () => {
       ).toHaveLength(2);
     });
 
+    it("encuentra el telefono aunque el termino tenga guiones o espacios", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", phone: "5512345678" }),
+        buildCustomer({ id: "b", name: "LUIS", phone: "5599999999" }),
+      ];
+
+      const ids = (searchTerm) =>
+        filterAndSortCustomers({ customers, searchTerm }).map((c) => c.id);
+
+      expect(ids("55-1234-5678")).toEqual(["a"]);
+      expect(ids("55 1234")).toEqual(["a"]);
+    });
+
+    it("encuentra el telefono guardado con formato", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", phone: "(55) 1234-5678" }),
+      ];
+
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "5512345678" })
+      ).toHaveLength(1);
+    });
+
+    it("un termino sin digitos no coincide con todos los telefonos", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", email: "", phone: "5512345678" }),
+        buildCustomer({
+          id: "b",
+          name: "LUIS",
+          email: "",
+          phone: "5599999999",
+        }),
+      ];
+
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "luis" }).map(
+          (c) => c.id
+        )
+      ).toEqual(["b"]);
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "-" })
+      ).toHaveLength(0);
+    });
+
     it("busca en nombre, telefono y correo sin distinguir mayusculas", () => {
       const customers = [
         buildCustomer({ id: "a", name: "ANA", phone: "5511111111" }),

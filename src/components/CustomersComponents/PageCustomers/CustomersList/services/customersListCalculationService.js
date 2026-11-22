@@ -8,6 +8,8 @@ import { normalizePhoneDigits } from "../../utils/customerFormatters";
 
 /**
  * Filtra por estado y busqueda libre, y ordena inactivos al final y por nombre.
+ * Si el termino trae digitos tambien compara el telefono solo por digitos, para
+ * que "55-1234-5678" encuentre "5512345678".
  */
 export const filterAndSortCustomers = ({
   customers = [],
@@ -15,6 +17,8 @@ export const filterAndSortCustomers = ({
   statusFilter = "all",
 } = {}) => {
   const search = searchTerm.trim().toLowerCase();
+  // Sin digitos queda vacio y no se compara: "" coincidiria con todos.
+  const searchDigits = normalizePhoneDigits(search);
 
   return customers
     .filter((customer) => {
@@ -29,10 +33,17 @@ export const filterAndSortCustomers = ({
 
       const values = [customer.name, customer.phone, customer.email];
 
-      return values.some((value) =>
+      const matchesText = values.some((value) =>
         String(value || "")
           .toLowerCase()
           .includes(search)
+      );
+
+      if (matchesText) return true;
+
+      return (
+        searchDigits !== "" &&
+        normalizePhoneDigits(customer.phone).includes(searchDigits)
       );
     })
     .sort((a, b) => {
