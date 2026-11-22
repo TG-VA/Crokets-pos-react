@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseClient";
+import { fetchCustomerPointsBalance } from "../../../services/customers/customerPointsBalanceService";
 
 export const DEFAULT_POINTS_AMOUNT = 50;
 const POINTS_AMOUNT_SETTING_KEY = "customer_points_amount_per_point";
@@ -36,21 +37,8 @@ export const calculateEarnedCustomerPoints = (saleTotal, amountPerPoint) => {
   return Math.floor(numericTotal / numericAmountPerPoint);
 };
 
-export const getCustomerCurrentPointsBalance = async (customerId) => {
-  if (!customerId) return 0;
-
-  const { data, error } = await supabase
-    .from("customer_points")
-    .select("points")
-    .eq("customer_id", customerId);
-
-  if (error) throw error;
-
-  return (data || []).reduce(
-    (sum, movement) => sum + Number(movement.points || 0),
-    0
-  );
-};
+export const getCustomerCurrentPointsBalance = (customerId) =>
+  fetchCustomerPointsBalance(customerId);
 
 export const registerCustomerPointsForSale = async ({
   saleId,

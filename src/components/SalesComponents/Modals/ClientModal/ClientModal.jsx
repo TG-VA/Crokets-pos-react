@@ -7,7 +7,11 @@ import React, {
   useCallback,
 } from "react";
 import styles from "./ClientModal.module.css";
-import { supabase } from "../../../../lib/supabaseClient";
+import { fetchPointsBalanceByCustomer } from "../../../../services/customers/customerPointsBalanceService";
+import {
+  fetchActiveRewards,
+  searchPointsCustomers,
+} from "../../services/clientModalService";
 import AppModal from "../../../AppModal/AppModal";
 import ModalCloseButton from "../../../ModalControls/ModalCloseButton";
 
@@ -92,28 +96,11 @@ const ClientModal = memo(
       [showAppModal]
     );
 
-    const loadCustomerPoints = async (customerIds = []) => {
-      if (!customerIds.length) return {};
-      const { data, error } = await supabase
-        .from("customer_points")
-        .select("customer_id, points")
-        .in("customer_id", customerIds);
-      if (error) throw error;
-      return (data || []).reduce(
-        (acc, mov) => ({
-          ...acc,
-          [mov.customer_id]:
-            Number(acc[mov.customer_id] || 0) + Number(mov.points || 0),
-        }),
-        {}
-      );
-    };
-
     // El cliente asignado guarda un snapshot de sus puntos. Al abrir el modal se
     // consulta el saldo vigente porque otra sucursal pudo sumar o descontar.
     const refreshAssignedClientPoints = async (clientId) => {
       try {
-        const pointsByCustomer = await loadCustomerPoints([clientId]);
+        const pointsByCustomer = await fetchPointsBalanceByCustomer([clientId]);
         setLivePointsById((previous) => ({
           ...previous,
           [clientId]: formatPoints(pointsByCustomer[clientId]),
@@ -126,17 +113,7 @@ const ClientModal = memo(
     const loadRewards = async () => {
       try {
         setLoadingRewards(true);
-        const { data, error } = await supabase
-          .from("rewards")
-          .select(
-            `id, name, description, points_required, is_active, reward_type, reward_quantity, discount_type, discount_value, reward_products (id, product_id)`
-          )
-          .eq("is_active", true)
-          .order("points_required", { ascending: true })
-          .order("name", { ascending: true });
-
-        if (error) throw error;
-        setRewards(data || []);
+        setRewards(await fetchActiveRewards());
       } catch (err) {
         console.error("Error cargando recompensas:", err);
         setRewards([]);
@@ -156,21 +133,8 @@ const ClientModal = memo(
         if (cleanSearch.length < 2)
           return setClients(currentSaleClient ? [currentSaleClient] : []);
 
-        const { data, error } = await supabase
-          .from("customers")
-          .select("id, name, phone, email, status, is_points_customer")
-          .eq("is_points_customer", true)
-          .neq("status", false)
-          .or(
-            `name.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%,email.ilike.%${cleanSearch}%`
-          )
-          .order("name", { ascending: true })
-          .limit(12);
-
-        if (error) throw error;
-
-        const customers = data || [];
-        const pointsByCustomer = await loadCustomerPoints(
+        const customers = await searchPointsCustomers(cleanSearch);
+        const pointsByCustomer = await fetchPointsBalanceByCustomer(
           customers.map((c) => c.id)
         );
         const customersWithPoints = customers.map((c) => ({

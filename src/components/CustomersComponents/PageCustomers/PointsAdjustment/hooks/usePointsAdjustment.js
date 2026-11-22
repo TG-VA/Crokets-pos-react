@@ -3,8 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useBranch } from "../../../../../contexts/BranchContext";
 import { useAppModal } from "../../../../../hooks/useAppModal";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
-import { calculatePointsBalance } from "../../services/customerPointsCalculationService";
-import { fetchCustomerPointMovements } from "../services/pointsAdjustmentService";
+import { fetchCustomerPointsBalance } from "../../../../../services/customers/customerPointsBalanceService";
 import {
   BLOCKED_GENERIC_NOTES,
   buildFinalNotes,
@@ -73,9 +72,7 @@ export const usePointsAdjustment = () => {
     try {
       setLoadingPoints(true);
 
-      const movements = await fetchCustomerPointMovements(customerId);
-
-      setCurrentPoints(calculatePointsBalance(movements));
+      setCurrentPoints(await fetchCustomerPointsBalance(customerId));
     } catch (err) {
       console.error("Error cargando puntos del cliente:", err);
 
