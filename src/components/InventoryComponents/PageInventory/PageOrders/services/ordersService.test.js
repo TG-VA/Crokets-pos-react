@@ -7,6 +7,15 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
   },
 }));
 
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
 vi.mock("./ordersDetailService", () => ({
   STORE_ORDER_SELECT: "id",
   fetchStoreOrderById: vi.fn(),
@@ -15,9 +24,14 @@ vi.mock("./ordersDetailService", () => ({
 import { supabase } from "../../../../../lib/supabaseClient";
 import { fetchStoreOrderById } from "./ordersDetailService";
 import {
+  buildId,
+  createFakePostgrest,
+} from "../../../../../services/supabase/fakePostgrest.testUtils";
+import {
   countPendingStoreOrders,
   createStoreOrder,
   fetchOrderBranchOptions,
+  loadStoreOrders,
   receiveStoreOrder,
 } from "./ordersService";
 
@@ -52,6 +66,30 @@ const pendingOrder = {
 describe("ordersService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("loadStoreOrders", () => {
+    it("lee todas las paginas y ordena por sent_at descendente", async () => {
+      const fake = createFakePostgrest({
+        store_orders: [
+          "2026-01-02T00:00:00Z",
+          "2026-01-05T00:00:00Z",
+          "2026-01-01T00:00:00Z",
+          "2026-01-04T00:00:00Z",
+          "2026-01-03T00:00:00Z",
+        ].map((sentAt, index) => ({
+          id: buildId("o", index),
+          sent_at: sentAt,
+        })),
+      });
+      supabase.from.mockImplementation(fake.from);
+
+      const orders = await loadStoreOrders();
+
+      expect(orders.map((order) => order.id)).toEqual(
+        [1, 3, 4, 0, 2].map((index) => buildId("o", index))
+      );
+    });
   });
 
   describe("fetchOrderBranchOptions", () => {

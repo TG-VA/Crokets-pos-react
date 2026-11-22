@@ -3,8 +3,8 @@
  * Calculos puros de la consulta de recompensas: resumen de disponibilidad por
  * recompensa y etiquetas de tipo/estado. Sin I/O ni React.
  *
- * El saldo de puntos se importa de `customerPointsCalculationService` porque lo
- * comparte con el ajuste manual de puntos.
+ * El saldo de puntos sale de `customerPointsBalanceService`, que comparte con el
+ * ajuste manual de puntos y con Ventas.
  */
 
 /**

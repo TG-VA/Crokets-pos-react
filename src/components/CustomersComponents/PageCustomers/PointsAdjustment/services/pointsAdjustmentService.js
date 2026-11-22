@@ -71,22 +71,6 @@ export const searchPointsCustomers = async (searchTerm, limit = 10) => {
 };
 
 /**
- * Movimientos de puntos de un cliente. Devuelve `[]` sin consultar si no hay id.
- */
-export const fetchCustomerPointMovements = async (customerId) => {
-  if (!customerId) return [];
-
-  const { data, error } = await supabase
-    .from("customer_points")
-    .select("points")
-    .eq("customer_id", customerId);
-
-  if (error) throw error;
-
-  return data || [];
-};
-
-/**
  * Inserta el movimiento de ajuste manual ya firmado (positivo suma, negativo resta).
  */
 export const insertPointsMovement = async (payload) => {

@@ -10,6 +10,8 @@ const buildChain = (result) => {
     gte: vi.fn(() => builder),
     lte: vi.fn(() => builder),
     order: vi.fn(() => builder),
+    gt: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
     then: (resolve) => resolve(result),
   };
 
@@ -18,17 +20,35 @@ const buildChain = (result) => {
   return builder;
 };
 
+// El caso de varias paginas desvia supabase.from al doble de PostgREST.
+let fakeFrom = null;
 let nextResults = [];
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: {
     from: (table) => {
+      if (fakeFrom) return fakeFrom(table);
+
       fromCalls.push(table);
 
       return buildChain(nextResults.shift() ?? { data: [], error: null });
     },
   },
 }));
+
+vi.mock(
+  "../../../../../services/supabase/paginatedQuery",
+  async (importOriginal) => {
+    const { withSmallPages } =
+      await import("../../../../../services/supabase/fakePostgrest.testUtils");
+    return withSmallPages(await importOriginal());
+  }
+);
+
+import {
+  buildId,
+  createFakePostgrest,
+} from "../../../../../services/supabase/fakePostgrest.testUtils";
 
 import {
   fetchActiveBranches,
@@ -39,6 +59,7 @@ const lastChain = () => chains[chains.length - 1];
 
 describe("invoicesHistoryReportService", () => {
   beforeEach(() => {
+    fakeFrom = null;
     fromCalls.length = 0;
     chains.length = 0;
     nextResults = [];
@@ -80,7 +101,7 @@ describe("invoicesHistoryReportService", () => {
       currentBranchId: 3,
     };
 
-    it("acota el rango con el dia completo y ordena de mas reciente a mas antigua", async () => {
+    it("acota el rango con el dia completo", async () => {
       nextResults = [{ data: [{ id: "inv1" }], error: null }];
 
       const invoices = await fetchInvoicesHistory(baseArgs);
@@ -94,10 +115,32 @@ describe("invoicesHistoryReportService", () => {
         "created_at",
         "2026-03-31T23:59:59"
       );
-      expect(lastChain().order).toHaveBeenCalledWith("created_at", {
-        ascending: false,
-      });
       expect(invoices).toEqual([{ id: "inv1" }]);
+    });
+
+    it("lee todas las paginas del rango y ordena de mas reciente a mas antigua", async () => {
+      const buildInvoice = (index, createdAt, branchId = 3) => ({
+        id: buildId("inv", index),
+        branch_id: branchId,
+        created_at: createdAt,
+      });
+      const fake = createFakePostgrest({
+        invoices: [
+          buildInvoice(0, "2026-03-02T10:00:00"),
+          buildInvoice(1, "2026-03-20T10:00:00"),
+          buildInvoice(2, "2026-03-10T10:00:00"),
+          buildInvoice(3, "2026-03-15T10:00:00", 9),
+          buildInvoice(4, "2026-03-05T10:00:00"),
+          buildInvoice(5, "2026-04-01T10:00:00"),
+        ],
+      });
+      fakeFrom = fake.from;
+
+      const invoices = await fetchInvoicesHistory(baseArgs);
+
+      expect(invoices.map((invoice) => invoice.id)).toEqual(
+        [1, 2, 4, 0].map((index) => buildId("inv", index))
+      );
     });
 
     it("filtra por la sucursal de la sesion cuando el selector es `current`", async () => {

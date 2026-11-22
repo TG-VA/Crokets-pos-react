@@ -66,17 +66,3 @@ export const searchActivePointsCustomers = async (searchTerm, limit = 20) => {
 
   return data || [];
 };
-
-/**
- * Movimientos de puntos de un cliente, para derivar su saldo.
- */
-export const fetchCustomerPointsMovements = async (customerId) => {
-  const { data, error } = await supabase
-    .from("customer_points")
-    .select("points")
-    .eq("customer_id", customerId);
-
-  if (error) throw error;
-
-  return data || [];
-};
