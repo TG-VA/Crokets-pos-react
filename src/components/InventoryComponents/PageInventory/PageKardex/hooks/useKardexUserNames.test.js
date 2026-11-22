@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 
-vi.mock("../../PageMovementsReport/services/movementsReportService", () => ({
+vi.mock("../../../../../services/userLookupService", () => ({
   loadUsers: vi.fn(),
 }));
 
-import { loadUsers } from "../../PageMovementsReport/services/movementsReportService";
+import { loadUsers } from "../../../../../services/userLookupService";
 
 import useKardexUserNames from "./useKardexUserNames";
 

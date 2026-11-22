@@ -18,7 +18,6 @@ import {
   MOVEMENTS_SALE_DETAILS_SELECT_KEY,
   MOVEMENTS_SALE_RETURNS_SELECT_KEY,
   MOVEMENTS_SALES_SELECT_KEY,
-  MOVEMENTS_USERS_SELECT_KEY,
   POLI_BRANCH_ID,
   REWARD_REDEMPTIONS_TABLE,
 } from "./movementServiceConstants";
@@ -33,6 +32,7 @@ import {
   sortMovementsByDate,
 } from "./movementServiceUtils";
 
+import { loadUsers } from "../../../../../services/userLookupService";
 import { getServerDateWindow } from "../utils/movementDateUtils";
 
 import {
@@ -290,36 +290,6 @@ export const loadProducts = async (productIds) => {
 
     if (!response.error) {
       setCachedValue(MOVEMENTS_PRODUCTS_SELECT_KEY, selectFields);
-
-      return Array.isArray(response.data) ? response.data : [];
-    }
-
-    if (isMissingColumnError(response.error)) {
-      continue;
-    }
-
-    throw response.error;
-  }
-
-  return [];
-};
-
-export const loadUsers = async (userIds) => {
-  if (!Array.isArray(userIds) || userIds.length === 0) {
-    return [];
-  }
-
-  const cachedSelect = getCachedValue(MOVEMENTS_USERS_SELECT_KEY);
-
-  const candidates = [cachedSelect, "id, username", "id"].filter(Boolean);
-
-  for (const selectFields of candidates) {
-    const response = await fetchByIdsInBatches(userIds, (batch) =>
-      supabase.from("users").select(selectFields).in("id", batch)
-    );
-
-    if (!response.error) {
-      setCachedValue(MOVEMENTS_USERS_SELECT_KEY, selectFields);
 
       return Array.isArray(response.data) ? response.data : [];
     }
