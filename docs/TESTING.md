@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (19 nov 2026)
+## Cobertura actual (22 nov 2026)
 
-363 archivos de test (**3657 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+363 archivos de test (**3694 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -210,7 +210,7 @@ y el proceso principal de Electron:
 | Traspasos: espacio de recepcion (armado y aviso 0s)       | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
 | Traspasos: modal de detalle (titulo, origen y destino)    | `.../PageTransfers/components/modals/TransferDetailModal.test.jsx`                 |
 | Traspasos: busqueda de productos con existencia           | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
-| Traspasos: recepcion (cantidades y bloqueo en cero)       | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
+| Traspasos: recepcion (cantidades, cero y recarga)         | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
 | Traspasos: formulario de envio (borrador y stock)         | `.../PageTransfers/hooks/useSendForm.test.js`                                      |
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
