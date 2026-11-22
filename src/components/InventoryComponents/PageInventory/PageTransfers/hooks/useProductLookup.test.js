@@ -301,6 +301,14 @@ describe("useProductLookup", () => {
         is_global: true,
         stock: 4,
       },
+      {
+        id: "a11",
+        codigo: "ADU-20",
+        descripcion: "CROQUETA ADULTO 20KG",
+        tracks_inventory: true,
+        is_global: true,
+        existencia: 0,
+      },
     ];
     const onProductSelected = vi.fn();
     const { result } = renderHook(() =>
