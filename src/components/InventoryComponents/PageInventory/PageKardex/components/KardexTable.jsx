@@ -1,5 +1,3 @@
-import React from "react";
-
 import {
   formatKardexDateTime,
   formatKardexOptionalCurrency,
@@ -83,10 +81,7 @@ const KardexTable = ({
                   {formatKardexDateTime(row?.created_at)}
                 </td>
 
-                <td
-                  className={styles.cellDescripcion}
-                  title={description}
-                >
+                <td className={styles.cellDescripcion} title={description}>
                   {description}
                 </td>
 

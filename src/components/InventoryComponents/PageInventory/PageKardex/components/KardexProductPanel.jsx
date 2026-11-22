@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 
@@ -37,7 +37,10 @@ const KardexProductPanel = ({
   onRemoveProduct,
   onExport,
 }) => {
-  const normalizedRows = Array.isArray(rows) ? rows : [];
+  const normalizedRows = useMemo(
+    () => (Array.isArray(rows) ? rows : []),
+    [rows]
+  );
 
   const {
     currentPage,

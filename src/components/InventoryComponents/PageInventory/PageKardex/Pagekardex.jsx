@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import AppModal from "../../../AppModal/AppModal";
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
