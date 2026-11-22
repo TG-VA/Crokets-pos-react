@@ -154,7 +154,14 @@ sucursal ni configurar variables de entorno en las máquinas de los clientes.
 - **Feed público sin token:** el repositorio `TG-VA/Crokets-pos-react` es público, por lo que
   `electron-updater` consulta GitHub Releases con el provider público y sin autenticación. El
   instalador no embebe ningún token (se retiró el antiguo `GH_READ_TOKEN`, que quedaba expuesto en
-  cada `.exe` publicado).
+  cada `.exe` publicado). `electron/updaterPublishConfig.test.js` falla si `build.publish` vuelve a
+  declarar `private` o `token`.
+- **Terminales con instaladores anteriores:** las versiones publicadas con el paso "Inject embedded
+  updater read token" de `release-windows.yml` conservan `private: true` y el token embebido. Al
+  revocar el token, esas terminales reciben 401 al consultar el feed y dejan de actualizarse sin
+  aviso en la UI: hay que reinstalarlas a mano con el instalador actual. Estado de la revocación del
+  token classic "Crokets POS Auto Updater" y del secreto `GH_READ_TOKEN`: pendiente (anotar aquí la
+  fecha cuando ocurra).
 - **Convención de nombres de artefacto (`artifactName`):** en `package.json`, la sección `build.nsis`
   define `"artifactName": "POS-CROKETS-Setup-${version}.${ext}"`. Es indispensable que el nombre no
   contenga espacios: al subir artefactos a GitHub Releases, la API de GitHub reemplaza automáticamente los
