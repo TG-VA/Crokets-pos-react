@@ -1,42 +1,13 @@
-export const getCachedValue = (key) => {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return null;
-  }
-
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-
-export const setCachedValue = (key, value) => {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    // El caché es opcional.
-  }
-};
-
-export const getDatabaseErrorMessage = (error) => {
-  return String(error?.message ?? error?.details ?? error?.hint ?? "")
-    .trim()
-    .toLowerCase();
-};
-
-export const isMissingColumnError = (error) => {
-  return getDatabaseErrorMessage(error).includes("column");
-};
-
-export const isMissingRelationError = (error) => {
-  const message = getDatabaseErrorMessage(error);
-
-  return message.includes("relation") || message.includes("does not exist");
-};
+// Reexportados desde src/utils para no romper los imports existentes.
+export {
+  getCachedValue,
+  setCachedValue,
+} from "../../../../../utils/localStorageCache";
+export {
+  getDatabaseErrorMessage,
+  isMissingColumnError,
+  isMissingRelationError,
+} from "../../../../../utils/databaseErrors";
 
 export const getUniqueIds = (rows, field) => {
   const normalizedRows = Array.isArray(rows) ? rows : [];
