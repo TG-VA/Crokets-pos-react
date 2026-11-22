@@ -53,6 +53,33 @@ describe("userLookupService.loadUsers", () => {
     expect(supabase.from).toHaveBeenCalledTimes(2);
   });
 
+  it("guarda el select exitoso en la clave historica de cache", async () => {
+    supabase.from
+      .mockReturnValueOnce(
+        usersQuery({ data: null, error: { message: "column missing" } })
+      )
+      .mockReturnValueOnce(usersQuery({ data: [{ id: "u1" }], error: null }));
+
+    await loadUsers(["u1"]);
+
+    expect(window.localStorage.getItem("movementsReportUsersSelect_v1")).toBe(
+      "id"
+    );
+  });
+
+  it("usa primero el select cacheado en la clave historica", async () => {
+    window.localStorage.setItem(
+      "movementsReportUsersSelect_v1",
+      "id, username, full_name"
+    );
+    const query = usersQuery({ data: [{ id: "u1" }], error: null });
+    supabase.from.mockReturnValue(query);
+
+    await loadUsers(["u1"]);
+
+    expect(query.select).toHaveBeenNthCalledWith(1, "id, username, full_name");
+  });
+
   it("propaga errores que no son de columna", async () => {
     const error = { message: "permission denied" };
     supabase.from.mockReturnValue(usersQuery({ data: null, error }));
