@@ -3143,3 +3143,23 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 108. Las salidas de efectivo solo se protegian en la interfaz
+
+**Estado:** listo para desplegar (22 nov 2026, rama `fix/security-cash-exit-server`).
+
+**Problema:** Ventas > Salida pedia la autorizacion de un administrador (`cash_exit_access`) solo
+en `AdminAuthorizationModal`. La politica de insert de `cash_movements` solo exige que la sesion de
+caja abierta sea del usuario, asi que un cajero podia insertar una `salida` directo por PostgREST.
+
+**Solucion:** trigger `cash_exit_admin_or_grant` (`BEFORE INSERT`) en la migracion
+`20261122150000`. Desde la API, una `salida` exige `is_admin()` o un grant vigente de
+`cash_exit_access` para quien llama y la sucursal del movimiento. `authorize-admin-action` registra
+esa autorizacion por 10 minutos. No cambia ningun cliente ni requiere instalador nuevo.
+
+**Despliegue:** primero la edge function, luego la migracion.
+
+**Limitacion:** si la autorizacion vence antes de guardar la salida (mas de 10 minutos), el cajero
+ve el error de guardado y debe volver a pedirla.

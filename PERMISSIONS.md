@@ -127,6 +127,12 @@ KNOWN_ISSUES #95).** `anon` y `authenticated` ya no pueden escribir en `users`, 
 un administrador se quite su propio rol o se desactive. Un cajero con autorización del modal puede
 entrar a la pantalla, pero no guardar.
 
+**Salidas de efectivo: admin o autorizacion vigente (22 nov 2026, migracion `20261122150000`,
+KNOWN_ISSUES #108).** Un trigger en `cash_movements` rechaza con `42501` (`ADMIN_GRANT_REQUIRED`)
+una `salida` desde la API si quien llama no es admin ni tiene un grant vigente de
+`cash_exit_access` para la sucursal del movimiento. `authorize-admin-action` registra esa
+autorizacion por 10 minutos. Las entradas no cambian.
+
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
 En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se muestran si el hook `useIsAdmin`
 (`src/hooks/useIsAdmin.js`, sobre `checkUserIsAdmin`) confirma que el usuario es administrador. Es

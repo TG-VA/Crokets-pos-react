@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-397 archivos de test (**3855 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+398 archivos de test (**3859 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -77,6 +77,7 @@ y el proceso principal de Electron:
 | Contrato SQL de precio 0 por sucursal                     | `supabase/migrations/branchProductsZeroPriceContract.test.js`                      |
 | Contrato SQL de RLS y escritura admin en branches         | `supabase/migrations/branchesRlsAdminWriteContract.test.js`                        |
 | Contrato SQL de escritura admin en usuarios y roles       | `supabase/migrations/usersRolesWriteAdminOnlyContract.test.js`                     |
+| Contrato SQL: salidas de caja con admin o grant           | `supabase/migrations/cashExitAdminOrGrantContract.test.js`                         |
 | Contrato SQL de username insensible a mayusculas          | `supabase/migrations/usersUsernameCaseInsensitiveContract.test.js`                 |
 | Contrato SQL del CHECK de username en minusculas          | `supabase/migrations/usersUsernameLowercaseCheckContract.test.js`                  |
 | Contrato de authorize-admin-action (username)             | `supabase/functions/authorizeAdminActionUsernameContract.test.js`                  |

@@ -44,7 +44,8 @@ método no es `POST`).
 
 ### Autorizaciones que valida la base de datos
 
-Para las acciones de `DB_ENFORCED_GRANT_MINUTES` (hoy `inventory_add_access`, 30 minutos), después de
+Para las acciones de `DB_ENFORCED_GRANT_MINUTES` (hoy `inventory_add_access` e
+`inventory_adjust_access`, 30 minutos; `cash_exit_access`, 10 minutos), después de
 validar al administrador la función:
 
 1. Toma al usuario del token de la llamada (`Authorization: Bearer`, que `supabase.functions.invoke`
