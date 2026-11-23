@@ -101,7 +101,7 @@ control real por tabla queda así:
 | RLS + `has_permission()` | `branch_inventory`                                                                         | único módulo con permiso granular                      |
 | RLS + `USING (true)`     | `sales`, `sale_details`, `sale_payments`, `reward_products`, `sale_reward_redemptions`     | cualquier `authenticated`, sin importar el rol         |
 | RLS + dueño de fila      | `cash_register_sessions`, `cash_movements`                                                 | cada usuario su propia sesión/movimientos              |
-| RLS + lectura `anon`     | `postal_codes`, `tax_regimes`                                                              | catálogos de lectura pre/post login                    |
+| RLS + lectura publica    | `postal_codes`, `tax_regimes`                                                              | catalogos de lectura post login; `anon` sin grant      |
 | RLS sin políticas        | `app_settings`, `cfdi_settings`                                                            | deny-all salvo owner/RPC                               |
 | Sin RLS, solo lectura    | `users`, `roles`, `permissions`, `role_permissions`, `user_roles` (desde `20261118140000`) | escritura solo por RPC con `is_admin()` o service role |
 | RLS deshabilitado        | `products`, `customers`, `departments`, `invoices`, `inventory_*`, `cash_cuts`, etc.       | acceso por `GRANT` de tabla, sin filtrado de filas     |
@@ -126,6 +126,13 @@ KNOWN_ISSUES #95).** `anon` y `authenticated` ya no pueden escribir en `users`, 
 `admin_set_user_status`, que exigen `is_admin()` sobre `auth.uid()` (`42501` si no) e impiden que
 un administrador se quite su propio rol o se desactive. Un cajero con autorización del modal puede
 entrar a la pantalla, pero no guardar.
+
+**`anon` solo con lo del login (22 nov 2026, migracion `20261122120000`, KNOWN_ISSUES #105).**
+Los default privileges de Supabase daban a `anon` todos los privilegios en `public`, incluidas las
+tablas sin RLS. La migracion los revoca y deja solo `SELECT` en `branches`, `users (id, username)`
+y `user_sessions (id, user_id, branch_id, status, ended_at)`, mas `EXECUTE` en
+`get_email_by_username`, `get_branch_by_device` y `register_pos_device`. `authenticated` no cambia:
+el modelo de confianza para la sesion iniciada sigue igual.
 
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
 En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se muestran si el hook `useIsAdmin`
