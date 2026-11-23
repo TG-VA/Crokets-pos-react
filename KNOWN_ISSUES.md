@@ -3143,3 +3143,22 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 106. `register_pos_device` aceptaba cualquier `p_admin_id` sin sesion
+
+**Estado:** listo para desplegar (22 nov 2026, rama `fix/security-register-pos-device`).
+
+**Problema:** la RPC es `SECURITY DEFINER`, `anon` la podia ejecutar y solo comprobaba que
+`p_admin_id` fuera un admin activo, no que ese admin hubiera autorizado algo. La validacion de la
+contrasena ocurria en `authorize-admin-action`, pero el cliente llamaba la RPC aparte. Con la clave
+publica y el id de un admin, cualquiera podia vincular un equipo a cualquier sucursal.
+
+**Solucion:** `authorize-admin-action` recibe `deviceCode` y, con la accion `register_pos_device`,
+llama la RPC con service role y el admin que valido la contrasena. `registerPosDevice` ya no llama
+la RPC. La migracion `20261122130000_register_pos_device_service_role_only.sql` deja `EXECUTE` solo
+a `service_role`.
+
+**Despliegue:** edge function, luego instalador, luego migracion. La edge function es compatible con
+instaladores anteriores (sin `deviceCode` solo autoriza).
