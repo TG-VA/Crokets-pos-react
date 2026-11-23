@@ -3143,3 +3143,27 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 109. Desactivar productos solo se protegia en la interfaz, y Modificar no lo protegia
+
+**Estado:** listo para desplegar (22 nov 2026, rama `fix/security-products-deactivate-server`).
+
+**Problema:** Productos > Eliminar (que pone `status = false`) pedia la autorizacion de un
+administrador (`products_delete_access`) solo en la interfaz. Productos > Modificar, sin proteger,
+podia guardar el mismo cambio, y cualquier sesion podia hacer `update products set status = false`
+directo por PostgREST.
+
+**Solucion:**
+
+- Trigger `products_deactivate_admin_or_grant` (`BEFORE UPDATE OF status`) en la migracion
+  `20261122160000`: desde la API, pasar de activo a inactivo exige `is_admin()` o un grant vigente
+  de `products_delete_access`. La sucursal no se compara porque el catalogo es global.
+- `authorize-admin-action` registra esa autorizacion por 30 minutos (la de Eliminar se pide al
+  entrar a la seccion).
+- `useProductsModify`: si un no admin guarda un producto que pasa de activo a inactivo, abre
+  `AdminAuthorizationModal` y guarda solo tras la autorizacion. Editar y activar no cambian.
+
+**Despliegue:** edge function, luego instalador, luego migracion. Con un instalador anterior, un
+cajero que desactiva desde Modificar recibe el error de guardado.

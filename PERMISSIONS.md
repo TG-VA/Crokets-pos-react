@@ -127,6 +127,12 @@ KNOWN_ISSUES #95).** `anon` y `authenticated` ya no pueden escribir en `users`, 
 un administrador se quite su propio rol o se desactive. Un cajero con autorización del modal puede
 entrar a la pantalla, pero no guardar.
 
+**Desactivar productos: admin o autorizacion vigente (22 nov 2026, migracion `20261122160000`,
+KNOWN_ISSUES #109).** Un trigger en `products` rechaza con `42501` (`ADMIN_GRANT_REQUIRED`) el
+cambio de `status` de activo a inactivo desde la API si quien llama no es admin ni tiene un grant
+vigente de `products_delete_access`. Cubre Eliminar y Modificar: Modificar pide la autorizacion al
+guardar un producto que pasa a inactivo. `authorize-admin-action` la registra por 30 minutos.
+
 **Kits: editar y eliminar solo para administradores (1 nov 2026, rama `feat/kits-vigencia-por-fechas`).**
 En Promociones y Kits, los botones Editar, Eliminar y Renovar vigencia solo se muestran si el hook `useIsAdmin`
 (`src/hooks/useIsAdmin.js`, sobre `checkUserIsAdmin`) confirma que el usuario es administrador. Es
