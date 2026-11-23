@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-397 archivos de test (**3855 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+400 archivos de test (**3875 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -179,7 +179,11 @@ y el proceso principal de Electron:
 | Reportes: comisiones por paginas de la RPC                | `.../PageCommissionsReport/services/commissionsReportPagination.test.js`           |
 | Saldo de puntos compartido (paginado)                     | `src/services/customers/customerPointsBalanceService.test.js`                      |
 | Orden por fecha descendente de lecturas paginadas         | `src/utils/sortByDateDesc.test.js`                                                 |
-| Clientes de puntos y movimientos (paginados)              | `.../CustomersList/services/customersListService.test.js`                          |
+| Clientes de puntos (paginados) y busqueda fiscal          | `.../CustomersList/services/customersListService.test.js`                          |
+| Listado de clientes: filtro, orden y telefono por digitos | `.../CustomersList/services/customersListCalculationService.test.js`               |
+| Listado de clientes: carga, estado, fiscal y realtime     | `.../CustomersList/hooks/useCustomersList.test.js`                                 |
+| Modal de cliente: sin X, cierre por ESC/Cancelar/overlay  | `.../Modals/CustomerModal/CustomerModal.test.jsx`                                  |
+| Menu de clientes: acceso admin y sessionStorage           | `.../NavbarCustomers/NavbarCustomers.test.jsx`                                     |
 | Historial de puntos (paginado)                            | `.../PointsHistory/services/pointsHistoryService.test.js`                          |
 | Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
 | Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |

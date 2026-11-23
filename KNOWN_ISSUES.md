@@ -3143,3 +3143,44 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 104. Listado de clientes: saldo duplicado, recarga realtime con parpadeo y busquedas incompletas
+
+**Estado:** resuelto (22 nov 2026, rama `refactor/customers-list-hardening`).
+
+**Problema:**
+
+- `customersListService.fetchPointsMovements` y `calculatePointsBalanceByCustomer` duplicaban
+  `fetchPointsBalanceByCustomer` con otra regla (restaban `redeem` con `Math.abs`).
+- Cada evento realtime de `customers` o `customer_points` recargaba todo, mostraba
+  "Cargando clientes..." y una respuesta lenta podia pisar a una nueva.
+- `searchFiscalCustomerByPhone` usaba `.maybeSingle()`: con dos clientes fiscales con el mismo
+  telefono fallaba en silencio y la tarjeta no aparecia.
+- La busqueda libre no normalizaba telefonos: "55-1234-5678" no encontraba "5512345678".
+- `NavbarCustomers` importaba `supabase` para leer el usuario y su rol (DIP).
+- `CustomerModal` tenia una X redundante con "Cancelar".
+- El modulo tenia 7 warnings de ESLint.
+
+**Solucion:**
+
+- `useCustomersList` lee el saldo con `fetchPointsBalanceByCustomer` (suma con signo). Se verifico
+  en la BD que `chk_customer_points_movement_type` solo admite `earn` y `redeem` y que los 60
+  `redeem` existentes tienen `points` negativo, asi que los saldos no cambian.
+- Realtime con debounce de 500 ms (`REALTIME_RELOAD_DEBOUNCE_MS`), recarga silenciosa (sin
+  `loadingCustomers`) y un contador de peticiones que descarta respuestas obsoletas.
+- `searchFiscalCustomerByPhone` usa `.limit(1)` y devuelve el primero, como `findCustomerByPhone`.
+- `filterAndSortCustomers` tambien compara telefonos por digitos cuando el termino los trae.
+- `NavbarCustomers` usa `useAuth` y `checkUserIsAdmin`. En la BD todos los roles estan en
+  minusculas y todos los usuarios con `status = true`, de modo que el resultado coincide con el
+  check local anterior (que pasaba el rol a minusculas y aceptaba `status` nulo).
+- Se quito la X de `CustomerModal` y `.closeButton`; ESC, "Cancelar" y el overlay siguen cerrando.
+- 0 warnings de ESLint en `src/components/CustomersComponents` y `src/pages/Customers`.
+
+**Fuera de alcance:** RLS y autorizacion de admin en el servidor siguen bajo la decision
+"hardening sin habilitar RLS" (ver arriba).
+
+**Cobertura de tests:** `useCustomersList.test.js` (nuevo), `CustomerModal.test.jsx` (nuevo),
+`NavbarCustomers.test.jsx` (nuevo), `customersListService.test.js` (busqueda fiscal) y
+`customersListCalculationService.test.js` (telefono por digitos).
