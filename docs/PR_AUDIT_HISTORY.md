@@ -3102,6 +3102,23 @@ ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
 Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
 recarga del catálogo origen en terminal admin y operativa.
 
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (22 de noviembre de 2026, cuarta auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `63aa52b`,
+base `4ef9d21`. Ejecución: build OK; `check:agents` OK; Prettier OK; ESLint OK; suites del PR 249/249;
+suite completa 3763/3764 con 1 fallo intermitente ajeno al PR (`ClientModal`, verde al reejecutar).
+Mutaciones: 3 ejecutadas, 3 detectadas. S1 de la tercera auditoría corregido.
+
+### Hallazgos
+
+| #   | Hallazgo                                            | Severidad  |
+| --- | --------------------------------------------------- | ---------- |
+| S1  | `docs/TESTING.md` sin los casos nuevos de Traspasos | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`). `docs/TESTING.md` pendiente de actualizar.
+
 ---
 
 ## Informe de Auditoría — PR #209 `feat(pedidos): capturar el costo al recibir un pedido y recalcular el CPP` (17 de noviembre de 2026, re-auditoría)
