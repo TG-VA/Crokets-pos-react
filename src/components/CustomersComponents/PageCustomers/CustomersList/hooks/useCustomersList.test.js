@@ -46,10 +46,12 @@ const FISCAL = { id: "f1", name: "FISCAL SA", phone: "5599999999" };
 
 const deferred = () => {
   let resolve;
-  const promise = new Promise((done) => {
+  let reject;
+  const promise = new Promise((done, fail) => {
     resolve = done;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 };
 
 // Deja correr las promesas pendientes del hook dentro de `act`.
@@ -278,6 +280,60 @@ describe("useCustomersList", () => {
       await act(async () => slow.resolve([]));
       expect(result.current.filteredCustomers).toEqual([ANA, LUIS]);
       expect(result.current.loadingCustomers).toBe(false);
+    });
+
+    it("ignora el error de una carga vieja que falla despues de una nueva", async () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const { result } = renderHook(() => useCustomersList());
+      await flush();
+
+      const slow = deferred();
+      fetchPointsCustomers
+        .mockReturnValueOnce(slow.promise)
+        .mockResolvedValueOnce([ANA, LUIS]);
+
+      act(() => {
+        result.current.loadCustomers();
+      });
+      await act(async () => result.current.loadCustomers());
+      expect(result.current.filteredCustomers).toEqual([ANA, LUIS]);
+
+      await act(async () => slow.reject(new Error("red caida")));
+      expect(result.current.filteredCustomers).toEqual([ANA, LUIS]);
+      expect(result.current.pointsByCustomer).toEqual({ c1: 40 });
+      expect(result.current.appModal.title).not.toBe(
+        "No se pudieron cargar clientes"
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
+    it("una carga vieja que termina primero no apaga loadingCustomers", async () => {
+      const { result } = renderHook(() => useCustomersList());
+      await flush();
+
+      const first = deferred();
+      const second = deferred();
+      fetchPointsCustomers
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise);
+
+      act(() => {
+        result.current.loadCustomers();
+      });
+      act(() => {
+        result.current.loadCustomers();
+      });
+      expect(result.current.loadingCustomers).toBe(true);
+
+      await act(async () => first.resolve([ANA]));
+      expect(result.current.loadingCustomers).toBe(true);
+
+      await act(async () => second.resolve([ANA, LUIS]));
+      expect(result.current.loadingCustomers).toBe(false);
+      expect(result.current.filteredCustomers).toEqual([ANA, LUIS]);
     });
 
     it("cancela la recarga pendiente y el canal al desmontar", async () => {
