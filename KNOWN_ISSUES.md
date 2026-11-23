@@ -3143,3 +3143,24 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 107. Desactivar clientes solo se protegia en la interfaz
+
+**Estado:** listo para desplegar (22 nov 2026, rama `fix/security-customers-deactivate-server`).
+
+**Problema:** `customers_deactivate` (Clientes) y `deactivate_fiscal_customer` (Facturacion) pedian
+la autorizacion de un administrador en `AdminAuthorizationModal`, pero la base no la comprobaba:
+cualquier sesion podia hacer `update customers set status = false` directo por PostgREST.
+
+**Solucion:** trigger `customers_deactivate_admin_or_grant` (`BEFORE UPDATE OF status`) en la
+migracion `20261122140000`. Desde la API, pasar de activo a inactivo exige `is_admin()` o un grant
+vigente de cualquiera de las dos acciones en `admin_action_grants`; la sucursal no se compara
+porque los clientes son globales. `authorize-admin-action` registra esas autorizaciones por 5
+minutos. No cambia ningun cliente ni requiere instalador nuevo.
+
+**Despliegue:** primero la edge function, luego la migracion.
+
+**Limitacion:** si la autorizacion vence antes de confirmar (mas de 5 minutos), el cajero ve el
+mensaje generico "No se pudo actualizar" y debe volver a pedirla.
