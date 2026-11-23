@@ -181,6 +181,10 @@ RLS (`SECURITY DEFINER`). Es necesaria porque el login resuelve la sucursal del 
 apoya en que `device_code` es un UUID (`crypto.randomUUID()`, `electron/main.js`) no enumerable.
 Riesgo aceptado y monitoreado; ver `KNOWN_ISSUES.md` #30 y `docs/SUPABASE_MIGRATIONS.md`.
 
+`register_pos_device` ya no es pre-auth para el cliente (migracion `20261122130000`, KNOWN_ISSUES
+#106): solo la ejecuta `service_role`, desde `authorize-admin-action`, con el administrador que
+valido su contrasena.
+
 ---
 
 ### Sucursales administrativas (`branches.branch_type`, 15 nov 2026)

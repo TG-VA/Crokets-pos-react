@@ -67,6 +67,11 @@ export const fetchActiveBranches = async () => {
   }
 };
 
+/**
+ * Vincula este equipo a una sucursal. La edge function valida al
+ * administrador y registra el dispositivo con service role: la RPC
+ * `register_pos_device` ya no se ejecuta desde el cliente.
+ */
 export const registerPosDevice = async ({
   deviceCode,
   branchId,
@@ -79,33 +84,28 @@ export const registerPosDevice = async ({
       username,
       password,
       branchId,
+      deviceCode,
     });
 
     if (!authResult.ok) {
       return { success: false, error: authResult.message };
     }
 
-    const { data, error } = await supabase.rpc("register_pos_device", {
-      p_device_code: deviceCode,
-      p_branch_id: branchId,
-      p_admin_id: authResult.authorizedBy,
-    });
+    const branch = authResult.device?.branch;
 
-    if (error) throw error;
-
-    if (!data?.success || !data?.branch?.id) {
+    if (!branch?.id) {
       return {
         success: false,
-        error: data?.message || "No se pudo registrar el dispositivo.",
+        error: "No se pudo registrar el dispositivo.",
       };
     }
 
     return {
       success: true,
       branch: {
-        id: data.branch.id,
-        name: data.branch.name,
-        code: data.branch.code,
+        id: branch.id,
+        name: branch.name,
+        code: branch.code,
       },
     };
   } catch (error) {

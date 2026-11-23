@@ -17,19 +17,21 @@ la consume a través de `src/lib/adminAuthorizationService.js` (modal `AdminAuth
 
 Request body:
 
-| Campo      | Requerido | Descripción                             |
-| ---------- | --------- | --------------------------------------- |
-| `username` | Sí        | Username del administrador              |
-| `password` | Sí        | Contraseña del administrador            |
-| `action`   | Sí        | Acción que se pretende autorizar        |
-| `targetId` | No        | Identificador del objetivo de la acción |
-| `branchId` | No        | Sucursal sobre la que aplica            |
+| Campo        | Requerido | Descripción                               |
+| ------------ | --------- | ----------------------------------------- |
+| `username`   | Sí        | Username del administrador                |
+| `password`   | Sí        | Contraseña del administrador              |
+| `action`     | Sí        | Acción que se pretende autorizar          |
+| `targetId`   | No        | Identificador del objetivo de la acción   |
+| `branchId`   | No        | Sucursal sobre la que aplica              |
+| `deviceCode` | No        | Equipo a vincular (`register_pos_device`) |
 
 Response (éxito, HTTP 200):
 
 ```json
 {
   "ok": true,
+  "device": "<respuesta de register_pos_device | null>",
   "authorizedBy": "<uuid>",
   "authorizedByUsername": "<username>",
   "action": "<accion>",
@@ -55,6 +57,15 @@ validar al administrador la función:
 
 La RPC `add_inventory_entry` acepta `is_admin()` o una fila vigente para el mismo usuario, acción y
 sucursal (ver `PERMISSIONS.md`). El resto de acciones no registra nada.
+
+### Vinculacion de dispositivos (`register_pos_device`)
+
+La vinculacion ocurre antes del login, sin sesion a la que ligar una autorizacion. Con
+`action = "register_pos_device"` y `deviceCode`, la funcion llama `register_pos_device` con service
+role y `p_admin_id` = el administrador que valido la contrasena, y devuelve la respuesta en `device`.
+Si la RPC falla o responde `success: false`, contesta `ok: false` con el mensaje. Desde la migracion
+`20261122130000` la RPC solo la ejecuta `service_role`. Sin `deviceCode` (instaladores anteriores)
+solo autoriza, como antes.
 
 ### Flujo de validación
 
