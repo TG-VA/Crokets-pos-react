@@ -18,6 +18,7 @@ export const authorizeAdminAction = async ({
   action,
   targetId = null,
   branchId = null,
+  deviceCode = null,
 }) => {
   const cleanUsername = String(username || "")
     .trim()
@@ -56,6 +57,7 @@ export const authorizeAdminAction = async ({
           action: cleanAction,
           targetId,
           branchId,
+          deviceCode,
         },
       }
     );
@@ -83,6 +85,7 @@ export const authorizeAdminAction = async ({
       action: data.action || cleanAction,
       targetId: data.targetId || targetId,
       branchId: data.branchId || branchId,
+      device: data.device || null,
     };
   } catch (error) {
     console.error("Error general autorizando acción admin:", error);

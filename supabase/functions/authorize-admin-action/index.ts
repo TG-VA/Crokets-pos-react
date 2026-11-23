@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
     const action = String(body?.action || "").trim();
     const targetId = body?.targetId || null;
     const branchId = body?.branchId || null;
+    const deviceCode = String(body?.deviceCode || "").trim();
 
     if (!username) {
       return jsonResponse({
@@ -228,8 +229,45 @@ Deno.serve(async (req) => {
       }
     }
 
+    // El registro de un POS ocurre antes del login: no hay sesion a la que
+    // ligar una autorizacion, asi que la funcion registra el equipo con service
+    // role una vez validada la contrasena. `register_pos_device` ya no es
+    // ejecutable por anon ni authenticated. Sin `deviceCode` (instaladores
+    // anteriores) solo se autoriza, como antes.
+    let device = null;
+
+    if (action === "register_pos_device" && deviceCode) {
+      const { data: deviceData, error: deviceError } = await supabaseAdmin.rpc(
+        "register_pos_device",
+        {
+          p_device_code: deviceCode,
+          p_branch_id: branchId,
+          p_admin_id: adminUser.id,
+        }
+      );
+
+      if (deviceError) {
+        console.error("Error registrando el dispositivo POS:", deviceError);
+
+        return jsonResponse({
+          ok: false,
+          message: "No se pudo registrar el dispositivo.",
+        });
+      }
+
+      if (!deviceData?.success) {
+        return jsonResponse({
+          ok: false,
+          message: deviceData?.message || "No se pudo registrar el dispositivo.",
+        });
+      }
+
+      device = deviceData;
+    }
+
     return jsonResponse({
       ok: true,
+      device,
       authorizedBy: adminUser.id,
       authorizedByUsername: adminUser.username,
       action,

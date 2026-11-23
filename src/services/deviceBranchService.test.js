@@ -148,17 +148,18 @@ describe("registerPosDevice", () => {
     password: "secreto",
   };
 
-  it("autoriza al administrador y registra el dispositivo", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("registra el dispositivo en la edge function, sin RPC desde el cliente", async () => {
     authorizeAdminAction.mockResolvedValue({
       ok: true,
       authorizedBy: "user-1",
-    });
-    supabase.rpc.mockResolvedValue({
-      data: {
+      device: {
         success: true,
         branch: { id: "branch-1", name: "Centro", code: "C01" },
       },
-      error: null,
     });
 
     const result = await registerPosDevice(credentials);
@@ -168,57 +169,19 @@ describe("registerPosDevice", () => {
       username: "admin",
       password: "secreto",
       branchId: "branch-1",
+      deviceCode: "device-uuid",
     });
-    expect(supabase.rpc).toHaveBeenCalledWith("register_pos_device", {
-      p_device_code: "device-uuid",
-      p_branch_id: "branch-1",
-      p_admin_id: "user-1",
-    });
+    expect(supabase.rpc).not.toHaveBeenCalled();
     expect(result).toEqual({
       success: true,
       branch: { id: "branch-1", name: "Centro", code: "C01" },
     });
   });
 
-  it("no llama al RPC si la autorización falla", async () => {
+  it("devuelve el mensaje si la autorizacion o el registro fallan", async () => {
     authorizeAdminAction.mockResolvedValue({
       ok: false,
-      message: "Usuario administrador o contraseña incorrectos.",
-    });
-
-    const result = await registerPosDevice(credentials);
-
-    expect(result).toEqual({
-      success: false,
-      error: "Usuario administrador o contraseña incorrectos.",
-    });
-    expect(supabase.rpc).not.toHaveBeenCalled();
-  });
-
-  it("propaga el error de transporte del RPC", async () => {
-    authorizeAdminAction.mockResolvedValue({
-      ok: true,
-      authorizedBy: "user-1",
-    });
-    supabase.rpc.mockResolvedValue({
-      data: null,
-      error: { message: "network" },
-    });
-
-    const result = await registerPosDevice(credentials);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("network");
-  });
-
-  it("reporta el mensaje de negocio cuando la sucursal no existe", async () => {
-    authorizeAdminAction.mockResolvedValue({
-      ok: true,
-      authorizedBy: "user-1",
-    });
-    supabase.rpc.mockResolvedValue({
-      data: { success: false, message: "La sucursal no existe" },
-      error: null,
+      message: "La sucursal no existe",
     });
 
     const result = await registerPosDevice(credentials);
@@ -226,19 +189,19 @@ describe("registerPosDevice", () => {
     expect(result).toEqual({ success: false, error: "La sucursal no existe" });
   });
 
-  it("falla si la respuesta no incluye id de sucursal", async () => {
+  it("falla si la edge function no devuelve la sucursal registrada", async () => {
     authorizeAdminAction.mockResolvedValue({
       ok: true,
       authorizedBy: "user-1",
-    });
-    supabase.rpc.mockResolvedValue({
-      data: { success: true, branch: { name: "Sin id" } },
-      error: null,
+      device: { success: true, branch: { name: "Sin id" } },
     });
 
     const result = await registerPosDevice(credentials);
 
-    expect(result.success).toBe(false);
+    expect(result).toEqual({
+      success: false,
+      error: "No se pudo registrar el dispositivo.",
+    });
   });
 
   it("captura excepciones inesperadas de la autorización", async () => {
