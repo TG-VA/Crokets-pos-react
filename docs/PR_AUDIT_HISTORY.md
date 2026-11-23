@@ -3102,6 +3102,40 @@ ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
 Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
 recarga del catálogo origen en terminal admin y operativa.
 
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (20 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 2 sugerencias). Head `363fd84`,
+base `4560b1a`. Ejecución: 353 archivos / 3617 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 6 ejecutadas, 6 detectadas. I1, S1 y S2 de la auditoría anterior corregidos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                 | Severidad  |
+| --- | ---------------------------------------------------------------------------------------- | ---------- |
+| S1  | La selección automática por texto cuenta productos locales con stock como seleccionables | Sugerencia |
+| S2  | `useProductLookup` relee `existencia` en línea en lugar de reusar `getProductStock`      | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
+captura por texto y escáner de productos agotados. `docs/TESTING.md` pendiente de actualizar.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (21 de noviembre de 2026, tercera auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `de40fd1`,
+base `9787944`. Ejecución: 363 archivos / 3676 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 3 ejecutadas, 2 detectadas. S1 y S2 de la re-auditoría corregidos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                       | Severidad  |
+| --- | ---------------------------------------------------------------------------------------------- | ---------- |
+| S1  | El test del campo `stock` sin `existencia` usa una sola coincidencia y no detecta la regresión | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`). `docs/TESTING.md` pendiente de actualizar.
+
 ## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (22 de noviembre de 2026, cuarta auditoría)
 
 Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `63aa52b`,
