@@ -13,7 +13,7 @@ componentes). No hay carpeta central de tests.
 
 ## Cobertura actual (22 nov 2026)
 
-397 archivos de test (**3855 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+397 archivos de test (**3874 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -241,19 +241,19 @@ y el proceso principal de Electron:
 | Traspasos: hero (sucursal y KPIs operativos)              | `.../PageTransfers/components/HeroSection.test.jsx`                                |
 | Traspasos: espacio de recepcion (armado y aviso 0s)       | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
 | Traspasos: modal de detalle (titulo, origen y destino)    | `.../PageTransfers/components/modals/TransferDetailModal.test.jsx`                 |
-| Traspasos: busqueda de productos con existencia           | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
+| Traspasos: busqueda con stock, agotados y locales         | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
 | Traspasos: recepcion (cantidades, cero y recarga)         | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
 | Traspasos: formulario de envio (borrador y stock)         | `.../PageTransfers/hooks/useSendForm.test.js`                                      |
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
-| Traspasos: carga y error en el buscador de la pagina      | `.../PageTransfers/PageTransfers.test.jsx`                                         |
+| Traspasos: buscador (origen, promocion y seleccion)       | `.../PageTransfers/PageTransfers.test.jsx`                                         |
 | Traspasos: servicio de datos (sucursales y ordenes)       | `.../PageTransfers/services/transferService.test.js`                               |
 | Traspasos: calculos de orden, recepcion y aviso 0s        | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
 | Traspasos: utilidades (meta, fechas y presets)            | `.../PageTransfers/utils/transfersUtils.test.js`                                   |
 | Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
 | Pedidos: reglas de producto global                        | `src/services/inventory/inventoryProductCalculationService.test.js`                |
-| Pedidos: busqueda de productos (locales y globales)       | `.../Modals/InventorySearchModal/InventorySearchModal.test.jsx`                    |
+| Busqueda de productos (locales, globales y stock)         | `.../Modals/InventorySearchModal/InventorySearchModal.test.jsx`                    |
 | Pedidos: borrador persistente por usuario y sucursal      | `src/contexts/OrderDraftContext.test.jsx`                                          |
 | Pedidos: detalle de producto por sucursal (hook)          | `.../PageOrders/hooks/useProductInsightsDetail.test.js`                            |
 | Pedidos: formulario de creacion (solo productos globales) | `.../PageOrders/hooks/useCreateOrderForm.test.jsx`                                 |
