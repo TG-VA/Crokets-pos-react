@@ -3143,3 +3143,34 @@ podia filtrar por tipo.
 **Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
 migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
 filtro los agrupa en `Ajuste`.
+
+---
+
+### 105. `anon` podia leer, modificar y vaciar las tablas sin RLS sin iniciar sesion
+
+**Estado:** migracion lista, pendiente de aplicar (22 nov 2026, rama `fix/security-revoke-anon-grants`).
+
+**Problema:** los default privileges de `public` daban a `anon` `arwdDxtm` en tablas y `EXECUTE` en
+funciones. En las 31 tablas sin RLS con grants completos (`customers`, `customer_points`,
+`products`, `cash_cuts`, `invoices`, `system_settings`, `audit_logs`, `user_sessions`, etc.)
+cualquiera con la clave publica del instalador podia leer, modificar o hacer `TRUNCATE` sin sesion.
+`users`, `roles`, `permissions`, `role_permissions` y `user_roles` exponian todas sus columnas en
+lectura.
+
+**Solucion:** `20261122120000_revoke_anon_grants.sql` revoca todo a `anon` (y `EXECUTE` a `PUBLIC`)
+en `public` y devuelve solo lo que `Login.jsx` y la activacion del dispositivo leen antes de
+`signInWithPassword`. Los default privileges de `postgres` dejan de abrir los objetos nuevos.
+
+**Verificacion:** en produccion, dentro de una transaccion revertida: 0 cambios en 882 privilegios de
+`authenticated` y `service_role`; 5 lecturas del login permitidas y 11 accesos denegados.
+
+**Pendiente:**
+
+- `register_pos_device` es `security definer`, la puede ejecutar `anon` y acepta `p_admin_id` del
+  cliente sin comprobarlo: cualquiera puede registrar un dispositivo en cualquier sucursal. Se
+  corrige aparte ligandola a `admin_action_grants`.
+- Los default privileges de `supabase_admin` siguen abriendo a `anon`; solo aplican a objetos que
+  cree ese rol, no a las migraciones del proyecto.
+- El login sigue leyendo `users` y `user_sessions` sin sesion (enumeracion de usuarios y de sesiones
+  activas). Cerrarlo requiere mover esas lecturas a una RPC de login.
+- `_rpc_backup_20260927_pr90` es una tabla de respaldo que sigue en `public`.
