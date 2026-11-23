@@ -80,8 +80,7 @@
       {
         "provider": "github",
         "owner": "TG-VA",
-        "repo": "Crokets-pos-react",
-        "private": true
+        "repo": "Crokets-pos-react"
       }
     ],
     "files": [

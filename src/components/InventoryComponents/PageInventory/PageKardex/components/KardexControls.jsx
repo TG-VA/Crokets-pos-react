@@ -1,7 +1,11 @@
-import React from "react";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
+
+import {
+  KARDEX_ALL_TYPES_FILTER,
+  KARDEX_TYPE_FILTER_OPTIONS,
+} from "../utils/kardexTypeFilters";
 
 import styles from "./KardexControls.module.css";
 
@@ -42,6 +46,7 @@ const KardexControls = ({
   dateFilterError = "",
   isDateFilterActive = false,
   hasSelectedProducts = false,
+  typeFilter = KARDEX_ALL_TYPES_FILTER,
 
   onBarcodeChange,
   onBarcodeSearch,
@@ -52,6 +57,7 @@ const KardexControls = ({
   onApplyDateFilter,
   onClearDateFilter,
   onOpenProductSearch,
+  onTypeFilterChange,
 }) => {
   const startDateValue = parseDateValue(draftDateFrom);
 
@@ -140,6 +146,27 @@ const KardexControls = ({
             showPopperArrow={false}
             isClearable={false}
           />
+        </div>
+
+        <div className={styles.typeGroup}>
+          <label htmlFor="kardex-type-filter" className={styles.searchLabel}>
+            Tipo
+          </label>
+
+          <select
+            id="kardex-type-filter"
+            className={styles.typeSelect}
+            value={typeFilter}
+            onChange={(event) => {
+              onTypeFilterChange?.(event.target.value);
+            }}
+          >
+            {KARDEX_TYPE_FILTER_OPTIONS.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button

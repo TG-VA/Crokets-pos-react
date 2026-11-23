@@ -1,16 +1,22 @@
 import { supabase } from "../lib/supabaseClient";
-import { fetchByIdsInBatches } from "./supabase/paginatedQuery";
+import { fetchAllPages, fetchByIdsInBatches } from "./supabase/paginatedQuery";
+import { sortRowsBy } from "./supabase/sortRows";
 
+// Se pagina sobre clave (la tabla no tiene id) para no truncar en 1000 filas
+// si el catalogo crece, y se ordena por descripcion en memoria.
 export const fetchSatClaves = async () => {
-  const { data, error } = await supabase
-    .from("sat_claves_productos_servicios")
-    .select("clave, descripcion")
-    .eq("status", true)
-    .order("descripcion", { ascending: true });
+  const { data, error } = await fetchAllPages(
+    () =>
+      supabase
+        .from("sat_claves_productos_servicios")
+        .select("clave, descripcion")
+        .eq("status", true),
+    { cursorColumn: "clave" }
+  );
 
   if (error) throw error;
 
-  return data || [];
+  return sortRowsBy(data, "descripcion");
 };
 
 export const validateSatClaves = async (satCodes) => {

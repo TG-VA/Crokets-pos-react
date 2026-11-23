@@ -3007,6 +3007,82 @@ ESLint 0 errores. Mutaciones: 4 ejecutadas, 4 detectadas. S1 y S2 de la auditor�
 Pendiente de verificación humana en Electron (`npm run dev`): edición de sucursal por un usuario no
 admin con la RLS de `branches` activa.
 
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (15 de noviembre de 2026, primera ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 3 sugerencias). Head `5d378c7`,
+base `765b0ca`. 16 commits. Ejecución: 303 archivos / 3245 tests verdes; build OK; `check:agents` OK;
+Prettier OK; ESLint 0 errores (2 warnings preexistentes en `useReceiveForm.js`). Mutaciones: 16
+ejecutadas, 13 detectadas, 2 equivalentes (M13, M15), 1 sobreviviente (M11).
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                                      | Severidad  |
+| --- | --------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Con valor por defecto en 0, los productos de páginas no revisadas regresan a origen sin aviso | Importante |
+| 2   | El texto "Doble click o Enter para confirmar" contradice el armado en dos pasos               | Sugerencia |
+| 3   | `onFocus select()` sin test (M11 sobrevive)                                                   | Sugerencia |
+| 4   | Nota obsoleta de commits adelantados en la descripción                                        | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`) de los 10 pasos manuales y de la altura
+de la lista de pendientes en 1366x768.
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (17 de noviembre de 2026, segunda ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 3 sugerencias). Head `60cd27a`,
+base `781d407`. Commits nuevos auditados: `e33bf80`, `30963d0`, `107171c`, merge `60cd27a`.
+Ejecución: 331 archivos / 3434 tests verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0
+errores (2 warnings preexistentes en `useReceiveForm.js`). Mutaciones: 6 ejecutadas, 4 detectadas, 2
+sobrevivientes (N1, N2).
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo                                                           | Estado               |
+| --- | ------------------------------------------------------------------ | -------------------- |
+| 1   | Productos en 0 de páginas no revisadas regresan a origen sin aviso | Resuelto (`107171c`) |
+| 2   | Texto "Doble click o Enter" contradice el armado en dos pasos      | Resuelto (`30963d0`) |
+| 3   | `onFocus select()` sin test (M11)                                  | Resuelto (`e33bf80`) |
+| 4   | Nota obsoleta de commits adelantados en la descripción             | Resuelto             |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                           | Severidad  |
+| --- | ---------------------------------------------------------------------------------- | ---------- |
+| 5   | Ocultar el aviso con todo en 0 no tiene test (N1 sobrevive)                        | Sugerencia |
+| 6   | La variante en singular del aviso no tiene test (N2 sobrevive)                     | Sugerencia |
+| 7   | La descripción reporta 303 archivos / 3254 tests y 19 commits; son 331 / 3434 y 20 | Sugerencia |
+
+### Estado al cierre
+
+Falta la confirmación humana de la prueba manual en Electron (`npm run dev`) que el autor reporta
+como hecha, incluido el desborde del aviso en 1366x768.
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación doble` (18 de noviembre de 2026, tercera ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `30085ee`,
+base `781d407`. Commit nuevo auditado: `30085ee` (solo tests). Ejecución: 331 archivos / 3435 tests
+verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0 errores (2 warnings preexistentes en
+`useReceiveForm.js`). Mutaciones: 2 ejecutadas, 2 detectadas.
+
+### Correcciones aplicadas desde la auditoría anterior
+
+| #   | Hallazgo                                                       | Estado               |
+| --- | -------------------------------------------------------------- | -------------------- |
+| 5   | Ocultar el aviso con todo en 0 no tiene test (N1 sobrevive)    | Resuelto (`30085ee`) |
+| 6   | La variante en singular del aviso no tiene test (N2 sobrevive) | Resuelto (`30085ee`) |
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                  | Severidad  |
+| --- | ------------------------------------------------------------------------- | ---------- |
+| 7   | La descripción reporta 303 / 3254 tests y 19 commits; son 331 / 3435 y 21 | Sugerencia |
+
+### Estado al cierre
+
+Falta la confirmación humana de la prueba manual en Electron (`npm run dev`), incluido el desborde
+del aviso en 1366x768.
+
 ## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (18 de noviembre de 2026)
 
 Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 2 sugerencias). Head `42e7918`,
@@ -3061,6 +3137,23 @@ resueltos.
 Pendiente de verificación humana en Electron (`npm run dev`): reautorización con grant vencido en
 Agregar y Ajustes, y avisos con `useAppModal`.
 
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación armada` (20 de noviembre de 2026, cuarta ronda)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `6173d9f`,
+base `4560b1a`. Commits nuevos auditados: `0dd0922`, `a6aa1ea` (solo docs) y merge `6173d9f`, sin
+cambios de producción. Ejecución: 353 archivos / 3636 tests verdes; build OK; `check:agents` OK;
+Prettier OK; ESLint 0 errores (2 warnings preexistentes). Mutaciones: 2 ejecutadas, 2 detectadas.
+
+### Hallazgos abiertos
+
+| #   | Hallazgo                                                                         | Severidad  |
+| --- | -------------------------------------------------------------------------------- | ---------- |
+| 7   | La descripción reporta 21 commits / 3435 tests y 10 archivos; son 24 / 3636 y 11 | Sugerencia |
+
+### Estado al cierre
+
+Falta la confirmación humana de la prueba manual en Electron (`npm run dev`), incluido el desborde
+del aviso en 1366x768.
 ---
 
 ## Informe de Auditoría — PR #233 `chore: quitar symlink node_modules del indice` (20 de noviembre de 2026, segunda ronda)
@@ -3070,3 +3163,27 @@ Quita del indice el symlink `node_modules` (modo 120000) y cambia `node_modules/
 en `.gitignore` para ignorar tambien symlinks. Ejecución: 363 archivos / 3657 tests verdes; build OK;
 `check:agents` OK; `git check-ignore` -> `.gitignore:2`; CI verde. S1 de la primera ronda
 (documentar `npm ci` tras el merge) resuelta en la descripción del PR.
+
+---
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación armada` (21 de noviembre de 2026, sexta ronda)
+
+**Veredicto:** APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `2f37d8d`, base `9787944`.
+
+- Bloqueante de la quinta ronda resuelto: el efecto de reinicio de `useReceiveForm.js` vuelve a depender solo de `selectedReceiptOrderId`, con `eslint-disable-line` justificado.
+- Tests de regresión nuevos (recarga con objetos nuevos y cambio de folio), verificados por mutación: M1 (reintroducir `selectedReceiptOrder` en deps) y M2 (deps vacías) quedan detectadas.
+- Ejecución: 363 archivos / 3694 tests en verde, build OK, `check:agents` OK, Prettier y ESLint limpios, CI en verde.
+- Sugerencia: actualizar `docs/TESTING.md` (conteo de 3657 a 3694 y fila de `useReceiveForm`).
+- Pendiente humano: prueba en Electron con recarga realtime durante la captura y aviso en 1366x768.
+
+---
+
+## Informe de Auditoría — PR #202 `feat(traspasos): mejorar recepción con scroll, paginación, captura numérica y confirmación armada` (22 de noviembre de 2026, séptima ronda)
+
+**Veredicto:** APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 0 sugerencias). Head `899f1cc`, base `4ef9d21`.
+
+- Delta desde `2f37d8d`: solo documentación (`docs/TESTING.md` actualizado a 382 / 3782 y fila de `useReceiveForm`; informe de la sexta ronda) y merge de `main`. Sugerencia de la sexta ronda resuelta.
+- Ejecución: 382 archivos / 3782 tests en verde, build OK, `check:agents` OK, Prettier y ESLint limpios, CI en verde.
+- Mutaciones M1 a M8 (select al enfocar, guard en cero del hook, deps del reinicio, temporizador, singular, Enter al botón, key del Fragment, desarme por blur) detectadas.
+- Observación: la descripción del PR conserva el conteo 363 / 3694 en "Verificación local".
+- Pendiente humano: prueba en Electron con recarga realtime durante la captura y aviso en 1366x768.

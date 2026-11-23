@@ -20,9 +20,11 @@ const RANGE = {
 const queryFor = (resolve, registry, table) => {
   const q = { table, eqCalls: [] };
 
-  ["select", "order", "not", "gte", "lte", "in", "limit"].forEach((method) => {
-    q[method] = vi.fn(() => q);
-  });
+  ["select", "order", "not", "gte", "lte", "gt", "in", "limit"].forEach(
+    (method) => {
+      q[method] = vi.fn(() => q);
+    }
+  );
 
   q.eq = vi.fn((column, value) => {
     q.eqCalls.push([column, value]);

@@ -1054,7 +1054,7 @@ si ningún PR lo usa.
 
 ### 101. `fetchByIdsInBatches` lanza todos los lotes a la vez y quedan lecturas sin paginar
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #236.
+**Estado:** resuelto (21 nov 2026) — rama `fix/concurrencia-lotes-y-lecturas-sin-paginar`; registrado en el PR #236.
 
 `fetchByIdsInBatches` (`src/services/supabase/paginatedQuery.js`) dispara todos los lotes de 200 ids
 con `Promise.all`. Un archivo de importacion de 20 000 codigos de barras son 100 peticiones
@@ -1068,11 +1068,19 @@ sucursales o importaciones grandes; las dos lecturas sin paginar pueden truncars
 **Recomendacion futura:** agregar a `fetchByIdsInBatches` un parametro `concurrency` (por ejemplo 4)
 que procese los lotes en tandas, y pasar `fetchSatClaves` y `cash_movements` a `fetchAllPages`.
 
+**Resolucion:** `fetchByIdsInBatches` acepta `concurrency` (por defecto
+`DEFAULT_BATCH_CONCURRENCY = 4`): procesa los lotes en tandas de 4 y no lanza mas tandas tras el
+primer error. `fetchSatClaves` pagina sobre `clave` con `fetchAllPages` y ordena por `descripcion` en
+memoria. `fetchCashMovementsBySession` (corte de caja) pagina sobre `id` y devuelve los movimientos
+del mas reciente al mas antiguo con `sortRowsBy`. Los `cash_movements` de `salesCashService` y de los
+reportes de caja no forman parte de este caso.
+
 ---
 
 ### 102. Historial de ventas: `fetchSalesRelatedData` oculta los errores de los datos relacionados
 
-**Estado:** abierto (21 nov 2026) — registrado en el PR #237 (hallazgo S2 de la review).
+**Estado:** resuelto (21 nov 2026) — rama `fix/historial-ventas-datos-parciales`. Registrado en el PR
+#237 (hallazgo S2 de la review).
 
 `fetchSalesRelatedData` (`src/components/SalesComponents/services/salesHistoryService.js`) lee
 detalles, usuarios, clientes, pagos, cancelaciones y devoluciones con `fetchByIdsInBatches`. Si una
@@ -1085,6 +1093,12 @@ en una devolución).
 **Recomendación futura:** no lanzar el error, porque bloquearía todo el historial del día. Devolver
 un indicador de datos parciales desde el servicio, exponerlo en el hook del historial y mostrar en
 la vista un aviso con opción de reintentar, conservando el `console.error`.
+
+**Resolución:** `fetchSalesRelatedData` registra cada error con `console.error` y devuelve
+`incomplete: true`; `fetchHistoryTickets` devuelve `{ tickets, incomplete }`. `useSalesHistory`
+expone `ticketsIncomplete` y `retryLoadTickets`, y `SalesHistoryModal` muestra los tickets con un
+aviso y el botón Reintentar. Un error de `fetchTicketsBatch` sigue vaciando la lista. Cobertura en
+`salesHistoryService.test.js`, `useSalesHistory.test.js` y `SalesHistoryModal.escape.test.jsx`.
 
 ---
 
@@ -3098,3 +3112,34 @@ PostgREST no lo trunca y ya no hay tope ni paginación en el cliente. Se eligió
 de uno paginado porque los filtros, conteos, orden y exportación a Excel trabajan sobre todas las
 filas de la sucursal. Es `security invoker` (aplica la RLS del llamador) y solo `authenticated`
 tiene `EXECUTE`. Contrato en `getBranchInventoryReportContract.test.js`.
+
+---
+
+### 103. Kardex: filas en guion sin stocks, sin saldo del rango, sin usuario ni sucursal del traspaso
+
+**Estado:** resuelto (22 nov 2026, rama `feat/kardex-mejoras`).
+
+**Problema:** entradas y salidas salian solo de `new_stock - previous_stock`, de modo que un
+movimiento sin alguno de los stocks quedaba en guion. Con rango de fechas no habia saldo inicial ni
+totales, la tabla no mostraba quien hizo el movimiento ni la otra sucursal de un traspaso, y no se
+podia filtrar por tipo.
+
+**Solucion:**
+
+- `getKardexStockChange` usa `quantity` cuando falta algun stock. `quantity` es el delta con signo
+  (CHECK `new_stock = previous_stock + quantity`); en tipos de sentido fijo (`sale`, `return`,
+  `canceled`, `entry`, etc.) se fuerza el sentido por si un registro historico lo trae sin signo.
+- `kardexCalculationService.buildKardexRangeSummary`: el saldo anterior es el `previousStock` del
+  movimiento mas antiguo del rango. Con el rango vacio no se consulta el ultimo movimiento previo
+  (se evita una lectura extra) y la tabla muestra su estado vacio. Tabla y Excel muestran
+  `SALDO ANTERIOR` (solo con rango) y `TOTALES` (entradas, salidas y saldo final).
+- Columna `USUARIO`: `user_id` se resuelve en lote con `loadUsers` del reporte de movimientos
+  (tabla `users`, campo `username`).
+- Traspasos: `related_branch_id` se resuelve con `fetchAllBranches` y la descripcion agrega
+  `ORIGEN` o `DESTINO`.
+- Filtro por tipo en memoria (`useKardexTypeFilter`); el Excel exporta lo filtrado y conserva los
+  saldos del rango completo.
+
+**Limitacion conocida:** los traspasos historicos registrados como `adjustment` (antes de la
+migracion `20261019000000`) no se reconocen como traspaso: no muestran la sucursal relacionada y el
+filtro los agrupa en `Ajuste`.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_BATCH_CONCURRENCY,
   DEFAULT_IN_FILTER_BATCH_SIZE,
   DEFAULT_PAGE_SIZE,
   fetchAllPages,
@@ -198,6 +199,58 @@ describe("fetchByIdsInBatches", () => {
     );
 
     expect(result).toEqual({ data: null, error: pageError });
+  });
+
+  it("no tiene mas de 4 lotes en vuelo por defecto", async () => {
+    const rows = buildRows(20);
+    let inFlight = 0;
+    let maxInFlight = 0;
+
+    const buildQuery = (batch) => {
+      const query = {
+        order: () => query,
+        gt: () => query,
+        limit: async () => {
+          inFlight += 1;
+          maxInFlight = Math.max(maxInFlight, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          inFlight -= 1;
+          return {
+            data: rows.filter((row) => batch.includes(row.id)),
+            error: null,
+          };
+        },
+      };
+      return query;
+    };
+
+    const result = await fetchByIdsInBatches(
+      rows.map((row) => row.id),
+      buildQuery,
+      { batchSize: 2 }
+    );
+
+    expect(DEFAULT_BATCH_CONCURRENCY).toBe(4);
+    expect(maxInFlight).toBe(4);
+    expect(result).toEqual({ data: rows, error: null });
+  });
+
+  it("no lanza mas tandas despues de un error", async () => {
+    const pageError = { message: "boom" };
+    const rows = buildRows(8);
+    const { buildQuery, calls } = createSource(() => rows, {
+      errorOnCall: 1,
+      error: pageError,
+    });
+
+    const result = await fetchByIdsInBatches(
+      rows.map((row) => row.id),
+      buildQuery,
+      { batchSize: 2, concurrency: 2 }
+    );
+
+    expect(result).toEqual({ data: null, error: pageError });
+    expect(calls).toHaveLength(2);
   });
 });
 

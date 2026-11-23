@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import PaginationBar from "../../../../PaginationBar/PaginationBar";
 
 import { usePagination } from "../../../../../hooks/usePagination";
+
+import { buildKardexRangeSummary } from "../services/kardexCalculationService";
 
 import { getKardexRangeLabel } from "../utils/kardexFormatters";
 
@@ -11,7 +13,7 @@ import KardexTable from "./KardexTable";
 
 import styles from "./KardexProductPanel.module.css";
 
-const KARDEX_PAGE_SIZE_OPTIONS = [10, 25, 50];
+const KARDEX_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const getKardexProductKey = (product) =>
   String(product?.id ?? product?.product_id ?? "");
@@ -20,6 +22,8 @@ const KardexProductPanel = ({
   slot = 0,
   product = null,
   rows = [],
+  rangeRows = null,
+  typeFilter = "",
   movementState = null,
 
   appliedDateFrom = "",
@@ -33,7 +37,10 @@ const KardexProductPanel = ({
   onRemoveProduct,
   onExport,
 }) => {
-  const normalizedRows = Array.isArray(rows) ? rows : [];
+  const normalizedRows = useMemo(
+    () => (Array.isArray(rows) ? rows : []),
+    [rows]
+  );
 
   const {
     currentPage,
@@ -53,11 +60,20 @@ const KardexProductPanel = ({
 
   const productKey = getKardexProductKey(product);
 
+  // Los saldos usan todo el rango; los totales, solo las filas filtradas.
+  const summary = useMemo(
+    () =>
+      buildKardexRangeSummary(rangeRows ?? normalizedRows, {
+        visibleRows: normalizedRows,
+      }),
+    [rangeRows, normalizedRows]
+  );
+
   // Cambiar de producto o de rango de fechas reinicia la pagina para que el
   // panel no abra en una pagina vacia o fuera del nuevo conjunto de datos.
   useEffect(() => {
     resetPagination();
-  }, [productKey, appliedDateFrom, appliedDateTo, resetPagination]);
+  }, [productKey, appliedDateFrom, appliedDateTo, typeFilter, resetPagination]);
 
   if (!product) {
     return null;
@@ -116,6 +132,8 @@ const KardexProductPanel = ({
           product={product}
           loading={loading}
           error={error}
+          summary={summary}
+          showOpeningBalance={hasActiveRange}
         />
 
         {normalizedRows.length > 0 && (

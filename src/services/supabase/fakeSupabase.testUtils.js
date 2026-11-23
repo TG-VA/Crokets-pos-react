@@ -133,6 +133,8 @@ const createQuery = (rows, { maxRows, calls, name }) => {
       call.range = [from, to];
       return query;
     },
+    single: () =>
+      run().then(({ data }) => ({ data: data[0] ?? null, error: null })),
     then: (onFulfilled, onRejected) => run().then(onFulfilled, onRejected),
   };
 

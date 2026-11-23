@@ -14,6 +14,37 @@ export const normalizeInteger = (value, fallback = 0) => {
   return Math.max(0, Math.floor(parsedValue));
 };
 
+/**
+ * Sanea la cantidad recibida capturada: descarta todo lo que no sea digito y
+ * recorta al maximo solicitado para que el faltante nunca sea negativo.
+ */
+export const normalizeReceivedQuantity = (value, maxQty = 0) => {
+  const digitsOnly = String(value ?? "").replace(/\D/g, "");
+  const parsedValue = Number(digitsOnly || 0);
+  const upperBound = normalizeInteger(maxQty);
+
+  return String(Math.min(parsedValue, upperBound));
+};
+
+/**
+ * Indica si al menos un producto de la orden tiene cantidad recibida capturada.
+ */
+export const hasReceivedUnits = (items = [], receiptQuantities = {}) => {
+  return (Array.isArray(items) ? items : []).some(
+    (item) => normalizeInteger(receiptQuantities?.[item?.productId]) > 0
+  );
+};
+
+/**
+ * Cuenta los productos de la orden que se quedaron en 0 y por lo tanto
+ * regresan completos a la sucursal de origen.
+ */
+export const countUnreceivedItems = (items = [], receiptQuantities = {}) => {
+  return (Array.isArray(items) ? items : []).filter(
+    (item) => normalizeInteger(receiptQuantities?.[item?.productId]) <= 0
+  ).length;
+};
+
 export const buildTransferTotals = (items = []) => {
   return (Array.isArray(items) ? items : []).reduce(
     (summary, item) => {

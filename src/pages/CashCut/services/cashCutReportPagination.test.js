@@ -22,6 +22,7 @@ import {
   calculateRewardSummary,
   calculateSalesTotals,
   fetchCancellationsByShift,
+  fetchCashMovementsBySession,
   fetchDepartmentSales,
   fetchPartialReturnsByShift,
   fetchPaymentsByMethod,
@@ -136,6 +137,21 @@ const redemptions = sales.slice(0, 5).map((sale, index) => ({
   reversed_at: index === 4 ? buildTime(index) : null,
 }));
 
+const cashMovements = [0, 1, 2, 3, 4].map((index) => ({
+  id: buildId("cm", index),
+  session_id: "cs-1",
+  movement_type: index % 2 === 0 ? "in" : "out",
+  amount: 10 + index,
+  description: `Movimiento ${index}`,
+  created_at: buildTime(index),
+}));
+
+const otherSessionMovement = {
+  ...cashMovements[0],
+  id: buildId("cm", 99),
+  session_id: "cs-2",
+};
+
 describe("cashCutReportService con turnos de varias paginas", () => {
   let fake;
 
@@ -147,6 +163,7 @@ describe("cashCutReportService con turnos de varias paginas", () => {
       canceled_sales: canceledSales,
       sale_returns: saleReturns,
       sale_reward_redemptions: redemptions,
+      cash_movements: [...cashMovements, otherSessionMovement],
     });
     supabase.from.mockImplementation(fake.from);
   });
@@ -226,6 +243,21 @@ describe("cashCutReportService con turnos de varias paginas", () => {
     expect(calculatePartialReturns(returns.data)).toEqual(
       calculatePartialReturns([...saleReturns].reverse())
     );
+  });
+
+  it("lee todos los movimientos de caja de la sesion, del mas reciente al mas antiguo", async () => {
+    const { data, error } = await fetchCashMovementsBySession({
+      sessionId: "cs-1",
+      endAt: buildTime(3),
+    });
+
+    expect(error).toBeNull();
+    expect(data.map((row) => row.id)).toEqual([
+      buildId("cm", 3),
+      buildId("cm", 2),
+      buildId("cm", 1),
+      buildId("cm", 0),
+    ]);
   });
 
   it("propaga el error de una pagina sin filas parciales", async () => {

@@ -1,7 +1,15 @@
+import { Fragment, useRef } from "react";
+
 import styles from "../PageTransfers.module.css";
-import { formatTransferDateTime } from "../utils/transfersUtils";
+import {
+  countUnreceivedItems,
+  formatTransferDateTime,
+  hasReceivedUnits,
+} from "../utils/transfersUtils";
 import boxIcon from "../../../../../assets/icons/box-solid-full.svg";
 import tableListIcon from "../../../../../assets/icons/table-list-solid-full.svg";
+import ReceiptItemsTable from "./ReceiptItemsTable";
+import ReceiptConfirmBar from "./ReceiptConfirmBar";
 
 const ReceiveWorkspace = ({
   submitting,
@@ -13,6 +21,18 @@ const ReceiveWorkspace = ({
   onReceiptQuantityChange,
   onConfirmReceipt,
 }) => {
+  const confirmButtonRef = useRef(null);
+
+  const canConfirm = hasReceivedUnits(
+    selectedReceiptOrder?.items,
+    receiptQuantities
+  );
+
+  const unreceivedCount = countUnreceivedItems(
+    selectedReceiptOrder?.items,
+    receiptQuantities
+  );
+
   return (
     <section className={styles.workspace}>
       <div className={styles.panel}>
@@ -99,80 +119,22 @@ const ReceiveWorkspace = ({
               </div>
             </div>
 
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Solicitado</th>
-                    <th>Recibido</th>
-                    <th>Regresa</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedReceiptOrder.items.map((item) => {
-                    const requestedQty = Number(item.requestedQty ?? 0);
-                    const receivedQty = Number(
-                      receiptQuantities[item.productId] ?? requestedQty
-                    );
-                    const normalizedReceivedQty = Number.isFinite(receivedQty)
-                      ? receivedQty
-                      : 0;
-                    const returnedQty = Math.max(
-                      0,
-                      requestedQty - normalizedReceivedQty
-                    );
+            <Fragment key={selectedReceiptOrder.id}>
+              <ReceiptItemsTable
+                items={selectedReceiptOrder.items ?? []}
+                receiptQuantities={receiptQuantities}
+                onReceiptQuantityChange={onReceiptQuantityChange}
+                onLastItemEnter={() => confirmButtonRef.current?.focus()}
+              />
 
-                    return (
-                      <tr key={item.productId}>
-                        <td>
-                          <div className={styles.productCell}>
-                            <strong>{item.name}</strong>
-                            <span>{item.barcode}</span>
-                          </div>
-                        </td>
-                        <td>{requestedQty}</td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            max={requestedQty}
-                            className={styles.quantityInput}
-                            value={
-                              receiptQuantities[item.productId] ??
-                              String(requestedQty)
-                            }
-                            onChange={(event) =>
-                              onReceiptQuantityChange(
-                                item.productId,
-                                event.target.value
-                              )
-                            }
-                          />
-                        </td>
-                        <td>{returnedQty}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className={styles.actionRow}>
-              <div className={styles.actionText}>
-                La recepción genera entradas automáticas en destino y reingresa
-                el faltante a origen.
-              </div>
-
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={onConfirmReceipt}
-                disabled={submitting}
-              >
-                {submitting ? "Procesando..." : "Confirmar recepción"}
-              </button>
-            </div>
+              <ReceiptConfirmBar
+                canConfirm={canConfirm}
+                submitting={submitting}
+                unreceivedCount={unreceivedCount}
+                buttonRef={confirmButtonRef}
+                onConfirm={onConfirmReceipt}
+              />
+            </Fragment>
           </>
         ) : (
           <div className={styles.emptyState}>

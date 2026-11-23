@@ -6,9 +6,80 @@ import {
   getProductPrices,
   buildTransferItems,
   validateTransferItems,
+  normalizeReceivedQuantity,
+  hasReceivedUnits,
+  countUnreceivedItems,
 } from "./transfersCalculationService";
 
 describe("transfersCalculationService", () => {
+  describe("normalizeReceivedQuantity", () => {
+    it("conserva solo los digitos capturados", () => {
+      expect(normalizeReceivedQuantity("1a2b", 20)).toBe("12");
+    });
+
+    it("recorta la captura al maximo solicitado", () => {
+      expect(normalizeReceivedQuantity("99", 8)).toBe("8");
+    });
+
+    it("devuelve 0 cuando no hay digitos", () => {
+      expect(normalizeReceivedQuantity("abc", 8)).toBe("0");
+      expect(normalizeReceivedQuantity(null, 8)).toBe("0");
+    });
+  });
+
+  describe("hasReceivedUnits", () => {
+    it("devuelve false sin items o sin capturas", () => {
+      expect(hasReceivedUnits([], {})).toBe(false);
+      expect(hasReceivedUnits(undefined, undefined)).toBe(false);
+    });
+
+    it("devuelve false cuando todas las capturas estan en 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(hasReceivedUnits(items, { p1: "0", p2: "0" })).toBe(false);
+    });
+
+    it("ignora capturas con texto sin digitos", () => {
+      const items = [{ productId: "p1" }];
+      expect(hasReceivedUnits(items, { p1: "abc" })).toBe(false);
+    });
+
+    it("devuelve true cuando al menos una captura es mayor a 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(hasReceivedUnits(items, { p1: "0", p2: "3" })).toBe(true);
+    });
+  });
+
+  describe("countUnreceivedItems", () => {
+    it("devuelve 0 sin items o con lista vacia", () => {
+      expect(countUnreceivedItems(undefined, undefined)).toBe(0);
+      expect(countUnreceivedItems([], {})).toBe(0);
+    });
+
+    it("cuenta todos los productos cuando todas las capturas estan en 0", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "0", p2: "0" })).toBe(2);
+    });
+
+    it("cuenta solo los productos sin captura en una mezcla", () => {
+      const items = [
+        { productId: "p1" },
+        { productId: "p2" },
+        { productId: "p3" },
+      ];
+      expect(countUnreceivedItems(items, { p1: "3", p2: "0" })).toBe(2);
+    });
+
+    it("devuelve 0 cuando todos los productos tienen captura", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "3", p2: "5" })).toBe(0);
+    });
+
+    it("ignora capturas con texto sin digitos y claves faltantes", () => {
+      const items = [{ productId: "p1" }, { productId: "p2" }];
+      expect(countUnreceivedItems(items, { p1: "abc" })).toBe(2);
+    });
+  });
+
   describe("getBranchFallback", () => {
     it("devuelve arreglo vacio si no hay sucursal activa", () => {
       expect(getBranchFallback(null)).toEqual([]);

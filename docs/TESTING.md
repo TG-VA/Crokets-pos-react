@@ -11,9 +11,9 @@
 Los tests se colocan **junto al archivo que prueban**, con sufijo `.test.js` (o `.test.jsx` para
 componentes). No hay carpeta central de tests.
 
-## Cobertura actual (21 nov 2026)
+## Cobertura actual (22 nov 2026)
 
-382 archivos de test (**3745 casos**) concentrados en utilidades puras, contratos de servicios, hooks
+397 archivos de test (**3855 casos**) concentrados en utilidades puras, contratos de servicios, hooks
 y el proceso principal de Electron:
 
 | Área                                                      | Archivo                                                                            |
@@ -106,6 +106,7 @@ y el proceso principal de Electron:
 | Contrato SQL de RPCs transaccionales                      | `supabase/migrations/transactionalRpcsContract.test.js`                            |
 | Contrato SQL del snapshot de costo de venta               | `supabase/migrations/costSnapshotContract.test.js`                                 |
 | Proceso principal de Electron                             | `electron/mainProcess.test.js`                                                     |
+| Auto-updater: build.publish publico sin token             | `electron/updaterPublishConfig.test.js`                                            |
 | Impresión de tickets (proceso principal)                  | `electron/ticketPrintService.test.js`                                              |
 | Utilidades async                                          | `src/utils/asyncUtils.test.js`                                                     |
 | Paginación global (incluye reset por `resetKeys`)         | `src/hooks/usePagination.test.js`                                                  |
@@ -135,6 +136,7 @@ y el proceso principal de Electron:
 | Guard de rutas                                            | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
 | Login: Enter en usuario avanza a contraseña               | `src/pages/Login/Login.test.jsx`                                                   |
 | Sucursal por dispositivo (RPC)                            | `src/services/deviceBranchService.test.js`                                         |
+| Busqueda de usuarios por id (y clave de cache del select) | `src/services/userLookupService.test.js`                                           |
 | Alcance de sucursales (consultas)                         | `src/services/branchScopeService.test.js`                                          |
 | Alcance de sucursales (origen de stock)                   | `src/services/branchScopeCalculationService.test.js`                               |
 | Contrato SQL de branches.branch_type                      | `supabase/migrations/branchesBranchTypeContract.test.js`                           |
@@ -182,12 +184,16 @@ y el proceso principal de Electron:
 | Historial de ventas: tickets, relaciones y puntos         | `.../SalesComponents/services/salesHistoryService.test.js`                         |
 | Devoluciones: reversion de puntos acotada por saldo       | `.../SalesComponents/services/returnsService.test.js`                              |
 | Ventas: saldo de puntos del cliente                       | `.../SalesComponents/services/salesCustomerPointsService.test.js`                  |
+| Reportes: caja (sesiones, movimientos, pagos, detalle)    | `.../PageCashReport/services/cashReportPagination.test.js`                         |
+| Reportes: inventario por paginas de la RPC                | `.../PageInventoryReport/services/inventoryReportPagination.test.js`               |
+| Reportes: productos vendidos e inventario muerto          | `.../PageProductsReport/services/productReportsPagination.test.js`                 |
+| Reportes: clientes y detalle 360 sin tope                 | `.../PageCustomersReport/services/customersReportPagination.test.js`               |
 | Estado de stock comun (agotado, stock bajo, disponible)   | `src/utils/stockStatus.test.js`                                                    |
 | Kardex: lectura de movimientos                            | `.../PageKardex/services/kardexService.test.js`                                    |
 | Catalogo de la sucursal completo (varias paginas)         | `src/services/products/productCatalogService.test.js`                              |
 | Corte de caja: turno de varias paginas y lotes            | `src/pages/CashCut/services/cashCutReportPagination.test.js`                       |
 | Ventas: efectivo disponible de la sesion                  | `src/components/SalesComponents/services/salesCashService.test.js`                 |
-| Claves SAT: validacion por lotes                          | `src/services/satClavesService.test.js`                                            |
+| Claves SAT: catalogo paginado y validacion por lotes      | `src/services/satClavesService.test.js`                                            |
 | Kardex: estado de stock y orden de movimientos            | `.../PageKardex/utils/kardexMovementUtils.test.js`                                 |
 | Kardex: Realtime y sondeo de respaldo                     | `.../PageKardex/hooks/useKardexRealtime.test.js`                                   |
 | Kardex: formateadores                                     | `.../PageKardex/utils/kardexFormatters.test.js`                                    |
@@ -196,6 +202,13 @@ y el proceso principal de Electron:
 | Kardex: exportador Excel                                  | `.../PageKardex/services/kardexWorkbookBuilder.test.js`                            |
 | Kardex: exportacion sobre el dataset completo             | `.../PageKardex/Pagekardex.test.jsx`                                               |
 | Kardex: carga y error de productos (hook)                 | `.../PageKardex/hooks/useKardex.test.js`                                           |
+| Kardex: saldo anterior y totales del rango                | `.../PageKardex/services/kardexCalculationService.test.js`                         |
+| Kardex: filtro por tipo de movimiento                     | `.../PageKardex/utils/kardexTypeFilters.test.js`                                   |
+| Kardex: estado del filtro por tipo (hook)                 | `.../PageKardex/hooks/useKardexTypeFilter.test.js`                                 |
+| Kardex: nombres de usuario en lote                        | `.../PageKardex/hooks/useKardexUserNames.test.js`                                  |
+| Kardex: sucursales de traspasos                           | `.../PageKardex/hooks/useKardexBranchNames.test.js`                                |
+| Kardex: usuario y sucursal aplicados a las filas          | `.../PageKardex/hooks/useKardexMovements.test.js`                                  |
+| Kardex: canal Realtime                                    | `.../PageKardex/services/kardexRealtimeService.test.js`                            |
 | Ventas: sincronización de columnas                        | `.../SalesComponents/hooks/useSalesTableColumns.test.js`                           |
 | Ventas: atajos de teclado                                 | `.../SalesComponents/hooks/useSalesKeyboardShortcuts.test.js`                      |
 | Facturación: validación fiscal                            | `.../InvoicesComponents/services/fiscalValidationService.test.js`                  |
@@ -226,16 +239,16 @@ y el proceso principal de Electron:
 | Traspasos: filtros de historial (hook)                    | `.../PageTransfers/hooks/useTransferHistoryFilters.test.js`                        |
 | Traspasos: filtrado por fecha de creacion                 | `.../PageTransfers/utils/transfersDateRange.test.js`                               |
 | Traspasos: hero (sucursal y KPIs operativos)              | `.../PageTransfers/components/HeroSection.test.jsx`                                |
-| Traspasos: espacio de recepcion (lista y detalle)         | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
+| Traspasos: espacio de recepcion (armado y aviso 0s)       | `.../PageTransfers/components/ReceiveWorkspace.test.jsx`                           |
 | Traspasos: modal de detalle (titulo, origen y destino)    | `.../PageTransfers/components/modals/TransferDetailModal.test.jsx`                 |
 | Traspasos: busqueda de productos con existencia           | `.../PageTransfers/hooks/useProductLookup.test.js`                                 |
-| Traspasos: recepcion (seleccion y cantidades)             | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
+| Traspasos: recepcion (cantidades, cero y recarga)         | `.../PageTransfers/hooks/useReceiveForm.test.js`                                   |
 | Traspasos: formulario de envio (borrador y stock)         | `.../PageTransfers/hooks/useSendForm.test.js`                                      |
 | Traspasos: carga de sucursales y ordenes                  | `.../PageTransfers/hooks/useTransferDataLoad.test.js`                              |
 | Traspasos: estado de la pagina                            | `.../PageTransfers/hooks/useTransferPage.test.js`                                  |
 | Traspasos: carga y error en el buscador de la pagina      | `.../PageTransfers/PageTransfers.test.jsx`                                         |
 | Traspasos: servicio de datos (sucursales y ordenes)       | `.../PageTransfers/services/transferService.test.js`                               |
-| Traspasos: calculos de sucursal y orden                   | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
+| Traspasos: calculos de orden, recepcion y aviso 0s        | `.../PageTransfers/utils/TransfersCalculationService.test.js`                      |
 | Traspasos: utilidades (meta, fechas y presets)            | `.../PageTransfers/utils/transfersUtils.test.js`                                   |
 | Pedidos: formateadores y opciones de estado               | `.../PageOrders/utils/ordersFormatters.test.js`                                    |
 | Pedidos: clases de estatus                                | `.../PageOrders/utils/ordersStatusClasses.test.js`                                 |
@@ -476,6 +489,13 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   y `productsImportService.test.js` fijan la validacion de importacion por lotes, sin repetidos y con
   `cursorColumn: "clave"` en la tabla SAT, que no tiene `id`; `paginatedQuery.test.js` suma los
   casos de `cursorColumn`.
+- **Lotes en tandas y lecturas restantes sin paginar** (21 nov 2026, rama
+  `fix/concurrencia-lotes-y-lecturas-sin-paginar`, KNOWN_ISSUES #101): `paginatedQuery.test.js` fija
+  que `fetchByIdsInBatches` no tiene mas de 4 lotes en vuelo por defecto y que no lanza mas tandas
+  despues de un error. `satClavesService.test.js` fija que `fetchSatClaves` lee todas las paginas de
+  claves activas sobre `clave` y ordena por descripcion. `cashCutReportPagination.test.js` fija que
+  `fetchCashMovementsBySession` lee todos los movimientos de la sesion, con el tope `endAt`, del mas
+  reciente al mas antiguo.
 - **Paginacion de listas e historiales** (21 nov 2026, rama `fix/paginacion-listas-historiales`):
   extiende `fetchAllPages`/`fetchByIdsInBatches` a clientes de puntos, historial de puntos,
   facturas (clientes fiscales, pendientes e historial), historial de ventas, traspasos, pedidos y
@@ -518,6 +538,14 @@ Cubierto en la Fase 4 (rama `test/coverage-gaps`):
   completa del catalogo, del inventario y de los kits (`product_kits`). Las cancelaciones del dia (`getTodayCancelledSales`) se
   cuentan sobre varias paginas, y el orden por fecha de inicio y de la exportacion de ventas
   compara instantes, no texto (`12:00:00+00:00` antes que `12:00:00.5+00:00`).
+- **Reportes sobre el tope de PostgREST, parte 2** (21 nov 2026, 8 casos en 4 archivos, rama
+  `fix/paginacion-reportes-b`): caja, inventario, productos y clientes leen todas las filas con
+  `paginatedQuery` y el doble `fakeSupabase.testUtils.js` (que suma `.single()` para el detalle de
+  sesion). `cashReportPagination.test.js` fija que sesiones con el mismo `opened_at` no se repiten
+  gracias al desempate por `session_id`, y que movimientos y detalle conservan el orden por fecha
+  aplicado en memoria. `inventoryReportPagination.test.js` fija el orden por `product_name` con
+  desempate por `product_id`. Los tests de contrato existentes de caja e inventario ahora esperan
+  `.order()` + `.range(0, 999)` en la RPC y `.limit(1000)` por pagina en lugar de los topes fijos.
 - **Kardex: paginacion por producto y columnas de valuacion** (3 oct 2026, 67 casos en 6 archivos,
   rama `feature/kardex-pagination-and-valuation-columns`): cubre las seis piezas del flujo de kardex.
   `kardexService.test.js` (17 casos) fija el contrato de la consulta: que el `select` pida

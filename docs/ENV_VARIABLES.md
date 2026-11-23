@@ -33,14 +33,8 @@ Nunca exponer `SUPABASE_SERVICE_ROLE_KEY` como secreto con prefijo `VITE_`. Ver 
 
 ## Proceso principal de Electron (auto-updater)
 
-Se leen en tiempo de ejecución desde el proceso principal (`electron/updaterService.js`), **no** se
-inyectan en el bundle del renderer. Nunca usar prefijo `VITE_` con estas variables.
-
-| Variable                | Requerida | Uso                                                                                                                              | Referencia                             |
-| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| `GH_TOKEN`              | No        | Token de lectura del feed privado de GitHub Releases; lo consume el provider de GitHub de `electron-updater` con `private: true` | `electron-updater` (`providerFactory`) |
-| `GITHUB_TOKEN`          | No        | Alternativa a `GH_TOKEN`                                                                                                         | `electron-updater` (`providerFactory`) |
-| `CROKETS_GH_READ_TOKEN` | No        | Token de lectura dedicado que se envía como header `Authorization` del feed                                                      | `electron/updaterService.js:20`        |
+Ya no aplica: el repositorio es público y `electron/updaterService.js` consulta GitHub Releases
+sin token. No hay variables de entorno para el auto-updater.
 
 ## Backend Node (Express local)
 
@@ -60,17 +54,3 @@ quedó como login/usuario legacy sobre SQLite y **ya no lee ninguna variable de 
 - Las credenciales del PAC de facturación (`cfdi_settings.api_username` / `api_password` /
   `api_token`) se guardan en la base de datos, no en `.env`; tratarlas como secretos y no
   exponerlas en el frontend ni en logs.
-
-### GH_READ_TOKEN (secreto de GitHub Actions)
-
-Para facilitar las actualizaciones desatendidas en repositorios privados, el workflow de release inyecta un token de solo lectura embebido en el instalador de Windows (`.exe`).
-
-| Secreto         | Uso                                                                                                           | Notas                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `GH_READ_TOKEN` | Token Personal Access Token con permiso `Contents: Read-only` sobre el repositorio `TG-VA/Crokets-pos-react`. | Se inyecta como `ghReadToken` en `electron/updaterConfig.json` durante el build en CI y nunca se commitea. |
-
-**Jerarquía de resolución (auto-updater):**
-
-1. **Variable de entorno del sistema** (`CROKETS_GH_READ_TOKEN` o `GH_TOKEN`) — tiene prioridad más alta. Útil para desarrollo/pruebas locales o despliegues custom.
-2. **Token embebido** (`electron/updaterConfig.json`, campo `ghReadToken`) — generado automáticamente por CI en el paso "Inject embedded updater read token". Permite que el instalador `.exe` funcione sin configuración manual en Windows.
-3. **Sin token** (`null`) — el updater intentará consultar sin autenticación (solo válido si el repo fuera público o el feed no requiriera auth).
