@@ -6,10 +6,13 @@
 
 import { normalizePhoneDigits } from "../../utils/customerFormatters";
 
+const PHONE_LIKE_PATTERN = /^[\d\s()+.-]+$/;
+
 /**
  * Filtra por estado y busqueda libre, y ordena inactivos al final y por nombre.
- * Si el termino trae digitos tambien compara el telefono solo por digitos, para
- * que "55-1234-5678" encuentre "5512345678".
+ * Si el termino tiene forma de telefono (solo digitos y separadores) tambien
+ * compara el telefono solo por digitos, para que "55-1234-5678" encuentre
+ * "5512345678". Un termino de texto con digitos ("juan2") no usa esa rama.
  */
 export const filterAndSortCustomers = ({
   customers = [],
@@ -18,7 +21,9 @@ export const filterAndSortCustomers = ({
 } = {}) => {
   const search = searchTerm.trim().toLowerCase();
   // Sin digitos queda vacio y no se compara: "" coincidiria con todos.
-  const searchDigits = normalizePhoneDigits(search);
+  const searchDigits = PHONE_LIKE_PATTERN.test(search)
+    ? normalizePhoneDigits(search)
+    : "";
 
   return customers
     .filter((customer) => {

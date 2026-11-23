@@ -3171,7 +3171,7 @@ filtro los agrupa en `Ajuste`.
 - Realtime con debounce de 500 ms (`REALTIME_RELOAD_DEBOUNCE_MS`), recarga silenciosa (sin
   `loadingCustomers`) y un contador de peticiones que descarta respuestas obsoletas.
 - `searchFiscalCustomerByPhone` usa `.limit(1)` y devuelve el primero, como `findCustomerByPhone`.
-- `filterAndSortCustomers` tambien compara telefonos por digitos cuando el termino los trae.
+- `filterAndSortCustomers` tambien compara telefonos por digitos cuando el termino tiene forma de telefono (solo digitos y separadores); un termino de texto con digitos ("juan2") no usa esa rama.
 - `NavbarCustomers` usa `useAuth` y `checkUserIsAdmin`. En la BD todos los roles estan en
   minusculas y todos los usuarios con `status = true`, de modo que el resultado coincide con el
   check local anterior (que pasaba el rol a minusculas y aceptaba `status` nulo).

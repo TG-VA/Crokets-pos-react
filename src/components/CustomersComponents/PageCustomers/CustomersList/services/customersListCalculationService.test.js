@@ -80,6 +80,31 @@ describe("customersListCalculationService", () => {
       ).toHaveLength(0);
     });
 
+    it("un termino de texto con digitos no compara telefonos por digitos", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", email: "", phone: "5512345678" }),
+        buildCustomer({
+          id: "b",
+          name: "LUIS",
+          email: "",
+          phone: "3322220000",
+        }),
+        buildCustomer({
+          id: "c",
+          name: "JUAN2",
+          email: "juan2@correo.com",
+          phone: "8100000000",
+        }),
+      ];
+
+      const ids = (searchTerm) =>
+        filterAndSortCustomers({ customers, searchTerm }).map((c) => c.id);
+
+      expect(ids("juan2")).toEqual(["c"]);
+      expect(ids("ana1")).toEqual([]);
+      expect(ids("calle 5")).toEqual([]);
+    });
+
     it("busca en nombre, telefono y correo sin distinguir mayusculas", () => {
       const customers = [
         buildCustomer({ id: "a", name: "ANA", phone: "5511111111" }),
