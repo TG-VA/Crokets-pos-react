@@ -13,9 +13,13 @@ const corsHeaders = {
 // `admin_action_grants` a nombre de quien llama y la RPC correspondiente la consulta.
 // La vigencia es corta para que el permiso no sobreviva mucho a la salida del modulo,
 // que es cuando la interfaz lo olvida.
+// Desactivar clientes se confirma justo despues de autorizar, asi que basta una vigencia
+// corta.
 const DB_ENFORCED_GRANT_MINUTES: Record<string, number> = {
   inventory_add_access: 30,
   inventory_adjust_access: 30,
+  customers_deactivate: 5,
+  deactivate_fiscal_customer: 5,
 };
 
 const jsonResponse = (body: unknown, status = 200) => {
