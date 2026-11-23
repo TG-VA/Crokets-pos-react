@@ -1,64 +1,18 @@
 /**
  * customersListCalculationService.js
- * Calculos puros del listado de clientes: saldo de puntos por cliente, filtrado,
+ * Calculos puros del listado de clientes: filtrado,
  * ordenamiento y etiquetas. Sin I/O, sin React y sin Supabase.
  */
 
 import { normalizePhoneDigits } from "../../utils/customerFormatters";
 
-/**
- * Tipo de movimiento que descuenta puntos.
- *
- * La restriccion `chk_customer_points_movement_type` de la base solo admite
- * `earn` y `redeem`, de modo que la comparacion es exacta y no por marcadores:
- * cualquier otro valor es rechazado por la base y no puede llegar aqui. Los
- * canjes se guardan con `points` negativo, y el `Math.abs` mantiene el
- * resultado correcto aun si alguno llegara con signo positivo.
- */
-const REDEEMING_MOVEMENT_TYPE = "redeem";
-
-/**
- * Clasifica el signo de un movimiento a partir de su tipo.
- */
-const isRedeemingMovement = (movementType) =>
-  String(movementType || "")
-    .trim()
-    .toLowerCase() === REDEEMING_MOVEMENT_TYPE;
-
-/**
- * Calcula el saldo de puntos indexado por `customer_id`.
- *
- * Los movimientos que gastan puntos se restan por valor absoluto; el resto se
- * suman con su signo, de modo que un `earn` negativo (reversion) tambien descuenta.
- *
- * @param {Array<{customer_id?: string, points?: number, movement_type?: string}>} pointsRows
- * @returns {Record<string, number>} Mapa `customer_id` -> saldo.
- */
-export const calculatePointsBalanceByCustomer = (pointsRows = []) => {
-  const pointsMap = {};
-
-  for (const row of pointsRows) {
-    const customerId = row.customer_id;
-    const rawPoints = Number(row.points || 0);
-
-    if (!customerId) continue;
-
-    if (!pointsMap[customerId]) {
-      pointsMap[customerId] = 0;
-    }
-
-    if (isRedeemingMovement(row.movement_type)) {
-      pointsMap[customerId] -= Math.abs(rawPoints);
-    } else {
-      pointsMap[customerId] += rawPoints;
-    }
-  }
-
-  return pointsMap;
-};
+const PHONE_LIKE_PATTERN = /^[\d\s()+.-]+$/;
 
 /**
  * Filtra por estado y busqueda libre, y ordena inactivos al final y por nombre.
+ * Si el termino tiene forma de telefono (solo digitos y separadores) tambien
+ * compara el telefono solo por digitos, para que "55-1234-5678" encuentre
+ * "5512345678". Un termino de texto con digitos ("juan2") no usa esa rama.
  */
 export const filterAndSortCustomers = ({
   customers = [],
@@ -66,6 +20,10 @@ export const filterAndSortCustomers = ({
   statusFilter = "all",
 } = {}) => {
   const search = searchTerm.trim().toLowerCase();
+  // Sin digitos queda vacio y no se compara: "" coincidiria con todos.
+  const searchDigits = PHONE_LIKE_PATTERN.test(search)
+    ? normalizePhoneDigits(search)
+    : "";
 
   return customers
     .filter((customer) => {
@@ -80,10 +38,17 @@ export const filterAndSortCustomers = ({
 
       const values = [customer.name, customer.phone, customer.email];
 
-      return values.some((value) =>
+      const matchesText = values.some((value) =>
         String(value || "")
           .toLowerCase()
           .includes(search)
+      );
+
+      if (matchesText) return true;
+
+      return (
+        searchDigits !== "" &&
+        normalizePhoneDigits(customer.phone).includes(searchDigits)
       );
     })
     .sort((a, b) => {

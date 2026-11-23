@@ -50,7 +50,6 @@
   color: #ffffff;
   padding: 16px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
 }
@@ -59,20 +58,6 @@
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-}
-
-.closeButton {
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  font-size: 30px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.closeButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .form {

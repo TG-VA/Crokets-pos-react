@@ -1,23 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import { useAppModal } from "../../../../../hooks/useAppModal";
+import { fetchPointsBalanceByCustomer } from "../../../../../services/customers/customerPointsBalanceService";
 import { subscribeToTableChanges } from "../../services/customersRealtimeService";
 import { normalizePhoneDigits } from "../../utils/customerFormatters";
 import {
   fetchPointsCustomers,
-  fetchPointsMovements,
   searchFiscalCustomerByPhone,
   updateCustomerStatus,
 } from "../services/customersListService";
 import {
   buildPointsCustomerFromFiscal,
-  calculatePointsBalanceByCustomer,
   filterAndSortCustomers,
   isCompletePhone,
   isPhoneAvailableInPoints,
 } from "../services/customersListCalculationService";
+
+/** Ventana para agrupar rafagas de eventos realtime en una sola recarga. */
+export const REALTIME_RELOAD_DEBOUNCE_MS = 500;
 
 export const useCustomersList = () => {
   const { user } = useAuth();
@@ -40,24 +42,36 @@ export const useCustomersList = () => {
   const { appModal, closeAppModal, showAppAlert, showAppConfirm } =
     useAppModal();
 
-  const loadCustomers = async () => {
+  // Solo la peticion mas reciente puede escribir el estado: una respuesta
+  // lenta no pisa a una posterior.
+  const latestRequestIdRef = useRef(0);
+
+  /**
+   * Recarga clientes y saldos. Con `silent` (recargas por realtime) no muestra
+   * "Cargando clientes..." para que la tabla no parpadee.
+   */
+  const loadCustomers = async ({ silent = false } = {}) => {
+    const requestId = ++latestRequestIdRef.current;
+    const isLatestRequest = () => requestId === latestRequestIdRef.current;
+
     try {
-      setLoadingCustomers(true);
+      if (!silent) setLoadingCustomers(true);
 
       const customersData = await fetchPointsCustomers();
+      const balances =
+        customersData.length === 0
+          ? {}
+          : await fetchPointsBalanceByCustomer(
+              customersData.map((customer) => customer.id)
+            );
+
+      if (!isLatestRequest()) return;
+
       setCustomers(customersData);
-
-      if (customersData.length === 0) {
-        setPointsByCustomer({});
-        return;
-      }
-
-      const pointsRows = await fetchPointsMovements(
-        customersData.map((customer) => customer.id)
-      );
-
-      setPointsByCustomer(calculatePointsBalanceByCustomer(pointsRows));
+      setPointsByCustomer(balances);
     } catch (err) {
+      if (!isLatestRequest()) return;
+
       console.error("Error cargando clientes:", err);
       setCustomers([]);
       setPointsByCustomer({});
@@ -69,7 +83,7 @@ export const useCustomersList = () => {
         confirmText: "Entendido",
       });
     } finally {
-      setLoadingCustomers(false);
+      if (isLatestRequest()) setLoadingCustomers(false);
     }
   };
 
@@ -108,11 +122,24 @@ export const useCustomersList = () => {
   }, []);
 
   useEffect(() => {
-    return subscribeToTableChanges({
+    let reloadTimeoutId = null;
+
+    const unsubscribe = subscribeToTableChanges({
       channelName: "customers-list-realtime",
       tables: ["customers", "customer_points"],
-      onChange: loadCustomers,
+      onChange: () => {
+        clearTimeout(reloadTimeoutId);
+        reloadTimeoutId = setTimeout(
+          () => loadCustomers({ silent: true }),
+          REALTIME_RELOAD_DEBOUNCE_MS
+        );
+      },
     });
+
+    return () => {
+      clearTimeout(reloadTimeoutId);
+      unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

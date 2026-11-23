@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildPointsCustomerFromFiscal,
-  calculatePointsBalanceByCustomer,
   filterAndSortCustomers,
   formatCustomerStatus,
   isCompletePhone,
@@ -19,89 +18,6 @@ const buildCustomer = (overrides = {}) => ({
 });
 
 describe("customersListCalculationService", () => {
-  describe("calculatePointsBalanceByCustomer", () => {
-    it("devuelve un mapa vacio sin movimientos", () => {
-      expect(calculatePointsBalanceByCustomer([])).toEqual({});
-      expect(calculatePointsBalanceByCustomer()).toEqual({});
-    });
-
-    it("acumula por cliente", () => {
-      const balance = calculatePointsBalanceByCustomer([
-        { customer_id: "c1", points: 100 },
-        { customer_id: "c2", points: 40 },
-        { customer_id: "c1", points: -25 },
-      ]);
-
-      expect(balance).toEqual({ c1: 75, c2: 40 });
-    });
-
-    it("resta el valor absoluto de un canje aunque venga positivo", () => {
-      const balance = calculatePointsBalanceByCustomer([
-        { customer_id: "c1", points: 100, movement_type: "earn" },
-        { customer_id: "c1", points: 30, movement_type: "redeem" },
-      ]);
-
-      expect(balance.c1).toBe(70);
-    });
-
-    it("descuenta solo el canje que la base admite", () => {
-      // `chk_customer_points_movement_type` solo admite `earn` y `redeem`, asi
-      // que la comparacion es exacta. Se conserva la tolerancia a mayusculas y
-      // espacios por si quedaran filas anteriores a la restriccion.
-      const balance = calculatePointsBalanceByCustomer([
-        { customer_id: "c1", points: 10, movement_type: "REDEEM" },
-        { customer_id: "c2", points: 10, movement_type: " redeem " },
-        { customer_id: "c3", points: 10, movement_type: "earn" },
-        { customer_id: "c4", points: 10, movement_type: "" },
-      ]);
-
-      expect(balance).toEqual({ c1: -10, c2: -10, c3: 10, c4: 10 });
-    });
-
-    it("ya no confunde otros tipos con un canje", () => {
-      // Antes `canje`, `used`, `uso` y `resta` restaban por coincidencia de
-      // subcadena. Ninguno puede existir en la base; este caso fija que la
-      // clasificacion ya no depende de una lista de marcadores.
-      const balance = calculatePointsBalanceByCustomer([
-        { customer_id: "c1", points: 10, movement_type: "used" },
-        { customer_id: "c2", points: 10, movement_type: "resta_manual" },
-        { customer_id: "c3", points: 10, movement_type: "entrada" },
-        { customer_id: "c4", points: 10, movement_type: "salida" },
-        { customer_id: "c5", points: 10, movement_type: "sale" },
-        { customer_id: "c6", points: 10, movement_type: "transfer" },
-        { customer_id: "c7", points: 10, movement_type: "adjustment" },
-      ]);
-
-      expect(balance).toEqual({
-        c1: 10,
-        c2: 10,
-        c3: 10,
-        c4: 10,
-        c5: 10,
-        c6: 10,
-        c7: 10,
-      });
-    });
-
-    it("suma un canje que ya viene negativo", () => {
-      const balance = calculatePointsBalanceByCustomer([
-        { customer_id: "c1", points: 100 },
-        { customer_id: "c1", points: -30, movement_type: "redeem" },
-      ]);
-
-      expect(balance.c1).toBe(70);
-    });
-
-    it("ignora movimientos sin customer_id", () => {
-      const balance = calculatePointsBalanceByCustomer([
-        { points: 999 },
-        { customer_id: "c1", points: 10 },
-      ]);
-
-      expect(balance).toEqual({ c1: 10 });
-    });
-  });
-
   describe("filterAndSortCustomers", () => {
     it("filtra por estado", () => {
       const customers = [
@@ -118,6 +34,75 @@ describe("customersListCalculationService", () => {
       expect(
         filterAndSortCustomers({ customers, statusFilter: "all" })
       ).toHaveLength(2);
+    });
+
+    it("encuentra el telefono aunque el termino tenga guiones o espacios", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", phone: "5512345678" }),
+        buildCustomer({ id: "b", name: "LUIS", phone: "5599999999" }),
+      ];
+
+      const ids = (searchTerm) =>
+        filterAndSortCustomers({ customers, searchTerm }).map((c) => c.id);
+
+      expect(ids("55-1234-5678")).toEqual(["a"]);
+      expect(ids("55 1234")).toEqual(["a"]);
+    });
+
+    it("encuentra el telefono guardado con formato", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", phone: "(55) 1234-5678" }),
+      ];
+
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "5512345678" })
+      ).toHaveLength(1);
+    });
+
+    it("un termino sin digitos no coincide con todos los telefonos", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", email: "", phone: "5512345678" }),
+        buildCustomer({
+          id: "b",
+          name: "LUIS",
+          email: "",
+          phone: "5599999999",
+        }),
+      ];
+
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "luis" }).map(
+          (c) => c.id
+        )
+      ).toEqual(["b"]);
+      expect(
+        filterAndSortCustomers({ customers, searchTerm: "-" })
+      ).toHaveLength(0);
+    });
+
+    it("un termino de texto con digitos no compara telefonos por digitos", () => {
+      const customers = [
+        buildCustomer({ id: "a", name: "ANA", email: "", phone: "5512345678" }),
+        buildCustomer({
+          id: "b",
+          name: "LUIS",
+          email: "",
+          phone: "3322220000",
+        }),
+        buildCustomer({
+          id: "c",
+          name: "JUAN2",
+          email: "juan2@correo.com",
+          phone: "8100000000",
+        }),
+      ];
+
+      const ids = (searchTerm) =>
+        filterAndSortCustomers({ customers, searchTerm }).map((c) => c.id);
+
+      expect(ids("juan2")).toEqual(["c"]);
+      expect(ids("ana1")).toEqual([]);
+      expect(ids("calle 5")).toEqual([]);
     });
 
     it("busca en nombre, telefono y correo sin distinguir mayusculas", () => {

@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./PointsAdjustmentConfirmModal.module.css";
 import { useEscapeKey } from "../../../../hooks/useEscapeKey";
 

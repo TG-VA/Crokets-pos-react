@@ -193,7 +193,6 @@ export const useRewardsAvailability = () => {
       // Deuda heredada de `set-state-in-effect` (`KNOWN_ISSUES.md` #56).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCustomerResults([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingCustomers(false);
       return;
     }

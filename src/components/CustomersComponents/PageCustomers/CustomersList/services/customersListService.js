@@ -3,14 +3,12 @@
  * Consultas y mutaciones de la tabla de clientes del modulo de Puntos.
  *
  * Solo este archivo conoce el cliente de Supabase y la forma de las tablas
- * `customers` y `customer_points` (DIP, AGENTS.md).
+ * `customers` (DIP, AGENTS.md). El saldo de puntos se lee con
+ * `fetchPointsBalanceByCustomer` de `src/services/customers`.
  */
 
 import { supabase } from "../../../../../lib/supabaseClient";
-import {
-  fetchAllPages,
-  fetchByIdsInBatches,
-} from "../../../../../services/supabase/paginatedQuery";
+import { fetchAllPages } from "../../../../../services/supabase/paginatedQuery";
 
 const POINTS_CUSTOMER_COLUMNS = `
           id,
@@ -55,28 +53,9 @@ export const fetchPointsCustomers = async () => {
 };
 
 /**
- * Movimientos de puntos de un conjunto de clientes. Devuelve `[]` sin tocar la
- * base cuando la lista de clientes es vacia.
- */
-export const fetchPointsMovements = async (customerIds = []) => {
-  if (customerIds.length === 0) return [];
-
-  // Los saldos suman todos los movimientos: un lote truncado los subestima.
-  const { data, error } = await fetchByIdsInBatches(customerIds, (batch) =>
-    supabase
-      .from("customer_points")
-      .select("id, customer_id, points, movement_type")
-      .in("customer_id", batch)
-  );
-
-  if (error) throw error;
-
-  return data || [];
-};
-
-/**
  * Cliente fiscal con el mismo telefono que todavia no es cliente de puntos, para
- * ofrecerlo como alta sin duplicar el registro.
+ * ofrecerlo como alta sin duplicar el registro. Si varios comparten telefono
+ * devuelve el primero en lugar de fallar.
  */
 export const searchFiscalCustomerByPhone = async (phone) => {
   const { data, error } = await supabase
@@ -85,11 +64,11 @@ export const searchFiscalCustomerByPhone = async (phone) => {
     .eq("phone", phone)
     .eq("is_billing_customer", true)
     .or("is_points_customer.is.null,is_points_customer.eq.false")
-    .maybeSingle();
+    .limit(1);
 
   if (error) throw error;
 
-  return data || null;
+  return data?.[0] || null;
 };
 
 /**
