@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useProducts } from "../../../../../contexts/ProductsContext";
 import { useBranch } from "../../../../../contexts/BranchContext";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 import { isAdminBranch } from "../../../../../services/branchScopeCalculationService";
 import { fetchSatClaves } from "../../../../../services/satClavesService";
 import { useProductModifyForm } from "./useProductModifyForm";
@@ -25,6 +27,7 @@ export const useProductsModify = () => {
     upsertProductDiscount,
   } = useProducts();
   const { branch } = useBranch();
+  const { user } = useAuth();
   const isAdminTerminal = isAdminBranch(branch);
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -34,6 +37,8 @@ export const useProductsModify = () => {
   const [loadingDiscount, setLoadingDiscount] = useState(false);
   const [satClaves, setSatClaves] = useState([]);
   const [loadingSatClaves, setLoadingSatClaves] = useState(false);
+  // Desactivar un producto exige administrador (lo valida tambien la base).
+  const [adminAuthOpen, setAdminAuthOpen] = useState(false);
 
   const { appModal, closeAppModal, showAppAlert } = useAppModal();
 
@@ -182,6 +187,18 @@ export const useProductsModify = () => {
       return;
     }
 
+    const isDeactivating =
+      selectedProduct.status !== false && form.status === "inactivo";
+
+    if (isDeactivating && !(await checkUserIsAdmin(user?.id))) {
+      setAdminAuthOpen(true);
+      return;
+    }
+
+    await persistChanges();
+  };
+
+  const persistChanges = async () => {
     try {
       setSaving(true);
       const payload = buildProductPayload(form, ganancia, usesInventory);
@@ -219,6 +236,15 @@ export const useProductsModify = () => {
     }
   };
 
+  const handleAdminAuthorized = async () => {
+    setAdminAuthOpen(false);
+    await persistChanges();
+  };
+
+  const handleCloseAdminAuth = () => {
+    setAdminAuthOpen(false);
+  };
+
   const {
     bodyRef,
     submitArmed,
@@ -232,7 +258,7 @@ export const useProductsModify = () => {
     errors,
     usesInventory,
     form,
-    appModalIsOpen: appModal.isOpen,
+    appModalIsOpen: appModal.isOpen || adminAuthOpen,
     selectedProduct,
     onSubmit: handleSave,
     setSearchModalOpen,
@@ -266,6 +292,10 @@ export const useProductsModify = () => {
     handleLookup,
     loadProduct,
     handleSave,
+    adminAuthOpen,
+    branchId: branch?.id || null,
+    handleAdminAuthorized,
+    handleCloseAdminAuth,
     bodyRef,
     submitArmed,
     setSubmitArmed,
