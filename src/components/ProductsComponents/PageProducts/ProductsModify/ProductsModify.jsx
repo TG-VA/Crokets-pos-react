@@ -1,6 +1,7 @@
 import React from "react";
 import ProductsSearchModal from "../../Modals/ProductsSearchModal/ProductsSearchModal";
 import AppModal from "../../../AppModal/AppModal";
+import AdminAuthorizationModal from "../../../AdminAuthorizationModal/AdminAuthorizationModal";
 import { useProductsModify } from "./hooks/useProductsModify";
 import ProductModifyLookup from "./components/ProductModifyLookup";
 import ProductModifyGeneralSection from "./components/ProductModifyGeneralSection";
@@ -38,6 +39,10 @@ const ProductsModify = () => {
     handleLookup,
     loadProduct,
     handleSave,
+    adminAuthOpen,
+    branchId,
+    handleAdminAuthorized,
+    handleCloseAdminAuth,
     bodyRef,
     setSubmitArmed,
     preventNumberScrollChange,
@@ -171,6 +176,16 @@ const ProductsModify = () => {
         confirmText={appModal.confirmText}
         onClose={closeAppModal}
         onConfirm={closeAppModal}
+      />
+
+      <AdminAuthorizationModal
+        isOpen={adminAuthOpen}
+        onClose={handleCloseAdminAuth}
+        onAuthorized={handleAdminAuthorized}
+        action="products_delete_access"
+        title="Autorización de administrador"
+        message="Para desactivar un producto, solicita autorización de un administrador."
+        branchId={branchId}
       />
     </div>
   );
