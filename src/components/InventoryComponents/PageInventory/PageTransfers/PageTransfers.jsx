@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import InventorySearchModal from "../../Modals/InventorySearchModal/InventorySearchModal";
@@ -23,6 +23,7 @@ const PageTransfers = () => {
     branchOptions,
     canChooseOrigin,
     originBranchId,
+    originBranchName,
     setOriginBranchId,
     cancellableTransferIds,
     destinationBranchId,
@@ -51,6 +52,7 @@ const PageTransfers = () => {
     handleDraftQuantityChange,
     handleLookupProduct,
     handleLookupProductSearchChange,
+    handleProductPromoted,
     handleReceiptQuantityChange,
     handleRemoveDraftItem,
     handleSelectReceiptOrder,
@@ -73,6 +75,11 @@ const PageTransfers = () => {
   });
 
   const [detailOrder, setDetailOrder] = useState(null);
+
+  const selectedProductIds = useMemo(
+    () => draftItems.map((item) => item.productId).filter(Boolean),
+    [draftItems]
+  );
 
   const openOrderDetail = (order) => {
     if (!order?.id) return;
@@ -186,9 +193,14 @@ const PageTransfers = () => {
           isOpen={searchModalOpen}
           onClose={closeSearchModal}
           products={searchableProducts}
+          selectedProductIds={selectedProductIds}
           onSelect={loadProductForTransfer}
           loading={loadingProducts}
           error={productsError}
+          showStock
+          restrictLocalProducts
+          localBranchName={originBranchName}
+          onProductPromoted={handleProductPromoted}
         />
 
         {activeTab === "receive" ? (

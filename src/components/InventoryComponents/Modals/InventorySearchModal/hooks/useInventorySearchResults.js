@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import {
   filterInventorySearchProducts,
+  getProductStock,
   isGlobalProduct,
   isInventoryTrackedProduct,
   isKitProduct,
@@ -16,6 +17,7 @@ const useInventorySearchResults = ({
   selectedProductIds = [],
   selectedIndex = -1,
   restrictLocalProducts = false,
+  showStock = false,
 } = {}) => {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -38,9 +40,26 @@ const useInventorySearchResults = ({
     [selectedIds]
   );
 
+  // Motivo por el que un producto no se puede agregar. El motivo local tiene
+  // prioridad porque es el unico que se puede resolver con doble clic.
+  const getDisabledReason = useCallback(
+    (product) => {
+      if (restrictLocalProducts && !isGlobalProduct(product)) {
+        return "local";
+      }
+
+      if (showStock && getProductStock(product) <= 0) {
+        return "outOfStock";
+      }
+
+      return null;
+    },
+    [restrictLocalProducts, showStock]
+  );
+
   const isProductDisabled = useCallback(
-    (product) => restrictLocalProducts && !isGlobalProduct(product),
-    [restrictLocalProducts]
+    (product) => getDisabledReason(product) !== null,
+    [getDisabledReason]
   );
 
   const searchResults = useMemo(
@@ -69,6 +88,10 @@ const useInventorySearchResults = ({
     ? isProductDisabled(selectedProduct)
     : false;
 
+  const selectedProductDisabledReason = selectedProduct
+    ? getDisabledReason(selectedProduct)
+    : null;
+
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(String(value ?? ""));
   }, []);
@@ -83,8 +106,10 @@ const useInventorySearchResults = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
+    selectedProductDisabledReason,
     isAlreadySelected,
     isProductDisabled,
+    getDisabledReason,
     handleSearchChange,
     clearSearch,
   };

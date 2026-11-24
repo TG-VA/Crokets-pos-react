@@ -3083,6 +3083,76 @@ verdes; build OK; `check:agents` OK; Prettier OK; ESLint 0 errores (2 warnings p
 Falta la confirmación humana de la prueba manual en Electron (`npm run dev`), incluido el desborde
 del aviso en 1366x768.
 
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (18 de noviembre de 2026)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 1 importante, 2 sugerencias). Head `42e7918`,
+base `9d35499`. Ejecución: 331 archivos / 3410 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 15 ejecutadas, 13 detectadas.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                    | Severidad  |
+| --- | ------------------------------------------------------------------------------------------- | ---------- |
+| I1  | `onProductPromoted` en `PageTransfers` sin test: borrarlo deja la suite en verde            | Importante |
+| S1  | `selectedProductIds` en `PageTransfers` sin test                                            | Sugerencia |
+| S2  | Sin filtro de existencia, la busqueda por texto cuenta agotados y muestra "mas de 0 piezas" | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
+recarga del catálogo origen en terminal admin y operativa.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (20 de noviembre de 2026, re-auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 2 sugerencias). Head `363fd84`,
+base `4560b1a`. Ejecución: 353 archivos / 3617 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 6 ejecutadas, 6 detectadas. I1, S1 y S2 de la auditoría anterior corregidos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                 | Severidad  |
+| --- | ---------------------------------------------------------------------------------------- | ---------- |
+| S1  | La selección automática por texto cuenta productos locales con stock como seleccionables | Sugerencia |
+| S2  | `useProductLookup` relee `existencia` en línea en lugar de reusar `getProductStock`      | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`): F10 en Traspasos, promoción a global y
+captura por texto y escáner de productos agotados. `docs/TESTING.md` pendiente de actualizar.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (21 de noviembre de 2026, tercera auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `de40fd1`,
+base `9787944`. Ejecución: 363 archivos / 3676 tests verdes; build OK; `check:agents` OK; Prettier OK;
+ESLint 0 errores. Mutaciones: 3 ejecutadas, 2 detectadas. S1 y S2 de la re-auditoría corregidos.
+
+### Hallazgos
+
+| #   | Hallazgo                                                                                       | Severidad  |
+| --- | ---------------------------------------------------------------------------------------------- | ---------- |
+| S1  | El test del campo `stock` sin `existencia` usa una sola coincidencia y no detecta la regresión | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`). `docs/TESTING.md` pendiente de actualizar.
+
+## Informe de Auditoría — PR #215 `feat(traspasos): mostrar stock y productos locales en el buscador de origen` (22 de noviembre de 2026, cuarta auditoría)
+
+Veredicto: APROBADO CON OBSERVACIONES (0 bloqueantes, 0 importantes, 1 sugerencia). Head `63aa52b`,
+base `4ef9d21`. Ejecución: build OK; `check:agents` OK; Prettier OK; ESLint OK; suites del PR 249/249;
+suite completa 3763/3764 con 1 fallo intermitente ajeno al PR (`ClientModal`, verde al reejecutar).
+Mutaciones: 3 ejecutadas, 3 detectadas. S1 de la tercera auditoría corregido.
+
+### Hallazgos
+
+| #   | Hallazgo                                            | Severidad  |
+| --- | --------------------------------------------------- | ---------- |
+| S1  | `docs/TESTING.md` sin los casos nuevos de Traspasos | Sugerencia |
+
+### Estado al cierre
+
+Pendiente de verificación humana en Electron (`npm run dev`). `docs/TESTING.md` pendiente de actualizar.
+
 ---
 
 ## Informe de Auditoría — PR #209 `feat(pedidos): capturar el costo al recibir un pedido y recalcular el CPP` (17 de noviembre de 2026, re-auditoría)

@@ -181,6 +181,83 @@ describe("InventorySearchModal reglas de pedidos", () => {
     ).toBeNull();
   });
 
+  describe("stock de la sucursal origen", () => {
+    const outOfStockProduct = {
+      id: "global-out",
+      codigo: "G-0",
+      descripcion: "Alimento agotado",
+      departamento: "Alimento",
+      precio: 10,
+      existencia: 0,
+      is_global: true,
+    };
+
+    it("muestra el stock cuando showStock esta activo", () => {
+      renderModal({
+        showStock: true,
+        products: [...products, outOfStockProduct],
+      });
+
+      expect(screen.getByText("Stock: 20")).toBeTruthy();
+      expect(screen.getByText("Stock: 0")).toBeTruthy();
+    });
+
+    it("bloquea un producto agotado y muestra el motivo en el boton", () => {
+      const onSelect = vi.fn();
+      window.Element.prototype.scrollIntoView = vi.fn();
+
+      renderModal({
+        showStock: true,
+        onSelect,
+        products: [outOfStockProduct],
+      });
+
+      const item = screen
+        .getByText("Alimento agotado")
+        .closest("[data-search-result]");
+
+      expect(item.getAttribute("aria-disabled")).toBe("true");
+      expect(screen.getByText("Stock: 0")).toBeTruthy();
+      expect(screen.getByText("SIN STOCK")).toBeTruthy();
+
+      fireEvent.click(screen.getByText("Alimento agotado"));
+      fireEvent.keyDown(document, { key: "ArrowDown" });
+      fireEvent.keyDown(document, { key: "Enter" });
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Sin stock" })).toBeTruthy();
+    });
+
+    it("no abre la confirmacion de global al hacer doble clic en un agotado", () => {
+      renderModal({
+        showStock: true,
+        products: [outOfStockProduct],
+      });
+
+      fireEvent.doubleClick(screen.getByText("Alimento agotado"));
+
+      expect(screen.queryByText("Volver global este producto")).toBeNull();
+    });
+
+    it("usa el nombre de la sucursal origen en el label local", () => {
+      renderModal({
+        localBranchName: "Centro",
+        products: [
+          {
+            id: "local-origin",
+            codigo: "L-2",
+            descripcion: "Correa local",
+            departamento: "Accesorios",
+            is_global: false,
+            existencia: 3,
+          },
+        ],
+      });
+
+      expect(screen.getByText("Producto local de Centro")).toBeTruthy();
+    });
+  });
+
   describe("volver global un producto local", () => {
     beforeEach(() => {
       promoteProductToGlobal.mockReset();

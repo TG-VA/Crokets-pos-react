@@ -16,6 +16,8 @@ const InventorySearchModal = ({
   error = null,
   restrictLocalProducts = false,
   onProductPromoted,
+  showStock = false,
+  localBranchName = "",
 }) => {
   const [promotingProduct, setPromotingProduct] = useState(null);
 
@@ -43,10 +45,12 @@ const InventorySearchModal = ({
     selectedProduct,
     selectedProductIsOpen,
     selectedProductIsDisabled,
+    selectedProductDisabledReason,
     resultsListRef,
 
     isAlreadySelected,
     isProductDisabled,
+    getDisabledReason,
     handleSearchChange,
     handleProductClick,
     handleSelectProduct,
@@ -56,6 +60,7 @@ const InventorySearchModal = ({
     products,
     selectedProductIds,
     restrictLocalProducts,
+    showStock,
     keyboardEnabled: !promotingProduct,
     onClose,
     onSelect,
@@ -75,9 +80,11 @@ const InventorySearchModal = ({
         selectLabel={
           selectedProductIsOpen
             ? "Ya seleccionado"
-            : selectedProductIsDisabled
-              ? "Producto local"
-              : "Seleccionar"
+            : selectedProductDisabledReason === "outOfStock"
+              ? "Sin stock"
+              : selectedProductDisabledReason === "local"
+                ? "Producto local"
+                : "Seleccionar"
         }
         selectDisabled={
           !selectedProduct || selectedProductIsOpen || selectedProductIsDisabled
@@ -102,6 +109,9 @@ const InventorySearchModal = ({
           resultsListRef={resultsListRef}
           isAlreadySelected={isAlreadySelected}
           isProductDisabled={isProductDisabled}
+          getDisabledReason={getDisabledReason}
+          showStock={showStock}
+          localBranchName={localBranchName}
           onProductClick={handleProductClick}
           onLocalProductDoubleClick={setPromotingProduct}
         />

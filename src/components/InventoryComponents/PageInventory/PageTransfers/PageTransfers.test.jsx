@@ -1,19 +1,37 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 
 import PageTransfers from "./PageTransfers";
 
-const { transfersState } = vi.hoisted(() => ({
+const { transfersState, lastSearchModalProps } = vi.hoisted(() => ({
   transfersState: {
     activeTab: "send",
     loadingProducts: false,
     productsError: null,
     searchModalOpen: true,
     searchableProducts: [],
+    draftItems: [],
+    originBranchName: "Centro",
+    handleProductPromoted: vi.fn(),
     closeSearchModal: vi.fn(),
     loadProductForTransfer: vi.fn(),
   },
+  lastSearchModalProps: { current: null },
 }));
+
+vi.mock(
+  "../../Modals/InventorySearchModal/InventorySearchModal",
+  async (importOriginal) => {
+    const { default: ActualInventorySearchModal } = await importOriginal();
+
+    return {
+      default: (props) => {
+        lastSearchModalProps.current = props;
+        return <ActualInventorySearchModal {...props} />;
+      },
+    };
+  }
+);
 
 vi.mock("react-router-dom", () => ({
   useLocation: () => ({ pathname: "/inventory/traspasos" }),
@@ -38,9 +56,14 @@ vi.mock("./components/modals/TransferDetailModal", () => ({
 
 describe("PageTransfers buscador de productos", () => {
   afterEach(() => {
+    lastSearchModalProps.current = null;
+    transfersState.handleProductPromoted.mockClear();
     Object.assign(transfersState, {
       loadingProducts: false,
       productsError: null,
+      searchableProducts: [],
+      draftItems: [],
+      originBranchName: "Centro",
     });
   });
 
@@ -58,5 +81,72 @@ describe("PageTransfers buscador de productos", () => {
     render(<PageTransfers />);
 
     expect(screen.getByText("Error al cargar")).toBeTruthy();
+  });
+
+  it("muestra stock, agotados y locales de la sucursal origen", () => {
+    transfersState.searchableProducts = [
+      {
+        id: "g1",
+        codigo: "G-1",
+        descripcion: "Alimento global",
+        existencia: 5,
+        is_global: true,
+        tracks_inventory: true,
+      },
+      {
+        id: "g0",
+        codigo: "G-0",
+        descripcion: "Alimento agotado",
+        existencia: 0,
+        is_global: true,
+        tracks_inventory: true,
+      },
+      {
+        id: "l1",
+        codigo: "L-1",
+        descripcion: "Juguete local",
+        existencia: 3,
+        is_global: false,
+        tracks_inventory: true,
+      },
+    ];
+
+    render(<PageTransfers />);
+
+    expect(screen.getByText("Stock: 0")).toBeTruthy();
+    expect(screen.getByText("Producto local de Centro")).toBeTruthy();
+
+    const outOfStockItem = screen
+      .getByText("Alimento agotado")
+      .closest("[data-search-result]");
+    const localItem = screen
+      .getByText("Juguete local")
+      .closest("[data-search-result]");
+
+    expect(outOfStockItem.getAttribute("aria-disabled")).toBe("true");
+    expect(localItem.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("cablea onProductPromoted del buscador con el handler de la pagina", () => {
+    render(<PageTransfers />);
+
+    expect(lastSearchModalProps.current).not.toBeNull();
+
+    act(() => {
+      lastSearchModalProps.current.onProductPromoted();
+    });
+
+    expect(transfersState.handleProductPromoted).toHaveBeenCalledTimes(1);
+  });
+
+  it("comparte con el buscador los productos ya seleccionados del borrador", () => {
+    transfersState.draftItems = [
+      { productId: "g1", name: "Alimento global", quantity: 2 },
+      { productId: "", name: "Sin id", quantity: 1 },
+    ];
+
+    render(<PageTransfers />);
+
+    expect(lastSearchModalProps.current.selectedProductIds).toEqual(["g1"]);
   });
 });

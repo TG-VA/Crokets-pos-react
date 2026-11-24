@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { isGlobalProduct } from "../../../../../services/inventory/inventoryProductCalculationService";
 import { createTransferOrder } from "../services/transfersService";
 import useProductLookup from "./useProductLookup";
 
@@ -112,8 +113,20 @@ const useSendForm = ({
         return;
       }
 
+      if (!isGlobalProduct(product)) {
+        setError(
+          "Producto local: vuelvelo global desde la busqueda (F10) para poder traspasarlo."
+        );
+        return;
+      }
+
       if (quantity <= 0) {
         setError("La cantidad a enviar debe ser mayor a 0.");
+        return;
+      }
+
+      if (availableStock <= 0) {
+        setError("Sin stock en la sucursal origen.");
         return;
       }
 
